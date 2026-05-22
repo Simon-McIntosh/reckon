@@ -22,6 +22,7 @@ Routes:
   GET /_projects/<file>         → ~/docs-server/<file>
   GET /state/<project>/<doc>    → ~/docs-server/state/<project>/<doc>.json
   POST /state/<project>/<doc>   → write the same path (versioned)
+  GET /_discover/<project>      → scan docs dir for HTML plan pages (meta tag opt-in)
   GET /<project>/<relpath>      → mount[project]/<relpath>
 
 POST versioned write contract — see reckon/serve.py for full details.
@@ -29,6 +30,7 @@ POST versioned write contract — see reckon/serve.py for full details.
 
 from __future__ import annotations
 
+import html.parser
 import json
 import mimetypes
 import os
@@ -138,6 +140,142 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
     }
 
 
+# ── Plan discovery ────────────────────────────────────────────────────────
+#
+# A plan HTML page opts in to discovery by carrying at least one
+#   <meta name="plan-status" content="active|pending|blocked|shipped">
+# tag in its <head>.  Other plan-* meta tags are optional but encouraged.
+# See the reckon-sync SKILL.md style guide for the full convention.
+
+_PLAN_META_PREFIX = "plan-"
+_NON_PLAN_FILES = frozenset([
+    "index.html", "sprint.html", "sprints.html", "milestones.html",
+    "decisions.html", "inventory.html", "blockers.html",
+    "implementation.html", "questions.html", "home.html",
+    "project.html",
+])
+_NON_PLAN_DIRS = frozenset(["_shared", "ui", "state", "assets"])
+
+
+class _HeadParser(html.parser.HTMLParser):
+    """Extract <meta> tags and <title> from the HTML <head> only."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.meta: dict[str, str] = {}
+        self.title = ""
+        self._in_title = False
+        self._done = False
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if self._done:
+            return
+        if tag == "body":
+            self._done = True
+            return
+        if tag == "title":
+            self._in_title = True
+        elif tag == "meta":
+            d = dict(attrs)
+            name = (d.get("name") or "").lower()
+            if name:
+                self.meta[name] = d.get("content", "")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("head", "body"):
+            self._done = True
+        if tag == "title":
+            self._in_title = False
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title and not self._done:
+            self.title += data
+
+
+def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
+    """Return (title, {name: content}) from a plan HTML file's <head>."""
+    try:
+        raw = path.read_bytes()[:8192].decode("utf-8", errors="replace")
+        p = _HeadParser()
+        p.feed(raw)
+        return p.title.strip(), p.meta
+    except Exception:
+        return "", {}
+
+
+def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
+    """Return {inventory, sprints, milestones} by scanning HTML plan pages.
+
+    Only HTML files that carry <meta name="plan-status"> are included —
+    this is the explicit opt-in that distinguishes plan pages from
+    infrastructure pages (sprint boards, decisions aggregators, etc.).
+    """
+    inventory: list[dict] = []
+
+    for html_file in sorted(docs_dir.rglob("*.html")):
+        rel = html_file.relative_to(docs_dir)
+        # Skip infrastructure directories
+        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if html_file.name in _NON_PLAN_FILES:
+            continue
+
+        title, meta = _read_head_meta(html_file)
+
+        # Explicit opt-in: must have plan-status (or plan-slug as fallback)
+        if "plan-status" not in meta and "plan-slug" not in meta:
+            continue
+
+        slug = meta.get("plan-slug") or html_file.stem
+        plan_title = meta.get("plan-title") or title or slug
+
+        # State JSON may override status, impl, dec_open, blockers
+        state_overlay: dict = {}
+        if state_root is not None:
+            sf = state_root / project / f"{slug}.json"
+            if sf.is_file():
+                try:
+                    env = json.loads(sf.read_text())
+                    state_overlay = env.get("data", {}) if isinstance(env, dict) else {}
+                except (OSError, json.JSONDecodeError):
+                    pass
+
+        inventory.append({
+            "slug":     slug,
+            "title":    plan_title,
+            "status":   state_overlay.get("status") or meta.get("plan-status", "pending"),
+            "ms":       meta.get("plan-milestone", "—"),
+            "roi":      meta.get("plan-roi", "mid"),
+            "effort":   meta.get("plan-effort", "M"),
+            "sprint":   meta.get("plan-sprint") or None,
+            "summary":  meta.get("plan-summary", ""),
+            "impl":     float(state_overlay.get("impl", 0) or 0),
+            "dec_open": int(state_overlay.get("dec_open", 0) or 0),
+            "blockers": int(state_overlay.get("blockers", 0) or 0),
+            "last":     state_overlay.get("last_modified", meta.get("plan-modified", "")),
+        })
+
+    # Load sprint + milestone structure from state/project.json or index.json
+    sprints: list = []
+    milestones: list = []
+    if state_root is not None:
+        for cand in ("project.json", "index.json"):
+            sf = state_root / project / cand
+            if not sf.is_file():
+                continue
+            try:
+                env = json.loads(sf.read_text())
+                data = env.get("data", {}) if isinstance(env, dict) else {}
+                sprints = data.get("sprints", [])
+                milestones = data.get("milestones", [])
+                if sprints or milestones:
+                    break
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    return {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+
+
 def safe_join(root: Path, rel: str) -> Path | None:
     try:
         target = (root / rel.lstrip("/")).resolve()
@@ -237,6 +375,19 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
             except OSError as e:
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
+            return
+
+        if path.startswith("/_discover/"):
+            project = path[len("/_discover/"):].strip("/")
+            if not project or not SAFE_NAME.match(project):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
+                return
+            disc_mounts = load_mounts()
+            if project not in disc_mounts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            result = discover_plans(disc_mounts[project], project, _STATE_ROOT)
+            self._send_json(HTTPStatus.OK, result)
             return
 
         parts = path.lstrip("/").split("/", 1)
