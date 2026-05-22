@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+"""Host-wide docs server for HTML-first dynamic docs.
+
+Serves multiple project doc roots under stable URL prefixes and provides a
+small JSON state store for in-page decision capture.
+
+Mounts are configured in ~/docs-server/mounts.json (default) or via --mounts:
+    {
+      "imas-ambix": "/home/user/Code/imas-ambix/docs",
+      "my-project":  "/home/user/Code/my-project/docs"
+    }
+
+State files land in ~/docs-server/state/<project>/<doc>.json so that
+agents working anywhere on the filesystem can read and write the same
+JSON the browser is interacting with.
+
+Routes:
+  GET /                         → home.html (cross-project rollup)
+  GET /_shared/<file>           → docs/_shared/<file> in the reckon repo
+                                  (falls back to ~/.claude/skills/html-docs/assets/)
+  GET /_projects/index.json     → cross-project rollup
+  GET /_projects/<file>         → ~/docs-server/<file>
+  GET /state/<project>/<doc>    → ~/docs-server/state/<project>/<doc>.json
+  POST /state/<project>/<doc>   → write the same path (versioned)
+  GET /<project>/<relpath>      → mount[project]/<relpath>
+
+POST versioned write contract — see reckon/serve.py for full details.
+"""
+
+from __future__ import annotations
+
+import json
+import mimetypes
+import os
+import re
+import socket
+from datetime import datetime
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+HOME = Path.home()
+
+# ── Configurable paths (set via main() args or env vars) ──────────────────
+
+_MOUNTS_FILE: Path | None = None
+_STATE_ROOT: Path | None = None
+_HOME_HTML: Path | None = None
+_SHARED_ROOT: Path | None = None
+
+
+def _resolve_paths(mounts_file: Path | None = None) -> None:
+    global _MOUNTS_FILE, _STATE_ROOT, _HOME_HTML, _SHARED_ROOT
+    legacy_root = HOME / "docs-server"
+    _MOUNTS_FILE = mounts_file or (legacy_root / "mounts.json")
+    _STATE_ROOT = legacy_root / "state"
+    _HOME_HTML = legacy_root / "home.html"
+    # Shared assets: prefer reckon repo's own docs/_shared, fall back to dotfiles.
+    repo_shared = Path(__file__).parent.parent / "docs" / "_shared"
+    dotfiles_shared = HOME / ".claude" / "skills" / "html-docs" / "assets"
+    _SHARED_ROOT = repo_shared if repo_shared.is_dir() else dotfiles_shared
+
+
+SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+MAX_POST_BYTES = 1_000_000
+
+
+def load_mounts() -> dict[str, Path]:
+    if not _MOUNTS_FILE or not _MOUNTS_FILE.exists():
+        return {}
+    raw = json.loads(_MOUNTS_FILE.read_text())
+    out: dict[str, Path] = {}
+    for name, path in raw.items():
+        if not SAFE_NAME.match(name):
+            continue
+        p = Path(path).expanduser().resolve()
+        if p.is_dir():
+            out[name] = p
+    return out
+
+
+def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> bytes:
+    rows = []
+    for name, path in sorted(mounts.items()):
+        rows.append(
+            f'<tr><td><a href="/{name}/">{name}</a></td>'
+            f'<td><code>{path}</code></td></tr>'
+        )
+    body = (
+        "<!doctype html><html><head><meta charset=utf-8>"
+        "<title>reckon docs-server</title>"
+        "<style>"
+        "body{font:14px/1.5 system-ui,sans-serif;max-width:780px;"
+        "margin:3rem auto;padding:0 1rem;color:#222}"
+        "h1{font-size:1.4rem;margin-bottom:.2rem}"
+        ".meta{color:#666;margin-bottom:2rem}"
+        "table{width:100%;border-collapse:collapse}"
+        "td{padding:.5rem .75rem;border-bottom:1px solid #eee}"
+        "td:first-child{font-weight:600}"
+        "code{background:#f5f5f5;padding:.1rem .3rem;border-radius:3px;font-size:.85em}"
+        "</style></head><body>"
+        "<h1>reckon</h1>"
+        f'<div class="meta">{host}:{port} &middot; '
+        f'{len(mounts)} project(s) mounted &middot; '
+        f'{datetime.now().strftime("%Y-%m-%d %H:%M")} &middot; '
+        "<em>home.html missing — install reckon to get the rollup view</em>"
+        "</div>"
+        '<table><thead><tr><th align=left>Project</th>'
+        '<th align=left>Path</th></tr></thead><tbody>'
+        + "".join(rows)
+        + "</tbody></table>"
+        "</body></html>"
+    )
+    return body.encode()
+
+
+def collect_projects(mounts: dict[str, Path]) -> dict:
+    out: list[dict] = []
+    for name, path in sorted(mounts.items()):
+        state_file = path / "state" / name / "index.json"
+        proj: dict = {"project": name, "path": str(path)}
+        if state_file.is_file():
+            try:
+                envelope = json.loads(state_file.read_text())
+                proj["data"] = envelope.get("data", envelope) if isinstance(envelope, dict) else {}
+                if isinstance(envelope, dict) and "updated" in envelope:
+                    proj["updated"] = envelope["updated"]
+            except (OSError, json.JSONDecodeError) as e:
+                proj["error"] = str(e)
+                proj["data"] = {}
+        else:
+            proj["data"] = {}
+        out.append(proj)
+    return {
+        "updated": datetime.now().isoformat(timespec="seconds"),
+        "projects": out,
+    }
+
+
+def safe_join(root: Path, rel: str) -> Path | None:
+    try:
+        target = (root / rel.lstrip("/")).resolve()
+    except (OSError, ValueError):
+        return None
+    if root not in target.parents and target != root:
+        return None
+    return target
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "reckon-docs/1.0"
+    _host: str = "127.0.0.1"
+    _port: int = 8765
+
+    def log_message(self, fmt: str, *args) -> None:
+        ts = datetime.now().strftime("%H:%M:%S")
+        print(f"[{ts}] {self.address_string()} {fmt % args}", flush=True)
+
+    def _send(self, status: int, body: bytes, ctype: str = "text/html") -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_json(self, status: int, obj) -> None:
+        self._send(status, json.dumps(obj, indent=2).encode(), "application/json")
+
+    def do_GET(self) -> None:  # noqa: N802
+        path = unquote(urlsplit(self.path).path)
+
+        if path in ("/", ""):
+            if _HOME_HTML and _HOME_HTML.is_file():
+                ctype, _ = mimetypes.guess_type(str(_HOME_HTML))
+                try:
+                    self._send(HTTPStatus.OK, _HOME_HTML.read_bytes(), ctype or "text/html")
+                except OSError as e:
+                    self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            else:
+                self._send(HTTPStatus.OK, render_index_fallback(load_mounts(), self._host, self._port))
+            return
+
+        if path.startswith("/_shared/"):
+            rel = path[len("/_shared/"):]
+            fname = rel.lstrip("/")
+            if not SAFE_NAME.match(fname):
+                self._send(HTTPStatus.BAD_REQUEST, b"bad shared filename")
+                return
+            target = (_SHARED_ROOT or Path("/dev/null")) / fname
+            if not target.is_file():
+                self._send(HTTPStatus.NOT_FOUND, b"shared asset not found")
+                return
+            ctype, _ = mimetypes.guess_type(str(target))
+            try:
+                self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+            except OSError as e:
+                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path == "/_projects/index.json":
+            self._send_json(HTTPStatus.OK, collect_projects(load_mounts()))
+            return
+
+        if path.startswith("/_projects/"):
+            rel = path[len("/_projects/"):]
+            fname = rel.lstrip("/")
+            if not SAFE_NAME.match(fname):
+                self._send(HTTPStatus.BAD_REQUEST, b"bad projects filename")
+                return
+            target = (HOME / "docs-server") / fname
+            if not target.is_file():
+                self._send(HTTPStatus.NOT_FOUND, b"not found")
+                return
+            ctype, _ = mimetypes.guess_type(str(target))
+            try:
+                self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+            except OSError as e:
+                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path.startswith("/state/"):
+            parts = path[len("/state/"):].strip("/").split("/", 1)
+            if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
+                return
+            project, doc = parts
+            if not SAFE_NAME.match(doc.removesuffix(".json")):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad doc"})
+                return
+            state_file = (_STATE_ROOT or Path("/dev/null")) / project / (doc if doc.endswith(".json") else f"{doc}.json")
+            if not state_file.exists():
+                self._send_json(HTTPStatus.OK, {})
+                return
+            try:
+                self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
+            except OSError as e:
+                self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
+            return
+
+        parts = path.lstrip("/").split("/", 1)
+        project = parts[0]
+        rel = parts[1] if len(parts) == 2 else ""
+        mounts = load_mounts()
+        if project not in mounts:
+            self._send(HTTPStatus.NOT_FOUND, b"unknown project")
+            return
+
+        root = mounts[project]
+        if rel in ("", "/"):
+            rel = "index.html"
+        target = safe_join(root, rel)
+        if target is None:
+            self._send(HTTPStatus.FORBIDDEN, b"forbidden")
+            return
+        if target.is_dir():
+            target = target / "index.html"
+        if not target.is_file():
+            self._send(HTTPStatus.NOT_FOUND, b"not found")
+            return
+
+        ctype, _ = mimetypes.guess_type(str(target))
+        try:
+            self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+        except OSError as e:
+            self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+
+    def do_POST(self) -> None:  # noqa: N802
+        path = unquote(urlsplit(self.path).path)
+        if not path.startswith("/state/"):
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "POST only to /state/"})
+            return
+        parts = path[len("/state/"):].strip("/").split("/", 1)
+        if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
+            return
+        project, doc = parts
+        doc_stem = doc.removesuffix(".json")
+        if not SAFE_NAME.match(doc_stem):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad doc"})
+            return
+
+        length = int(self.headers.get("Content-Length", "0"))
+        if length > MAX_POST_BYTES:
+            self._send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": f"body > {MAX_POST_BYTES} bytes"})
+            return
+        raw = self.rfile.read(length) if length else b""
+        try:
+            payload = json.loads(raw) if raw else {}
+        except json.JSONDecodeError as e:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"json: {e}"})
+            return
+
+        out_dir = (_STATE_ROOT or Path("/dev/null")) / project
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_file = out_dir / f"{doc_stem}.json"
+
+        cur_data: dict = {}
+        cur_version: int = 0
+        if out_file.exists():
+            try:
+                envelope = json.loads(out_file.read_text())
+                cur_data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                cur_version = int(cur_data.get("_version", 0))
+            except (OSError, json.JSONDecodeError, ValueError):
+                cur_data = {}
+                cur_version = 0
+
+        if_match_raw = self.headers.get("If-Match")
+        if if_match_raw is None:
+            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
+                "error": "version_mismatch",
+                "current_version": cur_version,
+                "expected_version": None,
+                "current_data": cur_data,
+            })
+            return
+
+        try:
+            expected_version = int(if_match_raw.strip().strip('"'))
+        except (ValueError, TypeError):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"})
+            return
+
+        if expected_version != cur_version:
+            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
+                "error": "version_mismatch",
+                "current_version": cur_version,
+                "expected_version": expected_version,
+                "current_data": cur_data,
+            })
+            return
+
+        new_data = dict(payload)
+        new_data.pop("_version", None)
+        new_data["_version"] = cur_version + 1
+
+        envelope = {
+            "updated": datetime.now().isoformat(timespec="seconds"),
+            "project": project,
+            "doc": doc_stem,
+            "data": new_data,
+        }
+        tmp = out_file.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(envelope, indent=2) + "\n")
+        tmp.replace(out_file)
+        self._send_json(HTTPStatus.OK, {"ok": True, "path": str(out_file), "version": new_data["_version"]})
+
+
+def main(port: int = 8765, host: str | None = None, mounts_file: Path | None = None) -> None:
+    _resolve_paths(mounts_file)
+    _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
+    _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
+
+    # Patch Handler class attributes so do_GET can use them for fallback page.
+    Handler._host = _host
+    Handler._port = _port
+
+    if _STATE_ROOT:
+        _STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    if _MOUNTS_FILE and not _MOUNTS_FILE.exists():
+        _MOUNTS_FILE.write_text("{}\n")
+
+    fqdn = socket.getfqdn()
+    print(f"reckon docs-server listening on http://{_host}:{_port}/", flush=True)
+    if _host == "0.0.0.0":  # noqa: S104
+        print(f"  team URL:  http://{fqdn}:{_port}/", flush=True)
+    else:
+        print(f"  reach from a laptop: ssh -L {_port}:localhost:{_port} <user>@{fqdn}", flush=True)
+    print(f"  mounts:  {_MOUNTS_FILE}", flush=True)
+    print(f"  state:   {_STATE_ROOT}", flush=True)
+    print(f"  shared:  {_SHARED_ROOT}", flush=True)
+    ThreadingHTTPServer((_host, _port), Handler).serve_forever()
+
+
+if __name__ == "__main__":
+    main()
