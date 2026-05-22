@@ -51,59 +51,73 @@ have plans, check `reckon-create` first — `reckon-sync` creates infrastructure
 | `docs/` absent **or** `docs/_shared/` absent | **first-run** — all steps run |
 | Both present | **refresh** — Steps 0 and 2 only; steps 3–4 are no-ops |
 
-### Step 0 — Link reckon skills into ~/.claude/skills/ and ~/.agents/skills/
+### Step 0 — Link reckon skills and clean up dead links
 
-Always run. Different agent runtimes look in different places:
-- **Claude Code** resolves skills from `~/.claude/skills/`
-- **Other agent systems** (Cursor, Aider, Continue, etc.) resolve from `~/.agents/skills/`
+Always run. Each reckon skill is linked individually into both skill
+directories so they are independently correct:
+- **`~/.claude/skills/`** — Claude Code
+- **`~/.agents/skills/`** — other agent runtimes (Cursor, Aider, Continue, etc.)
 
-`~/.agents/skills` is kept as a symlink to `~/.claude/skills` so both paths see
-the same set of skills without duplication. Only `~/.claude/skills` needs
-individual skill symlinks maintained.
+After linking, dead symlinks pointing into `~/Code/reckon/skills/` are removed
+from both dirs so renamed or deleted skills don't leave stale entries.
 
 ```bash
 RECKON_SKILLS="$HOME/Code/reckon/skills"
-CLAUDE_SKILLS="$HOME/.claude/skills"
-AGENTS_SKILLS="$HOME/.agents/skills"
 
-# Migrate legacy whole-dir symlink to dotfiles → real directory with individual links
-if [ -L "$CLAUDE_SKILLS" ]; then
-  LINK_TARGET="$(readlink "$CLAUDE_SKILLS")"
-  rm "$CLAUDE_SKILLS"
-  mkdir -p "$CLAUDE_SKILLS"
-  for skill_dir in "$LINK_TARGET"/*/; do
-    skill_name="$(basename "$skill_dir")"
-    case "$skill_name" in reckon-*) continue;; esac
-    ln -sfn "$skill_dir" "$CLAUDE_SKILLS/$skill_name"
-    echo "linked (dotfiles) $skill_name"
-  done
-  echo "migrated $LINK_TARGET → individual symlinks in $CLAUDE_SKILLS"
-fi
+link_skills() {
+  local DEST="$1"
 
-mkdir -p "$CLAUDE_SKILLS"
-
-# Link each reckon skill into ~/.claude/skills/
-for skill_dir in "$RECKON_SKILLS"/*/; do
-  skill_name="$(basename "$skill_dir")"
-  target="$CLAUDE_SKILLS/$skill_name"
-  if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_dir" ]; then
-    echo "ok (already linked) $skill_name"
-  else
-    ln -sfn "$skill_dir" "$target"
-    echo "linked (reckon) $skill_name"
+  # Migrate legacy whole-dir symlink to dotfiles → real directory
+  if [ -L "$DEST" ]; then
+    LINK_TARGET="$(readlink "$DEST")"
+    rm "$DEST"
+    mkdir -p "$DEST"
+    for skill_dir in "$LINK_TARGET"/*/; do
+      skill_name="$(basename "$skill_dir")"
+      case "$skill_name" in reckon-*) continue;; esac
+      ln -sfn "$skill_dir" "$DEST/$skill_name"
+      echo "  linked (migrated) $skill_name"
+    done
+    echo "  migrated $LINK_TARGET → individual symlinks in $DEST"
   fi
-done
 
-# Ensure ~/.agents/skills → ~/.claude/skills (covers Cursor, Aider, Continue, etc.)
-if [ ! -L "$AGENTS_SKILLS" ] || [ "$(readlink "$AGENTS_SKILLS")" != "$CLAUDE_SKILLS" ]; then
-  mkdir -p "$(dirname "$AGENTS_SKILLS")"
-  # Remove if it's a real dir or wrong symlink
-  [ -e "$AGENTS_SKILLS" ] && rm -rf "$AGENTS_SKILLS"
-  ln -s "$CLAUDE_SKILLS" "$AGENTS_SKILLS"
-  echo "linked ~/.agents/skills → ~/.claude/skills"
-else
-  echo "ok ~/.agents/skills → ~/.claude/skills"
-fi
+  mkdir -p "$DEST"
+
+  # Link each reckon skill
+  for skill_dir in "$RECKON_SKILLS"/*/; do
+    skill_name="$(basename "$skill_dir")"
+    target="$DEST/$skill_name"
+    if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_dir" ]; then
+      echo "  ok   $skill_name"
+    else
+      ln -sfn "$skill_dir" "$target"
+      echo "  link $skill_name"
+    fi
+  done
+
+  # Remove dead links that point into the reckon skills dir (handles renames)
+  for link in "$DEST"/*/; do
+    link="${link%/}"
+    if [ -L "$link" ]; then
+      target="$(readlink "$link")"
+      # Only clean up links that were ours (point into reckon/skills/)
+      case "$target" in
+        "$RECKON_SKILLS"/*)
+          if [ ! -e "$link" ]; then
+            rm "$link"
+            echo "  removed dead link $(basename "$link")"
+          fi
+          ;;
+      esac
+    fi
+  done
+}
+
+echo "~/.claude/skills:"
+link_skills "$HOME/.claude/skills"
+
+echo "~/.agents/skills:"
+link_skills "$HOME/.agents/skills"
 ```
 
 ### Step 1 — Detect intent
