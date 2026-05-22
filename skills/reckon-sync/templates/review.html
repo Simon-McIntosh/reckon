@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{TITLE}} — Review</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/state.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">⚗ {{PROJECT}}</a></div>
+  <nav>
+    <a href="index.html">Index</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<h1>{{TITLE}}</h1>
+<div class="meta">
+  <span>{{PROJECT}} / review</span>
+  <span> · </span>
+  <span>Updated: {{DATE}}</span>
+  <span> · </span>
+  <span class="saved-pulse" id="saved">saved</span>
+</div>
+
+<h2 id="summary">Summary</h2>
+<p>What changes, why, and the one-sentence verdict.</p>
+
+<h2 id="findings">Findings</h2>
+<table>
+  <thead><tr><th>Severity</th><th>File</th><th>Note</th><th>Status</th></tr></thead>
+  <tbody id="findings-body">
+    <tr data-key="f1">
+      <td><span class="badge bad">blocker</span></td>
+      <td><code>path/to/file.py:42</code></td>
+      <td>Describe the issue.</td>
+      <td>
+        <select>
+          <option value="open">open</option>
+          <option value="addressed">addressed</option>
+          <option value="dismissed">dismissed</option>
+        </select>
+      </td>
+    </tr>
+    <tr data-key="f2">
+      <td><span class="badge warn">nit</span></td>
+      <td><code>path/to/other.py:7</code></td>
+      <td>Smaller suggestion.</td>
+      <td>
+        <select>
+          <option value="open">open</option>
+          <option value="addressed">addressed</option>
+          <option value="dismissed">dismissed</option>
+        </select>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="toolbar">
+  <button id="copy-state">Copy state as JSON</button>
+</div>
+
+</main>
+
+<script defer>
+(async function () {
+  const saved = document.getElementById('saved');
+  const flash = () => { saved.classList.add('on'); setTimeout(() => saved.classList.remove('on'), 800); };
+  const rows = [...document.querySelectorAll('#findings-body tr[data-key]')];
+
+  async function readAll() {
+    const out = {};
+    for (const row of rows) out[row.dataset.key] = row.querySelector('select').value;
+    return out;
+  }
+  function applyAll(state) {
+    for (const row of rows) {
+      const v = state?.[row.dataset.key];
+      if (v) row.querySelector('select').value = v;
+    }
+  }
+
+  rows.forEach(row =>
+    row.querySelector('select').addEventListener('change', async () => {
+      await saveState(await readAll()); flash();
+    })
+  );
+  document.getElementById('copy-state').addEventListener('click', async () => {
+    await copyState(await readAll()); flash();
+  });
+
+  const initial = await loadState();
+  applyAll(initial.data || {});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{PROJECT}} — blockers</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/state.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">⚗ {{PROJECT}}</a></div>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="sprints.html">Sprints</a>
+    <a href="milestones.html">Milestones</a>
+    <a href="blockers.html">Blockers</a>
+    <a href="questions.html">Questions</a>
+    <a href="inventory.html">Inventory</a>
+  </nav>
+</header>
+
+<main class="wrap wide">
+
+<h1>Open blockers</h1>
+<div class="meta">
+  <span>{{PROJECT}} / blockers</span>
+  <span> · </span>
+  <span>One row per blocker; sorted by N plans it gates.</span>
+</div>
+
+<table id="blockers-table" class="dense">
+  <thead><tr>
+    <th>Blocker</th><th>Origin plan</th><th>Blocks (N)</th>
+    <th>Owner</th><th>Model</th><th>Next step</th>
+  </tr></thead>
+  <tbody id="blockers-tbody"><tr><td colspan="6" class="loading">Loading blockers…</td></tr></tbody>
+</table>
+
+</main>
+
+<script defer>
+(async function () {
+  const blob = await loadIndexState();
+  const data = blob.data || {};
+  if (!data.blockers) {
+    document.getElementById('blockers-tbody').innerHTML = '<tr><td colspan="6" class="loading">no blockers list yet.</td></tr>';
+    return;
+  }
+  function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  const tbody = document.getElementById('blockers-tbody');
+  const sorted = [...data.blockers].sort((a, b) => (b.blocks_n || 0) - (a.blocks_n || 0));
+  tbody.innerHTML = sorted.length === 0
+    ? '<tr><td colspan="6" class="loading">no open blockers recorded.</td></tr>'
+    : sorted.map(b => `<tr>
+        <td><strong>${escapeHtml(b.summary)}</strong></td>
+        <td class="path">${escapeHtml(b.origin_path || '')}</td>
+        <td>${b.blocks_n || 0}</td>
+        <td>${escapeHtml(b.owner || '')}</td>
+        <td>${b.model_tier ? `<span class="pill m-${b.model_tier}">${escapeHtml(b.model_tier)}</span>` : ''}</td>
+        <td>${escapeHtml(b.next_step || '')}</td>
+      </tr>`).join('');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{PROJECT}} — sprints</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/state.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo"><a href="index.html">⚗ {{PROJECT}}</a></div>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="sprints.html">Sprints</a>
+    <a href="milestones.html">Milestones</a>
+    <a href="blockers.html">Blockers</a>
+    <a href="questions.html">Questions</a>
+    <a href="inventory.html">Inventory</a>
+  </nav>
+</header>
+
+<main class="wrap wide">
+
+<h1>Sprint plan</h1>
+<div class="meta">
+  <span>{{PROJECT}} / sprints</span>
+  <span> · </span>
+  <span>Each sprint is an ordered list of plan items selected for execution.</span>
+</div>
+
+<p>
+  Sprints are managed by the <code>plan-sprint</code> skill. To dispatch the
+  fleet on the active sprint, invoke <code>/plan-implement sprint &lt;id&gt;</code>.
+</p>
+
+<div id="sprints-out"><div class="loading">Loading sprint plan…</div></div>
+
+</main>
+
+<script defer>
+(async function () {
+  const blob = await loadIndexState();
+  const data = blob.data || {};
+  if (!data.sprints) {
+    document.getElementById('sprints-out').innerHTML = '<div class="loading">No sprints defined yet. Run <code>/plan-sprint propose</code> to build one from the inventory.</div>';
+    return;
+  }
+  function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  const out = document.getElementById('sprints-out');
+  out.innerHTML = '';
+  for (const sprint of data.sprints) {
+    const done = (sprint.items || []).filter(i => i.status === 'shipped' || i.status === 'done').length;
+    const total = (sprint.items || []).length;
+    const pct = total ? (done * 100 / total).toFixed(0) : 0;
+    const heading = `${escapeHtml(sprint.id)} — ${escapeHtml(sprint.theme || sprint.name || '')}`;
+    const statusPill = sprint.status ? `<span class="pill s-${sprint.status}" style="margin-left:.5rem">${escapeHtml(sprint.status)}</span>` : '';
+    const dateLine = (sprint.starts || sprint.ends)
+      ? `<div class="sub"><span class="path">${escapeHtml(sprint.starts || '?')} → ${escapeHtml(sprint.ends || '?')}</span></div>`
+      : '';
+
+    const itemsHtml = (sprint.items || []).map(it => {
+      const itStatus = it.status || 'pending';
+      const mt = it.model_tier ? `<span class="pill m-${it.model_tier}">${escapeHtml(it.model_tier)}</span>` : '';
+      const blockedBy = (it.blocked_by || []).length
+        ? `<div class="sub">blocked by: ${it.blocked_by.map(escapeHtml).join(', ')}</div>`
+        : '';
+      const href = it.slug ? `${encodeURIComponent(it.slug)}.html` : (it.path || '#');
+      return `<tr class="item">
+        <td>
+          <a href="${href}">${escapeHtml(it.title || it.slug || '')}</a>
+          ${blockedBy}
+        </td>
+        <td><span class="pill s-${itStatus}">${itStatus}</span></td>
+        <td>${it.roi ? `<span class="pill r-${it.roi}">${escapeHtml(it.roi)}</span>` : ''}</td>
+        <td>${it.effort ? `<span class="pill e-${it.effort}">${escapeHtml(it.effort)}</span>` : ''}</td>
+        <td>${it.milestone ? `<span class="pill ms-${escapeHtml(it.milestone)}">${escapeHtml(it.milestone)}</span>` : ''}</td>
+        <td>${mt}</td>
+        <td><span class="why-now">${escapeHtml(it.why_now || '')}</span></td>
+        <td><span class="done-when">${escapeHtml(it.done_when || '')}</span></td>
+      </tr>`;
+    }).join('');
+
+    out.innerHTML += `<div class="sprint-card" id="${escapeHtml(sprint.id)}">
+      <h3>${heading}${statusPill}</h3>
+      ${dateLine}
+      <div class="sub">${escapeHtml(sprint.description || '')}</div>
+      <div class="sub"><strong>${done}/${total}</strong> done (${pct}%)</div>
+      ${total === 0 ? '<p class="loading">no items</p>' : `<table class="dense">
+        <thead><tr><th>Item</th><th>Status</th><th>ROI</th><th>Effort</th><th>Milestone</th><th>Model</th><th>Why now</th><th>Done when</th></tr></thead>
+        <tbody>${itemsHtml}</tbody></table>`}
+    </div>`;
+  }
+})();
+</script>
+</body>
+</html>
