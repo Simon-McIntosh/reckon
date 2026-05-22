@@ -28,7 +28,45 @@ window.STATE_READY = (async function () {
   const idx = (idxBlob && idxBlob.data) || {};
 
   // 2. Per-plan bodies — fetch in parallel
-  const inventory = Array.isArray(idx.inventory) ? idx.inventory : [];
+  // Support two layouts:
+  //   per-doc:       data.inventory[] — each item has a slug, individual JSON files
+  //   central-index: data.plans[]     — each item has a path, no individual JSONs
+  let inventory = Array.isArray(idx.inventory) ? idx.inventory : [];
+
+  if (inventory.length === 0 && Array.isArray(idx.plans) && idx.plans.length > 0) {
+    // Build sprint membership: path-basename → sprint id
+    const pathToSprint = {};
+    for (const s of (Array.isArray(idx.sprints) ? idx.sprints : [])) {
+      for (const it of (s.items || [])) {
+        const raw = typeof it === "string" ? it : (it.path || it.slug || "");
+        const key = raw.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+        if (key) pathToSprint[key] = s.id;
+      }
+    }
+    inventory = idx.plans.map(pl => {
+      const rawPath = pl.path || pl.slug || "";
+      const slug = rawPath.replace(/^.*\//, "").replace(/\.[^.]+$/, "")
+                   || (pl.title || "plan").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 48);
+      return {
+        slug,
+        title:    pl.title || slug,
+        status:   pl.status || "pending",
+        ms:       pl.milestone || "—",
+        roi:      pl.roi    || "mid",
+        effort:   pl.effort || "M",
+        impl:     pl.implementation_fraction || 0,
+        dec_open: pl.dec_open || 0,
+        blockers: Array.isArray(pl.blocked_by) ? pl.blocked_by.length
+                  : (typeof pl.blockers === "number" ? pl.blockers : 0),
+        sprint:   pathToSprint[slug] || null,
+        last:     pl.last_modified || "",
+        summary:  pl.summary || "",
+        category: pl.category || "",
+        _central: true,
+      };
+    });
+  }
+
   const planEntries = await Promise.all(
     inventory.map(async inv => {
       const blob = await getJson(`${stateBase}/${encodeURIComponent(inv.slug)}.json`);
@@ -71,6 +109,7 @@ window.STATE_READY = (async function () {
   window.STATE = {
     today:            new Date().toISOString().slice(0, 10),
     projects:         Array.isArray(idx.projects) ? idx.projects : [],
+    milestones:       Array.isArray(idx.milestones) ? idx.milestones : [],
     inventory:        mergedInventory,
     active_sprint_id: idx.active_sprint_id || null,
     sprints,

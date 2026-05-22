@@ -85,7 +85,7 @@ function V7TopBar({ route, onNav }) {
 function FiltersCol({ filters, setFilters }) {
   const M = window.STATE;
   const statuses = ["active", "blocked", "pending", "shipped"];
-  const milestones = M.projects[0].milestones;
+  const milestones = M.projects?.[0]?.milestones || M.milestones || [];
   const sprints = M.sprints || [];
 
   const toggle = (group, value) => {
