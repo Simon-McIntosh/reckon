@@ -1,12 +1,15 @@
 // Plan view — reading-first document with inline decisions and select-to-comment.
 // No internal topbar/breadcrumb because the sidebar handles nav.
-// The right rail has been removed; About/Graph/Comments live in the title bar
-// row 2 and inline in the section thread.
 //
-// Row 2 of the plan title bar (rendered in shell.jsx) carries the plan meta.
-// Inside the plan body there is a Reading | Graph toggle near the top.
-// Graph mode replaces the article body with RadialFan; followup + decision
-// sections are hidden in graph mode for cleaner focus.
+// Content source priority:
+//   1. Fetch /<project>/<slug>.html and render the <article class="plan-doc">
+//      body directly — this preserves all HTML formatting (tables, code, lists).
+//   2. Fall back to GenericBody (data-driven from state sections[]) if no HTML.
+//
+// Interactive overlay: after rendering the HTML, locked decision values from
+// state JSON are injected into .dec-choice[data-key] cells in the decisions
+// table. Followups and the resolved-log always come from state JSON (below the
+// HTML body).
 
 function Plan({ slug, onNav }) {
   const M = window.STATE;
@@ -16,25 +19,66 @@ function Plan({ slug, onNav }) {
 
   const P = PG;
 
+  // Decisions from state — handle both array (definitions) and object (locked map).
   const stored = planLoad(slug) || {};
   const storedDec = stored.decisions || {};
-  const initialDecs = (P.decisions || []).map(d => {
-    const s = storedDec[d.key];
-    if (!s) return d;
+  const defsRaw = Array.isArray(P.decisions_def) ? P.decisions_def
+                : Array.isArray(P.decisions)     ? P.decisions
+                : [];
+  const lockedMap = (P.decisions && !Array.isArray(P.decisions)) ? P.decisions : {};
+  const initialDecs = defsRaw.map(d => {
+    const s = storedDec[d.key] || lockedMap[d.key] || {};
     return { ...d, chosen: s.choice || d.chosen || "", rationale: s.rationale ?? (d.rationale || ""), when: s.when || "", by: s.by || "" };
   });
 
   const [decs, setDecs] = useState(initialDecs);
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
-
-  // Reading / Graph toggle — resets to Reading on each navigation (slug change)
   const [viewMode, setViewMode] = useState("reading");
+  useEffect(() => { setViewMode("reading"); }, [slug]);
+
+  // ── Fetch HTML plan body ────────────────────────────────────────────────
+  const [planHtml, setPlanHtml] = useState(null);
+  const [htmlReady, setHtmlReady] = useState(false);
+  const htmlRef = useRef(null);
+
   useEffect(() => {
-    setViewMode("reading");
+    setHtmlReady(false);
+    setPlanHtml(null);
+    const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+    if (!project) { setHtmlReady(true); return; }
+
+    fetch(`/${project}/${slug}.html`, { cache: "no-store" })
+      .then(r => r.ok ? r.text() : null)
+      .then(html => {
+        if (!html) { setHtmlReady(true); return; }
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const article = doc.querySelector(".plan-doc");
+        if (!article) { setHtmlReady(true); return; }
+        // Remove old-nav elements (SPA provides its own chrome)
+        article.querySelector(".topbar")?.remove();
+        const hdr = article.querySelector("header.plan-header");
+        if (hdr) hdr.remove();
+        setPlanHtml(article.innerHTML);
+        setHtmlReady(true);
+      })
+      .catch(() => setHtmlReady(true));
   }, [slug]);
 
-  // Listen for "open prompt" event from the title bar
+  // After HTML renders, inject locked decision values into table cells
+  useEffect(() => {
+    if (!htmlRef.current || !planHtml) return;
+    for (const el of htmlRef.current.querySelectorAll(".dec-choice[data-key]")) {
+      const key = el.getAttribute("data-key");
+      const locked = lockedMap[key] || storedDec[key];
+      if (locked?.choice) {
+        el.textContent = locked.choice;
+        el.classList.add("chosen");
+      }
+    }
+  }, [planHtml, lockedMap]);
+
+  // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
     const open = () => {
       const openDecs = decs.filter(d => !d.chosen);
@@ -59,22 +103,14 @@ function Plan({ slug, onNav }) {
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
     setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", rationale, when: now, by: author } : x));
-    planSave(slug, {
-      [`decisions.${key}`]: { choice: choice || null, rationale, when: now, by: author },
-    });
+    planSave(slug, { [`decisions.${key}`]: { choice: choice || null, rationale, when: now, by: author } });
     if (window.flashSaved) window.flashSaved(`${slug}.${key} → ${choice || "rationale saved"}`);
   };
 
   const addComment = (sectionId, body, quote) => {
     if (!body || !body.trim()) return;
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-    const c = {
-      id: `c-${Date.now()}`,
-      who: author,
-      when: now,
-      body: body.trim(),
-      ...(quote ? { quote } : {}),
-    };
+    const c = { id: `c-${Date.now()}`, who: author, when: now, body: body.trim(), ...(quote ? { quote } : {}) };
     const next = { ...comments, [sectionId]: [...(comments[sectionId] || []), c] };
     setComments(next);
     planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
@@ -83,54 +119,80 @@ function Plan({ slug, onNav }) {
 
   return (
     <div className="r-page">
-      {/* Reading / Graph toggle — sits above the article */}
       <div className="r-plan-mode-toggle">
-        <button
-          className={`r-mode-pill${viewMode === "reading" ? " active" : ""}`}
-          onClick={() => setViewMode("reading")}
-        >Reading</button>
-        <button
-          className={`r-mode-pill${viewMode === "graph" ? " active" : ""}`}
-          onClick={() => setViewMode("graph")}
-        >Graph</button>
+        <button className={`r-mode-pill${viewMode === "reading" ? " active" : ""}`} onClick={() => setViewMode("reading")}>Reading</button>
+        <button className={`r-mode-pill${viewMode === "graph" ? " active" : ""}`} onClick={() => setViewMode("graph")}>Graph</button>
       </div>
 
       {viewMode === "graph" ? (
-        /* Graph mode — radial fan only; no article or followups */
         window.RadialFan
           ? <window.RadialFan focalSlug={slug} onNav={onNav} />
           : <div style={{ padding: 24, color: "var(--muted)" }}>Graph view loading…</div>
       ) : (
-        /* Reading mode (default) */
         <article className="r-reading" ref={articleRef}>
-          <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
+          {!htmlReady ? (
+            <div style={{ padding: 24, color: "var(--muted)", fontSize: 13 }}>Loading…</div>
+          ) : planHtml ? (
+            <>
+              {/* Render HTML plan body — preserves all formatting from the authored doc */}
+              <div ref={htmlRef} className="r-plan-html" dangerouslySetInnerHTML={{ __html: planHtml }} />
+
+              {/* Resolved decisions log (locked choices from state JSON — shown below HTML body) */}
+              {Object.keys(lockedMap).length > 0 && defsRaw.length === 0 && (
+                <LockedDecisionsBlock lockedMap={lockedMap} />
+              )}
+
+              {/* Data-driven decisions (plans with decisions_def[] array) */}
+              {decs.length > 0 && (
+                <>
+                  <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
+                  {decs.map(d => (
+                    <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
+                  ))}
+                  <SectionComments comments={comments["decisions"]} />
+                </>
+              )}
+            </>
+          ) : (
+            /* Fallback: no HTML file — render from state JSON sections */
+            <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
+          )}
+
+          {/* Resolved followup log — always from state JSON */}
+          {(PG.followups_done || []).length > 0 && (
+            <>
+              <h2 id="log"><span className="sec">§</span>Log</h2>
+              <div className="followup-log">
+                {PG.followups_done.map(f => (
+                  <div className="item" key={f.id}>
+                    <div className="mark">✓</div>
+                    <div>
+                      <div className="title">{f.title}</div>
+                      <div className="meta">{f.written_by} → {f.resolved_by} · {f.written_at} → {f.resolved_at}</div>
+                      <div className="outcome">{f.outcome}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </article>
       )}
 
-      {/* Floating comment button — only in reading mode */}
       {viewMode === "reading" && sel && !composingAt && (
         <button
           className="r-float-btn"
           style={{ top: sel.top + 6, left: Math.min(sel.left - 60, window.innerWidth - 140) }}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            setComposingAt(sel);
-            clearSel();
-            window.getSelection()?.removeAllRanges();
-          }}
-        >
-          ¶ Comment
-        </button>
+          onClick={() => { setComposingAt(sel); clearSel(); window.getSelection()?.removeAllRanges(); }}
+        >¶ Comment</button>
       )}
 
       {composingAt && (
         <CommentPopover
           anchor={composingAt}
           onClose={() => setComposingAt(null)}
-          onPost={(body) => {
-            addComment(composingAt.sectionId, body, composingAt.quote);
-            setComposingAt(null);
-          }}
+          onPost={(body) => { addComment(composingAt.sectionId, body, composingAt.quote); setComposingAt(null); }}
         />
       )}
 
@@ -145,7 +207,34 @@ function Plan({ slug, onNav }) {
   );
 }
 
-// ─── Generic data-driven body (sections[] + decisions inline at end) ─────
+// ─── Locked decisions display (object-map format, no def array) ──────────
+// Used for plans like reckon-mcp-gaps where decisions are recorded as a locked
+// map keyed by decision ID but there is no decisions_def[] to drive a form.
+
+function LockedDecisionsBlock({ lockedMap }) {
+  const entries = Object.entries(lockedMap);
+  if (entries.length === 0) return null;
+  return (
+    <>
+      <h2 id="decisions-state"><span className="sec">§</span>Decisions (locked)</h2>
+      <table className="decisions-tbl">
+        <thead><tr><th>Key</th><th>Choice</th><th>Rationale</th><th>When</th></tr></thead>
+        <tbody>
+          {entries.map(([key, val]) => (
+            <tr key={key}>
+              <td><code>{key}</code></td>
+              <td className="dec-choice chosen">{val.choice || "—"}</td>
+              <td>{val.rationale || ""}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{val.by ? `${val.by} · ` : ""}{val.when || ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+// ─── Generic data-driven body (fallback when no HTML file) ───────────────
 
 function GenericBody({ PG, decs, onUpdateDec, comments }) {
   return (
@@ -163,8 +252,7 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
         <>
           <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
           {decs.map(d => (
-            <Decision key={d.key} d={d}
-              onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
+            <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
           ))}
           <SectionComments comments={comments["decisions"]} />
         </>
