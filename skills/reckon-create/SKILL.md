@@ -35,6 +35,10 @@ and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
 4. **`state.js` must be wired** in every scaffolded page — future agents expect it.
 5. **Every page ships with a NEXT card placeholder** — even empty.
 6. **Do not commit automatically.** Report what was created and suggest a commit message.
+7. **Plan body prose lives in HTML — never in state JSON.** Write the full section content
+   directly in `docs/<slug>.html`. State JSON (`data`) contains ONLY:
+   `{status, tier, decisions, notes, followups, research, questions}` — never `sections[]`
+   with prose. A stub like `<p>See state §2 for details</p>` is a hard failure.
 
 ## Workflow
 

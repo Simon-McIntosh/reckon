@@ -1,11 +1,11 @@
 {
-  "updated": "2026-05-26T18:34:42",
+  "updated": "2026-05-26T18:42:28",
   "project": "reckon",
   "doc": "reckon-ci-build",
   "data": {
     "status": "active",
     "title": "reckon build \u2014 CI static site generation",
-    "impl": 0.0,
+    "impl": 0.75,
     "tier": "sonnet",
     "sprint": "S5",
     "last_modified": "2026-05-26",
@@ -44,10 +44,28 @@
         ],
         "tier": "sonnet",
         "est_turn": "2-3 Sonnet turns",
-        "prompt": "Project: reckon\nPlan:    reckon-ci-build\nSection: \u00a72 + \u00a73\nTier:    sonnet\n\nContext\n  reckon now serves UI assets from /_ui/ and /_shared/ routes (v8 dynamic server).\n  Static deployment to GitHub Pages needs local asset copies. The plan at\n  docs/reckon-ci-build.html describes the full design.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  None yet \u2014 open decisions in the plan must be surfaced first.\n\nOpen decisions to surface\n  command-name, sprint-discovery-dir, index-json-fate\n\nDone-when\n  1. reckon build <docs_path> command in cli.py copies _ui/ + _shared/ and writes\n     index.html with relative paths\n  2. discover_plans() scans docs/sprints/*.html for sprint meta tags\n  3. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml\n  4. Tests added for build command\n  5. Followup written + this followup resolved"
+        "prompt": "Project: reckon\nPlan:    reckon-ci-build\nSection: \u00a72 + \u00a73\nTier:    sonnet\n\nContext\n  reckon now serves UI assets from /_ui/ and /_shared/ routes (v8 dynamic server).\n  Static deployment to GitHub Pages needs local asset copies. The plan at\n  docs/reckon-ci-build.html describes the full design.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  None yet \u2014 open decisions in the plan must be surfaced first.\n\nOpen decisions to surface\n  command-name, sprint-discovery-dir, index-json-fate\n\nDone-when\n  1. reckon build <docs_path> command in cli.py copies _ui/ + _shared/ and writes\n     index.html with relative paths\n  2. discover_plans() scans docs/sprints/*.html for sprint meta tags\n  3. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml\n  4. Tests added for build command\n  5. Followup written + this followup resolved",
+        "resolved_at": "2026-05-26T16:42:01+00:00",
+        "resolved_by": "Claude (sonnet-4.6)",
+        "outcome": "Landed: reckon build command (cli.py) copies _ui/ + _shared/ assets, writes relative-path index.html, drops .nojekyll, writes plan inventory to index.json. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml. discover_plans() extended to scan docs/sprints/*.html and docs/milestones/*.html for sprint/milestone meta tags. Committed 5c9a71c. Tests and q1/q2 resolution remain."
+      },
+      {
+        "id": "f-ci-build-tests-2026-05-26",
+        "written_by": "Claude (sonnet-4.6)",
+        "written_at": "2026-05-26",
+        "title": "Add tests for reckon build command + resolve q1 (state.js copy)",
+        "body": "build command and sprint/milestone discovery are implemented. Remaining: (1) tests/test_build.py covering reckon build output correctness, (2) resolve q1 \u2014 confirm whether reckon build should copy state.js to _shared/ alongside the CSS (check what standalone plan pages need), (3) resolve q2 \u2014 already resolved by implementation: docs/sprints/ + docs/milestones/.",
+        "recommends_skill": "/reckon-ship reckon-ci-build",
+        "touches": [
+          "reckon/tests/test_build.py",
+          "reckon/cli.py"
+        ],
+        "tier": "sonnet",
+        "est_turn": "1 Sonnet turn",
+        "prompt": "Project: reckon\nPlan:    reckon-ci-build\nTier:    sonnet\n\nContext\n  reckon build command landed in commit 5c9a71c. It copies _ui/ + _shared/ assets,\n  writes a relative-path index.html, and writes the plan inventory to index.json.\n  reckon sync --generate-ci writes .github/workflows/reckon-pages.yml.\n  Sprint/milestone HTML discovery (docs/sprints/*.html, docs/milestones/*.html) is live.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  sprint-discovery-dir \u2192 docs/sprints/ + docs/milestones/ (implemented)\n\nOpen decisions to surface\n  q1: should reckon build also copy state.js to _shared/ for legacy standalone pages?\n\nDone-when\n  1. tests/test_build.py covers: asset copy correctness, index.html relative paths,\n     .nojekyll presence, index.json inventory written\n  2. q1 resolved (check standalone plan page needs)\n  3. impl updated to 1.0, status \u2192 shipped if tests pass\n  4. This followup resolved with outcome"
       }
     ],
     "research": [],
-    "_version": 2
+    "_version": 5
   }
 }

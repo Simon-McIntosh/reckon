@@ -39,6 +39,19 @@ If the user wants to execute the work → hand off to `reckon-ship`.
 4. **A resolved decision MUST reach the state file.** HTML edits alone are insufficient.
 5. **Every followup MUST carry a `prompt` field.** A followup without `prompt` is a hard failure.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.
+7. **Never write stubs that cross-reference state JSON.** If a section body is missing,
+   write the actual prose in the HTML — do not write `<p>See state §N for details</p>`.
+   State JSON `data` has no `sections[]` field. Plan body is always in HTML.
+
+```html
+<!-- ❌ WRONG — stub with cross-reference -->
+<h2 id="s3">§3 · Implementation</h2>
+<p>See <a href="state/project/plan.json#s3">state §3</a>.</p>
+
+<!-- ✅ CORRECT — full prose in HTML -->
+<h2 id="s3">§3 · Implementation</h2>
+<p>New module <code>src/preprocess.py</code> exposes...</p>
+```
 
 ## State write pattern
 
