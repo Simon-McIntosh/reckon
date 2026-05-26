@@ -3,12 +3,12 @@ name: reckon-sync
 description: >-
   Set up or refresh the reckon plan infrastructure in a repo — ensures reckon
   skills are symlinked into ~/.claude/skills/, creates docs/, copies the 3-layer
-  CSS (foundation/dashboard/project) and state.js from ~/Code/reckon/docs/_shared/,
-  copies ui.jsx and state-loader.js from ~/Code/reckon/docs/ui/, sets up
-  docs/state/<project>/, symlinks ~/docs-server/state/<project> into the repo,
-  registers the project in ~/docs-server/mounts.json, and drops .nojekyll.
-  Plans are auto-discovered from HTML <meta name="plan-*"> tags — no index.json
-  required. Idempotent — safe to re-run as a refresh after reckon updates.
+  CSS (foundation/dashboard/project) from ~/Code/reckon/docs/_shared/ for GitHub
+  Pages compatibility (the live server serves CSS/JSX directly via /_shared/ and
+  /_ui/ routes — no per-project JSX copies needed), sets up docs/state/<project>/,
+  symlinks ~/docs-server/state/<project> into the repo, and registers the project
+  in ~/docs-server/mounts.json. Plans are auto-discovered from HTML <meta name="plan-*">
+  tags — no index.json inventory required. Idempotent.
   Trigger verbs: "init plans / set up reckon / set up plans / refresh styles /
   sync plan system / update CSS from reckon / /reckon-sync".
 allowed-tools: Read Write Edit Bash(*) Grep
@@ -142,23 +142,21 @@ Always run. Overwrites system-owned files only; never touches per-plan HTML
 or `state/*.json`.
 
 ```bash
-mkdir -p "$DOCS/_shared" "$DOCS/ui"
+mkdir -p "$DOCS/_shared"
 
+# CSS only — the live server serves JSX/JS via /_ui/ directly from the reckon
+# install; per-project copies are only needed for GitHub Pages static hosting.
 cp "$RECKON/docs/_shared/foundation.css" "$DOCS/_shared/foundation.css"
 cp "$RECKON/docs/_shared/dashboard.css"  "$DOCS/_shared/dashboard.css"
+
+# state.js is copied for legacy standalone plan pages that load it directly.
+# SPA pages (index.html → shell.jsx) do not need it.
 cp "$RECKON/docs/_shared/state.js"       "$DOCS/_shared/state.js"
-
-cp "$RECKON/docs/ui/ui.jsx"          "$DOCS/ui/ui.jsx"
-cp "$RECKON/docs/ui/state-loader.js" "$DOCS/ui/state-loader.js"
-cp "$RECKON/docs/ui/styles-base.css" "$DOCS/ui/styles-base.css"
-cp "$RECKON/docs/ui/styles.css"      "$DOCS/ui/styles.css"
-
-# Shell and component files (stable names — no version prefixes)
-for f in bits cockpit decision graph plan plan-tokenizers shell sprint; do
-  src="$RECKON/docs/ui/${f}.jsx"
-  [ -f "$src" ] && cp "$src" "$DOCS/ui/${f}.jsx"
-done
 ```
+
+Note: JSX components (`ui.jsx`, `shell.jsx`, `bits.jsx`, etc.) are NOT copied here.
+The reckon server serves them from `/_ui/<file>` directly. For full offline/static
+deployment, use `reckon build` instead of `reckon sync`.
 
 ### Step 2b — Create or update docs/index.html (SPA entry point)
 
@@ -187,27 +185,26 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="_shared/foundation.css">
-  <link rel="stylesheet" href="_shared/dashboard.css">
-  <link rel="stylesheet" href="ui/project.css">
-  <link rel="stylesheet" href="ui/styles-base.css">
-  <link rel="stylesheet" href="ui/styles.css">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+  <link rel="stylesheet" href="/_ui/project.css">
+  <link rel="stylesheet" href="/_ui/styles-base.css">
+  <link rel="stylesheet" href="/_ui/styles.css">
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="root"></div>
-  <script src="ui/state-loader.js"></script>
-  <script type="text/babel" src="ui/ui.jsx"></script>
-  <script type="text/babel" src="ui/bits.jsx"></script>
-  <script type="text/babel" src="ui/decision.jsx"></script>
-  <script type="text/babel" src="ui/plan-tokenizers.jsx"></script>
-  <script type="text/babel" src="ui/cockpit.jsx"></script>
-  <script type="text/babel" src="ui/plan.jsx"></script>
-  <script type="text/babel" src="ui/sprint.jsx"></script>
-  <script type="text/babel" src="ui/graph.jsx"></script>
-  <script type="text/babel" src="ui/shell.jsx"></script>
+  <script src="/_ui/state-loader.js"></script>
+  <script type="text/babel" src="/_ui/ui.jsx"></script>
+  <script type="text/babel" src="/_ui/bits.jsx"></script>
+  <script type="text/babel" src="/_ui/decision.jsx"></script>
+  <script type="text/babel" src="/_ui/cockpit.jsx"></script>
+  <script type="text/babel" src="/_ui/plan.jsx"></script>
+  <script type="text/babel" src="/_ui/sprint.jsx"></script>
+  <script type="text/babel" src="/_ui/graph.jsx"></script>
+  <script type="text/babel" src="/_ui/shell.jsx"></script>
 </body>
 </html>
 HTMLEOF
@@ -386,10 +383,12 @@ Three layers, sourced from `~/Code/reckon/docs/_shared/`:
 |---|---|---|
 | `foundation.css` | `docs/_shared/foundation.css` | Design tokens — colours, typography, spacing |
 | `dashboard.css` | `docs/_shared/dashboard.css` | Plan widgets — cards, badges, sprint tables |
-| `state.js` | `docs/_shared/state.js` | Browser persistence, POST-aware, version-aware |
+| `state.js` | `docs/_shared/state.js` | Browser persistence for legacy standalone plan pages |
 
-UI components (`ui.jsx`, `state-loader.js`, `bits.jsx`, `shell.jsx`, etc.) live
-in `docs/ui/` and are sourced from `~/Code/reckon/docs/ui/`.
+UI components (`ui.jsx`, `state-loader.js`, `bits.jsx`, `shell.jsx`, etc.) are served
+by the reckon server at `/_ui/<file>` directly from `~/Code/reckon/docs/ui/`.
+Per-project copies are **not** created by `reckon sync`. Use `reckon build` to produce
+a fully self-contained static bundle for CI/GitHub Pages deployment.
 
 ## Cross-references
 

@@ -91,26 +91,28 @@ def _read_plan(project: str, slug: str) -> dict[str, Any]:
 def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
     """Return a lightweight index of plans for the project.
 
-    Reads docs/state/<project>/index.json if present. Falls back to
-    HTML meta-tag discovery (/_discover/<project>) when inventory is empty.
+    Always uses live HTML meta-tag discovery so impl/status are never stale.
+    Falls back to index.json inventory only when discovery is unavailable.
     Each entry: { slug, title, status, impl, ms, sprint, roi, effort }.
     If status is given, filters to only plans matching that status value.
     """
-    data, _ = read_plan(project, "index")
-    inventory = data.get("inventory", [])
+    inventory: list[dict] = []
+    mounts_path = _mounts_path()
+    if mounts_path.exists():
+        try:
+            mounts = json.loads(mounts_path.read_text())
+            docs_dir_str = mounts.get(project)
+            if docs_dir_str:
+                from reckon.serve import discover_plans
+                discovered = discover_plans(Path(docs_dir_str), project, _state_root())
+                inventory = discovered.get("inventory", [])
+        except Exception:
+            pass
 
     if not inventory:
-        mounts_path = _mounts_path()
-        if mounts_path.exists():
-            try:
-                mounts = json.loads(mounts_path.read_text())
-                docs_dir_str = mounts.get(project)
-                if docs_dir_str:
-                    from reckon.serve import discover_plans
-                    discovered = discover_plans(Path(docs_dir_str), project, _state_root())
-                    inventory = discovered.get("inventory", [])
-            except Exception:
-                pass
+        # Discovery unavailable — fall back to index.json (may be stale)
+        data, _ = read_plan(project, "index")
+        inventory = data.get("inventory", [])
 
     if status:
         inventory = [p for p in inventory if p.get("status") == status]

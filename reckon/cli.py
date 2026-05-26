@@ -152,10 +152,11 @@ def sync(docs_path, project, mounts_file, state_root):
         proj_json.write_text(json.dumps(seed, indent=2) + "\n")
         click.echo(f"  seeded state/{proj_name}/project.json")
 
-    # ── Auto-populate index.json from discovered plan HTML pages ──────────
+    # ── Seed index.json with sprint/milestone structure (no inventory) ────────
+    # Inventory is discovered live by the server on every request — writing it
+    # here would create stale data that the MCP tools read instead of the live view.
     from reckon.serve import discover_plans
     discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
-    disc_inv = {p["slug"]: p for p in (discovered.get("inventory") or [])}
 
     index_json = state_dir / "index.json"
     idx_data: dict = {}
@@ -165,16 +166,6 @@ def sync(docs_path, project, mounts_file, state_root):
             idx_data = env.get("data", {})
         except json.JSONDecodeError:
             pass
-
-    # Merge: existing extra fields (justification, tier, etc.) are preserved;
-    # discovered fields (status, impl, sprint, dec_open, …) win on overlap.
-    existing_inv = {p["slug"]: p for p in (idx_data.get("inventory") or [])}
-    for slug, disc_plan in disc_inv.items():
-        if slug in existing_inv:
-            existing_inv[slug].update(disc_plan)
-        else:
-            existing_inv[slug] = disc_plan
-    idx_data["inventory"] = list(existing_inv.values())
 
     # Seed sprints/milestones from project.json discovery if not in index yet
     if not idx_data.get("sprints") and discovered.get("sprints"):
@@ -186,6 +177,9 @@ def sync(docs_path, project, mounts_file, state_root):
         if active:
             idx_data["active_sprint_id"] = active["id"]
 
+    # Purge any stale inventory — server discovers it live; MCP tools must too.
+    idx_data.pop("inventory", None)
+
     idx_data["_version"] = (idx_data.get("_version") or 0) + 1
     envelope = {
         "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
@@ -194,7 +188,9 @@ def sync(docs_path, project, mounts_file, state_root):
         "data": idx_data,
     }
     index_json.write_text(json.dumps(envelope, indent=2) + "\n")
-    click.echo(f"  indexed {len(idx_data['inventory'])} plan(s) → state/{proj_name}/index.json")
+    n_sprints = len(idx_data.get("sprints") or [])
+    n_miles = len(idx_data.get("milestones") or [])
+    click.echo(f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) — inventory discovered live")
 
     # ── Register in mounts.json ────────────────────────────────────────────
     mounts_path = (mounts_file or Path.home() / "docs-server" / "mounts.json").expanduser()

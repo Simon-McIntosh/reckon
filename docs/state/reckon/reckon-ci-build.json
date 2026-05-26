@@ -1,0 +1,48 @@
+{
+  "updated": "2026-05-26T17:30:00",
+  "project": "reckon",
+  "doc": "reckon-ci-build",
+  "data": {
+    "_version": 1,
+    "status": "active",
+    "title": "reckon build — CI static site generation",
+    "impl": 0.0,
+    "tier": "sonnet",
+    "sprint": "S5",
+    "last_modified": "2026-05-26",
+    "summary": "reckon build command bundles canonical UI assets and generates portable index.html for static deployment. Eliminates index.json by discovering sprints/milestones from HTML meta tags.",
+    "decisions": {},
+    "notes": [],
+    "questions": [
+      {
+        "id": "q1",
+        "section": "§ 2",
+        "body": "Should reckon build copy state.js to _shared/ (needed for legacy standalone pages) or only the CSS?",
+        "opened_by": "Simon McIntosh",
+        "opened_at": "2026-05-26"
+      },
+      {
+        "id": "q2",
+        "section": "§ 3",
+        "body": "What directory convention for sprint/milestone definition HTML files? docs/sprints/, docs/_meta/, or alongside plans in docs/?",
+        "opened_by": "Simon McIntosh",
+        "opened_at": "2026-05-26"
+      }
+    ],
+    "followups": [
+      {
+        "id": "f-ci-build-2026-05-26",
+        "written_by": "Simon McIntosh",
+        "written_at": "2026-05-26",
+        "title": "Implement reckon build command + sprint/milestone HTML discovery",
+        "body": "Design and decisions are locked in the plan. Implement: (1) cli.py reckon build command, (2) discover_plans extension for sprint/milestone HTML meta tags, (3) reckon sync --generate-ci flag for CI YAML, (4) index.json elimination once sprint discovery lands.",
+        "recommends_skill": "/reckon-ship reckon-ci-build",
+        "touches": ["reckon/cli.py", "reckon/serve.py", "reckon/tests/"],
+        "tier": "sonnet",
+        "est_turn": "2-3 Sonnet turns",
+        "prompt": "Project: reckon\nPlan:    reckon-ci-build\nSection: §2 + §3\nTier:    sonnet\n\nContext\n  reckon now serves UI assets from /_ui/ and /_shared/ routes (v8 dynamic server).\n  Static deployment to GitHub Pages needs local asset copies. The plan at\n  docs/reckon-ci-build.html describes the full design.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  None yet — open decisions in the plan must be surfaced first.\n\nOpen decisions to surface\n  command-name, sprint-discovery-dir, index-json-fate\n\nDone-when\n  1. reckon build <docs_path> command in cli.py copies _ui/ + _shared/ and writes\n     index.html with relative paths\n  2. discover_plans() scans docs/sprints/*.html for sprint meta tags\n  3. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml\n  4. Tests added for build command\n  5. Followup written + this followup resolved"
+      }
+    ],
+    "research": []
+  }
+}
