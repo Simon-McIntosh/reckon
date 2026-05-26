@@ -182,7 +182,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
 
 // ─── Plans list column ──────────────────────────────────────────────────
 
-function ListCol({ search, setSearch, route, onNav, items }) {
+function ListCol({ search, setSearch, route, onNav, items, filters, onClearFilters }) {
   const M = window.STATE;
   const sprints = M?.sprints || [];
 
@@ -224,7 +224,12 @@ function ListCol({ search, setSearch, route, onNav, items }) {
         </div>
       </div>
       {items.length === 0 ? (
-        <div className="r-list-empty">No plans match.</div>
+        <div className="r-list-empty">
+          No plans match.
+          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length) && (
+            <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
+          )}
+        </div>
       ) : groups.map(g => {
         const id = g.sprint?.id || "_none";
         const isOpen = !collapsed[id];
@@ -470,17 +475,25 @@ function ReadyGate({ children }) {
 
 function App() {
   const [route, nav] = useHashRoute();
+  // Storage keys are project-scoped to prevent cross-project filter contamination.
+  const PROJECT = window.STATE?.project || "default";
+  const SK = {
+    filters:   `reckon:${PROJECT}:filters`,
+    shipped:   `reckon:${PROJECT}:showShipped`,
+    collapsed: `reckon:${PROJECT}:filtersCollapsed`,
+    groupBy:   `reckon:${PROJECT}:groupBy`,
+  };
   const [filters, setFilters] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("reckon:filters") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem(SK.filters) || "{}"); } catch { return {}; }
   });
   const [showShipped, setShowShipped] = useState(() => {
-    try { return localStorage.getItem("reckon:showShipped") === "1"; } catch { return false; }
+    try { return localStorage.getItem(SK.shipped) === "1"; } catch { return false; }
   });
   useEffect(() => {
-    try { localStorage.setItem("reckon:filters", JSON.stringify(filters)); } catch {}
+    try { localStorage.setItem(SK.filters, JSON.stringify(filters)); } catch {}
   }, [filters]);
   useEffect(() => {
-    try { localStorage.setItem("reckon:showShipped", showShipped ? "1" : "0"); } catch {}
+    try { localStorage.setItem(SK.shipped, showShipped ? "1" : "0"); } catch {}
   }, [showShipped]);
 
   // Allow other components (e.g. cockpit milestone tiles) to set filters.
@@ -492,7 +505,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [promptOpen, setPromptOpen] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
-    try { return localStorage.getItem("reckon:filtersCollapsed") === "1"; } catch { return false; }
+    try { return localStorage.getItem(SK.collapsed) === "1"; } catch { return false; }
   });
   const [graphFocal, setGraphFocal] = useState(null);
   // When viewing graph and a plan is clicked in the sidebar, also set graphFocal
@@ -500,13 +513,13 @@ function App() {
     if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
   }, [route.view, route.slug]);
   useEffect(() => {
-    try { localStorage.setItem("reckon:filtersCollapsed", filtersCollapsed ? "1" : "0"); } catch {}
+    try { localStorage.setItem(SK.collapsed, filtersCollapsed ? "1" : "0"); } catch {}
   }, [filtersCollapsed]);
   const [groupBy, setGroupBy] = useState(() => {
-    try { return localStorage.getItem("reckon:groupBy") || "sprint"; } catch { return "sprint"; }
+    try { return localStorage.getItem(SK.groupBy) || "sprint"; } catch { return "sprint"; }
   });
   useEffect(() => {
-    try { localStorage.setItem("reckon:groupBy", groupBy); } catch {}
+    try { localStorage.setItem(SK.groupBy, groupBy); } catch {}
   }, [groupBy]);
   const [cmdKOpen, setCmdKOpen] = useState(false);
 
@@ -563,7 +576,7 @@ function App() {
           <span></span><span></span>
         </button>
         <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
-        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} groupBy={groupBy} setGroupBy={setGroupBy} />
+        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} groupBy={groupBy} setGroupBy={setGroupBy} filters={filters} onClearFilters={() => setFilters({})} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
           <div className="r-body">
@@ -661,7 +674,8 @@ function CockpitBody({ onNav }) {
           <button key={m.id} className={`r-ms-tile ${m.status}`}
             onClick={() => {
               // Apply milestone filter, navigate to plans view (first active plan in ms).
-              try { localStorage.setItem("reckon:filters", JSON.stringify({ ms: [m.id] })); } catch {}
+              const _proj = window.STATE?.project || "default";
+              try { localStorage.setItem(`reckon:${_proj}:filters`, JSON.stringify({ ms: [m.id] })); } catch {}
               window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
               const target = M.inventory.find(i => i.ms === m.id && i.status === "active")
                 || M.inventory.find(i => i.ms === m.id);
