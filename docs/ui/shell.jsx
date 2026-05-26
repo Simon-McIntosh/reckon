@@ -860,7 +860,7 @@ function FleetPrompt({ sprintId }) {
             `      body: ${c.body}`
           ).join("\n")
         ).join("\n");
-      txt += `Plan: ${p.slug}\nStatus: ${p.status} · ${p.phase || ""}\nJustification (sprint): ${p.justification || "—"}\n\nState to read\n  state/${projectName}/${p.slug}.json\n\nLocked decisions to honour\n${lockedBlock}\n\nOpen decisions to surface\n${openBlock}\n\nComments (anchored to sections)\n${commentsBlock}\n\nNext-up\n  ${next?.title || "—"}\n  ${next?.body || ""}\n\nDone-when\n  1. Land the work this prompt describes.\n  2. POST a followup to ${p.slug}.json#followups.\n  3. Mark the current followup resolved.\n`;
+      txt += `Plan: ${p.slug}\nStatus: ${p.status} · ${p.phase || ""}\nJustification (sprint): ${p.justification || "—"}\n\nPlan page to read\n  ${proj}/${p.slug}.html\n\nLocked decisions to honour\n${lockedBlock}\n\nOpen decisions to surface\n${openBlock}\n\nComments (anchored to sections)\n${commentsBlock}\n\nNext-up\n  ${next?.title || "—"}\n  ${next?.body || ""}\n\nDone-when\n  1. Land the work this prompt describes.\n  2. POST a followup to ${p.slug}.json#followups.\n  3. Mark the current followup resolved.\n`;
     });
     return txt;
   };

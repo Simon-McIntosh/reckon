@@ -93,8 +93,8 @@ function Plan({ slug, onNav }) {
       }
       setShowPrompt(true);
     };
-    window.addEventListener("reckon:open-prompt", open);
-    return () => window.removeEventListener("reckon:open-prompt", open);
+    window.addEventListener("r-open-prompt", open);
+    return () => window.removeEventListener("r-open-prompt", open);
   }, [decs]);
 
   const initialComments = (stored.comments) || P.comments || {};
