@@ -76,6 +76,9 @@ function V7TopBar({ route, onNav }) {
           Overview
         </button>
       </div>
+      <a href="/" className="dim" style={{ fontSize: 12, marginLeft: 12, textDecoration: "none", color: "var(--muted)" }}>
+        all projects ↗
+      </a>
     </div>
   );
 }

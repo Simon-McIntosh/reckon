@@ -37,7 +37,7 @@ function Topbar({ project, active, allProjectsView }) {
         <a href="decisions.html" className={active === "decisions" ? "active" : ""}>Decisions</a>
       </nav>
       <div className="right">
-        <a href="home.html" className="dim">all projects ↗</a>
+        <a href="/" className="dim">all projects ↗</a>
         <a href="implementation.html" className="dim">handoff doc</a>
         <kbd>⌘K</kbd>
       </div>
