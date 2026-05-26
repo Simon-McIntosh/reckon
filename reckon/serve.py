@@ -280,7 +280,58 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             except (OSError, json.JSONDecodeError):
                 pass
 
+    # Auto-synthesize stub sprint entries for any sprint ID referenced in plan
+    # inventory items that isn't already represented in the sprints list.
+    existing_sprint_ids = {s.get("id") for s in sprints if s.get("id")}
+    referenced_sprint_ids = {item["sprint"] for item in inventory if item.get("sprint")}
+    missing_sprint_ids = referenced_sprint_ids - existing_sprint_ids
+    for sid in sorted(missing_sprint_ids):
+        sprints.append({
+            "id": sid,
+            "theme": f"Sprint {sid}",
+            "description": "Auto-synthesized from plan inventory",
+            "status": "planned",
+            "items": [],
+        })
+
     return {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+
+
+def _render_spa_html(project: str) -> str:
+    """Generate a complete index.html for the given project."""
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="{project}">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>reckon · {project}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+  <link rel="stylesheet" href="/_ui/project.css">
+  <link rel="stylesheet" href="/_ui/styles-base.css">
+  <link rel="stylesheet" href="/_ui/styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="/_ui/state-loader.js"></script>
+  <script type="text/babel" src="/_ui/ui.jsx"></script>
+  <script type="text/babel" src="/_ui/bits.jsx"></script>
+  <script type="text/babel" src="/_ui/decision.jsx"></script>
+  <script type="text/babel" src="/_ui/cockpit.jsx"></script>
+  <script type="text/babel" src="/_ui/plan.jsx"></script>
+  <script type="text/babel" src="/_ui/sprint.jsx"></script>
+  <script type="text/babel" src="/_ui/graph.jsx"></script>
+  <script type="text/babel" src="/_ui/shell.jsx"></script>
+</body>
+</html>
+"""
 
 
 def safe_join(root: Path, rel: str) -> Path | None:
@@ -340,6 +391,30 @@ class Handler(BaseHTTPRequestHandler):
             ctype, _ = mimetypes.guess_type(str(target))
             try:
                 self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+            except OSError as e:
+                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path.startswith("/_ui/"):
+            rel = path[len("/_ui/"):]
+            fname = rel.lstrip("/")
+            if not SAFE_NAME.match(fname):
+                self._send(HTTPStatus.BAD_REQUEST, b"bad ui filename")
+                return
+            target = Path(__file__).parent.parent / "docs" / "ui" / fname
+            if not target.is_file():
+                self._send(HTTPStatus.NOT_FOUND, b"ui asset not found")
+                return
+            ext = target.suffix.lower()
+            if ext == ".css":
+                ctype = "text/css"
+            elif ext in (".js", ".jsx"):
+                ctype = "application/javascript"
+            else:
+                ctype, _ = mimetypes.guess_type(str(target))
+                ctype = ctype or "application/octet-stream"
+            try:
+                self._send(HTTPStatus.OK, target.read_bytes(), ctype)
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             return
@@ -450,7 +525,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Content-Length", "0")
                 self.end_headers()
                 return
-            rel = "index.html"
+            # Serve dynamically generated index.html for registered projects.
+            self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
+            return
+        if rel == "index.html":
+            # Also intercept direct requests to /<project>/index.html.
+            self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
+            return
         target = safe_join(root, rel)
         if target is None:
             self._send(HTTPStatus.FORBIDDEN, b"forbidden")
