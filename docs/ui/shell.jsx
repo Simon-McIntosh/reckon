@@ -44,11 +44,21 @@ function V7TopBar({ route, onNav }) {
     if (onOverview) goPlans();
     else onNav({ view: "cockpit" });
   };
+  const projectName = window.STATE?.projects?.[0]?.project ||
+    document.querySelector('meta[name="docs-project"]')?.content || "";
   return (
     <div className="v7-topbar">
       <div className="brand">
-        <span className="mark">R</span>
-        <span className="name">reckon</span>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: "inherit" }}>
+          <span className="mark">R</span>
+          <span className="name">reckon</span>
+        </a>
+        {projectName && (
+          <>
+            <span style={{ color: "var(--faint)", fontSize: 13, fontWeight: 400, margin: "0 1px" }}>·</span>
+            <span className="proj">{projectName}</span>
+          </>
+        )}
       </div>
       <span className="sp"></span>
       <div className="v7-glyph-tabs">
@@ -76,9 +86,6 @@ function V7TopBar({ route, onNav }) {
           Overview
         </button>
       </div>
-      <a href="/" className="dim" style={{ fontSize: 12, marginLeft: 12, textDecoration: "none", color: "var(--muted)" }}>
-        all projects ↗
-      </a>
     </div>
   );
 }

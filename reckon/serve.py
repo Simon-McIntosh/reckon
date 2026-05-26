@@ -404,6 +404,14 @@ class Handler(BaseHTTPRequestHandler):
 
         root = mounts[project]
         if rel in ("", "/"):
+            if not path.endswith("/"):
+                # Redirect so the browser uses /<project>/ as base URL for relative assets.
+                # Without this, _shared/foundation.css resolves to /foundation.css → 404.
+                self.send_response(HTTPStatus.MOVED_PERMANENTLY)
+                self.send_header("Location", f"/{project}/")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             rel = "index.html"
         target = safe_join(root, rel)
         if target is None:
