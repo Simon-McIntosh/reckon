@@ -33,7 +33,8 @@ def mcp():
 @click.option("--project", default=None, help="Project key (defaults to docs parent dir name).")
 @click.option("--mounts", "mounts_file", default=None, type=click.Path(path_type=Path), help="Path to mounts.json.")
 @click.option("--state-root", default=None, type=click.Path(path_type=Path), help="State root dir.")
-def sync(docs_path, project, mounts_file, state_root):
+@click.option("--generate-ci", is_flag=True, default=False, help="Write .github/workflows/reckon-pages.yml.")
+def sync(docs_path, project, mounts_file, state_root, generate_ci):
     """Register a project and copy reckon UI files into its docs directory.
 
     DOCS_PATH is the path to the project's docs/ directory
@@ -208,7 +209,189 @@ def sync(docs_path, project, mounts_file, state_root):
     else:
         click.echo(f"  {proj_name} already in mounts.json")
 
+    # ── Generate CI workflow (optional) ───────────────────────────────────
+    if generate_ci:
+        repo_root = docs_dir.parent
+        workflows_dir = repo_root / ".github" / "workflows"
+        workflows_dir.mkdir(parents=True, exist_ok=True)
+        ci_yml = workflows_dir / "reckon-pages.yml"
+        ci_yml.write_text(_CI_WORKFLOW_TEMPLATE.format(docs_path=docs_path))
+        click.echo(f"  wrote {ci_yml.relative_to(repo_root)}")
+
     click.echo(f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running.")
     click.echo("New plan pages appear live — the server discovers HTML <meta name=\"plan-*\"> tags on every request.")
     click.echo("UI assets (JSX, CSS) are served directly from the reckon install — no per-project copies needed.")
     click.echo("Re-run sync only to update shared CSS after a reckon upgrade.")
+
+
+# ── CI workflow template ────────────────────────────────────────────────────
+
+_CI_WORKFLOW_TEMPLATE = """\
+name: Deploy plans to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {{ python-version: "3.12" }}
+      - run: pip install reckon
+      - run: reckon build {docs_path}
+      - uses: actions/upload-pages-artifact@v3
+        with: {{ path: {docs_path} }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{{{ steps.deployment.outputs.page_url }}}}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+"""
+
+
+@main.command()
+@click.argument("docs_path", type=click.Path(path_type=Path))
+@click.option("--project", default=None, help="Project key (defaults to docs parent dir name).")
+def build(docs_path, project):
+    """Bundle UI assets and generate a portable static site for CI/GitHub Pages.
+
+    DOCS_PATH is the path to the project's docs/ directory.
+
+    Copies all JSX + CSS from the reckon install into docs/_ui/ and docs/_shared/,
+    generates an index.html with relative asset paths (compatible with GitHub Pages),
+    and writes a complete index.json with live-discovered inventory + sprints/milestones
+    so the SPA works without a running reckon server.
+
+    Intended for CI (e.g. GitHub Actions). For local development, use reckon sync
+    instead — it uses canonical server routes and doesn't need local asset copies.
+    """
+    docs_dir = docs_path.expanduser().resolve()
+    if not docs_dir.exists():
+        raise click.ClickException(f"docs path not found: {docs_dir}")
+
+    proj_name = project or docs_dir.parent.name
+    reckon_root = Path(__file__).parent.parent
+
+    click.echo(f"Building static site: {proj_name} → {docs_dir}")
+
+    # ── Copy UI assets (JSX + CSS) ─────────────────────────────────────────
+    ui_src  = reckon_root / "docs" / "ui"
+    ui_dest = docs_dir / "_ui"
+    if ui_src.is_dir():
+        if ui_dest.exists() and not ui_dest.is_dir():
+            raise click.ClickException(f"_ui exists but is not a directory: {ui_dest}")
+        ui_dest.mkdir(parents=True, exist_ok=True)
+        copied = 0
+        for src_file in sorted(ui_src.iterdir()):
+            if src_file.is_file():
+                shutil.copy2(src_file, ui_dest / src_file.name)
+                copied += 1
+        click.echo(f"  copied _ui/ ({copied} files)")
+
+    # ── Copy shared CSS + state.js ─────────────────────────────────────────
+    shared_src  = reckon_root / "docs" / "_shared"
+    shared_dest = docs_dir / "_shared"
+    if shared_src.is_dir():
+        shared_dest.mkdir(parents=True, exist_ok=True)
+        for src_file in sorted(shared_src.iterdir()):
+            if src_file.is_file():
+                shutil.copy2(src_file, shared_dest / src_file.name)
+        click.echo("  copied _shared/")
+
+    # ── Generate index.html with RELATIVE paths ────────────────────────────
+    index_html = docs_dir / "index.html"
+    index_html.write_text(_BUILD_INDEX_TEMPLATE.format(project=proj_name))
+    click.echo(f"  wrote index.html (project={proj_name}, relative paths)")
+
+    # ── Drop .nojekyll ─────────────────────────────────────────────────────
+    nojekyll = docs_dir / ".nojekyll"
+    if not nojekyll.exists():
+        nojekyll.touch()
+        click.echo("  created .nojekyll")
+
+    # ── Discover plans + write index.json with full inventory ──────────────
+    # Static deployments have no live server, so we bake inventory into index.json.
+    from reckon.serve import discover_plans
+
+    state_dir = docs_dir / "state" / proj_name
+    state_dir.mkdir(parents=True, exist_ok=True)
+    discovered = discover_plans(docs_dir, proj_name, docs_dir / "state")
+
+    index_json = state_dir / "index.json"
+    idx_data: dict = {}
+    if index_json.is_file():
+        try:
+            env = json.loads(index_json.read_text())
+            idx_data = dict(env.get("data", {}))
+        except json.JSONDecodeError:
+            pass
+
+    idx_data["inventory"]   = discovered["inventory"]
+    idx_data["sprints"]     = discovered["sprints"]
+    idx_data["milestones"]  = discovered["milestones"]
+    if not idx_data.get("active_sprint_id"):
+        active = next((s for s in idx_data["sprints"] if s.get("status") == "active"), None)
+        if active:
+            idx_data["active_sprint_id"] = active["id"]
+    idx_data["_version"] = (idx_data.get("_version") or 0) + 1
+
+    envelope = {
+        "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
+        "project": proj_name,
+        "doc":     "index",
+        "data":    idx_data,
+    }
+    index_json.write_text(json.dumps(envelope, indent=2) + "\n")
+    n_plans = len(idx_data["inventory"])
+    n_sprints = len(idx_data["sprints"])
+    click.echo(f"  wrote state/{proj_name}/index.json ({n_plans} plans, {n_sprints} sprints)")
+
+    click.echo(f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site.")
+
+
+# ── Static build index.html template (relative asset paths) ────────────────
+
+_BUILD_INDEX_TEMPLATE = """\
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="{project}">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>reckon · {project}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="_shared/foundation.css">
+  <link rel="stylesheet" href="_shared/dashboard.css">
+  <link rel="stylesheet" href="_ui/project.css">
+  <link rel="stylesheet" href="_ui/styles-base.css">
+  <link rel="stylesheet" href="_ui/styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="_ui/state-loader.js"></script>
+  <script type="text/babel" src="_ui/ui.jsx"></script>
+  <script type="text/babel" src="_ui/bits.jsx"></script>
+  <script type="text/babel" src="_ui/decision.jsx"></script>
+  <script type="text/babel" src="_ui/cockpit.jsx"></script>
+  <script type="text/babel" src="_ui/plan.jsx"></script>
+  <script type="text/babel" src="_ui/sprint.jsx"></script>
+  <script type="text/babel" src="_ui/graph.jsx"></script>
+  <script type="text/babel" src="_ui/shell.jsx"></script>
+</body>
+</html>
+"""

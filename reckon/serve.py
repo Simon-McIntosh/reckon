@@ -262,10 +262,45 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "last":     state_overlay.get("last_modified", meta.get("plan-modified", "")),
         })
 
-    # Load sprint + milestone structure from state/project.json or index.json
+    # ── Sprint / milestone discovery from HTML files ──────────────────────
+    # docs/sprints/<id>.html and docs/milestones/<id>.html carry sprint/milestone
+    # meta tags — zero-wiring alternative to project.json entries.
     sprints: list = []
     milestones: list = []
-    if state_root is not None:
+
+    sprints_dir = docs_dir / "sprints"
+    if sprints_dir.is_dir():
+        for sf in sorted(sprints_dir.glob("*.html")):
+            _, meta = _read_head_meta(sf)
+            sid = meta.get("sprint-id")
+            if not sid:
+                continue
+            sprints.append({
+                "id":          sid,
+                "theme":       meta.get("sprint-theme", f"Sprint {sid}"),
+                "description": meta.get("sprint-description", ""),
+                "status":      meta.get("sprint-status", "planned"),
+                "starts":      meta.get("sprint-starts", ""),
+                "ends":        meta.get("sprint-ends", ""),
+                "items":       [],
+            })
+
+    milestones_dir = docs_dir / "milestones"
+    if milestones_dir.is_dir():
+        for mf in sorted(milestones_dir.glob("*.html")):
+            _, meta = _read_head_meta(mf)
+            mid = meta.get("milestone-id")
+            if not mid:
+                continue
+            milestones.append({
+                "id":     mid,
+                "name":   meta.get("milestone-name", mid),
+                "status": meta.get("milestone-status", "planned"),
+                "pct":    int(meta.get("milestone-pct", "0")),
+            })
+
+    # Fall back to state/project.json or index.json if no HTML sprint files found
+    if not sprints and not milestones and state_root is not None:
         for cand in ("project.json", "index.json"):
             sf = state_root / project / cand
             if not sf.is_file():
