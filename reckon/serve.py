@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Host-wide docs server for HTML-first dynamic docs.
+"""reckon server — host-wide static + state backend for the plan SPA.
 
 Serves multiple project doc roots under stable URL prefixes and provides a
 small JSON state store for in-page decision capture.
+
+The on-disk layout under ~/docs-server/ is kept for backward compatibility;
+the name "reckon server" describes the process, not the filesystem path.
 
 Mounts are configured in ~/docs-server/mounts.json (default) or via --mounts:
     {
@@ -95,7 +98,7 @@ def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> byte
         )
     body = (
         "<!doctype html><html><head><meta charset=utf-8>"
-        "<title>reckon docs-server</title>"
+        "<title>reckon server</title>"
         "<style>"
         "body{font:14px/1.5 system-ui,sans-serif;max-width:780px;"
         "margin:3rem auto;padding:0 1rem;color:#222}"
@@ -526,7 +529,7 @@ def main(port: int = 8765, host: str | None = None, mounts_file: Path | None = N
         _MOUNTS_FILE.write_text("{}\n")
 
     fqdn = socket.getfqdn()
-    print(f"reckon docs-server listening on http://{_host}:{_port}/", flush=True)
+    print(f"reckon server listening on http://{_host}:{_port}/", flush=True)
     if _host == "0.0.0.0":  # noqa: S104
         print(f"  team URL:  http://{fqdn}:{_port}/", flush=True)
     else:

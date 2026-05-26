@@ -16,7 +16,7 @@ def main():
 @click.option("--host", default=None, help="Bind address (default: $DOCS_SERVER_BIND or 127.0.0.1).")
 @click.option("--mounts", "mounts_file", default=None, type=click.Path(path_type=Path), help="Path to mounts.json.")
 def serve(port, host, mounts_file):
-    """Start the planning docs server."""
+    """Start the reckon server (HTTP + state store on port 8765)."""
     from reckon.serve import main as serve_main
     serve_main(port=port, host=host, mounts_file=mounts_file)
 
