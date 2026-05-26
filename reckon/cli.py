@@ -41,11 +41,13 @@ def sync(docs_path, project, mounts_file, state_root):
 
     reckon copies CSS, JSX, and state-loader from its own canonical source,
     registers the project in mounts.json, and creates a state directory.
-    Plans are discovered automatically from HTML <meta name="plan-*"> tags —
-    no index.json authoring required.
 
-    Run this once to set up a new project, and again after a reckon update
-    to pull in the latest CSS/JSX.
+    Plans are discovered live — the server scans HTML <meta name="plan-*">
+    tags on every index.json request, so new plans appear immediately in the
+    SPA without re-running sync.
+
+    Run sync once to set up a new project, and again after a reckon update
+    to pull in the latest CSS/JSX. It is NOT needed every time you add a plan.
     """
     docs_dir = docs_path.expanduser().resolve()
     if not docs_dir.exists():
@@ -232,5 +234,5 @@ def sync(docs_path, project, mounts_file, state_root):
         click.echo(f"  {proj_name} already in mounts.json")
 
     click.echo(f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running.")
-    click.echo("Plans are auto-discovered from HTML <meta name=\"plan-status\"> tags.")
-    click.echo("See reckon-sync SKILL.md for the plan HTML style guide.")
+    click.echo("New plan pages appear live — the server discovers HTML <meta name=\"plan-*\"> tags on every request.")
+    click.echo("Re-run sync only to update CSS/JSX after a reckon upgrade.")

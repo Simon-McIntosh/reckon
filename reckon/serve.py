@@ -371,10 +371,45 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
                 return
             project, doc = parts
-            if not SAFE_NAME.match(doc.removesuffix(".json")):
+            doc_stem = doc.removesuffix(".json")
+            if not SAFE_NAME.match(doc_stem):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad doc"})
                 return
             state_file = (_STATE_ROOT or Path("/dev/null")) / project / (doc if doc.endswith(".json") else f"{doc}.json")
+
+            # index.json: serve live inventory merged with static structure.
+            # Scanning HTML for <meta name="plan-*"> tags on every read means
+            # new plan pages appear immediately without running reckon sync.
+            if doc_stem == "index":
+                envelope: dict = {}
+                if state_file.is_file():
+                    try:
+                        envelope = json.loads(state_file.read_bytes())
+                    except (OSError, json.JSONDecodeError):
+                        pass
+                mts = load_mounts()
+                if project in mts:
+                    try:
+                        disc = discover_plans(mts[project], project, _STATE_ROOT)
+                        data = dict(envelope.get("data") or {})
+                        data["inventory"] = disc.get("inventory", [])
+                        if not data.get("sprints") and disc.get("sprints"):
+                            data["sprints"] = disc["sprints"]
+                        if not data.get("milestones") and disc.get("milestones"):
+                            data["milestones"] = disc["milestones"]
+                        self._send_json(HTTPStatus.OK, {**envelope, "data": data})
+                        return
+                    except Exception:
+                        pass  # fall through to plain file read
+                if not state_file.is_file():
+                    self._send_json(HTTPStatus.OK, {})
+                    return
+                try:
+                    self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
+                except OSError as e:
+                    self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
+                return
+
             if not state_file.exists():
                 self._send_json(HTTPStatus.OK, {})
                 return
