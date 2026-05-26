@@ -1,17 +1,17 @@
 {
-  "updated": "2026-05-26T00:00:00Z",
+  "updated": "2026-05-26T16:24:29",
   "project": "reckon",
   "doc": "index",
   "data": {
-    "active_sprint_id": null,
+    "active_sprint_id": "S4",
     "projects": [
       {
         "project": "reckon",
         "path": "/home/ITER/mcintos/Code/reckon/docs",
         "published": "github.com/Simon-McIntosh/reckon",
         "owner": "Simon McIntosh",
-        "plans_count": 3,
-        "active": 0,
+        "plans_count": 4,
+        "active": 1,
         "blocked": 0,
         "pending": 0,
         "shipped": 2,
@@ -22,40 +22,81 @@
     ],
     "inventory": [
       {
+        "slug": "mcp-gaps",
+        "title": "MCP gap-closure \u2014 power-user queries",
+        "status": "active",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "high",
+        "effort": "M",
+        "summary": "list_followups, list_questions, resolve_question, add_research, list_projects + discovery fallback + note-ID fix. Single Sonnet turn.",
+        "last_modified": "2026-05-26"
+      },
+      {
         "slug": "plans-agile-sprints",
         "title": "Agile sprint flow with agent input",
         "status": "draft",
         "impl": 0.85,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "Sprint planning today is semi-manual: sprints[] live in state/<project>/index.json. Goal: agents PROPOSE sprint compositions based on plan ROI/effort/blockers/milestone; humans accept/override via the sprint.html Lock button. The proposal + acceptance flow is designed; first agent-generated sprint remains pending.",
+        "roi": "mid",
+        "effort": "M",
+        "summary": "Sprint planning today is semi-manual. Goal: agents PROPOSE sprint compositions; humans accept/override via the sprint.html Lock button.",
         "last_modified": "2026-05-26"
       },
       {
         "slug": "plans-infra",
-        "title": "Plan infra — state.js POST · reckon-sync · reckon-create",
+        "title": "Plan infra \u2014 state.js POST \u00b7 reckon-sync \u00b7 reckon-create",
         "status": "shipped",
-        "impl": 1.0,
+        "impl": 1,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "All infrastructure pieces shipped. reckon server (uv run reckon serve) + reckon MCP transport (uv run reckon mcp) + reckon-sync + reckon-create. The reckon repo is now the canonical source for SPA, shared CSS/JSX, and state write operations.",
+        "roi": "high",
+        "effort": "M",
+        "summary": "All infrastructure pieces shipped. reckon server + MCP transport + reckon-sync + reckon-create.",
         "last_modified": "2026-05-26"
       },
       {
         "slug": "plans-redesign-rollout",
-        "title": "Plan-system rollout — master",
+        "title": "Plan-system rollout \u2014 master",
         "status": "shipped",
-        "impl": 1.0,
+        "impl": 1,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "Rollout complete 2026-05-26. reckon SPA redesign, reckon server, reckon MCP transport, and all reckon-* skills landed. Migration plans re-homed to imas-ambix and imas-efit.",
+        "roi": "high",
+        "effort": "M",
+        "summary": "Rollout complete 2026-05-26. reckon SPA redesign, reckon server, reckon MCP, all reckon-* skills landed.",
         "last_modified": "2026-05-26"
       }
     ],
-    "sprints": [],
+    "sprints": [
+      {
+        "id": "S4",
+        "theme": "MCP power-user queries",
+        "description": "Close the 7 gaps identified in the 2026-05-26 MCP tool evaluation: cross-plan followup/question scanning, project discovery, research capture, question close, list_plans discovery fallback, note-ID collision fix.",
+        "starts": "2026-05-26",
+        "ends": "2026-06-02",
+        "status": "active",
+        "items": [
+          {
+            "slug": "mcp-gaps",
+            "title": "MCP gap-closure \u2014 power-user queries",
+            "roi": "high",
+            "effort": "M",
+            "ms": "PS",
+            "why_now": "Gaps confirmed live in session \u2014 7 serial read_plan calls to find 7 followups. Immediate productivity tax on every multi-plan session.",
+            "done_when": "uv run pytest tests/ -q shows \u226533 passing, 0 failed; commit landed; impl=1.0",
+            "status": "pending",
+            "tier": "sonnet",
+            "blocked_by": []
+          }
+        ]
+      }
+    ],
     "milestones": [],
     "blockers": [],
     "timeline": [],
-    "_version": 2
+    "_version": 3
   }
 }
