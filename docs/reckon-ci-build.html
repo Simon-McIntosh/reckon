@@ -5,48 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="docs-project" content="reckon">
 <meta name="plan-slug" content="reckon-ci-build">
-<meta name="plan-status" content="active">
-<meta name="plan-title" content="reckon build — CI static site generation">
-<meta name="plan-summary" content="reckon build command bundles canonical UI assets into docs/ and generates a portable index.html for static deployment. Eliminates index.json by wiring sprints and milestones from HTML meta tags.">
-<meta name="plan-roi" content="high">
-<meta name="plan-effort" content="M">
-<meta name="plan-sprint" content="S5">
-<meta name="plan-tier" content="sonnet">
-<meta name="plan-modified" content="2026-05-26">
 <title>reckon build — CI static site generation | reckon</title>
-<link rel="stylesheet" href="_shared/foundation.css">
-<link rel="stylesheet" href="_shared/dashboard.css">
-<script src="_shared/state.js"></script>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-
+<main class="plan-doc">
 <div class="topbar">
-  <a class="brand" href="index.html">
-    <span class="mark">r</span>
-    <span class="proj-name">reckon</span>
-  </a>
-  <nav>
-    <a href="index.html">Index</a>
-  </nav>
+<a class="brand" href="index.html">
+<span class="mark">r</span>
+<span class="proj-name">reckon</span>
+</a>
+<nav>
+<a href="index.html">Index</a>
+</nav>
 </div>
-
 <div class="page-shell">
 <article class="plan-doc">
-
 <header class="plan-header">
-  <h1>reckon build — CI static site generation</h1>
-  <div class="plan-meta-row">
-    <span class="badge status-active">active</span>
-    <span class="badge roi-high">high ROI</span>
-    <span class="badge effort-M">M effort</span>
-    <span class="badge sprint">S5</span>
-  </div>
-  <p class="plan-summary">Add a <code>reckon build</code> command that bundles canonical UI assets into
+<h1>reckon build — CI static site generation</h1>
+<div class="plan-meta-row">
+<span class="badge status-active">active</span>
+<span class="badge roi-high">high ROI</span>
+<span class="badge effort-M">M effort</span>
+<span class="badge sprint">S5</span>
+</div>
+<p class="plan-summary">Add a <code>reckon build</code> command that bundles canonical UI assets into
   <code>docs/</code> and generates a portable <code>index.html</code> for GitHub Pages and any
   static host. Eliminate <code>index.json</code> as wiring by discovering sprints and milestones
   from HTML meta tags — the same zero-wiring approach already used for plans.</p>
 </header>
-
 <section id="s1">
 <h2>§ 1 — Problem</h2>
 <p>The reckon server (v8+) serves UI assets via canonical routes:
@@ -57,23 +45,21 @@ but breaks for static deployment — GitHub Pages has no reckon process to serve
 by hand. This is the last piece of wiring that plans do not have: plans auto-discover from
 HTML meta tags; sprints and milestones do not.</p>
 </section>
-
 <section id="s2">
 <h2>§ 2 — reckon build command</h2>
 <p><code>reckon build &lt;docs_path&gt; [--project &lt;name&gt;]</code></p>
 <p>What it does (static-site only — no mounts, no symlinks):</p>
 <ol>
-  <li>Copies <code>reckon/docs/ui/</code> → <code>docs/_ui/</code> (all JSX + CSS)</li>
-  <li>Copies <code>reckon/docs/_shared/</code> → <code>docs/_shared/</code> (foundation, dashboard, state.js)</li>
-  <li>Generates <code>docs/index.html</code> with RELATIVE paths (<code>_shared/</code>, <code>_ui/</code>) — not absolute <code>/_shared/</code></li>
-  <li>Calls <code>discover_plans()</code> and writes <code>docs/state/&lt;project&gt;/index.json</code>
+<li>Copies <code>reckon/docs/ui/</code> → <code>docs/_ui/</code> (all JSX + CSS)</li>
+<li>Copies <code>reckon/docs/_shared/</code> → <code>docs/_shared/</code> (foundation, dashboard, state.js)</li>
+<li>Generates <code>docs/index.html</code> with RELATIVE paths (<code>_shared/</code>, <code>_ui/</code>) — not absolute <code>/_shared/</code></li>
+<li>Calls <code>discover_plans()</code> and writes <code>docs/state/&lt;project&gt;/index.json</code>
     with discovered inventory + sprints/milestones (for static environments without a live server)</li>
-  <li>Does NOT create symlinks, does NOT register in mounts.json</li>
+<li>Does NOT create symlinks, does NOT register in mounts.json</li>
 </ol>
 <p>Distinction from <code>reckon sync</code>: <code>sync</code> is for developer setup (live server,
 mounts, symlink, state directory). <code>build</code> is for CI — produces a portable static artifact.</p>
 </section>
-
 <section id="s3">
 <h2>§ 3 — Sprint and milestone discovery from HTML</h2>
 <p>The zero-wiring principle applied to sprints: define a sprint by dropping an HTML file with meta tags.</p>
@@ -92,7 +78,6 @@ in addition to plan pages. Sprint IDs found this way replace auto-synthesized st
 <code>index.json</code> becomes entirely optional — it holds only <code>active_sprint_id</code> if
 the user wants to pin it, and that can also come from a sprint page with <code>status="active"</code>.</p>
 </section>
-
 <section id="s4">
 <h2>§ 4 — CI YAML template</h2>
 <p><code>reckon sync --generate-ci</code> writes <code>.github/workflows/reckon-pages.yml</code>:</p>
@@ -126,47 +111,119 @@ jobs:
       - uses: actions/deploy-pages@v4
         id: deployment</code></pre>
 </section>
-
 <section id="s5">
 <h2>§ 5 — reckon as a versioned PyPI package</h2>
 <p>For CI reproducibility, reckon must be a versioned package on PyPI (or a GitHub release).
 <code>pip install reckon==1.2.3</code> in CI ensures deterministic builds. This requires:</p>
 <ul>
-  <li>PyPI registration (currently only on PyPI if published — verify)</li>
-  <li>GitHub Actions release workflow: tag → build → publish to PyPI</li>
-  <li>Version pinning guidance in generated CI YAML</li>
+<li>PyPI registration (currently only on PyPI if published — verify)</li>
+<li>GitHub Actions release workflow: tag → build → publish to PyPI</li>
+<li>Version pinning guidance in generated CI YAML</li>
 </ul>
 </section>
-
 <section id="decisions">
-<h2>Decisions</h2>
-<table id="decisions-table" class="decisions-tbl" data-plan="reckon-ci-build">
-  <thead><tr><th>Key</th><th>Question</th><th>Options</th><th>Choice</th></tr></thead>
-  <tbody>
-    <tr data-key="command-name">
-      <td><code>command-name</code></td>
-      <td>CLI verb for the static-build command</td>
-      <td>build · export · bundle · package</td>
-      <td class="dec-choice" data-key="command-name">—</td>
-    </tr>
-    <tr data-key="sprint-discovery-dir">
-      <td><code>sprint-discovery-dir</code></td>
-      <td>Where do sprint definition HTML files live?</td>
-      <td>docs/sprints/ · docs/_sprints/ · docs/ (alongside plans)</td>
-      <td class="dec-choice" data-key="sprint-discovery-dir">—</td>
-    </tr>
-    <tr data-key="index-json-fate">
-      <td><code>index-json-fate</code></td>
-      <td>Once sprint discovery lands, what happens to index.json?</td>
-      <td>keep for active_sprint_id override · deprecate entirely · auto-migrate</td>
-      <td class="dec-choice" data-key="index-json-fate">—</td>
-    </tr>
-  </tbody>
-</table>
-</section>
 
+
+</section>
 </article>
 </div>
-
+</main>
+<script type="application/json" id="reckon-state">
+{
+  "slug": "reckon-ci-build",
+  "title": "reckon build — CI static site generation",
+  "summary": "reckon build command bundles canonical UI assets into docs/ and generates a portable index.html for static deployment. Eliminates index.json by wiring sprints and milestones from HTML meta tags.",
+  "status": "active",
+  "impl": 0.75,
+  "roi": "mid",
+  "effort": "M",
+  "milestone": "—",
+  "sprint": "S5",
+  "tier": "sonnet",
+  "modified": "2026-05-26",
+  "decisions": {
+    "command-name": {
+      "title": "CLI verb for the static-build command",
+      "context": "",
+      "choices": [],
+      "choice": "build · export · bundle · package",
+      "rationale": "—",
+      "when": "",
+      "by": ""
+    },
+    "sprint-discovery-dir": {
+      "title": "Where do sprint definition HTML files live?",
+      "context": "",
+      "choices": [],
+      "choice": "docs/sprints/ · docs/_sprints/ · docs/ (alongside plans)",
+      "rationale": "—",
+      "when": "",
+      "by": ""
+    },
+    "index-json-fate": {
+      "title": "Once sprint discovery lands, what happens to index.json?",
+      "context": "",
+      "choices": [],
+      "choice": "keep for active_sprint_id override · deprecate entirely · auto-migrate",
+      "rationale": "—",
+      "when": "",
+      "by": ""
+    }
+  },
+  "followups": [
+    {
+      "id": "f-ci-build-2026-05-26",
+      "written_by": "Simon McIntosh",
+      "written_at": "2026-05-26",
+      "title": "Implement reckon build command + sprint/milestone HTML discovery",
+      "body": "Design and decisions are locked in the plan. Implement: (1) cli.py reckon build command, (2) discover_plans extension for sprint/milestone HTML meta tags, (3) reckon sync --generate-ci flag for CI YAML, (4) index.json elimination once sprint discovery lands.",
+      "recommends_skill": "/reckon-ship reckon-ci-build",
+      "touches": [
+        "reckon/cli.py",
+        "reckon/serve.py",
+        "reckon/tests/"
+      ],
+      "tier": "sonnet",
+      "est_turn": "2-3 Sonnet turns",
+      "prompt": "Project: reckon\nPlan:    reckon-ci-build\nSection: §2 + §3\nTier:    sonnet\n\nContext\n  reckon now serves UI assets from /_ui/ and /_shared/ routes (v8 dynamic server).\n  Static deployment to GitHub Pages needs local asset copies. The plan at\n  docs/reckon-ci-build.html describes the full design.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  None yet — open decisions in the plan must be surfaced first.\n\nOpen decisions to surface\n  command-name, sprint-discovery-dir, index-json-fate\n\nDone-when\n  1. reckon build <docs_path> command in cli.py copies _ui/ + _shared/ and writes\n     index.html with relative paths\n  2. discover_plans() scans docs/sprints/*.html for sprint meta tags\n  3. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml\n  4. Tests added for build command\n  5. Followup written + this followup resolved",
+      "resolved_at": "2026-05-26T16:42:01+00:00",
+      "resolved_by": "Claude (sonnet-4.6)",
+      "outcome": "Landed: reckon build command (cli.py) copies _ui/ + _shared/ assets, writes relative-path index.html, drops .nojekyll, writes plan inventory to index.json. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml. discover_plans() extended to scan docs/sprints/*.html and docs/milestones/*.html for sprint/milestone meta tags. Committed 5c9a71c. Tests and q1/q2 resolution remain."
+    },
+    {
+      "id": "f-ci-build-tests-2026-05-26",
+      "written_by": "Claude (sonnet-4.6)",
+      "written_at": "2026-05-26",
+      "title": "Add tests for reckon build command + resolve q1 (state.js copy)",
+      "body": "build command and sprint/milestone discovery are implemented. Remaining: (1) tests/test_build.py covering reckon build output correctness, (2) resolve q1 — confirm whether reckon build should copy state.js to _shared/ alongside the CSS (check what standalone plan pages need), (3) resolve q2 — already resolved by implementation: docs/sprints/ + docs/milestones/.",
+      "recommends_skill": "/reckon-ship reckon-ci-build",
+      "touches": [
+        "reckon/tests/test_build.py",
+        "reckon/cli.py"
+      ],
+      "tier": "sonnet",
+      "est_turn": "1 Sonnet turn",
+      "prompt": "Project: reckon\nPlan:    reckon-ci-build\nTier:    sonnet\n\nContext\n  reckon build command landed in commit 5c9a71c. It copies _ui/ + _shared/ assets,\n  writes a relative-path index.html, and writes the plan inventory to index.json.\n  reckon sync --generate-ci writes .github/workflows/reckon-pages.yml.\n  Sprint/milestone HTML discovery (docs/sprints/*.html, docs/milestones/*.html) is live.\n\nState to read\n  docs/state/reckon/reckon-ci-build.json\n\nLocked decisions to honour\n  sprint-discovery-dir → docs/sprints/ + docs/milestones/ (implemented)\n\nOpen decisions to surface\n  q1: should reckon build also copy state.js to _shared/ for legacy standalone pages?\n\nDone-when\n  1. tests/test_build.py covers: asset copy correctness, index.html relative paths,\n     .nojekyll presence, index.json inventory written\n  2. q1 resolved (check standalone plan page needs)\n  3. impl updated to 1.0, status → shipped if tests pass\n  4. This followup resolved with outcome"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "section": "§ 2",
+      "body": "Should reckon build copy state.js to _shared/ (needed for legacy standalone pages) or only the CSS?",
+      "opened_by": "Simon McIntosh",
+      "opened_at": "2026-05-26"
+    },
+    {
+      "id": "q2",
+      "section": "§ 3",
+      "body": "What directory convention for sprint/milestone definition HTML files? docs/sprints/, docs/_meta/, or alongside plans in docs/?",
+      "opened_by": "Simon McIntosh",
+      "opened_at": "2026-05-26"
+    }
+  ],
+  "version": 5
+}
+</script>
 </body>
 </html>

@@ -78,40 +78,13 @@ window.STATE_READY = (async function () {
     }
   }
 
-  // ── 4. Per-plan state JSON (per-doc layout only) ───────────────────────
-  // For _central plans the metadata lives in index.json; skip individual fetches.
-  const planEntries = await Promise.all(
-    inventory
-      .filter(inv => !inv._central)
-      .map(async inv => {
-        const blob = await getJson(`${stateBase}/${encodeURIComponent(inv.slug)}.json`);
-        const data = (blob && blob.data) || {};
-
-        const defs = Array.isArray(data.decisions_def) ? data.decisions_def
-                   : Array.isArray(data.decisions)     ? data.decisions
-                   : [];
-        const lockedMap = (data.decisions && !Array.isArray(data.decisions)) ? data.decisions : {};
-        const decisions = defs.map(d => {
-          const l = lockedMap[d.key] || {};
-          return {
-            ...d,
-            chosen:    l.choice    !== undefined ? l.choice    : (d.chosen    || ""),
-            rationale: l.rationale !== undefined ? l.rationale : (d.rationale || ""),
-            when:      l.when      !== undefined ? l.when      : (d.when      || ""),
-            by:        l.by        !== undefined ? l.by        : (d.by        || ""),
-          };
-        });
-
-        return [inv.slug, { ...inv, ...data, decisions }];
-      })
-  );
-  const plans = Object.fromEntries(planEntries);
-
-  // ── 5. Merge per-doc plan state ────────────────────────────────────────
-  // _central items stay as-is; per-doc items are merged with their plan JSON.
-  const mergedInventory = inventory.map(inv =>
-    inv._central ? inv : (plans[inv.slug] || inv)
-  );
+  // ── 4. Per-plan state travels inside the inventory ─────────────────────
+  // Each inventory entry was parsed from its plan page's embedded
+  // <script id="reckon-state"> island (status, decisions, followups,
+  // comments, questions). The plan HTML is the sole store — there is no
+  // per-plan state JSON to fetch.
+  const plans = Object.fromEntries(inventory.map(inv => [inv.slug, inv]));
+  const mergedInventory = inventory;
 
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
   // Plans with sprint:"X" in their inventory entry appear in that sprint

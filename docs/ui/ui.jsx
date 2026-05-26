@@ -155,9 +155,11 @@ Object.assign(window, {
   const forceReadonly = localStorage.getItem("__plans_readonly") === "1";
   const mode = (isLocal && !forceReadonly) ? "editable" : "readonly";
 
-  // Server URL — the docs-server lives at the origin in local mode.
-  const stateUrl     = (plan) => `${window.location.origin}/state/${PROJECT}/${plan}`;
-  const stateUrlJson = (plan) => `state/${PROJECT}/${plan}.json`;     // relative; works on Pages too
+  // Server URLs — the plan HTML is the sole store. POST a dotted patch to
+  // /plan/<project>/<slug>; the server merges it into the page's state island
+  // and rewrites the HTML in place. GET returns the current island (+version).
+  const stateUrl     = (plan) => `${window.location.origin}/plan/${PROJECT}/${plan}`;
+  const stateUrlJson = (plan) => `/plan/${PROJECT}/${plan}`;
 
   // Dotted-key merge into nested object.
   function patchInto(target, patch) {
@@ -185,13 +187,11 @@ Object.assign(window, {
     try {
       const r = await fetch(stateUrlJson(plan), { cache: "no-store" });
       if (!r.ok) return {};
-      const j = await r.json();
-      const data = (j && j.data) || j || {};
-      // Cache version whenever we fetch canonical state.
-      if (typeof data._version === "number") {
-        Persist._versions[plan] = data._version;
-      }
-      return data;
+      const data = await r.json();   // raw state island
+      const v = (typeof data.version === "number") ? data.version
+              : (typeof data._version === "number") ? data._version : undefined;
+      if (typeof v === "number") Persist._versions[plan] = v;
+      return data || {};
     } catch { return {}; }
   }
 
@@ -221,106 +221,60 @@ Object.assign(window, {
       return { ...cur, ...overlay };
     },
 
-    // save() — patch-shaped. In editable mode: GET canonical (if version
-    // not cached), merge patch, POST with If-Match. On 412 retry once.
-    // On second 412 or network error: localStorage fallback.
+    // save() — patch-shaped (flat, possibly dotted keys). The SERVER merges
+    // the patch into the plan page's state island and rewrites the HTML; the
+    // client just sends the patch + an If-Match version. On 412 it rebases on
+    // the server's current_version and retries once.
+    _echoLocal(plan, patch) {
+      const next = JSON.parse(JSON.stringify(this.load(plan)));
+      patchInto(next, patch);
+      localSave(plan, next);
+      return next;
+    },
+
     async save(plan, patch) {
       if (mode !== "editable") {
-        // Read-only: merge into localStorage cache only.
-        const prev = this.load(plan);
-        const next = JSON.parse(JSON.stringify(prev));
-        patchInto(next, patch);
-        localSave(plan, next);
+        this._echoLocal(plan, patch);
         return { ok: true, where: "localStorage (read-only site)", version: null };
       }
 
-      // Ensure we have canonical data and a version to compare against.
-      const current = await fetchCanonical(plan);   // caches _version
-      const merged = JSON.parse(JSON.stringify(current));
-      patchInto(merged, patch);
-      delete merged._updated;
-      delete merged._version;   // server owns this
-
-      const version = typeof this._versions[plan] === "number"
-        ? this._versions[plan] : 0;
-
-      try {
-        const r = await fetch(stateUrl(plan), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "If-Match": String(version),
-          },
-          body: JSON.stringify(merged),
-        });
-
-        if (r.ok) {
-          const j = await r.json().catch(() => ({}));
-          if (typeof j.version === "number") {
-            this._versions[plan] = j.version;
-          }
-          localSave(plan, merged);
-          return {
-            ok: true,
-            where: "docs-server → " + (j.path || `state/${PROJECT}/${plan}.json`),
-            version: j.version,
-          };
-        }
-
-        if (r.status === 412) {
-          // First 412 — resync with server state and retry.
-          const conflict = await r.json().catch(() => ({}));
-          const curData = conflict.current_data || {};
-          const curVersion = typeof conflict.current_version === "number"
-            ? conflict.current_version : 0;
-
-          const retryMerged = JSON.parse(JSON.stringify(curData));
-          patchInto(retryMerged, patch);
-          delete retryMerged._updated;
-          delete retryMerged._version;
-
-          const r2 = await fetch(stateUrl(plan), {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "If-Match": String(curVersion),
-            },
-            body: JSON.stringify(retryMerged),
-          });
-
-          if (r2.ok) {
-            const j2 = await r2.json().catch(() => ({}));
-            if (typeof j2.version === "number") {
-              this._versions[plan] = j2.version;
-            }
-            localSave(plan, retryMerged);
-            return {
-              ok: true,
-              where: "docs-server (retry) → " + (j2.path || `state/${PROJECT}/${plan}.json`),
-              version: j2.version,
-            };
-          }
-
-          // Second 412 — genuine concurrent conflict.
-          alert(
-            "Conflict: another session updated this plan since you loaded it.\n" +
-            "Please refresh the page and retry your change."
-          );
-          localSave(plan, merged);
-          return {
-            ok: false,
-            where: "localStorage (conflict — refresh and retry)",
-            version: null,
-          };
-        }
-
-        console.warn("Persist.save: POST not ok", r.status);
-      } catch (e) {
-        console.warn("Persist.save: POST failed (docs-server unreachable?)", e);
+      let version = this._versions[plan];
+      if (typeof version !== "number") {
+        const island = await fetchCanonical(plan);
+        version = (typeof island.version === "number") ? island.version : 0;
       }
 
-      localSave(plan, merged);
-      return { ok: true, where: "localStorage (docs-server unreachable)", version: null };
+      const post = (ver) => fetch(stateUrl(plan), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "If-Match": String(ver) },
+        body: JSON.stringify(patch),
+      });
+
+      try {
+        let r = await post(version);
+        if (r.status === 412) {
+          const conflict = await r.json().catch(() => ({}));
+          const curVersion = typeof conflict.current_version === "number" ? conflict.current_version : 0;
+          r = await post(curVersion);
+        }
+        if (r.ok) {
+          const j = await r.json().catch(() => ({}));
+          if (typeof j.version === "number") this._versions[plan] = j.version;
+          this._echoLocal(plan, patch);
+          return { ok: true, where: `plan html → ${plan}.html`, version: j.version };
+        }
+        if (r.status === 412) {
+          alert("Conflict: another session updated this plan since you loaded it.\nRefresh and retry.");
+          this._echoLocal(plan, patch);
+          return { ok: false, where: "localStorage (conflict — refresh)", version: null };
+        }
+        console.warn("Persist.save: POST not ok", r.status);
+      } catch (e) {
+        console.warn("Persist.save: POST failed (server unreachable?)", e);
+      }
+
+      this._echoLocal(plan, patch);
+      return { ok: true, where: "localStorage (server unreachable)", version: null };
     },
   };
 

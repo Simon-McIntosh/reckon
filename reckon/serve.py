@@ -45,6 +45,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+from reckon import _plan_html
+
 HOME = Path.home()
 
 # ── Configurable paths (set via main() args or env vars) ──────────────────
@@ -232,46 +234,46 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         if html_file.name in _NON_PLAN_FILES:
             continue
 
-        title, meta = _read_head_meta(html_file)
+        # The plan HTML is the sole store: parse_plan reads the embedded
+        # <script id="reckon-state"> island (status, decisions, followups, …),
+        # falling back to <meta> tags then sensible defaults. A bare page with
+        # no island still yields a valid record (status=draft, title=<title>).
+        rec = _plan_html.parse_plan(html_file)
+        slug = rec["slug"]
 
-        # Any HTML file in the docs dir is a plan — existence is sufficient.
-        # plan-* meta tags and canonical sections only *enrich* the entry
-        # (status, milestone, decisions, sprint membership); their absence
-        # never hides a plan. Infrastructure files/dirs are excluded above.
-        slug = meta.get("plan-slug") or html_file.stem
-        plan_title = meta.get("plan-title") or title or slug
-
-        # State JSON may override status, impl, dec_open, blockers
-        state_overlay: dict = {}
-        if state_root is not None:
-            sf = state_root / project / f"{slug}.json"
-            if sf.is_file():
-                try:
-                    env = json.loads(sf.read_text())
-                    state_overlay = env.get("data", {}) if isinstance(env, dict) else {}
-                except (OSError, json.JSONDecodeError):
-                    pass
-
-        # href is the URL path under /<project>/ used by plan.jsx to fetch the HTML.
-        # For root-level plans it equals slug; for subdirectory plans (e.g.
-        # curated/X.html) it includes the subdir so the fetch resolves correctly.
-        rel_no_ext = str(rel.with_suffix(""))   # e.g. "curated/my-plan"
+        # href is the URL path under /<project>/ used by plan.jsx to fetch the
+        # HTML. Root-level plans: href == slug. Subdirectory plans (e.g.
+        # curated/X.html): href includes the subdir so the fetch resolves.
+        rel_no_ext = str(rel.with_suffix(""))
         href = rel_no_ext if rel_no_ext != slug else slug
 
         inventory.append({
-            "slug":     slug,
-            "href":     href,
-            "title":    plan_title,
-            "status":   state_overlay.get("status") or meta.get("plan-status", "draft"),
-            "ms":       meta.get("plan-milestone", "—"),
-            "roi":      meta.get("plan-roi", "mid"),
-            "effort":   meta.get("plan-effort", "M"),
-            "sprint":   meta.get("plan-sprint") or None,
-            "summary":  meta.get("plan-summary", ""),
-            "impl":     float(state_overlay.get("impl", 0) or 0),
-            "dec_open": int(state_overlay.get("dec_open", 0) or 0),
-            "blockers": int(state_overlay.get("blockers", 0) or 0),
-            "last":     state_overlay.get("last_modified", meta.get("plan-modified", "")),
+            "slug":       slug,
+            "href":       href,
+            "title":      rec["title"],
+            "status":     rec["status"],
+            "ms":         rec.get("milestone", "—"),
+            "roi":        rec.get("roi", "mid"),
+            "effort":     rec.get("effort", "M"),
+            "sprint":     rec.get("sprint") or None,
+            "summary":    rec.get("summary", ""),
+            "tier":       rec.get("tier", "sonnet"),
+            "owner":      rec.get("owner", ""),
+            "impl":       rec["impl"],
+            "dec_open":   rec["dec_open"],
+            "blockers":   rec["blockers"],
+            "last":       rec.get("modified", ""),
+            "version":    rec["version"],
+            "depends_on": rec.get("depends_on", []),
+            "blocks":     rec.get("blocks", []),
+            # Full per-plan state travels in the inventory so the SPA needs no
+            # per-plan fetch — the plan page itself is the source of truth.
+            "decisions":  rec["decisions"],
+            "followups":  rec["followups"],
+            "comments":   rec["comments"],
+            "questions":  rec["questions"],
+            "research":   rec["research"],
+            "notes":      rec["notes"],
         })
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
@@ -391,6 +393,47 @@ def safe_join(root: Path, rel: str) -> Path | None:
     return target
 
 
+def _patch_into(target: dict, patch: dict) -> dict:
+    """Merge a flat dotted-key patch into nested dict `target`, in place.
+
+    Keys may be dotted (e.g. {"decisions.scan.choice": "..."}); intermediate
+    objects are created as needed. A non-dict value blocking a dotted path is
+    overwritten with a fresh object.
+    """
+    for k, v in patch.items():
+        parts = str(k).split(".")
+        cur = target
+        for p in parts[:-1]:
+            nxt = cur.get(p)
+            if not isinstance(nxt, dict):
+                nxt = {}
+                cur[p] = nxt
+            cur = nxt
+        cur[parts[-1]] = v
+    return target
+
+
+def _resolve_plan_file(root: Path, slug: str) -> Path | None:
+    """Find the HTML file for a plan slug under a project docs root."""
+    direct = root / f"{slug}.html"
+    if direct.is_file():
+        return direct
+    for cand in sorted(root.rglob("*.html")):
+        rel = cand.relative_to(root)
+        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if cand.name in _NON_PLAN_FILES:
+            continue
+        if cand.stem == slug:
+            return cand
+        try:
+            if _plan_html.parse_plan(cand)["slug"] == slug:
+                return cand
+        except Exception:
+            pass
+    return None
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "reckon-docs/1.0"
     _host: str = "127.0.0.1"
@@ -491,6 +534,25 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path.startswith("/plan/"):
+            # GET /plan/<project>/<slug> — the plan's embedded state island
+            # (raw, with version), for clients that need the current version
+            # before a write. {} if the plan/island is absent.
+            parts = path[len("/plan/"):].strip("/").split("/", 1)
+            if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
+                return
+            project, slug = parts
+            slug = slug.removesuffix(".html").removesuffix(".json")
+            mts = load_mounts()
+            if project not in mts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            pf = _resolve_plan_file(mts[project], slug)
+            island = _plan_html.read_island(pf.read_text(errors="replace")) if pf else {}
+            self._send_json(HTTPStatus.OK, island)
             return
 
         if path.startswith("/state/"):
@@ -632,10 +694,92 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as e:
             self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
 
+    def _read_body(self) -> tuple[bool, object]:
+        length = int(self.headers.get("Content-Length", "0"))
+        if length > MAX_POST_BYTES:
+            self._send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": f"body > {MAX_POST_BYTES} bytes"})
+            return False, None
+        raw = self.rfile.read(length) if length else b""
+        try:
+            return True, (json.loads(raw) if raw else {})
+        except json.JSONDecodeError as e:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": f"json: {e}"})
+            return False, None
+
+    def _handle_plan_write(self, path: str) -> None:
+        """POST /plan/<project>/<slug> — merge a dotted patch into the plan's
+        embedded state island and rewrite the HTML file in place. The plan HTML
+        is the sole store; there is no sidecar state JSON.
+
+        Optimistic concurrency: send `If-Match: <version>`; a mismatch returns
+        412 with the current island so the client can rebase and retry.
+        """
+        parts = path[len("/plan/"):].strip("/").split("/", 1)
+        if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
+            return
+        project, slug = parts
+        slug = slug.removesuffix(".html")
+        if not SAFE_NAME.match(slug):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad slug"})
+            return
+        mounts = load_mounts()
+        if project not in mounts:
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+            return
+        plan_file = _resolve_plan_file(mounts[project], slug)
+        if plan_file is None:
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown plan"})
+            return
+
+        ok, patch = self._read_body()
+        if not ok:
+            return
+        if not isinstance(patch, dict):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "patch must be an object"})
+            return
+
+        text = plan_file.read_text(encoding="utf-8", errors="replace")
+        island = _plan_html.read_island(text)
+        cur_version = int(island.get("version", 0) or 0)
+
+        if_match = self.headers.get("If-Match")
+        if if_match is None:
+            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
+                "error": "version_mismatch", "current_version": cur_version,
+                "expected_version": None, "current_data": island})
+            return
+        try:
+            expected = int(if_match.strip().strip('"'))
+        except (ValueError, TypeError):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"})
+            return
+        if expected != cur_version:
+            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
+                "error": "version_mismatch", "current_version": cur_version,
+                "expected_version": expected, "current_data": island})
+            return
+
+        patch.pop("version", None)
+        patch.pop("_version", None)
+        _patch_into(island, patch)
+        island.setdefault("slug", slug)
+        island["version"] = cur_version + 1
+        island["modified"] = datetime.now().strftime("%Y-%m-%d")
+
+        new_text = _plan_html.write_island(text, island)
+        tmp = plan_file.with_suffix(".html.tmp")
+        tmp.write_text(new_text, encoding="utf-8")
+        tmp.replace(plan_file)
+        self._send_json(HTTPStatus.OK, {"ok": True, "slug": slug, "version": island["version"]})
+
     def do_POST(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
+        if path.startswith("/plan/"):
+            self._handle_plan_write(path)
+            return
         if not path.startswith("/state/"):
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "POST only to /state/"})
+            self._send_json(HTTPStatus.NOT_FOUND, {"error": "POST to /plan/<project>/<slug>"})
             return
         parts = path[len("/state/"):].strip("/").split("/", 1)
         if len(parts) != 2 or not SAFE_NAME.match(parts[0]):

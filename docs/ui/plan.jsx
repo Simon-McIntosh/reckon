@@ -70,19 +70,6 @@ function Plan({ slug, onNav }) {
       .catch(() => setHtmlReady(true));
   }, [slug]);
 
-  // After HTML renders, inject locked decision values into table cells
-  useEffect(() => {
-    if (!htmlRef.current || !planHtml) return;
-    for (const el of htmlRef.current.querySelectorAll(".dec-choice[data-key]")) {
-      const key = el.getAttribute("data-key");
-      const locked = lockedMap[key] || storedDec[key];
-      if (locked?.choice) {
-        el.textContent = locked.choice;
-        el.classList.add("chosen");
-      }
-    }
-  }, [planHtml, lockedMap]);
-
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
     const open = () => {
@@ -107,8 +94,15 @@ function Plan({ slug, onNav }) {
 
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-    setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", rationale, when: now, by: author } : x));
-    planSave(slug, { [`decisions.${key}`]: { choice: choice || null, rationale, when: now, by: author } });
+    setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", choice: choice || "", rationale, when: now, by: author } : x));
+    // Dotted sub-keys so the server merges into the decision WITHOUT dropping
+    // its authored title/context/choices.
+    planSave(slug, {
+      [`decisions.${key}.choice`]:    choice || "",
+      [`decisions.${key}.rationale`]: rationale,
+      [`decisions.${key}.when`]:      now,
+      [`decisions.${key}.by`]:        author,
+    });
     if (window.flashSaved) window.flashSaved(`${slug}.${key} → ${choice || "rationale saved"}`);
   };
 

@@ -1,89 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="docs-project" content="reckon">
 <meta name="plan-slug" content="reckon-mcp-gaps">
-<meta name="plan-status" content="active">
-<meta name="plan-title" content="MCP gap-closure — power-user queries">
-<meta name="plan-summary" content="Add 5 missing query tools (list_followups, list_questions, resolve_question, add_research, list_projects), a discovery fallback in list_plans, and a note-ID collision fix. Structured as Sprint S4.">
-<meta name="plan-roi" content="high">
-<meta name="plan-effort" content="M">
-<meta name="plan-milestone" content="PS">
-<meta name="plan-sprint" content="S4">
-<meta name="plan-tier" content="sonnet">
-<meta name="plan-modified" content="2026-05-26">
-<title>MCP gap-closure | reckon</title>
-<link rel="stylesheet" href="_shared/foundation.css">
-<link rel="stylesheet" href="_shared/dashboard.css">
-<script src="_shared/state.js"></script>
+<title>MCP gap-closure — power-user queries | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-
-<div class="topbar">
-  <a class="brand" href="index.html">
-    <span class="mark">r</span>
-    <span class="proj-name">reckon</span>
-  </a>
-  <nav>
-    <a href="index.html">Index</a>
-    <a href="reckon-mcp-plan.html">MCP server</a>
-    <a href="reckon-mcp-gaps.html" class="active">MCP gaps</a>
-  </nav>
-  <div class="right"></div>
-</div>
-
-<main class="page">
-
-<div class="page-head">
-  <div class="title">
-    <h1>MCP gap-closure &mdash; power-user queries</h1>
-    <div class="subtitle">reckon / Sprint S4 &middot;
-      Status: <span class="badge badge-active">active</span> &middot;
-      Updated <time id="updated">2026-05-26</time></div>
-  </div>
-</div>
-
-<div class="prose" style="max-width:none">
-
+<main class="plan-doc">
 <p><strong>One-line:</strong> Five missing MCP tools (cross-plan followup/question scanning,
 project discovery, research capture, question close) plus a
 <code>list_plans</code> discovery fallback and a note-ID collision fix. All work lands
 in <code>reckon/mcp.py</code>, <code>reckon/_store.py</code>,
 <code>reckon/_mcp_tools.py</code>, and <code>tests/</code>.</p>
-
 <p><strong>Motivation:</strong> During the 2026-05-26 MCP tool evaluation (reading 7 imas-ambix
 plans to find 7 unresolved followups), the following gaps were confirmed by measuring
 call count and token cost against what a purpose-built query tool would take:</p>
-
 <table>
-  <thead>
-    <tr><th>Gap</th><th>Workaround today</th><th>Extra calls</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>No cross-plan followup list</td><td>read every plan individually</td><td>N serial read_plan calls where N = plan count</td></tr>
-    <tr><td>No cross-plan question list</td><td>same</td><td>N serial reads</td></tr>
-    <tr><td>No resolve_question</td><td>patch_plan with full questions array</td><td>read + write with full payload</td></tr>
-    <tr><td>No add_research</td><td>patch_plan with full research array</td><td>read + write with full payload</td></tr>
-    <tr><td>No list_projects</td><td>user must know project names a priori</td><td>0 calls (blocked entirely)</td></tr>
-    <tr><td>list_plans blind without index.json</td><td>only repos with central-index layout work</td><td>0 plans returned for per-doc repos</td></tr>
-    <tr><td>Note ID collision</td><td>delete-then-add creates duplicate IDs</td><td>silent data corruption</td></tr>
-  </tbody>
+<thead>
+<tr><th>Gap</th><th>Workaround today</th><th>Extra calls</th></tr>
+</thead>
+<tbody>
+<tr><td>No cross-plan followup list</td><td>read every plan individually</td><td>N serial read_plan calls where N = plan count</td></tr>
+<tr><td>No cross-plan question list</td><td>same</td><td>N serial reads</td></tr>
+<tr><td>No resolve_question</td><td>patch_plan with full questions array</td><td>read + write with full payload</td></tr>
+<tr><td>No add_research</td><td>patch_plan with full research array</td><td>read + write with full payload</td></tr>
+<tr><td>No list_projects</td><td>user must know project names a priori</td><td>0 calls (blocked entirely)</td></tr>
+<tr><td>list_plans blind without index.json</td><td>only repos with central-index layout work</td><td>0 plans returned for per-doc repos</td></tr>
+<tr><td>Note ID collision</td><td>delete-then-add creates duplicate IDs</td><td>silent data corruption</td></tr>
+</tbody>
 </table>
-
-<hr>
-
-<h2 id="s1">§ 1 — <code>list_followups</code> &mdash; cross-plan unresolved followup scanner</h2>
-
+<hr/>
+<h2 id="s1">§ 1 — <code>list_followups</code> — cross-plan unresolved followup scanner</h2>
 <p><strong>Files:</strong> <code>reckon/_store.py</code> (new store fn),
 <code>reckon/mcp.py</code> (new tool), <code>reckon/_mcp_tools.py</code> (new model).</p>
-
 <h3>Store layer — <code>list_followups_across</code></h3>
 <pre><code>def list_followups_across(
     project: str,
     unresolved_only: bool = True,
-) -> list[dict]:
+) -&gt; list[dict]:
     """Scan all per-plan state files for followups.
 
     Skips index.json and project.json (meta files).
@@ -114,12 +72,11 @@ call count and token cost against what a purpose-built query tool would take:</p
                 "written_at":  f.get("written_at"),
             })
     return results</code></pre>
-
 <h3>MCP tool — <code>_list_followups</code></h3>
 <pre><code>def _list_followups(
     project: str,
     unresolved_only: bool = True,
-) -> dict[str, Any]:
+) -&gt; dict[str, Any]:
     """List followups across all plans for a project.
 
     unresolved_only=True (default) omits followups that have a resolved_at
@@ -128,33 +85,27 @@ call count and token cost against what a purpose-built query tool would take:</p
     """
     items = list_followups_across(project, unresolved_only)
     return {"project": project, "count": len(items), "followups": items}</code></pre>
-
 <h3>Pydantic model</h3>
 <pre><code>class ListFollowupsArgs(BaseModel):
     project: str
     unresolved_only: bool = Field(True, description="When True, omit resolved followups")</code></pre>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_list_followups_empty_project</code> — state root has no files → returns []</li>
-  <li><code>test_list_followups_unresolved_only</code> — mix of resolved + unresolved; filter works</li>
-  <li><code>test_list_followups_all</code> — <code>unresolved_only=False</code> returns all followups</li>
-  <li><code>test_list_followups_skips_meta</code> — index.json and project.json are skipped</li>
-  <li><code>test_list_followups_cross_plan</code> — followups from 3 plans all aggregated</li>
+<li><code>test_list_followups_empty_project</code> — state root has no files → returns []</li>
+<li><code>test_list_followups_unresolved_only</code> — mix of resolved + unresolved; filter works</li>
+<li><code>test_list_followups_all</code> — <code>unresolved_only=False</code> returns all followups</li>
+<li><code>test_list_followups_skips_meta</code> — index.json and project.json are skipped</li>
+<li><code>test_list_followups_cross_plan</code> — followups from 3 plans all aggregated</li>
 </ul>
-
-<hr>
-
-<h2 id="s2">§ 2 — <code>list_questions</code> &mdash; cross-plan open question scanner</h2>
-
+<hr/>
+<h2 id="s2">§ 2 — <code>list_questions</code> — cross-plan open question scanner</h2>
 <p><strong>Files:</strong> <code>reckon/_store.py</code>, <code>reckon/mcp.py</code>,
 <code>reckon/_mcp_tools.py</code>.</p>
-
 <h3>Store layer — <code>list_questions_across</code></h3>
 <pre><code>def list_questions_across(
     project: str,
     open_only: bool = True,
-) -> list[dict]:
+) -&gt; list[dict]:
     """Scan all per-plan state files for questions.
 
     Returns {slug, question_id, section, body, opened_by, opened_at}.
@@ -183,12 +134,11 @@ call count and token cost against what a purpose-built query tool would take:</p
                 "opened_at":   q.get("opened_at"),
             })
     return results</code></pre>
-
 <h3>MCP tool — <code>_list_questions</code></h3>
 <pre><code>def _list_questions(
     project: str,
     open_only: bool = True,
-) -> dict[str, Any]:
+) -&gt; dict[str, Any]:
     """List questions across all plans for a project.
 
     Returns {project, count, questions: [{slug, question_id, section,
@@ -196,21 +146,16 @@ call count and token cost against what a purpose-built query tool would take:</p
     """
     items = list_questions_across(project, open_only)
     return {"project": project, "count": len(items), "questions": items}</code></pre>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_list_questions_open_only</code> — resolved questions excluded</li>
-  <li><code>test_list_questions_all</code> — <code>open_only=False</code> includes resolved</li>
-  <li><code>test_list_questions_cross_plan</code> — aggregation across 2 plans</li>
+<li><code>test_list_questions_open_only</code> — resolved questions excluded</li>
+<li><code>test_list_questions_all</code> — <code>open_only=False</code> includes resolved</li>
+<li><code>test_list_questions_cross_plan</code> — aggregation across 2 plans</li>
 </ul>
-
-<hr>
-
-<h2 id="s3">§ 3 — <code>resolve_question</code> &mdash; close a question with resolution text</h2>
-
+<hr/>
+<h2 id="s3">§ 3 — <code>resolve_question</code> — close a question with resolution text</h2>
 <p><strong>Files:</strong> <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code>.
 No new store function — reuses <code>resolve_in_list(..., "questions", ...)</code>.</p>
-
 <h3>MCP tool</h3>
 <pre><code>def _resolve_question(
     project: str,
@@ -219,7 +164,7 @@ No new store function — reuses <code>resolve_in_list(..., "questions", ...)</c
     resolution: str,
     by: str,
     expected_version: int,
-) -> dict[str, Any]:
+) -&gt; dict[str, Any]:
     """Mark a question as resolved.
 
     Sets resolved_at, resolved_by, resolution on the question with the
@@ -239,7 +184,6 @@ No new store function — reuses <code>resolve_in_list(..., "questions", ...)</c
         return _conflict_response(e)
     except KeyError as e:
         return {"ok": False, "error": str(e)}</code></pre>
-
 <h3>Pydantic model</h3>
 <pre><code>class ResolveQuestionArgs(BaseModel):
     project: str
@@ -248,28 +192,23 @@ No new store function — reuses <code>resolve_in_list(..., "questions", ...)</c
     resolution: str = Field(..., description="Concise statement of what was decided or learned")
     by: str = Field(..., description="Who resolved the question")
     expected_version: int</code></pre>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_resolve_question_happy_path</code> — resolved_at + resolution set, other fields preserved</li>
-  <li><code>test_resolve_question_missing_id</code> — returns ok:False with error string</li>
-  <li><code>test_resolve_question_version_conflict</code> — stale expected_version returns conflict response</li>
+<li><code>test_resolve_question_happy_path</code> — resolved_at + resolution set, other fields preserved</li>
+<li><code>test_resolve_question_missing_id</code> — returns ok:False with error string</li>
+<li><code>test_resolve_question_version_conflict</code> — stale expected_version returns conflict response</li>
 </ul>
-
-<hr>
-
-<h2 id="s4">§ 4 — <code>add_research</code> &mdash; append a research item</h2>
-
+<hr/>
+<h2 id="s4">§ 4 — <code>add_research</code> — append a research item</h2>
 <p><strong>Files:</strong> <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code>.
 No new store function — reuses <code>append_to_list(..., "research", ...)</code>.</p>
-
 <h3>MCP tool</h3>
 <pre><code>def _add_research(
     project: str,
     slug: str,
     item: dict[str, Any],
     expected_version: int,
-) -> dict[str, Any]:
+) -&gt; dict[str, Any]:
     """Append a research item to data.research.
 
     Required item fields: id, type, title, source, added_by, when.
@@ -288,7 +227,6 @@ No new store function — reuses <code>append_to_list(..., "research", ...)</cod
         return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
     except VersionConflict as e:
         return _conflict_response(e)</code></pre>
-
 <h3>Pydantic model</h3>
 <pre><code>class AddResearchArgs(BaseModel):
     project: str
@@ -302,24 +240,19 @@ No new store function — reuses <code>append_to_list(..., "research", ...)</cod
         ),
     )
     expected_version: int</code></pre>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_add_research_success</code> — item appended, version bumped</li>
-  <li><code>test_add_research_missing_fields</code> — ok:False with field list in error</li>
-  <li><code>test_add_research_conflict</code> — stale version returns conflict response</li>
+<li><code>test_add_research_success</code> — item appended, version bumped</li>
+<li><code>test_add_research_missing_fields</code> — ok:False with field list in error</li>
+<li><code>test_add_research_conflict</code> — stale version returns conflict response</li>
 </ul>
-
-<hr>
-
-<h2 id="s5">§ 5 — <code>list_projects</code> &mdash; discover registered projects</h2>
-
+<hr/>
+<h2 id="s5">§ 5 — <code>list_projects</code> — discover registered projects</h2>
 <p><strong>Files:</strong> <code>reckon/mcp.py</code>, <code>reckon/_mcp_tools.py</code>.
 No store function — reads <code>~/docs-server/mounts.json</code> directly and checks
 the state root for <code>index.json</code> existence.</p>
-
 <h3>MCP tool</h3>
-<pre><code>def _list_projects() -> dict[str, Any]:
+<pre><code>def _list_projects() -&gt; dict[str, Any]:
     """List all projects registered in the reckon server's mounts.json.
 
     Returns {projects: [{project, path, has_index}]}.
@@ -343,29 +276,22 @@ the state root for <code>index.json</code> existence.</p>
             "has_index": (state_root / name / "index.json").is_file(),
         })
     return {"projects": results}</code></pre>
-
 <p><strong>Note:</strong> No Pydantic args model needed — zero parameters.</p>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_list_projects_with_mounts</code> — reads a temp mounts.json, returns entries</li>
-  <li><code>test_list_projects_no_mounts_file</code> — returns {"projects": []} gracefully</li>
-  <li><code>test_list_projects_has_index</code> — has_index=True when index.json present</li>
+<li><code>test_list_projects_with_mounts</code> — reads a temp mounts.json, returns entries</li>
+<li><code>test_list_projects_no_mounts_file</code> — returns {"projects": []} gracefully</li>
+<li><code>test_list_projects_has_index</code> — has_index=True when index.json present</li>
 </ul>
-
-<hr>
-
+<hr/>
 <h2 id="s6">§ 6 — <code>list_plans</code> discovery fallback</h2>
-
 <p><strong>Files:</strong> <code>reckon/mcp.py</code> (update <code>_list_plans</code> only).
 <strong>No store changes.</strong></p>
-
 <p>Currently <code>_list_plans</code> reads <code>index.json → data.inventory</code>.
 When inventory is empty (no central-index layout), it returns zero plans.
 The fix: fall back to <code>discover_plans</code> from <code>reckon.serve</code>
 when inventory is empty.</p>
-
-<pre><code>def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
+<pre><code>def _list_plans(project: str, status: str | None = None) -&gt; dict[str, Any]:
     data, _ = read_plan(project, "index")
     inventory = data.get("inventory", [])
 
@@ -406,118 +332,147 @@ when inventory is empty.</p>
             for p in inventory
         ],
     }</code></pre>
-
 <h3>Tests</h3>
 <ul>
-  <li><code>test_list_plans_from_index</code> — existing behaviour, no regression</li>
-  <li><code>test_list_plans_discovery_fallback</code> — temp docs dir with one HTML plan file,
+<li><code>test_list_plans_from_index</code> — existing behaviour, no regression</li>
+<li><code>test_list_plans_discovery_fallback</code> — temp docs dir with one HTML plan file,
     no index.json → plan appears in result (requires writing a minimal HTML fixture)</li>
 </ul>
-
-<hr>
-
+<hr/>
 <h2 id="s7">§ 7 — Note ID collision fix in <code>append_comment</code></h2>
-
 <p><strong>File:</strong> <code>reckon/mcp.py</code> only (one-line change).</p>
-
 <p>Current: <code>note_id = f"n{len(notes) + 1}"</code> — collides when notes are
 deleted, or when two agents append in rapid succession (same length before write).</p>
-
 <p>Fix: timestamp-based ID with microsecond resolution:</p>
 <pre><code># Before (fragile):
 note_id = f"n{len(notes) + 1}"
 
 # After (collision-resistant):
 note_id = f"n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"</code></pre>
-
 <p>The ID format <code>n-20260526T162100123456</code> is:</p>
 <ul>
-  <li>Sortable (lexicographic = chronological)</li>
-  <li>Collision-resistant to microsecond (12 µs between writes on the same file is effectively
+<li>Sortable (lexicographic = chronological)</li>
+<li>Collision-resistant to microsecond (12 µs between writes on the same file is effectively
     impossible given the atomic-rename write cost)</li>
-  <li>Human-readable</li>
+<li>Human-readable</li>
 </ul>
-
 <h3>Tests</h3>
 <ul>
-  <li>Update <code>test_mcp_store.py</code> if any test checks note ID format (none currently do
+<li>Update <code>test_mcp_store.py</code> if any test checks note ID format (none currently do
     — the <code>append_comment</code> tests are in <code>test_mcp_tools.py</code>)</li>
-  <li><code>test_append_comment_note_id_format</code> — ID starts with "n-" and is unique
+<li><code>test_append_comment_note_id_format</code> — ID starts with "n-" and is unique
     across two rapid calls</li>
 </ul>
-
-<hr>
-
+<hr/>
 <h2 id="s8">§ 8 — Test coverage for all new tools</h2>
-
 <p><strong>File:</strong> <code>tests/test_mcp_tools.py</code> (new file).</p>
-
 <p>The existing <code>tests/test_mcp_store.py</code> covers the store layer only. This
 new file tests the MCP tool functions (<code>_list_followups</code>,
 <code>_list_questions</code>, <code>_resolve_question</code>, <code>_add_research</code>,
 <code>_list_projects</code>, <code>_append_comment</code> note-ID).</p>
-
 <p>All tests use the same <code>state_root</code> fixture pattern as
 <code>test_mcp_store.py</code>: <code>RECKON_STATE_ROOT</code> env var → tmp_path,
 module reload so <code>_state_root()</code> picks it up. For <code>_list_projects</code>,
 an additional <code>monkeypatch</code> replaces <code>Path.home()</code> with a temp dir
 containing a synthetic <code>docs-server/mounts.json</code>.</p>
-
 <p>Target: ≥25 test cases across the 7 items, all passing in &lt;0.5s
 (<code>uv run pytest tests/ -q --tb=short</code>).</p>
-
-<hr>
-
+<hr/>
 <h2 id="s9">§ 9 — Implementation notes &amp; ordering</h2>
-
 <p><strong>Single Sonnet agent, sequential within files:</strong></p>
 <ol>
-  <li>Add <code>list_followups_across</code> + <code>list_questions_across</code> to
+<li>Add <code>list_followups_across</code> + <code>list_questions_across</code> to
     <code>_store.py</code> (no versioning concerns — read-only fns).</li>
-  <li>Add all 5 new tools to <code>mcp.py</code> + update <code>_list_plans</code> + fix
+<li>Add all 5 new tools to <code>mcp.py</code> + update <code>_list_plans</code> + fix
     note-ID.</li>
-  <li>Add 3 new Pydantic models to <code>_mcp_tools.py</code>.</li>
-  <li>Write <code>tests/test_mcp_tools.py</code> and verify all tests pass.</li>
-  <li>Run <code>uv run pytest tests/ -q</code> — must see 8 original + ≥25 new = ≥33 passing.</li>
-  <li>Commit: <code>feat(mcp): add list_followups, list_questions, resolve_question, add_research, list_projects; fix note-id; list_plans discovery fallback</code></li>
-  <li>Write a followup to this plan's state JSON resolving the driving followup and
+<li>Add 3 new Pydantic models to <code>_mcp_tools.py</code>.</li>
+<li>Write <code>tests/test_mcp_tools.py</code> and verify all tests pass.</li>
+<li>Run <code>uv run pytest tests/ -q</code> — must see 8 original + ≥25 new = ≥33 passing.</li>
+<li>Commit: <code>feat(mcp): add list_followups, list_questions, resolve_question, add_research, list_projects; fix note-id; list_plans discovery fallback</code></li>
+<li>Write a followup to this plan's state JSON resolving the driving followup and
     recording what landed.</li>
 </ol>
-
 <p><strong>No parallelism needed</strong> — all 4 files are in scope for the same agent.
 Fleet dispatch would only add coordination overhead for this size of work.</p>
-
-<hr>
-
-<h2 id="decisions">Decisions</h2>
-
-<table id="decisions-table" data-plan="mcp-gaps">
-  <thead>
-    <tr><th>Key</th><th>Question</th><th>Choice</th><th>Rationale</th></tr>
-  </thead>
-  <tbody>
-    <tr data-key="scan-strategy">
-      <td><code>scan-strategy</code></td>
-      <td>How should list_followups / list_questions scan plans — glob state dir vs read index inventory?</td>
-      <td>glob state dir (*.json, skip meta)</td>
-      <td>Index inventory may be stale; direct glob always reflects current files. Meta files (index.json, project.json) are excluded by name. Consistent with how serve.py's discover_plans works.</td>
-    </tr>
-    <tr data-key="note-id-format">
-      <td><code>note-id-format</code></td>
-      <td>What format for the collision-resistant note ID?</td>
-      <td>f"n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}"</td>
-      <td>Sortable, human-readable, microsecond resolution. Collision probability at µs is negligible given atomic-rename write cost (&gt;1ms).</td>
-    </tr>
-    <tr data-key="discover-fallback-errors">
-      <td><code>discover-fallback-errors</code></td>
-      <td>Should list_plans surface discover_plans import/IO errors?</td>
-      <td>Silent pass (best-effort)</td>
-      <td>Discovery is an enhancement, not the primary path. Surfacing errors from the fallback would break list_plans for all repos on any import issue in serve.py. Graceful degradation is correct.</td>
-    </tr>
-  </tbody>
-</table>
-
-</div>
 </main>
+<script type="application/json" id="reckon-state">
+{
+  "slug": "reckon-mcp-gaps",
+  "title": "MCP gap-closure — power-user queries",
+  "summary": "Add list_followups, list_questions, resolve_question, add_research, list_projects; list_plans discovery fallback; note-ID collision fix. All in reckon/mcp.py + _store.py + _mcp_tools.py + tests/.",
+  "status": "active",
+  "impl": 0.0,
+  "roi": "high",
+  "effort": "M",
+  "milestone": "PS",
+  "sprint": "S4",
+  "tier": "sonnet",
+  "owner": "Simon McIntosh",
+  "modified": "2026-05-26",
+  "depends_on": [
+    "plans-infra"
+  ],
+  "decisions": {
+    "scan-strategy": {
+      "title": "How should list_followups / list_questions scan plans — glob state dir vs read index inventory?",
+      "context": "",
+      "choices": [],
+      "choice": "glob state dir (*.json, skip meta)",
+      "rationale": "Index inventory may be stale; direct glob always reflects current files. Meta files (index.json, project.json) are excluded by name. Consistent with how serve.py's discover_plans works.",
+      "when": "",
+      "by": ""
+    },
+    "note-id-format": {
+      "title": "What format for the collision-resistant note ID?",
+      "context": "",
+      "choices": [],
+      "choice": "f\"n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}\"",
+      "rationale": "Sortable, human-readable, microsecond resolution. Collision probability at µs is negligible given atomic-rename write cost (>1ms).",
+      "when": "",
+      "by": ""
+    },
+    "discover-fallback-errors": {
+      "title": "Should list_plans surface discover_plans import/IO errors?",
+      "context": "",
+      "choices": [],
+      "choice": "Silent pass (best-effort)",
+      "rationale": "Discovery is an enhancement, not the primary path. Surfacing errors from the fallback would break list_plans for all repos on any import issue in serve.py. Graceful degradation is correct.",
+      "when": "",
+      "by": ""
+    }
+  },
+  "followups": [
+    {
+      "id": "f-mcp-gaps-ship",
+      "written_by": "claude-sonnet-4-6",
+      "written_at": "2026-05-26",
+      "title": "Implement all 8 sprint items — single Sonnet turn",
+      "body": "All 8 items are scoped to 4 files with no overlapping write scope issues. Sequential within the single agent. See §9 for ordering. Done-when: ≥33 tests passing, commit with conventional message, followup written resolving this one.",
+      "recommends_skill": "/reckon-ship reckon-mcp-gaps",
+      "touches": [
+        "reckon/_store.py",
+        "reckon/mcp.py",
+        "reckon/_mcp_tools.py",
+        "tests/test_mcp_tools.py"
+      ],
+      "tier": "sonnet",
+      "est_turn": "single Sonnet turn · ~2h",
+      "prompt": "Project: reckon\nPlan:    reckon-mcp-gaps (docs/reckon-mcp-gaps.html)\nSection: §1–§8 (all items)\nTier:    sonnet\n\nContext\n  During the 2026-05-26 MCP tool evaluation, 7 opportunity gaps were confirmed\n  by measuring actual call overhead against purpose-built queries. This sprint\n  item closes all 7 in one pass. The plan HTML at docs/reckon-mcp-gaps.html\n  has the full implementation spec per section.\n\nState to read\n  docs/state/reckon/reckon-mcp-gaps.json (this file)\n  reckon/_store.py                      (add 2 new store fns at bottom)\n  reckon/mcp.py                         (add 5 tools, update _list_plans, fix note-ID)\n  reckon/_mcp_tools.py                  (add 3 Pydantic models)\n  tests/test_mcp_store.py               (read for fixture pattern; do NOT modify)\n\nLocked decisions to honour\n  scan-strategy            → glob state dir (*.json, skip index.json + project.json)\n  note-id-format           → f'n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}'\n  discover-fallback-errors → silent pass in except clause\n\nOpen decisions to surface (do not resolve)\n  (none — all decisions for this plan are locked above)\n\nConstraints\n  - Python >=3.12, uv, mcp>=1.0.0, pydantic>=2.0\n  - Do NOT use git add -A / git add . — stage specific paths only\n  - Do NOT modify tests/test_mcp_store.py\n  - All 8 original store tests must still pass after changes\n  - The mcp SDK @mcp.tool() registration block at the bottom of mcp.py\n    must be updated to register all 5 new tools\n\nImplementation order (§9):\n  1. reckon/_store.py — add list_followups_across + list_questions_across\n  2. reckon/mcp.py   — add 5 new tools + update _list_plans + fix note-ID\n                       + register new tools at bottom of file\n  3. reckon/_mcp_tools.py — add ListFollowupsArgs, ResolveQuestionArgs, AddResearchArgs\n  4. tests/test_mcp_tools.py — write ≥25 test cases\n  5. uv run pytest tests/ -q --tb=short → must show ≥33 passing, 0 failed\n\nDone-when\n  1. uv run pytest tests/ -q shows ≥33 passing, 0 failed\n  2. Committed with: feat(mcp): add list_followups, list_questions, resolve_question,\n     add_research, list_projects; fix note-id; list_plans discovery fallback\n  3. This followup (f-mcp-gaps-ship) resolved in reckon-mcp-gaps.json with outcome\n  4. data.impl set to 1.0 in reckon-mcp-gaps.json\n  5. data.status set to shipped in reckon-mcp-gaps.json"
+    }
+  ],
+  "research": [
+    {
+      "id": "r1",
+      "type": "thread",
+      "title": "2026-05-26 MCP tool evaluation — gap identification session",
+      "source": "Claude Code session, reckon project",
+      "added_by": "Simon McIntosh",
+      "when": "2026-05-26",
+      "url": null
+    }
+  ],
+  "version": 1
+}
+</script>
 </body>
 </html>
