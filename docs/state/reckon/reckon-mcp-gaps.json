@@ -1,0 +1,128 @@
+{
+  "updated": "2026-05-26T16:24:09",
+  "project": "reckon",
+  "doc": "reckon-mcp-gaps",
+  "data": {
+    "slug": "reckon-mcp-gaps",
+    "title": "MCP gap-closure — power-user queries",
+    "status": "active",
+    "ms": "PS",
+    "roi": "high",
+    "effort": "M",
+    "tier": "sonnet",
+    "impl": 0,
+    "owner": "Simon McIntosh",
+    "blockers": 0,
+    "sprint": "S4",
+    "phase": "planned — S4 sprint item",
+    "last_modified": "2026-05-26",
+    "depends_on": [
+      "plans-infra"
+    ],
+    "blocks": [],
+    "summary": "Add list_followups, list_questions, resolve_question, add_research, list_projects; list_plans discovery fallback; note-ID collision fix. All in reckon/mcp.py + _store.py + _mcp_tools.py + tests/.",
+    "sections": [
+      {
+        "id": "s1",
+        "sec": "§ 1",
+        "h": "list_followups",
+        "body": "Cross-plan unresolved followup scanner. New store fn list_followups_across + MCP tool _list_followups(project, unresolved_only=True). Returns {project, count, followups[{slug, followup_id, title, blocked_by, est_turn, tier, written_at}]}."
+      },
+      {
+        "id": "s2",
+        "sec": "§ 2",
+        "h": "list_questions",
+        "body": "Cross-plan open question scanner. New store fn list_questions_across + MCP tool _list_questions(project, open_only=True). Returns {project, count, questions[{slug, question_id, section, body, opened_by, opened_at}]}."
+      },
+      {
+        "id": "s3",
+        "sec": "§ 3",
+        "h": "resolve_question",
+        "body": "Close a question with resolution text. MCP tool _resolve_question(project, slug, question_id, resolution, by, expected_version). Reuses resolve_in_list(..., 'questions', ...) — no new store fn."
+      },
+      {
+        "id": "s4",
+        "sec": "§ 4",
+        "h": "add_research",
+        "body": "Append a research item. MCP tool _add_research(project, slug, item, expected_version). Required fields: id, type, title, source, added_by, when. Reuses append_to_list(..., 'research', ...)."
+      },
+      {
+        "id": "s5",
+        "sec": "§ 5",
+        "h": "list_projects",
+        "body": "Discover registered projects from mounts.json. MCP tool _list_projects() — no args. Returns {projects: [{project, path, has_index}]}."
+      },
+      {
+        "id": "s6",
+        "sec": "§ 6",
+        "h": "list_plans discovery fallback",
+        "body": "Update _list_plans to fall back to discover_plans(serve.py) when index.json has no inventory. Makes MCP work for per-doc repos without a central-index layout. Errors are silently swallowed (best-effort fallback)."
+      },
+      {
+        "id": "s7",
+        "sec": "§ 7",
+        "h": "note-ID collision fix",
+        "body": "Replace f'n{len(notes)+1}' with f'n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}' in _append_comment. Sortable, human-readable, microsecond-resolution, collision-resistant."
+      },
+      {
+        "id": "s8",
+        "sec": "§ 8",
+        "h": "tests/test_mcp_tools.py",
+        "body": "New test file covering all 5 new tools + note-ID + discovery fallback. Target: ≥25 cases, all pass in <0.5s. Keep test_mcp_store.py untouched."
+      }
+    ],
+    "decisions": {
+      "scan-strategy": {
+        "choice": "glob state dir (*.json, skip meta)",
+        "rationale": "Index inventory may be stale; direct glob always reflects current files. Consistent with serve.py discover_plans approach.",
+        "when": "2026-05-26",
+        "by": "Simon McIntosh"
+      },
+      "note-id-format": {
+        "choice": "f'n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}'",
+        "rationale": "Sortable, human-readable, microsecond resolution. Collision probability at µs is negligible given atomic-rename write cost.",
+        "when": "2026-05-26",
+        "by": "Simon McIntosh"
+      },
+      "discover-fallback-errors": {
+        "choice": "Silent pass (best-effort)",
+        "rationale": "Discovery is an enhancement. Surfacing errors from the fallback would break list_plans for all repos on any import issue in serve.py.",
+        "when": "2026-05-26",
+        "by": "Simon McIntosh"
+      }
+    },
+    "notes": [],
+    "research": [
+      {
+        "id": "r1",
+        "type": "thread",
+        "title": "2026-05-26 MCP tool evaluation — gap identification session",
+        "source": "Claude Code session, reckon project",
+        "added_by": "Simon McIntosh",
+        "when": "2026-05-26",
+        "url": null
+      }
+    ],
+    "questions": [],
+    "followups": [
+      {
+        "id": "f-mcp-gaps-ship",
+        "written_by": "claude-sonnet-4-6",
+        "written_at": "2026-05-26",
+        "title": "Implement all 8 sprint items — single Sonnet turn",
+        "body": "All 8 items are scoped to 4 files with no overlapping write scope issues. Sequential within the single agent. See §9 for ordering. Done-when: ≥33 tests passing, commit with conventional message, followup written resolving this one.",
+        "recommends_skill": "/reckon-ship reckon-mcp-gaps",
+        "touches": [
+          "reckon/_store.py",
+          "reckon/mcp.py",
+          "reckon/_mcp_tools.py",
+          "tests/test_mcp_tools.py"
+        ],
+        "tier": "sonnet",
+        "est_turn": "single Sonnet turn · ~2h",
+        "prompt": "Project: reckon\nPlan:    reckon-mcp-gaps (docs/reckon-mcp-gaps.html)\nSection: §1–§8 (all items)\nTier:    sonnet\n\nContext\n  During the 2026-05-26 MCP tool evaluation, 7 opportunity gaps were confirmed\n  by measuring actual call overhead against purpose-built queries. This sprint\n  item closes all 7 in one pass. The plan HTML at docs/reckon-mcp-gaps.html\n  has the full implementation spec per section.\n\nState to read\n  docs/state/reckon/reckon-mcp-gaps.json (this file)\n  reckon/_store.py                      (add 2 new store fns at bottom)\n  reckon/mcp.py                         (add 5 tools, update _list_plans, fix note-ID)\n  reckon/_mcp_tools.py                  (add 3 Pydantic models)\n  tests/test_mcp_store.py               (read for fixture pattern; do NOT modify)\n\nLocked decisions to honour\n  scan-strategy            → glob state dir (*.json, skip index.json + project.json)\n  note-id-format           → f'n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}'\n  discover-fallback-errors → silent pass in except clause\n\nOpen decisions to surface (do not resolve)\n  (none — all decisions for this plan are locked above)\n\nConstraints\n  - Python >=3.12, uv, mcp>=1.0.0, pydantic>=2.0\n  - Do NOT use git add -A / git add . — stage specific paths only\n  - Do NOT modify tests/test_mcp_store.py\n  - All 8 original store tests must still pass after changes\n  - The mcp SDK @mcp.tool() registration block at the bottom of mcp.py\n    must be updated to register all 5 new tools\n\nImplementation order (§9):\n  1. reckon/_store.py — add list_followups_across + list_questions_across\n  2. reckon/mcp.py   — add 5 new tools + update _list_plans + fix note-ID\n                       + register new tools at bottom of file\n  3. reckon/_mcp_tools.py — add ListFollowupsArgs, ResolveQuestionArgs, AddResearchArgs\n  4. tests/test_mcp_tools.py — write ≥25 test cases\n  5. uv run pytest tests/ -q --tb=short → must show ≥33 passing, 0 failed\n\nDone-when\n  1. uv run pytest tests/ -q shows ≥33 passing, 0 failed\n  2. Committed with: feat(mcp): add list_followups, list_questions, resolve_question,\n     add_research, list_projects; fix note-id; list_plans discovery fallback\n  3. This followup (f-mcp-gaps-ship) resolved in reckon-mcp-gaps.json with outcome\n  4. data.impl set to 1.0 in reckon-mcp-gaps.json\n  5. data.status set to shipped in reckon-mcp-gaps.json"
+      }
+    ],
+    "_version": 1
+  }
+}
