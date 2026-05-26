@@ -9,6 +9,153 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+  <style>
+    /* Home-page extras — tokens from foundation.css */
+    .proj-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 20px;
+      border: var(--hairline);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      margin-bottom: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 120ms, transform 80ms, box-shadow 80ms;
+      cursor: pointer;
+    }
+    .proj-row:hover {
+      border-color: var(--line-2);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .proj-row .proj-left { min-width: 0; }
+    .proj-row .proj-name {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+    .proj-row .proj-path {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .proj-row .proj-chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .proj-row .proj-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .proj-row .open-arrow {
+      font-size: 15px;
+      color: var(--faint);
+      transition: color 120ms;
+    }
+    .proj-row:hover .open-arrow { color: var(--accent); }
+    .proj-row .last-mod {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Status chips */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 999px;
+      line-height: 1.4;
+    }
+    .chip .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .chip.active  { background: var(--accent-3);  color: var(--accent); }
+    .chip.active  .dot { background: var(--accent); }
+    .chip.blocked { background: oklch(0.96 0.03 25); color: var(--bad); }
+    .chip.blocked .dot { background: var(--bad); }
+    .chip.pending { background: var(--bg-2); color: var(--muted); border: var(--hairline); }
+    .chip.pending .dot { background: var(--line-2); border: 1.5px solid var(--muted); }
+    .chip.shipped { background: oklch(0.95 0.04 155); color: var(--ok); }
+    .chip.shipped .dot { background: var(--ok); }
+    .chip.zero    { opacity: 0.35; }
+
+    /* Sort controls */
+    .sort-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      margin-bottom: 4px;
+      border-bottom: var(--hairline);
+    }
+    .sort-row .sort-label {
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .sort-row select {
+      font-size: 12.5px;
+      padding: 3px 8px;
+    }
+    .sort-row .sp { flex: 1; }
+    .sort-row .fleet-count {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Empty / error state */
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state .icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .empty-state h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0 0 6px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .empty-state p {
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .empty-state code {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      background: var(--bg-2);
+      border: var(--hairline);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+  </style>
 </head>
 <body>
 <div class="shell">
@@ -16,13 +163,37 @@
     <span class="brand">
       <span class="mark">R</span>
       reckon
+      <span class="sep">·</span>
+      <span class="proj-name">fleet</span>
     </span>
     <div class="right">
       <span id="js-time" style="font-family:var(--mono);font-size:12px;color:var(--muted)"></span>
     </div>
   </nav>
+
   <main class="page wide" id="main">
-    <p class="dim" style="padding:32px 0">Loading fleet rollup…</p>
+    <!-- Skeleton header renders immediately — no flash of empty -->
+    <div class="page-head">
+      <div class="title">
+        <h1>Across projects.</h1>
+        <div class="subtitle">all reckon-managed projects · click to open</div>
+      </div>
+    </div>
+    <div id="stats-strip"></div>
+    <div id="proj-list">
+      <!-- Skeleton rows while loading -->
+      <div class="sort-row">
+        <span class="sort-label">Sort</span>
+        <select disabled style="opacity:.4">
+          <option>ROI weight</option>
+        </select>
+        <span class="sp"></span>
+        <span class="fleet-count" style="opacity:.4">loading…</span>
+      </div>
+      <div style="padding:32px 0;color:var(--muted);font-size:13.5px;text-align:center">
+        Fetching fleet data…
+      </div>
+    </div>
   </main>
 </div>
 
@@ -46,67 +217,56 @@
     if (Array.isArray(d.projects) && d.projects.length) {
       var s = d.projects[0];
       return {
-        project:      p.project,
-        path:         p.path || '',
-        published:    s.published || '',
-        owner:        s.owner || '',
-        plans_count:  (s.plans_count | 0),
-        active:       (s.active  | 0),
-        blocked:      (s.blocked | 0),
-        pending:      (s.pending | 0),
-        shipped:      (s.shipped | 0),
+        project:       p.project,
+        path:          p.path || '',
+        published:     s.published || '',
+        plans_count:   (s.plans_count | 0),
+        active:        (s.active  | 0),
+        blocked:       (s.blocked | 0),
+        pending:       (s.pending | 0),
+        shipped:       (s.shipped | 0),
         last_modified: s.last_modified || p.updated || '',
-        milestones:   Array.isArray(s.milestones) ? s.milestones : [],
-        top:          Array.isArray(s.top) ? s.top : [],
-        activity30:   Array.isArray(s.activity30) ? s.activity30 : [],
-        tests_30d:    s.tests_30d || { pass: 0, runs: 0 },
+        top:           Array.isArray(s.top) ? s.top : [],
+        activity30:    Array.isArray(s.activity30) ? s.activity30 : [],
       };
     }
 
     // Shape B: data.counts.status + data.plans[]
-    var cnts = d.counts || {};
-    var sb   = cnts.status || {};
+    var cnts  = d.counts || {};
+    var sb    = cnts.status || {};
     var plans = Array.isArray(d.plans) ? d.plans : [];
-    var top = plans.slice()
+    var top   = plans.slice()
       .sort(function (a, b) {
         var pri = function (x) { return x.status === 'blocked' ? 0 : x.status === 'active' ? 1 : 2; };
-        var dp  = pri(a) - pri(b);
-        return dp || ((b.implementation_fraction || 0) - (a.implementation_fraction || 0));
+        return pri(a) - pri(b) || ((b.implementation_fraction || 0) - (a.implementation_fraction || 0));
       })
       .slice(0, 5)
       .map(function (pl) {
         return {
-          slug:     pl.slug || (pl.path || '').replace(/^.*\//, '').replace(/\.[^.]+$/, ''),
-          title:    pl.title || pl.slug,
-          status:   pl.status || 'pending',
-          roi:      pl.roi    || 'mid',
-          effort:   pl.effort || 'M',
-          ms:       pl.milestone || '—',
-          impl:     pl.implementation_fraction || 0,
-          blockers: Array.isArray(pl.blocked_by) ? pl.blocked_by.length : 0,
-          dec_open: pl.dec_open || 0,
+          slug:   pl.slug || (pl.path || '').replace(/^.*\//, '').replace(/\.[^.]+$/, ''),
+          title:  pl.title || pl.slug,
+          status: pl.status || 'pending',
+          roi:    pl.roi   || 'mid',
+          effort: pl.effort || 'M',
         };
       });
 
     return {
-      project:      p.project,
-      path:         p.path || '',
-      published:    d.published || '',
-      owner:        d.owner || '',
-      plans_count:  cnts.total || plans.length || 0,
-      active:       (sb.active  | 0),
-      blocked:      (sb.blocked | 0),
-      pending:      (sb.pending | 0),
-      shipped:      (sb.shipped | 0),
+      project:       p.project,
+      path:          p.path || '',
+      published:     d.published || '',
+      plans_count:   cnts.total || plans.length || 0,
+      active:        (sb.active  | 0),
+      blocked:       (sb.blocked | 0),
+      pending:       (sb.pending | 0),
+      shipped:       (sb.shipped | 0),
       last_modified: d.audit_date || p.updated || '',
-      milestones:   Array.isArray(d.milestones) ? d.milestones : [],
-      top:          top,
-      activity30:   Array.isArray(d.activity30) ? d.activity30 : [],
-      tests_30d:    d.tests_30d || { pass: 0, runs: 0 },
+      top:           top,
+      activity30:    Array.isArray(d.activity30) ? d.activity30 : [],
     };
   }
 
-  function score(p) {
+  function roiScore(p) {
     return p.top.reduce(function (a, t) {
       return a + (t.roi === 'high' ? 3 : t.roi === 'mid' ? 2 : 1);
     }, 0);
@@ -114,8 +274,9 @@
 
   function sorted() {
     var sorters = {
-      roi:      function (a, b) { return score(b) - score(a); },
+      roi:      function (a, b) { return roiScore(b) - roiScore(a); },
       blocked:  function (a, b) { return b.blocked - a.blocked; },
+      total:    function (a, b) { return b.plans_count - a.plans_count; },
       progress: function (a, b) {
         return (b.shipped / Math.max(1, b.plans_count)) - (a.shipped / Math.max(1, a.plans_count));
       },
@@ -124,199 +285,148 @@
     return allProjects.slice().sort(sorters[sortBy] || sorters.roi);
   }
 
-  function pctBar(v, w) {
-    var pct = Math.round(Math.min(1, Math.max(0, v || 0)) * 100);
-    return '<span style="display:inline-block;width:' + (w || 90) + 'px;height:5px;border-radius:3px;background:var(--line);vertical-align:middle">'
-         + '<span style="display:block;width:' + pct + '%;height:100%;border-radius:3px;background:var(--accent)"></span>'
-         + '</span>';
+  function chip(count, cls, label) {
+    var zero = count === 0 ? ' zero' : '';
+    return '<span class="chip ' + cls + zero + '">'
+      + '<span class="dot"></span>'
+      + count + ' ' + label
+      + '</span>';
   }
 
-  function stackBar(s, a, p, b) {
-    var tot = (s | 0) + (a | 0) + (p | 0) + (b | 0);
-    if (!tot) return '<div class="stack"></div>';
-    var pct = function (n) { return Math.round((n / tot) * 100) + '%'; };
-    return '<div class="stack">'
-      + (s ? '<i class="shipped" style="width:' + pct(s) + '"></i>' : '')
-      + (a ? '<i class="active"  style="width:' + pct(a) + '"></i>' : '')
-      + (p ? '<i class="pending" style="width:' + pct(p) + '"></i>' : '')
-      + (b ? '<i class="blocked" style="width:' + pct(b) + '"></i>' : '')
-      + '</div>';
+  function fmtDate(s) {
+    if (!s) return '';
+    // YYYY-MM-DD → human short
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    if (!m) return s;
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(m[2], 10) - 1] + ' ' + parseInt(m[3], 10);
   }
 
-  function heatStrip(data) {
-    var vals = Array.isArray(data) ? data.slice(-30) : [];
-    while (vals.length < 30) vals.unshift(0);
-    var mx = Math.max.apply(null, [1].concat(vals));
-    return vals.map(function (v) {
-      var h   = Math.max(2, Math.round((v / mx) * 18));
-      var bg  = v === 0 ? 'var(--line)' : 'var(--accent)';
-      var op  = v === 0 ? 0.35 : (0.55 + 0.45 * (v / mx));
-      return '<span style="display:inline-block;width:4px;border-radius:1px;height:' + h + 'px;'
-           + 'background:' + bg + ';opacity:' + op.toFixed(2) + ';flex-shrink:0"></span>';
-    }).join('');
-  }
-
-  function statusDot(s) {
-    return '<span class="status ' + esc(s) + '"><span class="dot"></span>' + esc(s) + '</span>';
-  }
-
-  function roiDot(v) {
-    var colors = { high: 'var(--ok)', mid: 'var(--warn)', low: 'var(--muted)' };
-    var c = colors[v] || colors.mid;
-    return '<span style="display:inline-flex;align-items:center;gap:6px">'
-         + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + '"></span>'
-         + '<span style="color:var(--muted);font-size:12px">' + esc(v) + '</span>'
-         + '</span>';
-  }
-
-  function projCard(p) {
-    var topRows = p.top.map(function (t) {
-      var decCell = t.dec_open
-        ? '<a class="link" href="/' + esc(p.project) + '/' + esc(t.slug) + '.html">' + t.dec_open + '</a>'
-        : '<span class="dim">—</span>';
-      var blkCell = t.blockers
-        ? '<span style="color:var(--bad)">' + t.blockers + '</span>'
-        : '<span class="dim">—</span>';
-      return '<tr>'
-        + '<td class="title"><div class="cell-stack">'
-        + '<a class="link" href="/' + esc(p.project) + '/' + esc(t.slug) + '.html">' + esc(t.title) + '</a>'
-        + '<span class="sub">/' + esc(t.slug) + '</span>'
-        + '</div></td>'
-        + '<td>' + statusDot(t.status) + '</td>'
-        + '<td>' + roiDot(t.roi) + '</td>'
-        + '<td><span class="tag ms">' + esc(t.ms) + '</span>'
-        + ' <span class="dim" style="font-size:12px;font-family:var(--mono)">' + esc(t.effort) + '</span></td>'
-        + '<td><span class="flex" style="gap:10px">' + pctBar(t.impl, 90)
-        + '<span style="color:var(--muted);font-size:12px;font-family:var(--mono)">' + Math.round(t.impl * 100) + '%</span></span></td>'
-        + '<td class="num">' + decCell + '</td>'
-        + '<td class="num">' + blkCell + '</td>'
-        + '</tr>';
-    }).join('');
-
-    var pagesLine = p.published && p.published !== '(local only)'
-      ? '<div class="meta" style="margin-top:4px">pages: <a class="link" href="https://' + esc(p.published) + '">' + esc(p.published) + '</a></div>'
-      : '';
-
-    var testsLine = p.tests_30d.runs > 0
-      ? '<div class="dim" style="font-size:11.5px">tests ' + Math.round(p.tests_30d.pass * 100) + '% · ' + p.tests_30d.runs.toLocaleString() + ' runs</div>'
-      : '';
-
-    var pct = p.plans_count ? Math.round(p.shipped / p.plans_count * 100) : 0;
-
-    return '<div class="proj">'
-      + '<div class="proj-head">'
-      + '<div class="ident">'
-      + '<div class="name"><a href="/' + esc(p.project) + '/">' + esc(p.project) + '</a></div>'
-      + '<div class="path">' + esc(p.path) + '</div>'
-      + '<div class="meta">' + p.shipped + ' shipped · ' + p.active + ' active · ' + p.pending + ' pending · ' + p.blocked + ' blocked</div>'
-      + pagesLine
-      + '</div>'
-      + '<div class="progress">'
-      + '<div class="stack-row">' + stackBar(p.shipped, p.active, p.pending, p.blocked) + '<span class="pct">' + pct + '%</span></div>'
-      + '<div class="stack-legend">'
-      + '<span class="k shipped">shipped</span>'
-      + '<span class="k active">active</span>'
-      + '<span class="k pending">pending</span>'
-      + '<span class="k blocked">blocked</span>'
-      + '</div></div>'
-      + '<div class="activity" style="flex-direction:column;align-items:flex-end;gap:8px">'
-      + '<div class="heat-label">30-day writes</div>'
-      + '<span style="display:inline-flex;gap:2px;align-items:flex-end;height:20px">' + heatStrip(p.activity30) + '</span>'
-      + testsLine
+  function projRow(p) {
+    var href = '/' + esc(p.project) + '/';
+    var lastMod = fmtDate(p.last_modified);
+    return '<a class="proj-row" href="' + href + '">'
+      + '<div class="proj-left">'
+      + '<div class="proj-name">' + esc(p.project) + '</div>'
+      + (p.path ? '<div class="proj-path">' + esc(p.path) + '</div>' : '')
+      + '<div class="proj-chips">'
+      + chip(p.active,  'active',  'active')
+      + chip(p.blocked, 'blocked', 'blocked')
+      + chip(p.pending, 'pending', 'pending')
+      + chip(p.shipped, 'shipped', 'shipped')
       + '</div>'
       + '</div>'
-      + (topRows
-        ? '<div class="top"><table class="t compact"><thead><tr>'
-          + '<th style="width:40%">Top items</th><th>Status</th><th>ROI</th>'
-          + '<th>Milestone</th><th>Implementation</th><th class="num">Open dec.</th><th class="num">Blockers</th>'
-          + '</tr></thead><tbody>' + topRows + '</tbody></table></div>'
-        : '')
-      + '</div>';
+      + '<div class="proj-right">'
+      + '<span class="open-arrow">→</span>'
+      + (lastMod ? '<span class="last-mod">' + esc(lastMod) + '</span>' : '')
+      + '</div>'
+      + '</a>';
   }
 
-  function render() {
-    var main  = document.getElementById('main');
-    var projs = sorted();
+  function renderStatsStrip(projects) {
+    var total   = projects.reduce(function (a, p) { return a + p.plans_count; }, 0);
+    var active  = projects.reduce(function (a, p) { return a + p.active;  }, 0);
+    var blocked = projects.reduce(function (a, p) { return a + p.blocked; }, 0);
+    var shipped = projects.reduce(function (a, p) { return a + p.shipped; }, 0);
+    var impl    = total ? Math.round(shipped / total * 100) : 0;
 
-    if (!projs.length) {
-      main.innerHTML = '<div class="page-head"><div class="title">'
-        + '<h1>Across projects.</h1>'
-        + '<div class="subtitle">No mounted projects yet — edit <code>~/docs-server/mounts.json</code> to add one.</div>'
-        + '</div></div>';
-      return;
-    }
+    var blockedStyle = blocked ? ' style="color:var(--bad)"' : '';
 
-    var total   = allProjects.reduce(function (a, p) { return a + p.plans_count; }, 0);
-    var active  = allProjects.reduce(function (a, p) { return a + p.active;  }, 0);
-    var blocked = allProjects.reduce(function (a, p) { return a + p.blocked; }, 0);
-    var shipped = allProjects.reduce(function (a, p) { return a + p.shipped; }, 0);
-    var pending = allProjects.reduce(function (a, p) { return a + p.pending; }, 0);
-    var impl    = total ? shipped / total : 0;
-
-    var projCount  = allProjects.length;
-    var sortSel = '<select id="sort-sel">'
-      + '<option value="roi"'      + (sortBy === 'roi'      ? ' selected' : '') + '>ROI weight</option>'
-      + '<option value="blocked"'  + (sortBy === 'blocked'  ? ' selected' : '') + '>blockers</option>'
-      + '<option value="progress"' + (sortBy === 'progress' ? ' selected' : '') + '>progress</option>'
-      + '<option value="modified"' + (sortBy === 'modified' ? ' selected' : '') + '>last modified</option>'
-      + '</select>';
-
-    main.innerHTML = '<div class="page-head"><div class="title">'
-      + '<h1>Across projects.</h1>'
-      + '<div class="subtitle">across all projects on this docs-server'
-      + ' · ' + projCount + ' project' + (projCount === 1 ? '' : 's') + ' mounted'
-      + ' · ' + total + ' plan' + (total === 1 ? '' : 's')
-      + '</div></div></div>'
-
-      + '<div class="stats">'
+    document.getElementById('stats-strip').innerHTML =
+      '<div class="stats" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">'
+      + '<div class="stat"><div class="l">projects</div><div class="n">' + projects.length + '</div></div>'
       + '<div class="stat"><div class="l">total plans</div><div class="n">' + total + '</div></div>'
       + '<div class="stat"><div class="l">active</div>'
       + '<div class="n">' + active + (total ? '<span class="of">/' + total + '</span>' : '') + '</div>'
       + (total ? '<div class="delta">' + Math.round(active / total * 100) + '% of fleet</div>' : '')
       + '</div>'
       + '<div class="stat"><div class="l">blocked</div>'
-      + '<div class="n"' + (blocked ? ' style="color:var(--bad)"' : '') + '>' + blocked + '</div></div>'
-      + '<div class="stat"><div class="l">shipped</div><div class="n">' + shipped + '</div></div>'
-      + '<div class="stat"><div class="l">fleet impl.</div>'
-      + '<div class="n">' + Math.round(impl * 100) + '<span class="of">%</span></div>'
-      + '<div class="mt-2">' + pctBar(impl, 110) + '</div>'
+      + '<div class="n"' + blockedStyle + '>' + blocked + '</div></div>'
+      + '<div class="stat"><div class="l">impl.</div>'
+      + '<div class="n">' + impl + '<span class="of">%</span></div>'
       + '</div>'
-      + '<div class="stat"><div class="l">pending</div><div class="n">' + pending + '</div></div>'
-      + '</div>'
-
-      + '<div class="filterbar" style="border-bottom:0;margin-top:22px">'
-      + '<h2 style="margin:0">Projects <span class="count">' + projCount + '</span></h2>'
-      + '<span class="sp"></span>'
-      + '<label class="field">sort ' + sortSel + '</label>'
-      + '</div>'
-
-      + projs.map(projCard).join('')
-
-      + '<div style="margin-top:28px;font-size:12.5px;color:var(--muted)">'
-      + 'Mount a new project: edit <code>~/docs-server/mounts.json</code>. No restart needed.'
       + '</div>';
+  }
+
+  function renderProjList() {
+    var projs = sorted();
+    var sortSel = '<select id="sort-sel">'
+      + '<option value="roi"'      + (sortBy === 'roi'      ? ' selected' : '') + '>ROI weight</option>'
+      + '<option value="blocked"'  + (sortBy === 'blocked'  ? ' selected' : '') + '>blockers</option>'
+      + '<option value="total"'    + (sortBy === 'total'    ? ' selected' : '') + '>total plans</option>'
+      + '<option value="progress"' + (sortBy === 'progress' ? ' selected' : '') + '>progress</option>'
+      + '<option value="modified"' + (sortBy === 'modified' ? ' selected' : '') + '>last modified</option>'
+      + '</select>';
+
+    var rows = projs.map(projRow).join('');
+
+    var footer = '<div style="margin-top:20px;font-size:12.5px;color:var(--muted)">'
+      + 'Add a project: edit <code style="font-family:var(--mono);font-size:11.5px;background:var(--bg-2);border:var(--hairline);padding:1px 5px;border-radius:3px">~/docs-server/mounts.json</code>. No restart needed.'
+      + '</div>';
+
+    document.getElementById('proj-list').innerHTML =
+      '<div class="sort-row">'
+      + '<span class="sort-label">Sort</span>'
+      + sortSel
+      + '<span class="sp"></span>'
+      + '<span class="fleet-count">' + projs.length + ' project' + (projs.length === 1 ? '' : 's') + '</span>'
+      + '</div>'
+      + rows
+      + footer;
 
     var sel = document.getElementById('sort-sel');
     if (sel) {
       sel.addEventListener('change', function (e) {
         sortBy = e.target.value;
-        render();
+        renderProjList();
       });
     }
   }
 
+  function renderEmpty() {
+    document.getElementById('stats-strip').innerHTML = '';
+    document.getElementById('proj-list').innerHTML =
+      '<div class="empty-state">'
+      + '<div class="icon">🗂</div>'
+      + '<h2>No projects mounted yet</h2>'
+      + '<p>Edit <code>~/docs-server/mounts.json</code> to register a project,<br>'
+      + 'then run <code>uv run reckon serve</code> to reload.</p>'
+      + '</div>';
+  }
+
+  function renderError(msg) {
+    document.getElementById('stats-strip').innerHTML = '';
+    document.getElementById('proj-list').innerHTML =
+      '<div class="empty-state">'
+      + '<div class="icon">⚠</div>'
+      + '<h2>Could not load fleet data</h2>'
+      + '<p style="color:var(--bad);font-family:var(--mono);font-size:12px">' + esc(msg) + '</p>'
+      + '<p style="margin-top:8px">Is the reckon server running?<br>'
+      + '<code>uv run reckon serve</code></p>'
+      + '</div>';
+  }
+
   fetch('/_projects/index.json', { cache: 'no-store' })
-    .then(function (r) { return r.ok ? r.json() : { projects: [] }; })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ' from /_projects/index.json');
+      return r.json();
+    })
     .then(function (data) {
       var t = document.getElementById('js-time');
-      if (t && data.updated) t.textContent = 'refreshed ' + new Date(data.updated).toLocaleTimeString();
+      if (t && data.updated) {
+        t.textContent = 'refreshed ' + new Date(data.updated).toLocaleTimeString();
+      }
       allProjects = (data.projects || []).map(normalize);
-      render();
+      if (!allProjects.length) {
+        renderEmpty();
+      } else {
+        renderStatsStrip(allProjects);
+        renderProjList();
+      }
     })
     .catch(function (e) {
       console.warn('fleet load failed:', e);
-      allProjects = [];
-      render();
+      renderError(e.message || String(e));
     });
 }());
 </script>
