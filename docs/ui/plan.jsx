@@ -14,8 +14,7 @@ function Plan({ slug, onNav }) {
   const PG = M.plans[slug];
   if (!PG) return <div className="r-page">Plan "{slug}" not found.</div>;
 
-  const isTokenizers = slug === "tokenizers";
-  const P = isTokenizers ? (M.planTokenizers || PG) : PG;
+  const P = PG;
 
   const stored = planLoad(slug) || {};
   const storedDec = stored.decisions || {};
@@ -104,11 +103,7 @@ function Plan({ slug, onNav }) {
       ) : (
         /* Reading mode (default) */
         <article className="r-reading" ref={articleRef}>
-          {isTokenizers ? (
-            <TokenizersBody P={P} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
-          ) : (
-            <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
-          )}
+          <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
         </article>
       )}
 

@@ -4,67 +4,6 @@
 
 const { useState, useEffect, useMemo } = React;
 
-// ─── Header / chrome ────────────────────────────────────────────────────────
-
-function Topbar({ project, active, allProjectsView }) {
-  if (allProjectsView) {
-    return (
-      <div className="topbar">
-        <a href="index.html" className="brand">
-          <span className="mark">P</span>
-          <span>Plans</span>
-        </a>
-        <div style={{ marginLeft: 6, color: "var(--muted)", fontSize: 13 }}>
-          across all projects on this docs-server
-        </div>
-        <div className="right">
-          <a href="implementation.html" className="dim">how this works ↗</a>
-          <kbd>⌘K</kbd>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="topbar">
-      <a href="project.html" className="brand" title="Project overview">
-        <span className="mark">P</span>
-        <span className="proj-name">{project || "—"}</span>
-        <span className="switcher">▾</span>
-      </a>
-      <nav>
-        <a href="inventory.html" className={active === "plans"     ? "active" : ""}>Plans</a>
-        <a href="sprint.html"    className={active === "sprint"    ? "active" : ""}>Sprints</a>
-        <a href="decisions.html" className={active === "decisions" ? "active" : ""}>Decisions</a>
-      </nav>
-      <div className="right">
-        <a href="/" className="dim">all projects ↗</a>
-        <a href="implementation.html" className="dim">handoff doc</a>
-        <kbd>⌘K</kbd>
-      </div>
-    </div>
-  );
-}
-
-function Crumbs({ items }) {
-  return (
-    <div className="crumbs">
-      {items.map((it, i) => {
-        const last = i === items.length - 1;
-        return (
-          <React.Fragment key={i}>
-            {it.href && !last
-              ? <a href={it.href}>{it.label}</a>
-              : last
-                ? <strong>{it.label}</strong>
-                : <span>{it.label}</span>}
-            {!last && <span className="sep">/</span>}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── primitives ─────────────────────────────────────────────────────────────
 
 function Status({ s, label }) {
@@ -175,7 +114,6 @@ function Icon({ name, size = 14 }) {
 }
 
 Object.assign(window, {
-  Topbar, Crumbs,
   Status, Roi, Bar, Stack, Heat, Spark, Tag, Who, Icon,
 });
 

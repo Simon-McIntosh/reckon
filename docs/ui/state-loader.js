@@ -173,6 +173,5 @@ window.STATE_READY = (async function () {
     blockers:         Array.isArray(idx.blockers) ? idx.blockers : [],
     timeline:         Array.isArray(idx.timeline) ? idx.timeline : [],
     plans,
-    planTokenizers:   plans["tokenizers"] || null,
   };
 })();
