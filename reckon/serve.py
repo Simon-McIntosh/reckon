@@ -57,7 +57,11 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
     legacy_root = HOME / "docs-server"
     _MOUNTS_FILE = mounts_file or (legacy_root / "mounts.json")
     _STATE_ROOT = legacy_root / "state"
-    _HOME_HTML = legacy_root / "home.html"
+    # Prefer the home page bundled in the reckon docs/ directory; fall back to
+    # the legacy ~/docs-server/home.html from dotfiles if it doesn't exist yet.
+    reckon_home = Path(__file__).parent.parent / "docs" / "home.html"
+    legacy_home = legacy_root / "home.html"
+    _HOME_HTML = reckon_home if reckon_home.is_file() else legacy_home
     # Shared assets: prefer reckon repo's own docs/_shared, fall back to dotfiles.
     repo_shared = Path(__file__).parent.parent / "docs" / "_shared"
     dotfiles_shared = HOME / ".claude" / "skills" / "html-docs" / "assets"
