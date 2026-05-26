@@ -171,6 +171,50 @@ def sync(docs_path, project, mounts_file, state_root):
         proj_json.write_text(json.dumps(seed, indent=2) + "\n")
         click.echo(f"  seeded state/{proj_name}/project.json")
 
+    # ── Auto-populate index.json from discovered plan HTML pages ──────────
+    from reckon.serve import discover_plans
+    discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
+    disc_inv = {p["slug"]: p for p in (discovered.get("inventory") or [])}
+
+    index_json = state_dir / "index.json"
+    idx_data: dict = {}
+    if index_json.is_file():
+        try:
+            env = json.loads(index_json.read_text())
+            idx_data = env.get("data", {})
+        except json.JSONDecodeError:
+            pass
+
+    # Merge: existing extra fields (justification, tier, etc.) are preserved;
+    # discovered fields (status, impl, sprint, dec_open, …) win on overlap.
+    existing_inv = {p["slug"]: p for p in (idx_data.get("inventory") or [])}
+    for slug, disc_plan in disc_inv.items():
+        if slug in existing_inv:
+            existing_inv[slug].update(disc_plan)
+        else:
+            existing_inv[slug] = disc_plan
+    idx_data["inventory"] = list(existing_inv.values())
+
+    # Seed sprints/milestones from project.json discovery if not in index yet
+    if not idx_data.get("sprints") and discovered.get("sprints"):
+        idx_data["sprints"] = discovered["sprints"]
+    if not idx_data.get("milestones") and discovered.get("milestones"):
+        idx_data["milestones"] = discovered["milestones"]
+    if not idx_data.get("active_sprint_id"):
+        active = next((s for s in (idx_data.get("sprints") or []) if s.get("status") == "active"), None)
+        if active:
+            idx_data["active_sprint_id"] = active["id"]
+
+    idx_data["_version"] = (idx_data.get("_version") or 0) + 1
+    envelope = {
+        "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
+        "project": proj_name,
+        "doc": "index",
+        "data": idx_data,
+    }
+    index_json.write_text(json.dumps(envelope, indent=2) + "\n")
+    click.echo(f"  indexed {len(idx_data['inventory'])} plan(s) → state/{proj_name}/index.json")
+
     # ── Register in mounts.json ────────────────────────────────────────────
     mounts_path = (mounts_file or Path.home() / "docs-server" / "mounts.json").expanduser()
     mounts_path.parent.mkdir(parents=True, exist_ok=True)

@@ -198,6 +198,62 @@ def set_nested(
     return write_plan(project, slug, merged, cur_version)
 
 
+def _mounts_path() -> Path:
+    """Return the canonical path to mounts.json.
+
+    Override with RECKON_MOUNTS_PATH env var (mirrors RECKON_STATE_ROOT pattern).
+    """
+    env = os.environ.get("RECKON_MOUNTS_PATH")
+    if env:
+        return Path(env).expanduser().resolve()
+    return Path.home() / "docs-server" / "mounts.json"
+
+
+def list_followups_across(project: str, unresolved_only: bool = True) -> list[dict]:
+    """Return followups from all per-plan state files in a project.
+
+    Adds plan_slug and plan_title to each entry.
+    Skips index.json and project.json.
+    """
+    root = _state_root() / project
+    if not root.is_dir():
+        return []
+    results: list[dict] = []
+    for json_file in sorted(root.glob("*.json")):
+        slug = json_file.stem
+        if slug in ("index", "project"):
+            continue
+        data, _ = _load_envelope(json_file)
+        title = data.get("title") or slug
+        for f in data.get("followups", []):
+            if unresolved_only and f.get("resolved_at"):
+                continue
+            results.append({"plan_slug": slug, "plan_title": title, **f})
+    return results
+
+
+def list_questions_across(project: str, unresolved_only: bool = True) -> list[dict]:
+    """Return questions from all per-plan state files in a project.
+
+    Adds plan_slug and plan_title to each entry.
+    """
+    root = _state_root() / project
+    if not root.is_dir():
+        return []
+    results: list[dict] = []
+    for json_file in sorted(root.glob("*.json")):
+        slug = json_file.stem
+        if slug in ("index", "project"):
+            continue
+        data, _ = _load_envelope(json_file)
+        title = data.get("title") or slug
+        for q in data.get("questions", []):
+            if unresolved_only and q.get("resolved_at"):
+                continue
+            results.append({"plan_slug": slug, "plan_title": title, **q})
+    return results
+
+
 def resolve_in_list(
     project: str,
     slug: str,

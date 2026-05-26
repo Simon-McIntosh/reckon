@@ -107,16 +107,28 @@ window.STATE_READY = (async function () {
   );
   const plans = Object.fromEntries(planEntries);
 
-  // ── 5. Resolve active sprint ───────────────────────────────────────────
-  const activeSprint =
-    sprints.find(s => s.id === idx.active_sprint_id) ||
-    sprints.find(s => s.status === "active");
-
-  // ── 6. Assemble window.STATE ───────────────────────────────────────────
+  // ── 5. Merge per-doc plan state ────────────────────────────────────────
   // _central items stay as-is; per-doc items are merged with their plan JSON.
   const mergedInventory = inventory.map(inv =>
     inv._central ? inv : (plans[inv.slug] || inv)
   );
+
+  // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
+  // Plans with sprint:"X" in their inventory entry appear in that sprint
+  // automatically — no explicit sprint.items[] wiring needed.
+  const augmentedSprints = sprints.map(s => {
+    const explicit = new Set(
+      (s.items || []).map(it => typeof it === "string" ? it : it.slug)
+    );
+    const auto = mergedInventory
+      .filter(p => p.sprint === s.id && !explicit.has(p.slug))
+      .map(p => p.slug);
+    return auto.length ? { ...s, items: [...(s.items || []), ...auto] } : s;
+  });
+  const activeSprint = augmentedSprints.find(s => s.id === idx.active_sprint_id)
+                    || augmentedSprints.find(s => s.status === "active");
+
+  // ── 6. Assemble window.STATE ───────────────────────────────────────────
 
   // Ensure projects[0] is populated. Some central-index repos (e.g. imas-efit)
   // have data.plans[] + data.counts + data.milestones at the top level and no
@@ -156,7 +168,7 @@ window.STATE_READY = (async function () {
     milestones,
     inventory:        mergedInventory,
     active_sprint_id: idx.active_sprint_id || null,
-    sprints,
+    sprints:          augmentedSprints,
     sprint:           activeSprint,
     blockers:         Array.isArray(idx.blockers) ? idx.blockers : [],
     timeline:         Array.isArray(idx.timeline) ? idx.timeline : [],
