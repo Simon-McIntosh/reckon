@@ -21,8 +21,8 @@ The repo provides:
 The docs/ directory is the canonical planning SPA template:
 - Pure client-side React 18 + JSX compiled in-browser via Babel standalone (no build step)
 - CSS: docs/_shared/foundation.css, docs/_shared/dashboard.css
-- JSX components: docs/ui/ (v7-shell.jsx is the root)
-- State is loaded at runtime from `state/<project>/index.json` via the docs-server
+- JSX components: docs/ui/ (shell.jsx is the root)
+- Plan state is loaded at runtime from each plan's embedded island (`<script type="application/json" id="reckon-state">`); project config from `state/<project>/index.json`
 
 ## Repo-agnostic principle
 
@@ -61,45 +61,51 @@ them is cheap.
 
 **Failure mode that motivated this section.** 2026-05-21: shipped
 plans-infra in dotfiles + ambix without updating the plan's state
-JSON to reflect that it shipped. The plan-system told a different
-story than the codebase. RCA: the coordinator authored a custom
-sub-agent dispatch prompt instead of routing through `/reckon-ship`
-(which has the followup-write requirement baked in), AND failed to
-write a closing followup on the parent plan when work completed.
+to reflect that it shipped. The plan-system told a different story
+than the codebase. RCA: the coordinator authored a custom sub-agent
+dispatch prompt instead of routing through `/reckon-ship` (which has
+the followup-write requirement baked in), AND failed to write a
+closing followup on the parent plan when work completed.
 
 **The mandate.** Any change to a plan's state — implementation lands,
 decision resolves, status changes, blocker clears, sprint moves —
-MUST be reflected in `docs/state/<project>/<slug>.json` (and
-`docs/state/<project>/index.json` for inventory rollups) **in the
-same turn that the change happens**.
+MUST be reflected in the **plan's HTML island** (via MCP tools or
+`POST /plan/<project>/<slug>`) **in the same turn that the change
+happens**.
+
+**The HTML is the sole store.** There is no per-plan
+`state/<project>/<slug>.json` sidecar. All plan data (status, impl,
+decisions, followups) lives in `<script type="application/json"
+id="reckon-state">` embedded in the plan HTML. The server rewrites
+that island on every successful POST.
 
 Concretely:
 
 1. **When work lands on a plan**:
-   - `data.status` updated (`active` → `shipped`/`done` when fully
-     done; `active` → `blocked` when stalled; etc.)
-   - `data.impl` advanced toward 1.0
-   - `data.last_modified` set to now
+   - `status` updated (`active` → `shipped`/`done` when fully done;
+     `active` → `blocked` when stalled; etc.)
+   - `impl` advanced toward 1.0
+   - `modified` set to today (server-written on each POST)
    - **The driving followup MUST be resolved** with `resolved_at`,
      `resolved_by`, `outcome` describing what landed
    - **A new followup MUST be written** with the §05 prompt template
      for whatever comes next — or with `outcome: "done — no followup"`
      when the chain truly closes
-   - `data._version` will be incremented by the docs-server POST (do
+   - `version` will be incremented by the server on each POST (do
      not set it client-side)
 
 2. **When a decision is resolved**:
-   - `data.decisions[<key>]` updated with `choice`, `rationale`, `when`,
-     `by` — via `/reckon-edit` or a live POST to
-     `/state/<project>/<slug>`. Direct file edits are permitted ONLY
-     if you announce the bypass reason in your reply.
+   - `decisions.<key>.choice`, `rationale`, `when`, `by` updated
+     via MCP `lock_decision` or `POST /plan/<project>/<slug>` with
+     a dotted patch. Direct HTML edits are permitted ONLY if you
+     announce the bypass reason in your reply.
 
 3. **Coordinator dispatch contract.** When dispatching a Sonnet (or
    any) worker to implement plan work, the dispatch prompt MUST:
    - Include the **§05 prompt template** with locked decisions, open
      decisions to surface, and a Done-when list
-   - **Require the worker to append a followup** to the relevant
-     plan's `state.followups[]` before declaring done
+   - **Require the worker to append a followup** to the plan's island
+     before declaring done
    - **Require the worker to resolve its driving followup** (if it
      was dispatched from one) with `resolved_at`, `outcome`
 
@@ -110,18 +116,17 @@ Concretely:
 
 4. **Eat-the-dog-food check.** Before marking any reckon-ship work
    "done" in chat, verify the plan-system itself reflects the work:
-   - `curl /state/<project>/<slug>.json` → `data.status` matches
-     reality
-   - The driving followup is resolved
-   - A next followup or `done — no followup` is present
-   - `data._version` has incremented
+   - `GET /plan/<project>/<slug>` → `status` matches reality
+   - The driving followup is resolved (`status: "resolved"`)
+   - A next followup or `outcome: "done — no followup"` is present
+   - `version` has incremented
    If any of those is false, you bypassed the skill. Fix it before
    moving on.
 
-5. **State-bypass announcement.** Any agent that edits a state JSON
-   without invoking `/reckon-edit` or `/reckon-ship` MUST announce
-   "bypassing /reckon-edit because X" in their reply. Silent bypasses
-   are exactly the failure mode being prevented here.
+5. **State-bypass announcement.** Any agent that edits a plan HTML
+   island directly (rather than via MCP tools or `/reckon-edit`)
+   MUST announce "bypassing /reckon-edit because X" in their reply.
+   Silent bypasses are exactly the failure mode being prevented here.
 
 This is enforced by discipline, not by tooling — but the discipline
 is binding. Surface a violation explicitly when you spot one.
@@ -130,20 +135,30 @@ is binding. Surface a violation explicitly when you spot one.
 
 Every project keeps its plans under `<repo>/docs/`. The
 host-wide `docs-server` at `127.0.0.1:8765` serves them under stable
-URL prefixes (`http://localhost:8765/<project>/`) and exposes a JSON
-state store at `/state/<project>/<doc>` that both the browser and
-agents read/write.
+URL prefixes (`http://localhost:8765/<project>/`).
 
-**State files live in the repo.** `reckon-sync` symlinks
-`~/docs-server/state/<project>` to
-`<repo>/docs/state/<project>` so the docs-server reads and
-writes the same files git tracks. One source of truth.
+**The plan HTML is the sole store.** All plan data (status, impl,
+decisions, followups, comments, questions, research, notes) lives in
+the `<script type="application/json" id="reckon-state">` island
+embedded in each `.html` file. Live edits (browser clicks, MCP tools)
+rewrite the HTML file in place — there are no per-plan sidecar JSON
+files.
 
-**Per-stage, not per-update.** When work transitions phases, write a
-**new** HTML file (`<plan>-<phase>.html`, e.g.
-`tokenizer-eval-locked.html`) — do not overwrite the evergreen page.
-The old file becomes the audit trail. This rule is enforced by
-`reckon-edit` and `reckon-ship`.
+**Project-level config in index.json.** `docs/state/<project>/index.json`
+holds sprints, milestones, `active_sprint_id`, and timeline — not
+per-plan state. `reckon-sync` symlinks `~/docs-server/state/<project>`
+to `<repo>/docs/state/<project>` so the server can write this file
+back to the repo.
+
+**Any HTML file is a plan.** Existence is sufficient — a page surfaces
+as `status=draft` if it has no island. No `plan-status` meta opt-in
+required.
+
+**Per-stage archival under `docs/archive/`.** When work transitions
+phases, write a **new** HTML file under `docs/archive/`
+(`<plan>-<phase>.html`, e.g. `tokenizer-eval-locked.html`) — do not
+overwrite the evergreen page. The archived file becomes the audit trail.
+Per-stage files in `archive/` are excluded from the live inventory.
 
 **HTML is the source of truth.** Do not author markdown plans under
 `plans/<slug>.md` and run a generator. Auto-regeneration overwrites
@@ -156,20 +171,18 @@ Any existing `plans/` markdown is read-only history — archive it under
 - Start (login node, persistent in tmux):
   `tmux new -d -s docs-server 'uv run --project ~/Code/reckon reckon serve'`
 - Stop: `tmux kill-session -t docs-server`
-- Mounts: `~/docs-server/mounts.json` — re-read on every request, no
-  restart needed
-- State endpoint:
-  `curl http://127.0.0.1:8765/state/<project>/<doc>` (GET) /
-  `-X POST` with JSON body (write)
-- State disk path: `~/docs-server/state/<project>/<doc>.json` (which
-  is the repo's `docs/state/<project>/<doc>.json` via symlink)
+- Mounts: `~/docs-server/mounts.json` — re-read on every request, no restart needed
+- Plan island (GET): `curl http://127.0.0.1:8765/plan/<project>/<slug>`
+- Plan patch (POST): `curl -X POST -H 'If-Match: <version>' -d '{"status":"shipped"}' http://127.0.0.1:8765/plan/<project>/<slug>`
+- Discovery: `curl http://127.0.0.1:8765/_discover/<project>` (all plans + full island state)
+- Project config: `curl http://127.0.0.1:8765/state/<project>/index.json`
 
 ### reckon MCP tools
 
-The reckon MCP server exposes plan state R/W as structured tools. Claude Code
+The reckon MCP server exposes plan island R/W as structured tools. Claude Code
 auto-starts it via the MCP config (`reckon mcp` stdio transport). All agents
-working with plans MUST use these tools for state mutations — never edit state
-JSON files directly.
+working with plans MUST use these tools for state mutations — they rewrite
+the plan HTML island directly.
 
 **Invocation** (if needed manually): `uv run --project ~/Code/reckon reckon mcp`
 
@@ -179,25 +192,25 @@ JSON files directly.
 |------|---------|
 | `list_projects` | List all mounted projects |
 | `list_plans` | List plans for a project |
-| `read_plan` | Read current plan state + `_version` |
-| `patch_plan` | Bulk-update plan fields |
-| `set_status` | Update `data.status` |
-| `set_impl` | Update `data.impl` (0.0–1.0) |
-| `lock_decision` | Record a resolved decision |
-| `append_followup` | Add a followup item |
+| `read_plan` | Read current island state + `version` |
+| `patch_plan` | Apply dotted-key patch to island |
+| `set_status` | Update `status` in island |
+| `set_impl` | Update `impl` (0.0–1.0) in island |
+| `lock_decision` | Record a resolved decision in `decisions.<key>` |
+| `append_followup` | Add a followup to `followups[]` |
 | `resolve_followup` | Mark a followup done with outcome |
-| `append_comment` | Add a note/comment |
+| `append_comment` | Add a comment to `comments.<sectionId>[]` |
 | `list_followups` | List open followups |
 | `list_questions` | List open questions |
 | `resolve_question` | Mark a question resolved |
-| `add_research` | Attach a research item |
+| `add_research` | Attach a research item to `research[]` |
 
-**Mandatory rule:** always call `read_plan` first to get the current `_version`
-before any write — writes are rejected if `expected_version` doesn't match.
+**Mandatory rule:** always call `read_plan` first to get the current `version`
+before any write — writes are rejected (412) if `version` doesn't match.
 
-**Further detail:** `GET http://127.0.0.1:8765/state/<project>/<slug>.json`
-for current state, or `/_discover/<project>` for plan inventory. MCP tool
-descriptions are self-documenting — query them via the MCP inspector if needed.
+**Further detail:** `GET http://127.0.0.1:8765/plan/<project>/<slug>` for
+current island, or `/_discover/<project>` for plan inventory with full islands.
+MCP tool descriptions are self-documenting — query them via the MCP inspector if needed.
 
 ### Forwarding the port (from a laptop)
 
@@ -222,15 +235,16 @@ Port (8765) and location are configurable in
 ### Decision capture model
 
 Decisions belong to the page that **owns** them, not to a central
-decisions doc. Each plan page can have a state.js-wired
-`<table id="decisions-table">` whose rows POST to
-`/state/<project>/<doc>` on click. A separate `decisions.html` is a
-**read-only aggregator** that fetches state from each owning page
-and shows current choices — it never writes.
+decisions doc. Each plan's island carries a `decisions` **map** keyed
+by decision key. The SPA renders these and POSTs updates to
+`/plan/<project>/<slug>` as dotted patches (e.g.
+`decisions.scan-strategy.choice`). A separate `decisions.html` is a
+**read-only aggregator** that reads each plan's island state and shows
+current choices — it never writes.
 
 ### Mandatory prompt template (§05) on every followup
 
-Every followup written into `data.followups[]` MUST set its `prompt`
+Every followup written into the island's `followups[]` MUST set its `prompt`
 field to a copy-paste prompt for the next agent. The template:
 
 ```
@@ -243,7 +257,7 @@ Context
   2–3 sentences on why this is queued now and what landed before it.
 
 State to read
-  docs/state/<project>/<plan>.json
+  GET /plan/<project>/<slug>   (island — decisions, followups, status, version)
   (any other plans whose state matters)
 
 Locked decisions to honour
@@ -259,7 +273,7 @@ Constraints
 Done-when
   1. measurable artefact (commit, file, bench number)
   2. tests still green
-  3. followup written + this followup marked resolved
+  3. followup written into island + this followup marked resolved
 ```
 
 The reckon-edit and reckon-ship skills enforce this. A followup
@@ -286,52 +300,73 @@ audit trail. Instead:
 
 Either way, the chain is preserved.
 
-### Per-plan state schema (additive — old files keep working)
+### Plan island schema
 
-State files at `docs/state/<project>/<doc>.json` carry an envelope
-wrapping the canonical `data` payload:
+All plan state lives in `<script type="application/json" id="reckon-state">`
+embedded in the plan HTML. There are no per-plan `state/<project>/<slug>.json`
+sidecar files. One format — no legacy fallback.
 
 ```json
 {
-  "updated": "<iso>",
-  "project": "<project>",
-  "doc":     "<slug>",
-  "data": {
-    "status":    "active | pending | blocked | shipped | draft",
-    "tier":      "haiku | sonnet | opus",
-    "decisions": { "<key>": { "choice", "rationale", "when", "by" } },
-    "notes":     [{ "id", "who", "bot", "when", "body", "quote?" }],
-    "followups": [{ "id", "written_by", "written_at", "title", "body",
-                    "recommends_skill", "touches", "blocked_by?", "tier?",
-                    "est_turn", "prompt",
-                    "resolved_at?", "resolved_by?", "outcome?" }],
-    "research":  [{ "id", "type", "title", "source", "added_by", "when", "url" }],
-    "questions": [{ "id", "section", "body", "opened_by", "opened_at", "resolved_at?" }],
-    "tests":     [{ "name", "pass", "fail", "pulse", "fail_now?" }]
-  }
+  "slug": "<slug>",
+  "title": "Human title",
+  "summary": "one-line synopsis",
+  "status": "active",            // draft|pending|active|in-progress|blocked|shipped|done|superseded|abandoned
+  "impl": 0.6,                    // [0,1] progress fraction
+  "roi": "high",                  // high|mid|low
+  "effort": "M",                  // S|M|L|XL
+  "milestone": "M2",
+  "sprint": "S4",                 // or null
+  "tier": "sonnet",               // haiku|sonnet|opus
+  "owner": "Simon McIntosh",
+  "modified": "2026-05-26",       // server-written on each POST
+  "version": 3,                   // optimistic-concurrency counter; server-owned
+  "depends_on": [],
+  "blocks": [],
+
+  "decisions": {                  // MAP keyed by decision key
+    "scan-strategy": {
+      "title": "How should scanning work?",
+      "context": "extra context",
+      "choices": ["glob", "index"],
+      "choice": "glob",           // locked answer; "" = open
+      "rationale": "…",
+      "when": "2026-05-26",
+      "by": "simon"
+    }
+  },
+
+  "followups": [
+    { "id": "f1", "status": "open|resolved", "title": "…", "body": "…",
+      "recommends_skill": "/reckon-ship <slug>", "touches": ["path"],
+      "tier": "sonnet", "est_turn": "2-3", "written_by": "…", "written_at": "…",
+      "prompt": "§05 copy-paste prompt — MANDATORY",
+      "resolved_at": null, "resolved_by": null, "outcome": null }
+  ],
+
+  "comments":  { "<sectionId>": [ { "id", "who", "when", "body", "quote?" } ] },
+  "questions": [ { "id", "section", "body", "opened_by", "opened_at", "resolved_at?", "resolution?" } ],
+  "research":  [ { "id", "type", "title", "source", "added_by", "when", "url?" } ],
+  "notes":     [ { "id", "who", "when", "body", "quote?" } ]
 }
 ```
 
-The pre-redesign files have decision keys at the top of `data`
-(without the nested `decisions` map) — `state.js` reads both shapes
-via `getDecisions(blob)`.
+`version` is server-owned — never write it. Empty collections may be omitted.
+The authoritative reference is `~/Code/reckon/PLAN-FORMAT.md`.
 
-### 3-layer CSS architecture
+### CSS architecture
 
-Pages load three stylesheets in cascade order:
+Pages load two shared stylesheets:
 
-1. `_shared/foundation.css` — design tokens, body, shell, primitives
-   (universal; copy of the dotfiles canonical)
-2. `_shared/dashboard.css` — plan-domain widgets (status, kanban,
-   milestone stepper, NEXT card; copy of the dotfiles canonical)
-3. `assets/project.css` — per-project overrides (optional)
+1. `/_shared/foundation.css` — design tokens, body, shell, primitives
+2. `/_shared/dashboard.css` — plan-domain widgets (status, kanban, milestone stepper, NEXT card)
 
 Canonical source lives in `~/Code/reckon/docs/_shared/`.
-The reckon server exposes them at `/_shared/<file>` (canonical, live from reckon
-install) and `/_ui/<file>` for JSX components. PROJECT PAGES served by the live
-server link to these absolute routes. For GitHub Pages static deployment, run
-`reckon sync` to copy CSS to `docs/_shared/`, or `reckon build` for a fully
-self-contained static bundle including JSX.
+The reckon server exposes them at `/_shared/<file>` (live, from reckon install)
+and `/_ui/<file>` for JSX components. Plan pages served by the live server link
+to these absolute routes. For GitHub Pages static deployment, run `reckon sync`
+to copy CSS to `docs/_shared/`, or `reckon build` for a fully self-contained
+static bundle including JSX.
 
 ### Plan vocabulary (canonical, cross-repo)
 
@@ -354,61 +389,38 @@ all assume this vocabulary.
 
 ### Phase suffixes on per-stage HTML
 
-| Suffix | Use when |
-|---|---|
-| `<plan>.html` | Evergreen — most-recent design view (always present) |
-| `<plan>-draft.html` | Initial exploration before any item moves to `active` |
-| `<plan>-<section>-landed.html` | A section's work has landed; outcomes captured |
-| `<plan>-<decision>-locked.html` | A decision is locked irreversibly |
-| `<plan>-shipped.html` / `-final.html` | Plan fully implemented |
-| `<plan>-postmortem.html` | Retrospective after shipping |
+Per-stage archival files live under `docs/archive/` so they are excluded from
+the live plan inventory.
 
-### Two layouts, both supported
+| File | Location | Use when |
+|---|---|---|
+| `<plan>.html` | `docs/` | Evergreen — most-recent design view (always present) |
+| `<plan>-draft.html` | `docs/archive/` | Initial exploration before any item moves to `active` |
+| `<plan>-<section>-landed.html` | `docs/archive/` | A section's work has landed; outcomes captured |
+| `<plan>-<decision>-locked.html` | `docs/archive/` | A decision is locked irreversibly |
+| `<plan>-shipped.html` / `-final.html` | `docs/archive/` | Plan fully implemented |
+| `<plan>-postmortem.html` | `docs/archive/` | Retrospective after shipping |
 
-The skills handle both shapes a repo can take:
+### Repo layout — one canonical format
 
-**Per-doc layout** (small/young repos, e.g. imas-ambix)
-- One HTML per plan, decisions live on the owning page, state at
-  `state/<project>/<slug>.json`. No central aggregator beyond the
-  read-only `decisions.html`.
+Every repo uses the same layout:
 
-**Central-index layout** (larger repos with many plans, e.g. imas-efit)
-- Single `state/<project>/index.json` with the canonical schema
-  (`plans[]`, `sprints[]`, `milestones[]`, `blockers[]`,
-  `questions[]`). Multiple HTML views render from it. All plan HTMLs
-  live flat at `docs/<slug>.html`.
-- `reckon-create` adds `index.html`, `sprints.html`, `milestones.html`,
-  `blockers.html`, `questions.html`, `inventory.html` from
-  `~/.claude/skills/html-docs/templates/dashboard-*.html`.
+- `docs/<slug>.html` — plan pages (any HTML file = a plan)
+- `docs/archive/<slug>-<suffix>.html` — per-stage archival (excluded from inventory)
+- `docs/state/<project>/index.json` — project config only (sprints, milestones, `active_sprint_id`)
+- `docs/_shared/` — CSS files copied from canonical reckon source
+- `docs/index.html` — SPA entry point (managed by `reckon-sync`)
 
-The skills detect which model a repo uses by checking for
-`state/<project>/index.json`. If present and conformant → central
-model. Otherwise → per-doc.
+Per-plan state lives in each HTML file's island — not in any JSON sidecar.
 
-### `index.json` canonical schema (central-index layout)
+### `index.json` schema (project config only)
 
 ```json
 {
+  "updated": "YYYY-MM-DDTHH:MM:SS",
+  "project": "<project>",
   "data": {
-    "audit_date": "YYYY-MM-DD",
-    "audit_method": "human description",
-    "counts": {
-      "total": int,
-      "status":    { "active": int, "pending": int, ... },
-      "milestone": { "M0": int, "M1": int, ... },
-      "roi":       { "high": int, "mid": int, "low": int },
-      "effort":    { "S": int, "M": int, "L": int, "XL": int }
-    },
-    "plans": [{
-      "slug": "<slug>", "path": "docs/<slug>.html",
-      "title": "...", "status": "active",
-      "milestone": "M2", "roi": "high", "effort": "M",
-      "implementation_fraction": 0.0,
-      "tier": "sonnet",
-      "summary": "one-line synopsis",
-      "last_modified": "YYYY-MM-DD",
-      "evidence": ["commit SHAs"]
-    }],
+    "active_sprint_id": "S2",
     "sprints": [{
       "id": "S1", "theme": "...", "description": "...",
       "starts": "YYYY-MM-DD", "ends": "YYYY-MM-DD",
@@ -425,18 +437,14 @@ model. Otherwise → per-doc.
       "id": "M2", "name": "...", "status": "...",
       "evidence": ["commit SHAs"], "depends_on": ["M1"]
     }],
-    "blockers": [{
-      "id": "...", "summary": "...", "origin_path": "...",
-      "blocks_n": int, "owner": "...", "next_step": "...",
-      "tier": "opus"
-    }],
-    "questions": [{
-      "key": "...", "question": "...", "options": [...],
-      "context": "...", "origin_path": "..."
-    }]
+    "timeline": []
   }
 }
 ```
+
+Sprint items reference plan slugs; their current state (impl, decisions, followups)
+is always read from the plan's island via `GET /plan/<project>/<slug>` or
+`/_discover/<project>`.
 
 ### Model selection for plan implementation
 
@@ -481,18 +489,19 @@ The recorded incidents that motivated this skill set:
    and re-ran a generator instead of editing HTML directly. The
    reckon-* skills' descriptions are tuned so this no longer slips by.
 2. **Per-stage rule missed.** Landed work appended to the evergreen
-   instead of producing a `<plan>-<phase>.html`. `reckon-edit` and
-   `reckon-ship` enforce this.
-3. **State file never written.** Decisions discussed in chat never
-   reached `~/docs-server/state/`. `reckon-edit` requires the POST.
+   instead of producing an archival `<plan>-<phase>.html` under
+   `docs/archive/`. `reckon-edit` and `reckon-ship` enforce this.
+3. **Island never updated.** Decisions discussed in chat never reached
+   the plan's embedded island. `reckon-edit` requires the MCP call
+   or `POST /plan/<project>/<slug>`.
 4. **`git commit -a` swept peer fleet edits.** Multiple workers,
    non-overlapping scopes, but `-a` swept WIP into the wrong commit.
    `reckon-ship`'s dispatch boilerplate explicitly bans `-a`/`-am`
    and `git add -A/./*` in every worker prompt.
 5. **Decisions baked into a generator.** Centralised decision list in
    a Python script meant editing the script to add a decision. The
-   new model: decision rows live on the owning plan page, written
-   directly into the HTML by `reckon-edit`.
+   new model: decisions live in the plan's island `decisions` map,
+   written directly by `reckon-edit` or the browser SPA.
 6. **Wrong model tier on a fleet.** Sonnet dispatched on Fortran
    solver edits → silent regressions. The model-selection table
    above is binding; check `item.tier` (or legacy `item.model_tier`) first, default by

@@ -2,12 +2,11 @@
 name: reckon-create
 description: >-
   Scaffold a brand-new plan HTML page or non-plan doc in an already-synced repo.
-  Creates docs/<slug>.html from template, seeds docs/state/<project>/<slug>.json
-  with initial state, and registers the plan in index.json (central-index layout).
-  Requires reckon-sync to have been run first. Trigger verbs: "create a plan /
-  new plan / draft a plan / start a plan / write a dashboard / create an explainer /
-  author a doc / /reckon-create <slug>". For editing an existing plan use reckon-edit;
-  for executing plan work use reckon-ship.
+  Creates docs/<slug>.html with an embedded reckon-state island — no sidecar
+  JSON created. Requires reckon-sync to have been run first. Trigger verbs:
+  "create a plan / new plan / draft a plan / start a plan / write a dashboard /
+  create an explainer / author a doc / /reckon-create <slug>". For editing an
+  existing plan use reckon-edit; for executing plan work use reckon-ship.
 allowed-tools: Read Write Edit Bash(*) Grep
 ---
 
@@ -32,13 +31,13 @@ and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
 1. **HTML is the source of truth.** Never create a markdown plan file.
 2. **Do NOT register mounts or create symlinks.** That is `reckon-sync`'s exclusive job.
 3. **Do NOT copy CSS or JS into the project.** If `docs/_shared/` is missing, stop (rule above).
-4. **`state.js` must be wired** in every scaffolded page — future agents expect it.
-5. **Every page ships with a NEXT card placeholder** — even empty.
+4. **Every plan carries a `reckon-state` island** — even if minimal. Future agents expect it.
+5. **Every page ships with a NEXT card placeholder** — even empty (via empty `followups: []` in the island).
 6. **Do not commit automatically.** Report what was created and suggest a commit message.
-7. **Plan body prose lives in HTML — never in state JSON.** Write the full section content
-   directly in `docs/<slug>.html`. State JSON (`data`) contains ONLY:
-   `{status, tier, decisions, notes, followups, research, questions}` — never `sections[]`
-   with prose. A stub like `<p>See state §2 for details</p>` is a hard failure.
+7. **Plan body prose lives in HTML — never in the island.** Write the full section content
+   directly in `docs/<slug>.html`. The island contains ONLY structured data
+   (`status`, `tier`, `decisions`, `followups`, `research`, `questions`, etc.) — never prose
+   sections or a `sections[]` array. A stub like `<p>See state §2 for details</p>` is a hard failure.
 
 ## Workflow
 
@@ -71,21 +70,41 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 
 ### Step 3 — Create HTML
 
-**For a plan page**, copy the structure of an existing plan in `docs/` (or use
-`~/Code/reckon/docs/index.html` as the canonical reference). The page must include:
+Scaffold `docs/<slug>.html` as a **self-contained plan page**. The page includes:
+- `<meta name="docs-project">` — required for server discovery
+- `<main class="plan-doc">` — prose body (section headings carry `id="s1"` etc. for comment anchoring)
+- `<script type="application/json" id="reckon-state">` — the state island
+
+**Canonical file anatomy:**
 
 ```html
-<meta name="docs-project" content="<project>">
-<meta id="plan-meta" data-slug="<slug>" data-tier="sonnet">
-<link rel="stylesheet" href="_shared/foundation.css">
-<link rel="stylesheet" href="_shared/dashboard.css">
-<!-- React CDN (match versions in ~/Code/reckon/docs/index.html) -->
-<script src="ui/state-loader.js"></script>
-<script type="text/babel" src="ui/v6-plan.jsx"></script>
-```
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="<project>">
+  <meta name="plan-slug"    content="<slug>">
+  <title><title> | <project></title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1><title></h1>
 
-**For a non-plan doc**, use `~/Code/reckon/docs/index.html` as the structural
-template with different JSX entry point or a plain HTML body as appropriate.
+    <h2 id="s1">§1 — Overview</h2>
+    <p>…</p>
+
+    <!-- additional sections as needed -->
+  </main>
+
+  <script type="application/json" id="reckon-state">
+  <!-- island — see §Island seed schema below -->
+  </script>
+</body>
+</html>
+```
 
 Key substitutions:
 
@@ -97,51 +116,49 @@ Key substitutions:
 | `<date>` | `date +%Y-%m-%d` |
 | `<tier>` | `sonnet` (default) |
 
-Include a NEXT card placeholder in the rendered content area:
+**For a non-plan doc**, use the same anatomy with a plain `<body>` prose structure
+instead of `<main class="plan-doc">`. Omit the island unless structured state is needed.
 
-```html
-<!-- If not using React JSX, embed directly -->
-<div class="next-card" id="next-card">
-  <div class="head">
-    <span class="lbl">Next</span>
-    <span class="ts"><date></span>
-  </div>
-  <div class="title-line">(no next step queued yet)</div>
-  <div class="body">Edit with <code>/reckon-edit <slug></code>.</div>
-</div>
-```
+### Step 4 — Seed the state island
 
-For React-rendered plans the NEXT card is driven by state JSON — `followups: []` in the seed is sufficient.
-
-### Step 4 — Seed state JSON
-
-Create `$STATE_DIR/<slug>.json` using the schema in [State seed schema](#state-seed-schema) below.
+Embed the island directly in the HTML file (no sidecar JSON created).
 `tier` defaults: `haiku` for research/audit, `sonnet` for routine work, `opus` for multi-file/solver.
-Do **not** include `_version` — the server manages that field.
-
-### Step 5 — Register in index.json (central-index only)
-
-Check if `$DOCS_DIR/state/$PROJECT/index.json` exists. If yes, append to its
-`plans[]` array:
 
 ```json
 {
   "slug": "<slug>",
-  "path": "docs/<slug>.html",
   "title": "<title>",
+  "summary": "",
   "status": "draft",
-  "milestone": "M0",
+  "impl": 0.0,
   "roi": "mid",
   "effort": "M",
-  "implementation_fraction": 0.0,
+  "milestone": null,
+  "sprint": null,
   "tier": "sonnet",
-  "summary": "(fill in)",
-  "last_modified": "<today>",
-  "evidence": []
+  "owner": "",
+  "modified": "<today>",
+  "decisions": {},
+  "followups": [],
+  "comments": {},
+  "questions": [],
+  "research": [],
+  "notes": []
 }
 ```
 
-If `index.json` does not exist, skip this step — the project uses per-doc layout.
+`version` is server-managed — never write it in the seed.
+
+`decisions` is a **map** keyed by decision key (e.g. `"scan-strategy": {...}`).
+See §Island schema reference for the full field set.
+
+### Step 5 — Register in index.json (if present)
+
+Check if `$DOCS_DIR/state/$PROJECT/index.json` exists. If yes, it holds
+**project-level config** (sprints, milestones, `active_sprint_id`). Plans are
+auto-discovered from HTML — no plan inventory entry is needed. Skip this step
+unless the project explicitly maintains a plans list in index.json and expects
+you to add an entry.
 
 ### Step 6 — Confirm
 
@@ -149,30 +166,67 @@ Report to the user:
 
 - Created file: `docs/<slug>.html` (relative to repo root)
 - Live URL: `http://localhost:8765/<project>/<slug>.html`
-- State file: `docs/state/<project>/<slug>.json`
-- index.json updated: yes / no (per-doc layout)
+- State: embedded island in the HTML (no sidecar JSON)
 - Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
 
-## State seed schema
+## Island schema reference
 
 ```json
 {
-  "updated": "<ISO datetime>",
-  "project": "<project>",
-  "doc": "<slug>",
-  "data": {
-    "status": "draft",
-    "tier": "sonnet",
-    "decisions": {},
-    "notes": [],
-    "followups": [],
-    "research": [],
-    "questions": []
-  }
+  "slug":      "<slug>",
+  "title":     "Human title",
+  "summary":   "one-line synopsis",
+  "status":    "draft",           // draft|pending|active|in-progress|blocked|shipped|done|superseded|abandoned
+  "impl":      0.0,               // [0,1] progress fraction
+  "roi":       "mid",             // high|mid|low
+  "effort":    "M",               // S|M|L|XL
+  "milestone": null,
+  "sprint":    null,
+  "tier":      "sonnet",          // haiku|sonnet|opus
+  "owner":     "",
+  "modified":  "YYYY-MM-DD",     // server-written on each POST
+  "depends_on": [],
+  "blocks":    [],
+
+  "decisions": {                  // MAP keyed by decision key
+    "my-decision": {
+      "title":    "The question to answer",
+      "context":  "extra context",
+      "choices":  ["option-a", "option-b"],
+      "choice":   "",             // locked answer; "" = open
+      "rationale": "",
+      "when":     "",
+      "by":       ""
+    }
+  },
+
+  "followups": [
+    {
+      "id":               "f-<base36>",
+      "status":           "open",
+      "title":            "…",
+      "body":             "…",
+      "recommends_skill": "/reckon-ship <slug>",
+      "touches":          ["path"],
+      "tier":             "sonnet",
+      "est_turn":         "~1h",
+      "written_by":       "…",
+      "written_at":       "…",
+      "prompt":           "§05 copy-paste prompt — MANDATORY",
+      "resolved_at":      null,
+      "resolved_by":      null,
+      "outcome":          null
+    }
+  ],
+
+  "comments":  {},
+  "questions": [],
+  "research":  [],
+  "notes":     []
 }
 ```
 
-`_version` is server-managed — never write it in the seed.
+Empty collections may be omitted. The `version` field is server-owned — never write it.
 
 ## Cross-references
 
@@ -180,4 +234,4 @@ Report to the user:
 - `~/.claude/skills/reckon-edit/SKILL.md` — for modifying an existing plan.
 - `~/.claude/skills/reckon-ship/SKILL.md` — for executing the work a plan describes.
 - `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection of plan state.
-- `~/Code/reckon/docs/index.html` — canonical HTML structure reference.
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format reference (island schema, endpoints, what is gone).

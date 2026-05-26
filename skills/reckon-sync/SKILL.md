@@ -5,10 +5,11 @@ description: >-
   skills are symlinked into ~/.claude/skills/, creates docs/, copies the 3-layer
   CSS (foundation/dashboard/project) from ~/Code/reckon/docs/_shared/ for GitHub
   Pages compatibility (the live server serves CSS/JSX directly via /_shared/ and
-  /_ui/ routes — no per-project JSX copies needed), sets up docs/state/<project>/,
-  symlinks ~/docs-server/state/<project> into the repo, and registers the project
-  in ~/docs-server/mounts.json. Plans are auto-discovered from HTML <meta name="plan-*">
-  tags — no index.json inventory required. Idempotent.
+  /_ui/ routes — no per-project JSX copies needed), sets up docs/state/<project>/
+  with index.json for project config only (no per-plan state JSON), symlinks
+  ~/docs-server/state/<project> into the repo, and registers the project in
+  ~/docs-server/mounts.json. Plans are auto-discovered from any HTML file in
+  docs/ — no opt-in meta tag required. Idempotent.
   Trigger verbs: "init plans / set up reckon / set up plans / refresh styles /
   sync plan system / update CSS from reckon / /reckon-sync".
 allowed-tools: Read Write Edit Bash(*) Grep
@@ -34,14 +35,31 @@ have plans, check `reckon-create` first — `reckon-sync` creates infrastructure
 ## Hard rules
 
 1. **Idempotent.** Every step is a no-op if already applied correctly.
-2. **Never overwrite `docs/state/<project>/*.json`** — only seed when absent.
+2. **Never overwrite `docs/state/<project>/index.json`** — only seed when absent.
 3. **Never overwrite per-plan HTML** the user has already authored.
-4. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.**
+4. **Never create per-plan state JSON sidecars.** Plan state lives in each plan's
+   HTML island (`<script type="application/json" id="reckon-state">`).
+   The only JSON in `docs/state/<project>/` is `index.json` (project config).
+5. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.**
    `reckon-create` does NOT register mounts or create symlinks.
-5. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if
+6. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if
    needed and clean it up before exiting.
-6. **Never commit automatically.** Print a suggested commit message.
-7. **Use `python3` for JSON manipulation** — `jq` may not be available.
+7. **Never commit automatically.** Print a suggested commit message.
+8. **Use `python3` for JSON manipulation** — `jq` may not be available.
+
+## Where state lives
+
+**The plan HTML is the sole store.** All plan data (status, impl, decisions,
+followups, comments, questions, research, notes) lives in the HTML file's
+`<script type="application/json" id="reckon-state">` island. Live edits
+(browser clicks, MCP tools) rewrite the HTML in place.
+
+`docs/state/<project>/index.json` holds **project-level config only**:
+sprints, milestones, `active_sprint_id`, timeline. It is not per-plan state.
+
+The reckon server reads plan state by parsing each HTML file's island.
+`reckon-sync` creates and symlinks the state directory so the server can
+write project config (index.json) back to the repo.
 
 ## Workflow
 
@@ -50,7 +68,7 @@ have plans, check `reckon-create` first — `reckon-sync` creates infrastructure
 | Condition | Intent |
 |---|---|
 | `docs/` absent **or** `docs/_shared/` absent | **first-run** — all steps run |
-| Both present | **refresh** — Steps 0 and 2 only; steps 3–4 are no-ops |
+| Both present | **refresh** — Steps 0 and 2 only; steps 3–5 are no-ops |
 
 ### Step 0 — Link reckon skills and clean up dead links
 
@@ -136,27 +154,23 @@ echo "intent=$INTENT  project=$PROJECT"
 Confirm the `PROJECT` key with the user on first-run (sets URL prefix and
 `state/` path).
 
-### Step 2 — Copy canonical files
+### Step 2 — Copy canonical CSS files
 
-Always run. Overwrites system-owned files only; never touches per-plan HTML
-or `state/*.json`.
+Always run. Overwrites system-owned CSS only; never touches per-plan HTML
+or `state/index.json`.
 
 ```bash
 mkdir -p "$DOCS/_shared"
 
-# CSS only — the live server serves JSX/JS via /_ui/ directly from the reckon
-# install; per-project copies are only needed for GitHub Pages static hosting.
+# CSS — copied for GitHub Pages static hosting.
+# The live server serves these directly via /_shared/ from the reckon install.
 cp "$RECKON/docs/_shared/foundation.css" "$DOCS/_shared/foundation.css"
 cp "$RECKON/docs/_shared/dashboard.css"  "$DOCS/_shared/dashboard.css"
-
-# state.js is copied for legacy standalone plan pages that load it directly.
-# SPA pages (index.html → shell.jsx) do not need it.
-cp "$RECKON/docs/_shared/state.js"       "$DOCS/_shared/state.js"
 ```
 
-Note: JSX components (`ui.jsx`, `shell.jsx`, `bits.jsx`, etc.) are NOT copied here.
-The reckon server serves them from `/_ui/<file>` directly. For full offline/static
-deployment, use `reckon build` instead of `reckon sync`.
+Note: `state.js` is NOT copied — it was a legacy standalone-interactivity
+helper that is no longer used. JSX components are served by the reckon server
+at `/_ui/<file>`. For full offline/static deployment, use `reckon build`.
 
 ### Step 2b — Create or update docs/index.html (SPA entry point)
 
@@ -232,6 +246,7 @@ fi
 
 State files live in the repo (`docs/state/<project>/`) and are git-tracked.
 The reckon server writes through the symlink at `~/docs-server/state/<project>`.
+Only `index.json` (project config) lives here — not per-plan state JSON.
 
 ### Step 4 — Register in mounts.json
 
@@ -255,24 +270,25 @@ EOF
 `mounts.json` is re-read on every request — no server restart needed.
 Start the server if not running: `uv run --project ~/Code/reckon reckon serve`
 
-### Step 5 — Seed project.json (sprint/milestone definitions only)
+### Step 5 — Seed index.json (project config only)
 
-Plans are auto-discovered from HTML `<meta name="plan-*">` tags — no inventory
-in JSON required. The only state that lives here is project-level structure
-(sprint themes, milestone names) that has no natural home in an individual plan.
+`index.json` holds sprint/milestone definitions and project-level config. Plans
+are auto-discovered by the server parsing each HTML file's island — no plan
+inventory in `index.json` is required.
 
 ```bash
-PROJ="$DOCS/state/$PROJECT/project.json"
+PROJ="$DOCS/state/$PROJECT/index.json"
 if [ ! -f "$PROJ" ]; then
   python3 - <<EOF
 import json, datetime
 seed = {
   "updated": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
-  "project": "$PROJECT", "doc": "project",
+  "project": "$PROJECT",
   "data": {
+    "active_sprint_id": null,
     "sprints":    [],
     "milestones": [],
-    "blockers":   []
+    "timeline":   []
   }
 }
 json.dump(seed, open('$PROJ', 'w'), indent=2)
@@ -281,7 +297,7 @@ EOF
 fi
 ```
 
-Do NOT write `_version` into the seed — the reckon server manages that field.
+Do NOT write `version` into the seed — the reckon server manages that field.
 
 ### Step 6 — Drop .nojekyll
 
@@ -299,39 +315,42 @@ Suggested commit:
 docs(plans): sync plan infrastructure from reckon canonical
 ```
 
-## Plan HTML style guide
-
-### How reckon discovers plan pages
+## How reckon discovers plans
 
 `GET /_discover/<project>` scans every `.html` file in the mounted docs
-directory (excluding `_shared/`, `ui/`, `state/`, `assets/` subdirectories
-and known infrastructure pages like `index.html`, `sprint.html`, etc.).
+directory and surfaces each one as a plan. **Any HTML file is a plan —
+existence is sufficient.** No `plan-status` meta opt-in is required.
 
-**A page is included in the inventory only if its `<head>` contains:**
+**Excluded dirs:** `_shared`, `ui`, `state`, `assets`, `images`, `archive`.
+**Excluded files:** `index.html`, `sprints.html`, `milestones.html`,
+`decisions.html`, `inventory.html`, `blockers.html`, `questions.html`,
+`home.html`, `project.html`.
+
+Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under
+`docs/archive/` so it does not appear in the live inventory.
+
+The server parses each plan's `<script type="application/json" id="reckon-state">`
+island for structured state. A bare page with no island surfaces with
+`status=draft` and its `<title>` as the title.
+
+## Canonical plan `<head>` meta tags (optional enrichment)
+
+`<meta>` tags provide fallback values when the island omits a field.
+The island always wins when present. These tags are **not required** for discovery.
+
 ```html
-<meta name="plan-status" content="active">
-```
-This single tag is the opt-in. Without it the page is ignored by discovery.
-
-### Canonical plan `<head>` meta tags
-
-```html
-<!-- Required for discovery -->
-<meta name="plan-status"    content="active">          <!-- active|pending|blocked|shipped -->
-
-<!-- Strongly recommended -->
-<meta name="plan-slug"      content="my-plan">         <!-- defaults to filename stem -->
-<meta name="plan-title"     content="Human title">     <!-- defaults to <title> text -->
-<meta name="plan-summary"   content="One-line synopsis">
-
-<!-- Categorisation (used by filters and fleet rollup) -->
+<!-- Optional enrichment — island fields take precedence -->
+<meta name="docs-project" content="my-project">  <!-- required for correct routing -->
+<meta name="plan-slug"    content="my-plan">      <!-- defaults to filename stem -->
+<meta name="plan-title"   content="Human title">  <!-- defaults to <title> text -->
+<meta name="plan-summary" content="One-line synopsis">
 <meta name="plan-milestone" content="M1">
-<meta name="plan-roi"       content="high">            <!-- high|mid|low -->
-<meta name="plan-effort"    content="M">               <!-- S|M|L|XL -->
-<meta name="plan-sprint"    content="S1">              <!-- omit if unscheduled -->
+<meta name="plan-roi"     content="high">          <!-- high|mid|low -->
+<meta name="plan-effort"  content="M">             <!-- S|M|L|XL -->
+<meta name="plan-sprint"  content="S1">
 ```
 
-### Minimal plan page boilerplate
+## Minimal plan page anatomy
 
 ```html
 <!doctype html>
@@ -339,53 +358,40 @@ This single tag is the opt-in. Without it the page is ignored by discovery.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="docs-project"  content="my-project">
-  <meta name="plan-status"   content="active">
-  <meta name="plan-slug"     content="my-plan">
-  <meta name="plan-title"    content="My Plan">
-  <meta name="plan-summary"  content="One sentence.">
-  <meta name="plan-milestone" content="M1">
-  <meta name="plan-roi"      content="high">
-  <meta name="plan-effort"   content="M">
-  <title>My Plan · my-project</title>
-  <link rel="stylesheet" href="../_shared/foundation.css">
-  <link rel="stylesheet" href="../_shared/dashboard.css">
-  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+  <meta name="docs-project" content="<project>">
+  <meta name="plan-slug"    content="<slug>">
+  <title>My Plan · <project></title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-  <div id="root"></div>
-  <script src="../ui/state-loader.js"></script>
-  <script type="text/babel" src="../ui/ui.jsx"></script>
-  <!-- your plan-specific JSX here -->
+  <main class="plan-doc">
+    <!-- authored prose -->
+  </main>
+
+  <script type="application/json" id="reckon-state">
+  {
+    "slug": "<slug>",
+    "title": "My Plan",
+    "status": "draft",
+    "decisions": {},
+    "followups": []
+  }
+  </script>
 </body>
 </html>
 ```
 
-### State JSON vs meta tags
-
-| What | Where |
-|---|---|
-| Current status, impl fraction, open decisions | `state/<project>/<slug>.json` (written by the SPA) |
-| Initial/authored metadata (milestone, roi, effort) | `<meta name="plan-*">` tags |
-| Sprint/milestone definitions (theme, dates) | `state/<project>/project.json` |
-
-The SPA writes to the state JSON; the HTML meta tags are the authored defaults
-read at discovery time. The state JSON takes precedence for `status` when it
-exists — the meta tag value is the fallback.
-
 ## CSS layout
 
-Three layers, sourced from `~/Code/reckon/docs/_shared/`:
+Two layers, sourced from `~/Code/reckon/docs/_shared/`:
 
 | File | Destination in project | Role |
 |---|---|---|
 | `foundation.css` | `docs/_shared/foundation.css` | Design tokens — colours, typography, spacing |
 | `dashboard.css` | `docs/_shared/dashboard.css` | Plan widgets — cards, badges, sprint tables |
-| `state.js` | `docs/_shared/state.js` | Browser persistence for legacy standalone plan pages |
 
-UI components (`ui.jsx`, `state-loader.js`, `bits.jsx`, `shell.jsx`, etc.) are served
+UI components (`ui.jsx`, `shell.jsx`, `bits.jsx`, etc.) are served
 by the reckon server at `/_ui/<file>` directly from `~/Code/reckon/docs/ui/`.
 Per-project copies are **not** created by `reckon sync`. Use `reckon build` to produce
 a fully self-contained static bundle for CI/GitHub Pages deployment.
@@ -394,6 +400,7 @@ a fully self-contained static bundle for CI/GitHub Pages deployment.
 
 - `~/Code/reckon/skills/reckon-create/SKILL.md` — create the first plan after sync.
 - `~/Code/reckon/skills/` — canonical skill source; symlinked to `~/.claude/skills/` by Step 0.
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, endpoints, what is gone).
 - `~/Code/reckon/reckon/serve.py` — mounts.json path, state root, /_shared/ route, /_discover/ endpoint.
-- `~/Code/reckon/docs/_shared/` — canonical CSS and state.js source.
+- `~/Code/reckon/docs/_shared/` — canonical CSS source.
 - `~/Code/reckon/docs/ui/` — canonical JSX component source.

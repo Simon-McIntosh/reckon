@@ -4,10 +4,10 @@ description: >-
   Read-only inspection of plans and sprint state — phase, status, ROI, effort,
   milestone, implementation fraction, open decisions, blockers, active sprint
   progress, and quality audit (empty followup prompts, stale timestamps, missing
-  NEXT cards). Handles both per-doc and central-index layouts. Never modifies
-  files. Trigger verbs: "what plans are open / where are we on X / show plan
-  status / what sprint are we on / summarise plans / review the plan / audit
-  plan health / is the plan stale / /reckon-status [slug]".
+  NEXT cards). Any HTML file in docs/ is a plan; island carries full state.
+  Never modifies files. Trigger verbs: "what plans are open / where are we on X /
+  show plan status / what sprint are we on / summarise plans / review the plan /
+  audit plan health / is the plan stale / /reckon-status [slug]".
 allowed-tools: Read Bash(*) Grep
 ---
 
@@ -29,7 +29,7 @@ to the docs-server. If you need to fix what you find, use `reckon-edit`.
 ## Hard rules
 
 1. **Pure read.** Never write a file. Never POST to the docs-server.
-2. **Literal.** Report what the state files say; do not invent status.
+2. **Literal.** Report what the island state says; do not invent status.
 3. **Synthetic examples only.** Use `plan-alpha`, `plan-beta`,
    `my-project` as examples — never real project names.
 4. **One suggestion, not an action.** Offer a single next-step hint
@@ -39,47 +39,50 @@ to the docs-server. If you need to fix what you find, use `reckon-edit`.
 
 ## Intent: status
 
-### Step 1 — detect layout
+### Step 1 — discover plans
 
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PROJECT="$(basename "$REPO_ROOT")"
-INDEX_JSON="$REPO_ROOT/docs/state/$PROJECT/index.json"
-STATE_DIR="$HOME/docs-server/state/$PROJECT"
 ```
 
-- If `$INDEX_JSON` exists → **central-index layout**.
-- Otherwise → **per-doc layout** (glob `docs/*.html`, read
-  `$STATE_DIR/<slug>.json` per plan).
+**Preferred:** query the server's discovery endpoint:
+```bash
+curl -s "http://127.0.0.1:8765/_discover/$PROJECT"
+```
+This returns all plans with their full island state merged in — one source.
 
-### Step 2 (central-index) — read index.json
+**Fallback (server not running):** glob `docs/*.html` (skip `_shared/`, `ui/`,
+`state/`, `assets/`, `archive/` subdirectories and known infrastructure pages:
+`index.html`, `sprints.html`, `milestones.html`, `decisions.html`,
+`inventory.html`, `blockers.html`, `questions.html`, `home.html`,
+`project.html`). Read each file's `<script type="application/json"
+id="reckon-state">` island for state. A file with no island surfaces as
+`status=draft` with `<title>` as the title — existence is sufficient.
 
-Read `$INDEX_JSON`. Surface per plan:
-`slug`, `title`, `status`, `sprint`, `roi`, `effort`, `tier`,
-`impl_fraction` (compute as `shipped_count / total_count` if absent).
+**Any HTML file in `docs/` is a plan.** No `plan-status` meta opt-in required.
 
-Per sprint, compute `done / total` and identify the active sprint
-(field `status: "active"`, else lowest-id sprint with progress < 1).
+### Step 2 — read project config
 
-### Step 2 (per-doc) — walk docs/*.html
+```bash
+INDEX_JSON="$REPO_ROOT/docs/state/$PROJECT/index.json"
+```
 
-For each `<slug>.html` (skip `index.html`):
-- Title: `<title>` or first `<h1>`.
-- Status: `data-status` on `#plan-meta`, or badge class, or infer from
-  per-stage files (`-landed.html` → landed).
-- Last-modified: `<time id="updated">` or
-  `git log -1 --format=%cI -- docs/<slug>.html`.
-- Read `$STATE_DIR/<slug>.json` for decisions and followups.
+If present, read it for sprint and milestone definitions. It holds
+**project-level config only** (sprints, milestones, `active_sprint_id`,
+timeline) — not per-plan state. Per-plan state comes from each plan's island.
 
 ### Step 3 — surface open decisions
 
-For each plan, list decisions where `choice` is null or empty.
-Support both state-file shapes (see §Decision schema detection below).
+For each plan, read `decisions` from the island (a **map** keyed by decision
+key). List entries where `choice` is `""` or null.
+
+Format: `- <slug>: [<key>] "<title>" options: <choices-joined>`
 
 ### Step 4 — surface unresolved followups
 
-For each plan, list followup entries where `status != "done"`.
-Show: `plan-slug / <id>: "<prompt>" (written <age>)`.
+For each plan, list followup entries where `status != "resolved"`.
+Show: `plan-slug / <id>: "<title>" (written <age>)`.
 
 ### Step 5 — suggest one next action
 
@@ -95,50 +98,28 @@ through `reckon-edit`, never here.
 
 | Check | Condition |
 |-------|-----------|
-| **Empty followup** | followup entry exists but `prompt` is null/empty |
-| **Missing NEXT card** | `status=active` plan has no `NEXT` section in HTML |
-| **Orphan decision** | `<table>` decision row in HTML has no matching `data.decisions` entry |
-| **Stale plan** | `status=active` and `last_modified` > 30 days ago |
-| **Tier mismatch** | sprint item `tier` differs from plan-level `tier` |
+| **Empty followup prompt** | followup entry exists but `prompt` is null/empty |
+| **Missing NEXT card** | `status=active` plan has no open followup in island |
+| **Open decision** | `decisions` map has entry where `choice` is `""` or null |
+| **Stale plan** | `status=active` and `modified` > 30 days ago |
+| **Tier mismatch** | sprint item `tier` differs from plan-level `tier` in island |
 
 Output format for review:
 
 ```
 ## Plan Quality Audit — <project> (<date>)
 
-### 🔴 High priority (N)
+### High priority (N)
 - plan-alpha: followup f-001 has empty prompt — add text or remove entry
-- plan-beta: active but no NEXT card in HTML
+- plan-beta: active but no open followup in island
 
-### 🟡 Medium priority (N)
-- plan-alpha: decision [storage] in HTML table but missing from data.decisions
+### Medium priority (N)
+- plan-alpha: decision [storage] is open — choice not yet set
 
-### 🟢 Low priority (N)
-- plan-alpha: last_modified 45d ago, status still active — confirm or ship
+### Low priority (N)
+- plan-alpha: modified 45d ago, status still active — confirm or ship
 - plan-beta: item tier=haiku but plan tier=sonnet
 ```
-
----
-
-## Decision schema detection
-
-State files use one of two shapes. Detect and handle both:
-
-**Shape A — nested map under `data.decisions`:**
-```json
-{ "data": { "decisions": { "transport": { "choice": "stdio", "options": ["stdio","http"] } } } }
-```
-Open = entries where `choice` is null or `""`.
-
-**Shape B — legacy top-level keys with `choice` property:**
-```json
-{ "transport": { "choice": null, "options": ["stdio","http"] } }
-```
-Open = keys (excluding known metadata keys) where `choice` is falsy.
-
-In either shape, list open decisions as:
-`- <slug>: [<key>] options: <options-joined>` or `not yet defined` if
-options is empty.
 
 ---
 
@@ -154,7 +135,7 @@ options is empty.
 | plan-beta  | active | S1     | med  | S      | haiku  | 10%     |
 
 ### Open decisions (N total)
-- plan-alpha: [transport] options: stdio, http
+- plan-alpha: [transport] "How should transport work?" options: stdio, http
 - plan-beta: [storage] not yet defined
 
 ### Unresolved followups (N total)
@@ -173,4 +154,5 @@ For ≤ 2 plans, skip the table; give one paragraph per plan inline.
 - `~/.claude/skills/reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive).
 - `~/.claude/skills/reckon-create/SKILL.md` — create new plans.
 - `~/.claude/skills/reckon-ship/SKILL.md` — execute plan work via fleet dispatch.
-- `~/Code/reckon/` — reckon project (server, canonical CSS). Start: `uv run --project ~/Code/reckon reckon serve`
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, discovery, endpoints).
+- `~/Code/reckon/` — reckon project (server). Start: `uv run --project ~/Code/reckon reckon serve`

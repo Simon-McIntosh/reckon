@@ -4,10 +4,10 @@ description: >-
   Execute the work an HTML plan describes — read the plan, identify implementable
   vs deferred items, dispatch a Sonnet fleet for multi-item sections with
   non-overlapping file scopes, then record outcomes by writing a per-stage HTML
-  (<slug>-<section>-landed.html), appending a landed summary to the evergreen,
-  and writing a §05 followup. Also invoked via §05 followup prompts queued by
-  earlier reckon-ship runs. Trigger verbs: "implement / execute / ship / land
-  items from / do the work in / /reckon-ship <slug> [section]". For editing
+  (docs/archive/<slug>-<section>-landed.html), appending a landed summary to the
+  evergreen, and writing a §05 followup. Also invoked via §05 followup prompts
+  queued by earlier reckon-ship runs. Trigger verbs: "implement / execute / ship /
+  land items from / do the work in / /reckon-ship <slug> [section]". For editing
   plan text use reckon-edit; for new plans use reckon-create; for sprint
   orchestration use reckon-edit (sprint intent).
 allowed-tools: Read Write Edit Bash(*) Grep Agent
@@ -43,8 +43,8 @@ yet exist, call `reckon-create` first.
 5. **Audit every commit.** Run `git show --stat <sha>` against the declared
    scope. Surface violations in the final report; do not silently drop them.
 6. **Per-stage HTML and a followup are required after every landing.** Even
-   single-item work gets a `<slug>-<section>-landed.html` and a queued §05
-   followup. Silence is not allowed.
+   single-item work gets a `docs/archive/<slug>-<section>-landed.html` and a
+   queued §05 followup. Silence is not allowed.
 7. **Collapse the evergreen when a section ships.** The evergreen page is a
    current-state dashboard, not a transcript. When a section lands, REPLACE
    the section body with a 2-4 line landed-summary + link to the per-stage
@@ -90,14 +90,13 @@ For each returned worker:
 
 1. Run `git show --stat <sha>` — confirm only assigned paths appear.
 2. Run the project's test suite (`uv run pytest -q`, `ctest`, `npm test`, …).
-3. Confirm the worker appended a followup to
-   `docs/state/<project>/<slug>.json#followups[]`. If missing, write one.
+3. Confirm the worker wrote a followup into the plan's island (via MCP
+   `append_followup` or `POST /plan/<project>/<slug>`). If missing, write one.
 
 ### 5. Record outcomes
 
-**Per-stage file** — create `docs/<slug>-<section>-landed.html`:
-- Links to `_shared/foundation.css` and `_shared/dashboard.css`
-- `<script src="_shared/state.js" defer></script>`
+**Per-stage file** — create `docs/archive/<slug>-<section>-landed.html`:
+- Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
 - Quick-status grid (shipped vs deferred)
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup
@@ -109,7 +108,7 @@ For each returned worker:
 This is the rule that keeps plans readable as they age. Once a section is
 shipped:
 
-**A) Move full content to the per-stage HTML** (`<slug>-<section>-landed.html`).
+**A) Move full content to the per-stage HTML** (`docs/archive/<slug>-<section>-landed.html`).
 That file is the archival record — verbose, complete, immutable. It holds
 the original prose, the decision rationale, code excerpts, screenshots,
 debugging notes. Treat it like a git tag: write-once, read-forever.
@@ -127,7 +126,7 @@ The evergreen page now shows ONLY current state. The summary card has:
     Encoded 11,237 shots (97% of training-grade corpus) on 4× H200 in 3h12m
     of GPU time. Visible-camera tokens at <code>/work/projects/imas_gpu/mast/tokens/rbb/</code>.
     Full outcome record:
-    <a href="tokenizers-12-5-landed.html">tokenizers §12.5 landed</a>
+    <a href="archive/tokenizers-12-5-landed.html">tokenizers §12.5 landed</a>
     (commits <code>abc1234</code>, <code>def5678</code>).
   </p>
 </section>
@@ -163,21 +162,45 @@ within 2-3 sprints. The evergreen should pass a 30-second-scan test: "what
 is currently in flight, what is locked, what is pending". Detail on shipped
 work has a different audience and belongs in the per-stage archive.
 
-### 6. Update state and write followup
+### 6. Update island and write followup
 
-POST resolved decisions to the state API (see §State write pattern). If the
-project uses central-index, update `index.json` — set `status: "shipped"`,
-append commit SHAs to `evidence[]`, update `implementation_fraction`.
+Record outcomes in the plan's island — not in a sidecar JSON file. Use
+MCP tools or `POST /plan/<project>/<slug>` with dotted patches:
 
-Write (or confirm) the §05 followup via `reckon-edit` or directly. If this
-run was triggered by a followup, mark that followup resolved with
-`resolved_at`, `resolved_by`, and `outcome`.
+```bash
+PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
+SLUG="<slug>"
+
+# Read current version
+ISLAND=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
+CUR_VER=$(echo "$ISLAND" | jq -r '.version // 0')
+
+# Patch: advance impl, set status shipped
+curl -s -X POST \
+  -H 'Content-Type: application/json' \
+  -H "If-Match: $CUR_VER" \
+  -d '{"impl": 1.0, "status": "shipped"}' \
+  "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
+```
+
+Write (or confirm) the §05 followup via MCP `append_followup` or the HTTP
+patch. If this run was triggered by a followup, mark that followup resolved:
+`resolve_followup(project, slug, id, outcome, version)`.
+
+If the project uses central-index, also update `docs/state/<project>/index.json`
+sprints/milestones.
+
+**Eat-the-dog-food check.** Before declaring done, verify the island reflects
+the work:
+- `GET /plan/<project>/<slug>` → `status` matches reality
+- The driving followup is resolved (`status: "resolved"`)
+- A next followup or `outcome: "done — no followup"` is present
+- `version` has incremented
 
 Commit the coordinator delta:
 
 ```bash
-git add docs/<slug>.html docs/<slug>-<section>-landed.html \
-        docs/state/$PROJECT/<slug>.json
+git add docs/<slug>.html docs/archive/<slug>-<section>-landed.html
 git commit -m "docs(reckon): <slug> §<section> landed — <one-line summary>"
 git pull --no-rebase origin <branch>
 git push origin <branch>
@@ -197,7 +220,7 @@ Context
   <2–3 sentences: what this section does and why it is being shipped now>
 
 State to read
-  docs/state/<project>/<plan>.json
+  GET /plan/<project>/<slug>   (island — decisions, followups, status, version)
 
 Locked decisions to honour
   <key> → <choice>
@@ -215,7 +238,7 @@ Constraints
 Done-when
   1. <measurable artefact: commit, file, test result>
   2. tests still green
-  3. followup written + driving followup resolved
+  3. followup written into island + driving followup resolved
 ```
 
 ## Worker dispatch boilerplate
@@ -250,9 +273,12 @@ Append the item-specific task body. End every worker prompt with:
 
 ```
 FOLLOWUP REQUIREMENT (binding):
-After tests pass, append an entry to docs/state/<project>/<slug>.json#followups[]:
+After tests pass, write a followup into the plan's island via MCP append_followup
+or POST /plan/<project>/<slug> (patch key: "followups" — append to the array).
+Followup object:
 {
   "id":               "f-<timestamp-base36>",
+  "status":           "open",
   "written_by":       "<worker name>",
   "written_at":       "<iso-now>",
   "title":            "<imperative one-liner>",
@@ -263,29 +289,32 @@ After tests pass, append an entry to docs/state/<project>/<slug>.json#followups[
   "est_turn":         "~1h" | "~1d" | "~1 sprint",
   "prompt":           "<§05 template body, ready to paste>"
 }
-Then mark your driving followup resolved (resolved_at, resolved_by, outcome).
+Then resolve your driving followup: set resolved_at, resolved_by, outcome, status="resolved".
 If nothing follows, set prompt = "done — no followup".
 ```
 
 ## State write pattern
 
-Always read current state before writing to avoid 412 conflicts:
+Always read current `version` before writing to avoid 412 conflicts.
 
-```bash
-ENVELOPE=$(curl -s "http://127.0.0.1:8765/state/$PROJECT/$SLUG")
-CUR_VER=$(echo "$ENVELOPE" | jq -r '.data._version // 0')
-NEW_DATA=$(echo "$ENVELOPE" | jq '.data // {} | del(._version)' | jq \
-  --arg key "<decision-id>" \
-  --arg val "<choice>" \
-  '.[$key] = {choice: $val, when: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'"}')
-curl -s -X POST \
-  -H 'Content-Type: application/json' \
-  -H "If-Match: \"$CUR_VER\"" \
-  -d "$NEW_DATA" \
-  "http://127.0.0.1:8765/state/$PROJECT/$SLUG"
+**MCP (preferred):**
+```
+read_plan(project, slug)   → island + version
+patch_plan(project, slug, {"impl": 0.8, "status": "active"}, version)
 ```
 
-Always use `If-Match` — omitting it causes HTTP 412.
+**HTTP fallback:**
+```bash
+ISLAND=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
+CUR_VER=$(echo "$ISLAND" | jq -r '.version // 0')
+curl -s -X POST \
+  -H 'Content-Type: application/json' \
+  -H "If-Match: $CUR_VER" \
+  -d '{"decisions.my-key.choice": "value", "decisions.my-key.when": "2026-05-26"}' \
+  "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
+```
+
+The patch body is a flat map of **dotted keys**. Always use `If-Match`.
 
 ## Model selection
 
@@ -300,9 +329,8 @@ breaking a build is not.
 
 ## Cross-references
 
-- `~/.claude/skills/reckon-edit/SKILL.md` — how the evergreen plan gets its
-  "landed" subsection and how followups are written
+- `~/.claude/skills/reckon-edit/SKILL.md` — how the evergreen plan gets its "landed" subsection and how followups are written
 - `~/.claude/skills/reckon-create/SKILL.md` — first-time plan scaffolding
-- `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection before
-  deciding what to ship
-- `~/Code/reckon/docs/_shared/` — shared CSS and state.js assets
+- `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection before deciding what to ship
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, endpoints, what is gone)
+- `~/Code/reckon/docs/_shared/` — shared CSS assets
