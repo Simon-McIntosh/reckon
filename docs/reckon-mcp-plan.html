@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="imas-ambix">
+<meta name="plan-slug" content="reckon-mcp-plan">
+<meta name="plan-status" content="pending">
+<meta name="plan-title" content="reckon MCP server">
+<meta name="plan-summary" content="MCP transport for plan state — same writes as docs-server, callable from any MCP client.">
+<meta name="plan-roi" content="high">
+<meta name="plan-effort" content="M">
+<meta name="plan-milestone" content="PS">
+<meta name="plan-modified" content="2026-05-26">
+<title>reckon MCP server | Plans</title>
+<link rel="stylesheet" href="_shared/foundation.css">
+<link rel="stylesheet" href="_shared/dashboard.css">
+<script src="_shared/state.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="index.html">
+    <span class="mark">r</span>
+    <span class="proj-name">reckon</span>
+  </a>
+  <nav>
+    <a href="index.html">Index</a>
+    <a href="reckon.html">SPA</a>
+    <a href="reckon-mcp-plan.html" class="active">MCP server</a>
+  </nav>
+  <div class="right"></div>
+</div>
+
+<main class="page">
+
+<div class="page-head">
+  <div class="title">
+    <h1>reckon MCP server</h1>
+    <div class="subtitle">reckon / plan-system infrastructure &middot;
+      Status: <span class="badge badge-pending">pending</span> &middot;
+      Updated <time id="updated">2026-05-26</time></div>
+  </div>
+</div>
+
+<div class="prose" style="max-width:none">
+
+<p><strong>One-line:</strong> An MCP server that brokers reckon plan-state writes
+over stdio/SSE so any MCP-capable agent can read and update plans directly,
+without going through the docs-server HTTP endpoint.</p>
+
+<p><strong>Scaffold:</strong> <code>~/Code/reckon-mcp/</code> &mdash;
+initial commit <code>cd6aa88</code> (2026-05-26). Store.py is working code;
+server.py is a well-structured sketch that needs the <code>mcp</code> SDK wired in.</p>
+
+<hr>
+
+<h2 id="s1">1. Why MCP?</h2>
+
+<p>The existing docs-server (<code>reckon/serve.py</code>, port 8765) serves HTML
+to a browser and exposes a <code>POST /state/&lt;project&gt;/&lt;doc&gt;</code> endpoint
+for in-page decision capture. Agents can call this endpoint over HTTP, but that
+requires:</p>
+
+<ul>
+  <li>The docs-server process to be running (tmux, login node).</li>
+  <li>The agent to know the port and hostname (SSH tunnel from laptop).</li>
+  <li>An HTTP library call rather than a first-class tool invocation.</li>
+</ul>
+
+<p>An MCP server removes all three constraints. It speaks the Model Context Protocol
+natively &mdash; Claude Code discovers it via <code>~/.claude/mcp.json</code> and
+presents each state operation as a named tool. The agent calls
+<code>reckon.patch_plan</code> the same way it calls any other tool, with no HTTP
+machinery in the call chain.</p>
+
+<p>The docs-server stays for the browser UI. The MCP server stays for agent IO.
+Both write to the same state files via the same atomic-rename versioning protocol.</p>
+
+<hr>
+
+<h2 id="s2">2. Tool surface</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Key args</th>
+      <th>Behaviour</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>reckon.read_plan</code></td>
+      <td>project, slug</td>
+      <td>Returns full <code>data</code> blob + current <code>_version</code>.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.list_plans</code></td>
+      <td>project, status?</td>
+      <td>Lightweight index: slug, title, status, impl, ms, sprint.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.patch_plan</code></td>
+      <td>project, slug, patch, expected_version</td>
+      <td>JSON merge-patch into data; bumps <code>_version</code>; 412 on conflict.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.append_comment</code></td>
+      <td>project, slug, section_id, body, author, expected_version</td>
+      <td>Appends to <code>data.notes</code>.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.lock_decision</code></td>
+      <td>project, slug, key, choice, rationale, by, expected_version</td>
+      <td>Writes <code>data.decisions[key]</code>.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.append_followup</code></td>
+      <td>project, slug, followup, expected_version</td>
+      <td>Appends to <code>data.followups</code>. <code>prompt</code> field required.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.resolve_followup</code></td>
+      <td>project, slug, followup_id, outcome, by, expected_version</td>
+      <td>Sets <code>resolved_at</code>, <code>resolved_by</code>, <code>outcome</code>.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.set_status</code></td>
+      <td>project, slug, status, expected_version</td>
+      <td>Updates <code>data.status</code>.</td>
+    </tr>
+    <tr>
+      <td><code>reckon.set_impl</code></td>
+      <td>project, slug, impl, expected_version</td>
+      <td>Updates <code>data.impl</code> (0..1).</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Agent workflow for any write:</strong></p>
+<ol>
+  <li>Call <code>reckon.read_plan(project, slug)</code> &mdash; note the <code>version</code> field.</li>
+  <li>Call the write tool with <code>expected_version = &lt;that version&gt;</code>.</li>
+  <li>On conflict (<code>error: "version_conflict"</code>): re-read and retry.</li>
+</ol>
+
+<hr>
+
+<h2 id="s3">3. State write contract</h2>
+
+<p>The version-write contract is identical to <code>POST /state/&lt;project&gt;/&lt;doc&gt;</code>
+in <code>reckon/serve.py</code>:</p>
+
+<ul>
+  <li>State files: <code>~/docs-server/state/&lt;project&gt;/&lt;slug&gt;.json</code>
+    (symlinked from each project repo's <code>docs/state/</code>).</li>
+  <li>Envelope: <code>{ "updated", "project", "doc", "data" }</code>. The <code>data</code>
+    sub-object is the writeable payload.</li>
+  <li><code>data._version</code> is the optimistic-concurrency counter. Reads always
+    return the current version; writes require the caller to echo it back.</li>
+  <li>Writes are atomic: the new envelope is written to <code>&lt;file&gt;.json.tmp</code>
+    and then <code>os.replace()</code>'d to <code>&lt;file&gt;.json</code>.</li>
+  <li>Conflict: if <code>expected_version != current_version</code> the write is
+    rejected and the caller receives the current version + data so it can
+    re-read and retry.</li>
+</ul>
+
+<p>Both the docs-server and the MCP server follow this contract. Concurrent writes from
+a browser tab and an agent are safe &mdash; one of them will get a conflict and retry.</p>
+
+<hr>
+
+<h2 id="s4">4. Distribution</h2>
+
+<p>Not yet published to PyPI. Development install:</p>
+
+<pre><code>cd ~/Code/reckon-mcp
+uv pip install -e .</code></pre>
+
+<p>Once the MCP SDK integration is complete and the tool is stable:</p>
+
+<pre><code>uv tool install reckon-mcp</code></pre>
+
+<p>Claude Code configuration (<code>~/.claude/mcp.json</code>):</p>
+
+<pre><code>{
+  "mcpServers": {
+    "reckon": {
+      "command": "reckon-mcp",
+      "env": { "RECKON_STATE_ROOT": "~/docs-server/state" }
+    }
+  }
+}</code></pre>
+
+<hr>
+
+<h2 id="s5">5. Open decisions</h2>
+
+<table id="decisions-table">
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Question</th>
+      <th>Options</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr data-key="transport">
+      <td><code>transport</code></td>
+      <td>Should the server support SSE in addition to stdio?</td>
+      <td>stdio-only first; stdio + SSE later (needs mcp SDK SSE server helper)</td>
+      <td class="dec-status" data-key="transport">
+        <span class="badge badge-locked">stdio first</span>
+      </td>
+    </tr>
+    <tr data-key="search">
+      <td><code>search</code></td>
+      <td>Should the MCP server expose a <code>reckon.search_plans</code> tool with free-text query?</td>
+      <td>No (grep is sufficient for now); Yes (add lunr.js or ripgrep subprocess)</td>
+      <td class="dec-status" data-key="search">
+        <span class="badge badge-open">open</span>
+      </td>
+    </tr>
+    <tr data-key="multi-project">
+      <td><code>multi-project</code></td>
+      <td>How to handle multi-project repos (imas-efit has plans under two logical projects)?</td>
+      <td>Same as docs-server: project = mounts.json key; slug = filename stem</td>
+      <td class="dec-status" data-key="multi-project">
+        <span class="badge badge-open">open</span>
+      </td>
+    </tr>
+    <tr data-key="index-write">
+      <td><code>index-write</code></td>
+      <td>Should the MCP server be able to write to index.json (for updating the plan inventory)?</td>
+      <td>Yes via patch_plan(slug="index"); or add a dedicated <code>reckon.update_index</code> tool</td>
+      <td class="dec-status" data-key="index-write">
+        <span class="badge badge-open">open</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2 id="s6">6. What is done vs deferred</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>State</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>store.py</code></td>
+      <td><span class="badge badge-active">working code</span></td>
+      <td>Full atomic versioned IO; all helpers implemented; tested.</td>
+    </tr>
+    <tr>
+      <td><code>tests/test_store.py</code></td>
+      <td><span class="badge badge-active">working code</span></td>
+      <td>6 pytest tests; tempdir fixtures; covers roundtrip, conflict, patch, append, resolve.</td>
+    </tr>
+    <tr>
+      <td><code>tools.py</code></td>
+      <td><span class="badge badge-active">working code</span></td>
+      <td>Pydantic arg + response models for all 9 tools.</td>
+    </tr>
+    <tr>
+      <td><code>server.py</code></td>
+      <td><span class="badge badge-pending">sketch</span></td>
+      <td>Tool logic is complete; SDK registration is a sketch pending <code>mcp</code> install.</td>
+    </tr>
+    <tr>
+      <td>PyPI publish</td>
+      <td><span class="badge badge-pending">deferred</span></td>
+      <td>After server.py is wired and integration-tested.</td>
+    </tr>
+    <tr>
+      <td>SSE transport</td>
+      <td><span class="badge badge-pending">deferred</span></td>
+      <td>Open decision <code>transport</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+</div><!-- .prose -->
+
+</main>
+
+<script>
+// Wire state.js for this plan page
+if (typeof initState === 'function') {
+  initState('imas-ambix', 'reckon-mcp-plan');
+}
+</script>
+
+</body>
+</html>
