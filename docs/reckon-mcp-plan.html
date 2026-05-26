@@ -49,9 +49,11 @@
 over stdio/SSE so any MCP-capable agent can read and update plans directly,
 without going through the docs-server HTTP endpoint.</p>
 
-<p><strong>Scaffold:</strong> <code>~/Code/reckon-mcp/</code> &mdash;
-initial commit <code>cd6aa88</code> (2026-05-26). Store.py is working code;
-server.py is a well-structured sketch that needs the <code>mcp</code> SDK wired in.</p>
+<p><strong>Location:</strong> MCP code lives inside the <code>reckon</code> repo at
+<code>reckon/mcp.py</code>, <code>reckon/_store.py</code>, <code>reckon/_mcp_tools.py</code>.
+The standalone <code>~/Code/reckon-mcp/</code> repo has been retired.
+<code>_store.py</code> is working code; <code>mcp.py</code> has all tool logic complete
+with the <code>mcp</code> SDK wired in via FastMCP.</p>
 
 <hr>
 
@@ -173,21 +175,27 @@ a browser tab and an agent are safe &mdash; one of them will get a conflict and 
 
 <h2 id="s4">4. Distribution</h2>
 
-<p>Not yet published to PyPI. Development install:</p>
+<p>The MCP server is part of the <code>reckon</code> package — no separate install.
+Development install:</p>
 
-<pre><code>cd ~/Code/reckon-mcp
-uv pip install -e .</code></pre>
+<pre><code>uv pip install -e ~/Code/reckon</code></pre>
 
-<p>Once the MCP SDK integration is complete and the tool is stable:</p>
+<p>Start the MCP server via the unified CLI:</p>
 
-<pre><code>uv tool install reckon-mcp</code></pre>
+<pre><code>reckon mcp</code></pre>
+
+<p>This runs alongside <code>reckon serve</code> — both commands are part of the same
+<code>reckon</code> CLI entry point, backed by the same venv.</p>
+
+<p>Once stable, a PyPI publish of <code>reckon</code> will include the MCP server.</p>
 
 <p>Claude Code configuration (<code>~/.claude/mcp.json</code>):</p>
 
 <pre><code>{
   "mcpServers": {
     "reckon": {
-      "command": "reckon-mcp",
+      "command": "reckon",
+      "args": ["mcp"],
       "env": { "RECKON_STATE_ROOT": "~/docs-server/state" }
     }
   }
@@ -256,24 +264,24 @@ uv pip install -e .</code></pre>
   </thead>
   <tbody>
     <tr>
-      <td><code>store.py</code></td>
+      <td><code>reckon/_store.py</code></td>
       <td><span class="badge badge-active">working code</span></td>
       <td>Full atomic versioned IO; all helpers implemented; tested.</td>
     </tr>
     <tr>
-      <td><code>tests/test_store.py</code></td>
+      <td><code>tests/test_mcp_store.py</code></td>
       <td><span class="badge badge-active">working code</span></td>
       <td>6 pytest tests; tempdir fixtures; covers roundtrip, conflict, patch, append, resolve.</td>
     </tr>
     <tr>
-      <td><code>tools.py</code></td>
+      <td><code>reckon/_mcp_tools.py</code></td>
       <td><span class="badge badge-active">working code</span></td>
       <td>Pydantic arg + response models for all 9 tools.</td>
     </tr>
     <tr>
-      <td><code>server.py</code></td>
-      <td><span class="badge badge-pending">sketch</span></td>
-      <td>Tool logic is complete; SDK registration is a sketch pending <code>mcp</code> install.</td>
+      <td><code>reckon/mcp.py</code></td>
+      <td><span class="badge badge-active">working code</span></td>
+      <td>Tool logic complete; FastMCP SDK wired; <code>reckon mcp</code> CLI entry active.</td>
     </tr>
     <tr>
       <td>PyPI publish</td>

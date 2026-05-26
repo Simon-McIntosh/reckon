@@ -22,6 +22,13 @@ def serve(port, host, mounts_file):
 
 
 @main.command()
+def mcp():
+    """Start the reckon MCP server (stdio transport)."""
+    from reckon.mcp import main as mcp_main
+    mcp_main()
+
+
+@main.command()
 @click.argument("docs_path", type=click.Path(path_type=Path))
 @click.option("--project", default=None, help="Project key (defaults to docs parent dir name).")
 @click.option("--mounts", "mounts_file", default=None, type=click.Path(path_type=Path), help="Path to mounts.json.")
