@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 class ReadPlanArgs(BaseModel):
     project: str = Field(..., description="Project name (key in mounts.json, e.g. 'imas-ambix')")
-    slug: str = Field(..., description="Plan slug (filename stem without .json, e.g. 'tokenizers')")
+    slug: str = Field(..., description="Plan slug (HTML filename stem, e.g. 'tokenizers'); use 'index' for project config")
 
 
 class ListPlansArgs(BaseModel):
@@ -119,4 +119,4 @@ class VersionConflictResult(BaseModel):
     error: str = "version_conflict"
     expected_version: int
     current_version: int
-    hint: str = "Re-read the plan (reckon.read_plan) to get the current version, then retry."
+    hint: str = "Re-read the plan with reckon.read_plan to get the current version, then retry."

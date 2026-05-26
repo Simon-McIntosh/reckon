@@ -2,12 +2,14 @@
 
 Registers all reckon.* tools and delegates IO to _store.py.
 
-Version-write contract mirrors POST /state/<project>/<doc> in
-~/Code/reckon/reckon/serve.py. Both write to the same state files at
-~/docs-server/state/<project>/<slug>.json (symlinked from each project repo's
-docs/state/<project>/<slug>.json). The docs-server owns the browser UI; this
-MCP server owns the agent IO path. They coexist safely because both use atomic
-rename and the same _version optimistic-concurrency field.
+Version-write contract mirrors POST /plan/<project>/<slug> in
+~/Code/reckon/reckon/serve.py. Both rewrite the plan HTML island atomically
+using the same `version` optimistic-concurrency field.  The docs-server owns
+the browser UI; this MCP server owns the agent IO path.  They coexist safely
+because both use atomic .tmp rename.
+
+For "index" and "project" slugs the old JSON-envelope backing (_version field)
+is used unchanged — sprints/milestones live there.
 
 Usage (stdio, the Claude Code default):
     reckon mcp
@@ -60,7 +62,7 @@ if _HAS_MCP and FastMCP is not None:
             "Read and write reckon plan state. "
             "Always call reckon.read_plan first to get the current version "
             "before any write tool — writes are rejected if expected_version "
-            "doesn't match the file's current _version."
+            "doesn't match the plan's current version."
         ),
     )
 else:
@@ -81,6 +83,9 @@ def _conflict_response(exc: VersionConflict) -> dict[str, Any]:
 
 def _read_plan(project: str, slug: str) -> dict[str, Any]:
     """Return the full data blob for one plan, plus its current version.
+
+    For plan slugs, data is the raw HTML island (version = island["version"]).
+    For "index"/"project" slugs, data is the JSON envelope data sub-object.
 
     Returns { project, slug, version, data }.
     """
@@ -202,7 +207,11 @@ def _lock_decision(
     by: str,
     expected_version: int,
 ) -> dict[str, Any]:
-    """Write data.decisions[key] = { choice, rationale, when, by }.
+    """Write data.decisions[key].{choice,rationale,when,by} (merge, not replace).
+
+    The authored fields (title, context, choices[]) are preserved — set_nested
+    merges the new lock fields into the existing decision entry rather than
+    replacing it wholesale.
 
     Locks the decision in place. To reopen a locked decision, use the
     /reckon-edit --reopen dissent flow described in AGENTS.md.
