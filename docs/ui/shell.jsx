@@ -125,7 +125,7 @@ function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK })
 function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   const M = window.STATE;
   const statuses = ["active", "blocked", "pending"];
-  const milestones = M.projects[0].milestones;
+  const milestones = M.projects?.[0]?.milestones || M.milestones || [];
   const shippedCount = M.inventory.filter(p => p.status === "shipped").length;
 
   const toggle = (group, value) => {
@@ -159,7 +159,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
 
       <div className="r-filter-group">
         <div className="r-filter-h">Milestone</div>
-        {(M.projects[0]?.milestones || []).map(m => {
+        {milestones.map(m => {
           const n = M.inventory.filter(p => p.ms === m.id).length;
           const on = (filters.ms || []).includes(m.id);
           if (n === 0) return null;
@@ -383,7 +383,7 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
     const handleGen = () => {
       window.dispatchEvent(new CustomEvent("r-open-fleet-prompt"));
     };
-    const projectName = M.projects[0]?.project || "project";
+    const projectName = M.projects?.[0]?.project || M.project || "project";
     return (
       <div className="r-titlebar">
         <div className="row1">
@@ -633,7 +633,7 @@ function CmdKPalette({ items, onClose, onPick }) {
 function CockpitBody({ onNav }) {
   const M = window.STATE;
   if (!M) return null;
-  const project = M.projects[0];
+  const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
   const allSprints = M.sprints || [];
   const [ckSprintIdx, setCkSprintIdx] = useState(() => {
     const i = allSprints.findIndex(s => s.id === M.active_sprint_id);
@@ -822,7 +822,8 @@ function FleetPrompt({ sprintId }) {
   for (const p of itemsArr) visit(p);
 
   const buildPrompt = () => {
-    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${order.length} plans in a single\n  sprint. Dispatch in the order below; honour the dependency edges. Workers\n  whose dependencies are satisfied may run in parallel. Each worker must read\n  every plan it depends on in full, develop the plan further as it works,\n  inspect code under imas_ambix/ when ambiguous, honour locked decisions,\n  and never resolve open decisions unilaterally.\n\nProject: ${M.projects[0].project}\nSprint:  ${sprint.id}\nGoal:    ${sprint.theme}\nWindow:  ${sprint.starts} → ${sprint.ends}\n\nExecution sequence (resolved from depends_on within the sprint):\n`;
+    const proj = M.projects?.[0]?.project || M.project || "project";
+    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${order.length} plans in a single\n  sprint. Dispatch in the order below; honour the dependency edges. Workers\n  whose dependencies are satisfied may run in parallel. Each worker must read\n  every plan it depends on in full, develop the plan further as it works,\n  inspect code under the project repo when ambiguous, honour locked decisions,\n  and never resolve open decisions unilaterally.\n\nProject: ${proj}\nSprint:  ${sprint.id}\nGoal:    ${sprint.theme}\nWindow:  ${sprint.starts} → ${sprint.ends}\n\nExecution sequence (resolved from depends_on within the sprint):\n`;
     order.forEach((p, i) => {
       txt += `  ${i + 1}. ${p.slug}${(p.depends_on || []).length ? "  (← " + p.depends_on.join(", ") + ")" : ""}\n`;
     });

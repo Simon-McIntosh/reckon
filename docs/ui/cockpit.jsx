@@ -5,7 +5,7 @@
 function Cockpit({ onNav }) {
   const M = window.STATE;
   if (!M) return null;
-  const project = M.projects[0];
+  const project = M.projects?.[0] || { project: M.project || "", plans_count: M.inventory?.length || 0, milestones: M.milestones || [], owner: "" };
   const sprint = M.sprint;
 
   // Plans with open decisions

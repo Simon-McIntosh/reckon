@@ -72,14 +72,65 @@ def sync(docs_path, project, mounts_file, state_root):
     ui_dest.mkdir(parents=True, exist_ok=True)
     ui_files = ["state-loader.js", "ui.jsx",
                 "bits.jsx", "cockpit.jsx", "plan.jsx",
-                "plan-decision.jsx", "plan-tokenizers.jsx",
-                "shell.jsx", "sprint.jsx",
-                "project.css", "styles.css"]
+                "decision.jsx", "plan-tokenizers.jsx",
+                "shell.jsx", "sprint.jsx", "graph.jsx",
+                "project.css", "styles-base.css", "styles.css"]
     for fname in ui_files:
         src = ui_src / fname
         if src.is_file():
             shutil.copy2(src, ui_dest / fname)
             click.echo(f"  copied ui/{fname}")
+
+    # Remove stale files from prior reckon versions
+    for stale in ("plan-decision.jsx",):
+        stale_path = ui_dest / stale
+        if stale_path.exists():
+            stale_path.unlink()
+            click.echo(f"  removed stale ui/{stale}")
+
+    # ── Write canonical index.html (SPA entry point) ──────────────────────
+    index_html = docs_dir / "index.html"
+    is_spa = index_html.is_file() and "_shared/" in index_html.read_text()
+    is_first_run = not index_html.exists()
+    if is_first_run or is_spa:
+        template = f"""<!doctype html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"utf-8\">
+  <meta name=\"docs-project\" content=\"{proj_name}\">
+  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+  <title>reckon · {proj_name}</title>
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
+  <link href=\"https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"_shared/foundation.css\">
+  <link rel=\"stylesheet\" href=\"_shared/dashboard.css\">
+  <link rel=\"stylesheet\" href=\"ui/project.css\">
+  <link rel=\"stylesheet\" href=\"ui/styles-base.css\">
+  <link rel=\"stylesheet\" href=\"ui/styles.css\">
+  <script src=\"https://unpkg.com/react@18.3.1/umd/react.development.js\" integrity=\"sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L\" crossorigin=\"anonymous\"></script>
+  <script src=\"https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js\" integrity=\"sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm\" crossorigin=\"anonymous\"></script>
+  <script src=\"https://unpkg.com/@babel/standalone@7.29.0/babel.min.js\" integrity=\"sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y\" crossorigin=\"anonymous\"></script>
+</head>
+<body>
+  <div id=\"root\"></div>
+  <script src=\"ui/state-loader.js\"></script>
+  <script type=\"text/babel\" src=\"ui/ui.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/bits.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/decision.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/plan-tokenizers.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/cockpit.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/plan.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/sprint.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/graph.jsx\"></script>
+  <script type=\"text/babel\" src=\"ui/shell.jsx\"></script>
+</body>
+</html>
+"""
+        index_html.write_text(template)
+        click.echo(f"  wrote index.html (project={proj_name})")
+    else:
+        click.echo("  skipped index.html — not a reckon SPA (manual review)")
 
     # ── Drop .nojekyll (GitHub Pages) ─────────────────────────────────────
     nojekyll = docs_dir / ".nojekyll"
