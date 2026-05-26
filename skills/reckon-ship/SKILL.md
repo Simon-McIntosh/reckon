@@ -45,6 +45,11 @@ yet exist, call `reckon-create` first.
 6. **Per-stage HTML and a followup are required after every landing.** Even
    single-item work gets a `<slug>-<section>-landed.html` and a queued §05
    followup. Silence is not allowed.
+7. **Collapse the evergreen when a section ships.** The evergreen page is a
+   current-state dashboard, not a transcript. When a section lands, REPLACE
+   the section body with a 2-4 line landed-summary + link to the per-stage
+   HTML. Full prose lives in the per-stage record. Pending vs done must be
+   visually distinguishable at-a-glance. See §5b.
 
 ## Workflow
 
@@ -97,11 +102,66 @@ For each returned worker:
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup
 
-**Evergreen update** — append a short subsection to `docs/<slug>.html` after
-the implemented section:
-- One paragraph: what landed and what didn't, with commit SHAs
-- Link to the per-stage HTML
-- Bump `<time id="updated">`; do not rewrite existing content
+**Evergreen update** — see §5b for the binding collapse-on-landing rule.
+
+### 5b. Collapse-on-landing — evergreen is a dashboard, not a transcript
+
+This is the rule that keeps plans readable as they age. Once a section is
+shipped:
+
+**A) Move full content to the per-stage HTML** (`<slug>-<section>-landed.html`).
+That file is the archival record — verbose, complete, immutable. It holds
+the original prose, the decision rationale, code excerpts, screenshots,
+debugging notes. Treat it like a git tag: write-once, read-forever.
+
+**B) Replace the section body on the evergreen with a landed-summary card.**
+The evergreen page now shows ONLY current state. The summary card has:
+
+```html
+<section id="s12-5" class="section-landed">
+  <header>
+    <span class="badge badge-shipped">✓ landed 2026-05-26</span>
+    <h2>§ 12.5 — Bulk-encode rbb + magnetics</h2>
+  </header>
+  <p class="landed-summary">
+    Encoded 11,237 shots (97% of training-grade corpus) on 4× H200 in 3h12m
+    of GPU time. Visible-camera tokens at <code>/work/projects/imas_gpu/mast/tokens/rbb/</code>.
+    Full outcome record:
+    <a href="tokenizers-12-5-landed.html">tokenizers §12.5 landed</a>
+    (commits <code>abc1234</code>, <code>def5678</code>).
+  </p>
+</section>
+```
+
+The landed-summary is **2-4 lines max**:
+- Line 1: what was built, in past tense
+- Line 2: quantitative outcome (number, percentage, bench score)
+- Line 3 (optional): link to per-stage record + commit SHAs
+
+**C) Visual rules:**
+- Section header carries a `✓ landed YYYY-MM-DD` badge (`.badge-shipped` class).
+- Body uses `.landed-summary` class (muted, italic, or whatever the design
+  system specifies — see `~/Code/reckon/docs/_shared/dashboard.css`).
+- The original prose is GONE from the evergreen — readers find it via the
+  per-stage link, not by scrolling.
+
+**D) What to keep visible on the evergreen:**
+- Decision rows (locked or open) for that section — still load-bearing.
+- Open followups referencing the section — still actionable.
+- Tests pulse for the section — still drift-indicator.
+
+**E) Trigger:** the moment the section's status flips from `active`/`in-progress`
+to `shipped`. Don't collapse incrementally — collapse once, at landing.
+
+**F) Dissent path:** if a reader thinks the collapsed summary lost something
+load-bearing, they file a followup (`/reckon-edit <slug> --uncollapse <sec>`)
+rather than re-expanding the evergreen unilaterally. The per-stage HTML is
+always there to lift content from.
+
+**Why this matters:** plans that don't collapse become unreadable scrolls
+within 2-3 sprints. The evergreen should pass a 30-second-scan test: "what
+is currently in flight, what is locked, what is pending". Detail on shipped
+work has a different audience and belongs in the per-stage archive.
 
 ### 6. Update state and write followup
 
