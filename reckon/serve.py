@@ -247,8 +247,15 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 except (OSError, json.JSONDecodeError):
                     pass
 
+        # href is the URL path under /<project>/ used by plan.jsx to fetch the HTML.
+        # For root-level plans it equals slug; for subdirectory plans (e.g.
+        # curated/X.html) it includes the subdir so the fetch resolves correctly.
+        rel_no_ext = str(rel.with_suffix(""))   # e.g. "curated/my-plan"
+        href = rel_no_ext if rel_no_ext != slug else slug
+
         inventory.append({
             "slug":     slug,
+            "href":     href,
             "title":    plan_title,
             "status":   state_overlay.get("status") or meta.get("plan-status", "pending"),
             "ms":       meta.get("plan-milestone", "—"),

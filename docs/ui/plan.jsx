@@ -48,7 +48,9 @@ function Plan({ slug, onNav }) {
     const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
     if (!project) { setHtmlReady(true); return; }
 
-    fetch(`/${project}/${slug}.html`, { cache: "no-store" })
+    // Use plan's href (may include subdir e.g. "curated/slug") if available
+    const href = PG.href || slug;
+    fetch(`/${project}/${href}.html`, { cache: "no-store" })
       .then(r => r.ok ? r.text() : null)
       .then(html => {
         if (!html) { setHtmlReady(true); return; }
