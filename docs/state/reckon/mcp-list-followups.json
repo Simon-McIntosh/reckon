@@ -1,0 +1,43 @@
+{
+  "updated": "2026-05-26T00:00:00",
+  "project": "reckon",
+  "doc": "mcp-list-followups",
+  "data": {
+    "slug": "mcp-list-followups",
+    "title": "list_followups — cross-plan unresolved followup scanner",
+    "status": "pending",
+    "impl": 0,
+    "ms": "PS",
+    "sprint": "S4",
+    "roi": "high",
+    "effort": "S",
+    "tier": "sonnet",
+    "owner": "Simon McIntosh",
+    "last_modified": "2026-05-26",
+    "summary": "New store fn list_followups_across(project, unresolved_only=True) scans all *.json in state dir, skips index.json and project.json. MCP tool _list_followups returns {project, count, followups[{slug, followup_id, title, blocked_by, tier, written_at}]}.",
+    "sections": [
+      {
+        "id": "s1",
+        "sec": "§ 1",
+        "h": "Store layer",
+        "body": "Add list_followups_across(project: str, unresolved_only: bool = True) -> list[dict] to reckon/_store.py. Globs _state_root()/project/*.json, skips slugs 'index' and 'project'. For each file, reads via _load_envelope(), iterates data.get('followups', []). When unresolved_only=True, skips items where f.get('resolved_at') is truthy. Returns lightweight dicts: {slug, followup_id, title, blocked_by, est_turn, tier, written_at}."
+      },
+      {
+        "id": "s2",
+        "sec": "§ 2",
+        "h": "MCP tool",
+        "body": "Add _list_followups(project: str, unresolved_only: bool = True) to reckon/mcp.py. Imports list_followups_across from reckon._store. Returns {project: project, count: len(items), followups: items}. Register with mcp.tool() at bottom of file. Add ListFollowupsArgs(project: str, unresolved_only: bool = True) to reckon/_mcp_tools.py."
+      },
+      {
+        "id": "s3",
+        "sec": "§ 3",
+        "h": "Tests",
+        "body": "In tests/test_mcp_tools.py: test_list_followups_empty_project (no files → []), test_list_followups_unresolved_only (mix resolved/unresolved; filter correct), test_list_followups_all (unresolved_only=False returns all), test_list_followups_skips_meta (index.json and project.json excluded), test_list_followups_cross_plan (3 plan files; followups from all 3 aggregated)."
+      }
+    ],
+    "decisions": {},
+    "notes": [],
+    "followups": [],
+    "_version": 0
+  }
+}

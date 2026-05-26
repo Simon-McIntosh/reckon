@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-26T16:24:29",
+  "updated": "2026-05-26T16:32:32",
   "project": "reckon",
   "doc": "index",
   "data": {
@@ -10,10 +10,10 @@
         "path": "/home/ITER/mcintos/Code/reckon/docs",
         "published": "github.com/Simon-McIntosh/reckon",
         "owner": "Simon McIntosh",
-        "plans_count": 4,
+        "plans_count": 12,
         "active": 1,
         "blocked": 0,
-        "pending": 0,
+        "pending": 8,
         "shipped": 2,
         "draft": 1,
         "last_modified": "2026-05-26",
@@ -22,16 +22,174 @@
     ],
     "inventory": [
       {
-        "slug": "mcp-gaps",
-        "title": "MCP gap-closure \u2014 power-user queries",
-        "status": "active",
+        "slug": "mcp-list-followups",
+        "title": "list_followups \u2014 cross-plan unresolved followup scanner",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "high",
+        "effort": "S",
+        "tier": "sonnet",
+        "summary": "New store fn list_followups_across(project, unresolved_only=True) scans all *.json in state dir, skips index.json and project.json. MCP tool _list_followups returns {project, count, followups[{slug, followup_id, title, blocked_by, tier, written_at}]}. Closes the highest-cost gap: today required 7 serial read_plan calls to find 7 followups.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-list-questions",
+        "title": "list_questions \u2014 cross-plan open question scanner",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "high",
+        "effort": "S",
+        "tier": "sonnet",
+        "summary": "New store fn list_questions_across(project, open_only=True) + MCP tool _list_questions. Returns {project, count, questions[{slug, question_id, section, body, opened_by, opened_at}]}. Questions are currently buried per-plan with no cross-plan view. Pairs with mcp-resolve-question.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-resolve-question",
+        "title": "resolve_question \u2014 close a question with resolution text",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "mid",
+        "effort": "XS",
+        "tier": "sonnet",
+        "summary": "MCP tool _resolve_question(project, slug, question_id, resolution, by, expected_version). Sets resolved_at, resolved_by, resolution. Thin wrapper over resolve_in_list(..., 'questions', ...) \u2014 no new store fn. New Pydantic model ResolveQuestionArgs. Today only raw patch_plan works.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-add-research",
+        "title": "add_research \u2014 append a structured research item",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "mid",
+        "effort": "XS",
+        "tier": "sonnet",
+        "summary": "MCP tool _add_research(project, slug, item, expected_version). Required fields: id, type, title, source, added_by, when. Optional: url. Valid types: paper|doc|web|dataset|thread|image|plan. Validates required fields before append. New Pydantic model AddResearchArgs.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-list-projects",
+        "title": "list_projects \u2014 discover registered projects from mounts.json",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "high",
+        "effort": "XS",
+        "tier": "sonnet",
+        "summary": "MCP tool _list_projects() \u2014 zero parameters. Reads ~/docs-server/mounts.json, cross-references state root for index.json presence. Returns {projects: [{project, path, has_index}]}. Critical for fresh sessions: without this, agents must know project names before calling any other tool.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-discover-fallback",
+        "title": "list_plans discovery fallback for per-doc repos",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "mid",
+        "effort": "S",
+        "tier": "sonnet",
+        "summary": "Update _list_plans in mcp.py to fall back to discover_plans() from serve.py when index.json has no inventory. Discovers plans from HTML <meta name=\"plan-status\"> tags. Errors silently swallowed \u2014 discovery is best-effort. Makes MCP useful for repos without a central-index layout.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-note-id-fix",
+        "title": "append_comment \u2014 collision-resistant note ID",
+        "status": "pending",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": "S4",
+        "roi": "low",
+        "effort": "XS",
+        "tier": "sonnet",
+        "summary": "One-line fix in mcp.py: replace f'n{len(notes)+1}' with f'n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}'. Timestamp IDs are sortable, human-readable, and collision-resistant to microsecond. Fixes silent data corruption when notes are deleted or concurrent agents append.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "plans-infra"
+        ],
+        "blocks": [
+          "mcp-tests"
+        ]
+      },
+      {
+        "slug": "mcp-tests",
+        "title": "test_mcp_tools.py \u2014 MCP tool layer test coverage",
+        "status": "pending",
         "impl": 0,
         "ms": "PS",
         "sprint": "S4",
         "roi": "high",
         "effort": "M",
-        "summary": "list_followups, list_questions, resolve_question, add_research, list_projects + discovery fallback + note-ID fix. Single Sonnet turn.",
-        "last_modified": "2026-05-26"
+        "tier": "sonnet",
+        "summary": "New tests/test_mcp_tools.py covering all 5 new tools + note-ID fix + discovery fallback. Target: \u226525 cases passing in <0.5s. Uses same state_root fixture pattern as test_mcp_store.py. _list_projects needs monkeypatch of Path.home() to serve a synthetic mounts.json. list_plans discovery fallback needs a minimal HTML fixture with plan-status meta tag. Zero tests cover the MCP tool layer today.",
+        "last": "2026-05-26",
+        "depends_on": [
+          "mcp-list-followups",
+          "mcp-list-questions",
+          "mcp-resolve-question",
+          "mcp-add-research",
+          "mcp-list-projects",
+          "mcp-discover-fallback",
+          "mcp-note-id-fix"
+        ],
+        "blocks": []
+      },
+      {
+        "slug": "mcp-gaps",
+        "title": "MCP gap-closure \u2014 spec & research doc",
+        "status": "active",
+        "impl": 0,
+        "ms": "PS",
+        "sprint": null,
+        "roi": "high",
+        "effort": "M",
+        "summary": "Reference document for all 8 S4 items. Detailed implementation spec per section: code signatures, data shapes, test cases. Source at docs/reckon-mcp-gaps.html.",
+        "last": "2026-05-26",
+        "depends_on": [],
+        "blocks": []
       },
       {
         "slug": "plans-agile-sprints",
@@ -43,7 +201,7 @@
         "roi": "mid",
         "effort": "M",
         "summary": "Sprint planning today is semi-manual. Goal: agents PROPOSE sprint compositions; humans accept/override via the sprint.html Lock button.",
-        "last_modified": "2026-05-26"
+        "last": "2026-05-26"
       },
       {
         "slug": "plans-infra",
@@ -55,7 +213,7 @@
         "roi": "high",
         "effort": "M",
         "summary": "All infrastructure pieces shipped. reckon server + MCP transport + reckon-sync + reckon-create.",
-        "last_modified": "2026-05-26"
+        "last": "2026-05-26"
       },
       {
         "slug": "plans-redesign-rollout",
@@ -67,36 +225,86 @@
         "roi": "high",
         "effort": "M",
         "summary": "Rollout complete 2026-05-26. reckon SPA redesign, reckon server, reckon MCP, all reckon-* skills landed.",
-        "last_modified": "2026-05-26"
+        "last": "2026-05-26"
       }
     ],
     "sprints": [
       {
+        "id": "S3",
+        "theme": "reckon infra + SPA redesign",
+        "description": "Land the reckon server, MCP transport, reckon-sync, reckon-create, and the full v7 SPA redesign. Canonical source moves to the reckon repo.",
+        "summary": "Shipped 2026-05-26: reckon server (uv run reckon serve), MCP transport (uv run reckon mcp), reckon-sync, reckon-create, and the v7 SPA with 4-tab shell, Cmd-K palette, and reading/graph toggle. All reckon-* skills updated.",
+        "starts": "2026-05-20",
+        "ends": "2026-05-26",
+        "status": "shipped",
+        "items": [
+          "plans-infra",
+          "plans-redesign-rollout"
+        ]
+      },
+      {
         "id": "S4",
         "theme": "MCP power-user queries",
-        "description": "Close the 7 gaps identified in the 2026-05-26 MCP tool evaluation: cross-plan followup/question scanning, project discovery, research capture, question close, list_plans discovery fallback, note-ID collision fix.",
+        "description": "Close 7 gaps confirmed in the 2026-05-26 tool evaluation: 5 missing query tools, a list_plans discovery fallback for per-doc repos, and a note-ID collision fix. Add test coverage for the MCP tool layer.",
+        "summary": "7 serial read_plan calls to find 7 followups \u2014 that was the productivity tax today. S4 eliminates it: list_followups and list_questions give cross-plan views in one call. list_projects unlocks fresh sessions. resolve_question and add_research give structured write paths for the two remaining unstructured operations. The discovery fallback makes MCP work for per-doc repos without a central index.json. The note-ID fix closes a silent corruption bug. tests/test_mcp_tools.py covers the tool layer (zero coverage today).",
         "starts": "2026-05-26",
         "ends": "2026-06-02",
         "status": "active",
         "items": [
           {
-            "slug": "mcp-gaps",
-            "title": "MCP gap-closure \u2014 power-user queries",
-            "roi": "high",
-            "effort": "M",
-            "ms": "PS",
-            "why_now": "Gaps confirmed live in session \u2014 7 serial read_plan calls to find 7 followups. Immediate productivity tax on every multi-plan session.",
-            "done_when": "uv run pytest tests/ -q shows \u226533 passing, 0 failed; commit landed; impl=1.0",
-            "status": "pending",
-            "tier": "sonnet",
-            "blocked_by": []
+            "slug": "mcp-list-projects",
+            "justification": "Fresh sessions need project discovery before anything else \u2014 currently blocked entirely without knowing project names a priori."
+          },
+          {
+            "slug": "mcp-list-followups",
+            "justification": "7 serial reads to find 7 followups in today's session. Single highest-ROI fix."
+          },
+          {
+            "slug": "mcp-list-questions",
+            "justification": "Open questions buried per-plan, no cross-plan view. Pairs with resolve_question to close the Q&A lifecycle."
+          },
+          {
+            "slug": "mcp-resolve-question",
+            "justification": "Questions have no dedicated close path today; raw patch_plan with full array is the only option."
+          },
+          {
+            "slug": "mcp-add-research",
+            "justification": "Research items require read + full-array patch today. Structured validated append is safer and cheaper."
+          },
+          {
+            "slug": "mcp-discover-fallback",
+            "justification": "Per-doc repos (no central index.json) return zero plans from list_plans today. Fallback makes the tool universal."
+          },
+          {
+            "slug": "mcp-note-id-fix",
+            "justification": "len(notes)+1 collides when notes are deleted or concurrent agents append \u2014 silent data corruption."
+          },
+          {
+            "slug": "mcp-tests",
+            "justification": "Zero tests cover the MCP tool layer today. Required quality gate before any of the 7 fixes ship."
           }
         ]
       }
     ],
     "milestones": [],
     "blockers": [],
-    "timeline": [],
-    "_version": 3
+    "timeline": [
+      {
+        "when": "2026-05-26",
+        "who": "claude-sonnet-4-6",
+        "what": "S4 sprint defined \u2014 8 MCP gap-closure items"
+      },
+      {
+        "when": "2026-05-26",
+        "who": "Simon McIntosh",
+        "what": "reckon state symlink created; 4 imas-ambix decisions locked"
+      },
+      {
+        "when": "2026-05-26",
+        "who": "claude-sonnet-4-6",
+        "what": "S3 shipped: reckon server, MCP, reckon-sync, reckon-create, v7 SPA"
+      }
+    ],
+    "_version": 4
   }
 }

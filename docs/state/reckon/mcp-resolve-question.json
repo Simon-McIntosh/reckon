@@ -1,0 +1,37 @@
+{
+  "updated": "2026-05-26T00:00:00",
+  "project": "reckon",
+  "doc": "mcp-resolve-question",
+  "data": {
+    "slug": "mcp-resolve-question",
+    "title": "resolve_question — close a question with resolution text",
+    "status": "pending",
+    "impl": 0,
+    "ms": "PS",
+    "sprint": "S4",
+    "roi": "mid",
+    "effort": "XS",
+    "tier": "sonnet",
+    "owner": "Simon McIntosh",
+    "last_modified": "2026-05-26",
+    "summary": "MCP tool _resolve_question(project, slug, question_id, resolution, by, expected_version). Sets resolved_at, resolved_by, resolution. Thin wrapper over resolve_in_list.",
+    "sections": [
+      {
+        "id": "s1",
+        "sec": "§ 1",
+        "h": "Implementation",
+        "body": "Add _resolve_question(project, slug, question_id, resolution, by, expected_version) to reckon/mcp.py. Constructs updates = {resolved_at: utc_now, resolved_by: by, resolution: resolution}. Calls resolve_in_list(project, slug, 'questions', question_id, updates, expected_version). Returns {ok, project, slug, new_version} or _conflict_response or {ok: False, error: str(KeyError)}. Add ResolveQuestionArgs to reckon/_mcp_tools.py."
+      },
+      {
+        "id": "s2",
+        "sec": "§ 2",
+        "h": "Tests",
+        "body": "In tests/test_mcp_tools.py: test_resolve_question_happy_path (resolved_at + resolution set; other fields preserved), test_resolve_question_missing_id (ok=False with error string), test_resolve_question_version_conflict (stale version returns conflict response)."
+      }
+    ],
+    "decisions": {},
+    "notes": [],
+    "followups": [],
+    "_version": 0
+  }
+}
