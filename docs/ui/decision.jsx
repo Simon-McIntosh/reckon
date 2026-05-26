@@ -1,6 +1,7 @@
 // Decision row — select a choice + rationale, commit with Update.
+// Renamed from plan-decision.jsx; destructures from window.reckon (canonical namespace).
 
-const { PromptModal, CommentPopover, useSelectionToComment, SectionComments, buildHandoffPrompt, planSave, planLoad, fmtPct } = window.planUtils;
+const { PromptModal, CommentPopover, useSelectionToComment, SectionComments, buildHandoffPrompt, planSave, planLoad, fmtPct } = window.reckon;
 
 function DecisionRow({ d, onUpdate }) {
   const [selected, setSelected] = useState(d.chosen || null);
