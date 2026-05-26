@@ -532,6 +532,42 @@ class Handler(BaseHTTPRequestHandler):
             # Also intercept direct requests to /<project>/index.html.
             self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
             return
+
+        # Intercept /<project>/state/<subproject>/index.json — state-loader.js
+        # uses a relative state URL that resolves here instead of to /state/.
+        # Apply the same live-discovery logic so the SPA always gets fresh inventory.
+        rel_parts = rel.split("/")
+        if (len(rel_parts) == 3 and rel_parts[0] == "state"
+                and rel_parts[2] == "index.json"
+                and SAFE_NAME.match(rel_parts[1])):
+            sub_project = rel_parts[1]
+            sf = (_STATE_ROOT or Path("/dev/null")) / sub_project / "index.json"
+            envelope: dict = {}
+            if sf.is_file():
+                try:
+                    envelope = json.loads(sf.read_bytes())
+                except (OSError, json.JSONDecodeError):
+                    pass
+            mts = load_mounts()
+            if sub_project in mts:
+                try:
+                    disc = discover_plans(Path(mts[sub_project]), sub_project, _STATE_ROOT)
+                    data = dict(envelope.get("data") or {})
+                    data["inventory"] = disc.get("inventory", [])
+                    if not data.get("sprints") and disc.get("sprints"):
+                        data["sprints"] = disc["sprints"]
+                    if not data.get("milestones") and disc.get("milestones"):
+                        data["milestones"] = disc["milestones"]
+                    self._send_json(HTTPStatus.OK, {**envelope, "data": data})
+                    return
+                except Exception:
+                    pass
+            if sf.is_file():
+                self._send(HTTPStatus.OK, sf.read_bytes(), "application/json")
+            else:
+                self._send_json(HTTPStatus.OK, {})
+            return
+
         target = safe_join(root, rel)
         if target is None:
             self._send(HTTPStatus.FORBIDDEN, b"forbidden")
