@@ -53,12 +53,15 @@ function Plan({ slug, onNav }) {
       .then(html => {
         if (!html) { setHtmlReady(true); return; }
         const doc = new DOMParser().parseFromString(html, "text/html");
-        const article = doc.querySelector(".plan-doc");
+        // Accept both reckon-style (.plan-doc) and legacy project-style (main.page / main)
+        const article = doc.querySelector(".plan-doc") || doc.querySelector("main.page") || doc.querySelector("main");
         if (!article) { setHtmlReady(true); return; }
-        // Remove old-nav elements (SPA provides its own chrome)
+        // Remove chrome that the SPA provides itself
         article.querySelector(".topbar")?.remove();
-        const hdr = article.querySelector("header.plan-header");
-        if (hdr) hdr.remove();
+        article.querySelector("header.plan-header")?.remove();
+        article.querySelector("nav.plan-nav")?.remove();
+        // Strip inline scripts — they target the standalone page, not the SPA
+        article.querySelectorAll("script").forEach(s => s.remove());
         setPlanHtml(article.innerHTML);
         setHtmlReady(true);
       })

@@ -1367,8 +1367,14 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 /* Decision table choice cells */
 .r-plan-html .dec-choice { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .r-plan-html .dec-choice.chosen { color: var(--accent); font-weight: 600; }
-/* Hide old topbar/nav elements that weren't stripped by DOMParser */
-.r-plan-html .topbar { display: none; }
+/* Reset layout containers from standalone pages — SPA controls outer layout */
+.r-plan-html main.page { max-width: none; margin: 0; padding: 0; width: auto; }
+/* .prose max-width is good for readability — keep it, but let it breathe */
+.r-plan-html .prose { max-width: none; }
+/* Hide standalone-page chrome stripped at fetch time or that slips through */
+.r-plan-html .topbar,
+.r-plan-html nav.plan-nav,
+.r-plan-html .plan-nav { display: none; }
 /* plan-summary paragraph in old format */
 .r-plan-html .plan-summary { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
 /* plan-meta-row badges — suppress in SPA (title bar owns these) */
