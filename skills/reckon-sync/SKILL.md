@@ -150,10 +150,11 @@ cp "$RECKON/docs/_shared/state.js"       "$DOCS/_shared/state.js"
 
 cp "$RECKON/docs/ui/ui.jsx"          "$DOCS/ui/ui.jsx"
 cp "$RECKON/docs/ui/state-loader.js" "$DOCS/ui/state-loader.js"
+cp "$RECKON/docs/ui/styles-base.css" "$DOCS/ui/styles-base.css"
 cp "$RECKON/docs/ui/styles.css"      "$DOCS/ui/styles.css"
 
 # Shell and component files (stable names — no version prefixes)
-for f in bits cockpit plan plan-decision plan-tokenizers shell sprint; do
+for f in bits cockpit decision graph plan plan-tokenizers shell sprint; do
   src="$RECKON/docs/ui/${f}.jsx"
   [ -f "$src" ] && cp "$src" "$DOCS/ui/${f}.jsx"
 done
@@ -189,6 +190,7 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
   <link rel="stylesheet" href="_shared/foundation.css">
   <link rel="stylesheet" href="_shared/dashboard.css">
   <link rel="stylesheet" href="ui/project.css">
+  <link rel="stylesheet" href="ui/styles-base.css">
   <link rel="stylesheet" href="ui/styles.css">
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -199,11 +201,12 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
   <script src="ui/state-loader.js"></script>
   <script type="text/babel" src="ui/ui.jsx"></script>
   <script type="text/babel" src="ui/bits.jsx"></script>
-  <script type="text/babel" src="ui/plan-decision.jsx"></script>
+  <script type="text/babel" src="ui/decision.jsx"></script>
   <script type="text/babel" src="ui/plan-tokenizers.jsx"></script>
   <script type="text/babel" src="ui/cockpit.jsx"></script>
   <script type="text/babel" src="ui/plan.jsx"></script>
   <script type="text/babel" src="ui/sprint.jsx"></script>
+  <script type="text/babel" src="ui/graph.jsx"></script>
   <script type="text/babel" src="ui/shell.jsx"></script>
 </body>
 </html>
@@ -211,6 +214,63 @@ HTMLEOF
   echo "wrote $INDEX (project=$PROJECT)"
 else
   echo "skipped index.html — file exists and is not a v7 SPA (manual review needed)"
+fi
+```
+
+### Step 2c — Create or update docs/reckon.html (named SPA entry point)
+
+Mirror `index.html` as `reckon.html` so both entry points stay in sync. The
+`reckon.html` name works as a stable deep-link and survives GitHub Pages
+routes that redirect bare `/` to `index.html`.
+
+```bash
+RECKON_HTML="$DOCS/reckon.html"
+
+# Same detection gate: only overwrite if already v7 or on first-run
+IS_V7_RECKON=false
+if [ -f "$RECKON_HTML" ] && grep -q '_shared/' "$RECKON_HTML" 2>/dev/null; then
+  IS_V7_RECKON=true
+fi
+
+if [ "$INTENT" = "first-run" ] || [ "$IS_V7_RECKON" = "true" ]; then
+  cat > "$RECKON_HTML" <<HTMLEOF
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="${PROJECT}">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>reckon · plan system</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="_shared/foundation.css">
+  <link rel="stylesheet" href="_shared/dashboard.css">
+  <link rel="stylesheet" href="ui/project.css">
+  <link rel="stylesheet" href="ui/styles-base.css">
+  <link rel="stylesheet" href="ui/styles.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="ui/state-loader.js"></script>
+  <script type="text/babel" src="ui/ui.jsx"></script>
+  <script type="text/babel" src="ui/bits.jsx"></script>
+  <script type="text/babel" src="ui/decision.jsx"></script>
+  <script type="text/babel" src="ui/plan-tokenizers.jsx"></script>
+  <script type="text/babel" src="ui/cockpit.jsx"></script>
+  <script type="text/babel" src="ui/plan.jsx"></script>
+  <script type="text/babel" src="ui/sprint.jsx"></script>
+  <script type="text/babel" src="ui/graph.jsx"></script>
+  <script type="text/babel" src="ui/shell.jsx"></script>
+</body>
+</html>
+HTMLEOF
+  echo "wrote $RECKON_HTML (project=$PROJECT)"
+else
+  echo "skipped reckon.html — file exists and is not a v7 SPA (manual review needed)"
 fi
 ```
 
