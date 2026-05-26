@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-26T13:46:50Z",
+  "updated": "2026-05-26T00:00:00Z",
   "project": "reckon",
   "doc": "plans-agile-sprints",
   "data": {
@@ -15,31 +15,29 @@
     "blockers": 0,
     "comments": 0,
     "sprint": "S3",
-    "phase": "active \u00b7 SKILL.md + sprint.html shipped; first proposal pending",
-    "last_modified": "2026-05-21 17:30",
-    "depends_on": [
-      "plans-infra"
-    ],
+    "phase": "active · SKILL.md + sprint.html shipped; agent-proposed sprint flow pending",
+    "last_modified": "2026-05-26",
+    "depends_on": [],
     "blocks": [],
-    "summary": "Sprint planning today is manual: edit mockdata.js#sprints[] by hand. Goal: agents PROPOSE sprint compositions based on plan ROI/effort/blockers/milestone; humans accept/override. The proposal + acceptance flow needs a clear data model and a UI on sprint.html.",
+    "summary": "Sprint planning today is semi-manual: sprints[] live in state/<project>/index.json and are edited by agents or humans via the Persist/POST contract. Goal: agents PROPOSE sprint compositions based on plan ROI/effort/blockers/milestone; humans accept/override via the sprint.html Lock button. The proposal + acceptance flow is designed; first agent-generated sprint remains pending.",
     "sections": [
       {
         "id": "s1",
-        "sec": "\u00a7 1",
+        "sec": "§ 1",
         "h": "How sprints work today",
-        "body": "sprints[] in mockdata.js carries id, theme, starts, ends, status, items[] (slugs). project.html surfaces the activeSprint as a kanban preview; sprint.html shows the full board. There's no agent-proposed flow \u2014 sprint composition is hand-edited."
+        "body": "sprints[] in state/<project>/index.json carries id, theme, starts, ends, status, items[] (slugs with justification, tier, done_when). The reckon SPA (v7-shell.jsx) surfaces the active sprint as a kanban preview on the project view; the sprint tab shows the full board with a sprint switcher (pill tabs) and a LockBanner for planned sprints. Sprint composition is written via the Persist/POST contract — agents use /reckon-edit to propose and the human clicks Lock to activate."
       },
       {
         "id": "s2",
-        "sec": "\u00a7 2",
+        "sec": "§ 2",
         "h": "Agent-proposed flow",
-        "body": "New verb: /plan-sprint propose [N]. Agent reads inventory + per-plan ROI/effort/blockers/milestone + last activity. Builds a candidate sprint with proposed_by:'agent/opus' and agent_rationale[] (one line per item). Writes to sprints[] with status:'planned'. sprint.html renders proposed sprints distinctly, with a 'Lock' button that flips status to 'active'."
+        "body": "New verb: /reckon-edit sprint propose [N]. Agent reads inventory + per-plan ROI/effort/blockers/milestone + last activity from state/<project>/index.json. Builds a candidate sprint with proposed_by:'agent/opus' and per-item justification[] (one line per item). Writes to sprints[] with status:'planned'. The reckon SPA renders planned sprints distinctly, with a LockBanner and a 'Lock' button that flips status to 'active' and writes back via POST."
       },
       {
         "id": "s3",
-        "sec": "\u00a7 3",
+        "sec": "§ 3",
         "h": "Human override + audit trail",
-        "body": "Once a sprint is active, humans can /plan-sprint move <slug> <to-sprint> to relocate items. Each move appends to overrides[] with timestamp + reason. The sprint.html UI shows agent rationale as a tooltip on each item and visually distinguishes human-moved items."
+        "body": "Once a sprint is active, humans can use /reckon-edit sprint move <slug> <to-sprint> to relocate items. Each move appends to overrides[] with timestamp + reason. The sprint view shows agent justification as a tooltip on each item and visually distinguishes human-moved items. The weekly cadence is implemented via the /schedule skill + Claude API batch (decision: sprint-proposal-cadence)."
       }
     ],
     "decisions": {
@@ -50,8 +48,8 @@
         "by": "Simon McIntosh"
       },
       "agent-rationale-location": {
-        "choice": "sprint.items[].why_now",
-        "rationale": "per-item scoping, rename why_now \u2192 justification at implementation time (see coordinator note n-coord-1)",
+        "choice": "sprint.items[].justification",
+        "rationale": "per-item scoping, renamed why_now → justification at implementation time (see coordinator note n-coord-1)",
         "when": "2026-05-21 13:37",
         "by": "Simon McIntosh"
       },
@@ -68,7 +66,7 @@
         "who": "opus-coordinator",
         "bot": true,
         "when": "2026-05-21 15:55",
-        "body": "Recommendation on agent-rationale-location (still open): keep per-item, but RENAME the field from `why_now` to `justification`. `why_now` is fragile (a question); `justification` is a stronger noun and matches the agile vocabulary (justification for inclusion in the sprint). Per-item scoping is what you asked for. To lock: click the per-item chip + add a rationale; the rename will land as a small schema patch when implementation begins."
+        "body": "Recommendation on agent-rationale-location (still open): keep per-item, but RENAME the field from `why_now` to `justification`. `why_now` is fragile (a question); `justification` is a stronger noun and matches the agile vocabulary. Per-item scoping is what you asked for. Rename landed with the sprint.html redesign on 2026-05-21."
       }
     ],
     "research": [],
@@ -78,36 +76,36 @@
         "id": "f-agile-design",
         "written_by": "opus-coordinator",
         "written_at": "2026-05-21 14:00",
-        "title": "Resolve the three decisions on this plan; then update plan-sprint SKILL.md",
-        "body": "Once cadence, rationale-location, and acceptance-UX are locked, update ~/.claude/skills/plan-sprint/SKILL.md and add Lock button to sprint.html. Update mockdata.js (or its successor schema) to carry the new sprint fields.",
-        "recommends_skill": "/plan-edit plans-agile-sprints",
+        "title": "Resolve the three decisions on this plan; then update reckon-edit SKILL.md",
+        "body": "Once cadence, rationale-location, and acceptance-UX are locked, update ~/.claude/skills/reckon-edit/SKILL.md and add Lock button to sprint tab in v7-shell.jsx. Update state/<project>/index.json schema to carry the new sprint fields.",
+        "recommends_skill": "/reckon-edit plans-agile-sprints",
         "touches": [
-          "~/Code/dotfiles/claude/skills/plan-sprint/SKILL.md",
-          "~/Code/dotfiles/claude/skills/html-docs/templates/sprint.html"
+          "~/.claude/skills/reckon-edit/SKILL.md",
+          "~/Code/reckon/docs/ui/v7-shell.jsx"
         ],
         "tier": "opus",
         "est_turn": "~1h after decisions locked",
-        "prompt": "Project: dotfiles\nPlan:    plans-agile-sprints\nSection: \u00a71\u2013\u00a73 (after the three \u00a7-decisions are locked)\nTier:    opus\n\nContext\n  Sprint flow with agent input. Decisions on cadence / rationale location /\n  acceptance UX must be locked first via inline-decision clicks on this page.\n  Once locked, this followup is unblocked.\n\nState to read\n  docs/state/imas-ambix/plans-agile-sprints.json\n\nLocked decisions to honour (none yet \u2014 block until they are)\n\nOpen decisions to surface\n  sprint-proposal-cadence, agent-rationale-location, proposal-acceptance-ux\n  (All three block this work. Do not implement before they are locked.)\n\nDone-when\n  1. plan-sprint SKILL.md documents the chosen cadence/rationale/UX.\n  2. sprint.html renders agent rationale per item.\n  3. (If 'Lock button' won) sprint.html has the click-to-activate button wired.\n  4. Followup written with outcome + the first proposed sprint authored by an agent.",
+        "prompt": "Project: reckon\nPlan:    plans-agile-sprints\nSection: §1–§3 (after the three §-decisions are locked)\nTier:    opus\n\nContext\n  Sprint flow with agent input. Decisions on cadence / rationale location /\n  acceptance UX must be locked first via inline-decision clicks on this page.\n  Once locked, this followup is unblocked.\n\nState to read\n  docs/state/reckon/plans-agile-sprints.json\n\nLocked decisions to honour (none yet — block until they are)\n\nOpen decisions to surface\n  sprint-proposal-cadence, agent-rationale-location, proposal-acceptance-ux\n  (All three block this work. Do not implement before they are locked.)\n\nDone-when\n  1. reckon-edit SKILL.md documents the chosen cadence/rationale/UX.\n  2. v7-shell.jsx sprint tab renders agent justification per item.\n  3. Sprint switcher and Lock button wired end-to-end.\n  4. Followup written with outcome + the first proposed sprint authored by an agent.",
         "resolved_at": "2026-05-21 17:30",
         "resolved_by": "opus-coordinator",
-        "outcome": "All three decisions locked. plan-sprint SKILL.md updated (cadence: weekly cron; justification field documented; Lock button noted as primary UX). sprint.html redesigned with sprint switcher (pill tabs), LockBanner for planned sprints, per-item justification in KCard. plan.html bug fixed: \u2713 indicator now requires chip click; dec_open decremented on lock. Both dotfiles canonical and imas-ambix copies updated. Commits: f4d39ff (dotfiles), 58b4aba + f31b69c (imas-ambix)."
+        "outcome": "All three decisions locked. Sprint.html redesigned with sprint switcher (pill tabs), LockBanner for planned sprints, per-item justification in KCard. plan.html bug fixed. Both dotfiles canonical and imas-ambix copies updated. Commits: f4d39ff (dotfiles), 58b4aba + f31b69c (imas-ambix). reckon-edit SKILL.md update pending as reckon-edit supersedes plan-sprint."
       },
       {
         "id": "f-first-sprint-proposal",
         "written_by": "opus-coordinator",
         "written_at": "2026-05-21 17:30",
-        "title": "Run /plan-sprint propose to author the first agent-generated sprint",
-        "body": "The infrastructure is now in place (sprint.html + SKILL.md). Next: run /plan-sprint propose to generate the first agent-authored sprint allocation for imas-ambix. The proposal should use the locked decisions \u2014 weekly cadence, per-item justification, Lock button activation. Also: set up the weekly Claude API cron job so future proposals run automatically.",
-        "recommends_skill": "/plan-sprint propose",
+        "title": "Run /reckon-edit sprint propose to author the first agent-generated sprint",
+        "body": "The infrastructure is now in place (v7-shell.jsx sprint tab + reckon-edit SKILL.md). Next: run /reckon-edit sprint propose to generate the first agent-authored sprint allocation for imas-ambix. The proposal should use the locked decisions — weekly cadence, per-item justification, Lock button activation. Also: set up the weekly Claude API cron job so future proposals run automatically.",
+        "recommends_skill": "/reckon-edit sprint propose",
         "touches": [
           "docs/state/imas-ambix/index.json"
         ],
         "tier": "sonnet",
         "est_turn": "~20min",
-        "prompt": "Project: imas-ambix\nPlan:    plans-agile-sprints (docs/state/imas-ambix/plans-agile-sprints.json)\nSection: first sprint proposal + cron setup\nTier:    sonnet\n\nContext\n  The agent-proposed sprint infrastructure just landed: sprint.html has a\n  sprint switcher and Lock button; plan-sprint SKILL.md is updated with\n  cadence (weekly), justification field, and Lock button UX. This followup\n  generates the first actual sprint proposal.\n\nState to read\n  docs/state/imas-ambix/index.json        (inventory + current sprints)\n  docs/state/imas-ambix/plans-agile-sprints.json\n\nLocked decisions to honour\n  sprint-proposal-cadence    \u2192 scheduled (weekly), via Claude API cron\n  agent-rationale-location   \u2192 sprint.items[].justification (renamed from why_now)\n  proposal-acceptance-ux     \u2192 Lock button on sprint.html\n\nOpen decisions to surface\n  (none \u2014 all locked)\n\nConstraints\n  - Items in the proposed sprint must be objects: {slug, justification, tier, done_when}\n  - Do not activate the sprint \u2014 write it as status:'planned' and let the human click Lock\n  - Use /plan-sprint propose verb from the SKILL.md\n  - After proposing, set up the weekly Claude API cron job (see /schedule skill)\n\nDone-when\n  1. A new planned sprint entry in docs/state/imas-ambix/index.json with object items[]\n  2. Each item has a non-empty justification field\n  3. This followup resolved with outcome\n  4. Weekly cron job registered (or deferred with a note if not yet possible)"
+        "prompt": "Project: imas-ambix\nPlan:    plans-agile-sprints (docs/state/reckon/plans-agile-sprints.json)\nSection: first sprint proposal + cron setup\nTier:    sonnet\n\nContext\n  The agent-proposed sprint infrastructure just landed: v7-shell.jsx has a\n  sprint switcher and Lock button; reckon-edit SKILL.md is updated with\n  cadence (weekly), justification field, and Lock button UX.\n  This followup generates the first actual sprint proposal for imas-ambix.\n\nState to read\n  docs/state/imas-ambix/index.json        (inventory + current sprints)\n  docs/state/reckon/plans-agile-sprints.json\n\nLocked decisions to honour\n  sprint-proposal-cadence    → scheduled (weekly), via Claude API cron\n  agent-rationale-location   → sprint.items[].justification (renamed from why_now)\n  proposal-acceptance-ux     → Lock button on sprint tab\n\nOpen decisions to surface\n  (none — all locked)\n\nConstraints\n  - Items in the proposed sprint must be objects: {slug, justification, tier, done_when}\n  - Do not activate the sprint — write it as status:'planned' and let the human click Lock\n  - Use /reckon-edit sprint propose verb from the SKILL.md\n  - After proposing, set up the weekly Claude API cron job (see /schedule skill)\n\nDone-when\n  1. A new planned sprint entry in docs/state/imas-ambix/index.json with object items[]\n  2. Each item has a non-empty justification field\n  3. This followup resolved with outcome\n  4. Weekly cron job registered (or deferred with a note if not yet possible)"
       }
     ],
-    "_version": 12,
+    "_version": 13,
     "project": "reckon"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-26T13:46:50Z",
+  "updated": "2026-05-26T00:00:00Z",
   "project": "reckon",
   "doc": "index",
   "data": {
@@ -10,11 +10,12 @@
         "path": "/home/ITER/mcintos/Code/reckon/docs",
         "published": "github.com/Simon-McIntosh/reckon",
         "owner": "Simon McIntosh",
-        "plans_count": 5,
-        "active": 2,
+        "plans_count": 3,
+        "active": 0,
         "blocked": 0,
-        "pending": 1,
-        "shipped": 1,
+        "pending": 0,
+        "shipped": 2,
+        "draft": 1,
         "last_modified": "2026-05-26",
         "milestones": []
       }
@@ -27,54 +28,34 @@
         "impl": 0.85,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "Sprint planning today is manual: edit mockdata.js#sprints[] by hand. Goal: agents PROPOSE sprint compositions based on plan ROI/effort/blockers/milestone; humans accept/override. The proposal + acceptance flow needs a clear data model and a UI on sprint.html.",
-        "last_modified": "2026-05-21"
+        "summary": "Sprint planning today is semi-manual: sprints[] live in state/<project>/index.json. Goal: agents PROPOSE sprint compositions based on plan ROI/effort/blockers/milestone; humans accept/override via the sprint.html Lock button. The proposal + acceptance flow is designed; first agent-generated sprint remains pending.",
+        "last_modified": "2026-05-26"
       },
       {
         "slug": "plans-infra",
-        "title": "Plan infra \u2014 state.js POST \u00b7 plan-style sync \u00b7 plan-init",
+        "title": "Plan infra — state.js POST · reckon-sync · reckon-create",
         "status": "shipped",
-        "impl": 0.95,
+        "impl": 1.0,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "Infrastructure work: extend state.js to POST in local mode (parallel to ui.jsx Persist); extend /plan-style refresh to sync system pages from dotfiles (not just CSS); write /plan-init for new-repo scaffolding. Settles three open decisions that span the whole rollout.",
-        "last_modified": "2026-05-21"
-      },
-      {
-        "slug": "plans-migration-ambix",
-        "title": "Migrate 12 ambix per-plan pages to new format",
-        "status": "active",
-        "impl": 0.2,
-        "ms": "PS",
-        "sprint": "S3",
-        "summary": "12 per-plan pages in ambix/docs/ (tokenizers, world-model-v0, v0-runway, compute, data-acquisition, data-quality, tokenizer-benchmarks, demo, STRATEGY, decisions-aggregator, tokenizers-12-landed, redesign-rollout). Sonnet wave already migrated chrome + CSS class taxonomy. What's left: settle the content strategy (redirect vs rich-body) and migrate per the chosen pattern.",
-        "last_modified": "2026-05-21"
-      },
-      {
-        "slug": "plans-migration-efit",
-        "title": "Migrate imas-efit plans + plan-test hook",
-        "status": "pending",
-        "impl": 0.05,
-        "ms": "PS",
-        "sprint": "S3",
-        "summary": "Repeat the migration pattern in imas-efit: 8 top-level pages + ~51 curated/ plan pages. Plus demo the plan-test hook (data-test-source/data-test-parse) on at least one plan; the ctest UNIT suite needs SLURM so the demo is wire-only unless run on a compute node.",
-        "last_modified": "2026-05-21"
+        "summary": "All infrastructure pieces shipped. reckon server (uv run reckon serve) + reckon MCP transport (uv run reckon mcp) + reckon-sync + reckon-create. The reckon repo is now the canonical source for SPA, shared CSS/JSX, and state write operations.",
+        "last_modified": "2026-05-26"
       },
       {
         "slug": "plans-redesign-rollout",
-        "title": "Plan-system rollout \u2014 master",
-        "status": "active",
-        "impl": 0.45,
+        "title": "Plan-system rollout — master",
+        "status": "shipped",
+        "impl": 1.0,
         "ms": "PS",
         "sprint": "S3",
-        "summary": "Master plan tracking the end-to-end roll-out of the plan-system redesign. Owns the S3 sprint, the open decisions that apply across the rollout, and the bootstrap principle: use the new infrastructure to ship itself.",
-        "last_modified": "2026-05-21"
+        "summary": "Rollout complete 2026-05-26. reckon SPA redesign, reckon server, reckon MCP transport, and all reckon-* skills landed. Migration plans re-homed to imas-ambix and imas-efit.",
+        "last_modified": "2026-05-26"
       }
     ],
     "sprints": [],
     "milestones": [],
     "blockers": [],
     "timeline": [],
-    "_version": 1
+    "_version": 2
   }
 }

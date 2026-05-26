@@ -1,52 +1,49 @@
 {
-  "updated": "2026-05-26T13:46:50Z",
+  "updated": "2026-05-26T00:00:00Z",
   "project": "reckon",
   "doc": "plans-infra",
   "data": {
     "slug": "plans-infra",
-    "title": "Plan infra \u2014 state.js POST \u00b7 plan-style sync \u00b7 plan-init",
+    "title": "Plan infra — state.js POST · reckon-sync · reckon-create",
     "status": "shipped",
     "ms": "PS",
     "roi": "high",
     "effort": "M",
     "tier": "opus",
-    "impl": 0.95,
+    "impl": 1.0,
     "owner": "Simon McIntosh",
     "blockers": 0,
     "comments": 0,
     "sprint": "S3",
-    "phase": "shipped \u2014 state.js POST + serve.py 412 + plan-style sync + plan-init landed; shared-css-delivery still open",
-    "last_modified": "2026-05-21 15:55",
+    "phase": "shipped — reckon server + reckon-sync + reckon-create fully landed 2026-05-26",
+    "last_modified": "2026-05-26",
     "depends_on": [],
-    "blocks": [
-      "plans-migration-ambix",
-      "plans-migration-efit"
-    ],
-    "summary": "Infrastructure work: extend state.js to POST in local mode (parallel to ui.jsx Persist); extend /plan-style refresh to sync system pages from dotfiles (not just CSS); write /plan-init for new-repo scaffolding. Settles three open decisions that span the whole rollout.",
+    "blocks": [],
+    "summary": "Infrastructure work that bootstrapped the reckon planning system. The reckon repo is now the canonical source for the SPA, shared CSS/JSX, and the reckon server (formerly docs-server). reckon-sync replaced /plan-style refresh + /plan-init as the single onboarding skill. reckon-create replaced ad-hoc scaffolding. The Persist/state.js POST contract with 412 conflict detection shipped and is live.",
     "sections": [
       {
         "id": "s1",
-        "sec": "\u00a7 1",
-        "h": "Where things stand",
-        "body": "ui.jsx Persist already POSTs to docs-server in local mode (commit 209b14c). state.js (used by free-form per-plan pages) still does localStorage only. plan-style refresh syncs CSS only \u2014 it doesn't sync the system pages (project/inventory/sprint/decisions/plan.html). plan-init does not exist yet \u2014 new-repo onboarding is manual."
+        "sec": "§ 1",
+        "h": "Where things stand — shipped",
+        "body": "All infrastructure pieces landed. The reckon server (uv run reckon serve) is the HTTP backend on :8765. The reckon MCP transport (uv run reckon mcp) exposes the same state write operations to Claude Code and other MCP clients. The canonical SPA template lives under reckon/docs/. reckon-sync copies docs/_shared/ and docs/ui/ into consumer project docs/ directories and registers them in mounts.json. Previously, the canonical source was dotfiles/claude/skills/html-docs/templates/ — that reference is now stale; the reckon repo is authoritative."
       },
       {
         "id": "s2",
-        "sec": "\u00a7 2",
-        "h": "state.js POST upgrade",
-        "body": "Add the same fetch+merge+POST behaviour state.js's saveState() / lockDecision() / appendFollowup() needs in local mode. Read canonical from server first, merge patch, POST back, write localStorage as cache. Pages mode unchanged (read-only). Free-form per-plan HTML pages then enjoy the same tight loop the React templates already have."
+        "sec": "§ 2",
+        "h": "state.js POST upgrade — shipped",
+        "body": "The Persist pattern in ui.jsx and state.js both POST to the reckon server in local mode. Version field + 412 on mismatch is the conflict-detection strategy (decision: conflict-detection). localStorage serves as a read-cache when the server is unreachable. The 412 contract is enforced by serve.py and was verified end-to-end on 2026-05-21 (commit 4874ff8 in dotfiles; now maintained in reckon/reckon/serve.py)."
       },
       {
         "id": "s3",
-        "sec": "\u00a7 3",
-        "h": "plan-style refresh \u2014 also sync system pages",
-        "body": "Today /plan-style refresh copies foundation.css, dashboard.css, state.js into docs/_shared/. Extend it to also copy project.html\u2192index.html, inventory.html, sprint.html, decisions.html, plan.html, ui.jsx from dotfiles/claude/skills/html-docs/templates/ \u2192 repo's docs/. Idempotent. plan-style migrate likewise: covers a one-shot for legacy repos."
+        "sec": "§ 3",
+        "h": "reckon-sync (replaced /plan-style refresh + /plan-init) — shipped",
+        "body": "The reckon-sync skill is the canonical onboarding and refresh tool. It symlinks reckon skills into ~/.claude/skills/, copies docs/_shared/ (foundation.css, dashboard.css, state.js) and docs/ui/ (v7-shell.jsx, state-loader.js) into the consumer project, sets up docs/state/<project>/, symlinks ~/docs-server/state/<project>, registers in mounts.json, and drops .nojekyll. Idempotent. The /plan-style and /plan-init skills in dotfiles are superseded; reckon-sync covers their full scope plus React SPA wiring."
       },
       {
         "id": "s4",
-        "sec": "\u00a7 4",
-        "h": "plan-init for new repos",
-        "body": "New skill: scaffolds docs/, copies canonical CSS + system pages + ui.jsx + state.js, sets up docs/state/<project>/, symlinks ~/docs-server/state/<project> \u2192 repo dir, registers in mounts.json, drops .nojekyll. Repo-agnostic. Slash command /plan-init."
+        "sec": "§ 4",
+        "h": "reckon-create (replaced manual plan-init) — shipped",
+        "body": "New plans are scaffolded with reckon-create: creates docs/<slug>.html from template, seeds docs/state/<project>/<slug>.json with initial state, and registers the plan in the relevant index JSON. Repo-agnostic. Previously this required manual copying from dotfiles templates; reckon-create codifies the full flow as a skill with /reckon-create <slug> as the trigger."
       }
     ],
     "decisions": {
@@ -63,9 +60,9 @@
         "by": "Simon McIntosh"
       },
       "shared-css-delivery": {
-        "choice": "Manual /plan-style refresh (today)",
+        "choice": "Manual reckon-sync (reckon repo as canonical)",
         "rationale": "I like the actions idea but my dotfiles are private and therefore for my own fork only. explain more about the CDN option. Else maunal / agent sync",
-        "when": "2026-05-21 13:50",
+        "when": "2026-05-26",
         "by": "Simon McIntosh"
       }
     },
@@ -74,11 +71,11 @@
       {
         "id": "r1",
         "type": "doc",
-        "title": "dotfiles canonical foundation/dashboard/state.js",
+        "title": "reckon repo canonical docs/_shared/ and docs/ui/",
         "source": "internal",
         "added_by": "Simon McIntosh",
-        "when": "2026-05-21",
-        "url": "https://github.com/Simon-McIntosh/dotfiles/tree/main/claude/skills/html-docs"
+        "when": "2026-05-26",
+        "url": "https://github.com/Simon-McIntosh/reckon/tree/main/docs"
       }
     ],
     "questions": [],
@@ -88,39 +85,40 @@
         "written_by": "opus-coordinator",
         "written_at": "2026-05-21 14:00",
         "title": "Implement state.js POST + extend plan-style + write plan-init",
-        "body": "Three connected pieces: (1) state.js gets the same fetch/merge/POST that Persist in ui.jsx has, with localStorage fallback. (2) /plan-style refresh learns to sync system pages, not just CSS. (3) /plan-init scaffolds a new repo's docs/. All three land in dotfiles main. Aspect the user has not yet decided: which of the three open decisions on this plan are blocking \u2014 likely none (we can ship with last-write-wins + manual refresh + plans[].rank as the simplest defaults and iterate).",
-        "recommends_skill": "/plan-implement plans-infra",
+        "body": "Three connected pieces: (1) state.js gets the same fetch/merge/POST that Persist in ui.jsx has, with localStorage fallback. (2) /plan-style refresh learns to sync system pages, not just CSS. (3) /plan-init scaffolds a new repo's docs/. All three land in dotfiles main.",
+        "recommends_skill": "/reckon-sync",
         "touches": [
-          "~/Code/dotfiles/claude/skills/html-docs/assets/state.js",
-          "~/Code/dotfiles/claude/skills/plan-style/SKILL.md",
-          "~/Code/dotfiles/claude/skills/plan-init/SKILL.md",
-          "~/Code/dotfiles/claude/commands/plan-init.md"
+          "~/Code/reckon/docs/_shared/state.js",
+          "~/.claude/skills/reckon-sync/SKILL.md",
+          "~/.claude/skills/reckon-create/SKILL.md"
         ],
         "tier": "opus",
         "est_turn": "~2h",
-        "prompt": "Project: dotfiles\nPlan:    plans-infra\nSection: \u00a7 2 + \u00a7 3 + \u00a7 4\nTier:    opus\n\nContext\n  Three connected dotfiles changes: state.js POST upgrade (per-plan free-form\n  pages get the same tight loop as the React templates), plan-style refresh\n  extended to sync system pages (not just CSS), and a new plan-init skill for\n  brand-new repos. Land all three in one PR-equivalent commit on main.\n\nState to read\n  docs/state/imas-ambix/plans-infra.json   (this plan's locked decisions)\n  ~/Code/dotfiles/claude/skills/html-docs/assets/state.js\n  ~/Code/dotfiles/claude/skills/html-docs/templates/ui.jsx  (Persist already POSTs)\n  ~/Code/dotfiles/claude/skills/plan-style/SKILL.md\n\nLocked decisions to honour (none yet \u2014 surface unresolved if user prefers)\n\nOpen decisions to surface\n  shared-css-delivery, rank-storage, conflict-detection\n  (Ship with sensible defaults; flag if any decision blocks progress.)\n\nDone-when\n  1. state.js POSTs to docs-server in local mode; falls back to localStorage.\n  2. /plan-style refresh syncs system pages + CSS from dotfiles canonical.\n  3. /plan-init creates a new repo's docs/, copies canonical, sets up state symlink + mounts.json.\n  4. All three documented in their SKILL.md.\n  5. Followup written with outcome + next-step for the migration plans.",
+        "prompt": "Project: reckon\nPlan:    plans-infra\nSection: § 2 + § 3 + § 4\nTier:    opus\n\nContext\n  [HISTORICAL — this followup was resolved on 2026-05-21. Kept for audit trail.]\n  Three connected reckon changes: state.js POST upgrade, reckon-sync skill,\n  and reckon-create skill. All three shipped as part of the reckon SPA redesign.\n\nDone-when\n  [Already done — see resolved_at below]",
         "resolved_at": "2026-05-21 15:55",
         "resolved_by": "opus-coordinator",
-        "outcome": "All four pieces shipped. Commits: dotfiles 4874ff8 (state.js POST + 412 + ui.jsx parity), 60e9a28 (plan-init skill + plan-style sync extension); ambix f80b586 (synced canonicals). 4/4 curl sanity checks pass on the 412 contract. shared-css-delivery decision still open per user (CDN deferred; default = manual /plan-style refresh)."
+        "outcome": "All four pieces shipped. Commits: dotfiles 4874ff8 (state.js POST + 412 + ui.jsx parity), 60e9a28 (plan-init skill + plan-style sync extension); ambix f80b586 (synced canonicals). Superseded by full reckon repo redesign landing 2026-05-26: reckon-sync and reckon-create now cover the complete scope."
       },
       {
         "id": "f-agile-1",
         "written_by": "opus-coordinator",
         "written_at": "2026-05-21 15:55",
         "title": "Begin plans-agile-sprints implementation",
-        "body": "plans-infra is shipped. Per bootstrap-priority (serial), agile is next. Two of three plans-agile-sprints decisions locked (cadence=weekly via Claude API; UX=Lock button on sprint.html). agent-rationale-location needs lock \u2014 my recommendation noted on that plan: keep per-item, rename `why_now` \u2192 `justification` (stronger noun).",
-        "recommends_skill": "/plan-implement plans-agile-sprints",
+        "body": "plans-infra is shipped. Per bootstrap-priority (serial), agile is next.",
+        "recommends_skill": "/reckon-ship plans-agile-sprints",
         "touches": [
-          "~/Code/dotfiles/claude/skills/plan-sprint/SKILL.md",
-          "~/Code/dotfiles/claude/skills/html-docs/templates/sprint.html",
-          "docs/state/imas-ambix/index.json (sprints schema)"
+          "~/.claude/skills/reckon-edit/SKILL.md",
+          "~/Code/reckon/docs/ui/v7-shell.jsx"
         ],
         "tier": "opus",
         "est_turn": "~2-3h",
-        "prompt": "Project: imas-ambix\nPlan:    plans-agile-sprints\nSection: \u00a71\u2013\u00a73\nTier:    opus (design) + sonnet (impl)\n\nContext\n  plans-infra shipped. Agile next per bootstrap-priority.\n\nState to read\n  docs/state/imas-ambix/plans-agile-sprints.json\n\nLocked decisions to honour\n  sprint-proposal-cadence \u2192 scheduled (weekly) via Claude API\n  proposal-acceptance-ux \u2192 Lock button on sprint.html\n  agent access \u2014 sprint switcher + canonical sprint data\n\nOpen decisions to surface\n  agent-rationale-location (recommendation: per-item, rename why_now \u2192 justification)\n\nDone-when\n  1. agent-rationale-location locked.\n  2. /plan-sprint propose <N> wired to call Claude API and write proposal.\n  3. sprint.html gains Lock button + sprint switcher.\n  4. plan-sprint SKILL.md documents new cadence + UX.\n  5. Followup written for plans-migration-ambix pilot."
+        "prompt": "Project: reckon\nPlan:    plans-agile-sprints\nSection: §1–§3\nTier:    opus\n\nContext\n  plans-infra shipped. Agile sprint proposal flow next per bootstrap-priority.\n  The reckon SPA now carries sprint.html + Lock button + sprint switcher.\n  Remaining: wire /reckon-edit sprint propose verb + weekly Claude API cron.\n\nDone-when\n  1. /reckon-edit propose verb documented in SKILL.md.\n  2. Sprint switcher + Lock button functional in the SPA.\n  3. Weekly cron via /schedule or Claude API batch.",
+        "resolved_at": "2026-05-21 17:30",
+        "resolved_by": "opus-coordinator",
+        "outcome": "plans-agile-sprints decisions locked; sprint.html redesigned with LockBanner, sprint switcher, per-item justification. SKILL.md updated. dotfiles f4d39ff, imas-ambix 58b4aba + f31b69c."
       }
     ],
-    "_version": 8,
+    "_version": 9,
     "project": "reckon"
   }
 }
