@@ -161,7 +161,12 @@ _NON_PLAN_FILES = frozenset([
     "implementation.html", "questions.html", "home.html",
     "project.html",
 ])
-_NON_PLAN_DIRS = frozenset(["_shared", "ui", "state", "assets"])
+_NON_PLAN_DIRS = frozenset([
+    "_shared", "ui", "state", "assets", "images",
+    # Per-stage / archival history (e.g. <plan>-shipped.html, *-locked.html)
+    # lives under archive/ so it does not clutter the live inventory.
+    "archive",
+])
 
 
 class _HeadParser(html.parser.HTMLParser):
@@ -229,10 +234,10 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
 
         title, meta = _read_head_meta(html_file)
 
-        # Explicit opt-in: must have plan-status (or plan-slug as fallback)
-        if "plan-status" not in meta and "plan-slug" not in meta:
-            continue
-
+        # Any HTML file in the docs dir is a plan — existence is sufficient.
+        # plan-* meta tags and canonical sections only *enrich* the entry
+        # (status, milestone, decisions, sprint membership); their absence
+        # never hides a plan. Infrastructure files/dirs are excluded above.
         slug = meta.get("plan-slug") or html_file.stem
         plan_title = meta.get("plan-title") or title or slug
 
@@ -257,7 +262,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "slug":     slug,
             "href":     href,
             "title":    plan_title,
-            "status":   state_overlay.get("status") or meta.get("plan-status", "pending"),
+            "status":   state_overlay.get("status") or meta.get("plan-status", "draft"),
             "ms":       meta.get("plan-milestone", "—"),
             "roi":      meta.get("plan-roi", "mid"),
             "effort":   meta.get("plan-effort", "M"),
@@ -409,6 +414,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
 
+        if path == "/favicon.ico":
+            # Browsers auto-request this; answer cleanly instead of 404-ing
+            # through the project router.
+            self._send(HTTPStatus.NO_CONTENT, b"", "image/x-icon")
+            return
+
         if path in ("/", ""):
             if _HOME_HTML and _HOME_HTML.is_file():
                 ctype, _ = mimetypes.guess_type(str(_HOME_HTML))
@@ -559,15 +570,10 @@ class Handler(BaseHTTPRequestHandler):
 
         root = mounts[project]
         if rel in ("", "/"):
-            if not path.endswith("/"):
-                # Redirect so the browser uses /<project>/ as base URL for relative assets.
-                # Without this, _shared/foundation.css resolves to /foundation.css → 404.
-                self.send_response(HTTPStatus.MOVED_PERMANENTLY)
-                self.send_header("Location", f"/{project}/")
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-                return
-            # Serve dynamically generated index.html for registered projects.
+            # Serve the dynamically generated SPA shell for both /<project> and
+            # /<project>/. No redirect: the shell links assets via absolute
+            # /_shared and /_ui routes, so it does not depend on a trailing
+            # slash for relative resolution.
             self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
             return
         if rel == "index.html":
