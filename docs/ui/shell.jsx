@@ -1,12 +1,14 @@
 // Shell — top bar + three-column body.
 // Brand: reckon (the system). Project name comes from state.
-// Changes from design bundle:
-//   A. Brand shows "reckon" (not project name)
+// Changes from earlier versions:
+//   A. Brand shows "reckon · <projectName>" (dynamic from meta tag / STATE)
 //   B. Fleet prompts use dynamic project name
-//   C. Fleet prompts allow unilateral decision resolution
-//   D/E. "Decisions N" button replaces "Resolve N" — cycles through blocked plans (sprint)
-//   F. Sidebar collapse (⌘B handle) collapses BOTH filter + plan list → full-screen
-//   G. Sprint nav (‹ ›) also appears in the cockpit/overview view
+//   C. "Decisions N" button cycles through blocked plans (sprint titlebar)
+//   D. Sidebar collapse (⌘B handle) collapses BOTH filter + plan list → full-screen
+//   E. Sprint nav (‹ ›) also appears in the cockpit/overview view
+//   F. Graph route (#graph) added to hash router
+//   G. Cmd-K / ⌘K palette for fast plan search
+//   H. showShipped toggle + filters/groupBy/filtersCollapsed persisted to localStorage
 
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
@@ -15,6 +17,7 @@ function parseHash() {
   if (!h || h === "cockpit") return { view: "cockpit" };
   if (h.startsWith("plan/")) return { view: "plan", slug: decodeURIComponent(h.slice(5)) };
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
+  if (h === "graph") return { view: "graph" };
   return { view: "cockpit" };
 }
 
@@ -29,27 +32,41 @@ function useHashRoute() {
     if (to.view === "cockpit") window.location.hash = "#cockpit";
     else if (to.view === "plan") window.location.hash = `#plan/${encodeURIComponent(to.slug)}`;
     else if (to.view === "sprint") window.location.hash = `#sprint/${encodeURIComponent(to.sprint)}`;
+    else if (to.view === "graph") window.location.hash = "#graph";
   }, []);
   return [route, nav];
 }
 
 // ─── Top bar ────────────────────────────────────────────────────────────
 
-function AppTopBar({ route, onNav }) {
-  const onOverview = route.view === "cockpit";
+function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK }) {
+  const M = window.STATE;
+  const view = route.view;
+  const projectName = M?.projects?.[0]?.project ||
+    document.querySelector('meta[name="docs-project"]')?.content || "";
+
   const goPlans = () => {
-    const M = window.STATE;
-    const target = M.inventory.find(p => p.status === "active") || M.inventory[0];
+    const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
     if (target) onNav({ view: "plan", slug: target.slug });
   };
-  const goOverview = () => {
-    if (onOverview) goPlans();
-    else onNav({ view: "cockpit" });
+  const goSprints = () => {
+    const id = M?.active_sprint_id || M?.sprint?.id || M?.sprints?.[0]?.id;
+    if (id) onNav({ view: "sprint", sprint: id });
   };
-  const projectName = window.STATE?.projects?.[0]?.project ||
-    document.querySelector('meta[name="docs-project"]')?.content || "";
+
   return (
     <div className="plan-topbar">
+      <button
+        className="sidebar-toggle-btn"
+        onClick={onToggleSidebar}
+        title={`${sidebarCollapsed ? "Show" : "Hide"} sidebar · ⌘B`}
+        aria-pressed={!sidebarCollapsed}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+          <path d="M6 3v10"/>
+        </svg>
+      </button>
       <div className="brand">
         <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: "inherit" }}>
           <span className="mark">R</span>
@@ -62,22 +79,20 @@ function AppTopBar({ route, onNav }) {
           </>
         )}
       </div>
+      <button className="cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="7" cy="7" r="4.5"/>
+          <path d="M13 13l-2.5-2.5"/>
+        </svg>
+        <span>Search</span>
+        <span className="kbd">⌘K</span>
+      </button>
       <span className="sp"></span>
       <div className="view-tabs">
         <button
-          className={`view-tab ${!onOverview ? "active" : ""}`}
-          onClick={goPlans}
-          title="Plans — work on individual plans"
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M3 4h10M3 8h10M3 12h7"/>
-          </svg>
-          Plans
-        </button>
-        <button
-          className={`view-tab ${onOverview ? "active" : ""}`}
-          onClick={goOverview}
-          title="Overview — milestones, decisions, recent activity"
+          className={`view-tab ${view === "cockpit" ? "active" : ""}`}
+          onClick={() => onNav({ view: "cockpit" })}
+          title="Overview"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="0.7"/>
@@ -87,6 +102,41 @@ function AppTopBar({ route, onNav }) {
           </svg>
           Overview
         </button>
+        <button
+          className={`view-tab ${view === "plan" ? "active" : ""}`}
+          onClick={goPlans}
+          title="Plans"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M3 4h10M3 8h10M3 12h7"/>
+          </svg>
+          Plans
+        </button>
+        <button
+          className={`view-tab ${view === "sprint" ? "active" : ""}`}
+          onClick={goSprints}
+          title="Sprints"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
+            <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
+            <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
+          </svg>
+          Sprints
+        </button>
+        <button
+          className={`view-tab ${view === "graph" ? "active" : ""}`}
+          onClick={() => onNav({ view: "graph" })}
+          title="Graph — dependencies + critical path"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="3.5" cy="4" r="1.5"/>
+            <circle cx="3.5" cy="12" r="1.5"/>
+            <circle cx="12.5" cy="8" r="1.5"/>
+            <path d="M5 4l6 3.5M5 12l6-3.5"/>
+          </svg>
+          Graph
+        </button>
       </div>
     </div>
   );
@@ -94,7 +144,7 @@ function AppTopBar({ route, onNav }) {
 
 // ─── Filters column ─────────────────────────────────────────────────────
 
-function FiltersCol({ filters, setFilters }) {
+function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   const M = window.STATE;
   const statuses = ["active", "blocked", "pending", "shipped"];
   const milestones = M.projects?.[0]?.milestones || M.milestones || [];
@@ -102,6 +152,7 @@ function FiltersCol({ filters, setFilters }) {
 
   const toggle = (group, value) => {
     setFilters(f => {
+      // Single-select per group: clicking the same value clears it; another value replaces.
       const cur = (f[group] || []);
       if (cur.includes(value)) return { ...f, [group]: [] };
       return { ...f, [group]: [value] };
@@ -117,6 +168,7 @@ function FiltersCol({ filters, setFilters }) {
         {statuses.map(s => {
           const n = M.inventory.filter(p => p.status === s).length;
           const on = (filters.status || []).includes(s);
+          if (n === 0) return null;
           return (
             <div key={s} className={`filter-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)}>
               <span className={`dot ${s}`}></span>
@@ -445,6 +497,56 @@ function PlanDeps({ slug }) {
   );
 }
 
+// ─── Cmd-K palette ──────────────────────────────────────────────────────
+
+function CmdKPalette({ items, onClose, onPick }) {
+  const [q, setQ] = useState("");
+  const [idx, setIdx] = useState(0);
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  const filtered = useMemo(() => {
+    if (!q.trim()) return items.slice(0, 30);
+    const needle = q.toLowerCase();
+    return items.filter(p =>
+      p.title?.toLowerCase().includes(needle) ||
+      p.slug?.toLowerCase().includes(needle) ||
+      (p.ms || "").toLowerCase().includes(needle) ||
+      (p.summary || "").toLowerCase().includes(needle)
+    ).slice(0, 30);
+  }, [q, items]);
+  useEffect(() => { setIdx(0); }, [q]);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(filtered.length - 1, i + 1)); }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setIdx(i => Math.max(0, i - 1)); }
+      if (e.key === "Enter" && filtered[idx]) onPick(filtered[idx].slug);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [filtered, idx, onClose, onPick]);
+  return (
+    <div className="cmdk-scrim" onMouseDown={onClose}>
+      <div className="cmdk" onMouseDown={(e) => e.stopPropagation()}>
+        <input ref={inputRef} placeholder="Search plans by title, slug, milestone…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="list">
+          {filtered.map((p, i) => (
+            <button key={p.slug} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p.slug)}>
+              <span className={`dot ${p.status}`}></span>
+              <span><strong>{p.title}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.slug}</span></span>
+              <span className="meta">{p.ms || "—"} · {Math.round((p.impl || 0) * 100)}%</span>
+            </button>
+          ))}
+          {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No plans match.</div>}
+        </div>
+        <div className="cmdk-foot">
+          <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App ────────────────────────────────────────────────────────────────
 
 function ReadyGate({ children }) {
@@ -461,16 +563,49 @@ function ReadyGate({ children }) {
 
 function PlanApp() {
   const [route, nav] = useHashRoute();
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("reckon:filters") || "{}"); } catch { return {}; }
+  });
+  const [showShipped, setShowShipped] = useState(() => {
+    try { return localStorage.getItem("reckon:showShipped") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("reckon:filters", JSON.stringify(filters)); } catch {}
+  }, [filters]);
+  useEffect(() => {
+    try { localStorage.setItem("reckon:showShipped", showShipped ? "1" : "0"); } catch {}
+  }, [showShipped]);
+
+  // Allow other components (e.g. cockpit milestone tiles) to set filters.
+  useEffect(() => {
+    const onSet = (e) => setFilters(e.detail || {});
+    window.addEventListener("reckon:set-filters", onSet);
+    return () => window.removeEventListener("reckon:set-filters", onSet);
+  }, []);
+
   const [search, setSearch] = useState("");
   const [promptOpen, setPromptOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem("reckon:sidebarCollapsed") === "1"; } catch { return false; }
+  });
   const [cockpitSprintIdx, setCockpitSprintIdx] = useState(null);
+  const [graphFocal, setGraphFocal] = useState(null);
+  const [cmdKOpen, setCmdKOpen] = useState(false);
+
+  useEffect(() => {
+    try { localStorage.setItem("reckon:sidebarCollapsed", sidebarCollapsed ? "1" : "0"); } catch {}
+  }, [sidebarCollapsed]);
+
+  // When viewing graph and a plan is clicked in the sidebar, also set graphFocal.
+  useEffect(() => {
+    if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
+  }, [route.view, route.slug]);
 
   const M = window.STATE;
   const items = useMemo(() => {
     if (!M) return [];
     let list = M.inventory;
+    if (!showShipped) list = list.filter(p => p.status !== "shipped");
     if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
     if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
     if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
@@ -483,7 +618,7 @@ function PlanApp() {
       );
     }
     return list;
-  }, [M, filters, search]);
+  }, [M, filters, showShipped, search]);
 
   useEffect(() => {
     if (!promptOpen) return;
@@ -491,9 +626,13 @@ function PlanApp() {
     window.dispatchEvent(new CustomEvent("open-prompt"));
   }, [promptOpen]);
 
-  // ⌘B / Ctrl+B toggles the sidebar (filters + plan list)
+  // ⌘B / Ctrl+B toggles the sidebar; ⌘K / Ctrl+K opens Cmd-K palette.
   useEffect(() => {
     const onKey = (e) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCmdKOpen(true);
+      }
       if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setSidebarCollapsed(c => !c);
@@ -505,8 +644,14 @@ function PlanApp() {
 
   return (
     <div className="plan-app">
-      <AppTopBar route={route} onNav={nav} />
-      <div className={`plan-layout ${sidebarCollapsed ? "sidebar-collapsed" : ""} ${route.view === "cockpit" ? "overview-mode" : ""}`}>
+      <AppTopBar
+        route={route}
+        onNav={nav}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={() => setSidebarCollapsed(c => !c)}
+        onOpenCmdK={() => setCmdKOpen(true)}
+      />
+      <div className={`plan-layout ${sidebarCollapsed ? "sidebar-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
         <button
           className="sidebar-handle"
           onClick={() => setSidebarCollapsed(c => !c)}
@@ -515,7 +660,7 @@ function PlanApp() {
         >
           <span></span><span></span>
         </button>
-        <FiltersCol filters={filters} setFilters={setFilters} />
+        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
         <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} />
         <div className="content-col">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
@@ -525,9 +670,17 @@ function PlanApp() {
             {route.view === "cockpit" && <CockpitBody onNav={nav} cockpitSprintIdx={cockpitSprintIdx} setCockpitSprintIdx={setCockpitSprintIdx} />}
             {route.view === "plan" && <PlanView slug={route.slug} onNav={nav} />}
             {route.view === "sprint" && <SprintView sprintId={route.sprint} onNav={nav} />}
+            {route.view === "graph" && typeof GraphView !== "undefined" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
           </div>
         </div>
       </div>
+      {cmdKOpen && (
+        <CmdKPalette
+          items={M?.inventory || []}
+          onClose={() => setCmdKOpen(false)}
+          onPick={(slug) => { setCmdKOpen(false); nav({ view: "plan", slug }); }}
+        />
+      )}
     </div>
   );
 }
@@ -565,7 +718,11 @@ function CockpitBody({ onNav, cockpitSprintIdx, setCockpitSprintIdx }) {
             onClick={() => {
               const target = M.inventory.find(i => i.ms === m.id && i.status === "active")
                 || M.inventory.find(i => i.ms === m.id);
-              if (target) onNav({ view: "plan", slug: target.slug });
+              if (target) {
+                try { localStorage.setItem("reckon:filters", JSON.stringify({ ms: [m.id] })); } catch {}
+                window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
+                onNav({ view: "plan", slug: target.slug });
+              }
             }}>
             <div className="fill" style={{ "--w": `${m.pct}%` }}></div>
             <div className="lbl">{m.id} · <span className={`stat-${m.status}`}>{m.status}</span></div>
