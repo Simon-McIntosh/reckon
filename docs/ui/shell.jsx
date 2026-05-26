@@ -1,16 +1,6 @@
-// Shell — top bar + three-column body.
-// Brand: reckon (the system). Project name comes from state.
-// Changes from earlier versions:
-//   A. Brand shows "reckon · <projectName>" (dynamic from meta tag / STATE)
-//   B. Fleet prompts use dynamic project name
-//   C. "Decisions N" button cycles through blocked plans (sprint titlebar)
-//   D. Sidebar collapse (⌘B handle) collapses BOTH filter + plan list → full-screen
-//   E. Sprint nav (‹ ›) also appears in the cockpit/overview view
-//   F. Graph route (#graph) added to hash router
-//   G. Cmd-K / ⌘K palette for fast plan search
-//   H. showShipped toggle + filters/groupBy/filtersCollapsed persisted to localStorage
-
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+// Reckon shell — top bar + three-column body.
+// Top bar: brand · sp · screen tabs (Cockpit / Sprint).
+// Body: filters · plans list · content (with two-row title bar).
 
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
@@ -39,47 +29,35 @@ function useHashRoute() {
 
 // ─── Top bar ────────────────────────────────────────────────────────────
 
-function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK }) {
+function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK }) {
   const M = window.STATE;
   const view = route.view;
-  const projectName = M?.projects?.[0]?.project ||
-    document.querySelector('meta[name="docs-project"]')?.content || "";
-
+  const projectName = (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
+    || M?.project
+    || M?.projects?.[0]?.project
+    || "reckon";
+  const projectMark = (projectName.match(/[A-Za-z]/) || ["R"])[0].toUpperCase();
   const goPlans = () => {
-    const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
+    const target = M.inventory.find(p => p.status === "active") || M.inventory[0];
     if (target) onNav({ view: "plan", slug: target.slug });
   };
   const goSprints = () => {
-    const id = M?.active_sprint_id || M?.sprint?.id || M?.sprints?.[0]?.id;
+    const id = M.active_sprint_id || M.sprint?.id || M.sprints?.[0]?.id;
     if (id) onNav({ view: "sprint", sprint: id });
   };
-
   return (
-    <div className="plan-topbar">
-      <button
-        className="sidebar-toggle-btn"
-        onClick={onToggleSidebar}
-        title={`${sidebarCollapsed ? "Show" : "Hide"} sidebar · ⌘B`}
-        aria-pressed={!sidebarCollapsed}
-      >
+    <div className="r-topbar">
+      <button className="r-sb-toggle" onClick={onToggleSidebar} title={`${sidebarCollapsed ? "Show" : "Hide"} sidebar · ⌘B`} aria-pressed={!sidebarCollapsed}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <rect x="2" y="3" width="12" height="10" rx="1.5"/>
           <path d="M6 3v10"/>
         </svg>
       </button>
       <div className="brand">
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: "inherit" }}>
-          <span className="mark">R</span>
-          <span className="name">reckon</span>
-        </a>
-        {projectName && (
-          <>
-            <span style={{ color: "var(--faint)", fontSize: 13, fontWeight: 400, margin: "0 1px" }}>·</span>
-            <span className="proj">{projectName}</span>
-          </>
-        )}
+        <span className="mark">{projectMark}</span>
+        <span className="name">{projectName}</span>
       </div>
-      <button className="cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
+      <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="7" cy="7" r="4.5"/>
           <path d="M13 13l-2.5-2.5"/>
@@ -88,9 +66,9 @@ function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK
         <span className="kbd">⌘K</span>
       </button>
       <span className="sp"></span>
-      <div className="view-tabs">
+      <div className="r-glyph-tabs">
         <button
-          className={`view-tab ${view === "cockpit" ? "active" : ""}`}
+          className={`r-glyph ${view === "cockpit" ? "active" : ""}`}
           onClick={() => onNav({ view: "cockpit" })}
           title="Overview"
         >
@@ -103,7 +81,7 @@ function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK
           Overview
         </button>
         <button
-          className={`view-tab ${view === "plan" ? "active" : ""}`}
+          className={`r-glyph ${view === "plan" ? "active" : ""}`}
           onClick={goPlans}
           title="Plans"
         >
@@ -113,7 +91,7 @@ function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK
           Plans
         </button>
         <button
-          className={`view-tab ${view === "sprint" ? "active" : ""}`}
+          className={`r-glyph ${view === "sprint" ? "active" : ""}`}
           onClick={goSprints}
           title="Sprints"
         >
@@ -125,7 +103,7 @@ function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK
           Sprints
         </button>
         <button
-          className={`view-tab ${view === "graph" ? "active" : ""}`}
+          className={`r-glyph ${view === "graph" ? "active" : ""}`}
           onClick={() => onNav({ view: "graph" })}
           title="Graph — dependencies + critical path"
         >
@@ -146,9 +124,9 @@ function AppTopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK
 
 function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   const M = window.STATE;
-  const statuses = ["active", "blocked", "pending", "shipped"];
-  const milestones = M.projects?.[0]?.milestones || M.milestones || [];
-  const sprints = M.sprints || [];
+  const statuses = ["active", "blocked", "pending"];
+  const milestones = M.projects[0].milestones;
+  const shippedCount = M.inventory.filter(p => p.status === "shipped").length;
 
   const toggle = (group, value) => {
     setFilters(f => {
@@ -159,18 +137,18 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
     });
   };
 
-  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) > 0;
+  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) > 0;
 
   return (
-    <aside className="filters-col">
-      <div className="filter-group">
-        <div className="filter-heading">Status</div>
-        {statuses.map(s => {
+    <aside className="r-filters">
+      <div className="r-filter-group">
+        <div className="r-filter-h">Status</div>
+        {["active", "blocked", "pending", "shipped"].map(s => {
           const n = M.inventory.filter(p => p.status === s).length;
           const on = (filters.status || []).includes(s);
           if (n === 0) return null;
           return (
-            <div key={s} className={`filter-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)}>
+            <div key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)}>
               <span className={`dot ${s}`}></span>
               <span style={{ textTransform: "capitalize" }}>{s}</span>
               <span className="n">{n}</span>
@@ -179,14 +157,14 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
         })}
       </div>
 
-      <div className="filter-group">
-        <div className="filter-heading">Milestone</div>
-        {milestones.map(m => {
+      <div className="r-filter-group">
+        <div className="r-filter-h">Milestone</div>
+        {(M.projects[0]?.milestones || []).map(m => {
           const n = M.inventory.filter(p => p.ms === m.id).length;
           const on = (filters.ms || []).includes(m.id);
           if (n === 0) return null;
           return (
-            <div key={m.id} className={`filter-chip ${on ? "on" : ""}`} onClick={() => toggle("ms", m.id)}>
+            <div key={m.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("ms", m.id)}>
               <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: m.status === "active" ? "var(--accent)" : m.status === "shipped" ? "var(--good)" : "var(--muted)", minWidth: 22 }}>{m.id}</span>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{m.name}</span>
               <span className="n">{n}</span>
@@ -195,23 +173,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
         })}
       </div>
 
-      <div className="filter-group">
-        <div className="filter-heading">Sprint</div>
-        {sprints.map(s => {
-          const slugs = (s.items || []).map(it => typeof it === "string" ? it : it.slug);
-          const n = slugs.length;
-          const on = (filters.sprint || []).includes(s.id);
-          return (
-            <div key={s.id} className={`filter-chip ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)}>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: s.status === "active" ? "var(--accent)" : s.status === "shipped" ? "var(--good)" : "var(--muted)", minWidth: 22 }}>{s.id}</span>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{s.theme?.slice(0, 22) + (s.theme?.length > 22 ? "…" : "")}</span>
-              <span className="n">{n}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <button className="clear-filters" disabled={!anyActive} onClick={() => setFilters({})}>
+      <button className="r-clear" disabled={!anyActive} onClick={() => setFilters({})}>
         {anyActive ? "× clear filters" : "no filters set"}
       </button>
     </aside>
@@ -250,25 +212,26 @@ function ListCol({ search, setSearch, route, onNav, items }) {
   const toggle = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
   return (
-    <div className="plans-list">
-      <div className="plan-search">
+    <div className="r-list">
+      <div className="r-search">
         <input
           placeholder="Search plans…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="count">{items.length} plan{items.length === 1 ? "" : "s"}</div>
+        <div className="r-search-foot">
+          <span className="count">{items.length} plan{items.length === 1 ? "" : "s"}</span>
+        </div>
       </div>
       {items.length === 0 ? (
-        <div className="plans-empty">No plans match.</div>
+        <div className="r-list-empty">No plans match.</div>
       ) : groups.map(g => {
         const id = g.sprint?.id || "_none";
         const isOpen = !collapsed[id];
         const isActiveSprintRoute = route.view === "sprint" && route.sprint === id;
         return (
-          <div key={id} className="sprint-group">
-            <div className={`sprint-group-header ${isActiveSprintRoute ? "route-active" : ""}`} onClick={() => toggle(id)}>
-              <span className="car">{isOpen ? "▾" : "▸"}</span>
+          <div key={id} className="r-sgroup">
+            <div className={`r-sgroup-h ${isActiveSprintRoute ? "route-active" : ""}`}>
               <span className="id">{g.sprint ? g.sprint.id : "—"}</span>
               <span className="theme">
                 {g.sprint ? g.sprint.theme : "Unscheduled"}
@@ -281,17 +244,22 @@ function ListCol({ search, setSearch, route, onNav, items }) {
                 <a
                   className="board-link"
                   href={`#sprint/${g.sprint.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  title="Open sprint board"
-                >▦</a>
+                  title="Sprints"
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
+                    <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
+                    <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
+                  </svg>
+                </a>
               )}
             </div>
-            {isOpen && g.plans.map(p => {
+            {g.plans.map(p => {
               const active = route.view === "plan" && route.slug === p.slug;
               return (
                 <div
                   key={p.slug}
-                  className={`plan-row ${active ? "active" : ""}`}
+                  className={`r-row ${active ? "active" : ""}`}
                   onClick={() => onNav({ view: "plan", slug: p.slug })}
                 >
                   <span className={`dot ${p.status}`}></span>
@@ -326,13 +294,7 @@ function ListCol({ search, setSearch, route, onNav, items }) {
 function TitleBar({ route, onNav, onOpenPrompt }) {
   const M = window.STATE;
   if (route.view === "cockpit") {
-    return (
-      <div className="plan-titlebar">
-        <div className="row1">
-          <span className="title">Overview</span>
-        </div>
-      </div>
-    );
+    return null;
   }
   if (route.view === "plan") {
     const p = M.inventory.find(x => x.slug === route.slug);
@@ -340,28 +302,28 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
     const openDecs = (p.decisions || []).filter(d => !d.chosen).length;
     const blockedByDecisions = openDecs > 0;
     return (
-      <div className="plan-titlebar">
+      <div className="r-titlebar">
         <div className="row1">
           <span className="crumbs"><code>/{route.slug}</code></span>
           <span className="title">{p.title}</span>
           <div className="actions">
-            {openDecs > 0 && (
+            {blockedByDecisions && (
               <button
-                className="decisions-btn"
+                className="resolve-btn"
                 onClick={() => {
-                  const el = document.querySelector(".decision:not(.taken)") || document.querySelector(".decision");
+                  const el = document.querySelector(".r-dec:not(.taken)") || document.querySelector(".r-dec");
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                title={`${openDecs} pending decision${openDecs === 1 ? "" : "s"}`}
+                title="Take the next open decision"
               >
-                Decisions <span className="dec-badge">{openDecs}</span>
+                Resolve <span className="resolve-badge">{openDecs}</span>
               </button>
             )}
             <button
               className="gen-prompt"
               onClick={onOpenPrompt}
               disabled={blockedByDecisions}
-              title="Generate handoff prompt"
+              title={blockedByDecisions ? `${openDecs} open decision${openDecs === 1 ? "" : "s"} — resolve first` : "Generate handoff prompt"}
             >
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M4 3h6l2 2v8H4z"/>
@@ -397,10 +359,11 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
     const idx = sprints.findIndex(s => s.id === route.sprint);
     const s = sprints[idx];
     const slugSet = new Set((s?.items || []).map(it => typeof it === "string" ? it : it.slug));
+    // Re-hydrate each plan's decisions from local overlay so the count is live.
     const inv = [...slugSet].map(slug => {
       const p = M.inventory.find(x => x.slug === slug);
       if (!p) return null;
-      const stored = (window.planUtils?.planLoad?.(slug)) || {};
+      const stored = (window.reckon?.planLoad?.(slug)) || {};
       const overlay = stored.decisions || {};
       const liveDecs = (p.decisions || []).map(d => {
         const ov = overlay[d.key];
@@ -412,38 +375,28 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
     const totalOpen = inv.reduce((n, p) => n + (p.decisions || []).filter(d => !d.chosen).length, 0);
     const blocked = totalOpen > 0;
     const blockedPlans = inv.filter(p => (p.decisions || []).some(d => !d.chosen));
-
-    const handleDecisions = () => {
+    const handleResolve = () => {
       if (blockedPlans.length === 0) return;
-      const currentSlug = route.view === "plan" ? route.slug : null;
-      const currentIdx = blockedPlans.findIndex(p => p.slug === currentSlug);
-      const nextIdx = (currentIdx >= 0 && currentIdx < blockedPlans.length - 1)
-        ? currentIdx + 1
-        : 0;
-      onNav({ view: "plan", slug: blockedPlans[nextIdx].slug });
+      // Rotate: if currently on a plan in the list, go to next; otherwise first.
+      onNav({ view: "plan", slug: blockedPlans[0].slug });
     };
-
     const handleGen = () => {
-      window.dispatchEvent(new CustomEvent("open-fleet-prompt"));
+      window.dispatchEvent(new CustomEvent("r-open-fleet-prompt"));
     };
+    const projectName = M.projects[0]?.project || "project";
     return (
-      <div className="plan-titlebar">
+      <div className="r-titlebar">
         <div className="row1">
           <span className="crumbs">sprint</span>
           <span className="title">{s ? `${s.id} · ${s.theme}` : route.sprint}</span>
           <div className="actions">
-            <button className="sprint-nav-btn" disabled={idx <= 0} onClick={() => onNav({ view: "sprint", sprint: sprints[idx - 1].id })}>‹</button>
-            <button className="sprint-nav-btn" disabled={idx >= sprints.length - 1} onClick={() => onNav({ view: "sprint", sprint: sprints[idx + 1].id })}>›</button>
-            {blocked && (
-              <button className="decisions-btn" onClick={handleDecisions} title="Navigate to next plan with pending decisions">
-                Decisions <span className="dec-badge">{totalOpen}</span>
-              </button>
-            )}
+            <button className="r-nav-btn" disabled={idx <= 0} onClick={() => onNav({ view: "sprint", sprint: sprints[idx - 1].id })}>‹</button>
+            <button className="r-nav-btn" disabled={idx >= sprints.length - 1} onClick={() => onNav({ view: "sprint", sprint: sprints[idx + 1].id })}>›</button>
             <button
               className="gen-prompt"
               onClick={handleGen}
               disabled={blocked}
-              title="Generate fleet prompt"
+              title={blocked ? `${totalOpen} open decisions — resolve first` : "Generate fleet prompt"}
             >
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M4 3h6l2 2v8H4z"/><path d="M10 3v2h2"/><path d="M6 7h4M6 9h4M6 11h2"/>
@@ -461,6 +414,10 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
             <span className="meta-item"><span className="k">ends</span><span className="v">{s.ends}</span></span>
             <span className="dot-sep">·</span>
             <span className="meta-item"><span className="k">items</span><span className="v">{s.items.length}</span></span>
+            <span style={{ flex: 1 }}></span>
+            <button className={`resolve-btn ${blocked ? "" : "done"}`} onClick={handleResolve} title={blocked ? "Take the next open decision" : "All decisions taken"}>
+              Resolve <span className="resolve-badge">{totalOpen}</span>
+            </button>
           </div>
         )}
       </div>
@@ -479,7 +436,7 @@ function PlanDeps({ slug }) {
   const blocks = p.blocks || [];
   if (deps.length === 0 && blocks.length === 0) return null;
   return (
-    <div className="plan-deps">
+    <div className="r-deps">
       {deps.length > 0 && <>
         <span className="lbl">depends on</span>
         {deps.map(s => {
@@ -497,7 +454,132 @@ function PlanDeps({ slug }) {
   );
 }
 
-// ─── Cmd-K palette ──────────────────────────────────────────────────────
+// ─── App ────────────────────────────────────────────────────────────────
+
+function ReadyGate({ children }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (window.STATE_READY) window.STATE_READY.then(() => setReady(true));
+    else setReady(true);
+  }, []);
+  if (!ready) {
+    return <div style={{ padding: 48, textAlign: "center", fontFamily: "var(--mono)", fontSize: 13, color: "var(--muted)" }}>Loading plan state…</div>;
+  }
+  return children;
+}
+
+function App() {
+  const [route, nav] = useHashRoute();
+  const [filters, setFilters] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("reckon:filters") || "{}"); } catch { return {}; }
+  });
+  const [showShipped, setShowShipped] = useState(() => {
+    try { return localStorage.getItem("reckon:showShipped") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("reckon:filters", JSON.stringify(filters)); } catch {}
+  }, [filters]);
+  useEffect(() => {
+    try { localStorage.setItem("reckon:showShipped", showShipped ? "1" : "0"); } catch {}
+  }, [showShipped]);
+
+  // Allow other components (e.g. cockpit milestone tiles) to set filters.
+  useEffect(() => {
+    const onSet = (e) => setFilters(e.detail || {});
+    window.addEventListener("reckon:set-filters", onSet);
+    return () => window.removeEventListener("reckon:set-filters", onSet);
+  }, []);
+  const [search, setSearch] = useState("");
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
+    try { return localStorage.getItem("reckon:filtersCollapsed") === "1"; } catch { return false; }
+  });
+  const [graphFocal, setGraphFocal] = useState(null);
+  // When viewing graph and a plan is clicked in the sidebar, also set graphFocal
+  useEffect(() => {
+    if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
+  }, [route.view, route.slug]);
+  useEffect(() => {
+    try { localStorage.setItem("reckon:filtersCollapsed", filtersCollapsed ? "1" : "0"); } catch {}
+  }, [filtersCollapsed]);
+  const [groupBy, setGroupBy] = useState(() => {
+    try { return localStorage.getItem("reckon:groupBy") || "sprint"; } catch { return "sprint"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("reckon:groupBy", groupBy); } catch {}
+  }, [groupBy]);
+  const [cmdKOpen, setCmdKOpen] = useState(false);
+
+  const M = window.STATE;
+  const items = useMemo(() => {
+    if (!M) return [];
+    let list = M.inventory;
+    if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
+    if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
+    if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(p =>
+        p.title?.toLowerCase().includes(q) ||
+        p.slug?.toLowerCase().includes(q) ||
+        p.summary?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [M, filters, search]);
+
+  useEffect(() => {
+    if (!promptOpen) return;
+    setPromptOpen(false);
+    window.dispatchEvent(new CustomEvent("r-open-prompt"));
+  }, [promptOpen]);
+
+  // Cmd/Ctrl+B toggles the filter column
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCmdKOpen(true);
+      }
+      if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setFiltersCollapsed(c => !c);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <div className="r-app">
+      <TopBar route={route} onNav={nav} sidebarCollapsed={filtersCollapsed} onToggleSidebar={() => setFiltersCollapsed(c => !c)} onOpenCmdK={() => setCmdKOpen(true)} />
+      <div className={`r-3col ${filtersCollapsed ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
+        <button
+          className="r-filter-handle"
+          onClick={() => setFiltersCollapsed(c => !c)}
+          title={filtersCollapsed ? "Show filters · ⌘B" : "Hide filters · ⌘B"}
+          aria-label="Toggle filters"
+        >
+          <span></span><span></span>
+        </button>
+        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
+        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} groupBy={groupBy} setGroupBy={setGroupBy} />
+        <div className="r-content">
+          <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
+          <div className="r-body">
+            {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
+            {route.view === "plan" && <PlanDeps slug={route.slug} />}
+            {route.view === "cockpit" && <CockpitBody onNav={nav} />}
+            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
+            {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
+            {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
+          </div>
+        </div>
+      </div>
+      {cmdKOpen && <CmdKPalette items={M?.inventory || []} onClose={() => setCmdKOpen(false)} onPick={(slug) => { setCmdKOpen(false); nav({ view: "plan", slug }); }} />}
+    </div>
+  );
+}
 
 function CmdKPalette({ items, onClose, onPick }) {
   const [q, setQ] = useState("");
@@ -526,8 +608,8 @@ function CmdKPalette({ items, onClose, onPick }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [filtered, idx, onClose, onPick]);
   return (
-    <div className="cmdk-scrim" onMouseDown={onClose}>
-      <div className="cmdk" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="r-cmdk-scrim" onMouseDown={onClose}>
+      <div className="r-cmdk" onMouseDown={(e) => e.stopPropagation()}>
         <input ref={inputRef} placeholder="Search plans by title, slug, milestone…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="list">
           {filtered.map((p, i) => (
@@ -539,7 +621,7 @@ function CmdKPalette({ items, onClose, onPick }) {
           ))}
           {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No plans match.</div>}
         </div>
-        <div className="cmdk-foot">
+        <div className="r-cmdk-foot">
           <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
         </div>
       </div>
@@ -547,182 +629,43 @@ function CmdKPalette({ items, onClose, onPick }) {
   );
 }
 
-// ─── App ────────────────────────────────────────────────────────────────
-
-function ReadyGate({ children }) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (window.STATE_READY) window.STATE_READY.then(() => setReady(true));
-    else setReady(true);
-  }, []);
-  if (!ready) {
-    return <div style={{ padding: 48, textAlign: "center", fontFamily: "var(--mono)", fontSize: 13, color: "var(--muted)" }}>Loading plan state…</div>;
-  }
-  return children;
-}
-
-function PlanApp() {
-  const [route, nav] = useHashRoute();
-  const [filters, setFilters] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("reckon:filters") || "{}"); } catch { return {}; }
-  });
-  const [showShipped, setShowShipped] = useState(() => {
-    try { return localStorage.getItem("reckon:showShipped") === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("reckon:filters", JSON.stringify(filters)); } catch {}
-  }, [filters]);
-  useEffect(() => {
-    try { localStorage.setItem("reckon:showShipped", showShipped ? "1" : "0"); } catch {}
-  }, [showShipped]);
-
-  // Allow other components (e.g. cockpit milestone tiles) to set filters.
-  useEffect(() => {
-    const onSet = (e) => setFilters(e.detail || {});
-    window.addEventListener("reckon:set-filters", onSet);
-    return () => window.removeEventListener("reckon:set-filters", onSet);
-  }, []);
-
-  const [search, setSearch] = useState("");
-  const [promptOpen, setPromptOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem("reckon:sidebarCollapsed") === "1"; } catch { return false; }
-  });
-  const [cockpitSprintIdx, setCockpitSprintIdx] = useState(null);
-  const [graphFocal, setGraphFocal] = useState(null);
-  const [cmdKOpen, setCmdKOpen] = useState(false);
-
-  useEffect(() => {
-    try { localStorage.setItem("reckon:sidebarCollapsed", sidebarCollapsed ? "1" : "0"); } catch {}
-  }, [sidebarCollapsed]);
-
-  // When viewing graph and a plan is clicked in the sidebar, also set graphFocal.
-  useEffect(() => {
-    if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
-  }, [route.view, route.slug]);
-
-  const M = window.STATE;
-  const items = useMemo(() => {
-    if (!M) return [];
-    let list = M.inventory;
-    if (!showShipped) list = list.filter(p => p.status !== "shipped");
-    if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
-    if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
-    if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p =>
-        p.title?.toLowerCase().includes(q) ||
-        p.slug?.toLowerCase().includes(q) ||
-        p.summary?.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [M, filters, showShipped, search]);
-
-  useEffect(() => {
-    if (!promptOpen) return;
-    setPromptOpen(false);
-    window.dispatchEvent(new CustomEvent("open-prompt"));
-  }, [promptOpen]);
-
-  // ⌘B / Ctrl+B toggles the sidebar; ⌘K / Ctrl+K opens Cmd-K palette.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setCmdKOpen(true);
-      }
-      if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setSidebarCollapsed(c => !c);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
-  return (
-    <div className="plan-app">
-      <AppTopBar
-        route={route}
-        onNav={nav}
-        sidebarCollapsed={sidebarCollapsed}
-        onToggleSidebar={() => setSidebarCollapsed(c => !c)}
-        onOpenCmdK={() => setCmdKOpen(true)}
-      />
-      <div className={`plan-layout ${sidebarCollapsed ? "sidebar-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
-        <button
-          className="sidebar-handle"
-          onClick={() => setSidebarCollapsed(c => !c)}
-          title={sidebarCollapsed ? "Show sidebar · ⌘B" : "Hide sidebar · ⌘B"}
-          aria-label="Toggle sidebar"
-        >
-          <span></span><span></span>
-        </button>
-        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
-        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} />
-        <div className="content-col">
-          <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
-          <div className="plan-content-body">
-            {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-            {route.view === "plan" && <PlanDeps slug={route.slug} />}
-            {route.view === "cockpit" && <CockpitBody onNav={nav} cockpitSprintIdx={cockpitSprintIdx} setCockpitSprintIdx={setCockpitSprintIdx} />}
-            {route.view === "plan" && <PlanView slug={route.slug} onNav={nav} />}
-            {route.view === "sprint" && <SprintView sprintId={route.sprint} onNav={nav} />}
-            {route.view === "graph" && typeof GraphView !== "undefined" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-          </div>
-        </div>
-      </div>
-      {cmdKOpen && (
-        <CmdKPalette
-          items={M?.inventory || []}
-          onClose={() => setCmdKOpen(false)}
-          onPick={(slug) => { setCmdKOpen(false); nav({ view: "plan", slug }); }}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── Cockpit body ────────────────────────────────────────────────────────
-
-function CockpitBody({ onNav, cockpitSprintIdx, setCockpitSprintIdx }) {
+// Leaner cockpit body — plan list is in column 2 so cockpit is project-only.
+function CockpitBody({ onNav }) {
   const M = window.STATE;
   if (!M) return null;
-  const project = M.projects[0] || {};
+  const project = M.projects[0];
   const allSprints = M.sprints || [];
-  const defaultIdx = allSprints.findIndex(s => s.id === M.active_sprint_id);
-  const displayIdx = cockpitSprintIdx !== null ? cockpitSprintIdx : (defaultIdx >= 0 ? defaultIdx : 0);
-  const sprint = allSprints[displayIdx] || M.sprint;
+  const [ckSprintIdx, setCkSprintIdx] = useState(() => {
+    const i = allSprints.findIndex(s => s.id === M.active_sprint_id);
+    return i >= 0 ? i : 0;
+  });
+  const sprint = allSprints[ckSprintIdx] || M.sprint;
 
   const decisionPlans = M.inventory
     .filter(i => (i.dec_open || 0) > 0)
     .sort((a, b) => (b.dec_open || 0) - (a.dec_open || 0));
   const decisionTotal = decisionPlans.reduce((n, p) => n + (p.dec_open || 0), 0);
+  const planSlugsWithDecs = new Set(decisionPlans.map(p => p.slug));
+  const decsByMs = {};
+  for (const p of decisionPlans) decsByMs[p.ms] = (decsByMs[p.ms] || 0) + (p.dec_open || 0);
+  const decsByRoi = { high: 0, mid: 0, low: 0 };
+  for (const p of decisionPlans) decsByRoi[p.roi || "mid"] = (decsByRoi[p.roi || "mid"] || 0) + (p.dec_open || 0);
 
   return (
     <>
-      {project.plans_count != null && (
-        <div className="ck-sub">
-          {project.plans_count} plans · owner {project.owner}
-        </div>
-      )}
-
-      <div className="ck-heading">
-        <span className="eyebrow">Milestones</span>
+      <div className="r-ck-h">
+        <span className="r-eyebrow">Milestones</span>
       </div>
-      <div className="ms-grid" style={{ marginBottom: 4 }}>
-        {(project.milestones || []).map(m => (
-          <button key={m.id} className={`ms-tile ${m.status}`}
+      <div className="r-ms" style={{ marginBottom: 4 }}>
+        {project.milestones.map(m => (
+          <button key={m.id} className={`r-ms-tile ${m.status}`}
             onClick={() => {
+              // Apply milestone filter, navigate to plans view (first active plan in ms).
+              try { localStorage.setItem("reckon:filters", JSON.stringify({ ms: [m.id] })); } catch {}
+              window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
               const target = M.inventory.find(i => i.ms === m.id && i.status === "active")
                 || M.inventory.find(i => i.ms === m.id);
-              if (target) {
-                try { localStorage.setItem("reckon:filters", JSON.stringify({ ms: [m.id] })); } catch {}
-                window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
-                onNav({ view: "plan", slug: target.slug });
-              }
+              if (target) onNav({ view: "plan", slug: target.slug });
             }}>
             <div className="fill" style={{ "--w": `${m.pct}%` }}></div>
             <div className="lbl">{m.id} · <span className={`stat-${m.status}`}>{m.status}</span></div>
@@ -732,15 +675,21 @@ function CockpitBody({ onNav, cockpitSprintIdx, setCockpitSprintIdx }) {
         ))}
       </div>
 
-      <div className="ck-heading">
-        <span className="eyebrow">Sprint {sprint?.id} · {sprint?.theme}</span>
-        <div className="sprint-nav">
-          <button className="sprint-nav-btn" disabled={displayIdx <= 0} onClick={() => setCockpitSprintIdx(displayIdx - 1)}>‹</button>
-          <button className="sprint-nav-btn" disabled={displayIdx >= allSprints.length - 1} onClick={() => setCockpitSprintIdx(displayIdx + 1)}>›</button>
+      <div className="r-ck-h">
+        <span className="r-eyebrow">Sprint {sprint?.id} · {sprint?.theme}</span>
+        <div className="r-ck-h-actions">
+          <button className="r-nav-btn" disabled={ckSprintIdx <= 0} onClick={() => setCkSprintIdx(i => i - 1)}>‹</button>
+          <button className="r-nav-btn" disabled={ckSprintIdx >= allSprints.length - 1} onClick={() => setCkSprintIdx(i => i + 1)}>›</button>
+          <a className="r-board-icon" href={`#sprint/${sprint?.id}`} title="Sprints">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
+              <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
+            </svg>
+          </a>
         </div>
-        <a className="board-icon" href={`#sprint/${sprint?.id}`} title="Open sprint board">▦</a>
       </div>
-      <div className="ck-list" style={{ marginBottom: 22 }}>
+      <div className="r-ck-list" style={{ marginBottom: 22 }}>
         {(sprint?.items || []).map(it => {
           const slug = typeof it === "string" ? it : it.slug;
           const justification = typeof it === "object" ? it.justification : null;
@@ -748,43 +697,79 @@ function CockpitBody({ onNav, cockpitSprintIdx, setCockpitSprintIdx }) {
           if (!p) return null;
           const pct = Math.round((p.impl || 0) * 100);
           return (
-            <a key={slug} className="ck-row" href={`#plan/${slug}`}>
-              <span className={`ck-dot ${p.status}`}></span>
-              <div className="ck-body">
-                <div className="ck-title">{p.title}</div>
-                {justification && <div className="ck-just">{justification}</div>}
+            <a key={slug} className="r-ck-row" href={`#plan/${slug}`}>
+              <span className={`r-ck-dot ${p.status}`}></span>
+              <div className="r-ck-body">
+                <div className="r-ck-title">{p.title}</div>
+                {justification && <div className="r-ck-just">{justification}</div>}
               </div>
-              <div className="ck-progress">
-                <span className="ck-bar"><i style={{ width: `${pct}%` }} className={p.status === "shipped" ? "shipped" : p.status === "blocked" ? "blocked" : ""}></i></span>
-                <span className="ck-pct">{pct}%</span>
+              <div className="r-ck-prog">
+                <span className="r-ck-bar"><i style={{ width: `${pct}%` }} className={p.status === "shipped" ? "shipped" : p.status === "blocked" ? "blocked" : ""}></i></span>
+                <span className="r-ck-pct">{pct}%</span>
               </div>
-              <span className="ck-arrow">›</span>
+              <span className="r-ck-arr">›</span>
             </a>
           );
         })}
       </div>
 
-      <div className="ck-heading">
-        <span className="eyebrow">Decisions · {decisionTotal} open across {decisionPlans.length} plan{decisionPlans.length === 1 ? "" : "s"}</span>
+      <div className="r-ck-h">
+        <span className="r-eyebrow">Decisions</span>
       </div>
-      {decisionPlans.length === 0 ? (
-        <div className="ck-empty">No open decisions.</div>
+      {decisionTotal === 0 ? (
+        <div className="r-ck-empty">No open decisions.</div>
       ) : (
-        <div className="ck-list">
+        <div className="r-ck-stats">
+          <div className="r-stat">
+            <div className="r-stat-num">{decisionTotal}</div>
+            <div className="r-stat-lbl">open</div>
+          </div>
+          <div className="r-stat">
+            <div className="r-stat-num">{decisionPlans.length}</div>
+            <div className="r-stat-lbl">plans affected</div>
+          </div>
+          <div className="r-stat r-stat-breakdown">
+            <div className="r-stat-lbl">by milestone</div>
+            <div className="r-stat-bars">
+              {Object.entries(decsByMs).sort().map(([ms, n]) => (
+                <div key={ms} className="r-stat-bar">
+                  <span className="r-stat-bar-k">{ms}</span>
+                  <span className="r-stat-bar-v"><i style={{ width: `${(n / decisionTotal) * 100}%` }}></i></span>
+                  <span className="r-stat-bar-n">{n}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="r-stat r-stat-breakdown">
+            <div className="r-stat-lbl">by ROI</div>
+            <div className="r-stat-bars">
+              {["high", "mid", "low"].filter(k => decsByRoi[k] > 0).map(k => (
+                <div key={k} className="r-stat-bar">
+                  <span className="r-stat-bar-k">{k}</span>
+                  <span className="r-stat-bar-v"><i className={`roi-${k}`} style={{ width: `${(decsByRoi[k] / decisionTotal) * 100}%` }}></i></span>
+                  <span className="r-stat-bar-n">{decsByRoi[k]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {decisionTotal > 0 && (
+        <div className="r-ck-list">
           {decisionPlans.map(p => (
-            <a key={p.slug} className="ck-row" href={`#plan/${p.slug}`}>
-              <span className="ck-num">{p.dec_open}</span>
-              <div className="ck-body">
-                <div className="ck-title">{p.title}</div>
-                <div className="ck-slug">/{p.slug}</div>
+            <a key={p.slug} className="r-ck-row" href={`#plan/${p.slug}`}>
+              <span className="r-ck-num">{p.dec_open}</span>
+              <div className="r-ck-body">
+                <div className="r-ck-title">{p.title}</div>
+                <div className="r-ck-slug">/{p.slug}</div>
               </div>
-              <span className="ck-arrow">›</span>
+              <span className="r-ck-arr">›</span>
             </a>
           ))}
         </div>
       )}
 
-      <div className="ck-heading"><span className="eyebrow">Recent activity</span></div>
+      <div className="r-ck-h"><span className="r-eyebrow">Recent activity</span></div>
       <div className="card">
         <div className="card-body">
           <div className="ledger">
@@ -802,8 +787,6 @@ function CockpitBody({ onNav, cockpitSprintIdx, setCockpitSprintIdx }) {
   );
 }
 
-// ─── Fleet prompt modal ─────────────────────────────────────────────────
-
 function FleetPrompt({ sprintId }) {
   const M = window.STATE;
   const sprint = M.sprints.find(s => s.id === sprintId);
@@ -811,8 +794,8 @@ function FleetPrompt({ sprintId }) {
 
   useEffect(() => {
     const h = () => setOpen(true);
-    window.addEventListener("open-fleet-prompt", h);
-    return () => window.removeEventListener("open-fleet-prompt", h);
+    window.addEventListener("r-open-fleet-prompt", h);
+    return () => window.removeEventListener("r-open-fleet-prompt", h);
   }, []);
 
   if (!sprint) return null;
@@ -839,11 +822,7 @@ function FleetPrompt({ sprintId }) {
   for (const p of itemsArr) visit(p);
 
   const buildPrompt = () => {
-    const projectName = M.projects[0]?.project ||
-      document.querySelector('meta[name="docs-project"]')?.content ||
-      "project";
-
-    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${order.length} plans in a single\n  sprint. Dispatch in the order below; honour the dependency edges. Workers\n  whose dependencies are satisfied may run in parallel. Each worker must read\n  every plan it depends on in full, develop the plan further as it works,\n  inspect code under ${projectName}/ when ambiguous, honour locked decisions,\n  resolve open decisions as part of the work — document rationale in the state JSON.\n\nProject: ${projectName}\nSprint:  ${sprint.id}\nGoal:    ${sprint.theme}\nWindow:  ${sprint.starts} → ${sprint.ends}\n\nExecution sequence (resolved from depends_on within the sprint):\n`;
+    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${order.length} plans in a single\n  sprint. Dispatch in the order below; honour the dependency edges. Workers\n  whose dependencies are satisfied may run in parallel. Each worker must read\n  every plan it depends on in full, develop the plan further as it works,\n  inspect code under imas_ambix/ when ambiguous, honour locked decisions,\n  and never resolve open decisions unilaterally.\n\nProject: ${M.projects[0].project}\nSprint:  ${sprint.id}\nGoal:    ${sprint.theme}\nWindow:  ${sprint.starts} → ${sprint.ends}\n\nExecution sequence (resolved from depends_on within the sprint):\n`;
     order.forEach((p, i) => {
       txt += `  ${i + 1}. ${p.slug}${(p.depends_on || []).length ? "  (← " + p.depends_on.join(", ") + ")" : ""}\n`;
     });
@@ -856,7 +835,7 @@ function FleetPrompt({ sprintId }) {
       const lockedBlock = locked.length === 0 ? "  (none)" : locked.map(d => `  ${d.key} → ${d.chosen}`).join("\n");
       const openBlock = openD.length === 0 ? "  (none)" : openD.map(d => `  ${d.key} — ${d.title}`).join("\n");
       const next = (p.followups || [])[0];
-      const comments = (p.comments) || (window.planUtils?.planLoad?.(p.slug)?.comments) || {};
+      const comments = (p.comments) || (window.reckon.planLoad?.(p.slug)?.comments) || {};
       const commentEntries = Object.entries(comments).filter(([_, arr]) => (arr || []).length > 0);
       const commentsBlock = commentEntries.length === 0 ? "  (none)" :
         commentEntries.map(([sid, arr]) =>
@@ -866,7 +845,7 @@ function FleetPrompt({ sprintId }) {
             `      body: ${c.body}`
           ).join("\n")
         ).join("\n");
-      txt += `Plan: ${p.slug}\nStatus: ${p.status} · ${p.phase || ""}\nJustification (sprint): ${p.justification || "—"}\n\nState to read\n  state/${projectName}/${p.slug}.json\n\nLocked decisions to honour\n${lockedBlock}\n\nOpen decisions (resolve as part of the work — document rationale)\n${openBlock}\n\nComments\n${commentsBlock}\n\nNext-up\n  ${next?.title || "—"}\n  ${next?.body || ""}\n\nDone-when\n  1. Land the work this prompt describes.\n  2. POST a followup to ${p.slug}.json#followups.\n  3. Mark the current followup resolved.\n`;
+      txt += `Plan: ${p.slug}\nStatus: ${p.status} · ${p.phase || ""}\nJustification (sprint): ${p.justification || "—"}\n\nState to read\n  state/${projectName}/${p.slug}.json\n\nLocked decisions to honour\n${lockedBlock}\n\nOpen decisions to surface\n${openBlock}\n\nComments (anchored to sections)\n${commentsBlock}\n\nNext-up\n  ${next?.title || "—"}\n  ${next?.body || ""}\n\nDone-when\n  1. Land the work this prompt describes.\n  2. POST a followup to ${p.slug}.json#followups.\n  3. Mark the current followup resolved.\n`;
     });
     return txt;
   };
@@ -895,8 +874,8 @@ function PromptModalAdHoc({ title, subtitle, buildText, onClose }) {
     if (window.flashSaved) window.flashSaved("prompt copied");
   };
   return (
-    <div className="modal-scrim" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="r-modal-scrim" onClick={onClose}>
+      <div className="r-modal" onClick={(e) => e.stopPropagation()}>
         <div className="head">
           <div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--accent)", fontWeight: 600 }}>{title}</div>
@@ -916,5 +895,5 @@ function PromptModalAdHoc({ title, subtitle, buildText, onClose }) {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <ReadyGate><PlanApp /></ReadyGate>
+  <ReadyGate><App /></ReadyGate>
 );
