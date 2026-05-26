@@ -76,7 +76,7 @@
       .slice(0, 5)
       .map(function (pl) {
         return {
-          slug:     pl.slug,
+          slug:     pl.slug || (pl.path || '').replace(/^.*\//, '').replace(/\.[^.]+$/, ''),
           title:    pl.title || pl.slug,
           status:   pl.status || 'pending',
           roi:      pl.roi    || 'mid',
