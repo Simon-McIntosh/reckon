@@ -4,7 +4,7 @@ Repo-agnostic agile planning system. Three surfaces share one repo and one venv:
 
 | Surface | CLI | What it does |
 |---|---|---|
-| **reckon server** | `reckon serve` | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML islands |
+| **reckon server** | `reckon serve` | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
@@ -20,15 +20,18 @@ uv run reckon mcp             # stdio MCP transport
 
 Each project keeps its plans under `<repo>/docs/`. Any `.html` file in that
 directory is a plan — existence is sufficient. Plan state (status, decisions,
-followups, etc.) lives in an embedded island in each HTML file:
+followups, etc.) lives as semantic HTML inside the plan file:
 
 ```html
-<script type="application/json" id="reckon-state">
-{ "slug": "my-plan", "status": "active", "decisions": {}, "followups": [] }
-</script>
+<meta name="plan-status" content="active">
+<meta name="plan-impl"   content="0.6">
+<!-- inside <main class="plan-doc">: -->
+<section data-reckon="decisions" class="r-decisions"> … </section>
+<section data-reckon="followups" class="r-followups"> … </section>
 ```
 
-The server parses each plan's island at request time — there are no per-plan
+The server parses each plan's `<meta name="plan-*">` scalars and
+`data-reckon` section elements at request time — there are no per-plan
 state JSON sidecars. `docs/state/<project>/index.json` holds project-level
 config only (sprints, milestones, `active_sprint_id`).
 
@@ -52,8 +55,8 @@ generation.
 |---|---|
 | `GET /<project>/` | SPA shell |
 | `GET /<project>/<slug>.html` | Plan prose page |
-| `GET /_discover/<project>` | All plans with full island state |
-| `GET /plan/<project>/<slug>` | Raw island (incl. `version`) |
+| `GET /_discover/<project>` | All plans with full parsed state |
+| `GET /plan/<project>/<slug>` | Parsed plan state (incl. `version`) |
 | `POST /plan/<project>/<slug>` | Dotted-key patch; requires `If-Match: <version>` |
 | `GET /state/<project>/index.json` | Project config (sprints, milestones) |
 
@@ -78,5 +81,5 @@ After `uv pip install -e .`, register in `~/.claude/mcp.json`:
 
 Then any MCP client can call `reckon.read_plan(project, slug)`,
 `reckon.patch_plan(...)`, `reckon.lock_decision(...)`, etc. The MCP transport
-writes to the same plan HTML islands as `reckon serve` — they are two faces of
+writes to the same plan HTML elements as `reckon serve` — they are two faces of
 one backend.

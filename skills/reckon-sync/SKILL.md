@@ -37,9 +37,10 @@ have plans, check `reckon-create` first — `reckon-sync` creates infrastructure
 1. **Idempotent.** Every step is a no-op if already applied correctly.
 2. **Never overwrite `docs/state/<project>/index.json`** — only seed when absent.
 3. **Never overwrite per-plan HTML** the user has already authored.
-4. **Never create per-plan state JSON sidecars.** Plan state lives in each plan's
-   HTML island (`<script type="application/json" id="reckon-state">`).
-   The only JSON in `docs/state/<project>/` is `index.json` (project config).
+4. **Never create per-plan state JSON sidecars.** Plan state lives as semantic HTML
+   elements (`<meta name="plan-*">` scalars and `data-reckon` section blocks) inside
+   each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json`
+   (project config only).
 5. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.**
    `reckon-create` does NOT register mounts or create symlinks.
 6. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if
@@ -50,14 +51,16 @@ have plans, check `reckon-create` first — `reckon-sync` creates infrastructure
 ## Where state lives
 
 **The plan HTML is the sole store.** All plan data (status, impl, decisions,
-followups, comments, questions, research, notes) lives in the HTML file's
-`<script type="application/json" id="reckon-state">` island. Live edits
-(browser clicks, MCP tools) rewrite the HTML in place.
+followups, comments, questions, research) lives as semantic HTML elements in
+the `.html` file: `<meta name="plan-*">` scalars in the head, and
+`<section data-reckon="decisions|followups|questions|research|comments">` blocks
+inside `<main class="plan-doc">`. Live edits (browser clicks, MCP tools) rewrite
+the HTML elements in place.
 
 `docs/state/<project>/index.json` holds **project-level config only**:
 sprints, milestones, `active_sprint_id`, timeline. It is not per-plan state.
 
-The reckon server reads plan state by parsing each HTML file's island.
+The reckon server reads plan state by parsing each HTML file's semantic elements.
 `reckon-sync` creates and symlinks the state directory so the server can
 write project config (index.json) back to the repo.
 
@@ -273,8 +276,8 @@ Start the server if not running: `uv run --project ~/Code/reckon reckon serve`
 ### Step 5 — Seed index.json (project config only)
 
 `index.json` holds sprint/milestone definitions and project-level config. Plans
-are auto-discovered by the server parsing each HTML file's island — no plan
-inventory in `index.json` is required.
+are auto-discovered by the server parsing each HTML file's `<meta name="plan-*">`
+scalars and `data-reckon` elements — no plan inventory in `index.json` is required.
 
 ```bash
 PROJ="$DOCS/state/$PROJECT/index.json"
@@ -329,25 +332,29 @@ existence is sufficient.** No `plan-status` meta opt-in is required.
 Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under
 `docs/archive/` so it does not appear in the live inventory.
 
-The server parses each plan's `<script type="application/json" id="reckon-state">`
-island for structured state. A bare page with no island surfaces with
-`status=draft` and its `<title>` as the title.
+The server parses each plan's `<meta name="plan-*">` scalars and
+`<section data-reckon="…">` elements for structured state. A bare page with
+no plan markup surfaces with `status=draft` and its `<title>` as the title.
 
-## Canonical plan `<head>` meta tags (optional enrichment)
+## Canonical plan `<head>` meta tags
 
-`<meta>` tags provide fallback values when the island omits a field.
-The island always wins when present. These tags are **not required** for discovery.
+`<meta name="plan-*">` tags in the head are the authoritative scalars —
+the server reads and writes them directly. All are optional for discovery;
+`docs-project` is required for correct routing.
 
 ```html
-<!-- Optional enrichment — island fields take precedence -->
 <meta name="docs-project" content="my-project">  <!-- required for correct routing -->
 <meta name="plan-slug"    content="my-plan">      <!-- defaults to filename stem -->
 <meta name="plan-title"   content="Human title">  <!-- defaults to <title> text -->
 <meta name="plan-summary" content="One-line synopsis">
+<meta name="plan-status"  content="draft">         <!-- server-written -->
+<meta name="plan-impl"    content="0.0">           <!-- server-written -->
+<meta name="plan-version" content="1">             <!-- server-owned -->
 <meta name="plan-milestone" content="M1">
 <meta name="plan-roi"     content="high">          <!-- high|mid|low -->
 <meta name="plan-effort"  content="M">             <!-- S|M|L|XL -->
 <meta name="plan-sprint"  content="S1">
+<meta name="plan-tier"    content="sonnet">        <!-- haiku|sonnet|opus -->
 ```
 
 ## Minimal plan page anatomy
@@ -360,6 +367,7 @@ The island always wins when present. These tags are **not required** for discove
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="docs-project" content="<project>">
   <meta name="plan-slug"    content="<slug>">
+  <meta name="plan-status"  content="draft">
   <title>My Plan · <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -367,17 +375,15 @@ The island always wins when present. These tags are **not required** for discove
 <body>
   <main class="plan-doc">
     <!-- authored prose -->
-  </main>
 
-  <script type="application/json" id="reckon-state">
-  {
-    "slug": "<slug>",
-    "title": "My Plan",
-    "status": "draft",
-    "decisions": {},
-    "followups": []
-  }
-  </script>
+    <!-- reckon-owned sections (regenerated by server on write) -->
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+    </section>
+  </main>
 </body>
 </html>
 ```
@@ -400,7 +406,7 @@ a fully self-contained static bundle for CI/GitHub Pages deployment.
 
 - `~/Code/reckon/skills/reckon-create/SKILL.md` — create the first plan after sync.
 - `~/Code/reckon/skills/` — canonical skill source; symlinked to `~/.claude/skills/` by Step 0.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, endpoints, what is gone).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
 - `~/Code/reckon/reckon/serve.py` — mounts.json path, state root, /_shared/ route, /_discover/ endpoint.
 - `~/Code/reckon/docs/_shared/` — canonical CSS source.
 - `~/Code/reckon/docs/ui/` — canonical JSX component source.

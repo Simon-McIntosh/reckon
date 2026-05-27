@@ -4,10 +4,10 @@ description: >-
   Read-only inspection of plans and sprint state — phase, status, ROI, effort,
   milestone, implementation fraction, open decisions, blockers, active sprint
   progress, and quality audit (empty followup prompts, stale timestamps, missing
-  NEXT cards). Any HTML file in docs/ is a plan; island carries full state.
-  Never modifies files. Trigger verbs: "what plans are open / where are we on X /
-  show plan status / what sprint are we on / summarise plans / review the plan /
-  audit plan health / is the plan stale / /reckon-status [slug]".
+  NEXT cards). Any HTML file in docs/ is a plan; semantic HTML elements carry full
+  state. Never modifies files. Trigger verbs: "what plans are open / where are we
+  on X / show plan status / what sprint are we on / summarise plans / review the
+  plan / audit plan health / is the plan stale / /reckon-status [slug]".
 allowed-tools: Read Bash(*) Grep
 ---
 
@@ -29,7 +29,7 @@ to the docs-server. If you need to fix what you find, use `reckon-edit`.
 ## Hard rules
 
 1. **Pure read.** Never write a file. Never POST to the docs-server.
-2. **Literal.** Report what the island state says; do not invent status.
+2. **Literal.** Report what the plan's semantic HTML says; do not invent status.
 3. **Synthetic examples only.** Use `plan-alpha`, `plan-beta`,
    `my-project` as examples — never real project names.
 4. **One suggestion, not an action.** Offer a single next-step hint
@@ -50,15 +50,15 @@ PROJECT="$(basename "$REPO_ROOT")"
 ```bash
 curl -s "http://127.0.0.1:8765/_discover/$PROJECT"
 ```
-This returns all plans with their full island state merged in — one source.
+This returns all plans with their full parsed state — one source.
 
 **Fallback (server not running):** glob `docs/*.html` (skip `_shared/`, `ui/`,
 `state/`, `assets/`, `archive/` subdirectories and known infrastructure pages:
 `index.html`, `sprints.html`, `milestones.html`, `decisions.html`,
 `inventory.html`, `blockers.html`, `questions.html`, `home.html`,
-`project.html`). Read each file's `<script type="application/json"
-id="reckon-state">` island for state. A file with no island surfaces as
-`status=draft` with `<title>` as the title — existence is sufficient.
+`project.html`). Read each file's `<meta name="plan-*">` scalars and
+`<section data-reckon="…">` elements for state. A file with no plan markup
+surfaces as `status=draft` with `<title>` as the title — existence is sufficient.
 
 **Any HTML file in `docs/` is a plan.** No `plan-status` meta opt-in required.
 
@@ -70,18 +70,20 @@ INDEX_JSON="$REPO_ROOT/docs/state/$PROJECT/index.json"
 
 If present, read it for sprint and milestone definitions. It holds
 **project-level config only** (sprints, milestones, `active_sprint_id`,
-timeline) — not per-plan state. Per-plan state comes from each plan's island.
+timeline) — not per-plan state. Per-plan state comes from each plan's HTML elements.
 
 ### Step 3 — surface open decisions
 
-For each plan, read `decisions` from the island (a **map** keyed by decision
-key). List entries where `choice` is `""` or null.
+For each plan, read `decisions` from the parsed state (a **map** keyed by `data-key`
+on each `.r-dec` element in `<section data-reckon="decisions">`). An open decision
+has `data-choice=""` or absent `data-choice`.
 
 Format: `- <slug>: [<key>] "<title>" options: <choices-joined>`
 
 ### Step 4 — surface unresolved followups
 
-For each plan, list followup entries where `status != "resolved"`.
+For each plan, list followup entries where `data-status != "resolved"` on
+`<article class="r-fu">` elements inside `<section data-reckon="followups">`.
 Show: `plan-slug / <id>: "<title>" (written <age>)`.
 
 ### Step 5 — suggest one next action
@@ -98,11 +100,11 @@ through `reckon-edit`, never here.
 
 | Check | Condition |
 |-------|-----------|
-| **Empty followup prompt** | followup entry exists but `prompt` is null/empty |
-| **Missing NEXT card** | `status=active` plan has no open followup in island |
-| **Open decision** | `decisions` map has entry where `choice` is `""` or null |
-| **Stale plan** | `status=active` and `modified` > 30 days ago |
-| **Tier mismatch** | sprint item `tier` differs from plan-level `tier` in island |
+| **Empty followup prompt** | `<article class="r-fu">` exists but `<pre class="r-fu-prompt">` is absent or empty |
+| **Missing NEXT card** | `plan-status=active` plan has no open `<article class="r-fu" data-status="open">` |
+| **Open decision** | `<div class="r-dec">` with empty or absent `data-choice` |
+| **Stale plan** | `plan-status=active` and `plan-modified` > 30 days ago |
+| **Tier mismatch** | sprint item `tier` differs from `<meta name="plan-tier">` on the plan page |
 
 Output format for review:
 
@@ -111,7 +113,7 @@ Output format for review:
 
 ### High priority (N)
 - plan-alpha: followup f-001 has empty prompt — add text or remove entry
-- plan-beta: active but no open followup in island
+- plan-beta: active but no open followup
 
 ### Medium priority (N)
 - plan-alpha: decision [storage] is open — choice not yet set
@@ -154,5 +156,5 @@ For ≤ 2 plans, skip the table; give one paragraph per plan inline.
 - `~/.claude/skills/reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive).
 - `~/.claude/skills/reckon-create/SKILL.md` — create new plans.
 - `~/.claude/skills/reckon-ship/SKILL.md` — execute plan work via fleet dispatch.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, discovery, endpoints).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, discovery, endpoints)
 - `~/Code/reckon/` — reckon project (server). Start: `uv run --project ~/Code/reckon reckon serve`

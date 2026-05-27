@@ -90,7 +90,7 @@ For each returned worker:
 
 1. Run `git show --stat <sha>` — confirm only assigned paths appear.
 2. Run the project's test suite (`uv run pytest -q`, `ctest`, `npm test`, …).
-3. Confirm the worker wrote a followup into the plan's island (via MCP
+3. Confirm the worker wrote a followup into the plan's followups section (via MCP
    `append_followup` or `POST /plan/<project>/<slug>`). If missing, write one.
 
 ### 5. Record outcomes
@@ -162,9 +162,9 @@ within 2-3 sprints. The evergreen should pass a 30-second-scan test: "what
 is currently in flight, what is locked, what is pending". Detail on shipped
 work has a different audience and belongs in the per-stage archive.
 
-### 6. Update island and write followup
+### 6. Update plan state and write followup
 
-Record outcomes in the plan's island — not in a sidecar JSON file. Use
+Record outcomes in the plan's semantic HTML — not in a sidecar JSON file. Use
 MCP tools or `POST /plan/<project>/<slug>` with dotted patches:
 
 ```bash
@@ -172,8 +172,8 @@ PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
 SLUG="<slug>"
 
 # Read current version
-ISLAND=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
-CUR_VER=$(echo "$ISLAND" | jq -r '.version // 0')
+PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
+CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
 
 # Patch: advance impl, set status shipped
 curl -s -X POST \
@@ -183,6 +183,9 @@ curl -s -X POST \
   "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
 ```
 
+The server rewrites `<meta name="plan-impl">` and `<meta name="plan-status">` in
+the HTML file in place.
+
 Write (or confirm) the §05 followup via MCP `append_followup` or the HTTP
 patch. If this run was triggered by a followup, mark that followup resolved:
 `resolve_followup(project, slug, id, outcome, version)`.
@@ -190,10 +193,10 @@ patch. If this run was triggered by a followup, mark that followup resolved:
 If the project uses central-index, also update `docs/state/<project>/index.json`
 sprints/milestones.
 
-**Eat-the-dog-food check.** Before declaring done, verify the island reflects
+**Eat-the-dog-food check.** Before declaring done, verify the plan HTML reflects
 the work:
 - `GET /plan/<project>/<slug>` → `status` matches reality
-- The driving followup is resolved (`status: "resolved"`)
+- The driving followup is resolved (`data-status="resolved"` on its `<article class="r-fu">`)
 - A next followup or `outcome: "done — no followup"` is present
 - `version` has incremented
 
@@ -220,7 +223,7 @@ Context
   <2–3 sentences: what this section does and why it is being shipped now>
 
 State to read
-  GET /plan/<project>/<slug>   (island — decisions, followups, status, version)
+  GET /plan/<project>/<slug>   (parsed plan state — decisions, followups, status, version)
 
 Locked decisions to honour
   <key> → <choice>
@@ -238,7 +241,7 @@ Constraints
 Done-when
   1. <measurable artefact: commit, file, test result>
   2. tests still green
-  3. followup written into island + driving followup resolved
+  3. followup written into plan + driving followup resolved
 ```
 
 ## Worker dispatch boilerplate
@@ -273,8 +276,9 @@ Append the item-specific task body. End every worker prompt with:
 
 ```
 FOLLOWUP REQUIREMENT (binding):
-After tests pass, write a followup into the plan's island via MCP append_followup
+After tests pass, write a followup into the plan's followups section via MCP append_followup
 or POST /plan/<project>/<slug> (patch key: "followups" — append to the array).
+The server renders this as a new <article class="r-fu"> element in the plan HTML.
 Followup object:
 {
   "id":               "f-<timestamp-base36>",
@@ -299,14 +303,14 @@ Always read current `version` before writing to avoid 412 conflicts.
 
 **MCP (preferred):**
 ```
-read_plan(project, slug)   → island + version
+read_plan(project, slug)   → parsed state + version
 patch_plan(project, slug, {"impl": 0.8, "status": "active"}, version)
 ```
 
 **HTTP fallback:**
 ```bash
-ISLAND=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
-CUR_VER=$(echo "$ISLAND" | jq -r '.version // 0')
+PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
+CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
 curl -s -X POST \
   -H 'Content-Type: application/json' \
   -H "If-Match: $CUR_VER" \
@@ -315,6 +319,7 @@ curl -s -X POST \
 ```
 
 The patch body is a flat map of **dotted keys**. Always use `If-Match`.
+The server rewrites the corresponding semantic HTML elements in the plan file.
 
 ## Model selection
 
@@ -332,5 +337,5 @@ breaking a build is not.
 - `~/.claude/skills/reckon-edit/SKILL.md` — how the evergreen plan gets its "landed" subsection and how followups are written
 - `~/.claude/skills/reckon-create/SKILL.md` — first-time plan scaffolding
 - `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection before deciding what to ship
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, endpoints, what is gone)
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints)
 - `~/Code/reckon/docs/_shared/` — shared CSS assets

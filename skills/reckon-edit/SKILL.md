@@ -36,14 +36,14 @@ If the user wants to execute the work → hand off to `reckon-ship`.
 1. **HTML is the source of truth.** Never edit `docs/archive/` files — they are frozen.
 2. **Decide evergreen-edit vs phase-transition before touching the page.** See §prose below.
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
-4. **All plan state lives in the plan HTML's island.** Edits to decisions, followups, status,
-   and impl go into the `<script type="application/json" id="reckon-state">` block — via
-   MCP tools or `POST /plan/<project>/<slug>`. There is no per-plan sidecar JSON.
-5. **Every followup MUST carry a `prompt` field.** A followup without `prompt` is a hard failure.
+4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
+   and impl go into `<meta name="plan-*">` scalars and `data-reckon` section elements — via
+   MCP tools or `POST /plan/<project>/<slug>`. There are no per-plan sidecar JSON files.
+5. **Every followup MUST carry a `<pre class="r-fu-prompt">` block.** A followup without a prompt is a hard failure.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.
 7. **Never write stubs that cross-reference state.** If a section body is missing,
    write the actual prose in the HTML — do not write `<p>See state §N for details</p>`.
-   The island has no `sections[]` field. Plan body is always in HTML.
+   Plan body is always full authored prose in HTML.
 
 ```html
 <!-- ❌ WRONG — stub with cross-reference -->
@@ -57,18 +57,14 @@ If the user wants to execute the work → hand off to `reckon-ship`.
 
 ## State write pattern
 
-The plan HTML is the sole store. All structured state lives in the island:
-
-```html
-<script type="application/json" id="reckon-state">
-{ ...canonical plan data... }
-</script>
-```
+The plan HTML is the sole store. Structured state lives in:
+- `<meta name="plan-*">` tags (scalars: status, impl, roi, effort, tier, sprint, milestone, …)
+- `<section data-reckon="decisions|followups|questions|research|comments">` blocks inside `<main class="plan-doc">`
 
 **Write path — MCP tools (preferred):**
 
 ```
-read_plan(project, slug)           → returns island + version
+read_plan(project, slug)           → returns parsed state + version
 lock_decision(project, slug, key, choice, rationale, version)
 append_followup(project, slug, followup_obj, version)
 resolve_followup(project, slug, id, outcome, version)
@@ -86,9 +82,9 @@ Writes are rejected (412) if `version` doesn't match.
 PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
 SLUG="<slug>"
 
-# 1. Read island + version
-ISLAND=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
-CUR_VER=$(echo "$ISLAND" | jq -r '.version // 0')
+# 1. Read current state + version
+PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
+CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
 
 # 2. Build dotted patch (flat key → value)
 # Example: lock a decision
@@ -104,7 +100,7 @@ curl -s -X POST \
 
 Rules:
 - Always read `version` before posting (`GET /plan/<project>/<slug>`).
-- The patch body is a **flat map of dotted keys** (not the full island).
+- The patch body is a **flat map of dotted keys**.
 - A missing `If-Match` header causes HTTP 412. A version mismatch returns 412 with `{current_version, current_data}` — rebase and retry.
 - Server bumps `version` on every successful write and sets `modified` to today.
 - `version` is server-owned — never include it in a patch.
@@ -117,8 +113,8 @@ Rules:
 | Edit intent | Treat as | Output |
 |---|---|---|
 | Typo, broken link, small clarification, new subsection | **Evergreen** | Edit `docs/<slug>.html` in place |
-| Adding a followup, note, or question | **Island write only** | POST patch or MCP call; usually no HTML body change |
-| Recording a decision with rationale | **Island write** | POST patch or MCP `lock_decision`; no HTML body change |
+| Adding a followup, note, or question | **Structured write only** | POST patch or MCP call; usually no prose body change |
+| Recording a decision with rationale | **Structured write** | POST patch or MCP `lock_decision`; no prose body change |
 | Section fully landed; work is done | **Phase transition** | Write `docs/archive/<slug>-<n>-landed.html`; append summary to evergreen |
 | Decision locked irreversibly | **Phase transition** | Write `docs/archive/<slug>-<key>-locked.html` |
 | Plan fully implemented | **Phase transition + archive** | See §archive below |
@@ -126,41 +122,30 @@ Rules:
 **Steps (evergreen):**
 1. Read `docs/<slug>.html` end to end.
 2. Make the smallest edit that achieves the goal; add new `<h3>` blocks rather than modifying existing paragraphs.
-3. Update `modified` in the island (via POST patch) to today.
+3. Update `modified` via POST patch (`{"modified": "YYYY-MM-DD"}`).
 4. Suggest commit: `docs(<slug>): <short summary>`. Do not commit unless asked.
 
 **Steps (phase transition):**
 1. Determine suffix: `landed`, `locked`, `final`, or section-specific (e.g. `02-landed`).
 2. Create `docs/archive/<slug>-<suffix>.html` — frozen snapshot with same CSS links, link back to evergreen.
 3. Append a short `<h3>` block in the evergreen pointing at the new file.
-4. Update `modified` in the island.
+4. Update `modified` via POST patch.
 
 ## Intent: decisions
 
-`decisions` is a **map** in the island, keyed by decision key:
+Decisions live as `<div class="r-dec" data-key="…">` elements inside `<section data-reckon="decisions">`. An open decision has `data-choice=""`. A locked decision has `data-choice="<answer>"` and `data-by`/`data-when` set. Options are `<button class="r-opt" data-value="…">` — the chosen button gains class `chosen`. A decision with no `<button>` elements is pure free-form (typed answer in `data-choice`).
 
-```json
-"decisions": {
-  "scan-strategy": {
-    "title":    "How should scanning work?",
-    "context":  "…",
-    "choices":  ["glob", "index"],
-    "choice":   "glob",
-    "rationale": "…",
-    "when":     "2026-05-26",
-    "by":       "smc"
-  }
-}
-```
+The server parses these elements via `GET /plan/<project>/<slug>` (returns `decisions` as a map keyed by `data-key`).
 
 **Lock a single decision:**
-1. Read island via `read_plan` (MCP) or `GET /plan/<project>/<slug>` (HTTP).
+1. Read state via `read_plan` (MCP) or `GET /plan/<project>/<slug>` (HTTP) — get current `version`.
 2. POST a dotted patch: `decisions.<key>.choice`, `decisions.<key>.rationale`, `decisions.<key>.when`, `decisions.<key>.by`.
+   The server sets `data-choice` on the `.r-dec`, marks the matching option button `.chosen`, and writes the rationale into `.r-dec-rat`.
 3. If the decision is irreversible, follow the phase-transition rule (write an archival `docs/archive/<slug>-<key>-locked.html`).
 
 **Interactive walkthrough ("walk me through all open decisions"):**
-1. Read island; collect `decisions` keys where `choice` is `""` or null.
-2. For each open decision, present the `title`, `context`, and `choices`; ask the user to choose.
+1. Read state; collect `decisions` entries where `choice` is `""` or null.
+2. For each open decision, present the `title` (from `.r-dec-q`), optional `context` (from `.r-dec-ctx`), and `choices` (from `.r-opt` buttons); ask the user to choose.
 3. Accumulate choices; send a single POST patch with If-Match at the end.
 4. Report how many decisions were locked.
 
@@ -168,17 +153,21 @@ Rules:
 1. Write a followup (§05 template, `recommends_skill: "/reckon-edit <slug> --reopen <key>"`).
 2. Body: what the locked choice was, what evidence changed, what you propose instead.
 3. Never silently re-lock. A human or coordinator reviews and accepts or rejects the followup.
-4. On `--reopen`: snapshot the existing decision into `docs/archive/<slug>-<key>-locked.html`, send a patch that clears `decisions.<key>.choice`, add a "reopened" badge to the HTML row, append a `notes[]` entry.
+4. On `--reopen`: snapshot the existing decision into `docs/archive/<slug>-<key>-locked.html`, send a patch that clears `decisions.<key>.choice` (sets `data-choice=""`), removes the `.chosen` class from any option button, append a comment noting the reopen.
 
 ## Intent: followup / notes / research
 
+Followups live as `<article class="r-fu" data-id="…">` elements inside `<section data-reckon="followups">`. The `<pre class="r-fu-prompt">` child carries the §05 prompt.
+
 **Append a followup:**
-1. Read island; generate `id: "f-<unix-secs-base36>"`.
-2. Build the followup object (minimum body below).
-3. POST via MCP `append_followup` or `POST /plan/<project>/<slug>` with a patch that appends to `followups`.
+1. Read current state via `read_plan` (MCP) or `GET /plan/<project>/<slug>`.
+2. Build the followup object (minimum fields below); generate `id: "f-<unix-secs-base36>"`.
+3. POST via MCP `append_followup` or `POST /plan/<project>/<slug>` with a patch appending to `followups`.
 4. A followup without `prompt` is a hard failure — use the §05 template.
 
-Minimum followup body:
+The server renders this as an `<article class="r-fu">` with `<pre class="r-fu-prompt">` in the HTML.
+
+Minimum followup object (as sent to MCP / POST):
 ```json
 {
   "id":               "f-<base36>",
@@ -195,10 +184,11 @@ Minimum followup body:
 ```
 
 **Resolve a followup by id:**
-1. Read island; find entry in `followups[]` by `id`.
+1. Read state; find the `<article class="r-fu" data-id="<id>">` element.
 2. Via MCP `resolve_followup` or a patch: set `resolved_at`, `resolved_by`, `outcome`, `status: "resolved"`.
+   The server sets `data-resolved-at`/`-by` attributes and inserts `<p class="r-fu-outcome">`.
 
-Notes and research items use the same append pattern; `prompt` is optional for those.
+Research items use the same append pattern via MCP `add_research`; `prompt` is not required for those.
 
 ## Intent: sprint management
 
@@ -207,7 +197,7 @@ Does NOT dispatch workers (that is `reckon-ship`).
 Does NOT read plan HTML content (that is `reckon-ship` / `reckon-status`).
 
 **Propose a sprint:**
-1. Discover plans via `GET /_discover/<project>` — each plan carries its full island state.
+1. Discover plans via `GET /_discover/<project>` — each plan carries its full parsed state.
 2. Filter by `status in {active, pending}`.
 3. Score: `roi (high=3, mid=2, low=1) × effort_inverse (S=4, M=3, L=2, XL=1) × milestone_priority`.
 4. Apply dependency-aware ordering (blocked items trail their blockers).
@@ -231,11 +221,11 @@ State path: `docs/state/<project>/index.json`.
 
 ## Intent: archive
 
-1. Write `docs/archive/<slug>-final.html` — frozen snapshot with final status grid, all locked decisions, implementation commit SHAs, and a link to the evergreen.
+1. Write `docs/archive/<slug>-final.html` — frozen snapshot with final status grid, all locked decisions (read from `.r-dec` elements), implementation commit SHAs, and a link to the evergreen.
 2. Move `docs/<slug>.html` to `docs/archive/<slug>.html`.
 3. Update `docs/index.html` plans table: move the row to "Completed" or drop it.
 4. Remove from active `<nav>` or add an "(archived)" marker.
-5. POST `status: "archived"` and `modified` to the plan's island endpoint.
+5. POST `status: "archived"` to the plan endpoint (updates `<meta name="plan-status">`).
 
 ## §05 followup template
 
@@ -251,7 +241,7 @@ Context
   2–3 sentences on why this is queued now.
 
 State to read
-  GET /plan/<project>/<slug>   (island — decisions, followups, status)
+  GET /plan/<project>/<slug>   (parsed plan state — decisions, followups, status)
 
 Locked decisions to honour
   <key> → <choice>
@@ -274,6 +264,6 @@ Done-when
 - `reckon-ship` — execute the work a plan describes.
 - `reckon-status` — read-only inspection of plan and sprint state.
 - `reckon-sync` — register a project mount and seed shared assets.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (island schema, endpoints, what is gone).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
 - `~/Code/reckon/` — docs-server source; CSS lives in `docs/_shared/`.
 - `~/docs-server/mounts.json` — mount registry (no restart needed).

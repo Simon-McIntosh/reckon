@@ -2,8 +2,9 @@
 name: reckon-create
 description: >-
   Scaffold a brand-new plan HTML page or non-plan doc in an already-synced repo.
-  Creates docs/<slug>.html with an embedded reckon-state island — no sidecar
-  JSON created. Requires reckon-sync to have been run first. Trigger verbs:
+  Creates docs/<slug>.html as self-contained semantic HTML with plan-data in
+  meta tags and data-reckon sections. Requires reckon-sync to have been run first.
+  Trigger verbs:
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
   create an explainer / author a doc / /reckon-create <slug>". For editing an
   existing plan use reckon-edit; for executing plan work use reckon-ship.
@@ -31,13 +32,10 @@ and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
 1. **HTML is the source of truth.** Never create a markdown plan file.
 2. **Do NOT register mounts or create symlinks.** That is `reckon-sync`'s exclusive job.
 3. **Do NOT copy CSS or JS into the project.** If `docs/_shared/` is missing, stop (rule above).
-4. **Every plan carries a `reckon-state` island** — even if minimal. Future agents expect it.
-5. **Every page ships with a NEXT card placeholder** — even empty (via empty `followups: []` in the island).
+4. **Plan data lives as semantic HTML.** `<meta name="plan-*">` scalars in the head and `data-reckon` section elements inside `<main class="plan-doc">`. No sidecar JSON files.
+5. **Every page ships with a followup placeholder** — even empty (a `<section data-reckon="followups">` block or absent if truly empty).
 6. **Do not commit automatically.** Report what was created and suggest a commit message.
-7. **Plan body prose lives in HTML — never in the island.** Write the full section content
-   directly in `docs/<slug>.html`. The island contains ONLY structured data
-   (`status`, `tier`, `decisions`, `followups`, `research`, `questions`, etc.) — never prose
-   sections or a `sections[]` array. A stub like `<p>See state §2 for details</p>` is a hard failure.
+7. **Plan body prose lives in HTML directly.** Write full section content in `docs/<slug>.html`. A stub like `<p>See state §2 for details</p>` is a hard failure.
 
 ## Workflow
 
@@ -72,8 +70,10 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 
 Scaffold `docs/<slug>.html` as a **self-contained plan page**. The page includes:
 - `<meta name="docs-project">` — required for server discovery
-- `<main class="plan-doc">` — prose body (section headings carry `id="s1"` etc. for comment anchoring)
-- `<script type="application/json" id="reckon-state">` — the state island
+- `<meta name="plan-*">` scalars — authored metadata (status, roi, effort, tier, etc.)
+- `<main class="plan-doc">` — prose body (section headings carry `id="s1"` etc. for comment anchoring) plus `data-reckon` sections for decisions, followups, questions, research, comments
+
+Plan data lives as HTML elements — no sidecar JSON.
 
 **Canonical file anatomy:**
 
@@ -85,6 +85,11 @@ Scaffold `docs/<slug>.html` as a **self-contained plan page**. The page includes
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project" content="<project>">
   <meta name="plan-slug"    content="<slug>">
+  <meta name="plan-status"  content="draft">
+  <meta name="plan-roi"     content="mid">
+  <meta name="plan-effort"  content="M">
+  <meta name="plan-tier"    content="sonnet">
+  <meta name="plan-summary" content="">
   <title><title> | <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -96,12 +101,32 @@ Scaffold `docs/<slug>.html` as a **self-contained plan page**. The page includes
     <h2 id="s1">§1 — Overview</h2>
     <p>…</p>
 
-    <!-- additional sections as needed -->
-  </main>
+    <!-- additional prose sections as needed -->
 
-  <script type="application/json" id="reckon-state">
-  <!-- island — see §Island seed schema below -->
-  </script>
+    <!-- reckon-owned sections: server regenerates these on write -->
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <!-- example: select-from-options decision -->
+      <div class="r-dec" data-key="example-decision" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Question to answer</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="option-a">Option A</button>
+          <button class="r-opt" data-value="option-b">Option B</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <!-- example: free-form decision (no option buttons) -->
+      <div class="r-dec" data-key="freeform-decision" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Free-form question</p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <!-- followups appended here by MCP or POST -->
+    </section>
+  </main>
 </body>
 </html>
 ```
@@ -113,52 +138,36 @@ Key substitutions:
 | `<slug>` | kebab-case slug |
 | `<project>` | basename of repo root |
 | `<title>` | Title Case title |
-| `<date>` | `date +%Y-%m-%d` |
-| `<tier>` | `sonnet` (default) |
+| `<tier>` | `sonnet` (default; `haiku` for research/audit, `opus` for multi-file/solver) |
 
-**For a non-plan doc**, use the same anatomy with a plain `<body>` prose structure
-instead of `<main class="plan-doc">`. Omit the island unless structured state is needed.
+**For a non-plan doc**, use the same anatomy with plain `<body>` prose instead of
+`<main class="plan-doc">`. Omit `data-reckon` sections unless structured state is needed.
 
-### Step 4 — Seed the state island
+### Step 4 — Meta scalars
 
-Embed the island directly in the HTML file (no sidecar JSON created).
-`tier` defaults: `haiku` for research/audit, `sonnet` for routine work, `opus` for multi-file/solver.
+All structured scalars live in `<meta name="plan-*">` tags in `<head>`. The server
+reads and writes these. `version` and `impl` are server-owned — never author them:
 
-```json
-{
-  "slug": "<slug>",
-  "title": "<title>",
-  "summary": "",
-  "status": "draft",
-  "impl": 0.0,
-  "roi": "mid",
-  "effort": "M",
-  "milestone": null,
-  "sprint": null,
-  "tier": "sonnet",
-  "owner": "",
-  "modified": "<today>",
-  "decisions": {},
-  "followups": [],
-  "comments": {},
-  "questions": [],
-  "research": [],
-  "notes": []
-}
-```
-
-`version` is server-managed — never write it in the seed.
-
-`decisions` is a **map** keyed by decision key (e.g. `"scan-strategy": {...}`).
-See §Island schema reference for the full field set.
+| Meta tag | Default | Notes |
+|---|---|---|
+| `plan-slug` | filename stem | Optional override |
+| `plan-status` | `draft` | Server-written |
+| `plan-impl` | `0.0` | Server-written |
+| `plan-version` | (omit) | Server-owned concurrency counter |
+| `plan-roi` | `mid` | `high`/`mid`/`low` |
+| `plan-effort` | `M` | `S`/`M`/`L`/`XL` |
+| `plan-tier` | `sonnet` | `haiku`/`sonnet`/`opus` |
+| `plan-milestone` | (empty) | e.g. `M2` |
+| `plan-sprint` | (empty) | e.g. `S4` |
+| `plan-summary` | (empty) | One-line synopsis |
+| `plan-depends-on` | (empty) | Comma-separated slugs |
 
 ### Step 5 — Register in index.json (if present)
 
 Check if `$DOCS_DIR/state/$PROJECT/index.json` exists. If yes, it holds
 **project-level config** (sprints, milestones, `active_sprint_id`). Plans are
-auto-discovered from HTML — no plan inventory entry is needed. Skip this step
-unless the project explicitly maintains a plans list in index.json and expects
-you to add an entry.
+auto-discovered from HTML files — no plan inventory entry in `index.json` is needed.
+Skip this step unless the project explicitly maintains a plans list there.
 
 ### Step 6 — Confirm
 
@@ -166,67 +175,58 @@ Report to the user:
 
 - Created file: `docs/<slug>.html` (relative to repo root)
 - Live URL: `http://localhost:8765/<project>/<slug>.html`
-- State: embedded island in the HTML (no sidecar JSON)
+- State: `<meta name="plan-*">` scalars + `data-reckon` section elements in the HTML
 - Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
 
-## Island schema reference
+## Semantic data reference
 
-```json
-{
-  "slug":      "<slug>",
-  "title":     "Human title",
-  "summary":   "one-line synopsis",
-  "status":    "draft",           // draft|pending|active|in-progress|blocked|shipped|done|superseded|abandoned
-  "impl":      0.0,               // [0,1] progress fraction
-  "roi":       "mid",             // high|mid|low
-  "effort":    "M",               // S|M|L|XL
-  "milestone": null,
-  "sprint":    null,
-  "tier":      "sonnet",          // haiku|sonnet|opus
-  "owner":     "",
-  "modified":  "YYYY-MM-DD",     // server-written on each POST
-  "depends_on": [],
-  "blocks":    [],
+Plan data lives as HTML elements, not JSON. The complete element shapes:
 
-  "decisions": {                  // MAP keyed by decision key
-    "my-decision": {
-      "title":    "The question to answer",
-      "context":  "extra context",
-      "choices":  ["option-a", "option-b"],
-      "choice":   "",             // locked answer; "" = open
-      "rationale": "",
-      "when":     "",
-      "by":       ""
-    }
-  },
+**Decisions** (`<section data-reckon="decisions">`):
+```html
+<div class="r-dec" data-key="my-decision" data-choice="" data-by="" data-when="">
+  <p class="r-dec-q">The question to answer</p>
+  <p class="r-dec-ctx">optional context</p>          <!-- omit if empty -->
+  <p class="r-dec-opts">                              <!-- omit if free-form only -->
+    <button class="r-opt" data-value="option-a">Option A</button>
+    <button class="r-opt chosen" data-value="option-b">Option B</button>  <!-- chosen = locked -->
+  </p>
+  <p class="r-dec-rat">rationale text</p>            <!-- empty when open -->
+</div>
+```
+`data-choice=""` = open; `data-choice="option-b"` = locked. A decision with no `<button>` elements is pure free-form — `data-choice` holds the typed answer.
 
-  "followups": [
-    {
-      "id":               "f-<base36>",
-      "status":           "open",
-      "title":            "…",
-      "body":             "…",
-      "recommends_skill": "/reckon-ship <slug>",
-      "touches":          ["path"],
-      "tier":             "sonnet",
-      "est_turn":         "~1h",
-      "written_by":       "…",
-      "written_at":       "…",
-      "prompt":           "§05 copy-paste prompt — MANDATORY",
-      "resolved_at":      null,
-      "resolved_by":      null,
-      "outcome":          null
-    }
-  ],
-
-  "comments":  {},
-  "questions": [],
-  "research":  [],
-  "notes":     []
-}
+**Followups** (`<section data-reckon="followups">`):
+```html
+<article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet"
+         data-written-by="smc" data-written-at="2026-05-27"
+         data-recommends-skill="/reckon-ship slug"
+         data-resolved-at="" data-resolved-by="">
+  <h4 class="r-fu-title">…</h4>
+  <div class="r-fu-body">…</div>
+  <pre class="r-fu-prompt">§05 copy-paste prompt — MANDATORY</pre>
+  <!-- on resolve: data-resolved-at/-by set + <p class="r-fu-outcome">…</p> -->
+</article>
 ```
 
-Empty collections may be omitted. The `version` field is server-owned — never write it.
+**Questions** (`<section data-reckon="questions">`):
+```html
+<div class="r-q" data-id="q1" data-section="§2" data-status="open"
+     data-opened-by="smc" data-opened-at="2026-01-01"
+     data-resolved-at="" data-resolved-by="">
+  <p class="r-q-body">…</p>
+</div>
+```
+
+**Research** (`<section data-reckon="research">`):
+```html
+<div class="r-research" data-id="r1" data-type="paper" data-source="arxiv"
+     data-added-by="smc" data-when="2026-01-01" data-url="https://…">
+  <span class="r-research-title"><a href="https://…">Title</a></span>
+</div>
+```
+
+The authoritative reference is `~/Code/reckon/PLAN-FORMAT.md`.
 
 ## Cross-references
 
@@ -234,4 +234,4 @@ Empty collections may be omitted. The `version` field is server-owned — never 
 - `~/.claude/skills/reckon-edit/SKILL.md` — for modifying an existing plan.
 - `~/.claude/skills/reckon-ship/SKILL.md` — for executing the work a plan describes.
 - `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection of plan state.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format reference (island schema, endpoints, what is gone).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format reference (semantic HTML elements, endpoints).
