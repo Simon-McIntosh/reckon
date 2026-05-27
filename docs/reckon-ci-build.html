@@ -20,7 +20,8 @@
 <meta name="plan-modified" content="2026-05-27">
 <meta name="plan-depends-on" content="">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="14">
+<meta name="reckon-type" content="plan">
 </head>
 <body>
 <main class="plan-doc">
@@ -134,6 +135,96 @@ jobs:
 <li>Version pinning guidance in generated CI YAML</li>
 </ul>
 </section>
+<section id="s6">
+<h2>§ 6 — Implementation review &amp; recommendations (2026-05-27, Opus)</h2>
+<p>Reviewed the shipped code against this plan. The <code>build</code> command, sprint/milestone
+HTML discovery, and the <code>sync --generate-ci</code> flag all landed. But the CI <em>install</em>
+story (§4 + §5) is not deployable as written — three blockers, detailed below. The driving
+fix is the user's instinct: <strong>CI should pull reckon in as a uv-managed dependency, not
+<code>pip install reckon</code></strong>.</p>
+
+<h3>§ 6.1 — Section-by-section status</h3>
+<table>
+<thead><tr><th>§</th><th>Item</th><th>State</th><th>Evidence / gap</th></tr></thead>
+<tbody>
+<tr><td>§2</td><td><code>reckon build</code> command</td><td>✅ landed (from source)</td>
+<td>cli.py <code>build()</code>; smoke test copies 12 <code>_ui/</code> files + <code>_shared/</code>, writes relative-path <code>index.html</code>, drops <code>.nojekyll</code>, bakes <code>index.json</code> inventory. <strong>Only works from a source checkout</strong> (see §6.2-B).</td></tr>
+<tr><td>§3</td><td>Sprint/milestone discovery</td><td>⚠️ coded, unexercised</td>
+<td><code>discover_plans()</code> scans <code>docs/sprints/*.html</code> + <code>docs/milestones/*.html</code> (serve.py). No such files exist in any repo yet, so the path has never run with real input.</td></tr>
+<tr><td>§3</td><td>Eliminate <code>index.json</code></td><td>❌ contradicts code</td>
+<td>Locked decision <code>index-json-fate = "deprecate entirely"</code>, but both <code>sync</code> and <code>build</code> still <em>write</em> <code>index.json</code>, and <code>discover_plans()</code> still <em>falls back</em> to it. Decision is not realised.</td></tr>
+<tr><td>§4</td><td>CI YAML template</td><td>⚠️ landed but broken</td>
+<td><code>sync --generate-ci</code> writes <code>.github/workflows/reckon-pages.yml</code>, but it uses <code>setup-python</code> + <code>pip install reckon</code> — wrong package <em>and</em> wrong tool (see §6.2). reckon's own repo has no committed workflow to deploy its plans.</td></tr>
+<tr><td>§5</td><td>Versioned PyPI package</td><td>❌ blocked</td>
+<td>Name <code>reckon</code> is taken on PyPI by an unrelated caching library; 0 git tags, so hatch-vcs yields <code>0.1.devNN</code>; no release workflow. <code>pip install reckon==1.2.3</code> is impossible as written.</td></tr>
+<tr><td>—</td><td>Tests</td><td>❌ missing</td>
+<td><code>tests/</code> holds only MCP tests; no <code>tests/test_build.py</code>.</td></tr>
+</tbody>
+</table>
+
+<h3>§ 6.2 — The three blockers</h3>
+<p><strong>A. PyPI name collision (§4, §5).</strong> <code>https://pypi.org/project/reckon/</code> resolves to
+<em>"reckon: Dead simple, dynamic caching"</em> by Sean Stewart — not this project. Any CI that runs
+<code>pip install reckon</code> installs that package, and <code>reckon build</code> is simply not found.
+The distribution must be renamed to an available name (e.g. <code>reckon-plans</code>) while keeping the
+<code>reckon</code> import package and <code>reckon</code> console-script unchanged.</p>
+<p><strong>B. The wheel does not ship the UI assets (§2, §4).</strong> <code>build</code> copies assets from
+<code>Path(__file__).parent.parent / "docs" / {ui,_shared}</code>, but the wheel
+(<code>[tool.hatch.build.targets.wheel] packages = ["reckon"]</code>) contains only <code>reckon/*.py</code>
+— verified: 11 entries, no <code>docs/</code>. So from an installed wheel the <code>if ui_src.is_dir()</code>
+guard is false and <strong>asset copying is silently skipped</strong> — producing a broken static site with
+no error. <code>build</code> only works today when run from a git checkout (where <code>docs/ui/</code> exists
+beside the package). Fix: ship the assets in the wheel via hatch <code>force-include</code>, or move them under
+<code>reckon/_assets/</code> and resolve with <code>importlib.resources</code>.</p>
+<p><strong>C. CI is pip-based, not uv-managed (§4) — the user's ask.</strong> Even after A+B, the workflow
+should use uv for reproducibility and to match how reckon is run everywhere else on this host
+(<code>uv run --project ~/Code/reckon reckon …</code>).</p>
+
+<h3>§ 6.3 — Recommendation: bring reckon in as a uv-managed CI dependency</h3>
+<p><strong>Variant 1 — works today, no packaging changes (source checkout via uv).</strong> Because the wheel
+omits assets (blocker B), the only correct install is from source. Check out reckon as a second repo and
+run it through uv from that tree — pin with <code>ref:</code> for reproducibility:</p>
+<pre><code>name: Deploy plans to GitHub Pages
+on: { push: { branches: [main] }, workflow_dispatch: {} }
+permissions: { contents: read, pages: write, id-token: write }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4                 # the project whose docs/ we publish
+      - uses: actions/checkout@v4                 # reckon itself (ships docs/ui + docs/_shared)
+        with: { repository: Simon-McIntosh/reckon, ref: v0.2.0, path: .reckon-src }
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run --project .reckon-src reckon build "$GITHUB_WORKSPACE/docs"
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: docs/ }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment</code></pre>
+<p><strong>Variant 2 — after blockers A + B are fixed (packaged + published).</strong> Once assets ship in the
+wheel and the dist is renamed, the install collapses to one uv line, pinned to a published version:</p>
+<pre><code>      - uses: astral-sh/setup-uv@v6
+      - run: uvx --from "reckon-plans==0.2.0" reckon build docs/
+        # or, git-pinned without a PyPI release:
+        # uvx --from "git+https://github.com/Simon-McIntosh/reckon@v0.2.0" reckon build docs/</code></pre>
+<p>A consuming repo that already uses uv can instead declare reckon in its own
+<code>pyproject.toml</code> under <code>[tool.uv.sources]</code> (git + ref) and call
+<code>uv run reckon build docs/</code> — same lockfile-pinned reproducibility, no extra checkout step.</p>
+
+<h3>§ 6.4 — Recommended next steps (queued as the followup below)</h3>
+<ol>
+<li><strong>Open a <code>dist-name</code> decision</strong> and rename the distribution off the squatted <code>reckon</code> name.</li>
+<li><strong>Ship UI assets in the wheel</strong> (hatch <code>force-include</code> or <code>reckon/_assets/</code> + <code>importlib.resources</code>); add a wheel-install smoke test.</li>
+<li><strong>Rewrite the generated CI template to uv</strong> (Variant 1 now; Variant 2 after 1+2), and commit a copy for reckon's own Pages deploy.</li>
+<li><strong>Add <code>tests/test_build.py</code></strong> covering asset copy, relative paths, <code>.nojekyll</code>, inventory.</li>
+<li><strong>Reconcile <code>index-json-fate</code></strong>: realise "deprecate entirely" or reopen the decision via the dissent flow — today it is locked but unimplemented.</li>
+<li><strong>Cut the first git tag</strong> so hatch-vcs emits a real version.</li>
+</ol>
+</section>
 <section id="decisions">
 
 
@@ -142,30 +233,30 @@ jobs:
 </div>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="command-name" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="command-name" data-choice="build" data-by="Simon McIntosh" data-when="2026-05-27 07:37">
     <p class="r-dec-q">CLI verb for the static-build command</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="build">build</button>
+      <button class="r-opt chosen" data-value="build">build</button>
       <button class="r-opt" data-value="export">export</button>
       <button class="r-opt" data-value="bundle">bundle</button>
       <button class="r-opt" data-value="package">package</button>
       </p>
     <p class="r-dec-rat"></p>
     </div>
-<div class="r-dec" data-key="sprint-discovery-dir" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="sprint-discovery-dir" data-choice="docs/sprints/" data-by="Simon McIntosh" data-when="2026-05-27 07:37">
     <p class="r-dec-q">Where do sprint definition HTML files live?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="docs/sprints/">docs/sprints/</button>
+      <button class="r-opt chosen" data-value="docs/sprints/">docs/sprints/</button>
       <button class="r-opt" data-value="docs/_sprints/">docs/_sprints/</button>
       <button class="r-opt" data-value="docs/ (alongside plans)">docs/ (alongside plans)</button>
       </p>
     <p class="r-dec-rat"></p>
     </div>
-<div class="r-dec" data-key="index-json-fate" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="index-json-fate" data-choice="deprecate entirely" data-by="Simon McIntosh" data-when="2026-05-27 07:37">
     <p class="r-dec-q">Once sprint discovery lands, what happens to index.json?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="keep for active_sprint_id override">keep for active_sprint_id override</button>
-      <button class="r-opt" data-value="deprecate entirely">deprecate entirely</button>
+      <button class="r-opt chosen" data-value="deprecate entirely">deprecate entirely</button>
       <button class="r-opt" data-value="auto-migrate">auto-migrate</button>
       </p>
     <p class="r-dec-rat"></p>
@@ -173,7 +264,7 @@ jobs:
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ci-build-2026-05-26" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="2026-05-26T16:42:01+00:00" data-resolved-by="Claude (sonnet-4.6)">
+<article class="r-fu" data-id="f-ci-build-2026-05-26" data-status="resolved" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="2026-05-26T16:42:01+00:00" data-resolved-by="Claude (sonnet-4.6)">
     <h4 class="r-fu-title">Implement reckon build command + sprint/milestone HTML discovery</h4>
     <div class="r-fu-body">Design and decisions are locked in the plan. Implement: (1) cli.py reckon build command, (2) discover_plans extension for sprint/milestone HTML meta tags, (3) reckon sync --generate-ci flag for CI YAML, (4) index.json elimination once sprint discovery lands.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -233,14 +324,68 @@ Done-when
   3. impl updated to 1.0, status → shipped if tests pass
   4. This followup resolved with outcome</pre>
     </article>
+<article class="r-fu" data-id="f-6a16a1ab" data-status="open" data-tier="sonnet" data-written-by="Claude (opus-4.7)" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make reckon CI-installable via uv: rename PyPI dist, ship UI assets in wheel, switch CI to uv</h4>
+    <div class="r-fu-body">Review on 2026-05-27 surfaced three blockers to the §4/§5 CI story: the PyPI name `reckon` belongs to an unrelated caching package; the wheel excludes docs/ui + docs/_shared so `reckon build` only works from a source checkout; and the generated CI uses pip, not uv. Fix packaging + naming and make CI install reckon as a uv-managed dependency (see §6 recommendations).</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-ci-build (http://localhost:8765/reckon/reckon-ci-build.html)
+Section: §4 + §5 (+ §2 packaging)
+Tier:    sonnet
+
+Context
+  2026-05-27 review found the §4/§5 CI install story is broken three ways:
+  (1) PyPI `reckon` is an unrelated package (Sean Stewart&#x27;s caching lib), so
+  `pip install reckon` fetches the wrong code; (2) the wheel ships only
+  reckon/*.py — docs/ui + docs/_shared are excluded, so `reckon build` from an
+  installed wheel copies nothing (works only from a source checkout); (3) the
+  generated CI uses pip, not uv. Fix packaging + naming, then make CI pull
+  reckon in as a uv-managed dependency.
+
+State to read
+  GET /plan/reckon/reckon-ci-build   (decisions, followups, status, version)
+  reckon/cli.py (build + sync --generate-ci), pyproject.toml,
+  reckon/serve.py discover_plans()
+
+Locked decisions to honour
+  command-name          -&gt; build
+  sprint-discovery-dir  -&gt; docs/sprints/ + docs/milestones/
+
+Open decisions to surface (do not resolve)
+  dist-name        : `reckon` is taken on PyPI -&gt; reckon-plans? pyreckon? reckon-agile?
+  asset-packaging  : hatch force-include docs/ into wheel vs move assets under
+                     reckon/_assets/ + importlib.resources lookup
+  ci-install-mode  : uvx --from git+URL@ref reckon build  vs  second actions/checkout
+                     of reckon + `uv run --project` (only this works until assets ship)
+
+Constraints
+  MIT licence; keep the `reckon` import package + `reckon` console script names
+  unchanged even if the distribution is renamed; hatch-vcs needs &gt;=1 git tag for
+  a real version (currently 0.1.devNN, 0 tags).
+
+Done-when
+  1. `reckon build` works from an installed wheel (assets resolved via
+     importlib.resources or hatch force-include) — verified by
+     `uv run --isolated --with &lt;wheel&gt; reckon build &lt;tmp-docs&gt;`.
+  2. Distribution renamed to an available PyPI name; README + plan §5 updated.
+  3. CI YAML (generated template AND a committed copy for reckon&#x27;s own docs)
+     installs reckon via uv (astral-sh/setup-uv + uvx/uv run), pinned to a
+     ref or version — no bare `pip install reckon`.
+  4. tests/test_build.py covers asset copy, relative index.html paths,
+     .nojekyll, and index.json inventory.
+  5. index-json-fate reconciled: code still writes/reads index.json, so either
+     realise &quot;deprecate entirely&quot; or reopen the decision via the dissent flow.
+  6. followup written into plan + this followup marked resolved.</pre>
+    </article>
 </section>
 <section data-reckon="questions" id="questions" class="r-questions">
 <h2><span class="sec">§</span> Open questions</h2>
-<div class="r-q" data-id="q1" data-section="§ 2" data-status="open" data-opened-by="Simon McIntosh" data-opened-at="2026-05-26">
+<div class="r-q" data-id="q1" data-section="§ 2" data-status="resolved" data-opened-by="Simon McIntosh" data-opened-at="2026-05-26" data-resolved-at="2026-05-27T07:47:55+00:00" data-resolved-by="Claude (opus-4.7) review">
     <p class="r-q-body">Should reckon build copy state.js to _shared/ (needed for legacy standalone pages) or only the CSS?</p>
+    <p class="r-q-resolution">Yes — verified 2026-05-27. reckon build copies the whole docs/_shared/ dir (foundation.css, dashboard.css, state.js) plus all 12 docs/ui/ files into _shared/ and _ui/. state.js is included, so legacy standalone pages render. (Note: this works only from a source checkout — the wheel does not ship these assets; see new followup.)</p>
     </div>
-<div class="r-q" data-id="q2" data-section="§ 3" data-status="open" data-opened-by="Simon McIntosh" data-opened-at="2026-05-26">
+<div class="r-q" data-id="q2" data-section="§ 3" data-status="resolved" data-opened-by="Simon McIntosh" data-opened-at="2026-05-26" data-resolved-at="2026-05-27T07:47:55+00:00" data-resolved-by="Claude (opus-4.7) review">
     <p class="r-q-body">What directory convention for sprint/milestone definition HTML files? docs/sprints/, docs/_meta/, or alongside plans in docs/?</p>
+    <p class="r-q-resolution">docs/sprints/*.html + docs/milestones/*.html — implemented in discover_plans() (serve.py). Matches locked decision sprint-discovery-dir. No example files exist yet, so the path is untested in practice.</p>
     </div>
 </section>
 </main>
