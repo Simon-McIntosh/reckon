@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-title" content="reckon MCP server">
 <meta name="plan-summary" content="">
-<meta name="plan-status" content="pending">
+<meta name="plan-status" content="shipped">
 <meta name="plan-roi" content="mid">
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="—">
@@ -18,8 +18,9 @@
 <meta name="plan-owner" content="">
 <meta name="plan-modified" content="2026-05-27">
 <meta name="plan-depends-on" content="">
-<meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="6">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="7">
+<meta name="reckon-type" content="plan">
 </head>
 <body>
 <main class="plan-doc">
@@ -208,13 +209,13 @@ Development install:</p>
       </p>
     <p class="r-dec-rat">ship stdio first - then implement streamable http</p>
     </div>
-<div class="r-dec" data-key="search" data-choice="Yes — add lunr.js or ripgrep subprocess" data-by="Simon McIntosh" data-when="2026-05-27 04:07">
+<div class="r-dec" data-key="search" data-choice="No — grep is sufficient for now" data-by="smc" data-when="2026-05-27">
     <p class="r-dec-q">Expose a reckon.search_plans tool with free-text query?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="No — grep is sufficient for now">No — grep is sufficient for now</button>
-      <button class="r-opt chosen" data-value="Yes — add lunr.js or ripgrep subprocess">Yes — add lunr.js or ripgrep subprocess</button>
+      <button class="r-opt chosen" data-value="No — grep is sufficient for now">No — grep is sufficient for now</button>
+      <button class="r-opt" data-value="Yes — add lunr.js or ripgrep subprocess">Yes — add lunr.js or ripgrep subprocess</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">No reckon.search_plans tool was built; discovery + grep over the plan corpus is sufficient.</p>
     </div>
 <div class="r-dec" data-key="multi-project" data-choice="project = mounts.json key; slug = filename stem" data-by="Simon McIntosh" data-when="2026-05-27 04:07">
     <p class="r-dec-q">How to handle multi-project repos (e.g. imas-efit under two logical projects)?</p>
@@ -231,6 +232,17 @@ Development install:</p>
       </p>
     <p class="r-dec-rat">if we are managing our inventories with an index.json still</p>
     </div>
+</section>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mcp-shipped" data-status="resolved" data-tier="" data-written-by="smc" data-written-at="2026-05-27" data-recommends-skill="" data-resolved-at="2026-05-27" data-resolved-by="smc">
+    <h4 class="r-fu-title">Ship the reckon MCP server</h4>
+    <div class="r-fu-body">stdio MCP server exposing read/write/list/sprint/inventory tools over the semantic-HTML doc store.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan: reckon-mcp-plan
+The MCP server is shipped and in active use — done, no followup.</pre>
+    <p class="r-fu-outcome">Shipped: reckon/mcp.py (FastMCP stdio) + _store.py + _mcp_tools.py — read_plan, list_plans, patch_plan, lock_decision, append_followup, resolve_followup, set_status, set_impl, append_comment, add_research, resolve_question, list_followups, list_questions, list_projects, list_sprints, and sprint/inventory tools, all operating on plan HTML. 47 tests pass; in daily use this session.</p>
+    </article>
 </section>
 </main>
 </body>
