@@ -195,7 +195,7 @@ function HomeApp() {
         {window.ProjectPicker
           ? <window.ProjectPicker current={null} projects={projects} onNav={p => p ? onOpen(p) : null}/>
           : <span className="label fleet">fleet</span>}
-        <button className="cmdk-btn" onClick={() => setCmdK(true)} style={{marginLeft: 4}}>
+        <button className="r-cmdk-trigger" onClick={() => setCmdK(true)}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="7" cy="7" r="4.5"/><path d="M13 13l-2.5-2.5"/>
           </svg>
