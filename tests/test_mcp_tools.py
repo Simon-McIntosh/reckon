@@ -414,13 +414,17 @@ def test_add_research_missing_fields(setup):
 
 def test_append_comment_unique_ids(setup):
     docs_dir, _, project = setup
-    _make_plan_html(docs_dir, "plan-a", {"slug": "plan-a", "version": 0, "notes": []})
-    r1 = mcp_module._append_comment(project, "plan-a", "§1", "first", "agent", expected_version=0)
+    _make_plan_html(docs_dir, "plan-a", {"slug": "plan-a", "version": 0, "comments": {}})
+    r1 = mcp_module._append_comment(project, "plan-a", "s1", "first", "agent", expected_version=0)
     assert r1["ok"] is True
-    r2 = mcp_module._append_comment(project, "plan-a", "§1", "second", "agent", expected_version=1)
+    r2 = mcp_module._append_comment(project, "plan-a", "s1", "second", "agent", expected_version=1)
     assert r2["ok"] is True
-    assert r1["note_id"] != r2["note_id"]
-    assert r1["note_id"].startswith("n-")
+    # comments land in the section-keyed comments map (rendered as data-reckon="comments")
+    assert r1["comment_id"] != r2["comment_id"]
+    assert r1["comment_id"].startswith("c-")
+    data, _ = _store_module.read_plan(project, "plan-a")
+    bodies = [c["body"] for c in data["comments"]["s1"]]
+    assert bodies == ["first", "second"]
 
 
 # ── lock_decision preserves authored fields ────────────────────────────────

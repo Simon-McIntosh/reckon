@@ -169,31 +169,32 @@ def _append_comment(
     expected_version: int,
     quote: str | None = None,
 ) -> dict[str, Any]:
-    """Append a comment to data.notes (keyed by section_id).
+    """Append a comment to data.comments[section_id] (the section-anchored map
+    the plan page renders as <section data-reckon="comments">).
 
-    comment shape: { id, section_id, who, bot, when, body, quote? }
+    comment shape: { id, who, when, body, quote? }
     """
     cur_data, cur_version = read_plan(project, slug)
     if expected_version != cur_version:
         return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
 
-    notes = list(cur_data.get("notes", []))
-    note_id = f"n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
-    note: dict[str, Any] = {
-        "id": note_id,
-        "section_id": section_id,
+    comments = dict(cur_data.get("comments", {}))
+    arr = list(comments.get(section_id, []))
+    comment_id = f"c-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
+    comment: dict[str, Any] = {
+        "id": comment_id,
         "who": author,
-        "bot": True,
         "when": datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
         "body": body,
     }
     if quote:
-        note["quote"] = quote
-    notes.append(note)
+        comment["quote"] = quote
+    arr.append(comment)
+    comments[section_id] = arr
 
     try:
-        new_version = write_plan(project, slug, {**cur_data, "notes": notes}, cur_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version, "note_id": note_id}
+        new_version = write_plan(project, slug, {**cur_data, "comments": comments}, cur_version)
+        return {"ok": True, "project": project, "slug": slug, "new_version": new_version, "comment_id": comment_id}
     except VersionConflict as e:
         return _conflict_response(e)
 
