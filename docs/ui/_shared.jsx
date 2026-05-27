@@ -13,34 +13,32 @@ function ProjectPicker({current, projects, onNav}) {
     return () => document.removeEventListener("mousedown", close);
   }, []);
   const cur = projects.find(p => p.project === current);
-  const accent = cur ? (cur.accent || window.ACCENTS?.[current] || window.ACCENTS?._default || "var(--accent)") : "var(--ink)";
+  const accent = cur ? (cur.accent || window.ACCENTS?.[current] || "var(--accent)") : "var(--muted)";
   return (
     <div className={`pick ${open ? "open" : ""}`} ref={ref} onClick={() => setOpen(v => !v)}>
-      <span className="glyph" style={{color: accent}}>
-        {current ? (window.GLYPHS?.[current] || window.GLYPHS?._default) : window.GLYPHS?.fleet}
+      <span className="pick-mark" style={{background: accent}}>
+        {(current || "f")[0].toUpperCase()}
       </span>
-      <span className={`label ${current ? "" : "fleet"}`}>{current || "fleet"}</span>
-      <span className="caret">▾</span>
+      <span className={`pick-name${current ? "" : " fleet"}`}>{current || "fleet"}</span>
+      <span className="pick-caret">▾</span>
       {open && (
         <div className="pick-menu" onClick={e => e.stopPropagation()}>
-          <a className={`pick-item ${!current ? "active" : ""}`} onClick={() => { setOpen(false); onNav(null); }}>
-            <span className="gl" style={{color: "var(--ink-2)"}}>{window.GLYPHS?.fleet}</span>
-            <span className="lbl">fleet</span>
-            <span className="meta">{projects.length} projects</span>
-          </a>
-          <div className="pick-divider"/>
-          <div className="pick-section">Mounted</div>
+          <button className={`pick-item${!current ? " active" : ""}`}
+                  onClick={() => { setOpen(false); onNav(null); }}>
+            <span className="pick-mark" style={{background: "var(--muted)"}}>f</span>
+            fleet
+          </button>
+          {projects.length > 0 && <div className="pick-divider"/>}
           {projects.map(p => {
-            const pacc = p.accent || window.ACCENTS?.[p.project] || window.ACCENTS?._default || "var(--accent)";
+            const pacc = p.accent || window.ACCENTS?.[p.project] || "var(--accent)";
             return (
-              <a key={p.project} className={`pick-item ${p.project === current ? "active" : ""}`}
-                 onClick={() => { setOpen(false); onNav(p.project); }}>
-                <span className="gl" style={{color: pacc}}>
-                  {window.GLYPHS?.[p.project] || window.GLYPHS?._default}
+              <button key={p.project} className={`pick-item${p.project === current ? " active" : ""}`}
+                      onClick={() => { setOpen(false); onNav(p.project); }}>
+                <span className="pick-mark" style={{background: pacc}}>
+                  {p.project[0].toUpperCase()}
                 </span>
-                <span className="lbl">{p.project}</span>
-                <span className="meta">{p.plans_count || 0} plans</span>
-              </a>
+                {p.project}
+              </button>
             );
           })}
         </div>
