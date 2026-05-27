@@ -8,6 +8,8 @@ function parseHash() {
   if (h.startsWith("plan/")) return { view: "plan", slug: decodeURIComponent(h.slice(5)) };
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
   if (h === "graph") return { view: "graph" };
+  if (h === "plans") return { view: "plan", slug: null };
+  if (h === "sprints") return { view: "sprint", sprint: null };
   return { view: "cockpit" };
 }
 
@@ -29,34 +31,35 @@ function useHashRoute() {
 
 // ─── Top bar ────────────────────────────────────────────────────────────
 
-function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK }) {
+function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleFilters, theme, setTheme, density, setDensity, projects }) {
   const M = window.STATE;
   const view = route.view;
-  const projectName = (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
-    || M?.project
-    || M?.projects?.[0]?.project
-    || "reckon";
-  const projectMark = (projectName.match(/[A-Za-z]/) || ["R"])[0].toUpperCase();
+  const currentProject = M?.project
+    || (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
+    || null;
+
+  // Assign window globals to local vars so JSX can use them as components
+  const PP = window.ProjectPicker;
+  const SM = window.SettingsMenu;
+
   const goPlans = () => {
-    const target = M.inventory.find(p => p.status === "active") || M.inventory[0];
+    const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
     if (target) onNav({ view: "plan", slug: target.slug });
   };
   const goSprints = () => {
-    const id = M.active_sprint_id || M.sprint?.id || M.sprints?.[0]?.id;
+    const id = M?.active_sprint_id || M?.sprint?.id || M?.sprints?.[0]?.id;
     if (id) onNav({ view: "sprint", sprint: id });
   };
+
   return (
     <div className="r-topbar">
-      <button className="r-sb-toggle" onClick={onToggleSidebar} title={`${sidebarCollapsed ? "Show" : "Hide"} sidebar · ⌘B`} aria-pressed={!sidebarCollapsed}>
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <rect x="2" y="3" width="12" height="10" rx="1.5"/>
-          <path d="M6 3v10"/>
-        </svg>
-      </button>
-      <div className="brand">
-        <span className="mark">{projectMark}</span>
-        <span className="name">{projectName}</span>
-      </div>
+      {PP ? (
+        <PP current={currentProject} projects={projects} onNav={navProject} />
+      ) : (
+        <div className="brand" onClick={() => navProject(null)} style={{ cursor: "pointer" }}>
+          <span className="name">{currentProject || "fleet"}</span>
+        </div>
+      )}
       <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="7" cy="7" r="4.5"/>
@@ -67,11 +70,7 @@ function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK })
       </button>
       <span className="sp"></span>
       <div className="r-glyph-tabs">
-        <button
-          className={`r-glyph ${view === "cockpit" ? "active" : ""}`}
-          onClick={() => onNav({ view: "cockpit" })}
-          title="Overview"
-        >
+        <button className={`r-glyph ${view === "cockpit" ? "active" : ""}`} onClick={() => onNav({ view: "cockpit" })} title="Overview">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="0.7"/>
             <rect x="9" y="2.5" width="4.5" height="4.5" rx="0.7"/>
@@ -80,21 +79,13 @@ function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK })
           </svg>
           Overview
         </button>
-        <button
-          className={`r-glyph ${view === "plan" ? "active" : ""}`}
-          onClick={goPlans}
-          title="Plans"
-        >
+        <button className={`r-glyph ${view === "plan" ? "active" : ""}`} onClick={goPlans} title="Plans">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M3 4h10M3 8h10M3 12h7"/>
           </svg>
           Plans
         </button>
-        <button
-          className={`r-glyph ${view === "sprint" ? "active" : ""}`}
-          onClick={goSprints}
-          title="Sprints"
-        >
+        <button className={`r-glyph ${view === "sprint" ? "active" : ""}`} onClick={goSprints} title="Sprints">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
             <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
@@ -102,11 +93,7 @@ function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK })
           </svg>
           Sprints
         </button>
-        <button
-          className={`r-glyph ${view === "graph" ? "active" : ""}`}
-          onClick={() => onNav({ view: "graph" })}
-          title="Graph — dependencies + critical path"
-        >
+        <button className={`r-glyph ${view === "graph" ? "active" : ""}`} onClick={() => onNav({ view: "graph" })} title="Graph">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <circle cx="3.5" cy="4" r="1.5"/>
             <circle cx="3.5" cy="12" r="1.5"/>
@@ -116,6 +103,22 @@ function TopBar({ route, onNav, sidebarCollapsed, onToggleSidebar, onOpenCmdK })
           Graph
         </button>
       </div>
+      {view === "plan" && (
+        <button
+          className="icon-btn"
+          onClick={onToggleFilters}
+          title={`${filtersHidden ? "Show" : "Hide"} filters + list · ⌘B`}
+          aria-pressed={!filtersHidden}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+            <path d="M6 3v10"/>
+          </svg>
+        </button>
+      )}
+      {SM ? (
+        <SM theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} />
+      ) : null}
     </div>
   );
 }
@@ -492,7 +495,7 @@ function App() {
   }, []);
   const [search, setSearch] = useState("");
   const [promptOpen, setPromptOpen] = useState(false);
-  const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
+  const [filtersHidden, setFiltersHidden] = useState(() => {
     try { return localStorage.getItem(SK.collapsed) === "1"; } catch { return false; }
   });
   const [graphFocal, setGraphFocal] = useState(null);
@@ -501,8 +504,8 @@ function App() {
     if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
   }, [route.view, route.slug]);
   useEffect(() => {
-    try { localStorage.setItem(SK.collapsed, filtersCollapsed ? "1" : "0"); } catch {}
-  }, [filtersCollapsed]);
+    try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
+  }, [filtersHidden]);
   const [groupBy, setGroupBy] = useState(() => {
     try { return localStorage.getItem(SK.groupBy) || "sprint"; } catch { return "sprint"; }
   });
@@ -510,6 +513,54 @@ function App() {
     try { localStorage.setItem(SK.groupBy, groupBy); } catch {}
   }, [groupBy]);
   const [cmdKOpen, setCmdKOpen] = useState(false);
+
+  const [projects, setProjects] = useState([]);
+  useEffect(() => {
+    fetch("/_projects/index.json")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.projects) return;
+        setProjects(data.projects.map(p => ({
+          project: p.project,
+          accent: p.data?.accent || window.ACCENTS?.[p.project] || "var(--accent)",
+          plans_count: p.data?.counts?.total || 0,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("reckon:theme") || "light"; } catch { return "light"; }
+  });
+  const [density, setDensity] = useState(() => {
+    try { return localStorage.getItem("reckon:density") || "comfortable"; } catch { return "comfortable"; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("reckon:theme", theme); } catch {}
+  }, [theme]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-density", density);
+    try { localStorage.setItem("reckon:density", density); } catch {}
+  }, [density]);
+
+  const navProject = useCallback((destProject) => {
+    if (!destProject) {
+      window.location.href = "/";
+      return;
+    }
+    const M = window.STATE;
+    const currentProject = M?.project || null;
+    const isFromProject = !!currentProject;
+    let hash = "#cockpit";
+    if (isFromProject) {
+      if (route.view === "graph") hash = "#graph";
+      else if (route.view === "plan") hash = "#plans";
+      else if (route.view === "sprint") hash = "#sprints";
+      else hash = "#cockpit";
+    }
+    window.location.href = `/${destProject}/${hash}`;
+  }, [route]);
 
   const M = window.STATE;
   const items = useMemo(() => {
@@ -535,7 +586,7 @@ function App() {
     window.dispatchEvent(new CustomEvent("r-open-prompt"));
   }, [promptOpen]);
 
-  // Cmd/Ctrl+B toggles the filter column
+  // Cmd/Ctrl+B — hides both filter + list columns; Plans view only
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -544,21 +595,33 @@ function App() {
       }
       if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setFiltersCollapsed(c => !c);
+        if (route.view === "plan") setFiltersHidden(c => !c);
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [route.view]);
 
   return (
     <div className="r-app">
-      <TopBar route={route} onNav={nav} sidebarCollapsed={filtersCollapsed} onToggleSidebar={() => setFiltersCollapsed(c => !c)} onOpenCmdK={() => setCmdKOpen(true)} />
-      <div className={`r-3col ${filtersCollapsed ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
+      <TopBar
+          route={route}
+          onNav={nav}
+          navProject={navProject}
+          onOpenCmdK={() => setCmdKOpen(true)}
+          filtersHidden={filtersHidden}
+          onToggleFilters={() => setFiltersHidden(c => !c)}
+          theme={theme}
+          setTheme={setTheme}
+          density={density}
+          setDensity={setDensity}
+          projects={projects}
+        />
+      <div className={`r-3col ${filtersHidden ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
         <button
           className="r-filter-handle"
-          onClick={() => setFiltersCollapsed(c => !c)}
-          title={filtersCollapsed ? "Show filters · ⌘B" : "Hide filters · ⌘B"}
+          onClick={() => setFiltersHidden(c => !c)}
+          title={filtersHidden ? "Show filters · ⌘B" : "Hide filters · ⌘B"}
           aria-label="Toggle filters"
         >
           <span></span><span></span>
