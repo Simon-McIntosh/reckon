@@ -41,11 +41,11 @@ function planLoad(slug) {
 // ─── Build handoff prompt ───────────────────────────────────────────────
 
 function buildHandoffPrompt(plan, decisions, followups) {
-  const locked = (decisions || []).filter(d => d.chosen);
-  const open = (decisions || []).filter(d => !d.chosen);
+  const locked = (decisions || []).filter(d => (d.chosen || d.choice));
+  const open = (decisions || []).filter(d => !(d.chosen || d.choice));
   const lockedBlock = locked.length === 0
     ? "  (none yet)"
-    : locked.map(d => `  ${d.key} → ${d.chosen}${d.rationale ? "\n      reason: " + d.rationale : ""}`).join("\n");
+    : locked.map(d => `  ${d.key} → ${d.chosen || d.choice}${d.rationale ? "\n      reason: " + d.rationale : ""}`).join("\n");
   const openBlock = open.length === 0
     ? "  (none)"
     : open.map(d => `  ${d.key} — ${d.title}`).join("\n");

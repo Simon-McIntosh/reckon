@@ -833,9 +833,9 @@ function FleetPrompt({ sprintId }) {
     order.forEach((p, i) => {
       txt += `\n─── ${i + 1}/${order.length} · ${p.slug} ───\n`;
       const decisions = (p.decisions || []);
-      const locked = decisions.filter(d => d.chosen);
-      const openD = decisions.filter(d => !d.chosen);
-      const lockedBlock = locked.length === 0 ? "  (none)" : locked.map(d => `  ${d.key} → ${d.chosen}`).join("\n");
+      const locked = decisions.filter(d => (d.chosen || d.choice));
+      const openD = decisions.filter(d => !(d.chosen || d.choice));
+      const lockedBlock = locked.length === 0 ? "  (none)" : locked.map(d => `  ${d.key} → ${d.chosen || d.choice}`).join("\n");
       const openBlock = openD.length === 0 ? "  (none)" : openD.map(d => `  ${d.key} — ${d.title}`).join("\n");
       const next = (p.followups || [])[0];
       const comments = (p.comments) || (window.reckon.planLoad?.(p.slug)?.comments) || {};

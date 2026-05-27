@@ -88,9 +88,9 @@ function PathPromptModal({ chain, bySlug, onClose }) {
   const openDecPlans = chain
     .map(slug => bySlug[slug])
     .filter(Boolean)
-    .filter(p => (p.decisions || []).some(d => !d.chosen));
+    .filter(p => (p.decisions || []).some(d => !(d.chosen || d.choice)));
 
-  const openDecCount = openDecPlans.reduce((n, p) => n + (p.decisions || []).filter(d => !d.chosen).length, 0);
+  const openDecCount = openDecPlans.reduce((n, p) => n + (p.decisions || []).filter(d => !(d.chosen || d.choice)).length, 0);
   const blocked = openDecCount > 0;
 
   const buildPrompt = () => {
@@ -105,13 +105,13 @@ function PathPromptModal({ chain, bySlug, onClose }) {
       const p = bySlug[slug];
       if (!p) return;
       const decisions = p.decisions || [];
-      const locked = decisions.filter(d => d.chosen);
-      const openD = decisions.filter(d => !d.chosen);
+      const locked = decisions.filter(d => (d.chosen || d.choice));
+      const openD = decisions.filter(d => !(d.chosen || d.choice));
       const next = (p.followups || [])[0];
 
       const lockedBlock = locked.length === 0
         ? null
-        : locked.map(d => `  ${d.key} → ${d.chosen}${d.rationale ? "\n      reason: " + d.rationale : ""}`).join("\n");
+        : locked.map(d => `  ${d.key} → ${d.chosen || d.choice}${d.rationale ? "\n      reason: " + d.rationale : ""}`).join("\n");
       const openBlock = openD.length === 0
         ? null
         : openD.map(d => `  ${d.key} — ${d.title}`).join("\n");
@@ -282,7 +282,7 @@ function CriticalPathView({ onNav }) {
   // Check open decisions in the displayed path
   const openDecCount = chain.reduce((n, slug) => {
     const p = bySlug[slug];
-    return n + (p?.decisions || []).filter(d => !d.chosen).length;
+    return n + (p?.decisions || []).filter(d => !(d.chosen || d.choice)).length;
   }, 0);
 
   return (
@@ -342,7 +342,7 @@ function CriticalPathView({ onNav }) {
               // Navigate to first blocking plan
               const firstBlocking = chain.find(slug => {
                 const p = bySlug[slug];
-                return (p?.decisions || []).some(d => !d.chosen);
+                return (p?.decisions || []).some(d => !(d.chosen || d.choice));
               });
               if (firstBlocking) {
                 window.location.hash = `#plan/${firstBlocking}`;
