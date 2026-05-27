@@ -359,6 +359,141 @@ def build(docs_path, project):
     click.echo(f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site.")
 
 
+@main.command()
+def doctor():
+    """Verify reckon installation health.
+
+    Checks:
+    - Skills installed at ~/.claude/skills/reckon-*/
+    - mounts.json reachable (default: ~/docs-server/mounts.json)
+    - Every mounted project directory exists
+    - MCP config present at ~/.claude/claude_desktop_config.json or ~/.config/claude/claude_desktop_config.json
+
+    Prints a green checkmark on pass or a named fix suggestion on fail.
+    """
+    import sys
+    ok = True
+    SKILLS = ["reckon-create", "reckon-edit", "reckon-ship", "reckon-status", "reckon-sync"]
+    skills_dir = Path.home() / ".claude" / "skills"
+
+    click.echo("reckon doctor\n")
+
+    # ── Skills check ────────────────────────────────────────────────────────
+    click.echo("Skills")
+    for skill in SKILLS:
+        skill_path = skills_dir / skill / "SKILL.md"
+        if skill_path.is_file():
+            click.echo(f"  ✓  {skill}")
+        else:
+            click.echo(f"  ✗  {skill}  →  run: reckon install-skills", err=False)
+            ok = False
+
+    # ── mounts.json check ───────────────────────────────────────────────────
+    click.echo("\nMounts")
+    mounts_path = Path.home() / "docs-server" / "mounts.json"
+    if not mounts_path.exists():
+        click.echo(f"  ✗  mounts.json not found at {mounts_path}")
+        click.echo(f"       create it:  echo '{{}}' > {mounts_path}")
+        ok = False
+    else:
+        try:
+            mounts = json.loads(mounts_path.read_text())
+            click.echo(f"  ✓  mounts.json  ({len(mounts)} project{'s' if len(mounts) != 1 else ''})")
+            for name, path in mounts.items():
+                p = Path(path).expanduser()
+                if p.is_dir():
+                    click.echo(f"  ✓  mount [{name}] → {p}")
+                else:
+                    click.echo(f"  ✗  mount [{name}] → {p}  (directory not found)")
+                    ok = False
+        except (json.JSONDecodeError, OSError) as e:
+            click.echo(f"  ✗  mounts.json unreadable: {e}")
+            ok = False
+
+    # ── MCP config check ─────────────────────────────────────────────────────
+    click.echo("\nMCP config")
+    mcp_candidates = [
+        Path.home() / ".claude" / "claude_desktop_config.json",
+        Path.home() / ".config" / "claude" / "claude_desktop_config.json",
+    ]
+    mcp_found = None
+    for candidate in mcp_candidates:
+        if candidate.is_file():
+            mcp_found = candidate
+            break
+    if mcp_found is None:
+        click.echo("  ✗  claude_desktop_config.json not found — MCP server may not be registered")
+        click.echo("       see: https://docs.reckon.dev/mcp")
+        ok = False
+    else:
+        try:
+            cfg = json.loads(mcp_found.read_text())
+            servers = cfg.get("mcpServers", {})
+            if "reckon" in servers:
+                click.echo(f"  ✓  MCP server 'reckon' registered in {mcp_found.name}")
+            else:
+                click.echo(f"  ✗  MCP server 'reckon' not in {mcp_found.name}")
+                click.echo("       add it with:  reckon mcp --install")
+                ok = False
+        except (json.JSONDecodeError, OSError) as e:
+            click.echo(f"  ✗  {mcp_found.name} unreadable: {e}")
+            ok = False
+
+    # ── Summary ──────────────────────────────────────────────────────────────
+    click.echo("")
+    if ok:
+        click.echo("All checks passed.")
+    else:
+        click.echo("Some checks failed — see fixes above.", err=False)
+        sys.exit(1)
+
+
+@main.command(name="install-skills")
+def install_skills():
+    """Install reckon skills into ~/.claude/skills/ idempotently.
+
+    Copies each subdirectory of reckon/skills/ into ~/.claude/skills/,
+    preserving existing files that are identical and overwriting stale ones.
+    Reports: skipped (unchanged) vs updated (changed or new).
+    """
+    reckon_root = Path(__file__).parent.parent
+    skills_src = reckon_root / "skills"
+    skills_dst = Path.home() / ".claude" / "skills"
+
+    if not skills_src.is_dir():
+        raise click.ClickException(
+            f"skills source directory not found: {skills_src}\n"
+            "This reckon install has no skills/ directory."
+        )
+
+    skills_dst.mkdir(parents=True, exist_ok=True)
+    skipped = 0
+    updated = 0
+
+    for skill_dir in sorted(skills_src.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        dst_dir = skills_dst / skill_dir.name
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        for src_file in sorted(skill_dir.rglob("*")):
+            if not src_file.is_file():
+                continue
+            rel = src_file.relative_to(skill_dir)
+            dst_file = dst_dir / rel
+            dst_file.parent.mkdir(parents=True, exist_ok=True)
+            src_bytes = src_file.read_bytes()
+            if dst_file.exists() and dst_file.read_bytes() == src_bytes:
+                skipped += 1
+            else:
+                dst_file.write_bytes(src_bytes)
+                updated += 1
+                click.echo(f"  updated  {skill_dir.name}/{rel}")
+
+    click.echo(f"\nDone. {updated} file{'s' if updated != 1 else ''} updated, {skipped} unchanged.")
+    if updated == 0 and skipped == 0:
+        click.echo("(No skills found in the reckon install's skills/ directory.)")
+
+
 # ── Static build index.html template (relative asset paths) ────────────────
 
 _BUILD_INDEX_TEMPLATE = """\
