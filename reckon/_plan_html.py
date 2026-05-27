@@ -349,23 +349,31 @@ def write_state(html_text: str, state: dict) -> str:
 # ── Lightweight inventory record (scales to thousands of docs) ──────────────
 
 _OPEN_DEC_RE = re.compile(r'class="r-dec"[^>]*\bdata-choice=""', re.IGNORECASE)
-_ANY_DEC_RE = re.compile(r'class="r-dec"[\s">]', re.IGNORECASE)
+_META_RE = re.compile(r'<meta\b[^>]*>', re.IGNORECASE)
+_NAME_RE = re.compile(r'\bname=["\']([^"\']+)["\']', re.IGNORECASE)
+_CONTENT_RE = re.compile(r'\bcontent=["\']([^"\']*)["\']', re.IGNORECASE)
+_TITLE_RE = re.compile(r'<title>(.*?)</title>', re.IGNORECASE | re.DOTALL)
 
 
 def parse_meta(path: Path, slug: str | None = None) -> dict:
-    """Fast inventory record: head <meta> + title + a regex open-decision
-    count, without a full-body parse. Used by discovery so a project with
-    thousands of docs stays cheap; full state is read per-doc via parse_plan.
+    """Fast inventory record: <meta> + <title> + a regex open-decision count,
+    parsed by regex (no bs4) so a project with thousands of docs stays cheap.
+    Full state is read per-doc via parse_plan.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         text = ""
-    soup = BeautifulSoup(text[:16384], "html.parser")  # head only — cheap
+    head = text[:16384]
     rec = dict(_DEFAULTS)
-    for m in soup.find_all("meta"):
-        name = (m.get("name") or "").lower()
-        content = m.get("content", "")
+    metas: dict[str, str] = {}
+    for tag in _META_RE.findall(head):
+        nm = _NAME_RE.search(tag)
+        if not nm:
+            continue
+        ct = _CONTENT_RE.search(tag)
+        metas[nm.group(1).lower()] = ct.group(1) if ct else ""
+    for name, content in metas.items():
         if not name.startswith("plan-") or content == "":
             continue
         field = name[len("plan-"):].replace("-", "_")
@@ -383,11 +391,10 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
                 rec["version"] = int(content)
             except ValueError:
                 pass
-    rt = soup.find("meta", attrs={"name": "reckon-type"})
-    rec["type"] = ((rt.get("content") if rt else "") or "plan").strip().lower()
-    title_tag = soup.find("title")
-    if title_tag and not rec.get("title"):
-        rec["title"] = title_tag.get_text(strip=True).split("|")[0].strip()
+    rec["type"] = (metas.get("reckon-type") or "plan").strip().lower()
+    tm = _TITLE_RE.search(head)
+    if tm and not rec.get("title"):
+        rec["title"] = tm.group(1).strip().split("|")[0].strip()
     rec["slug"] = slug or rec.get("slug") or path.stem
     rec["title"] = rec.get("title") or rec["slug"]
     rec["informs"] = rec.get("informs") or []

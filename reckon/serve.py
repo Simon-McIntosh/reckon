@@ -217,16 +217,26 @@ def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
         return "", {}
 
 
+_DISC_CACHE: dict = {}
+
+
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
-    """Return {inventory, sprints, milestones} by scanning HTML plan pages.
+    """Return {inventory, sprints, milestones} by scanning HTML doc pages.
 
-    Only HTML files that carry <meta name="plan-status"> are included —
-    this is the explicit opt-in that distinguishes plan pages from
-    infrastructure pages (sprint boards, decisions aggregators, etc.).
+    Any HTML file under docs_dir (outside infra dirs/files) is a doc; meta tags
+    enrich it. Results are cached per project against a cheap (count, max-mtime)
+    signature so an unchanged docs tree returns instantly.
     """
-    inventory: list[dict] = []
+    html_files = sorted(docs_dir.rglob("*.html"))
+    sig = (len(html_files), max((f.stat().st_mtime_ns for f in html_files), default=0))
+    cached = _DISC_CACHE.get(project)
+    if cached and cached[0] == sig:
+        return cached[1]
 
-    for html_file in sorted(docs_dir.rglob("*.html")):
+    inventory: list[dict] = []
+    seen_slugs: set[str] = set()
+
+    for html_file in html_files:
         rel = html_file.relative_to(docs_dir)
         # Skip infrastructure directories
         if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
@@ -240,6 +250,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         # GET /plan/<project>/<slug> when it opens that doc.
         rec = _plan_html.parse_meta(html_file)
         slug = rec["slug"]
+
+        # Slugs are the navigation identity; keep them unique. On a collision
+        # the first file in sorted order wins (matches _resolve_plan_file).
+        if slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
 
         # href is the URL path under /<project>/ used to fetch the HTML.
         # Root-level docs: href == slug. Subdirectory docs (e.g. research/X):
@@ -336,7 +352,9 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "items": [],
         })
 
-    return {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+    result = {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+    _DISC_CACHE[project] = (sig, result)
+    return result
 
 
 def _render_spa_html(project: str) -> str:
