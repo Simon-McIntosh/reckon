@@ -185,7 +185,7 @@ def _read_state(project: str, slug: str) -> tuple[dict, int]:
     """Read the semantic HTML state for a plan slug.
 
     Returns:
-        (island_dict, current_version) where version = state.get("version", 0).
+        (state_dict, current_version) where version = state.get("version", 0).
         Returns ({}, 0) if the HTML file or state is absent.
     """
     from reckon import _plan_html
@@ -233,15 +233,15 @@ def _write_state(
                 f'<body><main class="plan-doc"></main></body>\n</html>\n',
                 encoding="utf-8",
             )
-        cur_island: dict = {}
+        cur_state: dict = {}
         cur_version = 0
     else:
         text = html_file.read_text(encoding="utf-8", errors="replace")
-        cur_island = _plan_html.read_state(text)
-        cur_version = int(cur_island.get("version", 0) or 0)
+        cur_state = _plan_html.read_state(text)
+        cur_version = int(cur_state.get("version", 0) or 0)
 
     if expected_version != cur_version:
-        raise VersionConflict(expected_version, cur_version, cur_island)
+        raise VersionConflict(expected_version, cur_version, cur_state)
 
     new_data = dict(data)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
