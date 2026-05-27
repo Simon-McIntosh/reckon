@@ -13,6 +13,96 @@
   <link rel="stylesheet" href="/_ui/project.css">
   <link rel="stylesheet" href="/_ui/styles-base.css">
   <link rel="stylesheet" href="/_ui/styles.css">
+  <style>
+    /* ── Design tokens: prototype values (override legacy styles.css) ── */
+    :root {
+      --bg:#fbfaf7; --bg-2:#f5f3ee; --bg-3:#e8e6e0;
+      --ink:#1d2230; --ink-2:#4a5366;
+      --muted:#8a93a5; --faint:#b8bdc8; --line:#e7e5dd; --line-2:#cfccc2;
+      --accent:#3654c8; --accent-3:oklch(0.95 0.04 260);
+      --bad:oklch(0.55 0.16 25); --bad-2:oklch(0.96 0.03 25);
+      --ok:oklch(0.55 0.14 145); --warn:oklch(0.65 0.13 65);
+      --hair:var(--line); --hairline:1px solid var(--line);
+      --good:var(--ok); --good-2:oklch(0.95 0.04 155);
+      --topbar-h:52px;
+      --card:#fff;
+    }
+    [data-theme="dark"]{
+      --bg:#12141a; --bg-2:#1c1f28; --bg-3:#222533;
+      --ink:#e8eaf0; --ink-2:#9aa3b8;
+      --muted:#5a6378; --faint:#373d52; --line:#2a2e3e; --line-2:#353a4f;
+      --accent:oklch(0.72 0.15 264); --accent-3:oklch(0.30 0.06 264);
+      --card:var(--bg-2);
+    }
+    html,body{font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--ink)}
+    .card{background:var(--card)}
+
+    /* ── ProjectPicker ── */
+    .pick{display:inline-flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;transition:background .12s;position:relative}
+    .pick:hover{background:var(--bg-2)}
+    .pick .glyph{width:26px;height:26px;display:grid;place-items:center;border-radius:6px;flex-shrink:0}
+    .pick .glyph svg{width:22px;height:22px;display:block}
+    .pick .label{font-weight:600;font-size:14px;letter-spacing:-0.005em;color:var(--ink)}
+    .pick .label.fleet{color:var(--ink-2);font-weight:500}
+    .pick .caret{color:var(--muted);font-size:10px;transition:transform .15s}
+    .pick.open .caret{transform:rotate(180deg)}
+    .pick-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:280px;background:#fff;border:1px solid var(--line-2);border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,0.10);padding:4px;z-index:20}
+    .pick-item{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:5px;cursor:pointer;text-decoration:none;color:inherit;font-size:13px}
+    .pick-item:hover{background:var(--bg-2)}
+    .pick-item.active{background:color-mix(in oklch,var(--accent) 6%,transparent);color:var(--accent)}
+    .pick-item .gl{width:22px;height:22px;display:grid;place-items:center}
+    .pick-item .gl svg{width:20px;height:20px}
+    .pick-item .lbl{font-weight:500}
+    .pick-item .meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+    .pick-divider{border-top:var(--hairline);margin:4px 2px}
+    .pick-section{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:6px 10px 2px;font-weight:600}
+    [data-theme="dark"] .pick-menu{background:var(--bg-2)}
+
+    /* ── SettingsMenu ── */
+    .settings{position:relative}
+    .settings-menu{position:absolute;right:0;top:calc(100% + 4px);min-width:160px;background:#fff;border:1px solid var(--line-2);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:4px;z-index:20}
+    .settings-title{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:6px 10px 2px;font-weight:600}
+    .settings-item{display:block;text-align:left;width:100%;padding:6px 10px;border:0;background:transparent;font:inherit;font-size:12.5px;color:var(--ink);border-radius:4px;cursor:pointer}
+    .settings-item:hover{background:var(--bg-2)}
+    .settings-item.on{background:var(--accent-3);color:var(--accent);font-weight:500}
+    [data-theme="dark"] .settings-menu{background:var(--bg-2)}
+
+    /* ── Status chips ── */
+    .chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;line-height:1.4}
+    .chip .dot{width:6px;height:6px;border-radius:50%}
+    .chip.active{background:var(--accent-3);color:var(--accent)}.chip.active .dot{background:var(--accent)}
+    .chip.blocked{background:var(--bad-2);color:var(--bad)}.chip.blocked .dot{background:var(--bad)}
+    .chip.pending{background:var(--bg-2);color:var(--muted);border:var(--hairline)}.chip.pending .dot{background:var(--line-2);border:1.5px solid var(--muted)}
+    .chip.shipped{background:oklch(0.95 0.04 155);color:var(--ok)}.chip.shipped .dot{background:var(--ok)}
+    .chip.zero{display:none}
+
+    /* ── Icon button ── */
+    .icon-btn{width:30px;height:30px;display:grid;place-items:center;border:var(--hairline);border-radius:5px;background:transparent;cursor:pointer;color:var(--ink-2)}
+    .icon-btn:hover{background:var(--bg-2);color:var(--ink)}
+
+    /* ── Topbar: white bg, 52px height, correct gap ── */
+    .r-topbar{background:#fff;height:var(--topbar-h);gap:8px;padding:0 16px}
+    [data-theme="dark"] .r-topbar{background:var(--bg-2)}
+
+    /* ── Search trigger: match prototype cmdk-btn style ── */
+    .r-cmdk-trigger{background:transparent !important;border:var(--hairline) !important;color:var(--ink-2);font-size:12px;gap:6px;padding:5px 10px;min-width:0}
+    .r-cmdk-trigger:hover{background:var(--bg-2) !important;color:var(--ink)}
+    .r-cmdk-trigger .kbd{background:#fff;border:var(--hairline)}
+    [data-theme="dark"] .r-cmdk-trigger .kbd{background:var(--bg-3)}
+
+    /* ── ViewTabs: match prototype .tabs style (bg-2 container, #fff active) ── */
+    .r-glyph-tabs{background:var(--bg-2) !important;border:var(--hairline) !important;border-radius:5px !important;padding:2px !important;gap:1px !important}
+    .r-glyph{padding:4px 9px;font-size:12.5px;color:var(--ink-2);border-radius:4px;gap:5px;font-weight:400}
+    .r-glyph.active{background:#fff !important;color:var(--ink) !important;font-weight:500;box-shadow:0 1px 2px rgba(15,20,35,0.04)}
+    .r-glyph:hover:not(.active){background:var(--bg-3) !important;color:var(--ink)}
+    [data-theme="dark"] .r-glyph.active{background:var(--bg-3) !important}
+
+    /* ── top-r grouping ── */
+    .top-r{display:flex;align-items:center;gap:8px}
+
+    /* ── Meta time ── */
+    .meta-time{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  </style>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>

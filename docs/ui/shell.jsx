@@ -71,22 +71,20 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
       <span className="sp"></span>
       <div className="r-glyph-tabs">
         <button className={`r-glyph ${view === "cockpit" ? "active" : ""}`} onClick={() => onNav({ view: "cockpit" })} title="Overview">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2.5" y="2.5" width="4.5" height="4.5" rx="0.7"/>
-            <rect x="9" y="2.5" width="4.5" height="4.5" rx="0.7"/>
-            <rect x="2.5" y="9" width="4.5" height="4.5" rx="0.7"/>
-            <rect x="9" y="9" width="4.5" height="4.5" rx="0.7"/>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M2 12 V8"/><path d="M5.5 12 V5"/><path d="M9 12 V9"/><path d="M12.5 12 V3"/>
+            <circle cx="12.5" cy="3" r="1.2" fill="currentColor" stroke="none"/>
           </svg>
           Overview
         </button>
         <button className={`r-glyph ${view === "plan" ? "active" : ""}`} onClick={goPlans} title="Plans">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M3 4h10M3 8h10M3 12h7"/>
           </svg>
           Plans
         </button>
         <button className={`r-glyph ${view === "sprint" ? "active" : ""}`} onClick={goSprints} title="Sprints">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
             <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
             <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
@@ -94,7 +92,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           Sprints
         </button>
         <button className={`r-glyph ${view === "graph" ? "active" : ""}`} onClick={() => onNav({ view: "graph" })} title="Graph">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <circle cx="3.5" cy="4" r="1.5"/>
             <circle cx="3.5" cy="12" r="1.5"/>
             <circle cx="12.5" cy="8" r="1.5"/>
@@ -103,22 +101,24 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           Graph
         </button>
       </div>
-      {view === "plan" && (
-        <button
-          className="icon-btn"
-          onClick={onToggleFilters}
-          title={`${filtersHidden ? "Show" : "Hide"} filters + list · ⌘B`}
-          aria-pressed={!filtersHidden}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <rect x="2" y="3" width="12" height="10" rx="1.5"/>
-            <path d="M6 3v10"/>
-          </svg>
-        </button>
-      )}
-      {SM ? (
-        <SM theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} />
-      ) : null}
+      <div className="top-r">
+        {SM ? (
+          <SM theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} />
+        ) : null}
+        {view === "plan" && (
+          <button
+            className="icon-btn"
+            onClick={onToggleFilters}
+            title={`${filtersHidden ? "Show" : "Hide"} filters + list · ⌘B`}
+            aria-pressed={!filtersHidden}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+              <path d="M6 3v10"/>
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

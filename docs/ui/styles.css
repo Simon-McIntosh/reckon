@@ -4,22 +4,14 @@
 :root {
   --c1: 188px;   /* filters */
   --c2: 264px;   /* plans list */
-  --topbar-h: 44px;
-  --warn:   oklch(0.66 0.13 85);
+  --topbar-h: 52px;
   --warn-2: oklch(0.95 0.05 85);
-
-  /* Tokens that foundation.css doesn't define under these names. We supply
-     them here so v7 styles don't fall through to "0px none" borders. */
-  --hair:   #e4e4dc;
-  --line:   #d4d4cf;
-  --good:   #1a7a4a;
-  --good-2: #e1f1e6;
-  --bad:    #a32525;
-  --bad-2:  #f7e4e3;
-  --bg-3:   #e9e9e2;
-  --accent: #c45d1f;
-  --ink-2:  #3f3f46;
-  --faint:  #a1a1aa;
+  /* Legacy aliases kept for v7 component references */
+  --good:   var(--ok, oklch(0.55 0.14 145));
+  --good-2: oklch(0.95 0.04 155);
+  --bad-2:  oklch(0.96 0.03 25);
+  --bg-3:   #e8e6e0;
+  --hair:   var(--line, #e7e5dd);
 }
 
 html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
@@ -100,10 +92,10 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-topbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 18px;
+  gap: 8px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--hair);
-  background: var(--bg);
+  background: #fff;
   height: var(--topbar-h);
 }
 .r-topbar .brand {
