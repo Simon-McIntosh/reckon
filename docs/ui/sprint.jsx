@@ -15,6 +15,8 @@ function Sprint({ sprintId, onNav }) {
   const sprint = allSprints[idx];
   if (!sprint) return <div className="r-page">No sprint.</div>;
 
+  const [showSprintPrompt, setShowSprintPrompt] = useState(false);
+
   // Materialise items with their plan info + justification
   const items = sprint.items.map(it => {
     const slug = typeof it === "string" ? it : it.slug;
@@ -68,6 +70,19 @@ function Sprint({ sprintId, onNav }) {
           <button className="nav-btn" disabled={idx >= allSprints.length - 1} onClick={() => onNav({ view: "sprint", sprint: allSprints[idx + 1].id })}>→</button>
           <span className="range">{sprint.starts} → {sprint.ends}</span>
         </div>
+        <button
+          className="gen-prompt"
+          onClick={() => setShowSprintPrompt(true)}
+          title="Generate fleet prompt for this sprint"
+          style={{ marginLeft: "auto" }}
+        >
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M4 3h6l2 2v8H4z"/>
+            <path d="M10 3v2h2"/>
+            <path d="M6 7h4M6 9h4M6 11h2"/>
+          </svg>
+          Generate prompt
+        </button>
       </div>
 
       <div className="r-sp-goal">
@@ -129,6 +144,18 @@ function Sprint({ sprintId, onNav }) {
           </div>
         ))}
       </div>
+
+      {showSprintPrompt && window.reckon?.PromptModal && (
+        <window.reckon.PromptModal
+          planSlug={`sprint-${sprint.id}`}
+          initialPrompt={
+            window.buildFleetPrompt
+              ? window.buildFleetPrompt(items, window.STATE, sprint.theme)
+              : "(prompts.js not loaded)"
+          }
+          onClose={() => setShowSprintPrompt(false)}
+        />
+      )}
     </div>
   );
 }

@@ -228,9 +228,16 @@ function Plan({ slug, onNav }) {
       )}
 
       {showPrompt && (
-        <PromptModal
+        <window.reckon.PromptModal
           planSlug={slug}
-          initialPrompt={buildHandoffPrompt(P, decs, fullState?.followups || [])}
+          initialPrompt={
+            window.buildFleetPrompt
+              ? window.buildFleetPrompt(
+                  [Object.assign({}, P, { decisions: decs, followups: fullState?.followups || [] })],
+                  window.STATE
+                )
+              : "(prompts.js not loaded)"
+          }
           onClose={() => setShowPrompt(false)}
         />
       )}
