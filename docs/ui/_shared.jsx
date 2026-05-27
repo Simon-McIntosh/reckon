@@ -13,11 +13,11 @@ function ProjectPicker({current, projects, onNav}) {
     return () => document.removeEventListener("mousedown", close);
   }, []);
   const cur = projects.find(p => p.project === current);
-  const accent = cur ? (cur.accent || window.ACCENTS?.[current] || "var(--accent)") : "var(--muted)";
+  const accent = cur ? (cur.accent || window.ACCENTS?.[current] || "var(--accent)") : "var(--ink-2)";
   return (
     <div className={`pick ${open ? "open" : ""}`} ref={ref} onClick={() => setOpen(v => !v)}>
-      <span className="pick-mark" style={{background: accent}}>
-        {(current || "f")[0].toUpperCase()}
+      <span className="pick-mark" style={{color: accent, background: `color-mix(in oklch,${accent} 12%,transparent)`}}>
+        {current ? (window.GLYPHS?.[current] || window.GLYPHS?._default) : window.GLYPHS?.fleet}
       </span>
       <span className={`pick-name${current ? "" : " fleet"}`}>{current || "fleet"}</span>
       <span className="pick-caret">▾</span>
@@ -25,7 +25,9 @@ function ProjectPicker({current, projects, onNav}) {
         <div className="pick-menu" onClick={e => e.stopPropagation()}>
           <button className={`pick-item${!current ? " active" : ""}`}
                   onClick={() => { setOpen(false); onNav(null); }}>
-            <span className="pick-mark" style={{background: "var(--muted)"}}>f</span>
+            <span className="pick-mark" style={{color: "var(--ink-2)", background: "var(--bg-2)"}}>
+              {window.GLYPHS?.fleet}
+            </span>
             fleet
           </button>
           {projects.length > 0 && <div className="pick-divider"/>}
@@ -34,8 +36,8 @@ function ProjectPicker({current, projects, onNav}) {
             return (
               <button key={p.project} className={`pick-item${p.project === current ? " active" : ""}`}
                       onClick={() => { setOpen(false); onNav(p.project); }}>
-                <span className="pick-mark" style={{background: pacc}}>
-                  {p.project[0].toUpperCase()}
+                <span className="pick-mark" style={{color: pacc, background: `color-mix(in oklch,${pacc} 12%,transparent)`}}>
+                  {window.GLYPHS?.[p.project] || window.GLYPHS?._default}
                 </span>
                 {p.project}
               </button>
