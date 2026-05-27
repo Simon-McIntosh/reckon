@@ -1,434 +1,124 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>reckon · fleet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
   <style>
-    /* Home-page extras — tokens from foundation.css */
-    .proj-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center;
-      gap: 20px;
-      padding: 16px 20px;
-      border: var(--hairline);
-      border-radius: var(--radius-lg);
-      background: var(--bg);
-      margin-bottom: 10px;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 120ms, transform 80ms, box-shadow 80ms;
-      cursor: pointer;
+    :root {
+      --bg:#fbfaf7; --bg-2:#f5f3ee; --ink:#1d2230; --ink-2:#4a5366;
+      --muted:#8a93a5; --faint:#b8bdc8; --line:#e7e5dd; --line-2:#cfccc2;
+      --accent:#3654c8; --accent-3:oklch(0.95 0.04 260);
+      --bad:oklch(0.55 0.16 25); --bad-2:oklch(0.96 0.03 25);
+      --ok:oklch(0.55 0.14 145); --warn:oklch(0.65 0.13 65);
+      --mono:'Geist Mono',ui-monospace,monospace;
+      --sans:'Geist',system-ui,-apple-system,sans-serif;
+      --radius:6px; --radius-lg:10px; --hairline:1px solid var(--line);
     }
-    .proj-row:hover {
-      border-color: var(--line-2);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    [data-theme="dark"]{
+      --bg:#12141a; --bg-2:#1c1f28; --ink:#e8eaf0; --ink-2:#9aa3b8;
+      --muted:#5a6378; --faint:#373d52; --line:#2a2e3e; --line-2:#353a4f;
     }
-    .proj-row .proj-left { min-width: 0; }
-    .proj-row .proj-name {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.005em;
-      color: var(--ink);
-      margin-bottom: 2px;
-    }
-    .proj-row .proj-path {
-      font-family: var(--mono);
-      font-size: 11.5px;
-      color: var(--muted);
-    }
-    .proj-row .proj-chips {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .proj-row .proj-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .proj-row .open-arrow {
-      font-size: 15px;
-      color: var(--faint);
-      transition: color 120ms;
-    }
-    .proj-row:hover .open-arrow { color: var(--accent); }
-    .proj-row .last-mod {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    /* Status chips */
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: var(--mono);
-      font-size: 11.5px;
-      font-weight: 500;
-      padding: 2px 8px;
-      border-radius: 999px;
-      line-height: 1.4;
-    }
-    .chip .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-    .chip.active  { background: var(--accent-3);  color: var(--accent); }
-    .chip.active  .dot { background: var(--accent); }
-    .chip.blocked { background: oklch(0.96 0.03 25); color: var(--bad); }
-    .chip.blocked .dot { background: var(--bad); }
-    .chip.pending { background: var(--bg-2); color: var(--muted); border: var(--hairline); }
-    .chip.pending .dot { background: var(--line-2); border: 1.5px solid var(--muted); }
-    .chip.shipped { background: oklch(0.95 0.04 155); color: var(--ok); }
-    .chip.shipped .dot { background: var(--ok); }
-    .chip.zero    { opacity: 0.35; }
-
-    /* Sort controls */
-    .sort-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 0;
-      margin-bottom: 4px;
-      border-bottom: var(--hairline);
-    }
-    .sort-row .sort-label {
-      font-size: 11.5px;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .sort-row select {
-      font-size: 12.5px;
-      padding: 3px 8px;
-    }
-    .sort-row .sp { flex: 1; }
-    .sort-row .fleet-count {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* Empty / error state */
-    .empty-state {
-      padding: 48px 24px;
-      text-align: center;
-      color: var(--muted);
-    }
-    .empty-state .icon {
-      font-size: 28px;
-      margin-bottom: 12px;
-    }
-    .empty-state h2 {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--ink);
-      margin: 0 0 6px;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-    .empty-state p {
-      font-size: 13.5px;
-      line-height: 1.6;
-      margin: 0;
-    }
-    .empty-state code {
-      font-family: var(--mono);
-      font-size: 12.5px;
-      background: var(--bg-2);
-      border: var(--hairline);
-      padding: 1px 5px;
-      border-radius: 3px;
-    }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    button{font-family:inherit}
+    /* Topbar */
+    .topbar{display:flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-bottom:var(--hairline);background:var(--bg);position:sticky;top:0;z-index:10}
+    .pick{display:inline-flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;transition:background .12s;position:relative}
+    .pick:hover{background:var(--bg-2)}
+    .pick .glyph{width:26px;height:26px;display:grid;place-items:center;border-radius:6px;flex-shrink:0}
+    .pick .glyph svg{width:22px;height:22px;display:block}
+    .pick .label{font-weight:600;font-size:14px;letter-spacing:-0.005em;color:var(--ink)}
+    .pick .label.fleet{color:var(--ink-2);font-weight:500}
+    .pick .caret{color:var(--muted);font-size:10px;transition:transform .15s}
+    .pick.open .caret{transform:rotate(180deg)}
+    .pick-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:280px;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,0.10);padding:4px;z-index:20}
+    .pick-item{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:5px;cursor:pointer;text-decoration:none;color:inherit;font-size:13px}
+    .pick-item:hover{background:var(--bg-2)}
+    .pick-item.active{background:color-mix(in oklch,var(--accent) 6%,transparent);color:var(--accent)}
+    .pick-item .gl{width:22px;height:22px;display:grid;place-items:center}
+    .pick-item .gl svg{width:20px;height:20px}
+    .pick-item .lbl{font-weight:500}
+    .pick-item .meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+    .pick-divider{border-top:var(--hairline);margin:4px 2px}
+    .pick-section{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:6px 10px 2px;font-weight:600}
+    .topbar .sp{flex:1}
+    .top-r{display:flex;align-items:center;gap:8px}
+    .cmdk-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:var(--hairline);border-radius:5px;background:transparent;cursor:pointer;color:var(--ink-2);font-size:12px}
+    .cmdk-btn:hover{background:var(--bg-2);color:var(--ink)}
+    .cmdk-btn .kbd{font-family:var(--mono);font-size:10px;color:var(--muted);background:var(--bg);border:var(--hairline);padding:1px 5px;border-radius:3px}
+    .icon-btn{width:30px;height:30px;display:grid;place-items:center;border:var(--hairline);border-radius:5px;background:transparent;cursor:pointer;color:var(--ink-2)}
+    .icon-btn:hover{background:var(--bg-2);color:var(--ink)}
+    .meta-time{font-family:var(--mono);font-size:11px;color:var(--muted)}
+    /* Settings */
+    .settings{position:relative}
+    .settings-menu{position:absolute;right:0;top:calc(100% + 4px);min-width:160px;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:4px;z-index:20}
+    .settings-title{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);padding:6px 10px 2px;font-weight:600}
+    .settings-item{display:block;text-align:left;width:100%;padding:6px 10px;border:0;background:transparent;font:inherit;font-size:12.5px;color:var(--ink);border-radius:4px;cursor:pointer}
+    .settings-item:hover{background:var(--bg-2)}
+    .settings-item.on{background:var(--accent-3);color:var(--accent);font-weight:500}
+    /* Fleet page */
+    .page{max-width:980px;margin:0 auto;padding:22px 32px 64px}
+    .page-head{margin-bottom:16px}
+    .page-head h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-0.018em}
+    .page-head .subtitle{color:var(--muted);font-size:12.5px;margin-top:2px}
+    .fstrip{display:flex;gap:28px;padding:10px 16px;background:var(--bg);border:var(--hairline);border-radius:var(--radius);margin:0 0 16px;font-size:12.5px}
+    .fstrip .fcell .k{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:600}
+    .fstrip .fcell .v{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-0.008em}
+    .fstrip .fcell .v.bad{color:var(--bad)}
+    .fstrip .sp{flex:1}
+    /* Project cards */
+    .pcard{display:grid;grid-template-columns:48px 1fr 260px auto;gap:18px;align-items:center;padding:16px 20px;background:var(--bg);border:var(--hairline);border-radius:var(--radius-lg);text-decoration:none;color:inherit;cursor:pointer;margin-bottom:10px;transition:border-color .12s,transform .08s,box-shadow .08s}
+    .pcard:hover{border-color:var(--line-2);transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,0.04)}
+    .pcard .pgl{width:44px;height:44px;display:grid;place-items:center;border-radius:8px}
+    .pcard .pgl svg{width:34px;height:34px}
+    .pcard .pname{font-size:16px;font-weight:600;letter-spacing:-0.008em}
+    .pcard .ptag{font-size:11.5px;color:var(--muted);margin-top:2px}
+    .pcard .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+    .pcard .spark-wrap{display:flex;flex-direction:column;gap:4px}
+    .pcard .spark{display:block;height:32px;width:100%}
+    .pcard .spark-foot{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+    .pcard .arr{color:var(--faint);font-size:18px;transition:color .12s,transform .12s}
+    .pcard:hover .arr{color:var(--accent);transform:translateX(2px)}
+    /* Chips */
+    .chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;line-height:1.4}
+    .chip .dot{width:6px;height:6px;border-radius:50%}
+    .chip.active{background:var(--accent-3);color:var(--accent)}.chip.active .dot{background:var(--accent)}
+    .chip.blocked{background:var(--bad-2);color:var(--bad)}.chip.blocked .dot{background:var(--bad)}
+    .chip.pending{background:var(--bg-2);color:var(--muted);border:var(--hairline)}.chip.pending .dot{background:var(--line-2);border:1.5px solid var(--muted)}
+    .chip.shipped{background:oklch(0.95 0.04 155);color:var(--ok)}.chip.shipped .dot{background:var(--ok)}
+    .chip.zero{display:none}
+    .add-hint{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
+    .add-hint code{font-family:var(--mono);font-size:11px;background:var(--bg-2);border:var(--hairline);padding:1px 5px;border-radius:3px}
+    /* CmdK */
+    .cmdk-scrim{position:fixed;inset:0;background:rgba(20,25,40,0.35);z-index:100;display:grid;place-items:start center;padding-top:72px}
+    .cmdk{width:min(620px,90vw);background:var(--bg);border:var(--hairline);border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.20);overflow:hidden}
+    .cmdk input{width:100%;border:0;padding:14px 18px;font-size:15px;font-family:inherit;outline:0;background:var(--bg);color:var(--ink)}
+    .cmdk .list{max-height:50vh;overflow-y:auto;border-top:var(--hairline)}
+    .cmdk-item{display:grid;grid-template-columns:14px 24px 1fr auto;gap:10px;align-items:center;width:100%;padding:8px 14px;background:transparent;border:0;cursor:pointer;text-align:left;font:inherit;font-size:13px}
+    .cmdk-item:hover,.cmdk-item.on{background:var(--bg-2)}
+    .cmdk-item.on{background:color-mix(in oklch,var(--accent) 8%,transparent)}
+    .cmdk-item .cgl{width:18px;height:18px;display:grid;place-items:center}
+    .cmdk-item .cgl svg{width:14px;height:14px}
+    .cmdk-item .ct{font-weight:500}
+    .cmdk-item .cs{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+    .cmdk-item .cmeta{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+    .cmdk-foot{display:flex;gap:14px;padding:8px 14px;border-top:var(--hairline);font-family:var(--mono);font-size:10.5px;color:var(--muted)}
   </style>
 </head>
 <body>
-<div class="shell">
-  <nav class="topbar">
-    <span class="brand">
-      <span class="mark">R</span>
-      reckon
-      <span class="sep">·</span>
-      <span class="proj-name">fleet</span>
-    </span>
-    <div class="right">
-      <span id="js-time" style="font-family:var(--mono);font-size:12px;color:var(--muted)"></span>
-    </div>
-  </nav>
-
-  <main class="page wide" id="main">
-    <!-- Skeleton header renders immediately — no flash of empty -->
-    <div class="page-head">
-      <div class="title">
-        <h1>Across projects.</h1>
-        <div class="subtitle">all reckon-managed projects · click to open</div>
-      </div>
-    </div>
-    <div id="stats-strip"></div>
-    <div id="proj-list">
-      <!-- Skeleton rows while loading -->
-      <div class="sort-row">
-        <span class="sort-label">Sort</span>
-        <select disabled style="opacity:.4">
-          <option>ROI weight</option>
-        </select>
-        <span class="sp"></span>
-        <span class="fleet-count" style="opacity:.4">loading…</span>
-      </div>
-      <div style="padding:32px 0;color:var(--muted);font-size:13.5px;text-align:center">
-        Fetching fleet data…
-      </div>
-    </div>
-  </main>
-</div>
-
-<script>
-(function () {
-  'use strict';
-
-  var sortBy = 'roi';
-  var allProjects = [];
-
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function normalize(p) {
-    var d = (p && p.data) || {};
-
-    // Shape A: data.projects[0] carries the per-project summary row
-    if (Array.isArray(d.projects) && d.projects.length) {
-      var s = d.projects[0];
-      return {
-        project:       p.project,
-        path:          p.path || '',
-        published:     s.published || '',
-        plans_count:   (s.plans_count | 0),
-        active:        (s.active  | 0),
-        blocked:       (s.blocked | 0),
-        pending:       (s.pending | 0),
-        shipped:       (s.shipped | 0),
-        last_modified: s.last_modified || p.updated || '',
-        top:           Array.isArray(s.top) ? s.top : [],
-        activity30:    Array.isArray(s.activity30) ? s.activity30 : [],
-      };
-    }
-
-    // Shape B: data.counts.status + data.plans[]
-    var cnts  = d.counts || {};
-    var sb    = cnts.status || {};
-    var plans = Array.isArray(d.plans) ? d.plans : [];
-    var top   = plans.slice()
-      .sort(function (a, b) {
-        var pri = function (x) { return x.status === 'blocked' ? 0 : x.status === 'active' ? 1 : 2; };
-        return pri(a) - pri(b) || ((b.implementation_fraction || 0) - (a.implementation_fraction || 0));
-      })
-      .slice(0, 5)
-      .map(function (pl) {
-        return {
-          slug:   pl.slug || (pl.path || '').replace(/^.*\//, '').replace(/\.[^.]+$/, ''),
-          title:  pl.title || pl.slug,
-          status: pl.status || 'pending',
-          roi:    pl.roi   || 'mid',
-          effort: pl.effort || 'M',
-        };
-      });
-
-    return {
-      project:       p.project,
-      path:          p.path || '',
-      published:     d.published || '',
-      plans_count:   cnts.total || plans.length || 0,
-      active:        (sb.active  | 0),
-      blocked:       (sb.blocked | 0),
-      pending:       (sb.pending | 0),
-      shipped:       (sb.shipped | 0),
-      last_modified: d.audit_date || p.updated || '',
-      top:           top,
-      activity30:    Array.isArray(d.activity30) ? d.activity30 : [],
-    };
-  }
-
-  function roiScore(p) {
-    return p.top.reduce(function (a, t) {
-      return a + (t.roi === 'high' ? 3 : t.roi === 'mid' ? 2 : 1);
-    }, 0);
-  }
-
-  function sorted() {
-    var sorters = {
-      roi:      function (a, b) { return roiScore(b) - roiScore(a); },
-      blocked:  function (a, b) { return b.blocked - a.blocked; },
-      total:    function (a, b) { return b.plans_count - a.plans_count; },
-      progress: function (a, b) {
-        return (b.shipped / Math.max(1, b.plans_count)) - (a.shipped / Math.max(1, a.plans_count));
-      },
-      modified: function (a, b) { return (b.last_modified || '').localeCompare(a.last_modified || ''); },
-    };
-    return allProjects.slice().sort(sorters[sortBy] || sorters.roi);
-  }
-
-  function chip(count, cls, label) {
-    var zero = count === 0 ? ' zero' : '';
-    return '<span class="chip ' + cls + zero + '">'
-      + '<span class="dot"></span>'
-      + count + ' ' + label
-      + '</span>';
-  }
-
-  function fmtDate(s) {
-    if (!s) return '';
-    // YYYY-MM-DD → human short
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-    if (!m) return s;
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return months[parseInt(m[2], 10) - 1] + ' ' + parseInt(m[3], 10);
-  }
-
-  function projRow(p) {
-    var href = '/' + esc(p.project) + '/';
-    var lastMod = fmtDate(p.last_modified);
-    return '<a class="proj-row" href="' + href + '">'
-      + '<div class="proj-left">'
-      + '<div class="proj-name">' + esc(p.project) + '</div>'
-      + (p.path ? '<div class="proj-path">' + esc(p.path) + '</div>' : '')
-      + '<div class="proj-chips">'
-      + chip(p.active,  'active',  'active')
-      + chip(p.blocked, 'blocked', 'blocked')
-      + chip(p.pending, 'pending', 'pending')
-      + chip(p.shipped, 'shipped', 'shipped')
-      + '</div>'
-      + '</div>'
-      + '<div class="proj-right">'
-      + '<span class="open-arrow">→</span>'
-      + (lastMod ? '<span class="last-mod">' + esc(lastMod) + '</span>' : '')
-      + '</div>'
-      + '</a>';
-  }
-
-  function renderStatsStrip(projects) {
-    var total   = projects.reduce(function (a, p) { return a + p.plans_count; }, 0);
-    var active  = projects.reduce(function (a, p) { return a + p.active;  }, 0);
-    var blocked = projects.reduce(function (a, p) { return a + p.blocked; }, 0);
-    var shipped = projects.reduce(function (a, p) { return a + p.shipped; }, 0);
-    var impl    = total ? Math.round(shipped / total * 100) : 0;
-
-    var blockedStyle = blocked ? ' style="color:var(--bad)"' : '';
-
-    document.getElementById('stats-strip').innerHTML =
-      '<div class="stats" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">'
-      + '<div class="stat"><div class="l">projects</div><div class="n">' + projects.length + '</div></div>'
-      + '<div class="stat"><div class="l">total plans</div><div class="n">' + total + '</div></div>'
-      + '<div class="stat"><div class="l">active</div>'
-      + '<div class="n">' + active + (total ? '<span class="of">/' + total + '</span>' : '') + '</div>'
-      + (total ? '<div class="delta">' + Math.round(active / total * 100) + '% of fleet</div>' : '')
-      + '</div>'
-      + '<div class="stat"><div class="l">blocked</div>'
-      + '<div class="n"' + blockedStyle + '>' + blocked + '</div></div>'
-      + '<div class="stat"><div class="l">impl.</div>'
-      + '<div class="n">' + impl + '<span class="of">%</span></div>'
-      + '</div>'
-      + '</div>';
-  }
-
-  function renderProjList() {
-    var projs = sorted();
-    var sortSel = '<select id="sort-sel">'
-      + '<option value="roi"'      + (sortBy === 'roi'      ? ' selected' : '') + '>ROI weight</option>'
-      + '<option value="blocked"'  + (sortBy === 'blocked'  ? ' selected' : '') + '>blockers</option>'
-      + '<option value="total"'    + (sortBy === 'total'    ? ' selected' : '') + '>total plans</option>'
-      + '<option value="progress"' + (sortBy === 'progress' ? ' selected' : '') + '>progress</option>'
-      + '<option value="modified"' + (sortBy === 'modified' ? ' selected' : '') + '>last modified</option>'
-      + '</select>';
-
-    var rows = projs.map(projRow).join('');
-
-    var footer = '<div style="margin-top:20px;font-size:12.5px;color:var(--muted)">'
-      + 'Add a project: edit <code style="font-family:var(--mono);font-size:11.5px;background:var(--bg-2);border:var(--hairline);padding:1px 5px;border-radius:3px">~/docs-server/mounts.json</code>. No restart needed.'
-      + '</div>';
-
-    document.getElementById('proj-list').innerHTML =
-      '<div class="sort-row">'
-      + '<span class="sort-label">Sort</span>'
-      + sortSel
-      + '<span class="sp"></span>'
-      + '<span class="fleet-count">' + projs.length + ' project' + (projs.length === 1 ? '' : 's') + '</span>'
-      + '</div>'
-      + rows
-      + footer;
-
-    var sel = document.getElementById('sort-sel');
-    if (sel) {
-      sel.addEventListener('change', function (e) {
-        sortBy = e.target.value;
-        renderProjList();
-      });
-    }
-  }
-
-  function renderEmpty() {
-    document.getElementById('stats-strip').innerHTML = '';
-    document.getElementById('proj-list').innerHTML =
-      '<div class="empty-state">'
-      + '<div class="icon">🗂</div>'
-      + '<h2>No projects mounted yet</h2>'
-      + '<p>Edit <code>~/docs-server/mounts.json</code> to register a project,<br>'
-      + 'then run <code>uv run reckon serve</code> to reload.</p>'
-      + '</div>';
-  }
-
-  function renderError(msg) {
-    document.getElementById('stats-strip').innerHTML = '';
-    document.getElementById('proj-list').innerHTML =
-      '<div class="empty-state">'
-      + '<div class="icon">⚠</div>'
-      + '<h2>Could not load fleet data</h2>'
-      + '<p style="color:var(--bad);font-family:var(--mono);font-size:12px">' + esc(msg) + '</p>'
-      + '<p style="margin-top:8px">Is the reckon server running?<br>'
-      + '<code>uv run reckon serve</code></p>'
-      + '</div>';
-  }
-
-  fetch('/_projects/index.json', { cache: 'no-store' })
-    .then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status + ' from /_projects/index.json');
-      return r.json();
-    })
-    .then(function (data) {
-      var t = document.getElementById('js-time');
-      if (t && data.updated) {
-        t.textContent = 'refreshed ' + new Date(data.updated).toLocaleTimeString();
-      }
-      allProjects = (data.projects || []).map(normalize);
-      if (!allProjects.length) {
-        renderEmpty();
-      } else {
-        renderStatsStrip(allProjects);
-        renderProjList();
-      }
-    })
-    .catch(function (e) {
-      console.warn('fleet load failed:', e);
-      renderError(e.message || String(e));
-    });
-}());
-</script>
+  <div id="root"></div>
+  <script type="text/babel" src="/_ui/glyphs.jsx"></script>
+  <script type="text/babel" src="/_ui/_shared.jsx"></script>
+  <script type="text/babel" src="/_ui/home.jsx"></script>
 </body>
 </html>
