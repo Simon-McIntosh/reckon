@@ -108,9 +108,13 @@ def read_state(html_text: str) -> dict:
     # Followups — resolved fields are present only when the followup is resolved.
     followups = []
     for fu in soup.select('section[data-reckon="followups"] .r-fu'):
+        # Derive status from resolved_at so a stale data-status="open" left by
+        # an older resolve_followup (which set resolved_at but not status) still
+        # reads as resolved. Mirrors the questions parser.
+        _resolved_at = fu.get("data-resolved-at")
         f = {
             "id": fu.get("data-id", ""),
-            "status": fu.get("data-status", "open"),
+            "status": "resolved" if _resolved_at else fu.get("data-status", "open"),
             "tier": fu.get("data-tier", ""),
             "written_by": fu.get("data-written-by", ""),
             "written_at": fu.get("data-written-at", ""),
@@ -209,8 +213,12 @@ def _render_followups(followups: list) -> str:
         f = f or {}
         prompt = f'<pre class="r-fu-prompt">{_esc(f.get("prompt"))}</pre>\n    ' if f.get("prompt") else ""
         outcome = f'<p class="r-fu-outcome">{_esc(f.get("outcome"))}</p>\n    ' if f.get("outcome") else ""
+        # Derive status from resolved_at (mirrors _render_questions). A followup
+        # with a resolved_at is resolved regardless of a stale literal status —
+        # resolve_followup sets resolved_at/by/outcome but not the status field.
+        status = "resolved" if f.get("resolved_at") else (f.get("status") or "open")
         arts.append(
-            f'<article class="r-fu" data-id="{_esc(f.get("id"))}" data-status="{_esc(f.get("status") or "open")}"'
+            f'<article class="r-fu" data-id="{_esc(f.get("id"))}" data-status="{_esc(status)}"'
             f' data-tier="{_esc(f.get("tier"))}" data-written-by="{_esc(f.get("written_by"))}"'
             f' data-written-at="{_esc(f.get("written_at"))}" data-recommends-skill="{_esc(f.get("recommends_skill"))}"'
             f' data-resolved-at="{_esc(f.get("resolved_at") or "")}" data-resolved-by="{_esc(f.get("resolved_by") or "")}">\n    '
