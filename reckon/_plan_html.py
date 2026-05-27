@@ -346,6 +346,59 @@ def write_state(html_text: str, state: dict) -> str:
     return out
 
 
+# ── Lightweight inventory record (scales to thousands of docs) ──────────────
+
+_OPEN_DEC_RE = re.compile(r'class="r-dec"[^>]*\bdata-choice=""', re.IGNORECASE)
+_ANY_DEC_RE = re.compile(r'class="r-dec"[\s">]', re.IGNORECASE)
+
+
+def parse_meta(path: Path, slug: str | None = None) -> dict:
+    """Fast inventory record: head <meta> + title + a regex open-decision
+    count, without a full-body parse. Used by discovery so a project with
+    thousands of docs stays cheap; full state is read per-doc via parse_plan.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        text = ""
+    soup = BeautifulSoup(text[:16384], "html.parser")  # head only — cheap
+    rec = dict(_DEFAULTS)
+    for m in soup.find_all("meta"):
+        name = (m.get("name") or "").lower()
+        content = m.get("content", "")
+        if not name.startswith("plan-") or content == "":
+            continue
+        field = name[len("plan-"):].replace("-", "_")
+        if field in _SCALARS:
+            rec[field] = content
+        elif field in _LIST_SCALARS:
+            rec[field] = [x.strip() for x in content.split(",") if x.strip()]
+        elif field == "impl":
+            try:
+                rec["impl"] = float(content)
+            except ValueError:
+                pass
+        elif field == "version":
+            try:
+                rec["version"] = int(content)
+            except ValueError:
+                pass
+    rt = soup.find("meta", attrs={"name": "reckon-type"})
+    rec["type"] = ((rt.get("content") if rt else "") or "plan").strip().lower()
+    title_tag = soup.find("title")
+    if title_tag and not rec.get("title"):
+        rec["title"] = title_tag.get_text(strip=True).split("|")[0].strip()
+    rec["slug"] = slug or rec.get("slug") or path.stem
+    rec["title"] = rec.get("title") or rec["slug"]
+    rec["informs"] = rec.get("informs") or []
+    rec["depends_on"] = rec.get("depends_on") or []
+    rec["dec_open"] = len(_OPEN_DEC_RE.findall(text))
+    rec["impl"] = float(rec.get("impl", 0) or 0)
+    rec["version"] = int(rec.get("version", 0) or 0)
+    rec["blockers"] = 0
+    return rec
+
+
 # ── Plan record (inventory + full state) ────────────────────────────────────
 
 def parse_plan(path: Path, slug: str | None = None) -> dict:

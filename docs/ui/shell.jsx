@@ -304,7 +304,7 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
   if (route.view === "plan") {
     const p = M.inventory.find(x => x.slug === route.slug);
     if (!p) return null;
-    const openDecs = (p.decisions || []).filter(d => !d.chosen).length;
+    const openDecs = p.dec_open || 0;
     const blockedByDecisions = openDecs > 0;
     return (
       <div className="r-titlebar">
@@ -364,22 +364,10 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
     const idx = sprints.findIndex(s => s.id === route.sprint);
     const s = sprints[idx];
     const slugSet = new Set((s?.items || []).map(it => typeof it === "string" ? it : it.slug));
-    // Re-hydrate each plan's decisions from local overlay so the count is live.
-    const inv = [...slugSet].map(slug => {
-      const p = M.inventory.find(x => x.slug === slug);
-      if (!p) return null;
-      const stored = (window.reckon?.planLoad?.(slug)) || {};
-      const overlay = stored.decisions || {};
-      const liveDecs = (p.decisions || []).map(d => {
-        const ov = overlay[d.key];
-        if (ov?.choice) return { ...d, chosen: ov.choice, rationale: ov.rationale, when: ov.when, by: ov.by };
-        return d;
-      });
-      return { ...p, decisions: liveDecs };
-    }).filter(Boolean);
-    const totalOpen = inv.reduce((n, p) => n + (p.decisions || []).filter(d => !d.chosen).length, 0);
+    const inv = [...slugSet].map(slug => M.inventory.find(x => x.slug === slug)).filter(Boolean);
+    const totalOpen = inv.reduce((n, p) => n + (p.dec_open || 0), 0);
     const blocked = totalOpen > 0;
-    const blockedPlans = inv.filter(p => (p.decisions || []).some(d => !d.chosen));
+    const blockedPlans = inv.filter(p => (p.dec_open || 0) > 0);
     const handleResolve = () => {
       if (blockedPlans.length === 0) return;
       // Rotate: if currently on a plan in the list, go to next; otherwise first.

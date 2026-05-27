@@ -20,19 +20,11 @@ function Plan({ slug, onNav }) {
   const P = PG;
   const isResearch = PG.type === "research";
 
-  // Decisions from state — handle both array (definitions) and object (locked map).
   const stored = planLoad(slug) || {};
-  const storedDec = stored.decisions || {};
-  const defsRaw = Array.isArray(P.decisions_def) ? P.decisions_def
-                : Array.isArray(P.decisions)     ? P.decisions
-                : [];
-  const lockedMap = (P.decisions && !Array.isArray(P.decisions)) ? P.decisions : {};
-  const initialDecs = defsRaw.map(d => {
-    const s = storedDec[d.key] || lockedMap[d.key] || {};
-    return { ...d, chosen: s.choice || d.chosen || "", rationale: s.rationale ?? (d.rationale || ""), when: s.when || "", by: s.by || "" };
-  });
-
-  const [decs, setDecs] = useState(initialDecs);
+  // The inventory is lightweight; full per-doc state (decisions, followups) is
+  // fetched from /plan/<project>/<slug> when the doc opens.
+  const [decs, setDecs] = useState([]);
+  const [fullState, setFullState] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
   const [viewMode, setViewMode] = useState("reading");
@@ -73,6 +65,28 @@ function Plan({ slug, onNav }) {
         setHtmlReady(true);
       })
       .catch(() => setHtmlReady(true));
+  }, [slug]);
+
+  // ── Fetch full doc state (decisions, followups) ─────────────────────────
+  useEffect(() => {
+    setFullState(null);
+    setDecs([]);
+    const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+    if (!project) return;
+    fetch(`/plan/${project}/${encodeURIComponent(slug)}`, { cache: "no-store" })
+      .then(r => r.ok ? r.json() : null)
+      .then(rec => {
+        if (!rec) return;
+        setFullState(rec);
+        const overlay = (planLoad(slug) || {}).decisions || {};
+        setDecs((rec.decisions || []).map(d => {
+          const o = overlay[d.key];
+          return o && o.choice
+            ? { ...d, chosen: o.choice, choice: o.choice, rationale: o.rationale, when: o.when, by: o.by }
+            : d;
+        }));
+      })
+      .catch(() => {});
   }, [slug]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
@@ -156,12 +170,7 @@ function Plan({ slug, onNav }) {
               {/* Render HTML plan body — preserves all formatting from the authored doc */}
               <div ref={htmlRef} className="r-plan-html" dangerouslySetInnerHTML={{ __html: planHtml }} />
 
-              {/* Resolved decisions log (locked choices from state JSON — shown below HTML body) */}
-              {Object.keys(lockedMap).length > 0 && defsRaw.length === 0 && (
-                <LockedDecisionsBlock lockedMap={lockedMap} />
-              )}
-
-              {/* Data-driven decisions (plans with decisions_def[] array) */}
+              {/* Interactive decisions — rendered from the doc's parsed state */}
               {decs.length > 0 && (
                 <>
                   <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
@@ -177,21 +186,24 @@ function Plan({ slug, onNav }) {
             <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
           )}
 
-          {/* Resolved followup log — always from state JSON */}
-          {(PG.followups_done || []).length > 0 && (
+          {/* Followups — from the doc's parsed state */}
+          {(fullState?.followups || []).length > 0 && (
             <>
-              <h2 id="log"><span className="sec">§</span>Log</h2>
+              <h2 id="log"><span className="sec">§</span>Followups</h2>
               <div className="followup-log">
-                {PG.followups_done.map(f => (
-                  <div className="item" key={f.id}>
-                    <div className="mark">✓</div>
-                    <div>
-                      <div className="title">{f.title}</div>
-                      <div className="meta">{f.written_by} → {f.resolved_by} · {f.written_at} → {f.resolved_at}</div>
-                      <div className="outcome">{f.outcome}</div>
+                {fullState.followups.map(f => {
+                  const done = !!(f.resolved_at || f.status === "resolved");
+                  return (
+                    <div className={`item ${done ? "done" : "open"}`} key={f.id}>
+                      <div className="mark">{done ? "✓" : "○"}</div>
+                      <div>
+                        <div className="title">{f.title}</div>
+                        <div className="meta">{f.written_by}{f.resolved_by ? ` → ${f.resolved_by}` : ""} · {f.written_at}{f.resolved_at ? ` → ${f.resolved_at}` : ""}</div>
+                        {f.outcome && <div className="outcome">{f.outcome}</div>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
@@ -218,7 +230,7 @@ function Plan({ slug, onNav }) {
       {showPrompt && (
         <PromptModal
           planSlug={slug}
-          initialPrompt={buildHandoffPrompt(P, decs, P.followups || PG.followups || [])}
+          initialPrompt={buildHandoffPrompt(P, decs, fullState?.followups || [])}
           onClose={() => setShowPrompt(false)}
         />
       )}

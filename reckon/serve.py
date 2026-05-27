@@ -234,16 +234,16 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         if html_file.name in _NON_PLAN_FILES:
             continue
 
-        # The plan HTML is the sole store: parse_plan reads the embedded
-        # <script id="reckon-state"> island (status, decisions, followups, …),
-        # falling back to <meta> tags then sensible defaults. A bare page with
-        # no island still yields a valid record (status=draft, title=<title>).
-        rec = _plan_html.parse_plan(html_file)
+        # Lightweight inventory: head <meta> + a regex open-decision count, no
+        # full-body parse — so a project with thousands of docs stays cheap.
+        # The SPA fetches a doc's full state (decisions, followups, …) from
+        # GET /plan/<project>/<slug> when it opens that doc.
+        rec = _plan_html.parse_meta(html_file)
         slug = rec["slug"]
 
-        # href is the URL path under /<project>/ used by plan.jsx to fetch the
-        # HTML. Root-level plans: href == slug. Subdirectory plans (e.g.
-        # curated/X.html): href includes the subdir so the fetch resolves.
+        # href is the URL path under /<project>/ used to fetch the HTML.
+        # Root-level docs: href == slug. Subdirectory docs (e.g. research/X):
+        # href includes the subdir so the fetch resolves.
         rel_no_ext = str(rel.with_suffix(""))
         href = rel_no_ext if rel_no_ext != slug else slug
 
@@ -267,13 +267,6 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "last":       rec.get("modified", ""),
             "version":    rec["version"],
             "depends_on": rec.get("depends_on", []),
-            "blocks":     rec.get("blocks", []),
-            # Full per-plan state travels in the inventory so the SPA needs no
-            # per-plan fetch — the plan page itself is the source of truth.
-            "decisions":  rec["decisions"],
-            "followups":  rec["followups"],
-            "comments":   rec["comments"],
-            "questions":  rec["questions"],
         })
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
@@ -551,8 +544,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
             pf = _resolve_plan_file(mts[project], slug)
-            island = _plan_html.read_state(pf.read_text(errors="replace")) if pf else {}
-            self._send_json(HTTPStatus.OK, island)
+            rec = _plan_html.parse_plan(pf) if pf else {}
+            self._send_json(HTTPStatus.OK, rec)
             return
 
         if path.startswith("/state/"):
