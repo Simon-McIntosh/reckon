@@ -156,8 +156,8 @@ Object.assign(window, {
   const mode = (isLocal && !forceReadonly) ? "editable" : "readonly";
 
   // Server URLs — the plan HTML is the sole store. POST a dotted patch to
-  // /plan/<project>/<slug>; the server merges it into the page's state island
-  // and rewrites the HTML in place. GET returns the current island (+version).
+  // /plan/<project>/<slug>; the server merges it into the page's embedded state
+  // and rewrites the HTML in place. GET returns the current state (+version).
   const stateUrl     = (plan) => `${window.location.origin}/plan/${PROJECT}/${plan}`;
   const stateUrlJson = (plan) => `/plan/${PROJECT}/${plan}`;
 
@@ -187,7 +187,7 @@ Object.assign(window, {
     try {
       const r = await fetch(stateUrlJson(plan), { cache: "no-store" });
       if (!r.ok) return {};
-      const data = await r.json();   // raw state island
+      const data = await r.json();   // raw embedded state
       const v = (typeof data.version === "number") ? data.version
               : (typeof data._version === "number") ? data._version : undefined;
       if (typeof v === "number") Persist._versions[plan] = v;
@@ -222,7 +222,7 @@ Object.assign(window, {
     },
 
     // save() — patch-shaped (flat, possibly dotted keys). The SERVER merges
-    // the patch into the plan page's state island and rewrites the HTML; the
+    // the patch into the plan page's embedded state and rewrites the HTML; the
     // client just sends the patch + an If-Match version. On 412 it rebases on
     // the server's current_version and retries once.
     _echoLocal(plan, patch) {
@@ -240,8 +240,8 @@ Object.assign(window, {
 
       let version = this._versions[plan];
       if (typeof version !== "number") {
-        const island = await fetchCanonical(plan);
-        version = (typeof island.version === "number") ? island.version : 0;
+        const state = await fetchCanonical(plan);
+        version = (typeof state.version === "number") ? state.version : 0;
       }
 
       const post = (ver) => fetch(stateUrl(plan), {

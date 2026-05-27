@@ -1,10 +1,10 @@
-"""Tests for reckon._store — HTML-island-backed plan store.
+"""Tests for reckon._store — semantic-HTML-backed plan store.
 
-All plan operations (non-index/project slugs) use HTML island files.
+All plan operations (non-index/project slugs) use semantic HTML state files.
 index/project slugs remain JSON-backed.
 
 Uses a tempdir docs root with plan .html files containing embedded
-<script id="reckon-state"> islands.  RECKON_MOUNTS_PATH and
+<script id="reckon-owned sections ins.  RECKON_MOUNTS_PATH and
 RECKON_STATE_ROOT point to temp paths so no live files are touched.
 """
 
@@ -52,8 +52,8 @@ def setup(tmp_path, monkeypatch):
     return docs_dir, state_root, project
 
 
-def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
-    """Write a minimal plan HTML with an embedded state island."""
+def _make_plan_html(docs_dir: Path, slug: str, state: dict) -> Path:
+    """Write a minimal plan HTML with an embedded semantic state."""
     from reckon._plan_html import write_state
     bare = (
         '<!doctype html>\n<html lang="en">\n<head>'
@@ -62,7 +62,7 @@ def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
         f'<title>{slug}</title></head>\n'
         '<body><main class="plan-doc"></main></body>\n</html>\n'
     )
-    html_with_island = write_state(bare, island)
+    html_with_island = write_state(bare, state)
     path = docs_dir / f"{slug}.html"
     path.write_text(html_with_island, encoding="utf-8")
     return path
@@ -79,7 +79,7 @@ def test_read_plan_absent_returns_empty(setup):
 
 
 def test_read_plan_html_island(setup):
-    """read_plan reads the HTML island directly."""
+    """read_plan reads the semantic HTML state directly."""
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "my-plan", {
         "slug": "my-plan",
@@ -96,7 +96,7 @@ def test_read_plan_html_island(setup):
 # ── write_plan round-trip ──────────────────────────────────────────────────
 
 def test_write_plan_roundtrip(setup):
-    """write_plan rewrites the HTML island; read_plan recovers the data."""
+    """write_plan rewrites the semantic HTML state; read_plan recovers the data."""
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"slug": "plan-a", "status": "draft", "version": 0})
 
@@ -109,7 +109,7 @@ def test_write_plan_roundtrip(setup):
     assert data["status"] == "active"
     assert data["impl"] == pytest.approx(0.5)
     assert data["version"] == 1
-    # No _version in the HTML island
+    # No _version in the semantic HTML state
     assert "_version" not in data
 
 
@@ -152,7 +152,7 @@ def test_version_conflict_raises(setup):
 
 
 def test_version_conflict_carries_current_data(setup):
-    """VersionConflict carries the current island data."""
+    """VersionConflict carries the current state data."""
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-e", {"version": 0, "status": "draft"})
     _store_module.write_plan(project, "plan-e", {"status": "active"}, expected_version=0)
@@ -212,7 +212,7 @@ def test_lock_decision_creates_new_entry(setup):
 # ── append_followup ────────────────────────────────────────────────────────
 
 def test_append_followup(setup):
-    """append_to_list adds followups to the HTML island."""
+    """append_to_list adds followups to the semantic HTML state."""
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-h", {"version": 0, "followups": []})
 

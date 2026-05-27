@@ -1,11 +1,11 @@
-"""Tests for reckon MCP tools — HTML-island-backed plan store.
+"""Tests for reckon MCP tools — semantic-HTML-backed plan store.
 
 Sprint/milestone/inventory tools still use index.json (JSON-backed).
 Per-plan tools (followups, questions, research, comments, lock_decision, etc.)
-use HTML island files via the new _store.py backing.
+use semantic HTML state files via the new _store.py backing.
 
 Test setup:
-  - A tempdir docs root with plan .html files (HTML island backing).
+  - A tempdir docs root with plan .html files (semantic HTML state backing).
   - RECKON_MOUNTS_PATH → a temp mounts.json mapping project → docs dir.
   - RECKON_STATE_ROOT  → a temp state dir (for index/project JSON slugs).
   - serve.py module-level paths patched to match.
@@ -55,8 +55,8 @@ def setup(tmp_path, monkeypatch):
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
-    """Write a minimal plan HTML with an embedded state island."""
+def _make_plan_html(docs_dir: Path, slug: str, state: dict) -> Path:
+    """Write a minimal plan HTML with an embedded semantic state."""
     from reckon._plan_html import write_state
     bare = (
         '<!doctype html>\n<html lang="en">\n<head>'
@@ -65,7 +65,7 @@ def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
         f'<title>{slug}</title></head>\n'
         '<body><main class="plan-doc"></main></body>\n</html>\n'
     )
-    html_with_island = write_state(bare, island)
+    html_with_island = write_state(bare, state)
     path = docs_dir / f"{slug}.html"
     path.write_text(html_with_island, encoding="utf-8")
     return path
@@ -271,7 +271,7 @@ def test_update_inventory_item_not_found(setup):
     assert "not found in inventory" in result["error"]
 
 
-# ── _list_followups (HTML island scan) ────────────────────────────────────
+# ── _list_followups (semantic HTML state scan) ────────────────────────────────────
 
 def test_list_followups_across_plans(setup):
     docs_dir, _, project = setup
@@ -317,7 +317,7 @@ def test_list_followups_include_resolved(setup):
     assert result["count"] == 1
 
 
-# ── _list_questions (HTML island scan) ────────────────────────────────────
+# ── _list_questions (semantic HTML state scan) ────────────────────────────────────
 
 def test_list_questions_across_plans(setup):
     docs_dir, _, project = setup
@@ -359,7 +359,7 @@ def test_list_projects_no_mounts(tmp_path, monkeypatch):
     assert result["projects"] == []
 
 
-# ── _resolve_question (HTML island) ───────────────────────────────────────
+# ── _resolve_question (semantic HTML state) ───────────────────────────────────────
 
 def test_resolve_question(setup):
     docs_dir, _, project = setup
@@ -386,7 +386,7 @@ def test_resolve_question_not_found(setup):
     assert result["ok"] is False
 
 
-# ── _add_research (HTML island) ────────────────────────────────────────────
+# ── _add_research (semantic HTML state) ────────────────────────────────────────────
 
 def test_add_research(setup):
     docs_dir, _, project = setup
@@ -410,7 +410,7 @@ def test_add_research_missing_fields(setup):
     assert "missing fields" in result["error"]
 
 
-# ── note ID uniqueness (HTML island) ──────────────────────────────────────
+# ── note ID uniqueness (semantic HTML state) ──────────────────────────────────────
 
 def test_append_comment_unique_ids(setup):
     docs_dir, _, project = setup
@@ -462,7 +462,7 @@ def test_lock_decision_preserves_authored_fields(setup):
     assert "when" in dec
 
 
-# ── _list_plans discovery (HTML island scan) ───────────────────────────────
+# ── _list_plans discovery (semantic HTML state scan) ───────────────────────────────
 
 def test_list_plans_discovery(setup):
     """_list_plans uses HTML discovery to return plan inventory."""

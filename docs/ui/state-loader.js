@@ -80,7 +80,7 @@ window.STATE_READY = (async function () {
 
   // ── 4. Per-plan state travels inside the inventory ─────────────────────
   // Each inventory entry was parsed from its plan page's embedded
-  // <script id="reckon-state"> island (status, decisions, followups,
+  // <script id="reckon-owned sections in (status, decisions, followups,
   // comments, questions). The plan HTML is the sole store — there is no
   // per-plan state JSON to fetch.
   const plans = Object.fromEntries(inventory.map(inv => [inv.slug, inv]));

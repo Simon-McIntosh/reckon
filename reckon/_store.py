@@ -1,9 +1,9 @@
-"""State IO for reckon MCP server — HTML-island-backed plan store.
+"""State IO for reckon MCP server — semantic-HTML-backed plan store.
 
 Architecture
 ------------
 The plan HTML file is the sole store for plan state.  Each plan page
-embeds a <script type="application/json" id="reckon-state"> island that
+embeds a <script type="application/json" id="reckon-owned sections in that
 holds all mutable data (status, decisions, followups, comments, …).
 
 Two slugs are special and remain JSON-backed:
@@ -13,16 +13,16 @@ Two slugs are special and remain JSON-backed:
   - "project" — legacy project config (kept for back-compat)
 
 All other slugs are PLAN slugs.  For plan slugs:
-  - read_plan reads the HTML island directly from the plan's .html file
-  - write_plan rewrites the HTML island atomically
-  - version field is "version" (not "_version") inside the island
+  - read_plan reads the semantic HTML state directly from the plan's .html file
+  - write_plan rewrites the semantic HTML state atomically
+  - version field is "version" (not "_version") inside the state
 
 Version-write contract mirrors POST /plan/<project>/<slug> in
 reckon/serve.py._handle_plan_write:
-  - Read the current island → cur_version = island.get("version", 0)
+  - Read the current state → cur_version = state.get("version", 0)
   - Raise VersionConflict if expected_version != cur_version
-  - Set island["version"] = cur_version + 1
-  - Set island["modified"] to today's date
+  - Set state["version"] = cur_version + 1
+  - Set state["modified"] to today's date
   - Write atomically: .html.tmp → .html
 
 JSON slugs (index/project) keep the old _version counter inside the envelope
@@ -179,23 +179,23 @@ def _write_json_envelope(
     return new_data["_version"]
 
 
-# ── HTML-island helpers ────────────────────────────────────────────────────
+# ── HTML-state helpers ────────────────────────────────────────────────────
 
 def _read_state(project: str, slug: str) -> tuple[dict, int]:
-    """Read the HTML island for a plan slug.
+    """Read the semantic HTML state for a plan slug.
 
     Returns:
-        (island_dict, current_version) where version = island.get("version", 0).
-        Returns ({}, 0) if the HTML file or island is absent.
+        (island_dict, current_version) where version = state.get("version", 0).
+        Returns ({}, 0) if the HTML file or state is absent.
     """
     from reckon import _plan_html
     html_file = _resolve_html_file(project, slug)
     if html_file is None or not html_file.is_file():
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
-    island = _plan_html.read_state(text)
-    version = int(island.get("version", 0) or 0)
-    return island, version
+    state = _plan_html.read_state(text)
+    version = int(state.get("version", 0) or 0)
+    return state, version
 
 
 def _write_state(
@@ -204,7 +204,7 @@ def _write_state(
     data: dict,
     expected_version: int,
 ) -> int:
-    """Atomically rewrite the HTML island for a plan slug.
+    """Atomically rewrite the semantic HTML state for a plan slug.
 
     Raises VersionConflict on mismatch.
     Returns the new version.
@@ -224,7 +224,7 @@ def _write_state(
             )
         html_file = docs_dir / f"{slug}.html"
         if not html_file.exists():
-            # Stub HTML with minimal structure for the island to be injected.
+            # Stub HTML with minimal structure for the state to be injected.
             html_file.write_text(
                 f'<!doctype html>\n<html lang="en">\n<head>'
                 f'<meta charset="utf-8">'
@@ -244,7 +244,7 @@ def _write_state(
         raise VersionConflict(expected_version, cur_version, cur_island)
 
     new_data = dict(data)
-    new_data.pop("_version", None)  # never allow the old JSON key in the island
+    new_data.pop("_version", None)  # never allow the old JSON key in the state
     new_data["version"] = cur_version + 1
     new_data["modified"] = date.today().isoformat()
 
@@ -261,7 +261,7 @@ def _write_state(
 def read_plan(project: str, slug: str) -> tuple[dict, int]:
     """Read the data blob and version for a plan (or JSON config doc).
 
-    For plan slugs: reads the HTML island; version = island["version"].
+    For plan slugs: reads the semantic HTML state; version = state["version"].
     For JSON slugs (index/project): reads the JSON envelope; version = data["_version"].
 
     Returns:
@@ -280,7 +280,7 @@ def write_plan(
 ) -> int:
     """Write a full data blob back with version check.
 
-    For plan slugs: rewrites the HTML island atomically.
+    For plan slugs: rewrites the semantic HTML state atomically.
     For JSON slugs: rewrites the JSON envelope atomically.
 
     Raises VersionConflict if expected_version does not match current.
@@ -429,7 +429,7 @@ def list_followups_across(project: str, unresolved_only: bool = True) -> list[di
             continue
         slug = rec["slug"]
         title = rec.get("title") or slug
-        # followups live in the raw island (parse_plan returns them)
+        # followups live in the raw state (parse_plan returns them)
         for f in rec.get("followups", []):
             if unresolved_only and f.get("resolved_at"):
                 continue

@@ -3,7 +3,7 @@
 Registers all reckon.* tools and delegates IO to _store.py.
 
 Version-write contract mirrors POST /plan/<project>/<slug> in
-~/Code/reckon/reckon/serve.py. Both rewrite the plan HTML island atomically
+~/Code/reckon/reckon/serve.py. Both rewrite the plan semantic HTML state atomically
 using the same `version` optimistic-concurrency field.  The docs-server owns
 the browser UI; this MCP server owns the agent IO path.  They coexist safely
 because both use atomic .tmp rename.
@@ -84,7 +84,7 @@ def _conflict_response(exc: VersionConflict) -> dict[str, Any]:
 def _read_plan(project: str, slug: str) -> dict[str, Any]:
     """Return the full data blob for one plan, plus its current version.
 
-    For plan slugs, data is the raw HTML island (version = island["version"]).
+    For plan slugs, data is the plan's parsed state (version = state["version"]).
     For "index"/"project" slugs, data is the JSON envelope data sub-object.
 
     Returns { project, slug, version, data }.

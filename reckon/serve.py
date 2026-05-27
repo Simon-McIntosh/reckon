@@ -151,10 +151,10 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
 
 # ── Plan discovery ────────────────────────────────────────────────────────
 #
-# A plan HTML page opts in to discovery by carrying at least one
-#   <meta name="plan-status" content="active|pending|blocked|shipped">
-# tag in its <head>.  Other plan-* meta tags are optional but encouraged.
-# See the reckon-sync SKILL.md style guide for the full convention.
+# Any HTML file under a project's docs dir (outside infra files/dirs) is a
+# doc — existence is sufficient. plan-* meta tags and the data-reckon sections
+# only enrich the entry; their absence never hides a doc. reckon-type=research
+# marks non-actionable input docs. See PLAN-FORMAT.md for the convention.
 
 _PLAN_META_PREFIX = "plan-"
 _NON_PLAN_FILES = frozenset([
@@ -548,9 +548,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/plan/"):
-            # GET /plan/<project>/<slug> — the plan's embedded state island
+            # GET /plan/<project>/<slug> — the plan's embedded semantic state
             # (raw, with version), for clients that need the current version
-            # before a write. {} if the plan/island is absent.
+            # before a write. {} if the plan/state is absent.
             parts = path[len("/plan/"):].strip("/").split("/", 1)
             if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
@@ -719,11 +719,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_plan_write(self, path: str) -> None:
         """POST /plan/<project>/<slug> — merge a dotted patch into the plan's
-        embedded state island and rewrite the HTML file in place. The plan HTML
+        embedded semantic state and rewrite the HTML file in place. The plan HTML
         is the sole store; there is no sidecar state JSON.
 
         Optimistic concurrency: send `If-Match: <version>`; a mismatch returns
-        412 with the current island so the client can rebase and retry.
+        412 with the current state so the client can rebase and retry.
         """
         parts = path[len("/plan/"):].strip("/").split("/", 1)
         if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
@@ -751,14 +751,14 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         text = plan_file.read_text(encoding="utf-8", errors="replace")
-        island = _plan_html.read_state(text)
-        cur_version = int(island.get("version", 0) or 0)
+        state = _plan_html.read_state(text)
+        cur_version = int(state.get("version", 0) or 0)
 
         if_match = self.headers.get("If-Match")
         if if_match is None:
             self._send_json(HTTPStatus.PRECONDITION_FAILED, {
                 "error": "version_mismatch", "current_version": cur_version,
-                "expected_version": None, "current_data": island})
+                "expected_version": None, "current_data": state})
             return
         try:
             expected = int(if_match.strip().strip('"'))
@@ -768,21 +768,21 @@ class Handler(BaseHTTPRequestHandler):
         if expected != cur_version:
             self._send_json(HTTPStatus.PRECONDITION_FAILED, {
                 "error": "version_mismatch", "current_version": cur_version,
-                "expected_version": expected, "current_data": island})
+                "expected_version": expected, "current_data": state})
             return
 
         patch.pop("version", None)
         patch.pop("_version", None)
-        _patch_into(island, patch)
-        island.setdefault("slug", slug)
-        island["version"] = cur_version + 1
-        island["modified"] = datetime.now().strftime("%Y-%m-%d")
+        _patch_into(state, patch)
+        state.setdefault("slug", slug)
+        state["version"] = cur_version + 1
+        state["modified"] = datetime.now().strftime("%Y-%m-%d")
 
-        new_text = _plan_html.write_state(text, island)
+        new_text = _plan_html.write_state(text, state)
         tmp = plan_file.with_suffix(".html.tmp")
         tmp.write_text(new_text, encoding="utf-8")
         tmp.replace(plan_file)
-        self._send_json(HTTPStatus.OK, {"ok": True, "slug": slug, "version": island["version"]})
+        self._send_json(HTTPStatus.OK, {"ok": True, "slug": slug, "version": state["version"]})
 
     def do_POST(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
