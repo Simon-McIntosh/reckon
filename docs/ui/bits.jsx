@@ -132,8 +132,8 @@ function PromptModal({ initialPrompt, planSlug, onClose }) {
   };
 
   return (
-    <div className="modal-scrim" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="r-modal-scrim" onClick={onClose}>
+      <div className="r-modal" onClick={(e) => e.stopPropagation()}>
         <div className="head">
           <div>
             <div className="eyebrow">Handoff prompt</div>

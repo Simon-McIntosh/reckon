@@ -92,7 +92,7 @@ function Plan({ slug, onNav }) {
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
     const open = () => {
-      const openDecs = decs.filter(d => !d.chosen);
+      const openDecs = decs.filter(d => !d.chosen && !d.choice);
       if (openDecs.length > 0) {
         if (window.flashSaved) window.flashSaved(`✗ ${openDecs.length} open decision${openDecs.length === 1 ? "" : "s"} — resolve them first`);
         return;

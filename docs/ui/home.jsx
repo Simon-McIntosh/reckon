@@ -58,7 +58,7 @@ function FleetPage({projects, refreshedAt, onOpen}) {
         <div className="sp"/>
         <div className="fcell"><div className="k">shipped</div><div className="v">{shipped}</div></div>
       </div>
-      {projects.map(p => <ProjectCard key={p.project} p={p} onOpen={onOpen}/>)}
+      {window.ProjectCard && projects.map(p => <window.ProjectCard key={p.project} p={p} onOpen={onOpen}/>)}
       <div className="add-hint">
         Add a project: edit <code>~/docs-server/mounts.json</code>. No restart needed.
       </div>
@@ -192,7 +192,9 @@ function HomeApp() {
   return (
     <>
       <div className="topbar">
-        <ProjectPicker current={null} projects={projects} onNav={p => p ? onOpen(p) : null}/>
+        {window.ProjectPicker
+          ? <window.ProjectPicker current={null} projects={projects} onNav={p => p ? onOpen(p) : null}/>
+          : <span className="label fleet">fleet</span>}
         <button className="cmdk-btn" onClick={() => setCmdK(true)} style={{marginLeft: 4}}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="7" cy="7" r="4.5"/><path d="M13 13l-2.5-2.5"/>
@@ -202,7 +204,7 @@ function HomeApp() {
         </button>
         <span className="sp"/>
         <div className="top-r">
-          <SettingsMenu theme={theme} setTheme={setTheme} density={density} setDensity={setDensity}/>
+          {window.SettingsMenu && <window.SettingsMenu theme={theme} setTheme={setTheme} density={density} setDensity={setDensity}/>}
           {refreshedAt && <span className="meta-time">refreshed {refreshedAt}</span>}
         </div>
       </div>
