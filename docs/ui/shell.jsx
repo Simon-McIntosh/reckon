@@ -595,7 +595,7 @@ function App() {
       }
       if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (route.view === "plan") setFiltersHidden(c => !c);
+        if (route.view === "plan") setFiltersHidden(c => !c); // Plans only — hides filter + list cols
       }
     };
     document.addEventListener("keydown", onKey);
