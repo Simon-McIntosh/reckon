@@ -272,8 +272,6 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "followups":  rec["followups"],
             "comments":   rec["comments"],
             "questions":  rec["questions"],
-            "research":   rec["research"],
-            "notes":      rec["notes"],
         })
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
@@ -551,7 +549,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
             pf = _resolve_plan_file(mts[project], slug)
-            island = _plan_html.read_island(pf.read_text(errors="replace")) if pf else {}
+            island = _plan_html.read_state(pf.read_text(errors="replace")) if pf else {}
             self._send_json(HTTPStatus.OK, island)
             return
 
@@ -740,7 +738,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         text = plan_file.read_text(encoding="utf-8", errors="replace")
-        island = _plan_html.read_island(text)
+        island = _plan_html.read_state(text)
         cur_version = int(island.get("version", 0) or 0)
 
         if_match = self.headers.get("If-Match")
@@ -767,7 +765,7 @@ class Handler(BaseHTTPRequestHandler):
         island["version"] = cur_version + 1
         island["modified"] = datetime.now().strftime("%Y-%m-%d")
 
-        new_text = _plan_html.write_island(text, island)
+        new_text = _plan_html.write_state(text, island)
         tmp = plan_file.with_suffix(".html.tmp")
         tmp.write_text(new_text, encoding="utf-8")
         tmp.replace(plan_file)

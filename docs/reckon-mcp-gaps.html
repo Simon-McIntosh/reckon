@@ -8,6 +8,19 @@
 <title>MCP gap-closure — power-user queries | reckon</title>
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="MCP gap-closure — power-user queries">
+<meta name="plan-summary" content="Add list_followups, list_questions, resolve_question, add_research, list_projects; list_plans discovery fallback; note-ID collision fix. All in reckon/mcp.py + _store.py + _mcp_tools.py + tests/.">
+<meta name="plan-status" content="active">
+<meta name="plan-roi" content="high">
+<meta name="plan-effort" content="M">
+<meta name="plan-milestone" content="PS">
+<meta name="plan-sprint" content="S4">
+<meta name="plan-tier" content="sonnet">
+<meta name="plan-owner" content="Simon McIntosh">
+<meta name="plan-modified" content="2026-05-26">
+<meta name="plan-depends-on" content="plans-infra">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="2">
 </head>
 <body>
 <main class="plan-doc">
@@ -394,85 +407,77 @@ containing a synthetic <code>docs-server/mounts.json</code>.</p>
 </ol>
 <p><strong>No parallelism needed</strong> — all 4 files are in scope for the same agent.
 Fleet dispatch would only add coordination overhead for this size of work.</p>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="scan-strategy" data-choice="glob state dir (*.json, skip meta)" data-by="" data-when="">
+    <p class="r-dec-q">How should list_followups / list_questions scan plans — glob state dir vs read index inventory?</p>
+    <p class="r-dec-rat">Index inventory may be stale; direct glob always reflects current files. Meta files are excluded by name. Consistent with serve.py&#x27;s discover_plans.</p>
+    </div>
+<div class="r-dec" data-key="note-id-format" data-choice="f&quot;n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}&quot;" data-by="" data-when="">
+    <p class="r-dec-q">What format for the collision-resistant note ID?</p>
+    <p class="r-dec-rat">Sortable, human-readable, microsecond resolution. Collision probability at µs is negligible given atomic-rename write cost (&gt;1ms).</p>
+    </div>
+<div class="r-dec" data-key="discover-fallback-errors" data-choice="Silent pass (best-effort)" data-by="" data-when="">
+    <p class="r-dec-q">Should list_plans surface discover_plans import/IO errors?</p>
+    <p class="r-dec-rat">Discovery is an enhancement, not the primary path. Surfacing fallback errors would break list_plans for all repos on any import issue. Graceful degradation is correct.</p>
+    </div>
+</section>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mcp-gaps-ship" data-status="open" data-tier="sonnet" data-written-by="claude-sonnet-4-6" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-mcp-gaps" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement all 8 sprint items — single Sonnet turn</h4>
+    <div class="r-fu-body">All 8 items are scoped to 4 files with no overlapping write scope issues. Sequential within the single agent. See §9 for ordering. Done-when: ≥33 tests passing, commit with conventional message, followup written resolving this one.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-mcp-gaps (docs/reckon-mcp-gaps.html)
+Section: §1–§8 (all items)
+Tier:    sonnet
+
+Context
+  During the 2026-05-26 MCP tool evaluation, 7 opportunity gaps were confirmed
+  by measuring actual call overhead against purpose-built queries. This sprint
+  item closes all 7 in one pass. The plan HTML at docs/reckon-mcp-gaps.html
+  has the full implementation spec per section.
+
+State to read
+  docs/state/reckon/reckon-mcp-gaps.json (this file)
+  reckon/_store.py                      (add 2 new store fns at bottom)
+  reckon/mcp.py                         (add 5 tools, update _list_plans, fix note-ID)
+  reckon/_mcp_tools.py                  (add 3 Pydantic models)
+  tests/test_mcp_store.py               (read for fixture pattern; do NOT modify)
+
+Locked decisions to honour
+  scan-strategy            → glob state dir (*.json, skip index.json + project.json)
+  note-id-format           → f&#x27;n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}&#x27;
+  discover-fallback-errors → silent pass in except clause
+
+Open decisions to surface (do not resolve)
+  (none — all decisions for this plan are locked above)
+
+Constraints
+  - Python &gt;=3.12, uv, mcp&gt;=1.0.0, pydantic&gt;=2.0
+  - Do NOT use git add -A / git add . — stage specific paths only
+  - Do NOT modify tests/test_mcp_store.py
+  - All 8 original store tests must still pass after changes
+  - The mcp SDK @mcp.tool() registration block at the bottom of mcp.py
+    must be updated to register all 5 new tools
+
+Implementation order (§9):
+  1. reckon/_store.py — add list_followups_across + list_questions_across
+  2. reckon/mcp.py   — add 5 new tools + update _list_plans + fix note-ID
+                       + register new tools at bottom of file
+  3. reckon/_mcp_tools.py — add ListFollowupsArgs, ResolveQuestionArgs, AddResearchArgs
+  4. tests/test_mcp_tools.py — write ≥25 test cases
+  5. uv run pytest tests/ -q --tb=short → must show ≥33 passing, 0 failed
+
+Done-when
+  1. uv run pytest tests/ -q shows ≥33 passing, 0 failed
+  2. Committed with: feat(mcp): add list_followups, list_questions, resolve_question,
+     add_research, list_projects; fix note-id; list_plans discovery fallback
+  3. This followup (f-mcp-gaps-ship) resolved in reckon-mcp-gaps.json with outcome
+  4. data.impl set to 1.0 in reckon-mcp-gaps.json
+  5. data.status set to shipped in reckon-mcp-gaps.json</pre>
+    </article>
+</section>
 </main>
-<script type="application/json" id="reckon-state">
-{
-  "slug": "reckon-mcp-gaps",
-  "title": "MCP gap-closure — power-user queries",
-  "summary": "Add list_followups, list_questions, resolve_question, add_research, list_projects; list_plans discovery fallback; note-ID collision fix. All in reckon/mcp.py + _store.py + _mcp_tools.py + tests/.",
-  "status": "active",
-  "impl": 0.0,
-  "roi": "high",
-  "effort": "M",
-  "milestone": "PS",
-  "sprint": "S4",
-  "tier": "sonnet",
-  "owner": "Simon McIntosh",
-  "modified": "2026-05-26",
-  "depends_on": [
-    "plans-infra"
-  ],
-  "decisions": {
-    "scan-strategy": {
-      "title": "How should list_followups / list_questions scan plans — glob state dir vs read index inventory?",
-      "context": "",
-      "choices": [],
-      "choice": "glob state dir (*.json, skip meta)",
-      "rationale": "Index inventory may be stale; direct glob always reflects current files. Meta files (index.json, project.json) are excluded by name. Consistent with how serve.py's discover_plans works.",
-      "when": "",
-      "by": ""
-    },
-    "note-id-format": {
-      "title": "What format for the collision-resistant note ID?",
-      "context": "",
-      "choices": [],
-      "choice": "f\"n-{datetime.now(tz=utc):%Y%m%dT%H%M%S%f}\"",
-      "rationale": "Sortable, human-readable, microsecond resolution. Collision probability at µs is negligible given atomic-rename write cost (>1ms).",
-      "when": "",
-      "by": ""
-    },
-    "discover-fallback-errors": {
-      "title": "Should list_plans surface discover_plans import/IO errors?",
-      "context": "",
-      "choices": [],
-      "choice": "Silent pass (best-effort)",
-      "rationale": "Discovery is an enhancement, not the primary path. Surfacing errors from the fallback would break list_plans for all repos on any import issue in serve.py. Graceful degradation is correct.",
-      "when": "",
-      "by": ""
-    }
-  },
-  "followups": [
-    {
-      "id": "f-mcp-gaps-ship",
-      "written_by": "claude-sonnet-4-6",
-      "written_at": "2026-05-26",
-      "title": "Implement all 8 sprint items — single Sonnet turn",
-      "body": "All 8 items are scoped to 4 files with no overlapping write scope issues. Sequential within the single agent. See §9 for ordering. Done-when: ≥33 tests passing, commit with conventional message, followup written resolving this one.",
-      "recommends_skill": "/reckon-ship reckon-mcp-gaps",
-      "touches": [
-        "reckon/_store.py",
-        "reckon/mcp.py",
-        "reckon/_mcp_tools.py",
-        "tests/test_mcp_tools.py"
-      ],
-      "tier": "sonnet",
-      "est_turn": "single Sonnet turn · ~2h",
-      "prompt": "Project: reckon\nPlan:    reckon-mcp-gaps (docs/reckon-mcp-gaps.html)\nSection: §1–§8 (all items)\nTier:    sonnet\n\nContext\n  During the 2026-05-26 MCP tool evaluation, 7 opportunity gaps were confirmed\n  by measuring actual call overhead against purpose-built queries. This sprint\n  item closes all 7 in one pass. The plan HTML at docs/reckon-mcp-gaps.html\n  has the full implementation spec per section.\n\nState to read\n  docs/state/reckon/reckon-mcp-gaps.json (this file)\n  reckon/_store.py                      (add 2 new store fns at bottom)\n  reckon/mcp.py                         (add 5 tools, update _list_plans, fix note-ID)\n  reckon/_mcp_tools.py                  (add 3 Pydantic models)\n  tests/test_mcp_store.py               (read for fixture pattern; do NOT modify)\n\nLocked decisions to honour\n  scan-strategy            → glob state dir (*.json, skip index.json + project.json)\n  note-id-format           → f'n-{datetime.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}'\n  discover-fallback-errors → silent pass in except clause\n\nOpen decisions to surface (do not resolve)\n  (none — all decisions for this plan are locked above)\n\nConstraints\n  - Python >=3.12, uv, mcp>=1.0.0, pydantic>=2.0\n  - Do NOT use git add -A / git add . — stage specific paths only\n  - Do NOT modify tests/test_mcp_store.py\n  - All 8 original store tests must still pass after changes\n  - The mcp SDK @mcp.tool() registration block at the bottom of mcp.py\n    must be updated to register all 5 new tools\n\nImplementation order (§9):\n  1. reckon/_store.py — add list_followups_across + list_questions_across\n  2. reckon/mcp.py   — add 5 new tools + update _list_plans + fix note-ID\n                       + register new tools at bottom of file\n  3. reckon/_mcp_tools.py — add ListFollowupsArgs, ResolveQuestionArgs, AddResearchArgs\n  4. tests/test_mcp_tools.py — write ≥25 test cases\n  5. uv run pytest tests/ -q --tb=short → must show ≥33 passing, 0 failed\n\nDone-when\n  1. uv run pytest tests/ -q shows ≥33 passing, 0 failed\n  2. Committed with: feat(mcp): add list_followups, list_questions, resolve_question,\n     add_research, list_projects; fix note-id; list_plans discovery fallback\n  3. This followup (f-mcp-gaps-ship) resolved in reckon-mcp-gaps.json with outcome\n  4. data.impl set to 1.0 in reckon-mcp-gaps.json\n  5. data.status set to shipped in reckon-mcp-gaps.json"
-    }
-  ],
-  "research": [
-    {
-      "id": "r1",
-      "type": "thread",
-      "title": "2026-05-26 MCP tool evaluation — gap identification session",
-      "source": "Claude Code session, reckon project",
-      "added_by": "Simon McIntosh",
-      "when": "2026-05-26",
-      "url": null
-    }
-  ],
-  "version": 1
-}
-</script>
 </body>
 </html>

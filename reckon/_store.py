@@ -181,7 +181,7 @@ def _write_json_envelope(
 
 # ── HTML-island helpers ────────────────────────────────────────────────────
 
-def _read_island(project: str, slug: str) -> tuple[dict, int]:
+def _read_state(project: str, slug: str) -> tuple[dict, int]:
     """Read the HTML island for a plan slug.
 
     Returns:
@@ -193,12 +193,12 @@ def _read_island(project: str, slug: str) -> tuple[dict, int]:
     if html_file is None or not html_file.is_file():
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
-    island = _plan_html.read_island(text)
+    island = _plan_html.read_state(text)
     version = int(island.get("version", 0) or 0)
     return island, version
 
 
-def _write_island(
+def _write_state(
     project: str,
     slug: str,
     data: dict,
@@ -237,7 +237,7 @@ def _write_island(
         cur_version = 0
     else:
         text = html_file.read_text(encoding="utf-8", errors="replace")
-        cur_island = _plan_html.read_island(text)
+        cur_island = _plan_html.read_state(text)
         cur_version = int(cur_island.get("version", 0) or 0)
 
     if expected_version != cur_version:
@@ -249,7 +249,7 @@ def _write_island(
     new_data["modified"] = date.today().isoformat()
 
     text = html_file.read_text(encoding="utf-8", errors="replace")
-    new_text = _plan_html.write_island(text, new_data)
+    new_text = _plan_html.write_state(text, new_data)
     tmp = html_file.with_suffix(".html.tmp")
     tmp.write_text(new_text, encoding="utf-8")
     tmp.replace(html_file)
@@ -269,7 +269,7 @@ def read_plan(project: str, slug: str) -> tuple[dict, int]:
     """
     if _is_json_slug(slug):
         return _load_json_envelope(state_path(project, slug))
-    return _read_island(project, slug)
+    return _read_state(project, slug)
 
 
 def write_plan(
@@ -290,7 +290,7 @@ def write_plan(
         return _write_json_envelope(
             state_path(project, slug), project, slug, data, expected_version
         )
-    return _write_island(project, slug, data, expected_version)
+    return _write_state(project, slug, data, expected_version)
 
 
 def patch_plan(

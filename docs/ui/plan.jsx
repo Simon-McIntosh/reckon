@@ -62,6 +62,10 @@ function Plan({ slug, onNav }) {
         article.querySelector(".topbar")?.remove();
         article.querySelector("header.plan-header")?.remove();
         article.querySelector("nav.plan-nav")?.remove();
+        // The decisions section is re-rendered interactively below from parsed
+        // state; drop the static copy so it isn't shown twice. Followups /
+        // questions / comments stay as readable prose.
+        article.querySelector('section[data-reckon="decisions"]')?.remove();
         // Strip inline scripts — they target the standalone page, not the SPA
         article.querySelectorAll("script").forEach(s => s.remove());
         setPlanHtml(article.innerHTML);

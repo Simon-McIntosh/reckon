@@ -54,7 +54,7 @@ def setup(tmp_path, monkeypatch):
 
 def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
     """Write a minimal plan HTML with an embedded state island."""
-    from reckon._plan_html import write_island
+    from reckon._plan_html import write_state
     bare = (
         '<!doctype html>\n<html lang="en">\n<head>'
         '<meta charset="utf-8">'
@@ -62,7 +62,7 @@ def _make_plan_html(docs_dir: Path, slug: str, island: dict) -> Path:
         f'<title>{slug}</title></head>\n'
         '<body><main class="plan-doc"></main></body>\n</html>\n'
     )
-    html_with_island = write_island(bare, island)
+    html_with_island = write_state(bare, island)
     path = docs_dir / f"{slug}.html"
     path.write_text(html_with_island, encoding="utf-8")
     return path

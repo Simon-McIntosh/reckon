@@ -8,6 +8,18 @@
 <title>reckon MCP server | reckon</title>
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="reckon MCP server">
+<meta name="plan-summary" content="">
+<meta name="plan-status" content="pending">
+<meta name="plan-roi" content="mid">
+<meta name="plan-effort" content="M">
+<meta name="plan-milestone" content="—">
+<meta name="plan-tier" content="sonnet">
+<meta name="plan-owner" content="">
+<meta name="plan-modified" content="2026-05-27">
+<meta name="plan-depends-on" content="">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="5">
 </head>
 <body>
 <main class="plan-doc">
@@ -186,57 +198,40 @@ Development install:</p>
 </tr>
 </tbody>
 </table>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="transport" data-choice="stdio first" data-by="Simon McIntosh" data-when="2026-05-27 04:06">
+    <p class="r-dec-q">Should the server support SSE in addition to stdio?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="stdio first">stdio first</button>
+      <button class="r-opt" data-value="stdio + SSE later">stdio + SSE later</button>
+      </p>
+    <p class="r-dec-rat">ship stdio first - then implement streamable http</p>
+    </div>
+<div class="r-dec" data-key="search" data-choice="Yes — add lunr.js or ripgrep subprocess" data-by="Simon McIntosh" data-when="2026-05-27 04:07">
+    <p class="r-dec-q">Expose a reckon.search_plans tool with free-text query?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="No — grep is sufficient for now">No — grep is sufficient for now</button>
+      <button class="r-opt chosen" data-value="Yes — add lunr.js or ripgrep subprocess">Yes — add lunr.js or ripgrep subprocess</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="multi-project" data-choice="project = mounts.json key; slug = filename stem" data-by="Simon McIntosh" data-when="2026-05-27 04:07">
+    <p class="r-dec-q">How to handle multi-project repos (e.g. imas-efit under two logical projects)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="project = mounts.json key; slug = filename stem">project = mounts.json key; slug = filename stem</button>
+      </p>
+    <p class="r-dec-rat">do we ever see this in practice?</p>
+    </div>
+<div class="r-dec" data-key="index-write" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Should the MCP server write to index.json (plan inventory)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="Yes via patch_plan(slug=&quot;index&quot;)">Yes via patch_plan(slug=&quot;index&quot;)</button>
+      <button class="r-opt" data-value="add a dedicated reckon.update_index tool">add a dedicated reckon.update_index tool</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 </main>
-<script type="application/json" id="reckon-state">
-{
-  "slug": "reckon-mcp-plan",
-  "title": "reckon MCP server",
-  "status": "pending",
-  "impl": 0.0,
-  "roi": "mid",
-  "effort": "M",
-  "milestone": "—",
-  "tier": "sonnet",
-  "decisions": {
-    "transport": {
-      "title": "Should the server support SSE in addition to stdio?",
-      "context": "",
-      "choices": [],
-      "choice": "stdio-only first; stdio + SSE later (needs mcp SDK SSE server helper)",
-      "rationale": "stdio first",
-      "when": "",
-      "by": ""
-    },
-    "search": {
-      "title": "Should the MCP server expose a reckon.search_plans tool with free-text query?",
-      "context": "",
-      "choices": [],
-      "choice": "No (grep is sufficient for now); Yes (add lunr.js or ripgrep subprocess)",
-      "rationale": "open",
-      "when": "",
-      "by": ""
-    },
-    "multi-project": {
-      "title": "How to handle multi-project repos (imas-efit has plans under two logical projects)?",
-      "context": "",
-      "choices": [],
-      "choice": "Same as docs-server: project = mounts.json key; slug = filename stem",
-      "rationale": "open",
-      "when": "",
-      "by": ""
-    },
-    "index-write": {
-      "title": "Should the MCP server be able to write to index.json (for updating the plan inventory)?",
-      "context": "",
-      "choices": [],
-      "choice": "Yes via patch_plan(slug=\"index\"); or add a dedicated reckon.update_index tool",
-      "rationale": "open",
-      "when": "",
-      "by": ""
-    }
-  },
-  "version": 1
-}
-</script>
 </body>
 </html>
