@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="agent-plan-authoring">
+<title>Agent ↔ Plan authoring — prompts &amp; exemplars over tool straitjackets | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="reckon-type" content="plan">
+<meta name="plan-title" content="Agent ↔ Plan authoring — prompts & exemplars over tool straitjackets">
+<meta name="plan-summary" content="Reframe how agents interact with reckon plans: agents already write HTML well, so lead with a canonical authoring prompt, copy-paste templates, dos/don'ts, exemplars, and the REASONING behind every machine-readable tag — and make the MCP tools an optional version-safe writer, not a mandatory straitjacket. Covers the full lifecycle model and the agile primitives (sprints, milestones, ROI/effort, followup chains) reckon supports.">
+<meta name="plan-status" content="draft">
+<meta name="plan-roi" content="high">
+<meta name="plan-effort" content="M">
+<meta name="plan-milestone" content="—">
+<meta name="plan-tier" content="opus">
+<meta name="plan-owner" content="Simon McIntosh">
+<meta name="plan-modified" content="2026-05-27">
+<meta name="plan-depends-on" content="">
+<meta name="plan-blocks" content="">
+</head>
+<body>
+<main class="plan-doc">
+
+<p><span class="status pending"><span class="dot"></span>Draft</span> — design
+proposal. Thesis: <strong>agents don't need a tool straitjacket; they write
+HTML well.</strong> What they need is a great <em>prompt</em>, <em>templates</em>,
+<em>exemplars</em>, clear <em>dos &amp; don'ts</em>, and the <em>reasoning</em>
+behind the machine-readable contract — plus a shared understanding of the
+lifecycle and agile models reckon supports. The MCP tools stay, but as an
+optional version-safe writer, not the only door.</p>
+
+<h2 id="s1">§1 · Problem — tool-mediation friction</h2>
+<p>The reckon MCP exposes ~19 tools (<code>read_plan</code>, <code>patch_plan</code>,
+<code>lock_decision</code>, <code>resolve_followup</code>, <code>add_sprint_item</code>,
+…). They're well-built, but treating them as the <em>mandatory</em> interface has
+costs:</p>
+<ul>
+<li><strong>Discoverability tax.</strong> An agent must load 19 schemas, learn each
+field, and chain read→patch with version checks — for what is, underneath, "edit
+this HTML element." Modern agents author HTML fluently; the indirection adds steps
+without adding capability.</li>
+<li><strong>Availability coupling.</strong> When the MCP server is down (it bounced
+several times on 2026-05-27), a tool-only model leaves agents stranded — and one
+slipped to authoring <em>markdown</em> because the "HTML path" felt gated behind a
+tool. The document is a file; it should always be editable.</li>
+<li><strong>Brittleness when the schema drifts.</strong> Tools encode field names;
+when render/parse fall out of sync the tool lies (we hit three such bugs:
+<code>chosen</code> vs <code>choice</code>, followup <code>status</code> not derived
+from <code>resolved_at</code>, the generate-prompt gate). A prompt+exemplar model
+makes the contract visible and reviewable in the artifact itself.</li>
+</ul>
+<p><strong>Reframe:</strong> the HTML <em>is</em> the plan and the store. Lead with
+the document and the prompt; offer the tools as a convenience for the one thing
+they're genuinely better at — <em>version-safe concurrent writes</em>.</p>
+
+<h2 id="s2">§2 · The model — the plan HTML is the document AND the store</h2>
+<p>One <code>docs/&lt;slug&gt;.html</code> file is the entire plan. Its state lives as
+ordinary HTML in that same file — there is no sidecar. Two regions matter:</p>
+<ul>
+<li><strong>Head scalars</strong> — <code>&lt;meta name="plan-*"&gt;</code> tags carry
+the at-a-glance state (status, roi, effort, milestone, sprint, impl, …).</li>
+<li><strong>Body sections</strong> — <code>&lt;section data-reckon="…"&gt;</code>
+blocks carry the structured records (decisions, followups, questions, research,
+comments). Everything outside them is free prose you write however you like.</li>
+</ul>
+<p>An agent edits the file directly. The server parses these regions on
+<code>GET /plan/&lt;project&gt;/&lt;slug&gt;</code> so the dashboard, status, and
+fleet-prompt generator can read state; it rewrites them on <code>POST</code> (or via
+MCP). Editing the plan = editing the HTML. That's the whole mental model.</p>
+
+<h2 id="s3">§3 · The machine-readable contract — every tag, and WHY</h2>
+<p>Only a small, fixed set of things must be machine-readable, and only because a
+human-or-machine reader downstream needs them. If a field isn't consumed by a
+view, it doesn't need a tag — write prose.</p>
+
+<h3 id="s3-meta">Head scalars (<code>&lt;meta name="plan-*"&gt;</code>)</h3>
+<div class="table-scroll"><table class="t">
+<thead><tr><th>Tag</th><th>Why it's machine-readable (who consumes it)</th><th>Owner</th></tr></thead>
+<tbody>
+<tr><td><code>plan-slug</code> / <code>docs-project</code></td><td>Server keys the plan + project; required for discovery &amp; cross-plan links.</td><td>author</td></tr>
+<tr><td><code>plan-title</code> / <code>plan-summary</code></td><td>Dashboard cards, search, the fleet-prompt header.</td><td>author</td></tr>
+<tr><td><code>plan-status</code></td><td>Lifecycle filter (active/blocked/shipped…); kanban columns; "what's open" queries.</td><td>author / set on transition</td></tr>
+<tr><td><code>plan-roi</code> · <code>plan-effort</code></td><td>Sprint ordering &amp; capacity planning (ROI×effort).</td><td>author</td></tr>
+<tr><td><code>plan-milestone</code> · <code>plan-sprint</code></td><td>Milestone rollup &amp; sprint membership.</td><td>author / sprint tool</td></tr>
+<tr><td><code>plan-tier</code></td><td>Model-tier hint for dispatch (haiku/sonnet/opus).</td><td>author</td></tr>
+<tr><td><code>plan-depends-on</code> · <code>plan-blocks</code></td><td>The dependency DAG → critical-path &amp; the generate-prompt route.</td><td>author</td></tr>
+<tr><td><code>plan-impl</code> · <code>plan-version</code></td><td><strong>Server-owned.</strong> impl is computed; version is the optimistic-concurrency counter. <em>Never author these.</em></td><td>server</td></tr>
+<tr><td><code>plan-modified</code></td><td>Staleness detection; server-stamped on write.</td><td>server</td></tr>
+</tbody>
+</table></div>
+
+<h3 id="s3-sections">Body sections (<code>data-reckon</code>)</h3>
+<ul>
+<li><strong>decisions</strong> — <code>&lt;div class="r-dec" data-key data-choice data-by data-when&gt;</code> with <code>.r-dec-q</code> (question), <code>.r-dec-opts</code> (option buttons), <code>.r-dec-rat</code> (rationale). <em>Why:</em> a decision is a contract — the aggregator and the fleet-prompt need the locked choice + rationale, and the audit trail needs who/when. Derive "locked" from a non-empty <code>data-choice</code> (do not add a separate flag).</li>
+<li><strong>followups</strong> — <code>&lt;article class="r-fu" data-id data-status data-resolved-at data-resolved-by&gt;</code> with title, body, a §05 <code>&lt;pre&gt;</code> prompt, and an <code>.r-fu-outcome</code>. <em>Why:</em> the followup chain IS the work queue; <code>list_followups</code>, "what's next", and fleet dispatch read it. Derive <code>status=resolved</code> from <code>resolved_at</code> (the 2026-05-27 bug was deriving it wrong).</li>
+<li><strong>questions</strong> — open design questions with options + resolution. <em>Why:</em> surfaced as blockers on the generate-prompt; resolved ones link to the deciding decision.</li>
+<li><strong>research / comments</strong> — references and section-anchored notes. <em>Why:</em> carried into the fleet prompt so a worker reads the same context.</li>
+</ul>
+<p><strong>Rule of thumb:</strong> tag it only if a view reads it; otherwise prose.
+Keep the machine-readable surface minimal and <em>derivable</em>.</p>
+
+<h2 id="s4">§4 · Templates (copy-paste exemplars)</h2>
+
+<h3 id="s4-plan">A new plan (minimal, valid, parseable)</h3>
+<pre><code>&lt;!doctype html&gt;&lt;html lang="en"&gt;&lt;head&gt;
+&lt;meta charset="utf-8"&gt;&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+&lt;meta name="docs-project" content="PROJECT"&gt;
+&lt;meta name="plan-slug" content="SLUG"&gt;
+&lt;title&gt;TITLE | PROJECT&lt;/title&gt;
+&lt;link rel="stylesheet" href="/_shared/foundation.css"&gt;
+&lt;link rel="stylesheet" href="/_shared/dashboard.css"&gt;
+&lt;meta name="reckon-type" content="plan"&gt;
+&lt;meta name="plan-title" content="TITLE"&gt;
+&lt;meta name="plan-summary" content="ONE-LINE SYNOPSIS"&gt;
+&lt;meta name="plan-status" content="draft"&gt;
+&lt;meta name="plan-roi" content="high"&gt;&lt;meta name="plan-effort" content="M"&gt;
+&lt;meta name="plan-milestone" content="M1"&gt;&lt;meta name="plan-owner" content="NAME"&gt;
+&lt;meta name="plan-modified" content="YYYY-MM-DD"&gt;
+&lt;!-- do NOT author plan-impl / plan-version: server-owned --&gt;
+&lt;/head&gt;&lt;body&gt;&lt;main class="plan-doc"&gt;
+  &lt;h2 id="s1"&gt;§1 · …&lt;/h2&gt;&lt;p&gt;prose…&lt;/p&gt;
+  &lt;section data-reckon="decisions" id="decisions"&gt;&lt;/section&gt;
+  &lt;section data-reckon="followups" id="followups"&gt;&lt;/section&gt;
+&lt;/main&gt;&lt;/body&gt;&lt;/html&gt;</code></pre>
+
+<h3 id="s4-doc">A non-plan doc (RCA, ticket, explainer)</h3>
+<p>Same skeleton, but <code>&lt;meta name="reckon-type" content="doc"&gt;</code> and no
+lifecycle fields. <strong>Never</strong> author these as markdown.</p>
+
+<h3 id="s4-dec">A decision (locked)</h3>
+<pre><code>&lt;div class="r-dec" data-key="resize-backend" data-choice="torch"
+     data-by="Simon McIntosh" data-when="2026-05-27T09:30:00Z"&gt;
+  &lt;p class="r-dec-q"&gt;Resize backend — cv2 or torch?&lt;/p&gt;
+  &lt;p class="r-dec-opts"&gt;
+    &lt;button class="r-opt chosen" data-value="torch"&gt;torch F.interpolate&lt;/button&gt;
+    &lt;button class="r-opt" data-value="cv2"&gt;cv2.resize&lt;/button&gt;&lt;/p&gt;
+  &lt;p class="r-dec-rat"&gt;cv2 absent from venv; torch matches the daemon byte-for-byte.&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+<p>Open decision: same markup with empty <code>data-choice</code> and no rationale.</p>
+
+<h3 id="s4-fu">A followup (with the §05 dispatch prompt)</h3>
+<pre><code>&lt;article class="r-fu" data-id="f-2026-05-27a" data-status="open"
+         data-tier="sonnet" data-written-by="NAME" data-written-at="YYYY-MM-DD"
+         data-recommends-skill="/reckon-ship SLUG --section 3"&gt;
+  &lt;h4 class="r-fu-title"&gt;Imperative one-liner&lt;/h4&gt;
+  &lt;div class="r-fu-body"&gt;2–3 sentences: why queued now, what landed before.&lt;/div&gt;
+  &lt;pre class="r-fu-prompt"&gt;Project: …
+Plan: SLUG (§N)
+Tier: sonnet
+Context … / State to read … / Locked decisions to honour … /
+Open decisions to surface (do not resolve) … / Constraints … /
+Done-when: 1) artefact 2) tests green 3) followup written + this one resolved&lt;/pre&gt;
+&lt;/article&gt;</code></pre>
+<p>Resolve by adding <code>data-resolved-at</code>/<code>data-resolved-by</code> and an
+<code>&lt;p class="r-fu-outcome"&gt;</code>; status is <em>derived</em> from resolved_at.</p>
+
+<h3 id="s4-landed">Collapse-on-landing (closure)</h3>
+<pre><code>&lt;section id="s12-5" class="section-landed"&gt;
+  &lt;header&gt;&lt;span class="badge badge-shipped"&gt;✓ landed 2026-05-27&lt;/span&gt;
+    &lt;h2&gt;§12.5 — Bulk-encode rbb&lt;/h2&gt;&lt;/header&gt;
+  &lt;p class="landed-summary"&gt;Encoded 9,527 shots on 4×H200 in 2h.
+    Full record: &lt;a href="archive/SLUG-12-5-landed.html"&gt;…landed&lt;/a&gt; (abc1234).&lt;/p&gt;
+&lt;/section&gt;</code></pre>
+
+<h2 id="s5">§5 · Dos &amp; don'ts</h2>
+<div class="table-scroll"><table class="t">
+<thead><tr><th>Do</th><th>Don't</th></tr></thead>
+<tbody>
+<tr><td>Edit the plan HTML directly; treat it as the document it is.</td><td>Author markdown for anything with a table/timeline/status (use <code>reckon-type=doc</code>).</td></tr>
+<tr><td>Keep <code>plan-status</code>/<code>roi</code>/<code>effort</code>/<code>sprint</code> accurate as reality changes.</td><td>Author <code>plan-impl</code> or <code>plan-version</code> — they're server-owned.</td></tr>
+<tr><td>Reuse the exact class/attr names from §4.</td><td>Invent new tag names or restructure <code>data-reckon</code> sections.</td></tr>
+<tr><td>Write a §05 prompt on every followup; resolve the driving one.</td><td>Leave a resolved followup without <code>resolved_at</code>/outcome.</td></tr>
+<tr><td>Collapse a shipped section to a 2–4 line summary + archive link.</td><td>Let the evergreen grow into an unreadable transcript.</td></tr>
+<tr><td>Use MCP/<code>reckon-edit</code> when a human might be editing concurrently (version safety).</td><td>Blind-overwrite without reading current <code>version</code> first.</td></tr>
+<tr><td>When editing by hand instead of a tool, announce "bypassing /reckon-edit because …".</td><td>Silently bypass — that hides drift.</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="s6">§6 · Lifecycle tracking</h2>
+<p>Phases: <code>draft → active → in-progress → blocked → shipped → archived</code>,
+carried in <code>plan-status</code> + the status badge. Transitions:</p>
+<ul>
+<li><strong>draft→active</strong> when work starts; <strong>→blocked</strong> with a
+blocker record + owner/next-step when stalled; <strong>→shipped</strong> when
+<code>impl</code> reaches 1.0 and the driving followup resolves.</li>
+<li><strong>Per-stage archival.</strong> On a phase transition, write a NEW file
+under <code>docs/archive/&lt;slug&gt;-&lt;phase&gt;.html</code> (e.g.
+<code>-shipped.html</code>, <code>-12-5-landed.html</code>) — the frozen audit trail,
+excluded from the live inventory. Don't overwrite the evergreen.</li>
+<li><strong>impl fraction</strong> = shipped-items / items; computed by the server —
+reflect reality via section status, don't hand-set the meta.</li>
+<li><strong>Collapse-on-landing</strong> (§4 above) keeps the evergreen a
+30-second-scan dashboard, with detail in the archive.</li>
+</ul>
+
+<h2 id="s7">§7 · Agile models reckon supports</h2>
+<ul>
+<li><strong>Sprints</strong> (<code>S0,S1,…</code> in <code>index.json</code>): a themed,
+time-boxed set of plan items with <code>status</code> planned/active/done and an
+<code>active_sprint_id</code>. Managed via <code>add_sprint_item</code> /
+<code>move_sprint_item</code> / <code>update_sprint</code> (or edit index.json).
+Closing an expired sprint and rolling unfinished items forward is normal hygiene.</li>
+<li><strong>Milestones</strong> (<code>M0,M1,…</code>): named targets with evidence
+(commits) and dependencies; plans tag into one via <code>plan-milestone</code>.
+<em>Gap to fix (see followups): milestones have no write tool yet.</em></li>
+<li><strong>ROI × effort</strong> drive sprint ordering &amp; capacity. Keep them
+honest; they're the prioritisation signal.</li>
+<li><strong>The followup chain is the work queue.</strong> Each followup carries a
+ready-to-paste §05 prompt, a tier, a <code>blocked_by</code>, and a
+<code>recommends_skill</code>. A worker resolves its driving followup and writes the
+next — the chain never silently ends (close it explicitly with
+<code>outcome: "done — no followup"</code>).</li>
+<li><strong>Fleet dispatch.</strong> For multi-item sections, the §05 prompt + the
+dependency DAG (<code>depends-on</code>/<code>blocks</code>) let a coordinator fan out
+non-overlapping workers and walk the critical path (the generate-prompt feature).</li>
+</ul>
+
+<h2 id="s8">§8 · The MCP's right role (reframed)</h2>
+<p>Not a straitjacket — a <strong>version-safe writer + a parser/reader for
+tooling.</strong> The agent contract becomes:</p>
+<ol>
+<li><strong>Read</strong> current state (<code>read_plan</code> or
+<code>GET /plan</code>) to learn the <code>version</code> and what's there.</li>
+<li><strong>Write</strong> either via MCP (when a human/another agent might be
+editing the same plan — optimistic concurrency protects you) <em>or</em> by editing
+the HTML directly and announcing the bypass (fine for a lone writer).</li>
+<li>Treat <code>version</code>/<code>impl</code>/<code>modified</code> as server-owned.</li>
+</ol>
+<p>The tools should feel like <code>git</code>: there when you want safety, never the
+only way to change a file. Their real value is (a) parsing state for views, and
+(b) refusing a write whose <code>expected_version</code> is stale.</p>
+
+<h2 id="s9">§9 · Best-practice recommendations (mine)</h2>
+<ul>
+<li><strong>Prompt-first, tool-second.</strong> Ship a single canonical
+<em>authoring prompt</em> (the §4 templates + §5 dos/don'ts + §3 reasoning) that an
+agent reads once. The tools become an optional appendix, not the entry point.</li>
+<li><strong>One self-describing exemplar in-repo.</strong> Keep a fully-annotated
+<code>docs/_exemplar-plan.html</code> agents copy from — examples beat schemas.</li>
+<li><strong>Derive, don't duplicate.</strong> Every piece of state should have ONE
+source: <code>status</code> from <code>resolved_at</code>, "locked" from
+<code>data-choice</code>, <code>impl</code> from section counts. Duplicated state is
+where the render/parse bugs lived.</li>
+<li><strong>CI round-trip parity test.</strong> Add a test asserting
+<code>render(parse(html)) == html</code> (idempotent) and
+<code>parse(render(state)) == state</code>. This catches the symmetry bugs
+(chosen/choice, status/resolved_at) before they ship — the single highest-leverage
+robustness fix.</li>
+<li><strong>Minimal machine-readable surface.</strong> Fewer tags, all consumed by a
+view. Everything else is prose. Less to learn, less to drift.</li>
+<li><strong>Bypass-with-announcement is first-class</strong>, not an exception. Make
+hand-editing a documented, blessed path so agents don't reach for markdown when a
+tool is unavailable.</li>
+<li><strong>Optimistic concurrency + an escape hatch.</strong> Keep version checks,
+but offer a clearly-labelled force/merge for the lone-writer case so a transient
+version mismatch never blocks progress.</li>
+<li><strong>Dogfood.</strong> Track reckon's own design as reckon plans (this page is
+one). If the authoring experience hurts here, fix it here first.</li>
+</ul>
+
+<section data-reckon="decisions" id="decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="tool-mediation" data-choice="prompt-first-mcp-optional" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
+  <p class="r-dec-q">Are MCP tools the mandatory interface, or optional?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt chosen" data-value="prompt-first-mcp-optional">Prompt + exemplars primary; MCP optional for version-safety</button>
+    <button class="r-opt" data-value="mcp-mandatory">MCP tools mandatory for all state writes</button>
+  </p>
+  <p class="r-dec-rat">Agents write HTML fluently; mandating 19 tools adds friction and couples authoring to server availability (it caused a markdown slip during an outage). Keep tools for concurrent-write safety + parsing; lead with prompt/templates/exemplars.</p>
+</div>
+<div class="r-dec" data-key="schema-enforcement" data-choice="ci-roundtrip" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
+  <p class="r-dec-q">How do we keep render/parse in sync?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt chosen" data-value="ci-roundtrip">CI round-trip parity test (render∘parse idempotent)</button>
+    <button class="r-opt" data-value="trust">Trust authors + tools</button>
+  </p>
+  <p class="r-dec-rat">Three render/parse symmetry bugs shipped on 2026-05-27 (chosen/choice, followup status, generate-prompt gate). A round-trip test is the cheapest durable guard.</p>
+</div>
+<div class="r-dec" data-key="state-derivation" data-choice="derive-single-source" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
+  <p class="r-dec-q">Duplicate state flags, or derive from one source?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt chosen" data-value="derive-single-source">Derive (status←resolved_at, locked←choice, impl←sections)</button>
+    <button class="r-opt" data-value="explicit-flags">Explicit flags per field</button>
+  </p>
+  <p class="r-dec-rat">Duplicated flags are where drift bugs live. One source of truth per field, derived everywhere else.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring">
+  <h4 class="r-fu-title">Write the canonical authoring prompt + in-repo exemplar plan</h4>
+  <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it's the first thing an agent reads.</div>
+  <pre class="r-fu-prompt">Project: reckon
+Plan:    agent-plan-authoring (§4–§5)
+Tier:    sonnet
+Context  This design plan landed; now make it operational.
+Done-when
+  1. docs/_exemplar-plan.html — annotated, copy-paste-ready, passes the parser.
+  2. A "Authoring prompt" block added to reckon-create + reckon-edit SKILL.md
+     (templates + dos/don'ts + the reasoning table from §3).
+  3. This followup resolved; followup written for the CI round-trip test.</pre>
+</article>
+<article class="r-fu" data-id="f-apa-roundtrip" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon">
+  <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
+  <div class="r-fu-body">Guard against the symmetry bugs: assert render(parse(html))==html and parse(render(state))==state across decisions, followups (incl. resolved), questions, meta scalars. Seed it with the three 2026-05-27 regressions.</div>
+  <pre class="r-fu-prompt">Project: reckon
+Plan:    agent-plan-authoring (§9)
+Tier:    sonnet
+Done-when
+  1. tests/test_roundtrip.py — render∘parse idempotent on a fixture plan.
+  2. Regression cases: chosen/choice, followup status←resolved_at, gen-prompt gate.
+  3. Wired into the reckon test run; this followup resolved.</pre>
+</article>
+<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring">
+  <h4 class="r-fu-title">Close the milestone-tooling gap</h4>
+  <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.</div>
+  <pre class="r-fu-prompt">Project: reckon
+Plan:    agent-plan-authoring (§7)
+Tier:    sonnet
+Done-when
+  1. Milestone create/update path (MCP tool or documented index.json edit).
+  2. imas-ambix M0–M3/PS milestones repopulated as a test case.
+  3. This followup resolved.</pre>
+</article>
+</section>
+
+</main>
+</body>
+</html>
