@@ -31,10 +31,26 @@ Project identity comes from `meta[name="docs-project"]` in the served HTML and f
 
 ## HTML-first plans
 
-Plain markdown remains fine for short prose (READMEs, brief notes).
+Plain markdown remains fine ONLY for short prose (READMEs, brief notes).
 Anything project-level that needs tables, diagrams, status tiles,
 side-by-side comparisons, interactive decision capture, or shared
 state across humans and agents is a **plan**, and plans are HTML.
+
+**Non-plan structured docs are ALSO HTML.** RCAs, incident reports,
+SDCC/ops tickets, design reviews, explainers and dashboards are NOT
+markdown — author them with `reckon-create` using `reckon-type=doc`
+(a standalone HTML page in `docs/`, no plan lifecycle). If you catch
+yourself writing a `docs/*.md` for anything with a table, a timeline,
+or a status, stop and use `reckon-create` instead. (This rule exists
+because an RCA + an SDCC ticket were authored as markdown on 2026-05-27
+when the routing table still pointed at a since-removed `html-docs`
+skill — they had to be re-authored as HTML.)
+
+**Reckon MCP server down is NOT an excuse for markdown.** `reckon-create`
+writes the HTML file directly from its template; the server is only
+needed to mutate plan *state* (status/impl/decisions/followups) later.
+When the MCP is down: still author the HTML doc/plan, and apply state
+mutations via MCP once it reconnects (or note the deferral).
 
 ### Skills you must use — never freelance
 
@@ -50,7 +66,7 @@ writeback, content parity, fleet safety).
 | Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-ship` | `/reckon-ship <slug> [section]` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
-| Non-plan dynamic docs (reviews, explainers, dashboards) | `html-docs` | — |
+| Non-plan docs (RCAs, incident reports, tickets, reviews, explainers, dashboards) | `reckon-create` (with `reckon-type=doc`) | `/reckon-create <slug>` |
 
 **Trigger discipline.** When the user says "the X plan", read the
 relevant skill's SKILL.md **before** touching any file. The skills
