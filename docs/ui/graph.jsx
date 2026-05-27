@@ -62,15 +62,13 @@ function _allCriticalPaths(plans) {
   const live = plans.filter(p => p.status === "active" || p.status === "blocked");
   if (live.length === 0) return [];
 
-  // Group by chain length, sort desc. Return all endpoints (not just the single max).
-  const sorted = [...live].sort((a, b) => (pathLen[b.slug] || 0) - (pathLen[a.slug] || 0));
-  const maxLen = pathLen[sorted[0]?.slug] || 0;
-  if (maxLen === 0) return [];
-
-  // Collect all endpoints with length >= maxLen (i.e. tied for longest)
-  const endpoints = sorted.filter(p => (pathLen[p.slug] || 0) >= maxLen);
-
-  return endpoints.map(ep => {
+  // Sort all live plans by pathLen desc, ties broken by slug alpha
+  const allEndpoints = [...live].sort((a, b) => {
+    const diff = (pathLen[b.slug] || 0) - (pathLen[a.slug] || 0);
+    return diff !== 0 ? diff : a.slug.localeCompare(b.slug);
+  });
+  if (allEndpoints.length === 0) return [];
+  return allEndpoints.map(ep => {
     const chain = [];
     let cur = ep.slug;
     while (cur) { chain.unshift(cur); cur = pathPrev[cur]; }
@@ -80,77 +78,16 @@ function _allCriticalPaths(plans) {
 
 // ─── Path prompt modal ────────────────────────────────────────────────────
 
-function PathPromptModal({ chain, bySlug, onClose }) {
+function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
   const M = window.STATE;
-  const projectName = M?.projects?.[0]?.project || "project";
+  const items = fullPrereqItems || (chain || []).map(s => bySlug?.[s]).filter(Boolean);
+  const blocked = items.some(p => (p.decisions || []).some(d => !(d.chosen || d.choice)));
+  const openDecCount = items.reduce((n, p) =>
+    n + (p.decisions || []).filter(d => !(d.chosen || d.choice)).length, 0);
 
-  // Check for open decisions in the chain
-  const openDecPlans = chain
-    .map(slug => bySlug[slug])
-    .filter(Boolean)
-    .filter(p => (p.decisions || []).some(d => !(d.chosen || d.choice)));
-
-  const openDecCount = openDecPlans.reduce((n, p) => n + (p.decisions || []).filter(d => !(d.chosen || d.choice)).length, 0);
-  const blocked = openDecCount > 0;
-
-  const buildPrompt = () => {
-    const endSlug = chain[chain.length - 1] || "—";
-    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${chain.length} plans on a\n  dependency route. Dispatch in topological order (dependencies first);\n  honour the dependency edges. Read each referenced plan in full before\n  starting work.\n\nProject: ${projectName}\nRoute:   depends_on chain ending at ${endSlug}\nPlans:   ${chain.length}\n\nExecution sequence (topological — earlier = upstream dependency):\n`;
-    chain.forEach((slug, i) => {
-      txt += `  ${i + 1}. ${slug}\n`;
-    });
-    txt += `\nEach plan's detail follows below.\n`;
-
-    chain.forEach((slug, i) => {
-      const p = bySlug[slug];
-      if (!p) return;
-      const decisions = p.decisions || [];
-      const locked = decisions.filter(d => (d.chosen || d.choice));
-      const openD = decisions.filter(d => !(d.chosen || d.choice));
-      const next = (p.followups || [])[0];
-
-      const lockedBlock = locked.length === 0
-        ? null
-        : locked.map(d => `  ${d.key} → ${d.chosen || d.choice}${d.rationale ? "\n      reason: " + d.rationale : ""}`).join("\n");
-      const openBlock = openD.length === 0
-        ? null
-        : openD.map(d => `  ${d.key} — ${d.title}`).join("\n");
-
-      const comments = (p.comments) || (window.reckon?.planLoad?.(slug)?.comments) || {};
-      const commentEntries = Object.entries(comments).filter(([_, arr]) => (arr || []).length > 0);
-      const commentsBlock = commentEntries.length === 0
-        ? null
-        : commentEntries.map(([sid, arr]) =>
-            arr.map(c =>
-              `  §${sid} · ${c.who} · ${c.when}\n` +
-              (c.quote ? `      quote: "${c.quote.length > 200 ? c.quote.slice(0, 200) + "…" : c.quote}"\n` : "") +
-              `      body: ${c.body}`
-            ).join("\n")
-          ).join("\n");
-
-      txt += `\n─── ${i + 1}/${chain.length} · ${slug} ───\n`;
-      txt += `Plan:   ${slug}\nTitle:  ${p.title}\nStatus: ${p.status}${p.phase ? " · " + p.phase : ""}\n`;
-      if (p.ms) txt += `MS:     ${p.ms}\n`;
-      if (p.sprint) txt += `Sprint: ${p.sprint}\n`;
-      if (p.summary) txt += `\nSummary\n  ${p.summary}\n`;
-      txt += `\nState to read\n  state/${projectName}/${slug}.json\n`;
-      if (lockedBlock) txt += `\nLocked decisions (honour these)\n${lockedBlock}\n`;
-      if (openBlock) txt += `\nOpen decisions (surface, do not resolve)\n${openBlock}\n`;
-      if (commentsBlock) txt += `\nComments (anchored to sections)\n${commentsBlock}\n`;
-      if (next) {
-        txt += `\nNext-up\n  ${next.title}\n  ${next.body || ""}`;
-        if (next.blocked_by) txt += `\n  Blocked by: ${next.blocked_by.slug || next.blocked_by} — ${next.blocked_by.reason || ""}`;
-        txt += `\n`;
-      }
-      txt += `\nDone-when\n  1. Land the work described above.\n  2. POST a new followup to ${slug}.json#followups with what landed.\n  3. Mark the current followup resolved with outcome.\n`;
-    });
-    return txt;
-  };
-
-  const [text, setText] = React.useState(() => blocked ? "" : buildPrompt());
-  React.useEffect(() => {
-    if (!blocked) setText(buildPrompt());
-  }, [chain.join(","), blocked]);
+  const prompt = (!blocked && window.buildFleetPrompt)
+    ? window.buildFleetPrompt(items, M)
+    : "";
 
   React.useEffect(() => {
     const k = (e) => { if (e.key === "Escape") onClose(); };
@@ -159,15 +96,9 @@ function PathPromptModal({ chain, bySlug, onClose }) {
   }, [onClose]);
 
   const copy = () => {
-    navigator.clipboard?.writeText(text);
+    navigator.clipboard?.writeText(prompt);
     onClose();
     if (window.flashSaved) window.flashSaved("path prompt copied");
-  };
-
-  const goFirstBlocking = () => {
-    if (openDecPlans.length === 0) return;
-    window.location.hash = `#plan/${openDecPlans[0].slug}`;
-    onClose();
   };
 
   return (
@@ -175,33 +106,21 @@ function PathPromptModal({ chain, bySlug, onClose }) {
       <div className="r-modal" onClick={(e) => e.stopPropagation()}>
         <div className="head">
           <div>
-            <div className="r-eyebrow">Critical path · fleet prompt</div>
-            <h3>{chain[chain.length - 1] || "—"} route · {chain.length} plans</h3>
-            <div style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 2 }}>
-              Topological order — upstream dependencies first.
-            </div>
+            <div className="r-eyebrow">Graph · fleet prompt</div>
+            <h3>{chain?.[chain.length - 1] || "—"} · {items.length} plans</h3>
           </div>
           <button className="btn ghost" onClick={onClose}>Close · Esc</button>
         </div>
         {blocked ? (
-          <div style={{ padding: "24px 20px", background: "var(--bad-2)", borderRadius: 6, margin: "12px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ color: "var(--bad)", fontWeight: 600 }}>{openDecCount} open decision{openDecCount === 1 ? "" : "s"}</span>
-            <span style={{ color: "var(--bad)", fontSize: 13 }}>Resolve all decisions in the chain before generating a prompt.</span>
-            <span style={{ flex: 1 }}></span>
-            <button className="btn" style={{ background: "var(--bad)", color: "#fff", border: "none" }} onClick={goFirstBlocking}>
-              Go to first blocking plan →
-            </button>
+          <div style={{ padding: "24px 20px", background: "var(--bad-2)", borderRadius: 6, margin: "12px 20px" }}>
+            <span style={{ color: "var(--bad)", fontWeight: 600 }}>{openDecCount} open decision{openDecCount === 1 ? "" : "s"} — resolve before generating prompt.</span>
           </div>
         ) : (
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            spellCheck={false}
-          />
+          <textarea value={prompt} readOnly spellCheck={false} />
         )}
         <div className="foot">
           <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 11 }}>
-            {chain.length} plans · {blocked ? "blocked" : `${text.length} chars`}
+            {items.length} plans · {blocked ? "blocked" : `${prompt.length} chars`}
           </span>
           <span style={{ flex: 1 }}></span>
           <button className="btn primary" onClick={copy} disabled={blocked}>Copy to clipboard</button>
@@ -223,16 +142,45 @@ function CriticalPathView({ onNav }) {
   const [pathIdx, setPathIdx] = React.useState(0);
   const safeIdx = Math.max(0, Math.min(pathIdx, allPaths.length - 1));
   const chain = allPaths[safeIdx] || [];
-  const critLen = chain.length;
   const onPath = new Set(chain);
 
   const [showPrompt, setShowPrompt] = React.useState(false);
 
+  // Map: endpoint slug → chain index (for mini-map endpoint-dot clicks)
+  const endpointToChain = React.useMemo(() => {
+    const m = {};
+    allPaths.forEach((c, i) => { if (c.length > 0) m[c[c.length - 1]] = i; });
+    return m;
+  }, [allPaths]);
+
+  // Full transitive prereq set of the current endpoint (DFS through ALL deps)
+  const fullPrereqSet = React.useMemo(() => {
+    const end = chain.length > 0 ? chain[chain.length - 1] : null;
+    if (!end) return new Set();
+    const visited = new Set();
+    function visit(slug) {
+      if (visited.has(slug)) return;
+      visited.add(slug);
+      for (const dep of (bySlug[slug]?.depends_on || [])) {
+        if (bySlug[dep]) visit(dep);
+      }
+    }
+    visit(end);
+    return visited;
+  }, [chain, bySlug]);
+
+  // Plans in fullPrereqSet but NOT on the linear chain → DAG branches
+  const alsoRequired = React.useMemo(() =>
+    [...fullPrereqSet].filter(s => !onPath.has(s)).map(s => bySlug[s]).filter(Boolean),
+    [fullPrereqSet, onPath, bySlug]
+  );
+
+  // Plans not in fullPrereqSet and active/blocked (other active plans)
   const otherActive = M.inventory
-    .filter(p => !onPath.has(p.slug) && (p.status === "active" || p.status === "blocked"))
+    .filter(p => !fullPrereqSet.has(p.slug) && (p.status === "active" || p.status === "blocked"))
     .sort((a, b) => (b.impl || 0) - (a.impl || 0));
 
-  // Mini-map: every plan as a dot, edges between deps; critical path coloured.
+  // Mini-map data
   const mini = React.useMemo(() => {
     const plans = M.inventory;
     const depth = {};
@@ -279,80 +227,55 @@ function CriticalPathView({ onNav }) {
       s === "shipped" ? "var(--good)" : "var(--muted)";
   }
 
-  // Check open decisions in the displayed path
-  const openDecCount = chain.reduce((n, slug) => {
-    const p = bySlug[slug];
-    return n + (p?.decisions || []).filter(d => !(d.chosen || d.choice)).length;
-  }, 0);
+  // Full prereq items for the prompt (chain + DAG branches, in topological order via buildFleetPrompt)
+  const fullPrereqItems = [...fullPrereqSet].map(s => bySlug[s]).filter(Boolean);
+  const endSlug = chain.length > 0 ? chain[chain.length - 1] : null;
+  const endPlan = endSlug ? bySlug[endSlug] : null;
+
+  // Open decisions in the full prereq set
+  const openDecCount = fullPrereqItems.reduce((n, p) =>
+    n + (p.decisions || []).filter(d => !(d.chosen || d.choice)).length, 0);
+
+  const handleGenPrompt = () => {
+    if (openDecCount > 0) {
+      const firstBlocking = fullPrereqItems.find(p =>
+        (p.decisions || []).some(d => !(d.chosen || d.choice))
+      );
+      if (firstBlocking) { window.location.hash = `#plan/${firstBlocking.slug}`; return; }
+    }
+    setShowPrompt(true);
+  };
 
   return (
     <div className="r-graph">
-      {/* Mini-map — top of the page */}
-      <div className="r-graph-section" style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>Map · {M.inventory.length} plans</div>
-        <div className="r-mini-map">
-          <svg viewBox={`0 0 ${mini.W} ${mini.H}`} width="100%" height={mini.H}>
-            {mini.edges.map((e, i) => (
-              <line key={i} x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y}
-                stroke={e.crit ? "var(--accent)" : "var(--hair)"}
-                strokeWidth={e.crit ? 1.8 : 1}/>
-            ))}
-            {mini.plans.map(p => {
-              const xy = mini.pos[p.slug];
-              if (!xy) return null;
-              const c = statusColor(p.status);
-              const isCrit = onPath.has(p.slug);
-              return (
-                <g key={p.slug} transform={`translate(${xy.x},${xy.y})`} style={{ cursor: "pointer" }}
-                   onClick={() => onNav({ view: "plan", slug: p.slug })}>
-                  <title>{p.title} · {p.status}</title>
-                  {isCrit && <circle r="6" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>}
-                  <circle r="3" fill={c}/>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      </div>
 
-      {/* Critical path chain with nav and generate-prompt */}
+      {/* 1. Trajectory header */}
       <div className="r-graph-head">
         <div className="r-crit-chain-nav">
-          <button
-            className="r-nav-btn"
-            disabled={safeIdx <= 0}
-            onClick={() => setPathIdx(i => Math.max(0, i - 1))}
-            title="Previous critical path"
-          >‹</button>
+          <button className="r-nav-btn" disabled={safeIdx <= 0}
+            onClick={() => setPathIdx(i => Math.max(0, i - 1))} title="Previous trajectory">‹</button>
           <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)", minWidth: 36, textAlign: "center" }}>
             {allPaths.length > 0 ? `${safeIdx + 1}/${allPaths.length}` : "—"}
           </span>
-          <button
-            className="r-nav-btn"
-            disabled={safeIdx >= allPaths.length - 1}
-            onClick={() => setPathIdx(i => Math.min(allPaths.length - 1, i + 1))}
-            title="Next critical path"
-          >›</button>
+          <button className="r-nav-btn" disabled={safeIdx >= allPaths.length - 1}
+            onClick={() => setPathIdx(i => Math.min(allPaths.length - 1, i + 1))} title="Next trajectory">›</button>
         </div>
+        {endPlan && (
+          <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-2)", marginLeft: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>
+            → <strong>{endSlug}</strong>
+          </span>
+        )}
+        {fullPrereqSet.size > 0 && (
+          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)", marginLeft: 8, whiteSpace: "nowrap" }}>
+            {fullPrereqSet.size} prereq{fullPrereqSet.size !== 1 ? "s" : ""}
+          </span>
+        )}
         <span style={{ flex: 1 }}></span>
         <button
           className="gen-prompt"
-          onClick={() => {
-            if (openDecCount > 0 && chain.length > 0) {
-              // Navigate to first blocking plan
-              const firstBlocking = chain.find(slug => {
-                const p = bySlug[slug];
-                return (p?.decisions || []).some(d => !(d.chosen || d.choice));
-              });
-              if (firstBlocking) {
-                window.location.hash = `#plan/${firstBlocking}`;
-                return;
-              }
-            }
-            setShowPrompt(true);
-          }}
+          onClick={handleGenPrompt}
           disabled={chain.length === 0}
-          title={openDecCount > 0 ? `${openDecCount} open decisions — resolve first` : "Generate path fleet prompt"}
+          title={openDecCount > 0 ? `${openDecCount} open decisions — resolve first` : "Generate fleet prompt"}
           style={{ position: "relative" }}
         >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -361,15 +284,16 @@ function CriticalPathView({ onNav }) {
             <path d="M6 7h4M6 9h4M6 11h2"/>
           </svg>
           Generate prompt
-          {openDecCount > 0 && (
-            <span className="resolve-badge" style={{ marginLeft: 4 }}>{openDecCount}</span>
-          )}
+          {openDecCount > 0 && <span className="resolve-badge" style={{ marginLeft: 4 }}>{openDecCount}</span>}
         </button>
       </div>
 
+      {/* 2. Chain cards */}
       <div className="r-crit-chain">
         {chain.length === 0 && (
-          <div style={{ color: "var(--muted)", padding: "12px 0", fontSize: 13 }}>No active or blocked plans with dependencies found.</div>
+          <div style={{ color: "var(--muted)", padding: "12px 0", fontSize: 13 }}>
+            No active or blocked plans with dependencies found.
+          </div>
         )}
         {chain.map((slug, i) => {
           const p = bySlug[slug];
@@ -399,11 +323,14 @@ function CriticalPathView({ onNav }) {
         })}
       </div>
 
-      <div className="r-graph-grid">
-        <div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "0 0 8px" }}>Other active &amp; blocked · {otherActive.length}</div>
+      {/* 3. "Also required" strip — DAG branches not on the linear chain */}
+      {alsoRequired.length > 0 && (
+        <div className="r-graph-section" style={{ marginTop: 16 }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
+            Also required · {alsoRequired.length}
+          </div>
           <div className="r-ck-list">
-            {otherActive.map(p => (
+            {alsoRequired.map(p => (
               <a key={p.slug} className="r-ck-row" href={`#plan/${p.slug}`}>
                 <span className={`r-ck-dot ${p.status}`}></span>
                 <div className="r-ck-body">
@@ -417,15 +344,84 @@ function CriticalPathView({ onNav }) {
                 <span className="r-ck-arr">›</span>
               </a>
             ))}
-            {otherActive.length === 0 && <div className="r-ck-empty">Everything in flight is on the critical path.</div>}
           </div>
+        </div>
+      )}
+
+      {/* 4. Mini-map — last, with endpoint dots clickable */}
+      <div className="r-graph-section" style={{ marginTop: 20 }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
+          Map · {M.inventory.length} plans
+        </div>
+        <div className="r-mini-map">
+          <svg viewBox={`0 0 ${mini.W} ${mini.H}`} width="100%" height={mini.H}>
+            {mini.edges.map((e, i) => (
+              <line key={i} x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y}
+                stroke={e.crit ? "var(--accent)" : "var(--hair)"}
+                strokeWidth={e.crit ? 1.8 : 1}/>
+            ))}
+            {mini.plans.map(p => {
+              const xy = mini.pos[p.slug];
+              if (!xy) return null;
+              const c = statusColor(p.status);
+              const isCrit = onPath.has(p.slug);
+              const isEndpoint = endpointToChain[p.slug] !== undefined;
+              const isOffChainPrereq = fullPrereqSet.has(p.slug) && !onPath.has(p.slug);
+              return (
+                <g key={p.slug}
+                   transform={`translate(${xy.x},${xy.y})`}
+                   style={{ cursor: isEndpoint ? "pointer" : "default" }}
+                   onClick={() => {
+                     if (isEndpoint) setPathIdx(endpointToChain[p.slug]);
+                     else onNav({ view: "plan", slug: p.slug });
+                   }}>
+                  <title>{p.title} · {p.status}{isEndpoint ? " (endpoint — click to select)" : ""}</title>
+                  {isCrit && <circle r="6" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>}
+                  {isOffChainPrereq && !isCrit && <circle r="5" fill="none" stroke="var(--muted)" strokeWidth="1" strokeDasharray="2,2"/>}
+                  <circle r="3" fill={c}/>
+                </g>
+              );
+            })}
+          </svg>
         </div>
       </div>
 
-      {showPrompt && (
-        <PathPromptModal
-          chain={chain}
-          bySlug={bySlug}
+      {/* 5. Other active & blocked (not in the prereq set) */}
+      {otherActive.length > 0 && (
+        <div className="r-graph-grid">
+          <div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "16px 0 8px" }}>
+              Other active &amp; blocked · {otherActive.length}
+            </div>
+            <div className="r-ck-list">
+              {otherActive.map(p => (
+                <a key={p.slug} className="r-ck-row" href={`#plan/${p.slug}`}>
+                  <span className={`r-ck-dot ${p.status}`}></span>
+                  <div className="r-ck-body">
+                    <div className="r-ck-title">{p.title}</div>
+                    <div className="r-ck-slug">/{p.slug} · {p.ms || "—"}</div>
+                  </div>
+                  <div className="r-ck-prog">
+                    <span className="r-ck-bar"><i style={{ width: `${Math.round((p.impl || 0) * 100)}%`, background: statusColor(p.status) }}></i></span>
+                    <span className="r-ck-pct">{Math.round((p.impl || 0) * 100)}%</span>
+                  </div>
+                  <span className="r-ck-arr">›</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt modal */}
+      {showPrompt && window.reckon?.PromptModal && (
+        <window.reckon.PromptModal
+          planSlug={endSlug || "graph"}
+          initialPrompt={
+            window.buildFleetPrompt
+              ? window.buildFleetPrompt(fullPrereqItems, window.STATE, endPlan?.title)
+              : "(prompts.js not loaded)"
+          }
           onClose={() => setShowPrompt(false)}
         />
       )}
