@@ -251,6 +251,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "slug":       slug,
             "href":       href,
             "title":      rec["title"],
+            "type":       rec.get("type", "plan"),
+            "informs":    rec.get("informs", []),
             "status":     rec["status"],
             "ms":         rec.get("milestone", "—"),
             "roi":        rec.get("roi", "mid"),

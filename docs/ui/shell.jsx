@@ -269,7 +269,7 @@ function ListCol({ search, setSearch, route, onNav, items, filters, onClearFilte
                 >
                   <span className={`dot ${p.status}`}></span>
                   <div>
-                    <div className="t">{p.title}</div>
+                    <div className="t">{p.title}{p.type === "research" && <span className="r-type-pill">research</span>}</div>
                     <div className="meta">
                       <span className="ms">{p.ms}</span>
                       <span className="sp">·</span>

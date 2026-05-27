@@ -32,7 +32,7 @@ _SCALARS = (
     "slug", "title", "summary", "status", "roi", "effort", "milestone",
     "sprint", "tier", "owner", "modified",
 )
-_LIST_SCALARS = ("depends_on", "blocks")  # comma-separated in meta
+_LIST_SCALARS = ("depends_on", "blocks", "informs")  # comma-separated in meta
 
 _DEFAULTS = {
     "status": "draft", "roi": "mid", "effort": "M", "milestone": "—",
@@ -76,6 +76,10 @@ def read_state(html_text: str) -> dict:
                 st[field] = float(content) if field == "impl" else int(content)
             except (TypeError, ValueError):
                 pass
+
+    # Document type: plan (actionable) | research (non-actionable input).
+    rt = soup.find("meta", attrs={"name": "reckon-type"})
+    st["type"] = ((rt.get("content") if rt else "") or "plan").strip().lower()
 
     title_tag = soup.find("title")
     if title_tag and not st.get("title"):
@@ -172,7 +176,7 @@ def read_state(html_text: str) -> dict:
 # ── Render ───────────────────────────────────────────────────────────────--
 
 def _render_decisions(decisions: dict) -> str:
-    if not decisions:
+    if not decisions or not isinstance(decisions, dict):
         return ""
     rows = []
     for key, d in decisions.items():
@@ -198,7 +202,7 @@ def _render_decisions(decisions: dict) -> str:
 
 
 def _render_followups(followups: list) -> str:
-    if not followups:
+    if not followups or not isinstance(followups, list):
         return ""
     arts = []
     for f in followups:
@@ -220,7 +224,7 @@ def _render_followups(followups: list) -> str:
 
 
 def _render_questions(questions: list) -> str:
-    if not questions:
+    if not questions or not isinstance(questions, list):
         return ""
     items = []
     for q in questions:
@@ -240,7 +244,7 @@ def _render_questions(questions: list) -> str:
 
 
 def _render_research(research: list) -> str:
-    if not research:
+    if not research or not isinstance(research, list):
         return ""
     items = []
     for r in research:
@@ -260,7 +264,7 @@ def _render_research(research: list) -> str:
 
 
 def _render_comments(comments: dict) -> str:
-    if not comments:
+    if not comments or not isinstance(comments, dict):
         return ""
     items = []
     for sid, arr in comments.items():
@@ -324,6 +328,8 @@ def write_state(html_text: str, state: dict) -> str:
     Authored prose (everything outside the data-reckon sections) is untouched.
     """
     out = html_text
+    if state.get("type"):
+        out = _set_meta(out, "reckon-type", state["type"])
     for f in _SCALARS:
         if f in state and state[f] is not None:
             out = _set_meta(out, f"plan-{f}", state[f])
@@ -352,6 +358,8 @@ def parse_plan(path: Path, slug: str | None = None) -> dict:
     rec.update({k: v for k, v in st.items() if v is not None})
     rec["slug"] = slug or st.get("slug") or path.stem
     rec["title"] = st.get("title") or rec["slug"]
+    rec["type"] = st.get("type") or "plan"
+    rec["informs"] = st.get("informs") or []
 
     decisions_map = st.get("decisions") or {}
     rec["decisions"] = [

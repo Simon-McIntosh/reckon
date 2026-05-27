@@ -18,6 +18,7 @@ function Plan({ slug, onNav }) {
   if (!PG) return <div className="r-page">Plan "{slug}" not found.</div>;
 
   const P = PG;
+  const isResearch = PG.type === "research";
 
   // Decisions from state — handle both array (definitions) and object (locked map).
   const stored = planLoad(slug) || {};
@@ -133,6 +134,21 @@ function Plan({ slug, onNav }) {
           : <div style={{ padding: 24, color: "var(--muted)" }}>Graph view loading…</div>
       ) : (
         <article className="r-reading" ref={articleRef}>
+          {isResearch && (
+            <div className="r-research-banner">
+              <span className="r-type-tag research">research</span>
+              {(PG.informs || []).length > 0 && (
+                <span className="informs">informs&nbsp;
+                  {PG.informs.map((s, i) => (
+                    <React.Fragment key={s}>
+                      {i > 0 && ", "}
+                      <a href={`#plan/${s}`}>{s}</a>
+                    </React.Fragment>
+                  ))}
+                </span>
+              )}
+            </div>
+          )}
           {!htmlReady ? (
             <div style={{ padding: 24, color: "var(--muted)", fontSize: 13 }}>Loading…</div>
           ) : planHtml ? (
