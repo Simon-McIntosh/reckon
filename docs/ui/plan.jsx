@@ -16,38 +16,61 @@
 // + tiny <sup class="r-cm-badge">¶</sup>. No-op if the comment has no quote,
 // no id, or has already been injected (looked up via [data-cm="<id>"]).
 //
+// Accepts an optional directRange (a cloned live Range from selection time) so
+// that cross-element selections — which surroundContents cannot handle — work
+// correctly via extractContents+insertNode.
+//
 // Module-level (not a hook) so the function identity is stable across renders.
-function injectCommentMark(htmlRef, comment) {
+function injectCommentMark(htmlRef, comment, directRange) {
   const root = htmlRef.current;
-  if (!root || !comment || !comment.quote || !comment.id) return;
+  if (!root || !comment || !comment.id) return;
   // Avoid double-injection
   if (root.querySelector(`[data-cm="${comment.id}"]`)) return;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-  let textNode;
-  while ((textNode = walker.nextNode())) {
-    // Skip text that's already inside a comment mark
-    if (textNode.parentElement?.closest(".r-cm-anchor")) continue;
-    const idx = textNode.textContent.indexOf(comment.quote);
-    if (idx < 0) continue;
+
+  const attachBadge = (mark) => {
+    const badge = document.createElement("sup");
+    badge.className = "r-cm-badge";
+    badge.dataset.cm = comment.id;
+    badge.textContent = "¶";
+    mark.after(badge);
+  };
+
+  // ── Fast path: inject using the preserved live Range ─────────────────────
+  if (directRange) {
     try {
-      const range = document.createRange();
-      range.setStart(textNode, idx);
-      range.setEnd(textNode, idx + comment.quote.length);
       const mark = document.createElement("mark");
       mark.className = "r-cm-anchor";
       mark.dataset.cm = comment.id;
-      mark.title = comment.body;
-      range.surroundContents(mark);
-      const badge = document.createElement("sup");
-      badge.className = "r-cm-badge";
-      badge.dataset.cm = comment.id;
-      badge.textContent = "¶";
-      mark.after(badge);
-    } catch (_) {
-      // surroundContents fails when the range straddles element boundaries —
-      // skip silently; the comment still shows in the §Comments panel.
-    }
-    break; // highlight first occurrence only
+      if (comment.body) mark.title = comment.body;
+      // extractContents handles cross-element selections correctly
+      mark.appendChild(directRange.extractContents());
+      directRange.insertNode(mark);
+      attachBadge(mark);
+      return;
+    } catch (_) { /* fall through to text-walk */ }
+  }
+
+  // ── Fallback: text-walk (used on page reload when Range is gone) ──────────
+  if (!comment.quote) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement?.closest(".r-cm-anchor")) continue;
+    const idx = node.textContent.indexOf(comment.quote);
+    if (idx < 0) continue;
+    try {
+      const r = document.createRange();
+      r.setStart(node, idx);
+      r.setEnd(node, idx + comment.quote.length);
+      const mark = document.createElement("mark");
+      mark.className = "r-cm-anchor";
+      mark.dataset.cm = comment.id;
+      if (comment.body) mark.title = comment.body;
+      mark.appendChild(r.extractContents()); // also handles cross-element
+      r.insertNode(mark);
+      attachBadge(mark);
+    } catch (_) { /* skip silently — mark will still show in §Comments panel */ }
+    break;
   }
 }
 
@@ -166,7 +189,7 @@ function Plan({ slug, onNav }) {
     if (window.flashSaved) window.flashSaved(`${slug}.${key} → ${choice || "rationale saved"}`);
   };
 
-  const addComment = (sectionId, body, quote) => {
+  const addComment = (sectionId, body, quote, range = null) => {
     if (!body || !body.trim()) return;
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
     // If composing was opened in "edit" mode, replace the existing comment
@@ -184,23 +207,40 @@ function Plan({ slug, onNav }) {
       return;
     }
     const c = { id: `c-${Date.now()}`, who: author, when: now, body: body.trim(), ...(quote ? { quote } : {}) };
+    // Inject anchor immediately using the live range (before React re-renders)
+    if (range && htmlRef.current) {
+      injectCommentMark(htmlRef, c, range);
+    }
     const next = { ...comments, [sectionId]: [...(comments[sectionId] || []), c] };
     setComments(next);
     planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
     if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} +1`);
   };
 
-  // Inject quote-anchor highlights into the rendered plan HTML after each
-  // (planHtml | comments | viewMode) update. Uses useLayoutEffect so the DOM
-  // is settled before the user sees anything paint. viewMode is included so
-  // toggling reading→graph→reading re-runs injection on the remounted article.
+  // Populate the plan HTML div imperatively so React never touches it after
+  // initial set, preventing clobbering of injected comment marks.
+  // viewMode is included so toggling graph→reading re-populates the remounted div.
+  useLayoutEffect(() => {
+    if (!htmlRef.current) return;
+    if (!planHtml) { htmlRef.current.innerHTML = ""; return; }
+    htmlRef.current.innerHTML = planHtml;
+    // Re-inject existing comment marks after innerHTML reset
+    if (viewMode === "reading") {
+      Object.values(comments).flat().forEach(c => {
+        if (c && c.quote) injectCommentMark(htmlRef, c);
+      });
+    }
+  }, [planHtml, viewMode]); // comments intentionally NOT in deps; marks managed by effect below
+
+  // Re-inject marks when comments change (new save, delete, reload).
+  // planHtml removed from deps — innerHTML is managed by the effect above.
   useLayoutEffect(() => {
     if (viewMode !== "reading") return;
     if (!htmlRef.current || !planHtml) return;
     Object.values(comments).flat().forEach(c => {
       if (c && c.quote) injectCommentMark(htmlRef, c);
     });
-  }, [planHtml, comments, viewMode]);
+  }, [comments, viewMode]);
 
   // Click-to-review: any click on an injected [data-cm] element opens
   // CommentReviewPopover anchored to that element's viewport rect.
@@ -255,7 +295,7 @@ function Plan({ slug, onNav }) {
           ) : planHtml ? (
             <>
               {/* Render HTML plan body — preserves all formatting from the authored doc */}
-              <div ref={htmlRef} className="r-plan-html" dangerouslySetInnerHTML={{ __html: planHtml }} />
+              <div ref={htmlRef} className="r-plan-html" />
 
               {/* Interactive decisions — rendered from the doc's parsed state */}
               {decs.length > 0 && (
@@ -327,7 +367,7 @@ function Plan({ slug, onNav }) {
         <CommentPopover
           anchor={composingAt}
           onClose={() => setComposingAt(null)}
-          onPost={(body) => { addComment(composingAt.sectionId, body, composingAt.quote); setComposingAt(null); }}
+          onPost={(body) => { addComment(composingAt.sectionId, body, composingAt.quote, composingAt.range); setComposingAt(null); }}
         />
       )}
 
@@ -389,7 +429,11 @@ function Plan({ slug, onNav }) {
           initialPrompt={
             window.buildFleetPrompt
               ? window.buildFleetPrompt(
-                  [Object.assign({}, P, { decisions: decs, followups: fullState?.followups || [] })],
+                  [Object.assign({}, P, {
+                    decisions: decs,
+                    followups: fullState?.followups || [],
+                    comments:  fullState?.comments  || (planLoad(slug)?.comments) || {},
+                  })],
                   window.STATE
                 )
               : "(prompts.js not loaded)"

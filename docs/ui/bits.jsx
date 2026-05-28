@@ -313,6 +313,7 @@ function useSelectionToComment(rootRef, planSlug) {
           top: startRect.bottom,   // viewport y (no scroll offset — content scrolls inside .r-content)
           left: startRect.left,    // left edge of selection
           planSlug,
+          range: range.cloneRange(), // preserved so the caller can inject an anchor with extractContents
         });
       }, 1);
     }

@@ -27,6 +27,27 @@
     if (p.ms) txt += "MS:     " + p.ms + "\n";
     if (p.sprint) txt += "Sprint: " + p.sprint + "\n";
     if (p.summary) txt += "\nSummary\n  " + p.summary + "\n";
+
+    // Human feedback — highest priority for agents to read
+    var allComments = [];
+    var comments = p.comments || {};
+    // comments is { sectionId: [{id, who, when, quote, body}, ...], ... }
+    Object.keys(comments).forEach(function(sid) {
+      var arr = comments[sid] || [];
+      arr.forEach(function(c) {
+        if (c && c.body) allComments.push({ sid: sid, c: c });
+      });
+    });
+    if (allComments.length > 0) {
+      txt += "\nHuman feedback (act on these — reviewer intent, highest priority)\n";
+      allComments.forEach(function(item) {
+        var c = item.c;
+        txt += "  §" + item.sid + " · " + (c.who || "user") + " · " + (c.when || "") + "\n";
+        if (c.quote) txt += "      quoted text: \"" + (c.quote.length > 200 ? c.quote.slice(0, 200) + "…" : c.quote) + "\"\n";
+        txt += "      comment: " + c.body + "\n";
+      });
+    }
+
     txt += "\nState to read\n  /plan/" + projectName + "/" + p.slug + "\n";
     txt += "\nLocked decisions (honour these)\n" + lockedBlock + "\n";
     txt += "\nOpen decisions (surface, do not resolve)\n" + openBlock + "\n";

@@ -1136,22 +1136,29 @@ body {
 /* ── Comment anchor (injected into the plan HTML for each quote-anchored comment) */
 
 .r-cm-anchor {
-  background: oklch(0.94 0.06 148);
-  border-bottom: 1.5px solid var(--comment);
-  border-radius: 2px;
+  background: transparent;
+  text-decoration: underline;
+  text-decoration-color: var(--comment);
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
   cursor: pointer;
-  padding: 0 1px;
-  text-decoration: none;
+  border-radius: 2px;
 }
-.r-cm-anchor:hover { background: oklch(0.90 0.09 148); }
+.r-cm-anchor:hover {
+  background: var(--comment-bg);
+  text-decoration-thickness: 3px;
+}
 .r-cm-badge {
   display: inline-block;
-  margin-left: 2px;
-  font-size: 10px;
+  margin-left: 1px;
+  font-size: 9px;
   color: var(--comment);
   font-family: var(--mono);
   font-weight: 700;
   vertical-align: super;
   cursor: pointer;
   line-height: 1;
+  opacity: 0.8;
 }
+.r-cm-badge:hover { opacity: 1; }
