@@ -66,17 +66,18 @@ window.STATE_READY = (async function () {
     });
   }
 
-  // ── 3. Auto-discovery fallback ─────────────────────────────────────────
-  // If still no inventory, ask the server to scan HTML plan pages for
-  // <meta name="plan-status"> tags. Zero boilerplate required in the repo.
-  if (inventory.length === 0) {
-    const disc = await getJson(`/_discover/${PROJECT}`);
-    if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
-      inventory = disc.inventory;
-      if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
-      if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
-    }
+  // ── 3. Discovery: always the authoritative inventory source ───────────────
+  // Plans are the single source of truth. /_discover/ parses HTML meta tags
+  // directly, includes server-computed fields (created, dec_open) that
+  // index.json never stores, and is always up-to-date.
+  // index.json is only used for project config (sprints, milestones, timeline).
+  const disc = await getJson(`/_discover/${PROJECT}`);
+  if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
+    inventory = disc.inventory;
+    if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
+    if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
   }
+  // disc unavailable (server down) → fall through with inventory from index.json / idx.plans
 
   // ── 4. Per-plan state travels inside the inventory ─────────────────────
   // Each inventory entry was parsed from its plan page's embedded
