@@ -74,6 +74,26 @@ function injectCommentMark(htmlRef, comment, directRange) {
   }
 }
 
+// Comment list with inline Edit/Delete buttons — used in plan body and §Comments panel.
+function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
+  if (!arr || arr.length === 0) return null;
+  return (
+    <div className="r-section-comments">
+      {arr.map(c => (
+        <div key={c.id} className="r-inline-comment">
+          <div className="meta">{c.who} · {c.when}</div>
+          {c.quote && <div className="quote">"{c.quote}"</div>}
+          <div>{c.body}</div>
+          <div className="r-comment-actions">
+            <button className="r-cr-edit" onClick={() => onEdit(c, sectionId)}>Edit</button>
+            <button className="r-cr-del" onClick={() => onDelete(c.id)}>Delete</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
@@ -142,6 +162,17 @@ function Plan({ slug, onNav }) {
       .then(rec => {
         if (!rec) return;
         setFullState(rec);
+        // Load comments from server — canonical source, overrides stale localStorage
+        if (rec.comments && typeof rec.comments === "object") {
+          setComments(prev => {
+            // Per section: keep the longer array (local may have unsaved additions)
+            const merged = { ...rec.comments };
+            for (const [sid, arr] of Object.entries(prev)) {
+              if ((arr || []).length > (merged[sid] || []).length) merged[sid] = arr;
+            }
+            return merged;
+          });
+        }
         const overlay = (planLoad(slug) || {}).decisions || {};
         setDecs((rec.decisions || []).map(d => {
           const o = overlay[d.key];
@@ -215,6 +246,34 @@ function Plan({ slug, onNav }) {
     setComments(next);
     planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
     if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} +1`);
+  };
+
+  // ── Shared comment action helpers ──────────────────────────────────────
+  const deleteComment = (id) => {
+    const next = {};
+    for (const [sid, arr] of Object.entries(comments)) {
+      const filtered = (arr || []).filter(c => c.id !== id);
+      next[sid] = filtered;
+      if ((arr || []).length !== filtered.length) {
+        planSave(slug, { [`comments.${sid}`]: filtered });
+      }
+    }
+    if (htmlRef.current) {
+      htmlRef.current.querySelectorAll(`[data-cm="${id}"]`).forEach(el => {
+        if (el.tagName === "MARK") {
+          const p = el.parentNode;
+          while (el.firstChild) p.insertBefore(el.firstChild, el);
+          p.removeChild(el);
+        } else { el.remove(); }
+      });
+    }
+    setComments(next);
+    setReviewing(null);
+  };
+
+  const editComment = (c, sectionId) => {
+    setReviewing(null);
+    setComposingAt({ ...c, sectionId, planSlug: slug, editing: true });
   };
 
   // Populate the plan HTML div imperatively so React never touches it after
@@ -304,7 +363,7 @@ function Plan({ slug, onNav }) {
                   {decs.map(d => (
                     <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
                   ))}
-                  <SectionComments comments={comments["decisions"]} />
+                  <ActionableCommentList sectionId="decisions" arr={comments["decisions"] || []} onEdit={editComment} onDelete={deleteComment} />
                 </>
               )}
 
@@ -317,7 +376,7 @@ function Plan({ slug, onNav }) {
                     .map(([id, arr]) => (
                       <div key={id} className="r-comment-section">
                         <div className="r-comment-section-h">↳ {id === "_top" ? "top of page" : `#${id}`}</div>
-                        <SectionComments comments={arr} />
+                        <ActionableCommentList sectionId={id} arr={arr} onEdit={editComment} onDelete={deleteComment} />
                       </div>
                     ))
                   }
@@ -356,7 +415,7 @@ function Plan({ slug, onNav }) {
       {viewMode === "reading" && sel && !composingAt && (
         <button
           className="r-float-btn"
-          style={{ top: sel.top - 14, right: 24 }}
+          style={{ top: sel.top - 14, left: Math.min(sel.left + 12, window.innerWidth - 140) }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => { setComposingAt(sel); clearSel(); window.getSelection()?.removeAllRanges(); }}
           title="Comment on selection"
@@ -375,50 +434,13 @@ function Plan({ slug, onNav }) {
         <window.reckon.CommentReviewPopover
           reviewing={reviewing}
           onClose={() => setReviewing(null)}
-          onDelete={(id) => {
-            // Remove the comment with this id from whichever section holds it.
-            const next = {};
-            for (const [sid, arr] of Object.entries(comments)) {
-              const filtered = (arr || []).filter(c => c.id !== id);
-              next[sid] = filtered;
-              if ((arr || []).length !== filtered.length) {
-                planSave(slug, { [`comments.${sid}`]: filtered });
-              }
-            }
-            // Also tear down the injected mark + badge so the highlight disappears.
-            if (htmlRef.current) {
-              htmlRef.current.querySelectorAll(`[data-cm="${id}"]`).forEach(el => {
-                if (el.tagName === "MARK") {
-                  // Unwrap the mark — replace with its text node(s)
-                  const parent = el.parentNode;
-                  while (el.firstChild) parent.insertBefore(el.firstChild, el);
-                  parent.removeChild(el);
-                } else {
-                  el.remove();
-                }
-              });
-            }
-            setComments(next);
-            setReviewing(null);
-            if (window.flashSaved) window.flashSaved(`${slug}.comments −1`);
-          }}
+          onDelete={deleteComment}
           onEdit={(c) => {
-            // Find the section that owns this comment, then re-open the
-            // composer prefilled with the existing body. addComment() will
-            // recognise editing:true + id and replace in place.
-            let sectionId = null;
+            let sectionId = "_top";
             for (const [sid, arr] of Object.entries(comments)) {
               if ((arr || []).some(x => x.id === c.id)) { sectionId = sid; break; }
             }
-            setReviewing(null);
-            setComposingAt({
-              ...c,
-              sectionId: sectionId || "_top",
-              planSlug: slug,
-              editing: true,
-              top: reviewing.y,
-              left: reviewing.x,
-            });
+            editComment(c, sectionId);
           }}
         />
       )}
