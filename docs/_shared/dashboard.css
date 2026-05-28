@@ -1460,3 +1460,179 @@ svg.spark .dot  { fill: var(--accent); }
   border-radius: 3px;
 }
 .r-cmdk-trigger svg { color: var(--muted); }
+
+/* ===== Sort control pills (list column header) =================== */
+
+.r-sort-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 10px 4px;
+  border-bottom: var(--hairline);
+}
+
+.r-sort-pill {
+  font: inherit;
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: var(--hairline);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 100ms, color 100ms, border-color 100ms;
+  white-space: nowrap;
+}
+
+.r-sort-pill:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+
+.r-sort-pill.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+/* ===== Context chip (dependency filter indicator) ================ */
+
+.r-context-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  margin: 4px 6px 0;
+  background: var(--accent-3);
+  border: 1px solid var(--accent-2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.r-context-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.r-context-label code {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.r-context-x {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--accent);
+  padding: 0 2px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.r-context-x:hover {
+  background: var(--accent-2);
+  color: var(--bg);
+}
+
+/* ===== Clear filters button (top of filters col) ================= */
+
+.r-clear-top {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--mono);
+  text-align: left;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+  background: transparent;
+  border: var(--hairline);
+  border-radius: 5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 100ms, color 100ms;
+}
+
+.r-clear-top:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+}
+
+/* ===== Sprint filter chips ======================================= */
+
+.r-chip-sprint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.r-chip-sprint-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.r-chip-sprint .on .r-chip-sprint-id {
+  color: inherit;
+}
+
+.r-chip-sprint-theme {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* ===== Type filter chips ========================================= */
+
+.r-chip-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.r-chip-type-label {
+  font-size: 11px;
+}
+
+.r-chip-type-research .r-chip-type-label::before {
+  content: "~ ";
+  color: var(--muted);
+}
+
+/* ===== Research type pill in list rows ========================== */
+
+.r-type-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  border-radius: 3px;
+  background: var(--bg-3);
+  color: var(--muted);
+  font-style: italic;
+  vertical-align: middle;
+  font-weight: 400;
+}
+
+.r-type-pill.research {
+  background: oklch(0.96 0.04 264);
+  color: oklch(0.50 0.12 264);
+  border: 1px solid oklch(0.88 0.08 264);
+}

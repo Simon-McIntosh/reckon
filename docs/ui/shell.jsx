@@ -127,9 +127,8 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
 function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   const M = window.STATE;
-  const statuses = ["active", "blocked", "pending"];
   const milestones = M.projects?.[0]?.milestones || M.milestones || [];
-  const shippedCount = M.inventory.filter(p => p.status === "shipped").length;
+  const sprints = M.sprints || [];
 
   const toggle = (group, value) => {
     setFilters(f => {
@@ -140,10 +139,24 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
     });
   };
 
-  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) > 0;
+  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) + (filters.type?.length || 0) > 0;
+
+  // Sprints that have plans in inventory
+  const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.sprint === s.id));
+
+  // Type counts
+  const planCount = M.inventory.filter(p => !p.type || p.type === "plan").length;
+  const researchCount = M.inventory.filter(p => p.type === "research").length;
+  const showTypeFilter = planCount > 0 && researchCount > 0;
 
   return (
     <aside className="r-filters">
+      {anyActive && (
+        <button className="r-clear-top" onClick={() => setFilters({})}>
+          × clear filters
+        </button>
+      )}
+
       <div className="r-filter-group">
         <div className="r-filter-h">Status</div>
         {["active", "blocked", "pending", "shipped"].map(s => {
@@ -159,6 +172,23 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
           );
         })}
       </div>
+
+      {sprintsWithPlans.length > 0 && (
+        <div className="r-filter-group">
+          <div className="r-filter-h">Sprint</div>
+          {sprintsWithPlans.map(s => {
+            const n = M.inventory.filter(p => p.sprint === s.id).length;
+            const on = (filters.sprint || []).includes(s.id);
+            return (
+              <div key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)}>
+                <span className="r-chip-sprint-id">{s.id}</span>
+                <span className="r-chip-sprint-theme">{s.theme}</span>
+                <span className="n">{n}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="r-filter-group">
         <div className="r-filter-h">Milestone</div>
@@ -176,43 +206,61 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
         })}
       </div>
 
-      <button className="r-clear" disabled={!anyActive} onClick={() => setFilters({})}>
-        {anyActive ? "× clear filters" : "no filters set"}
-      </button>
+      {showTypeFilter && (
+        <div className="r-filter-group">
+          <div className="r-filter-h">Type</div>
+          {[
+            { key: "plan", label: "plan", count: planCount },
+            { key: "research", label: "research", count: researchCount },
+          ].map(({ key, label, count }) => {
+            const on = (filters.type || []).includes(key);
+            return (
+              <div key={key} className={`r-chip r-chip-type r-chip-type-${key} ${on ? "on" : ""}`} onClick={() => toggle("type", key)}>
+                <span className="r-chip-type-label">{label}</span>
+                <span className="n">{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </aside>
   );
 }
 
 // ─── Plans list column ──────────────────────────────────────────────────
 
-function ListCol({ search, setSearch, route, onNav, items, filters, onClearFilters }) {
-  const M = window.STATE;
-  const sprints = M?.sprints || [];
+const STATUS_ORDER = { blocked: 0, active: 1, "in-progress": 1, pending: 2, shipped: 3, done: 4, draft: 5 };
 
-  const groups = React.useMemo(() => {
-    const bySprint = {};
-    for (const s of sprints) bySprint[s.id] = { sprint: s, plans: [] };
-    bySprint._none = { sprint: null, plans: [] };
-    for (const p of items) {
-      const k = p.sprint || "_none";
-      (bySprint[k] || bySprint._none).plans.push(p);
-    }
-    const order = { active: 0, planned: 1, shipped: 2 };
-    return Object.values(bySprint)
-      .filter(g => g.plans.length > 0)
-      .sort((a, b) => {
-        if (!a.sprint) return 1;
-        if (!b.sprint) return -1;
-        return (order[a.sprint.status] ?? 9) - (order[b.sprint.status] ?? 9);
-      });
-  }, [items, sprints]);
+function sortItems(items, sortBy) {
+  const arr = [...items];
+  if (sortBy === "status") {
+    arr.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
+  } else if (sortBy === "progress") {
+    arr.sort((a, b) => (a.impl || 0) - (b.impl || 0));
+  } else if (sortBy === "title") {
+    arr.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  } else {
+    // recent (default): sort by last desc, items without last go to end
+    arr.sort((a, b) => {
+      if (!a.last && !b.last) return 0;
+      if (!a.last) return 1;
+      if (!b.last) return -1;
+      return b.last.localeCompare(a.last);
+    });
+  }
+  return arr;
+}
 
-  const [collapsed, setCollapsed] = useState(() => {
-    const c = {};
-    for (const s of sprints) if (s.status === "shipped") c[s.id] = true;
-    return c;
-  });
-  const toggle = (id) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
+function ListCol({ search, setSearch, route, onNav, onSelectPlan, items, sortBy, setSortBy, filters, onClearFilters, onClearContext }) {
+  const sorted = React.useMemo(() => sortItems(items, sortBy), [items, sortBy]);
+  const contextSlug = filters.context || null;
+
+  const SORTS = [
+    { key: "recent", label: "Recent" },
+    { key: "status", label: "Status" },
+    { key: "progress", label: "Progress" },
+    { key: "title", label: "Title" },
+  ];
 
   return (
     <div className="r-list">
@@ -226,70 +274,58 @@ function ListCol({ search, setSearch, route, onNav, items, filters, onClearFilte
           <span className="count">{items.length} plan{items.length === 1 ? "" : "s"}</span>
         </div>
       </div>
+
+      {contextSlug && (
+        <div className="r-context-chip">
+          <span className="r-context-label">⟳ Related to: <code>{contextSlug}</code></span>
+          <button className="r-context-x" onClick={onClearContext} title="Clear context filter">×</button>
+        </div>
+      )}
+
+      <div className="r-sort-controls">
+        {SORTS.map(s => (
+          <button
+            key={s.key}
+            className={`r-sort-pill ${sortBy === s.key ? "active" : ""}`}
+            onClick={() => setSortBy(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {items.length === 0 ? (
         <div className="r-list-empty">
           No plans match.
-          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length) && (
+          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length || filters?.type?.length) && (
             <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
           )}
         </div>
-      ) : groups.map(g => {
-        const id = g.sprint?.id || "_none";
-        const isOpen = !collapsed[id];
-        const isActiveSprintRoute = route.view === "sprint" && route.sprint === id;
+      ) : sorted.map(p => {
+        const active = route.view === "plan" && route.slug === p.slug;
         return (
-          <div key={id} className="r-sgroup">
-            <div className={`r-sgroup-h ${isActiveSprintRoute ? "route-active" : ""}`}>
-              <span className="id">{g.sprint ? g.sprint.id : "—"}</span>
-              <span className="theme">
-                {g.sprint ? g.sprint.theme : "Unscheduled"}
-                {g.sprint && (
-                  <span className={`st ${g.sprint.status}`}>{g.sprint.status}</span>
-                )}
-              </span>
-              <span className="n">{g.plans.length}</span>
-              {g.sprint && (
-                <a
-                  className="board-link"
-                  href={`#sprint/${g.sprint.id}`}
-                  title="Sprints"
-                >
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
-                    <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
-                    <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
-                  </svg>
-                </a>
+          <div
+            key={p.slug}
+            className={`r-row ${active ? "active" : ""}`}
+            onClick={() => onSelectPlan(p.slug)}
+          >
+            <span className={`dot ${p.status}`}></span>
+            <div>
+              <div className="t">{p.title}{p.type === "research" && <span className="r-type-pill research">research</span>}</div>
+              <div className="meta">
+                <span className="ms">{p.ms}</span>
+                <span className="sp">·</span>
+                <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
+                <span className="sp">·</span>
+                <span>{p.last}</span>
+              </div>
+              {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
+                <div className="sigs">
+                  {(p.dec_open || 0) > 0 && <span className="sig dec">D {p.dec_open}</span>}
+                  {(p.blockers || 0) > 0 && <span className="sig blk">! {p.blockers}</span>}
+                </div>
               )}
             </div>
-            {g.plans.map(p => {
-              const active = route.view === "plan" && route.slug === p.slug;
-              return (
-                <div
-                  key={p.slug}
-                  className={`r-row ${active ? "active" : ""}`}
-                  onClick={() => onNav({ view: "plan", slug: p.slug })}
-                >
-                  <span className={`dot ${p.status}`}></span>
-                  <div>
-                    <div className="t">{p.title}{p.type === "research" && <span className="r-type-pill">research</span>}</div>
-                    <div className="meta">
-                      <span className="ms">{p.ms}</span>
-                      <span className="sp">·</span>
-                      <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
-                      <span className="sp">·</span>
-                      <span>{p.last}</span>
-                    </div>
-                    {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
-                      <div className="sigs">
-                        {(p.dec_open || 0) > 0 && <span className="sig dec">D {p.dec_open}</span>}
-                        {(p.blockers || 0) > 0 && <span className="sig blk">! {p.blockers}</span>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         );
       })}
@@ -330,8 +366,7 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
             <button
               className="gen-prompt"
               onClick={onOpenPrompt}
-              disabled={blockedByDecisions}
-              title={blockedByDecisions ? `${openDecs} open decision${openDecs === 1 ? "" : "s"} — resolve first` : "Generate handoff prompt"}
+              title="Generate handoff prompt"
             >
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M4 3h6l2 2v8H4z"/>
@@ -391,8 +426,7 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
             <button
               className="gen-prompt"
               onClick={handleGen}
-              disabled={blocked}
-              title={blocked ? `${totalOpen} open decisions — resolve first` : "Generate fleet prompt"}
+              title="Generate fleet prompt"
             >
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M4 3h6l2 2v8H4z"/><path d="M10 3v2h2"/><path d="M6 7h4M6 9h4M6 11h2"/>
@@ -507,7 +541,12 @@ function App() {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
   }, [filtersHidden]);
   const [groupBy, setGroupBy] = useState(() => {
-    try { return localStorage.getItem(SK.groupBy) || "sprint"; } catch { return "sprint"; }
+    try {
+      const stored = localStorage.getItem(SK.groupBy);
+      // Migrate legacy "sprint" groupBy to "recent" sort
+      if (!stored || stored === "sprint") return "recent";
+      return stored;
+    } catch { return "recent"; }
   });
   useEffect(() => {
     try { localStorage.setItem(SK.groupBy, groupBy); } catch {}
@@ -569,6 +608,19 @@ function App() {
     if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
     if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
     if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
+    if (filters.type?.length) {
+      list = list.filter(p => {
+        const t = p.type || "plan";
+        return filters.type.includes(t);
+      });
+    }
+    if (filters.context) {
+      const ctx = M.inventory.find(p => p.slug === filters.context);
+      if (ctx) {
+        const related = new Set([ctx.slug, ...(ctx.depends_on || []), ...(ctx.blocks || [])]);
+        list = list.filter(p => related.has(p.slug));
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(p =>
@@ -579,6 +631,11 @@ function App() {
     }
     return list;
   }, [M, filters, search]);
+
+  const onSelectPlan = useCallback((slug) => {
+    nav({ view: "plan", slug });
+    setFilters(f => ({ ...f, context: slug }));
+  }, [nav]);
 
   useEffect(() => {
     if (!promptOpen) return;
@@ -627,7 +684,7 @@ function App() {
           <span></span><span></span>
         </button>
         <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
-        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} items={items} groupBy={groupBy} setGroupBy={setGroupBy} filters={filters} onClearFilters={() => setFilters({})} />
+        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
           <div className="r-body">
