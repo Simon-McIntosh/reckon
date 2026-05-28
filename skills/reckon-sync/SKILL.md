@@ -18,9 +18,7 @@ allowed-tools: Read Write Edit Bash(*) Grep
 # reckon-sync — set up or refresh plan infrastructure
 
 Replaces `plan-init` and `plan-style`. Idempotent — safe on already-initialised
-repos. Canonical sources live in `~/Code/reckon`, not dotfiles. The reckon
-server serves `/_shared/` from there directly; per-project copies ensure
-GitHub Pages compatibility.
+repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
 
 ## When to invoke
 
@@ -28,41 +26,30 @@ GitHub Pages compatibility.
 - "sync plan system" / "update CSS from reckon" / `/reckon-sync`
 - Repo has no `docs/` or no `docs/_shared/`
 
-**When NOT to invoke:** if `docs/` is absent but the project should already
-have plans, check `reckon-create` first — `reckon-sync` creates infrastructure;
-`reckon-create` creates plan pages.
-
 ## Hard rules
 
 1. **Idempotent.** Every step is a no-op if already applied correctly.
 2. **Never overwrite `docs/state/<project>/index.json`** — only seed when absent.
 3. **Never overwrite per-plan HTML** the user has already authored.
-4. **Never create per-plan state JSON sidecars.** Plan state lives as semantic HTML
-   elements (`<meta name="plan-*">` scalars and `data-reckon` section blocks) inside
-   each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json`
-   (project config only).
-5. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.**
-   `reckon-create` does NOT register mounts or create symlinks.
-6. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if
-   needed and clean it up before exiting.
+4. **No per-plan state JSON.** Plan state lives as semantic HTML inside each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json` (project config only).
+5. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
+6. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
 7. **Never commit automatically.** Print a suggested commit message.
 8. **Use `python3` for JSON manipulation** — `jq` may not be available.
 
-## Where state lives
+## What appears in the plan inventory
 
-**The plan HTML is the sole store.** All plan data (status, impl, decisions,
-followups, comments, questions, research) lives as semantic HTML elements in
-the `.html` file: `<meta name="plan-*">` scalars in the head, and
-`<section data-reckon="decisions|followups|questions|research|comments">` blocks
-inside `<main class="plan-doc">`. Live edits (browser clicks, MCP tools) rewrite
-the HTML elements in place.
+**Any HTML file under `docs/` is discovered — no content filter is applied.** Sparse plans (bare HTML with no `plan-*` meta) appear as `status=draft` with `<title>` as the title. Existence is sufficient.
 
-`docs/state/<project>/index.json` holds **project-level config only**:
-sprints, milestones, `active_sprint_id`, timeline. It is not per-plan state.
+**Excluded dirs** (children of the project's docs dir):
+`_shared`, `ui`, `state`, `assets`, `images`, `archive`
 
-The reckon server reads plan state by parsing each HTML file's semantic elements.
-`reckon-sync` creates and symlinks the state directory so the server can
-write project config (index.json) back to the repo.
+**Excluded files:**
+`index.html`, `sprint.html`, `sprints.html`, `milestones.html`, `decisions.html`, `inventory.html`, `blockers.html`, `implementation.html`, `questions.html`, `home.html`, `project.html`
+
+**Research docs** (`<meta name="reckon-type" content="research">`) appear with a "research" banner in the SPA and `type="research"` in the discovery payload. They have no decision/followup workflow. If you see plans appearing with minimal metadata, they are genuinely sparse — not filtered out.
+
+Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under `docs/archive/` so it does not clutter the live inventory.
 
 ## Workflow
 
@@ -70,18 +57,14 @@ write project config (index.json) back to the repo.
 
 | Condition | Intent |
 |---|---|
-| `docs/` absent **or** `docs/_shared/` absent | **first-run** — all steps run |
+| `docs/` absent **or** `docs/_shared/` absent | **first-run** — all steps |
 | Both present | **refresh** — Steps 0 and 2 only; steps 3–5 are no-ops |
 
 ### Step 0 — Link reckon skills and clean up dead links
 
-Always run. Each reckon skill is linked individually into both skill
-directories so they are independently correct:
-- **`~/.claude/skills/`** — Claude Code
-- **`~/.agents/skills/`** — other agent runtimes (Cursor, Aider, Continue, etc.)
-
-After linking, dead symlinks pointing into `~/Code/reckon/skills/` are removed
-from both dirs so renamed or deleted skills don't leave stale entries.
+Always run. Link each reckon skill individually into both skill dirs:
+- `~/.claude/skills/` — Claude Code
+- `~/.agents/skills/` — other agent runtimes
 
 ```bash
 RECKON_SKILLS="$HOME/Code/reckon/skills"
@@ -89,7 +72,7 @@ RECKON_SKILLS="$HOME/Code/reckon/skills"
 link_skills() {
   local DEST="$1"
 
-  # Migrate legacy whole-dir symlink to dotfiles → real directory
+  # Migrate legacy whole-dir symlink → individual links
   if [ -L "$DEST" ]; then
     LINK_TARGET="$(readlink "$DEST")"
     rm "$DEST"
@@ -98,14 +81,11 @@ link_skills() {
       skill_name="$(basename "$skill_dir")"
       case "$skill_name" in reckon-*) continue;; esac
       ln -sfn "$skill_dir" "$DEST/$skill_name"
-      echo "  linked (migrated) $skill_name"
     done
-    echo "  migrated $LINK_TARGET → individual symlinks in $DEST"
   fi
 
   mkdir -p "$DEST"
 
-  # Link each reckon skill
   for skill_dir in "$RECKON_SKILLS"/*/; do
     skill_name="$(basename "$skill_dir")"
     target="$DEST/$skill_name"
@@ -117,12 +97,11 @@ link_skills() {
     fi
   done
 
-  # Remove dead links that point into the reckon skills dir (handles renames)
+  # Remove dead links pointing into reckon/skills/ (handles renames/deletes)
   for link in "$DEST"/*/; do
     link="${link%/}"
     if [ -L "$link" ]; then
       target="$(readlink "$link")"
-      # Only clean up links that were ours (point into reckon/skills/)
       case "$target" in
         "$RECKON_SKILLS"/*)
           if [ ! -e "$link" ]; then
@@ -135,11 +114,8 @@ link_skills() {
   done
 }
 
-echo "~/.claude/skills:"
-link_skills "$HOME/.claude/skills"
-
-echo "~/.agents/skills:"
-link_skills "$HOME/.agents/skills"
+echo "~/.claude/skills:"; link_skills "$HOME/.claude/skills"
+echo "~/.agents/skills:"; link_skills "$HOME/.agents/skills"
 ```
 
 ### Step 1 — Detect intent
@@ -154,37 +130,26 @@ RECKON="$HOME/Code/reckon"
 echo "intent=$INTENT  project=$PROJECT"
 ```
 
-Confirm the `PROJECT` key with the user on first-run (sets URL prefix and
-`state/` path).
+Confirm the `PROJECT` key with the user on first-run.
 
 ### Step 2 — Copy canonical CSS files
 
-Always run. Overwrites system-owned CSS only; never touches per-plan HTML
-or `state/index.json`.
+Always run. Overwrites system-owned CSS only; never touches per-plan HTML or `index.json`.
 
 ```bash
 mkdir -p "$DOCS/_shared"
-
-# CSS — copied for GitHub Pages static hosting.
-# The live server serves these directly via /_shared/ from the reckon install.
 cp "$RECKON/docs/_shared/foundation.css" "$DOCS/_shared/foundation.css"
 cp "$RECKON/docs/_shared/dashboard.css"  "$DOCS/_shared/dashboard.css"
 ```
 
-Note: `state.js` is NOT copied — it was a legacy standalone-interactivity
-helper that is no longer used. JSX components are served by the reckon server
-at `/_ui/<file>`. For full offline/static deployment, use `reckon build`.
+JSX components are served by the reckon server at `/_ui/<file>` from `~/Code/reckon/docs/ui/`. Per-project JSX copies are NOT created. Use `reckon build` for offline/static deployment.
 
 ### Step 2b — Create or update docs/index.html (SPA entry point)
 
-On first-run, create `docs/index.html` as the v7 SPA entry point. On refresh,
-update only if the file already uses the v7 format (loads from `_shared/` and `ui/`).
-**Never overwrite** an `index.html` that is a hand-authored plan page.
+On first-run, create `docs/index.html`. On refresh, update only if the file already uses v7 format. Never overwrite a hand-authored plan page.
 
 ```bash
 INDEX="$DOCS/index.html"
-
-# Detect v7 SPA: loads from _shared/ or has docs-project meta tag
 IS_V7_ALREADY=false
 if [ -f "$INDEX" ] && grep -q '_shared/' "$INDEX" 2>/dev/null; then
   IS_V7_ALREADY=true
@@ -227,7 +192,7 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
 HTMLEOF
   echo "wrote $INDEX (project=$PROJECT)"
 else
-  echo "skipped index.html — file exists and is not a v7 SPA (manual review needed)"
+  echo "skipped index.html — not v7 SPA (manual review needed)"
 fi
 ```
 
@@ -236,20 +201,15 @@ fi
 ```bash
 mkdir -p "$DOCS/state/$PROJECT" ~/docs-server/state
 
-# Migrate real directory → repo path, then replace with symlink
+# Migrate real directory → symlink
 if [ -d ~/docs-server/state/"$PROJECT" ] && [ ! -L ~/docs-server/state/"$PROJECT" ]; then
   mv ~/docs-server/state/"$PROJECT"/*.json "$DOCS/state/$PROJECT/" 2>/dev/null || true
   rmdir ~/docs-server/state/"$PROJECT"
 fi
 
-# Symlink: ~/docs-server/state/<project> → <repo>/docs/state/<project>/
 [ -L ~/docs-server/state/"$PROJECT" ] || \
   ln -s "$DOCS/state/$PROJECT" ~/docs-server/state/"$PROJECT"
 ```
-
-State files live in the repo (`docs/state/<project>/`) and are git-tracked.
-The reckon server writes through the symlink at `~/docs-server/state/<project>`.
-Only `index.json` (project config) lives here — not per-plan state JSON.
 
 ### Step 4 — Register in mounts.json
 
@@ -271,13 +231,8 @@ EOF
 ```
 
 `mounts.json` is re-read on every request — no server restart needed.
-Start the server if not running: `uv run --project ~/Code/reckon reckon serve`
 
 ### Step 5 — Seed index.json (project config only)
-
-`index.json` holds sprint/milestone definitions and project-level config. Plans
-are auto-discovered by the server parsing each HTML file's `<meta name="plan-*">`
-scalars and `data-reckon` elements — no plan inventory in `index.json` is required.
 
 ```bash
 PROJ="$DOCS/state/$PROJECT/index.json"
@@ -288,7 +243,7 @@ seed = {
   "updated": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
   "project": "$PROJECT",
   "data": {
-    "active_sprint_id": null,
+    "active_sprint_id": None,
     "sprints":    [],
     "milestones": [],
     "timeline":   []
@@ -300,113 +255,56 @@ EOF
 fi
 ```
 
-Do NOT write `version` into the seed — the reckon server manages that field.
-
 ### Step 6 — Drop .nojekyll
 
 ```bash
 [ -f "$DOCS/.nojekyll" ] || touch "$DOCS/.nojekyll"
 ```
 
-Confirm to the user when done:
+Confirm to user:
 
 > **reckon-sync complete — docs/ ready, docs-server registered.**
 > Run `/reckon-create <slug>` to add a plan.
 
-Suggested commit:
-```
-docs(plans): sync plan infrastructure from reckon canonical
-```
+Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`
 
-## How reckon discovers plans
-
-`GET /_discover/<project>` scans every `.html` file in the mounted docs
-directory and surfaces each one as a plan. **Any HTML file is a plan —
-existence is sufficient.** No `plan-status` meta opt-in is required.
-
-**Excluded dirs:** `_shared`, `ui`, `state`, `assets`, `images`, `archive`.
-**Excluded files:** `index.html`, `sprints.html`, `milestones.html`,
-`decisions.html`, `inventory.html`, `blockers.html`, `questions.html`,
-`home.html`, `project.html`.
-
-Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under
-`docs/archive/` so it does not appear in the live inventory.
-
-The server parses each plan's `<meta name="plan-*">` scalars and
-`<section data-reckon="…">` elements for structured state. A bare page with
-no plan markup surfaces with `status=draft` and its `<title>` as the title.
-
-## Canonical plan `<head>` meta tags
-
-`<meta name="plan-*">` tags in the head are the authoritative scalars —
-the server reads and writes them directly. All are optional for discovery;
-`docs-project` is required for correct routing.
+## Canonical plan meta tags
 
 ```html
-<meta name="docs-project" content="my-project">  <!-- required for correct routing -->
-<meta name="plan-slug"    content="my-plan">      <!-- defaults to filename stem -->
-<meta name="plan-title"   content="Human title">  <!-- defaults to <title> text -->
-<meta name="plan-summary" content="One-line synopsis">
-<meta name="plan-status"  content="draft">         <!-- server-written -->
-<meta name="plan-impl"    content="0.0">           <!-- server-written -->
-<meta name="plan-version" content="1">             <!-- server-owned -->
+<!-- required -->
+<meta name="docs-project"  content="my-project">
+
+<!-- authored scalars — fill in when creating a plan -->
+<meta name="reckon-type"   content="plan">         <!-- plan | research -->
+<meta name="plan-slug"     content="my-plan">      <!-- default: filename stem -->
+<meta name="plan-summary"  content="One-line synopsis">
+<meta name="plan-roi"      content="high">         <!-- high|mid|low -->
+<meta name="plan-effort"   content="M">            <!-- S|M|L|XL -->
+<meta name="plan-tier"     content="sonnet">       <!-- haiku|sonnet|opus -->
 <meta name="plan-milestone" content="M1">
-<meta name="plan-roi"     content="high">          <!-- high|mid|low -->
-<meta name="plan-effort"  content="M">             <!-- S|M|L|XL -->
-<meta name="plan-sprint"  content="S1">
-<meta name="plan-tier"    content="sonnet">        <!-- haiku|sonnet|opus -->
-```
+<meta name="plan-sprint"   content="S1">
+<meta name="plan-depends-on" content="slug-a,research-x">
 
-## Minimal plan page anatomy
-
-```html
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="docs-project" content="<project>">
-  <meta name="plan-slug"    content="<slug>">
-  <meta name="plan-status"  content="draft">
-  <title>My Plan · <project></title>
-  <link rel="stylesheet" href="/_shared/foundation.css">
-  <link rel="stylesheet" href="/_shared/dashboard.css">
-</head>
-<body>
-  <main class="plan-doc">
-    <!-- authored prose -->
-
-    <!-- reckon-owned sections (regenerated by server on write) -->
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
-    <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-    </section>
-  </main>
-</body>
-</html>
+<!-- server-written — do NOT author these -->
+<meta name="plan-status"   content="draft">
+<meta name="plan-impl"     content="0.0">
+<meta name="plan-version"  content="1">
+<meta name="plan-modified" content="2026-05-28">
 ```
 
 ## CSS layout
 
-Two layers, sourced from `~/Code/reckon/docs/_shared/`:
+Two layers copied from `~/Code/reckon/docs/_shared/`:
 
-| File | Destination in project | Role |
-|---|---|---|
-| `foundation.css` | `docs/_shared/foundation.css` | Design tokens — colours, typography, spacing |
-| `dashboard.css` | `docs/_shared/dashboard.css` | Plan widgets — cards, badges, sprint tables |
+| File | Role |
+|---|---|
+| `foundation.css` | Design tokens — colours, typography, spacing |
+| `dashboard.css` | Plan widgets — cards, badges, sprint tables |
 
-UI components (`ui.jsx`, `shell.jsx`, `bits.jsx`, etc.) are served
-by the reckon server at `/_ui/<file>` directly from `~/Code/reckon/docs/ui/`.
-Per-project copies are **not** created by `reckon sync`. Use `reckon build` to produce
-a fully self-contained static bundle for CI/GitHub Pages deployment.
+JSX UI components are served by the reckon server at `/_ui/<file>` directly from `~/Code/reckon/docs/ui/`. No per-project copies.
 
 ## Cross-references
 
-- `~/Code/reckon/skills/reckon-create/SKILL.md` — create the first plan after sync.
-- `~/Code/reckon/skills/` — canonical skill source; symlinked to `~/.claude/skills/` by Step 0.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
-- `~/Code/reckon/reckon/serve.py` — mounts.json path, state root, /_shared/ route, /_discover/ endpoint.
-- `~/Code/reckon/docs/_shared/` — canonical CSS source.
-- `~/Code/reckon/docs/ui/` — canonical JSX component source.
+- `reckon-create/SKILL.md` — create the first plan after sync.
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, endpoints, exclusion lists).
+- `~/Code/reckon/reckon/serve.py` — mounts.json path, `_NON_PLAN_FILES`, `_NON_PLAN_DIRS`.

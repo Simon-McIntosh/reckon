@@ -15,25 +15,18 @@ allowed-tools: Read Bash(*) Grep
 
 ## When to invoke
 
-**Intent: status** — user asks any of:
-- "what plans are open?" / "show plan status" / "where are we on X?"
-- "what sprint are we on?" / "summarise plans" / `/reckon-status`
+**Intent: status** — "what plans are open?" / "show plan status" / "where are we on X?" / `/reckon-status`
 
-**Intent: review** — user asks any of:
-- "review the plan" / "audit plan health" / "is the plan stale?"
-- "any quality issues with the plans?" / `/reckon-status --review`
+**Intent: review** — "review the plan" / "audit plan health" / "is the plan stale?" / `/reckon-status --review`
 
-**Never writes.** This skill does not modify any file and does not POST
-to the docs-server. If you need to fix what you find, use `reckon-edit`.
+**Never writes.** This skill does not modify any file and does not POST to the docs-server. Fixes go through `reckon-edit`.
 
 ## Hard rules
 
 1. **Pure read.** Never write a file. Never POST to the docs-server.
 2. **Literal.** Report what the plan's semantic HTML says; do not invent status.
-3. **Synthetic examples only.** Use `plan-alpha`, `plan-beta`,
-   `my-project` as examples — never real project names.
-4. **One suggestion, not an action.** Offer a single next-step hint
-   at the end; do not execute it.
+3. **Synthetic examples only.** Use `plan-alpha`, `plan-beta`, `my-project` — never real project names.
+4. **One suggestion, not an action.** Offer a single next-step hint; do not execute.
 
 ---
 
@@ -46,67 +39,57 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 PROJECT="$(basename "$REPO_ROOT")"
 ```
 
-**Preferred:** query the server's discovery endpoint:
-```bash
-curl -s "http://127.0.0.1:8765/_discover/$PROJECT"
-```
-This returns all plans with their full parsed state — one source.
+**Preferred:** `curl -s "http://127.0.0.1:8765/_discover/$PROJECT"` — returns all plans with full parsed state.
 
-**Fallback (server not running):** glob `docs/*.html` (skip `_shared/`, `ui/`,
-`state/`, `assets/`, `archive/` subdirectories and known infrastructure pages:
-`index.html`, `sprints.html`, `milestones.html`, `decisions.html`,
-`inventory.html`, `blockers.html`, `questions.html`, `home.html`,
-`project.html`). Read each file's `<meta name="plan-*">` scalars and
-`<section data-reckon="…">` elements for state. A file with no plan markup
-surfaces as `status=draft` with `<title>` as the title — existence is sufficient.
+**Fallback (server not running):** glob `docs/*.html`; skip infrastructure dirs and excluded files (see §Discovery rules). Read each file's `<meta name="plan-*">` scalars and `<section data-reckon="…">` elements. A file with no plan markup surfaces as `status=draft` with `<title>` as its title.
 
-**Any HTML file in `docs/` is a plan.** No `plan-status` meta opt-in required.
+### Discovery rules
+
+**Any HTML file in `docs/` is a plan.** No `plan-status` opt-in required. Existence is sufficient. Sparse plans with no markup show as `status=draft` — they are NOT being filtered.
+
+**Excluded dirs:** `_shared`, `ui`, `state`, `assets`, `images`, `archive`.
+
+**Excluded files:** `index.html`, `sprint.html`, `sprints.html`, `milestones.html`, `decisions.html`, `inventory.html`, `blockers.html`, `implementation.html`, `questions.html`, `home.html`, `project.html`.
+
+Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under `docs/archive/` so it does not appear in the live inventory.
+
+**`reckon-type=research`** plans show with a "research" banner in the SPA; they appear in the inventory with `type="research"`. They have no decision/followup workflow.
 
 ### Step 2 — read project config
 
-```bash
-INDEX_JSON="$REPO_ROOT/docs/state/$PROJECT/index.json"
-```
-
-If present, read it for sprint and milestone definitions. It holds
-**project-level config only** (sprints, milestones, `active_sprint_id`,
-timeline) — not per-plan state. Per-plan state comes from each plan's HTML elements.
+If `docs/state/$PROJECT/index.json` exists, read it for sprint and milestone definitions. It holds project-level config only — not per-plan state.
 
 ### Step 3 — surface open decisions
 
-For each plan, read `decisions` from the parsed state (a **map** keyed by `data-key`
-on each `.r-dec` element in `<section data-reckon="decisions">`). An open decision
-has `data-choice=""` or absent `data-choice`.
+For each plan, read `decisions` from parsed state (map keyed by `data-key` on `.r-dec` elements). Open decision: `data-choice=""` or absent.
 
-Format: `- <slug>: [<key>] "<title>" options: <choices-joined>`
+Format: `- <slug>: [<key>] "<title>" options: <choices>`
 
 ### Step 4 — surface unresolved followups
 
-For each plan, list followup entries where `data-status != "resolved"` on
-`<article class="r-fu">` elements inside `<section data-reckon="followups">`.
-Show: `plan-slug / <id>: "<title>" (written <age>)`.
+For each plan, list followups where `data-status != "resolved"` on `<article class="r-fu">` elements.
+
+Format: `plan-slug / <id>: "<title>" (written <age>)`
 
 ### Step 5 — suggest one next action
 
-Scan the report and offer the single most actionable next step.
-Do not execute it.
+Scan the report; offer the single most actionable next step. Do not execute it.
 
 ---
 
 ## Intent: review
 
-Run all checks below and emit a prioritised punch-list. Fixes go
-through `reckon-edit`, never here.
+Run all checks; emit a prioritised punch-list.
 
 | Check | Condition |
 |-------|-----------|
-| **Empty followup prompt** | `<article class="r-fu">` exists but `<pre class="r-fu-prompt">` is absent or empty |
+| **Empty followup prompt** | `<article class="r-fu">` exists but `<pre class="r-fu-prompt">` absent or empty |
 | **Missing NEXT card** | `plan-status=active` plan has no open `<article class="r-fu" data-status="open">` |
 | **Open decision** | `<div class="r-dec">` with empty or absent `data-choice` |
 | **Stale plan** | `plan-status=active` and `plan-modified` > 30 days ago |
 | **Tier mismatch** | sprint item `tier` differs from `<meta name="plan-tier">` on the plan page |
 
-Output format for review:
+Output format:
 
 ```
 ## Plan Quality Audit — <project> (<date>)
@@ -138,7 +121,6 @@ Output format for review:
 
 ### Open decisions (N total)
 - plan-alpha: [transport] "How should transport work?" options: stdio, http
-- plan-beta: [storage] not yet defined
 
 ### Unresolved followups (N total)
 - plan-alpha / f-001: "Implement alias layer" (written 3d ago)
@@ -147,14 +129,13 @@ Output format for review:
 > Run `/reckon-ship plan-alpha §3` — 3 items implementable, S2 in progress
 ```
 
-For ≤ 2 plans, skip the table; give one paragraph per plan inline.
+For ≤ 2 plans, skip the table; give one paragraph per plan.
 
 ---
 
 ## Cross-references
 
-- `~/.claude/skills/reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive).
-- `~/.claude/skills/reckon-create/SKILL.md` — create new plans.
-- `~/.claude/skills/reckon-ship/SKILL.md` — execute plan work via fleet dispatch.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, discovery, endpoints)
-- `~/Code/reckon/` — reckon project (server). Start: `uv run --project ~/Code/reckon reckon serve`
+- `reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive).
+- `reckon-create/SKILL.md` — create new plans.
+- `reckon-ship/SKILL.md` — execute plan work.
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, discovery, endpoints).

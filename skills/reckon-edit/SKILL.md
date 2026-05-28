@@ -21,7 +21,7 @@ allowed-tools: Read Write Edit Bash(*) Grep
 | "update / amend / revise / add section" | **prose** |
 | "lock / record / resolve decision" + decision key | **decision** |
 | "walk me through open decisions" | **decision** (interactive) |
-| "queue followup / add note / add research" | **followup** |
+| "queue followup / add note / add research / add comment" | **followup / note** |
 | "resolve followup / mark followup done" + id | **followup** |
 | "propose / start / close / rebalance sprint" | **sprint** |
 | "move item X to sprint Y" | **sprint** |
@@ -34,32 +34,25 @@ If the user wants to execute the work → hand off to `reckon-ship`.
 ## Hard rules
 
 1. **HTML is the source of truth.** Never edit `docs/archive/` files — they are frozen.
-2. **Decide evergreen-edit vs phase-transition before touching the page.** See §prose below.
+2. **Decide evergreen-edit vs phase-transition before touching the page.**
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
    and impl go into `<meta name="plan-*">` scalars and `data-reckon` section elements — via
-   MCP tools or `POST /plan/<project>/<slug>`. There are no per-plan sidecar JSON files.
-5. **Every followup MUST carry a `<pre class="r-fu-prompt">` block.** A followup without a prompt is a hard failure.
+   MCP tools or `POST /plan/<project>/<slug>`. No per-plan sidecar JSON files.
+5. **Every followup MUST carry a `<pre class="r-fu-prompt">` block.** See §05 template below.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.
-7. **Never write stubs that cross-reference state.** If a section body is missing,
-   write the actual prose in the HTML — do not write `<p>See state §N for details</p>`.
-   Plan body is always full authored prose in HTML.
 
 ```html
-<!-- ❌ WRONG — stub with cross-reference -->
+<!-- ❌ WRONG — stub body -->
 <h2 id="s3">§3 · Implementation</h2>
 <p>See state §3.</p>
 
 <!-- ✅ CORRECT — full prose in HTML -->
 <h2 id="s3">§3 · Implementation</h2>
-<p>New module <code>src/preprocess.py</code> exposes...</p>
+<p>New module <code>src/preprocess.py</code> exposes …</p>
 ```
 
 ## State write pattern
-
-The plan HTML is the sole store. Structured state lives in:
-- `<meta name="plan-*">` tags (scalars: status, impl, roi, effort, tier, sprint, milestone, …)
-- `<section data-reckon="decisions|followups|questions|research|comments">` blocks inside `<main class="plan-doc">`
 
 **Write path — MCP tools (preferred):**
 
@@ -73,101 +66,77 @@ set_impl(project, slug, impl, version)
 patch_plan(project, slug, patch_dict, version)
 ```
 
-Always call `read_plan` first to get the current `version` before any write.
-Writes are rejected (412) if `version` doesn't match.
+Always call `read_plan` first to get the current `version`. Writes are rejected (412) on mismatch.
 
-**Write path — HTTP (when MCP unavailable):**
+**Write path — HTTP fallback:**
 
 ```bash
 PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
 SLUG="<slug>"
-
-# 1. Read current state + version
 PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
 CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
-
-# 2. Build dotted patch (flat key → value)
-# Example: lock a decision
-PATCH='{"decisions.scan-strategy.choice": "glob", "decisions.scan-strategy.rationale": "simpler", "decisions.scan-strategy.when": "2026-05-26", "decisions.scan-strategy.by": "smc"}'
-
-# 3. POST with If-Match
 curl -s -X POST \
   -H 'Content-Type: application/json' \
   -H "If-Match: $CUR_VER" \
-  -d "$PATCH" \
+  -d '{"decisions.scan-strategy.choice": "glob", "decisions.scan-strategy.rationale": "simpler", "decisions.scan-strategy.when": "2026-05-26", "decisions.scan-strategy.by": "smc"}' \
   "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
 ```
 
-Rules:
-- Always read `version` before posting (`GET /plan/<project>/<slug>`).
-- The patch body is a **flat map of dotted keys**.
-- A missing `If-Match` header causes HTTP 412. A version mismatch returns 412 with `{current_version, current_data}` — rebase and retry.
-- Server bumps `version` on every successful write and sets `modified` to today.
-- `version` is server-owned — never include it in a patch.
-- Per-stage archival files live under `docs/archive/` — not `docs/`.
+Patch body is a **flat map of dotted keys**. `version` is server-owned — never include in a patch. Server bumps `version` and sets `modified` on every successful write.
 
 ## Intent: prose edit
 
-**Evergreen vs stage-file decision:**
-
-| Edit intent | Treat as | Output |
+| Edit intent | Action | Output |
 |---|---|---|
-| Typo, broken link, small clarification, new subsection | **Evergreen** | Edit `docs/<slug>.html` in place |
-| Adding a followup, note, or question | **Structured write only** | POST patch or MCP call; usually no prose body change |
-| Recording a decision with rationale | **Structured write** | POST patch or MCP `lock_decision`; no prose body change |
-| Section fully landed; work is done | **Phase transition** | Write `docs/archive/<slug>-<n>-landed.html`; append summary to evergreen |
+| Typo, clarification, new subsection | **Evergreen** | Edit `docs/<slug>.html` in place |
+| Followup, note, question | **Structured write** | POST patch or MCP call |
+| Decision with rationale | **Structured write** | `lock_decision` or POST patch |
+| Section fully landed | **Phase transition** | Write `docs/archive/<slug>-<n>-landed.html`; append summary to evergreen |
 | Decision locked irreversibly | **Phase transition** | Write `docs/archive/<slug>-<key>-locked.html` |
 | Plan fully implemented | **Phase transition + archive** | See §archive below |
 
-**Steps (evergreen):**
-1. Read `docs/<slug>.html` end to end.
-2. Make the smallest edit that achieves the goal; add new `<h3>` blocks rather than modifying existing paragraphs.
+**Evergreen steps:**
+1. Read `docs/<slug>.html`.
+2. Make the smallest edit; add new `<h3>` blocks rather than modifying existing paragraphs.
 3. Update `modified` via POST patch (`{"modified": "YYYY-MM-DD"}`).
 4. Suggest commit: `docs(<slug>): <short summary>`. Do not commit unless asked.
 
-**Steps (phase transition):**
-1. Determine suffix: `landed`, `locked`, `final`, or section-specific (e.g. `02-landed`).
-2. Create `docs/archive/<slug>-<suffix>.html` — frozen snapshot with same CSS links, link back to evergreen.
-3. Append a short `<h3>` block in the evergreen pointing at the new file.
+**Phase transition steps:**
+1. Determine suffix: `landed`, `locked`, `final`, or section-specific (`02-landed`).
+2. Create `docs/archive/<slug>-<suffix>.html` — frozen snapshot with link back to evergreen.
+3. Append a short `<h3>` block in the evergreen pointing at the archive file.
 4. Update `modified` via POST patch.
 
 ## Intent: decisions
 
-Decisions live as `<div class="r-dec" data-key="…">` elements inside `<section data-reckon="decisions">`. An open decision has `data-choice=""`. A locked decision has `data-choice="<answer>"` and `data-by`/`data-when` set. Options are `<button class="r-opt" data-value="…">` — the chosen button gains class `chosen`. A decision with no `<button>` elements is pure free-form (typed answer in `data-choice`).
+Decisions are `<div class="r-dec" data-key="…">` inside `<section data-reckon="decisions">`.
+Open: `data-choice=""`. Locked: `data-choice="<answer>"` with `data-by`/`data-when` set.
+Options are `<button class="r-opt" data-value="…">` — chosen button gets class `chosen`.
+Free-form decision: no `<button>` elements; `data-choice` holds the typed answer.
 
-The server parses these elements via `GET /plan/<project>/<slug>` (returns `decisions` as a map keyed by `data-key`).
+**Lock a decision:**
+1. Read state via `read_plan` or `GET /plan/<project>/<slug>` — get `version`.
+2. POST dotted patch: `decisions.<key>.choice`, `.rationale`, `.when`, `.by`.
+3. If irreversible, write archival `docs/archive/<slug>-<key>-locked.html`.
 
-**Lock a single decision:**
-1. Read state via `read_plan` (MCP) or `GET /plan/<project>/<slug>` (HTTP) — get current `version`.
-2. POST a dotted patch: `decisions.<key>.choice`, `decisions.<key>.rationale`, `decisions.<key>.when`, `decisions.<key>.by`.
-   The server sets `data-choice` on the `.r-dec`, marks the matching option button `.chosen`, and writes the rationale into `.r-dec-rat`.
-3. If the decision is irreversible, follow the phase-transition rule (write an archival `docs/archive/<slug>-<key>-locked.html`).
+**Interactive walkthrough:**
+1. Collect open decisions (where `choice == ""`); present each `r-dec-q` + options.
+2. Accumulate choices; POST a single patch with `If-Match` at the end.
+3. Report how many decisions were locked.
 
-**Interactive walkthrough ("walk me through all open decisions"):**
-1. Read state; collect `decisions` entries where `choice` is `""` or null.
-2. For each open decision, present the `title` (from `.r-dec-q`), optional `context` (from `.r-dec-ctx`), and `choices` (from `.r-opt` buttons); ask the user to choose.
-3. Accumulate choices; send a single POST patch with If-Match at the end.
-4. Report how many decisions were locked.
+**Dissent / reopen:**
+1. Write a followup (`recommends_skill: "/reckon-edit <slug> --reopen <key>"`).
+2. Body: locked choice, what evidence changed, what you propose.
+3. Never silently re-lock.
+4. On `--reopen`: snapshot into `docs/archive/<slug>-<key>-locked.html`; send a patch clearing `decisions.<key>.choice`.
 
-**Dissent / reopen flow:**
-1. Write a followup (§05 template, `recommends_skill: "/reckon-edit <slug> --reopen <key>"`).
-2. Body: what the locked choice was, what evidence changed, what you propose instead.
-3. Never silently re-lock. A human or coordinator reviews and accepts or rejects the followup.
-4. On `--reopen`: snapshot the existing decision into `docs/archive/<slug>-<key>-locked.html`, send a patch that clears `decisions.<key>.choice` (sets `data-choice=""`), removes the `.chosen` class from any option button, append a comment noting the reopen.
-
-## Intent: followup / notes / research
-
-Followups live as `<article class="r-fu" data-id="…">` elements inside `<section data-reckon="followups">`. The `<pre class="r-fu-prompt">` child carries the §05 prompt.
+## Intent: followup / notes / research / comments
 
 **Append a followup:**
-1. Read current state via `read_plan` (MCP) or `GET /plan/<project>/<slug>`.
-2. Build the followup object (minimum fields below); generate `id: "f-<unix-secs-base36>"`.
-3. POST via MCP `append_followup` or `POST /plan/<project>/<slug>` with a patch appending to `followups`.
-4. A followup without `prompt` is a hard failure — use the §05 template.
+1. Read state; generate `id: "f-<unix-secs-base36>"`.
+2. POST via MCP `append_followup` or patch. A followup without `prompt` is a hard failure.
 
-The server renders this as an `<article class="r-fu">` with `<pre class="r-fu-prompt">` in the HTML.
-
-Minimum followup object (as sent to MCP / POST):
+Minimum followup object:
 ```json
 {
   "id":               "f-<base36>",
@@ -178,62 +147,23 @@ Minimum followup object (as sent to MCP / POST):
   "body":             "<2–3 sentences of context>",
   "recommends_skill": "/reckon-ship <slug> | /reckon-edit <slug> | null",
   "tier":             "haiku | sonnet | opus",
-  "est_turns":        "~1h | ~1d | ~1 sprint",
   "prompt":           "<§05 template body — mandatory>"
 }
 ```
 
-**Resolve a followup by id:**
-1. Read state; find the `<article class="r-fu" data-id="<id>">` element.
-2. Via MCP `resolve_followup` or a patch: set `resolved_at`, `resolved_by`, `outcome`, `status: "resolved"`.
-   The server sets `data-resolved-at`/`-by` attributes and inserts `<p class="r-fu-outcome">`.
+**Resolve a followup:** MCP `resolve_followup` or patch `resolved_at`, `resolved_by`, `outcome`.
 
-Research items use the same append pattern via MCP `add_research`; `prompt` is not required for those.
+**Research items:** append via MCP `add_research`; `prompt` not required.
 
-## Intent: sprint management
-
-Operates only on `docs/state/<project>/index.json` (project config: sprints, milestones, `active_sprint_id`).
-Does NOT dispatch workers (that is `reckon-ship`).
-Does NOT read plan HTML content (that is `reckon-ship` / `reckon-status`).
-
-**Propose a sprint:**
-1. Discover plans via `GET /_discover/<project>` — each plan carries its full parsed state.
-2. Filter by `status in {active, pending}`.
-3. Score: `roi (high=3, mid=2, low=1) × effort_inverse (S=4, M=3, L=2, XL=1) × milestone_priority`.
-4. Apply dependency-aware ordering (blocked items trail their blockers).
-5. Partition into N sprints (default 4); each item as an object:
-   ```json
-   {"slug": "my-plan", "why_now": "Highest ROI; gates M1", "tier": "sonnet", "done_when": "tests green"}
-   ```
-   Use `why_now` (not `justification`). Use `tier` (not `model_tier`).
-6. Print proposal as a table; ask user to confirm before writing.
-7. Write updated `index.json` with the new sprints array.
-
-**Start a sprint:** Promote `status: "planned"` → `"active"`. Warn if another sprint is already active.
-
-**Close a sprint:** Set `status: "done"`. List any unshipped items; ask how to handle (roll, abandon, or keep open).
-
-**Move item:** Remove from source `items[]`, append to target `items[]`. Write with optimistic concurrency.
-
-**Rebalance:** Re-score + diff against current `sprints[]`; surface proposed moves; ask to confirm before applying.
-
-State path: `docs/state/<project>/index.json`.
-
-## Intent: archive
-
-1. Write `docs/archive/<slug>-final.html` — frozen snapshot with final status grid, all locked decisions (read from `.r-dec` elements), implementation commit SHAs, and a link to the evergreen.
-2. Move `docs/<slug>.html` to `docs/archive/<slug>.html`.
-3. Update `docs/index.html` plans table: move the row to "Completed" or drop it.
-4. Remove from active `<nav>` or add an "(archived)" marker.
-5. POST `status: "archived"` to the plan endpoint (updates `<meta name="plan-status">`).
+**Comments:** The SPA creates comments when a user selects text — a "¶ Comment" button appears, clicking it opens a popover. The comment is stored under the nearest `h2[id]` anchor (`data-section`). When reading a plan, check `<section data-reckon="comments">` for human feedback. Comments are agent-readable; respond to them in the next followup or prose edit.
 
 ## §05 followup template
 
-Every followup `prompt` field MUST be built from this template:
+Every followup `prompt` MUST be built from this template:
 
 ```
 Project: <project-name>
-Plan:    <slug>
+Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
 Section: <§ if applicable>
 Tier:    <haiku | sonnet | opus>
 
@@ -241,7 +171,7 @@ Context
   2–3 sentences on why this is queued now.
 
 State to read
-  GET /plan/<project>/<slug>   (parsed plan state — decisions, followups, status)
+  GET /plan/<project>/<slug>   (decisions, followups, status, version)
 
 Locked decisions to honour
   <key> → <choice>
@@ -258,12 +188,36 @@ Done-when
   3. followup written + this followup marked resolved
 ```
 
+## Intent: sprint management
+
+Operates only on `docs/state/<project>/index.json`. Does NOT dispatch workers (use `reckon-ship`).
+
+**Propose a sprint:**
+1. Discover plans via `GET /_discover/<project>`.
+2. Filter `status in {active, pending}`.
+3. Score: `roi × effort_inverse × milestone_priority`. Apply dependency-aware ordering.
+4. Partition into N sprints; each item:
+   ```json
+   {"slug": "my-plan", "why_now": "Highest ROI; gates M1", "tier": "sonnet", "done_when": "tests green"}
+   ```
+5. Print proposal; ask to confirm before writing `index.json`.
+
+**Start sprint:** `status: "planned"` → `"active"`. Warn if another is active.
+**Close sprint:** `status: "done"`. List unshipped items; ask how to handle.
+**Move item:** Remove from source `items[]`, append to target.
+**Rebalance:** Re-score; diff against current; ask to confirm before applying.
+
+## Intent: archive
+
+1. Write `docs/archive/<slug>-final.html` — frozen snapshot.
+2. Move `docs/<slug>.html` to `docs/archive/<slug>.html`.
+3. Update `docs/index.html` if present.
+4. POST `status: "archived"`.
+
 ## Cross-references
 
 - `reckon-create` — scaffold a new plan.
 - `reckon-ship` — execute the work a plan describes.
-- `reckon-status` — read-only inspection of plan and sprint state.
+- `reckon-status` — read-only inspection.
 - `reckon-sync` — register a project mount and seed shared assets.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
-- `~/Code/reckon/` — docs-server source; CSS lives in `docs/_shared/`.
-- `~/docs-server/mounts.json` — mount registry (no restart needed).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, endpoints).

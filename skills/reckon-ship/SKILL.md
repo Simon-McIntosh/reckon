@@ -17,104 +17,69 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent
 
 ## When to invoke
 
-Trigger on any of:
-
 - "implement / execute / ship X" / "land items from X"
-- "do the work in X plan" / "/reckon-ship `<slug>` [section]"
+- "do the work in X plan" / `/reckon-ship <slug> [section]`
 - reading a §05 followup whose `recommends_skill` is `/reckon-ship`
 
-This skill is **dual-role**: it is invoked by a human or orchestrator AND it
-generates §05 dispatch prompts for worker agents. Both entry points share the
-same workflow from Step 2 onward.
+**Dual-role:** invoked by human or orchestrator AND generates §05 dispatch prompts for workers.
 
-If the user wants to *write* the plan, call `reckon-edit`. If the plan does not
-yet exist, call `reckon-create` first.
+If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → `reckon-create` first.
 
 ## Hard rules
 
-1. **The plan HTML is the source of truth.** Read `docs/<slug>.html`. Do not
-   implement items marked "deferred", "post-v1", or behind an unmet trigger.
-2. **Multi-item sections get a fleet.** ≥ 3 independent items → one worker per
-   item, dispatched in parallel, with non-overlapping file scopes.
-3. **Scope allocation precedes dispatch.** Write down each worker's exclusive
-   write paths before sending a single prompt. No two workers share a file.
-4. **Parallel-safety preamble is mandatory in every worker prompt.** Embed
-   the block verbatim (see §Worker dispatch boilerplate below).
-5. **Audit every commit.** Run `git show --stat <sha>` against the declared
-   scope. Surface violations in the final report; do not silently drop them.
-6. **Per-stage HTML and a followup are required after every landing.** Even
-   single-item work gets a `docs/archive/<slug>-<section>-landed.html` and a
-   queued §05 followup. Silence is not allowed.
-7. **Collapse the evergreen when a section ships.** The evergreen page is a
-   current-state dashboard, not a transcript. When a section lands, REPLACE
-   the section body with a 2-4 line landed-summary + link to the per-stage
-   HTML. Full prose lives in the per-stage record. Pending vs done must be
-   visually distinguishable at-a-glance. See §5b.
+1. **Plan HTML is the source of truth.** Do not implement items marked "deferred", "post-v1", or behind an unmet trigger.
+2. **Multi-item sections get a fleet.** ≥ 3 independent items → one worker per item, dispatched in parallel, non-overlapping file scopes.
+3. **Scope allocation precedes dispatch.** List each worker's exclusive write paths before sending a prompt. No two workers share a file.
+4. **Parallel-safety preamble is mandatory in every worker prompt.** Embed verbatim (see §Worker dispatch boilerplate).
+5. **Audit every commit.** Run `git show --stat <sha>` against declared scope. Surface violations.
+6. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/archive/<slug>-<section>-landed.html` and a queued §05 followup.
+7. **Collapse the evergreen when a section ships.** Replace the section body with a 2-4 line landed-summary + link to per-stage HTML.
 
 ## Workflow
 
 ### 1. Read the plan — classify items
 
-Walk `docs/<slug>.html` section by section and decide:
-
 | Signal | Action |
 |---|---|
 | Past-tense prose / commit SHAs present | Skip — already done |
-| Marked "deferred", "v1", or "post-smoke" | Skip — respect timing |
+| Marked "deferred", "v1", "post-smoke" | Skip |
 | `Trigger:` subsection with unmet condition | Skip — surface to user |
 | Concrete deliverable, no deferral signal | Implement |
 
-Report the audit (implementable / deferred / blocked) to the user before
-dispatching anything. Include the chosen model tier per item.
+Report audit (implementable / deferred / blocked) before dispatching.
 
-### 2. Scope allocation — assign exclusive write paths
+### 2. Scope allocation
 
-List **exclusive write paths** per item before dispatch. No overlap. If two
-items share a file, serialise them or split it (`test_a.py` / `test_b.py`).
+List **exclusive write paths** per item. If two items share a file, serialise them or split it (`test_a.py` / `test_b.py`).
 
 ### 3. Dispatch workers
 
-| Implementable items | Strategy |
+| Items | Strategy |
 |---|---|
 | 1 | One worker (or inline if tiny) |
 | 2–8 | Parallel fleet, one per item |
 | > 8 | Haiku reader fleet + Sonnet/Opus synthesiser |
 | Cross-cutting / strategic | Single Opus |
 
-Build each prompt from the §05 template below. Embed the parallel-safety
-preamble verbatim. Include `Done-when` criteria and the followup requirement.
+Build each prompt from the §05 template. Embed parallel-safety preamble verbatim.
 
 ### 4. Wait and audit
 
-For each returned worker:
-
 1. Run `git show --stat <sha>` — confirm only assigned paths appear.
-2. Run the project's test suite (`uv run pytest -q`, `ctest`, `npm test`, …).
-3. Confirm the worker wrote a followup into the plan's followups section (via MCP
-   `append_followup` or `POST /plan/<project>/<slug>`). If missing, write one.
+2. Run the project test suite.
+3. Confirm the worker wrote a followup. If missing, write it yourself.
 
 ### 5. Record outcomes
 
-**Per-stage file** — create `docs/archive/<slug>-<section>-landed.html`:
+**Per-stage file** — `docs/archive/<slug>-<section>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
 - Quick-status grid (shipped vs deferred)
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup
 
-**Evergreen update** — see §5b for the binding collapse-on-landing rule.
-
 ### 5b. Collapse-on-landing — evergreen is a dashboard, not a transcript
 
-This is the rule that keeps plans readable as they age. Once a section is
-shipped:
-
-**A) Move full content to the per-stage HTML** (`docs/archive/<slug>-<section>-landed.html`).
-That file is the archival record — verbose, complete, immutable. It holds
-the original prose, the decision rationale, code excerpts, screenshots,
-debugging notes. Treat it like a git tag: write-once, read-forever.
-
-**B) Replace the section body on the evergreen with a landed-summary card.**
-The evergreen page now shows ONLY current state. The summary card has:
+Once a section ships, the evergreen shows only current state. Replace the section body with a landed-summary card:
 
 ```html
 <section id="s12-5" class="section-landed">
@@ -123,59 +88,28 @@ The evergreen page now shows ONLY current state. The summary card has:
     <h2>§ 12.5 — Bulk-encode rbb + magnetics</h2>
   </header>
   <p class="landed-summary">
-    Encoded 11,237 shots (97% of training-grade corpus) on 4× H200 in 3h12m
-    of GPU time. Visible-camera tokens at <code>/work/projects/imas_gpu/mast/tokens/rbb/</code>.
-    Full outcome record:
-    <a href="archive/tokenizers-12-5-landed.html">tokenizers §12.5 landed</a>
+    Encoded 11,237 shots (97% of training-grade corpus) on 4× H200 in 3h12m.
+    Full record: <a href="archive/tokenizers-12-5-landed.html">tokenizers §12.5 landed</a>
     (commits <code>abc1234</code>, <code>def5678</code>).
   </p>
 </section>
 ```
 
-The landed-summary is **2-4 lines max**:
-- Line 1: what was built, in past tense
-- Line 2: quantitative outcome (number, percentage, bench score)
-- Line 3 (optional): link to per-stage record + commit SHAs
-
-**C) Visual rules:**
-- Section header carries a `✓ landed YYYY-MM-DD` badge (`.badge-shipped` class).
-- Body uses `.landed-summary` class (muted, italic, or whatever the design
-  system specifies — see `~/Code/reckon/docs/_shared/dashboard.css`).
-- The original prose is GONE from the evergreen — readers find it via the
-  per-stage link, not by scrolling.
-
-**D) What to keep visible on the evergreen:**
-- Decision rows (locked or open) for that section — still load-bearing.
-- Open followups referencing the section — still actionable.
-- Tests pulse for the section — still drift-indicator.
-
-**E) Trigger:** the moment the section's status flips from `active`/`in-progress`
-to `shipped`. Don't collapse incrementally — collapse once, at landing.
-
-**F) Dissent path:** if a reader thinks the collapsed summary lost something
-load-bearing, they file a followup (`/reckon-edit <slug> --uncollapse <sec>`)
-rather than re-expanding the evergreen unilaterally. The per-stage HTML is
-always there to lift content from.
-
-**Why this matters:** plans that don't collapse become unreadable scrolls
-within 2-3 sprints. The evergreen should pass a 30-second-scan test: "what
-is currently in flight, what is locked, what is pending". Detail on shipped
-work has a different audience and belongs in the per-stage archive.
+**Rules:**
+- 2-4 lines max: what was built (past tense), quantitative outcome, link + SHAs.
+- Section header gets `✓ landed YYYY-MM-DD` badge (`.badge-shipped`).
+- Original prose moves to per-stage HTML — gone from evergreen.
+- Keep: locked decisions, open followups, tests pulse for the section.
+- Trigger: the moment status flips to `shipped`. Don't collapse incrementally.
+- **Why:** plans that don't collapse become unreadable after 2-3 sprints.
 
 ### 6. Update plan state and write followup
-
-Record outcomes in the plan's semantic HTML — not in a sidecar JSON file. Use
-MCP tools or `POST /plan/<project>/<slug>` with dotted patches:
 
 ```bash
 PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
 SLUG="<slug>"
-
-# Read current version
 PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
 CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
-
-# Patch: advance impl, set status shipped
 curl -s -X POST \
   -H 'Content-Type: application/json' \
   -H "If-Match: $CUR_VER" \
@@ -183,25 +117,15 @@ curl -s -X POST \
   "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
 ```
 
-The server rewrites `<meta name="plan-impl">` and `<meta name="plan-status">` in
-the HTML file in place.
+Write (or confirm) the §05 followup via MCP `append_followup`. If triggered by a followup, mark it resolved. Also update `docs/state/<project>/index.json` sprints/milestones if central-index is in use.
 
-Write (or confirm) the §05 followup via MCP `append_followup` or the HTTP
-patch. If this run was triggered by a followup, mark that followup resolved:
-`resolve_followup(project, slug, id, outcome, version)`.
-
-If the project uses central-index, also update `docs/state/<project>/index.json`
-sprints/milestones.
-
-**Eat-the-dog-food check.** Before declaring done, verify the plan HTML reflects
-the work:
+**Eat-the-dog-food check.** Before declaring done:
 - `GET /plan/<project>/<slug>` → `status` matches reality
-- The driving followup is resolved (`data-status="resolved"` on its `<article class="r-fu">`)
-- A next followup or `outcome: "done — no followup"` is present
+- Driving followup is resolved (`data-status="resolved"`)
+- Next followup or `outcome: "done — no followup"` is present
 - `version` has incremented
 
-Commit the coordinator delta:
-
+Commit:
 ```bash
 git add docs/<slug>.html docs/archive/<slug>-<section>-landed.html
 git commit -m "docs(reckon): <slug> §<section> landed — <one-line summary>"
@@ -209,9 +133,9 @@ git pull --no-rebase origin <branch>
 git push origin <branch>
 ```
 
-## Dispatch prompt template (§05)
+## §05 dispatch prompt template
 
-Embed this verbatim in every worker prompt, substituting angle-bracket fields:
+Embed in every worker prompt, substituting angle-bracket fields:
 
 ```
 Project: <project-name>
@@ -223,11 +147,10 @@ Context
   <2–3 sentences: what this section does and why it is being shipped now>
 
 State to read
-  GET /plan/<project>/<slug>   (parsed plan state — decisions, followups, status, version)
+  GET /plan/<project>/<slug>   (parsed state — decisions, followups, status, version)
 
 Locked decisions to honour
   <key> → <choice>
-  ...
 
 Open decisions to surface (do not resolve)
   <key>, <key>
@@ -246,21 +169,20 @@ Done-when
 
 ## Worker dispatch boilerplate
 
-Embed this block **verbatim** at the top of every worker prompt:
+Embed **verbatim** at the top of every worker prompt:
 
 ```
 PARALLEL-SAFETY RULES (binding — violating any is a hard failure):
 1. Stay on branch `<BRANCH>`. Never checkout or create branches.
 2. `git stash` is BANNED. Commit your files instead.
-3. `git add -A` / `git add .` / `git commit -a` / `git commit -am` are BANNED.
-   Required workflow:
-     git status --short                # confirm only YOUR paths are dirty
-     git add <explicit path list>      # never -A / . / *
-     git commit -m "..."               # never -a / -am
+3. `git add -A` / `git add .` / `git commit -a` are BANNED.
+   Required:
+     git status --short
+     git add <explicit path list>
+     git commit -m "..."
      git pull --no-rebase origin <BRANCH>
      git push origin <BRANCH>
 4. If any path outside your exclusive scope is dirty, STOP and report.
-   Do not stage it; do not stash it.
 5. Your final report MUST include `git show --stat <sha>`.
 
 YOUR EXCLUSIVE WRITE SCOPE (stage ONLY these):
@@ -269,17 +191,14 @@ YOUR EXCLUSIVE WRITE SCOPE (stage ONLY these):
 
 CONCURRENT WORKERS (do NOT touch their scopes):
   Worker B: <paths>
-  Worker C: <paths>
 ```
 
-Append the item-specific task body. End every worker prompt with:
+End every worker prompt with:
 
 ```
 FOLLOWUP REQUIREMENT (binding):
-After tests pass, write a followup into the plan's followups section via MCP append_followup
-or POST /plan/<project>/<slug> (patch key: "followups" — append to the array).
-The server renders this as a new <article class="r-fu"> element in the plan HTML.
-Followup object:
+After tests pass, write a followup into the plan via MCP append_followup
+or POST /plan/<project>/<slug>.
 {
   "id":               "f-<timestamp-base36>",
   "status":           "open",
@@ -288,38 +207,12 @@ Followup object:
   "title":            "<imperative one-liner>",
   "body":             "<2–3 sentences on what's next>",
   "recommends_skill": "/reckon-ship <slug> [section]" | "/reckon-edit <slug>" | null,
-  "touches":          ["<file>"],
   "tier":             "haiku" | "sonnet" | "opus",
-  "est_turn":         "~1h" | "~1d" | "~1 sprint",
   "prompt":           "<§05 template body, ready to paste>"
 }
 Then resolve your driving followup: set resolved_at, resolved_by, outcome, status="resolved".
 If nothing follows, set prompt = "done — no followup".
 ```
-
-## State write pattern
-
-Always read current `version` before writing to avoid 412 conflicts.
-
-**MCP (preferred):**
-```
-read_plan(project, slug)   → parsed state + version
-patch_plan(project, slug, {"impl": 0.8, "status": "active"}, version)
-```
-
-**HTTP fallback:**
-```bash
-PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
-CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
-curl -s -X POST \
-  -H 'Content-Type: application/json' \
-  -H "If-Match: $CUR_VER" \
-  -d '{"decisions.my-key.choice": "value", "decisions.my-key.when": "2026-05-26"}' \
-  "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
-```
-
-The patch body is a flat map of **dotted keys**. Always use `If-Match`.
-The server rewrites the corresponding semantic HTML elements in the plan file.
 
 ## Model selection
 
@@ -329,13 +222,11 @@ The server rewrites the corresponding semantic HTML elements in the plan file.
 | Python, docs, config, test additions | sonnet |
 | Research, file audits, inventory reads | haiku |
 
-When in doubt, escalate upward. A wasted Sonnet is cheap; a Haiku silently
-breaking a build is not.
+When in doubt, escalate upward.
 
 ## Cross-references
 
-- `~/.claude/skills/reckon-edit/SKILL.md` — how the evergreen plan gets its "landed" subsection and how followups are written
-- `~/.claude/skills/reckon-create/SKILL.md` — first-time plan scaffolding
-- `~/.claude/skills/reckon-status/SKILL.md` — read-only inspection before deciding what to ship
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints)
-- `~/Code/reckon/docs/_shared/` — shared CSS assets
+- `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; state write pattern (MCP + HTTP).
+- `reckon-create/SKILL.md` — first-time plan scaffolding and §05 template.
+- `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
