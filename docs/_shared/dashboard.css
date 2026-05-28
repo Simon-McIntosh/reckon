@@ -1461,41 +1461,66 @@ svg.spark .dot  { fill: var(--accent); }
 }
 .r-cmdk-trigger svg { color: var(--muted); }
 
-/* ===== Sort control pills (list column header) =================== */
+/* ===== Sort bar (list column header) ============================= */
 
-.r-sort-controls {
+.r-sort-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 10px 4px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
   border-bottom: var(--hairline);
 }
 
-.r-sort-pill {
-  font: inherit;
-  font-size: 11px;
+.r-sort-n {
   font-family: var(--mono);
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: var(--hairline);
+  font-size: 10.5px;
+  color: var(--faint, #a1a1aa);
+  min-width: 18px;
+  flex-shrink: 0;
+}
+
+.r-sort-select {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  font: 11.5px/1.4 var(--sans);
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 2px 0;
+  outline: none;
+}
+
+.r-sort-select:hover,
+.r-sort-select:focus { color: var(--ink); }
+
+.r-sort-dir {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hair);
+  border-radius: 5px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: background 100ms, color 100ms, border-color 100ms;
-  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 80ms, color 80ms, border-color 80ms;
 }
 
-.r-sort-pill:hover {
-  background: var(--bg-2);
+.r-sort-dir:hover {
+  background: var(--bg-3);
   color: var(--ink);
-  border-color: var(--line-2);
+  border-color: var(--line-2, #c4c4b8);
 }
 
-.r-sort-pill.active {
+.r-sort-dir.active {
   background: var(--ink);
-  border-color: var(--ink);
   color: var(--bg);
-  font-weight: 600;
+  border-color: var(--ink);
 }
 
 /* ===== Context chip (dependency filter indicator) ================ */
@@ -1610,10 +1635,6 @@ svg.spark .dot  { fill: var(--accent); }
   font-size: 11px;
 }
 
-.r-chip-type-research .r-chip-type-label::before {
-  content: "~ ";
-  color: var(--muted);
-}
 
 /* ===== Research type pill in list rows ========================== */
 
@@ -1635,6 +1656,12 @@ svg.spark .dot  { fill: var(--accent); }
   background: oklch(0.96 0.04 264);
   color: oklch(0.50 0.12 264);
   border: 1px solid oklch(0.88 0.08 264);
+}
+
+.r-type-pill.doc {
+  background: oklch(0.95 0.03 90);
+  color: oklch(0.46 0.07 90);
+  border: 1px solid oklch(0.87 0.06 90);
 }
 
 /* ===== Comment section grouper (plan.jsx comments panel) ======== */

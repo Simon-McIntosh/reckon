@@ -144,10 +144,14 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   // Sprints that have plans in inventory
   const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.sprint === s.id));
 
-  // Type counts
-  const planCount = M.inventory.filter(p => !p.type || p.type === "plan").length;
-  const researchCount = M.inventory.filter(p => p.type === "research").length;
-  const showTypeFilter = planCount > 0 && researchCount > 0;
+  // Dynamic type counts — shows all types that appear in inventory
+  const typeCounts = {};
+  for (const p of M.inventory) {
+    const t = p.type || "plan";
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  }
+  const allTypes = Object.entries(typeCounts).sort((a, b) => a[0].localeCompare(b[0]));
+  const showTypeFilter = allTypes.length > 1;
 
   return (
     <aside className="r-filters">
@@ -209,14 +213,11 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
       {showTypeFilter && (
         <div className="r-filter-group">
           <div className="r-filter-h">Type</div>
-          {[
-            { key: "plan", label: "plan", count: planCount },
-            { key: "research", label: "research", count: researchCount },
-          ].map(({ key, label, count }) => {
+          {allTypes.map(([key, count]) => {
             const on = (filters.type || []).includes(key);
             return (
               <div key={key} className={`r-chip r-chip-type r-chip-type-${key} ${on ? "on" : ""}`} onClick={() => toggle("type", key)}>
-                <span className="r-chip-type-label">{label}</span>
+                <span className="r-chip-type-label">{key}</span>
                 <span className="n">{count}</span>
               </div>
             );
@@ -231,50 +232,54 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
 
 const STATUS_ORDER = { blocked: 0, active: 1, "in-progress": 1, pending: 2, shipped: 3, done: 4, draft: 5 };
 
-function sortItems(items, sortBy) {
+// Default direction per sort key: "asc" = smallest/earliest/A first.
+const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc", status: "asc", progress: "desc", title: "asc" };
+
+function sortItems(items, sortBy, dir) {
   const arr = [...items];
+  const m = dir === "asc" ? 1 : -1;
   if (sortBy === "status") {
-    arr.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
+    arr.sort((a, b) => m * ((STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9)));
   } else if (sortBy === "progress") {
-    arr.sort((a, b) => (a.impl || 0) - (b.impl || 0));
+    arr.sort((a, b) => m * ((a.impl || 0) - (b.impl || 0)));
   } else if (sortBy === "title") {
-    arr.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    arr.sort((a, b) => m * (a.title || "").localeCompare(b.title || ""));
+  } else if (sortBy === "created") {
+    arr.sort((a, b) => {
+      if (!a.created && !b.created) return 0;
+      if (!a.created) return 1;
+      if (!b.created) return -1;
+      return m * a.created.localeCompare(b.created);
+    });
   } else {
-    // recent (default): sort by last desc, items without last go to end
+    // edited / recent (default): sort by last modified; undated items go to end
     arr.sort((a, b) => {
       if (!a.last && !b.last) return 0;
       if (!a.last) return 1;
       if (!b.last) return -1;
-      return b.last.localeCompare(a.last);
+      return m * a.last.localeCompare(b.last);
     });
   }
   return arr;
 }
 
-function ListCol({ search, setSearch, route, onNav, onSelectPlan, items, sortBy, setSortBy, filters, onClearFilters, onClearContext }) {
-  const sorted = React.useMemo(() => sortItems(items, sortBy), [items, sortBy]);
+function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext }) {
+  const sorted = React.useMemo(() => sortItems(items, sortBy, sortDir), [items, sortBy, sortDir]);
   const contextSlug = filters.context || null;
 
-  const SORTS = [
-    { key: "recent", label: "Recent" },
-    { key: "status", label: "Status" },
-    { key: "progress", label: "Progress" },
-    { key: "title", label: "Title" },
-  ];
+  const SortAscIcon = () => (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 9V1M2 4l3-3 3 3"/>
+    </svg>
+  );
+  const SortDescIcon = () => (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 1v8M2 6l3 3 3-3"/>
+    </svg>
+  );
 
   return (
     <div className="r-list">
-      <div className="r-search">
-        <input
-          placeholder="Search plans…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <div className="r-search-foot">
-          <span className="count">{items.length} plan{items.length === 1 ? "" : "s"}</span>
-        </div>
-      </div>
-
       {contextSlug && (
         <div className="r-context-chip">
           <span className="r-context-label">⟳ Related to: <code>{contextSlug}</code></span>
@@ -282,16 +287,22 @@ function ListCol({ search, setSearch, route, onNav, onSelectPlan, items, sortBy,
         </div>
       )}
 
-      <div className="r-sort-controls">
-        {SORTS.map(s => (
-          <button
-            key={s.key}
-            className={`r-sort-pill ${sortBy === s.key ? "active" : ""}`}
-            onClick={() => setSortBy(s.key)}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div className="r-sort-bar">
+        <span className="r-sort-n">{items.length}</span>
+        <select className="r-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="edited">Edited</option>
+          <option value="created">Created</option>
+          <option value="status">Status</option>
+          <option value="progress">Progress</option>
+          <option value="title">Title</option>
+        </select>
+        <button
+          className={`r-sort-dir ${sortDir !== (SORT_DIR_DEFAULTS[sortBy] || "asc") ? "active" : ""}`}
+          onClick={toggleSortDir}
+          title={sortDir === "asc" ? "Ascending" : "Descending"}
+        >
+          {sortDir === "asc" ? <SortAscIcon /> : <SortDescIcon />}
+        </button>
       </div>
 
       {items.length === 0 ? (
@@ -311,7 +322,7 @@ function ListCol({ search, setSearch, route, onNav, onSelectPlan, items, sortBy,
           >
             <span className={`dot ${p.status}`}></span>
             <div>
-              <div className="t">{p.title}{p.type === "research" && <span className="r-type-pill research">research</span>}</div>
+              <div className="t">{p.title}{(p.type && p.type !== "plan") && <span className={`r-type-pill ${p.type}`}>{p.type}</span>}</div>
               <div className="meta">
                 <span className="ms">{p.ms}</span>
                 <span className="sp">·</span>
@@ -507,6 +518,7 @@ function App() {
     shipped:   `reckon:${PROJECT}:showShipped`,
     collapsed: `reckon:${PROJECT}:filtersCollapsed`,
     groupBy:   `reckon:${PROJECT}:groupBy`,
+    sortDirs:  `reckon:${PROJECT}:sortDirs`,
   };
   const [filters, setFilters] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SK.filters) || "{}"); } catch { return {}; }
@@ -527,7 +539,6 @@ function App() {
     window.addEventListener("reckon:set-filters", onSet);
     return () => window.removeEventListener("reckon:set-filters", onSet);
   }, []);
-  const [search, setSearch] = useState("");
   const [promptOpen, setPromptOpen] = useState(false);
   const [filtersHidden, setFiltersHidden] = useState(() => {
     try { return localStorage.getItem(SK.collapsed) === "1"; } catch { return false; }
@@ -543,14 +554,24 @@ function App() {
   const [groupBy, setGroupBy] = useState(() => {
     try {
       const stored = localStorage.getItem(SK.groupBy);
-      // Migrate legacy "sprint" groupBy to "recent" sort
-      if (!stored || stored === "sprint") return "recent";
+      if (!stored || stored === "sprint" || stored === "recent") return "edited";
       return stored;
-    } catch { return "recent"; }
+    } catch { return "edited"; }
   });
   useEffect(() => {
     try { localStorage.setItem(SK.groupBy, groupBy); } catch {}
   }, [groupBy]);
+  const [sortDirs, setSortDirs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(SK.sortDirs) || "{}"); } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SK.sortDirs, JSON.stringify(sortDirs)); } catch {}
+  }, [sortDirs]);
+  const sortDir = sortDirs[groupBy] ?? SORT_DIR_DEFAULTS[groupBy] ?? "asc";
+  const toggleSortDir = () => {
+    const next = sortDir === "asc" ? "desc" : "asc";
+    setSortDirs(prev => ({ ...prev, [groupBy]: next }));
+  };
   const [cmdKOpen, setCmdKOpen] = useState(false);
 
   const [projects, setProjects] = useState([]);
@@ -621,16 +642,8 @@ function App() {
         list = list.filter(p => related.has(p.slug));
       }
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p =>
-        p.title?.toLowerCase().includes(q) ||
-        p.slug?.toLowerCase().includes(q) ||
-        p.summary?.toLowerCase().includes(q)
-      );
-    }
     return list;
-  }, [M, filters, search]);
+  }, [M, filters]);
 
   const onSelectPlan = useCallback((slug) => {
     nav({ view: "plan", slug });
@@ -684,7 +697,7 @@ function App() {
           <span></span><span></span>
         </button>
         <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
-        <ListCol search={search} setSearch={setSearch} route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} />
+        <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
           <div className="r-body">
