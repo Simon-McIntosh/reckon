@@ -232,8 +232,10 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
 
 const STATUS_ORDER = { blocked: 0, active: 1, "in-progress": 1, pending: 2, shipped: 3, done: 4, draft: 5 };
 
-// Default direction per sort key: "asc" = smallest/earliest/A first.
-const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc", status: "asc", progress: "desc", title: "asc" };
+// Default direction per sort key: "asc" = smallest/earliest/A/high-priority first.
+const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc", status: "asc", progress: "desc", title: "asc", priority: "asc" };
+
+const ROI_ORDER = { high: 0, mid: 1, low: 2 };
 
 function sortItems(items, sortBy, dir) {
   const arr = [...items];
@@ -244,15 +246,18 @@ function sortItems(items, sortBy, dir) {
     arr.sort((a, b) => m * ((a.impl || 0) - (b.impl || 0)));
   } else if (sortBy === "title") {
     arr.sort((a, b) => m * (a.title || "").localeCompare(b.title || ""));
+  } else if (sortBy === "priority") {
+    arr.sort((a, b) => m * ((ROI_ORDER[a.roi || "mid"] ?? 1) - (ROI_ORDER[b.roi || "mid"] ?? 1)));
   } else if (sortBy === "created") {
+    // created is a Unix timestamp (integer seconds) — numeric comparison for second precision
     arr.sort((a, b) => {
       if (!a.created && !b.created) return 0;
       if (!a.created) return 1;
       if (!b.created) return -1;
-      return m * a.created.localeCompare(b.created);
+      return m * ((a.created || 0) - (b.created || 0));
     });
   } else {
-    // edited / recent (default): sort by last modified; undated items go to end
+    // edited / recent (default): sort by plan-modified date string; undated items go to end
     arr.sort((a, b) => {
       if (!a.last && !b.last) return 0;
       if (!a.last) return 1;
@@ -263,7 +268,7 @@ function sortItems(items, sortBy, dir) {
   return arr;
 }
 
-function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext }) {
+function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext, onSetContext }) {
   const sorted = React.useMemo(() => sortItems(items, sortBy, sortDir), [items, sortBy, sortDir]);
   const contextSlug = filters.context || null;
 
@@ -277,25 +282,35 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
       <path d="M5 1v8M2 6l3 3 3-3"/>
     </svg>
   );
+  const RelatedIcon = () => (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="2.5" cy="6" r="1.4"/>
+      <circle cx="9.5" cy="2.5" r="1.4"/>
+      <circle cx="9.5" cy="9.5" r="1.4"/>
+      <path d="M3.9 5.5L8.1 3M3.9 6.5L8.1 9"/>
+    </svg>
+  );
 
   return (
     <div className="r-list">
-      {contextSlug && (
-        <div className="r-context-chip">
-          <span className="r-context-label">⟳ Related to: <code>{contextSlug}</code></span>
-          <button className="r-context-x" onClick={onClearContext} title="Clear context filter">×</button>
-        </div>
-      )}
-
       <div className="r-sort-bar">
         <span className="r-sort-n">{items.length}</span>
-        <select className="r-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="edited">Edited</option>
-          <option value="created">Created</option>
-          <option value="status">Status</option>
-          <option value="progress">Progress</option>
-          <option value="title">Title</option>
-        </select>
+        <div className="r-sort-select-wrap">
+          <svg className="r-sort-icon" width="11" height="8" viewBox="0 0 11 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+            <path d="M1 1h9M1 4h6M1 7h3"/>
+          </svg>
+          <select className="r-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="edited">Edited</option>
+            <option value="created">Created</option>
+            <option value="status">Status</option>
+            <option value="progress">Progress</option>
+            <option value="priority">Priority</option>
+            <option value="title">Title</option>
+          </select>
+          <svg className="r-sort-chevron" width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 1l3.5 3.5L8 1"/>
+          </svg>
+        </div>
         <button
           className={`r-sort-dir ${sortDir !== (SORT_DIR_DEFAULTS[sortBy] || "asc") ? "active" : ""}`}
           onClick={toggleSortDir}
@@ -304,6 +319,20 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
           {sortDir === "asc" ? <SortAscIcon /> : <SortDescIcon />}
         </button>
       </div>
+
+      {/* Context / Related filter — explicit opt-in, not auto-applied */}
+      {!contextSlug && route.view === "plan" && route.slug && (
+        <button className="r-related-btn" onClick={() => onSetContext(route.slug)} title="Show only plans related to the current one">
+          <RelatedIcon /> Related
+        </button>
+      )}
+      {contextSlug && (
+        <div className="r-context-chip">
+          <RelatedIcon />
+          <span className="r-context-label">Related to <code>{contextSlug}</code></span>
+          <button className="r-context-x" onClick={onClearContext} title="Clear">×</button>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="r-list-empty">
@@ -647,8 +676,11 @@ function App() {
 
   const onSelectPlan = useCallback((slug) => {
     nav({ view: "plan", slug });
-    setFilters(f => ({ ...f, context: slug }));
   }, [nav]);
+
+  const onSetContext = useCallback((slug) => {
+    setFilters(f => ({ ...f, context: slug }));
+  }, []);
 
   useEffect(() => {
     if (!promptOpen) return;
@@ -697,7 +729,7 @@ function App() {
           <span></span><span></span>
         </button>
         <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
-        <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} />
+        <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
           <div className="r-body">

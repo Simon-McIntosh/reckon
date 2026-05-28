@@ -289,7 +289,10 @@ function CommentReviewPopover({ reviewing, onClose, onDelete, onEdit }) {
 function useSelectionToComment(rootRef, planSlug) {
   const [sel, setSel] = useState(null);
   useEffect(() => {
-    function onMouseUp() {
+    function onMouseUp(e) {
+      // Capture cursor coords before deferring — native events aren't pooled
+      const mx = e.clientX;
+      const my = e.clientY;
       setTimeout(() => {
         const s = window.getSelection();
         if (!s || s.isCollapsed || !s.toString().trim()) { setSel(null); return; }
@@ -298,7 +301,6 @@ function useSelectionToComment(rootRef, planSlug) {
         let node = range.commonAncestorContainer;
         if (node.nodeType === 3) node = node.parentElement;
         if (!rootRef.current || !rootRef.current.contains(node)) { setSel(null); return; }
-        // Walk back through the article to find the nearest preceding <h2 id="...">
         const headings = rootRef.current.querySelectorAll("h2[id]");
         const startRect = range.getBoundingClientRect();
         let lastAbove = null;
@@ -310,10 +312,11 @@ function useSelectionToComment(rootRef, planSlug) {
         setSel({
           quote: s.toString().trim(),
           sectionId,
-          top: startRect.top,      // viewport y aligned to top of selection line
-          left: startRect.right,   // right edge of selection — button appears just after the text
+          // Position near cursor, not selection bounds
+          top:  Math.min(my + 4, window.innerHeight - 44),
+          left: Math.min(mx + 10, window.innerWidth - 112),
           planSlug,
-          range: range.cloneRange(), // preserved so the caller can inject an anchor with extractContents
+          range: range.cloneRange(),
         });
       }, 1);
     }

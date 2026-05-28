@@ -281,7 +281,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "dec_open":   rec["dec_open"],
             "blockers":   rec["blockers"],
             "last":       rec.get("modified", ""),
-            "created":    datetime.fromtimestamp(html_file.stat().st_ctime).strftime("%Y-%m-%d"),
+            "created":    int(getattr(html_file.stat(), "st_birthtime", None) or html_file.stat().st_ctime),
             "version":    rec["version"],
             "depends_on": rec.get("depends_on", []),
             "blocks":     rec.get("blocks", []),

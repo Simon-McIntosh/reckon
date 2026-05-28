@@ -415,10 +415,7 @@ function Plan({ slug, onNav }) {
       {viewMode === "reading" && sel && !composingAt && (
         <button
           className="r-float-btn"
-          style={{
-            top:  sel.top - 1,
-            left: Math.min(sel.left + 8, window.innerWidth - 110),
-          }}
+          style={{ top: sel.top, left: sel.left }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => { setComposingAt(sel); clearSel(); window.getSelection()?.removeAllRanges(); }}
           title="Add comment"
