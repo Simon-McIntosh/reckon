@@ -283,6 +283,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "last":       rec.get("modified", ""),
             "version":    rec["version"],
             "depends_on": rec.get("depends_on", []),
+            "blocks":     rec.get("blocks", []),
         })
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────

@@ -23,7 +23,7 @@
     var txt = "─── " + num + "/" + total + " · " + p.slug + " ───\n";
     txt += "Plan:   " + p.slug + "\n";
     txt += "Title:  " + (p.title || p.slug) + "\n";
-    txt += "Status: " + (p.status || "?") + (p.phase ? " · " + p.phase : "") + "\n";
+    txt += "Status: " + (p.status || "?") + (p.phase ? " · " + p.phase : "") + " · " + Math.round((p.impl || 0) * 100) + "% complete\n";
     if (p.ms) txt += "MS:     " + p.ms + "\n";
     if (p.sprint) txt += "Sprint: " + p.sprint + "\n";
     if (p.summary) txt += "\nSummary\n  " + p.summary + "\n";
@@ -61,6 +61,9 @@
       if (!p) return;
       var deps = p.depends_on || [];
       for (var k = 0; k < deps.length; k++) visit(deps[k]);
+      // Skip completed dependencies — shipped/done plans need no agent action
+      var status = (p.status || "").toLowerCase();
+      if (status === "shipped" || status === "done") return;
       order.push(slug);
     }
     for (var m = 0; m < items.length; m++) visit(items[m].slug);
