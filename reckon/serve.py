@@ -39,6 +39,7 @@ import mimetypes
 import os
 import re
 import socket
+import subprocess
 from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -220,6 +221,33 @@ def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
 _DISC_CACHE: dict = {}
 
 
+def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
+    """Return {repo-relative-path: unix_ts} for the first commit of each HTML file."""
+    try:
+        rel_docs = str(docs_dir.relative_to(repo_dir))
+        result = subprocess.run(
+            ["git", "log", "--diff-filter=A", "--format=COMMIT %at",
+             "--name-only", "--", rel_docs],
+            capture_output=True, text=True, cwd=repo_dir, timeout=10,
+        )
+        if result.returncode != 0:
+            return {}
+        times: dict[str, int] = {}
+        ts: int | None = None
+        for raw in result.stdout.splitlines():
+            line = raw.strip()
+            if line.startswith("COMMIT "):
+                try:
+                    ts = int(line[7:])
+                except ValueError:
+                    ts = None
+            elif line and ts is not None and not line.startswith("COMMIT"):
+                times[line] = ts
+        return times
+    except Exception:
+        return {}
+
+
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
     """Return {inventory, sprints, milestones} by scanning HTML doc pages.
 
@@ -232,6 +260,11 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     cached = _DISC_CACHE.get(project)
     if cached and cached[0] == sig:
         return cached[1]
+
+    # Batch git first-commit lookup — gives true creation time for tracked files.
+    # Falls back to inode ctime when a file is untracked or git is unavailable.
+    repo_dir = docs_dir.parent
+    git_times = _git_first_committed(repo_dir, docs_dir)
 
     inventory: list[dict] = []
     seen_slugs: set[str] = set()
@@ -281,7 +314,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "dec_open":   rec["dec_open"],
             "blockers":   rec["blockers"],
             "last":       rec.get("modified", ""),
-            "created":    int(getattr(html_file.stat(), "st_birthtime", None) or html_file.stat().st_ctime),
+            "created":    git_times.get(str(html_file.relative_to(repo_dir)))
+                          or int(getattr(html_file.stat(), "st_birthtime", None) or html_file.stat().st_ctime),
             "version":    rec["version"],
             "depends_on": rec.get("depends_on", []),
             "blocks":     rec.get("blocks", []),

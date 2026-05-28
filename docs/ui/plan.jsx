@@ -454,7 +454,7 @@ function Plan({ slug, onNav }) {
                   [Object.assign({}, P, {
                     decisions: decs,
                     followups: fullState?.followups || [],
-                    comments:  fullState?.comments  || (planLoad(slug)?.comments) || {},
+                    comments,  // live state — always current; fullState snapshot can be stale
                   })],
                   window.STATE
                 )
