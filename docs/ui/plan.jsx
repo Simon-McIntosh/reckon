@@ -180,6 +180,22 @@ function Plan({ slug, onNav }) {
                   <SectionComments comments={comments["decisions"]} />
                 </>
               )}
+
+              {/* Comments on non-decisions HTML body sections */}
+              {Object.entries(comments).filter(([id, arr]) => id !== "decisions" && (arr || []).length > 0).length > 0 && (
+                <>
+                  <h2 id="comments-panel"><span className="sec">§</span>Comments</h2>
+                  {Object.entries(comments)
+                    .filter(([id, arr]) => id !== "decisions" && (arr || []).length > 0)
+                    .map(([id, arr]) => (
+                      <div key={id} className="r-comment-section">
+                        <div className="r-comment-section-h">↳ {id === "_top" ? "top of page" : `#${id}`}</div>
+                        <SectionComments comments={arr} />
+                      </div>
+                    ))
+                  }
+                </>
+              )}
             </>
           ) : (
             /* Fallback: no HTML file — render from state JSON sections */

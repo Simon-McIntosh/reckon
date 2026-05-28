@@ -271,9 +271,9 @@ function useSelectionToComment(rootRef, planSlug) {
 function SectionComments({ comments }) {
   if (!comments || comments.length === 0) return null;
   return (
-    <div className="section-comments">
+    <div className="r-section-comments">
       {comments.map(c => (
-        <div key={c.id} className="inline-comment">
+        <div key={c.id} className="r-inline-comment">
           <div className="meta">{c.who} · {c.when}</div>
           {c.quote && <div className="quote">"{c.quote}"</div>}
           <div>{c.body}</div>
