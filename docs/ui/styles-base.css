@@ -786,28 +786,28 @@ body {
   border-left: 2px solid var(--line);
 }
 
-/* Floating Comment button on selection — small green circle, like Google Docs */
+/* Floating Comment button on selection — matches gen-prompt style */
 
 .r-float-btn {
   position: fixed;
   z-index: 50;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--comment);
-  color: #fff;
-  border: 0;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px oklch(0.48 0.14 148 / 0.35);
-  transition: transform 100ms, box-shadow 100ms;
+  padding: 4px 11px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  font: 500 12.5px var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background 120ms, border-color 120ms, color 120ms;
 }
 .r-float-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px oklch(0.48 0.14 148 / 0.45);
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
 }
 
 /* Legacy composer popover (fallback — newer comments use .r-comment-compose) */
@@ -1138,27 +1138,27 @@ body {
 .r-cm-anchor {
   background: transparent;
   text-decoration: underline;
-  text-decoration-color: var(--comment);
+  text-decoration-color: var(--muted);
   text-decoration-style: solid;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 2px;
   cursor: pointer;
-  border-radius: 2px;
 }
 .r-cm-anchor:hover {
-  background: var(--comment-bg);
-  text-decoration-thickness: 3px;
+  text-decoration-color: var(--ink-2);
+  text-decoration-thickness: 2px;
+  background: var(--bg-2);
 }
 .r-cm-badge {
   display: inline-block;
   margin-left: 1px;
   font-size: 9px;
-  color: var(--comment);
+  color: var(--muted);
   font-family: var(--mono);
-  font-weight: 700;
+  font-weight: 600;
   vertical-align: super;
   cursor: pointer;
   line-height: 1;
-  opacity: 0.8;
+  opacity: 0.55;
 }
-.r-cm-badge:hover { opacity: 1; }
+.r-cm-badge:hover { opacity: 1; color: var(--ink-2); }

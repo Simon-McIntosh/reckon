@@ -310,8 +310,8 @@ function useSelectionToComment(rootRef, planSlug) {
         setSel({
           quote: s.toString().trim(),
           sectionId,
-          top: startRect.bottom,   // viewport y (no scroll offset — content scrolls inside .r-content)
-          left: startRect.left,    // left edge of selection
+          top: startRect.top,      // viewport y aligned to top of selection line
+          left: startRect.right,   // right edge of selection — button appears just after the text
           planSlug,
           range: range.cloneRange(), // preserved so the caller can inject an anchor with extractContents
         });
