@@ -1,7 +1,7 @@
 // Shared bits — comment popover, prompt modal, helpers.
 // Exposed on window.reckon (canonical) and window.planUtils (backward-compat alias).
 
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+const { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } = React;
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -163,10 +163,23 @@ function PromptModal({ initialPrompt, planSlug, onClose }) {
 }
 
 // ─── Comment composer popover ───────────────────────────────────────────
+//
+// Floating card anchored to a text selection. Posts a quote-anchored comment
+// on Enter (Shift+Enter for newline). Click-outside or Esc closes.
+// Uses position:fixed with viewport coordinates supplied by the caller.
 
 function CommentPopover({ anchor, onClose, onPost }) {
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(anchor.body || "");
   const ref = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Focus + Esc-to-close
+  useEffect(() => {
+    textareaRef.current?.focus();
+    const k = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", k);
+    return () => document.removeEventListener("keydown", k);
+  }, [onClose]);
 
   // Click-outside closes
   useEffect(() => {
@@ -177,48 +190,91 @@ function CommentPopover({ anchor, onClose, onPost }) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [onClose]);
 
-  const post = () => {
-    if (!body.trim()) return;
-    onPost(body.trim());
+  const post = () => { if (body.trim()) onPost(body.trim()); };
+  const onKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); post(); }
   };
 
-  // Enter posts; Shift+Enter for newline
-  const onKey = (e) => {
-    if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      post();
-    }
-  };
+  // Position: just below the anchor point, clamped to viewport
+  const top  = Math.min(anchor.top + 8, window.innerHeight - 200);
+  const left = Math.max(20, Math.min(anchor.left, window.innerWidth - 380));
 
   return (
-    <div
-      ref={ref}
-      className="comment-popover"
-      style={{
-        top: anchor.top + 8,
-        left: Math.max(20, Math.min(anchor.left - 200, window.innerWidth - 440)),
-      }}
-    >
-      <div className="quote-strip">
-        <span className="qm">¶</span>
-        <span className="qt">"{anchor.quote.length > 130 ? anchor.quote.slice(0, 130) + "…" : anchor.quote}"</span>
+    <div ref={ref} className="r-comment-compose" style={{ top, left }}>
+      <div className="r-cc-header">
+        <span className="r-cc-title">{anchor.editing ? "Edit comment" : "Comment"}</span>
+        <button className="r-cc-close" onClick={onClose} title="Close · Esc">×</button>
       </div>
-      <div className="row">
-        <textarea
-          autoFocus
-          placeholder="Comment — Enter to post, Shift+Enter for newline"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={onKey}
-          rows={1}
-        />
-        <button className="post-btn" onClick={post} disabled={!body.trim()} title="Post (Enter)">↵</button>
+      {anchor.quote && (
+        <div className="r-cc-quote">
+          <span className="r-cc-qmark">¶</span>
+          <span className="r-cc-qtext">"{anchor.quote.length > 120 ? anchor.quote.slice(0, 120) + "…" : anchor.quote}"</span>
+        </div>
+      )}
+      <textarea
+        ref={textareaRef}
+        className="r-cc-textarea"
+        placeholder="Add a comment…"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        onKeyDown={onKey}
+        rows={3}
+      />
+      <div className="r-cc-foot">
+        <span className="r-cc-hint">Shift+Enter for newline</span>
+        <button className="r-cc-save" onClick={post} disabled={!body.trim()}>
+          {anchor.editing ? "Update · Enter" : "Save · Enter"}
+        </button>
       </div>
-      <div className="footer">
-        <span>writes to <code>{anchor.planSlug}.json#comments.{anchor.sectionId}</code></span>
-        <span style={{ flex: 1 }}></span>
-        <span className="cancel" onClick={onClose}>Cancel · Esc</span>
+    </div>
+  );
+}
+
+// ─── Comment review popover ─────────────────────────────────────────────
+//
+// Shown when the user clicks an injected `.r-cm-anchor` mark in the plan
+// body. Displays the comment author, timestamp, body and offers Delete /
+// Edit. Esc or click-outside dismisses.
+
+function CommentReviewPopover({ reviewing, onClose, onDelete, onEdit }) {
+  const ref = useRef(null);
+  const { comment, x, y } = reviewing;
+
+  useEffect(() => {
+    const k = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", k);
+    return () => document.removeEventListener("keydown", k);
+  }, [onClose]);
+
+  useEffect(() => {
+    function onDown(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    }
+    setTimeout(() => document.addEventListener("mousedown", onDown), 30);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [onClose]);
+
+  const top  = Math.min(y, window.innerHeight - 160);
+  const left = Math.max(20, Math.min(x, window.innerWidth - 340));
+
+  return (
+    <div ref={ref} className="r-comment-review" style={{ top, left }}>
+      <div className="r-cr-header">
+        <Who name={comment.who} />
+        <span className="r-cr-when">{comment.when}</span>
+        <button className="r-cc-close" onClick={onClose} title="Close · Esc">×</button>
+      </div>
+      {comment.quote && (
+        <div className="r-cc-quote" style={{ fontSize: 11.5 }}>
+          <span className="r-cc-qmark">¶</span>
+          <span className="r-cc-qtext">"{comment.quote.length > 100 ? comment.quote.slice(0, 100) + "…" : comment.quote}"</span>
+        </div>
+      )}
+      <div className="r-cr-body">{comment.body}</div>
+      <div className="r-cr-foot">
+        <button className="r-cr-del" onClick={() => onDelete(comment.id)} title="Delete comment">Delete</button>
+        <span style={{ flex: 1 }} />
+        <button className="r-cr-edit" onClick={() => onEdit(comment)} title="Edit comment">Edit</button>
       </div>
     </div>
   );
@@ -254,8 +310,8 @@ function useSelectionToComment(rootRef, planSlug) {
         setSel({
           quote: s.toString().trim(),
           sectionId,
-          top: startRect.bottom + window.scrollY,
-          left: startRect.right,
+          top: startRect.bottom,   // viewport y (no scroll offset — content scrolls inside .r-content)
+          left: startRect.left,    // left edge of selection
           planSlug,
         });
       }, 1);
@@ -288,12 +344,12 @@ function SectionComments({ comments }) {
 const _reckonUtils = {
   fmtPct, whenShort, planSave, planLoad,
   buildHandoffPrompt,
-  PromptModal, CommentPopover, useSelectionToComment, SectionComments,
+  PromptModal, CommentPopover, CommentReviewPopover, useSelectionToComment, SectionComments,
 };
 
 Object.assign(window, {
   reckon:    _reckonUtils,
   planUtils: _reckonUtils,  // backward-compat alias
   // Top-level window properties for cross-Babel-script access
-  planSave, planLoad, PromptModal, CommentPopover, useSelectionToComment, SectionComments,
+  planSave, planLoad, PromptModal, CommentPopover, CommentReviewPopover, useSelectionToComment, SectionComments,
 });

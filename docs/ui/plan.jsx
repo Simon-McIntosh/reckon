@@ -11,6 +11,46 @@
 // table. Followups and the resolved-log always come from state JSON (below the
 // HTML body).
 
+// Walk the rendered plan HTML for the first text node whose textContent
+// contains `comment.quote`, and wrap that range in a <mark class="r-cm-anchor">
+// + tiny <sup class="r-cm-badge">¶</sup>. No-op if the comment has no quote,
+// no id, or has already been injected (looked up via [data-cm="<id>"]).
+//
+// Module-level (not a hook) so the function identity is stable across renders.
+function injectCommentMark(htmlRef, comment) {
+  const root = htmlRef.current;
+  if (!root || !comment || !comment.quote || !comment.id) return;
+  // Avoid double-injection
+  if (root.querySelector(`[data-cm="${comment.id}"]`)) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let textNode;
+  while ((textNode = walker.nextNode())) {
+    // Skip text that's already inside a comment mark
+    if (textNode.parentElement?.closest(".r-cm-anchor")) continue;
+    const idx = textNode.textContent.indexOf(comment.quote);
+    if (idx < 0) continue;
+    try {
+      const range = document.createRange();
+      range.setStart(textNode, idx);
+      range.setEnd(textNode, idx + comment.quote.length);
+      const mark = document.createElement("mark");
+      mark.className = "r-cm-anchor";
+      mark.dataset.cm = comment.id;
+      mark.title = comment.body;
+      range.surroundContents(mark);
+      const badge = document.createElement("sup");
+      badge.className = "r-cm-badge";
+      badge.dataset.cm = comment.id;
+      badge.textContent = "¶";
+      mark.after(badge);
+    } catch (_) {
+      // surroundContents fails when the range straddles element boundaries —
+      // skip silently; the comment still shows in the §Comments panel.
+    }
+    break; // highlight first occurrence only
+  }
+}
+
 function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
@@ -27,6 +67,7 @@ function Plan({ slug, onNav }) {
   const [fullState, setFullState] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
+  const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
   const [viewMode, setViewMode] = useState("reading");
   useEffect(() => { setViewMode("reading"); }, [slug]);
 
@@ -128,12 +169,58 @@ function Plan({ slug, onNav }) {
   const addComment = (sectionId, body, quote) => {
     if (!body || !body.trim()) return;
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+    // If composing was opened in "edit" mode, replace the existing comment
+    // with the same id in the matching section array.
+    if (composingAt && composingAt.editing && composingAt.id) {
+      const arr = comments[sectionId] || [];
+      const replaced = arr.map(c => c.id === composingAt.id
+        ? { ...c, body: body.trim(), when: now, ...(quote ? { quote } : {}) }
+        : c
+      );
+      const next = { ...comments, [sectionId]: replaced };
+      setComments(next);
+      planSave(slug, { [`comments.${sectionId}`]: replaced });
+      if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} updated`);
+      return;
+    }
     const c = { id: `c-${Date.now()}`, who: author, when: now, body: body.trim(), ...(quote ? { quote } : {}) };
     const next = { ...comments, [sectionId]: [...(comments[sectionId] || []), c] };
     setComments(next);
     planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
     if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} +1`);
   };
+
+  // Inject quote-anchor highlights into the rendered plan HTML after each
+  // (planHtml | comments | viewMode) update. Uses useLayoutEffect so the DOM
+  // is settled before the user sees anything paint. viewMode is included so
+  // toggling reading→graph→reading re-runs injection on the remounted article.
+  useLayoutEffect(() => {
+    if (viewMode !== "reading") return;
+    if (!htmlRef.current || !planHtml) return;
+    Object.values(comments).flat().forEach(c => {
+      if (c && c.quote) injectCommentMark(htmlRef, c);
+    });
+  }, [planHtml, comments, viewMode]);
+
+  // Click-to-review: any click on an injected [data-cm] element opens
+  // CommentReviewPopover anchored to that element's viewport rect.
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) return;
+    const handleClick = (e) => {
+      const target = e.target.closest("[data-cm]");
+      if (!target) return;
+      const id = target.dataset.cm;
+      const all = Object.values(comments).flat();
+      const c = all.find(x => x.id === id);
+      if (!c) return;
+      const rect = target.getBoundingClientRect();
+      e.stopPropagation();
+      setReviewing({ id, comment: c, x: rect.left, y: rect.bottom + 6 });
+    };
+    el.addEventListener("click", handleClick);
+    return () => el.removeEventListener("click", handleClick);
+  }, [comments, viewMode]);
 
   return (
     <div className="r-page">
@@ -229,10 +316,11 @@ function Plan({ slug, onNav }) {
       {viewMode === "reading" && sel && !composingAt && (
         <button
           className="r-float-btn"
-          style={{ top: sel.top + 6, left: Math.min(sel.left - 60, window.innerWidth - 140) }}
+          style={{ top: sel.top - 14, right: 24 }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => { setComposingAt(sel); clearSel(); window.getSelection()?.removeAllRanges(); }}
-        >¶ Comment</button>
+          title="Comment on selection"
+        >¶</button>
       )}
 
       {composingAt && (
@@ -240,6 +328,58 @@ function Plan({ slug, onNav }) {
           anchor={composingAt}
           onClose={() => setComposingAt(null)}
           onPost={(body) => { addComment(composingAt.sectionId, body, composingAt.quote); setComposingAt(null); }}
+        />
+      )}
+
+      {reviewing && (
+        <window.reckon.CommentReviewPopover
+          reviewing={reviewing}
+          onClose={() => setReviewing(null)}
+          onDelete={(id) => {
+            // Remove the comment with this id from whichever section holds it.
+            const next = {};
+            for (const [sid, arr] of Object.entries(comments)) {
+              const filtered = (arr || []).filter(c => c.id !== id);
+              next[sid] = filtered;
+              if ((arr || []).length !== filtered.length) {
+                planSave(slug, { [`comments.${sid}`]: filtered });
+              }
+            }
+            // Also tear down the injected mark + badge so the highlight disappears.
+            if (htmlRef.current) {
+              htmlRef.current.querySelectorAll(`[data-cm="${id}"]`).forEach(el => {
+                if (el.tagName === "MARK") {
+                  // Unwrap the mark — replace with its text node(s)
+                  const parent = el.parentNode;
+                  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                  parent.removeChild(el);
+                } else {
+                  el.remove();
+                }
+              });
+            }
+            setComments(next);
+            setReviewing(null);
+            if (window.flashSaved) window.flashSaved(`${slug}.comments −1`);
+          }}
+          onEdit={(c) => {
+            // Find the section that owns this comment, then re-open the
+            // composer prefilled with the existing body. addComment() will
+            // recognise editing:true + id and replace in place.
+            let sectionId = null;
+            for (const [sid, arr] of Object.entries(comments)) {
+              if ((arr || []).some(x => x.id === c.id)) { sectionId = sid; break; }
+            }
+            setReviewing(null);
+            setComposingAt({
+              ...c,
+              sectionId: sectionId || "_top",
+              planSlug: slug,
+              editing: true,
+              top: reviewing.y,
+              left: reviewing.x,
+            });
+          }}
         />
       )}
 

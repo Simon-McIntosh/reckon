@@ -5,6 +5,10 @@
   --sb-width: 252px;
   --warn:   oklch(0.66 0.13 85);
   --warn-2: oklch(0.95 0.05 85);
+  /* Comment system — muted green palette */
+  --comment:        oklch(0.48 0.14 148);   /* muted green — text, icons */
+  --comment-bg:     oklch(0.96 0.05 148);   /* very light green — backgrounds */
+  --comment-border: oklch(0.86 0.09 148);   /* mid green — borders */
 }
 
 html, body { margin: 0; padding: 0; }
@@ -754,13 +758,13 @@ body {
 .r-section-comments {
   margin: 8px 0 12px;
   padding: 0 0 0 12px;
-  border-left: 2px solid var(--accent);
+  border-left: 2px solid var(--comment);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .r-inline-comment {
-  background: oklch(0.92 0.04 55 / 0.20);
+  background: var(--comment-bg);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 13px;
@@ -782,26 +786,34 @@ body {
   border-left: 2px solid var(--line);
 }
 
-/* Floating Comment button on selection */
+/* Floating Comment button on selection — small green circle, like Google Docs */
 
 .r-float-btn {
-  position: absolute;
+  position: fixed;
   z-index: 50;
-  padding: 6px 14px;
-  background: var(--ink);
-  color: var(--bg);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--comment);
+  color: #fff;
   border: 0;
-  border-radius: 16px;
-  font: 500 12.5px var(--sans);
+  font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px oklch(0.48 0.14 148 / 0.35);
+  transition: transform 100ms, box-shadow 100ms;
 }
-.r-float-btn:hover { background: var(--accent); }
+.r-float-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px oklch(0.48 0.14 148 / 0.45);
+}
 
-/* Composer popover */
+/* Legacy composer popover (fallback — newer comments use .r-comment-compose) */
 
 .r-pop {
-  position: absolute;
+  position: fixed;
   z-index: 60;
   width: 420px;
   background: #fff;
@@ -965,4 +977,181 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ── Comment composer (new) — floating card for posting a quote-anchored comment */
+
+.r-comment-compose {
+  position: fixed;
+  z-index: 200;
+  width: 360px;
+  background: var(--bg);
+  border: 1.5px solid var(--comment-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px oklch(0.48 0.14 148 / 0.18);
+  padding: 12px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.r-cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.r-cc-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--comment);
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.r-cc-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.r-cc-close:hover { color: var(--ink); }
+.r-cc-quote {
+  display: flex;
+  gap: 6px;
+  padding: 5px 9px;
+  background: var(--comment-bg);
+  border-left: 3px solid var(--comment);
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.r-cc-qmark {
+  color: var(--comment);
+  font-family: var(--mono);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.r-cc-qtext {
+  color: var(--ink-2);
+  font-style: italic;
+}
+.r-cc-textarea {
+  width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font: 13.5px/1.45 var(--sans);
+  resize: none;
+  outline: none;
+  background: var(--bg);
+  color: var(--ink);
+  box-sizing: border-box;
+  field-sizing: content;
+  min-height: 62px;
+  max-height: 160px;
+}
+.r-cc-textarea:focus { border-color: var(--comment); }
+.r-cc-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.r-cc-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  flex: 1;
+}
+.r-cc-save {
+  background: var(--comment);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font: 500 12.5px var(--sans);
+  cursor: pointer;
+}
+.r-cc-save:hover { filter: brightness(1.1); }
+.r-cc-save:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Comment review popover (click on highlighted text) */
+
+.r-comment-review {
+  position: fixed;
+  z-index: 200;
+  width: 320px;
+  background: var(--bg);
+  border: 1.5px solid var(--comment-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px oklch(0.48 0.14 148 / 0.18);
+  padding: 11px 13px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.r-cr-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.r-cr-when {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  flex: 1;
+}
+.r-cr-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.r-cr-foot {
+  display: flex;
+  gap: 8px;
+}
+.r-cr-del {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.r-cr-del:hover { border-color: #e55; color: #e55; }
+.r-cr-edit {
+  background: var(--comment);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.r-cr-edit:hover { filter: brightness(1.1); }
+
+/* ── Comment anchor (injected into the plan HTML for each quote-anchored comment) */
+
+.r-cm-anchor {
+  background: oklch(0.94 0.06 148);
+  border-bottom: 1.5px solid var(--comment);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0 1px;
+  text-decoration: none;
+}
+.r-cm-anchor:hover { background: oklch(0.90 0.09 148); }
+.r-cm-badge {
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 10px;
+  color: var(--comment);
+  font-family: var(--mono);
+  font-weight: 700;
+  vertical-align: super;
+  cursor: pointer;
+  line-height: 1;
 }
