@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-05-29">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -200,7 +200,7 @@ Tests: every existing plan across the 4 projects parses into PlanState (xfail+ca
 those are F5 migrations). Keep optimistic-concurrency + atomic .tmp write unchanged.</pre>
     <p class="r-fu-outcome">SHIPPED (commit cf5fb2b). reckon/_schema.py: PlanState (source of truth) + Decision/Followup/Question/ResearchItem/Comment + IndexState/IndexData envelope; SCHEMA_VERSION=1.0; derived JSON Schema at docs/_shared/plan.schema.json (gen_json_schema/write_json_schema). _plan_html.py: ADDED from_html/to_html wrappers + additive docs-project capture; read_state/write_state behaviour byte-identical (existing callers untouched). Lenient read (never raises: med→mid, doc→research, status union via json_schema_extra not Literal, derived statuses, extra=ignore); strict validate_for_write() is the reject boundary. canonical_dump()=model_dump(exclude_unset=True) reproduces read_state&#x27;s sparse-top/dense-nested shape; IndexData._version alias + by_alias dump override avoids the index-counter-zeroing trap. Verified: model_dump-shape==read_state dict, byte-identity to_html∘from_html==write_state∘read_state, state-level round-trip. Tests: 702 passed (54 pre-existing green); cross-project conformance 600/600 plans parse — ZERO F5 migrations needed. NEXT: f-tool-collapse (F3 edit_plan+doctor+read-injector, opus) + f-skills-rewrite (F4 skills, sonnet) dispatch in parallel on this schema.</p>
     </article>
-<article class="r-fu" data-id="f-tool-collapse" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tool-collapse" data-status="resolved" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="2026-05-29T14:31:34+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">F3 — edit_plan + doctor + read-injector (additive, non-breaking)</h4>
     <div class="r-fu-body">The ~4-tool surface, built on the schema. Add alongside the 19; don&#x27;t remove yet.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -213,8 +213,9 @@ resulting PlanState against the schema (reject with field errors); version-check
 Add doctor(project) — validate every plan vs schema + reindex index.json rollups. Enrich read_plan to inject
 schema/dos-don&#x27;ts + a discovery mode. Keep all 19 existing tools working. Tests via `uv run --with pytest
 pytest tests/ -q` (NOT global pytest — it runs a python without bs4). 33 existing must stay green.</pre>
+    <p class="r-fu-outcome">SHIPPED (commit 622ead9), additive + non-breaking. reckon/_store.py: pure op-engine apply_ops + per-verb helpers (_apply_set/append/resolve/lock/move), OpError, id/ts helpers, new_plan_html template. reckon/mcp.py: edit_plan(project, slug, ops, expected_version, create=False) — dict-in/dict-out: ops mutate a deepcopied working dict, validated via PlanState.validate_for_write (plans) / IndexData (index), rejected with field errors on failure, then persisted via the existing version-checked atomic write_plan (no model_dump round-trip → sidesteps the exclude_unset/fields_set trap). doctor(project) audits every plan (warn half; never mutates) + recomputes rollups. read_plan gains discovery mode (slug omitted → inventory + followups/questions/sprints facets) + with_schema=True context injection (schema + dos/don&#x27;ts + op_vocab). All 19 prior tools stay registered + green. Verbs set/append/resolve/lock/move map all 14 mutators; create via version-0 template (failed create unlinks the stub — no orphan); set impl clamps; set inventory.* is a durable no-op (folds update_inventory_item). +44 tests; 746 passed. Live integration check: F4&#x27;s create/lock+append/ship/index/move exemplars all execute end-to-end; all 3 reject paths fire. SHARP EDGE for F5: edit_plan re-validates the WHOLE plan, so a plan with a pre-existing violation is un-editable via edit_plan until fixed — safe at cutover only because F1 found 600/600 conform; F5 MUST run doctor pre-cutover before removing the granular escape hatch.</p>
     </article>
-<article class="r-fu" data-id="f-skills-rewrite" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-skills-rewrite" data-status="resolved" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="2026-05-29T14:31:45+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">F4 — Rewrite reckon-* skills around schema + edit_plan</h4>
     <div class="r-fu-body">Skills own prose authoring; reference the schema + exemplars + dos/don&#x27;ts; use only read_plan + edit_plan.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -225,6 +226,7 @@ Depends on F2/F3. Rewrite skills/reckon-create, reckon-edit, reckon-ship, reckon
 canonical authoring prompt + copy-paste exemplars + dos/don&#x27;ts (fold in agent-plan-authoring §3-§5), point at
 docs/_shared/plan.schema.json as the contract, and use ONLY read_plan (context) + edit_plan (write). Remove
 references to the 15 granular tools.</pre>
+    <p class="r-fu-outcome">SHIPPED (commit 9c17c35). reckon-create/edit/ship/status SKILL.md rewritten to lead with the authoring contract (agent-plan-authoring §3 tag-rationale + §4 exemplars + §5 dos/don&#x27;ts), point at docs/_shared/plan.schema.json as the published derived contract, and use ONLY read_plan (context/discovery) + edit_plan (the one safe write). All 15 granular-tool references removed (grep: 0 matches across the 4 skills + PLAN-FORMAT.md). reckon-status stays pure-read (read_plan discovery; edit_plan named as banned). PLAN-FORMAT.md aligned: names the schema as authoritative, adds the previously-undocumented plan-archived/plan-read flags + the index.json envelope ({updated,project,doc,data{_version,sprints,milestones,timeline,blockers}}) + synthesised-inventory + lenient-read/strict-write rules. Each skill carries a concrete edit_plan exemplar; all reconciled against F3&#x27;s shipped signature via the live integration check. NOTE carried to F5: AGENTS.md still enumerates the 15 old tools — update it to the ~4-tool surface as part of the F5 cutover.</p>
     </article>
 <article class="r-fu" data-id="f-migrate-remove" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">F5 — Migrate all projects to schema; deprecate→remove granular tools</h4>
