@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-05-29">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -228,7 +228,7 @@ docs/_shared/plan.schema.json as the contract, and use ONLY read_plan (context) 
 references to the 15 granular tools.</pre>
     <p class="r-fu-outcome">SHIPPED (commit 9c17c35). reckon-create/edit/ship/status SKILL.md rewritten to lead with the authoring contract (agent-plan-authoring §3 tag-rationale + §4 exemplars + §5 dos/don&#x27;ts), point at docs/_shared/plan.schema.json as the published derived contract, and use ONLY read_plan (context/discovery) + edit_plan (the one safe write). All 15 granular-tool references removed (grep: 0 matches across the 4 skills + PLAN-FORMAT.md). reckon-status stays pure-read (read_plan discovery; edit_plan named as banned). PLAN-FORMAT.md aligned: names the schema as authoritative, adds the previously-undocumented plan-archived/plan-read flags + the index.json envelope ({updated,project,doc,data{_version,sprints,milestones,timeline,blockers}}) + synthesised-inventory + lenient-read/strict-write rules. Each skill carries a concrete edit_plan exemplar; all reconciled against F3&#x27;s shipped signature via the live integration check. NOTE carried to F5: AGENTS.md still enumerates the 15 old tools — update it to the ~4-tool surface as part of the F5 cutover.</p>
     </article>
-<article class="r-fu" data-id="f-migrate-remove" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-migrate-remove" data-status="resolved" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="2026-05-29T15:00:01+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">F5 — Migrate all projects to schema; deprecate→remove granular tools</h4>
     <div class="r-fu-body">doctor across all 4 projects; migrate nonconformant plans (incl. the plan-title/plan-status divergence); alias the 15 mutators → edit_plan; validate a real edit session; remove aliases.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -239,8 +239,9 @@ Depends on F2/F3/F4. Run doctor on imas-ambix, imas-efit, reckon, vv; migrate no
 schema (reconcile divergent meta). Make the 15 granular mutators thin aliases → edit_plan (back-compat).
 Validate a real multi-plan edit session across 2 repos. Then remove the aliases + bump. Coordinate the
 server restart (MCP changes are not hot). Lock the three decisions in this plan with rationale.</pre>
+    <p class="r-fu-outcome">CODE-COMPLETE + committed; operational cutover handed to F7 (f-cutover). DONE: doctor swept all 4 projects (imas-ambix 29/29, reckon 5/5, imas-efit 554/562, vv 1/4 → 11 metadata-less violations catalogued — all slug/project-empty on README/RCA/raw-report files; NOT a cutover gate because serve.py&#x27;s POST path stays unvalidated so they remain fixable). Granular tools DIRECT-REMOVED (advisor: skip the alias window — skills already on edit_plan + single restart; commit c03edfd unregisters 19, keeps read_plan/edit_plan/doctor + private funcs). 3 decisions locked up-front. Config-home resolution shipped non-breaking (75c5b06). PENDING in F7 (user-gated): the coordinated reckon serve restart + MCP reconnect (flips to ~/.config/reckon + the 3-tool surface), post-restart cross-repo edit_plan validation, the 11-file migration backlog (vv reports → reckon-type=research; don&#x27;t fabricate), and dropping the ~/docs-server fallback once soaked. NOTE: imas-codex needs NO edit — it consumes only port 8765 (unchanged), not the config path.</p>
     </article>
-<article class="r-fu" data-id="f-infra-consolidation" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-infra-consolidation" data-status="resolved" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="2026-05-29T15:00:11+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">F6 — Infra consolidation: rename config home ~/docs-server → ~/.config/reckon (XDG); coordinate with F5 cutover</h4>
     <div class="r-fu-body">Raised by the user mid-fleet on 2026-05-29: ensure reckon is served consistently and remove legacy &#x27;docs-server&#x27;-era infra. ALREADY DONE this session (committed): removed dead dotfiles symlinks (~/docs-server/{serve.py,ui.jsx,README.md}); removed stale ~/docs-server/state/imas-ambix.old.1779364556; terminated 6 abandoned `reckon mcp` stdio servers (multi-day-old sessions); corrected AGENTS.md server-ops (the live server is `reckon serve` in a zellij session named &#x27;reckon&#x27;, NOT tmux &#x27;docs-server&#x27;). DECIDED by the user: rename the config home from ~/docs-server/ to ~/.config/reckon/ (XDG). This is a cross-cutting, restart-coordinated change → fold into F5 (server restart is not hot). Still pending: ~/docs-server/home.html symlink removal (kept until /_projects/ route dependence is confirmed; reckon ships its own docs/home.html so the fallback is unused).</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -276,6 +277,46 @@ Done-when
   2. No remaining references to ~/docs-server/ as the canonical path in reckon code, skills, AGENTS.md, or imas-codex tunnel config (a documented deprecation fallback is acceptable if that open decision lands that way).
   3. tests green via `uv run --with pytest pytest tests/ -q`.
   4. followup written into plan + this followup marked resolved.</pre>
+    <p class="r-fu-outcome">CODE-COMPLETE + committed; live cutover handed to F7 (f-cutover). DONE this session: removed dead dotfiles symlinks (~/docs-server/{serve.py,ui.jsx,README.md}); removed stale imas-ambix.old backup; terminated 6 abandoned reckon mcp servers; corrected AGENTS.md server-ops (zellij not tmux); shipped the XDG config-home resolution code (_config_home: RECKON_HOME → ~/.config/reckon → ~/docs-server fallback; 75c5b06) non-breaking; COPIED (not moved) ~/docs-server → ~/.config/reckon (mounts.json + 4 state symlinks, dead home.html omitted) and verified the new home serves all 4 projects; updated reckon-sync skill to the new path. CORRECTION to the original F6 plan: imas-codex tunnel config needs NO edit — it consumes only port 8765 (unchanged), not the ~/docs-server path (its references are stale comments only). PENDING in F7 (user-gated): the reckon serve restart + MCP reconnect that flips to ~/.config/reckon, then dropping the ~/docs-server fallback after a soak, and removing the now-stale ~/docs-server/home.html symlink.</p>
+    </article>
+<article class="r-fu" data-id="f-cutover" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">F7 — Execute the cutover: restart reckon serve + MCP reconnect; post-restart validation; deferred cleanups</h4>
+    <div class="r-fu-body">All reckon-repo code is shipped + committed and NON-BREAKING (schema cf5fb2b, edit_plan+doctor 622ead9, skills 9c17c35, surface-collapse c03edfd, config-home 75c5b06). ~/.config/reckon is copied + verified (serves all 4 projects); ~/docs-server retained as fallback. The running `reckon serve` + every `reckon mcp` stdio server still run OLD code (19 tools, ~/docs-server) until restarted. This is the single USER-GATED cutover (it bounces the live SPA + resets MCP) plus post-restart validation + deferred cleanups.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (cutover; follows F5/F6)
+Section: §7 cutover
+Tier:    opus
+
+Context
+  All reckon-repo code for schema + tool-collapse + config-rename is shipped, committed, non-breaking.
+  ~/.config/reckon is copied + verified (serves all 4). The running reckon serve + reckon mcp servers
+  still run OLD code until restarted. This card is the single coordinated cutover. USER-GATED (bounces the
+  live SPA at :8765 + resets MCP connections), so confirm timing before executing.
+
+State to read
+  GET /plan/reckon/reckon-schema-and-tooling
+  reckon/_store.py:_config_home ; reckon/mcp.py registration block ; docs/_shared/plan.schema.json
+
+Locked decisions to honour
+  schema-source-of-truth → pydantic-derives-jsonschema
+  validation-strictness → reject-write-warn-doctor
+  tool-count-target → four
+  config-home → ~/.config/reckon (XDG), ~/docs-server fallback retained for now
+
+Open decisions to surface (do not resolve)
+  when to DROP the ~/docs-server fallback (after a soak) ; whether to fully DELETE the unregistered private granular _funcs + prune test_mcp_tools.py
+
+Constraints
+  - Restart is not hot; MCP needs a fresh stdio spawn (Claude Code reconnect).
+  - Do NOT move ~/docs-server; it stays as fallback until explicitly dropped.
+
+Done-when
+  1. reckon serve restarted in the zellij `reckon` session (ss -ltnp | grep :8765 shows the new pid); GET /&lt;project&gt;/ → 200 for all 4 + GET /_shared/plan.schema.json → 200.
+  2. MCP reconnected — agent-facing surface is exactly read_plan + edit_plan + doctor.
+  3. doctor run via MCP across all 4; the 11 metadata-less violations reviewed (imas-efit ×8, vv ×3) — migrate (judgement: vv&#x27;s 3 bare reports → reckon-type=research/exempt; do NOT fabricate plan metadata) or record as intentionally-exempt.
+  4. A real cross-repo edit_plan session validated (a lock + followup on a plan in 2 repos via MCP).
+  5. Optional cleanups once soaked: drop the ~/docs-server fallback; delete the dead private granular _funcs + redundant test_mcp_tools.py coverage (keep the edit_plan equivalents).
+  6. F5 + F6 confirmed resolved; this followup resolved; plan-status → shipped when the cutover lands.</pre>
     </article>
 </section>
   </main>
