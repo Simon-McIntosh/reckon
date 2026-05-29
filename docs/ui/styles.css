@@ -2100,3 +2100,128 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
   .r-fan-col-body.centred { align-items: stretch; }
   .r-gcard.focal { max-width: 100%; }
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Inline plan-graph strip (above the report). Replaces both the
+ * Reading/Graph tab toggle and the legacy pill strip.
+ * ─────────────────────────────────────────────────────────────────────── */
+
+.r-plan-graph {
+  margin: 0 0 18px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.r-plan-graph.is-hidden {
+  background: transparent;
+  border-color: transparent;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+}
+.r-plan-graph-h {
+  display: flex;
+  align-items: center;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--hair);
+}
+.r-plan-graph.is-hidden .r-plan-graph-h {
+  background: transparent;
+  border-bottom: 0;
+}
+.r-plan-graph-toggle {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  padding: 7px 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.r-plan-graph-toggle:hover { background: var(--bg-3); color: var(--ink); }
+.r-plan-graph.is-hidden .r-plan-graph-toggle:hover { background: var(--bg-2); }
+.r-plan-graph-toggle .caret {
+  transition: transform 150ms ease;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.r-plan-graph.is-hidden .r-plan-graph-toggle .caret {
+  transform: rotate(-90deg);
+}
+.r-plan-graph-toggle .lbl {
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.r-plan-graph-toggle .counts {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.r-plan-graph-toggle .counts.muted { color: var(--faint); font-style: italic; }
+.r-plan-graph-toggle .c-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.r-plan-graph-toggle .c-pair .n {
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.r-plan-graph-toggle .c-pair .k {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* Compact (inline) graph variant — tighter padding, smaller cards. */
+.r-fan-wrap.compact { padding: 10px 14px 14px; }
+.r-fan-wrap.compact .r-fan-grid {
+  grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.2fr) minmax(140px, 1fr);
+  gap: 22px;
+  min-height: 120px;
+  padding: 4px 0;
+}
+.r-fan-wrap.compact .r-fan-col-h {
+  padding: 0 2px 3px;
+  margin-bottom: 4px;
+}
+.r-fan-wrap.compact .r-fan-col-lbl { font-size: 9px; }
+.r-fan-wrap.compact .r-fan-col-n { font-size: 9.5px; padding: 0 5px; }
+.r-fan-wrap.compact .r-fan-col-body { gap: 6px; }
+.r-fan-wrap.compact .r-gcard { padding: 8px 10px; border-radius: 6px; }
+.r-fan-wrap.compact .r-gcard.focal { padding: 10px 12px; max-width: 280px; }
+.r-fan-wrap.compact .r-gcard-top { gap: 6px; margin-bottom: 2px; }
+.r-fan-wrap.compact .r-gcard-dot { width: 7px; height: 7px; margin-top: 4px; }
+.r-fan-wrap.compact .r-gcard-title { font-size: 12px; line-height: 1.25; -webkit-line-clamp: 2; }
+.r-fan-wrap.compact .r-gcard.focal .r-gcard-title { font-size: 13.5px; -webkit-line-clamp: 2; }
+.r-fan-wrap.compact .r-gcard-meta { font-size: 10px; gap: 3px; margin: 1px 0 4px; }
+.r-fan-wrap.compact .r-gcard-bar { height: 2px; }
+.r-fan-wrap.compact .r-gcard-foot { font-size: 9.5px; margin-top: 3px; }
+.r-fan-wrap.compact .r-fan-col-empty { font-size: 11px; padding: 10px 4px; }
+.r-fan-wrap.compact .r-fan-empty {
+  padding: 8px 0 0;
+  font-size: 11.5px;
+  color: var(--faint);
+  text-align: center;
+}
+
+/* Hide the now-removed plan-tabs (in case stale clients have them cached) */
+.r-plan-tabs { display: none !important; }

@@ -475,19 +475,68 @@ function _PlanCard({ plan, role, focal, onClick }) {
   );
 }
 
-function RadialFan({ focalSlug, onNav }) {
+// Reverse-edge index: makes graph relationships symmetric without requiring
+// both sides to author them. If plan A's depends_on lists B, B's effective
+// blocks should include A — even if B.blocks doesn't mention A explicitly.
+// Memoised on inventory identity so it's recomputed only when the list rebuilds.
+function _buildReverseIndex(inventory) {
+  const revDeps = {};    // slug → [slugs that depend on this slug] → effective blocks
+  const revBlocks = {};  // slug → [slugs that say they block this slug] → effective depends_on
+  for (const p of inventory) {
+    for (const d of (p.depends_on || [])) {
+      (revDeps[d] = revDeps[d] || []).push(p.slug);
+    }
+    for (const b of (p.blocks || [])) {
+      (revBlocks[b] = revBlocks[b] || []).push(p.slug);
+    }
+  }
+  return { revDeps, revBlocks };
+}
+
+function _effectiveNeighbours(focal, bySlug, revIdx) {
+  if (!focal) return { deps: [], blocks: [] };
+  const seen = new Set();
+  const collect = (slugs) => {
+    const out = [];
+    for (const s of (slugs || [])) {
+      if (!s || seen.has(s) || s === focal.slug) continue;
+      seen.add(s);
+      const p = bySlug[s];
+      if (p) out.push(p);
+    }
+    return out;
+  };
+  const depsSeen = new Set();
+  const blocksSeen = new Set();
+  const pushUnique = (set, out, plans) => {
+    for (const p of plans) { if (!set.has(p.slug)) { set.add(p.slug); out.push(p); } }
+  };
+  const deps = [];
+  pushUnique(depsSeen, deps, ((focal.depends_on || []).map(s => bySlug[s]).filter(Boolean)));
+  pushUnique(depsSeen, deps, ((revIdx.revBlocks[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
+  const blocks = [];
+  pushUnique(blocksSeen, blocks, ((focal.blocks || []).map(s => bySlug[s]).filter(Boolean)));
+  pushUnique(blocksSeen, blocks, ((revIdx.revDeps[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
+  // Guard against self-loops and dep⇄block overlap (a plan shouldn't appear in
+  // both columns — when it does, prefer the explicitly-authored side).
+  const blockSlugs = new Set(blocks.map(p => p.slug));
+  const cleanDeps = deps.filter(p => !blockSlugs.has(p.slug) || (focal.depends_on || []).includes(p.slug));
+  return { deps: cleanDeps, blocks };
+}
+
+function RadialFan({ focalSlug, onNav, compact = false }) {
   const M = window.STATE;
   if (!M) return null;
   const bySlug = React.useMemo(() => Object.fromEntries(M.inventory.map(p => [p.slug, p])), [M.inventory]);
+  const revIdx = React.useMemo(() => _buildReverseIndex(M.inventory), [M.inventory]);
   const focal = bySlug[focalSlug];
 
   const containerRef = React.useRef(null);
   const [edges, setEdges] = React.useState([]);
   const [boxSize, setBoxSize] = React.useState({ w: 0, h: 0 });
 
-  // Compute the dep/block sets. Skip stuff the inventory doesn't know about.
-  const deps   = React.useMemo(() => (focal?.depends_on || []).map(s => bySlug[s]).filter(Boolean), [focal, bySlug]);
-  const blocks = React.useMemo(() => (focal?.blocks     || []).map(s => bySlug[s]).filter(Boolean), [focal, bySlug]);
+  // Symmetric: blocks ∪ reverse-deps; depends_on ∪ reverse-blocks.
+  const { deps, blocks } = React.useMemo(() => _effectiveNeighbours(focal, bySlug, revIdx), [focal, bySlug, revIdx]);
 
   // Recompute edge geometry whenever the layout could shift.
   React.useLayoutEffect(() => {
@@ -537,7 +586,7 @@ function RadialFan({ focalSlug, onNav }) {
   const empty = deps.length === 0 && blocks.length === 0;
 
   return (
-    <div className="r-fan-wrap">
+    <div className={`r-fan-wrap ${compact ? "compact" : ""}`}>
       <div className="r-fan-grid" ref={containerRef}>
         {/* Edges overlay — absolute-positioned SVG behind the cards */}
         <svg className="r-fan-edges" width={boxSize.w} height={boxSize.h} aria-hidden="true">

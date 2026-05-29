@@ -94,7 +94,7 @@ function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
   );
 }
 
-function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModeProp }) {
+function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
@@ -111,12 +111,6 @@ function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModePro
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
-  // viewMode is owned by App (shell.jsx) so it persists across slug changes —
-  // satellite clicks in the Graph view shouldn't bounce the user back to Reading.
-  // Local fallback for callers that haven't been migrated yet.
-  const [localViewMode, setLocalViewMode] = useState("reading");
-  const viewMode = viewModeProp ?? localViewMode;
-  const setViewMode = setViewModeProp ?? setLocalViewMode;
 
   // ── Fetch HTML plan body ────────────────────────────────────────────────
   const [planHtml, setPlanHtml] = useState(null);
@@ -282,28 +276,22 @@ function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModePro
 
   // Populate the plan HTML div imperatively so React never touches it after
   // initial set, preventing clobbering of injected comment marks.
-  // viewMode is included so toggling graph→reading re-populates the remounted div.
   useLayoutEffect(() => {
     if (!htmlRef.current) return;
     if (!planHtml) { htmlRef.current.innerHTML = ""; return; }
     htmlRef.current.innerHTML = planHtml;
-    // Re-inject existing comment marks after innerHTML reset
-    if (viewMode === "reading") {
-      Object.values(comments).flat().forEach(c => {
-        if (c && c.quote) injectCommentMark(htmlRef, c);
-      });
-    }
-  }, [planHtml, viewMode]); // comments intentionally NOT in deps; marks managed by effect below
+    Object.values(comments).flat().forEach(c => {
+      if (c && c.quote) injectCommentMark(htmlRef, c);
+    });
+  }, [planHtml]); // comments intentionally NOT in deps; marks managed by effect below
 
   // Re-inject marks when comments change (new save, delete, reload).
-  // planHtml removed from deps — innerHTML is managed by the effect above.
   useLayoutEffect(() => {
-    if (viewMode !== "reading") return;
     if (!htmlRef.current || !planHtml) return;
     Object.values(comments).flat().forEach(c => {
       if (c && c.quote) injectCommentMark(htmlRef, c);
     });
-  }, [comments, viewMode]);
+  }, [comments]);
 
   // Click-to-review: any click on an injected [data-cm] element opens
   // CommentReviewPopover anchored to that element's viewport rect.
@@ -323,16 +311,11 @@ function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModePro
     };
     el.addEventListener("click", handleClick);
     return () => el.removeEventListener("click", handleClick);
-  }, [comments, viewMode]);
+  }, [comments]);
 
   return (
     <div className="r-page">
-      {viewMode === "graph" ? (
-        window.RadialFan
-          ? <window.RadialFan focalSlug={slug} onNav={onNav} />
-          : <div style={{ padding: 24, color: "var(--muted)" }}>Graph view loading…</div>
-      ) : (
-        <article className="r-reading" ref={articleRef}>
+      <article className="r-reading" ref={articleRef}>
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
@@ -408,10 +391,9 @@ function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModePro
               </div>
             </>
           )}
-        </article>
-      )}
+      </article>
 
-      {viewMode === "reading" && sel && !composingAt && (
+      {sel && !composingAt && (
         <button
           className="r-float-btn"
           style={{ top: sel.top, left: sel.left }}

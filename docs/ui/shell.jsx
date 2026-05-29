@@ -472,40 +472,61 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
 
 // ─── Title bar ──────────────────────────────────────────────────────────
 
-// ─── Plan view mode tabs (Reading / Graph) ──────────────────────────────
-// Lifted out of plan.jsx so that navigating between plans via the graph
-// preserves the user's chosen mode. Rendered as proper tabs with an
-// underline indicator, not stand-alone buttons.
+// ─── Inline plan dependency graph (replaces both the Reading/Graph tabs
+//     and the legacy depends-on / blocks pill strip).
+// Shown above the report body. Collapsible — when hidden, only a thin header
+// strip remains so the report slides up. State persists per project.
 
-function PlanModeTabs({ viewMode, setViewMode }) {
+function PlanGraphStrip({ slug, onNav, hidden, setHidden }) {
+  const M = window.STATE;
+  const p = M?.inventory?.find(x => x.slug === slug);
+  if (!p) return null;
+  // Probe symmetric counts via the same reverse index the graph uses.
+  let counts = { dep: 0, blk: 0 };
+  if (window.RadialFan && window.STATE) {
+    // Cheap recount — avoids touching graph internals.
+    const inv = window.STATE.inventory || [];
+    const directDeps = new Set(p.depends_on || []);
+    const directBlocks = new Set(p.blocks || []);
+    const revBlk = new Set();  // who depends on me → I block them
+    const revDep = new Set();  // who blocks me   → I depend on them
+    for (const q of inv) {
+      if ((q.depends_on || []).includes(p.slug)) revBlk.add(q.slug);
+      if ((q.blocks     || []).includes(p.slug)) revDep.add(q.slug);
+    }
+    const depSet = new Set([...directDeps, ...revDep].filter(s => s !== p.slug));
+    const blkSet = new Set([...directBlocks, ...revBlk].filter(s => s !== p.slug));
+    counts = { dep: depSet.size, blk: blkSet.size };
+  }
+  const empty = counts.dep === 0 && counts.blk === 0;
   return (
-    <div className="r-plan-tabs" role="tablist" aria-label="Plan view mode">
-      <button
-        role="tab"
-        aria-selected={viewMode === "reading"}
-        className={`r-plan-tab ${viewMode === "reading" ? "active" : ""}`}
-        onClick={() => setViewMode("reading")}
-      >
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 3.5h7a2 2 0 0 1 2 2V13H5a2 2 0 0 1-2-2V3.5z"/>
-          <path d="M3 3.5a2 2 0 0 1 2-2h2v9.5H5a2 2 0 0 0-2 2"/>
-        </svg>
-        Reading
-      </button>
-      <button
-        role="tab"
-        aria-selected={viewMode === "graph"}
-        className={`r-plan-tab ${viewMode === "graph" ? "active" : ""}`}
-        onClick={() => setViewMode("graph")}
-      >
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="3" cy="4" r="1.6"/>
-          <circle cx="3" cy="12" r="1.6"/>
-          <circle cx="13" cy="8" r="1.6"/>
-          <path d="M4.4 4.8L11.6 7.5M4.4 11.2L11.6 8.5"/>
-        </svg>
-        Graph
-      </button>
+    <div className={`r-plan-graph ${hidden ? "is-hidden" : ""}`}>
+      <div className="r-plan-graph-h">
+        <button
+          type="button"
+          className="r-plan-graph-toggle"
+          onClick={() => setHidden(h => !h)}
+          aria-expanded={!hidden}
+          title={hidden ? "Show dependency graph" : "Hide dependency graph"}
+        >
+          <svg className="caret" width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3l2.5 3L7 3"/>
+          </svg>
+          <span className="lbl">Dependencies</span>
+          {!empty && (
+            <span className="counts">
+              <span className="c-pair"><span className="n">{counts.dep}</span><span className="k">in</span></span>
+              <span className="c-pair"><span className="n">{counts.blk}</span><span className="k">out</span></span>
+            </span>
+          )}
+          {empty && <span className="counts muted">no edges</span>}
+        </button>
+      </div>
+      {!hidden && (
+        window.RadialFan
+          ? <window.RadialFan focalSlug={slug} onNav={onNav} compact={true} />
+          : <div style={{ padding: 16, color: "var(--muted)", fontSize: 12 }}>Graph view loading…</div>
+      )}
     </div>
   );
 }
@@ -733,44 +754,6 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
   return null;
 }
 
-// ─── Dependency strip (top of plan body) ────────────────────────────────
-// Renders two distinct rows: "DEPENDS ON" and "BLOCKS", each with its own
-// pill list. Either row is omitted when empty.
-
-function PlanDeps({ slug }) {
-  const M = window.STATE;
-  const p = M.inventory.find(x => x.slug === slug);
-  if (!p) return null;
-  const deps = p.depends_on || [];
-  const blocks = p.blocks || [];
-  if (deps.length === 0 && blocks.length === 0) return null;
-  const renderPill = (s, kind) => {
-    const target = M.inventory.find(i => i.slug === s);
-    const blocked = target?.status === "blocked";
-    return (
-      <a key={s} className={`pill ${blocked ? "blocked" : ""}`} href={`#plan/${s}`}>
-        {s}
-      </a>
-    );
-  };
-  return (
-    <div className="r-deps">
-      {deps.length > 0 && (
-        <div className="r-deps-row">
-          <span className="lbl">depends on</span>
-          <div className="r-deps-pills">{deps.map(s => renderPill(s, "dep"))}</div>
-        </div>
-      )}
-      {blocks.length > 0 && (
-        <div className="r-deps-row">
-          <span className="lbl">blocks</span>
-          <div className="r-deps-pills">{blocks.map(s => renderPill(s, "blk"))}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── App ────────────────────────────────────────────────────────────────
 
 function ReadyGate({ children }) {
@@ -796,7 +779,7 @@ function App() {
     groupBy:   `reckon:${PROJECT}:groupBy`,
     sortDirs:  `reckon:${PROJECT}:sortDirs`,
     archived:  `reckon:${PROJECT}:showArchived`,
-    viewMode:  `reckon:${PROJECT}:planViewMode`,
+    graphHidden: `reckon:${PROJECT}:planGraphHidden`,
   };
   const [filters, setFilters] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SK.filters) || "{}"); } catch { return {}; }
@@ -826,14 +809,14 @@ function App() {
   useEffect(() => {
     if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
   }, [route.view, route.slug]);
-  // Plan view mode (reading vs graph) — lifted to App so navigating between
-  // plans via the graph keeps the user in graph mode.
-  const [viewMode, setViewMode] = useState(() => {
-    try { return localStorage.getItem(SK.viewMode) || "reading"; } catch { return "reading"; }
+  // Inline plan-graph: persisted hidden/shown state. Replaces the older
+  // Reading/Graph tab toggle — the graph now lives above the report.
+  const [graphHidden, setGraphHidden] = useState(() => {
+    try { return localStorage.getItem(SK.graphHidden) === "1"; } catch { return false; }
   });
   useEffect(() => {
-    try { localStorage.setItem(SK.viewMode, viewMode); } catch {}
-  }, [viewMode]);
+    try { localStorage.setItem(SK.graphHidden, graphHidden ? "1" : "0"); } catch {}
+  }, [graphHidden]);
   const [showArchived, setShowArchived] = useState(() => {
     try { return localStorage.getItem(SK.archived) === "1"; } catch { return false; }
   });
@@ -1006,14 +989,13 @@ function App() {
         <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
-          {route.view === "plan" && (
-            <PlanModeTabs viewMode={viewMode} setViewMode={setViewMode} />
-          )}
           <div className="r-body">
             {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-            {route.view === "plan" && viewMode === "reading" && <PlanDeps slug={route.slug} />}
+            {route.view === "plan" && (
+              <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
+            )}
             {route.view === "cockpit" && <CockpitBody onNav={nav} />}
-            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} viewMode={viewMode} setViewMode={setViewMode} />}
+            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
             {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
             {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
           </div>
