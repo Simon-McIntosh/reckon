@@ -1,4 +1,4 @@
-"""Tests for the MCP doctor tool — plan-schema conformance audit.
+"""Tests for the MCP audit tool — plan-schema conformance audit.
 
 This is the WARN half of the locked reject-write-warn-doctor decision: it
 validates every plan in a project against the PlanState schema (non-raising),
@@ -72,11 +72,11 @@ def _valid_state(slug: str) -> dict:
 # ── all conformant ───────────────────────────────────────────────────────
 
 
-def test_doctor_all_conformant(setup):
+def test_audit_all_conformant(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
     _make_plan_html(docs_dir, "beta", _valid_state("beta"))
-    r = mcp_module._doctor(project)
+    r = mcp_module._audit(project)
     assert r["checked"] == 2
     assert r["conformant"] == 2
     assert r["violations"] == []
@@ -86,7 +86,7 @@ def test_doctor_all_conformant(setup):
 # ── seeded violation: invalid status enum ─────────────────────────────────
 
 
-def test_doctor_reports_invalid_status(setup):
+def test_audit_reports_invalid_status(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "alpha", _valid_state("alpha"))
     _make_plan_html(
@@ -94,7 +94,7 @@ def test_doctor_reports_invalid_status(setup):
         "bad",
         {"slug": "bad", "title": "Bad", "status": "not-a-status", "version": 0},
     )
-    r = mcp_module._doctor(project)
+    r = mcp_module._audit(project)
     assert r["checked"] == 2
     assert r["conformant"] == 1
     bad = next(v for v in r["violations"] if v["slug"] == "bad")
@@ -104,7 +104,7 @@ def test_doctor_reports_invalid_status(setup):
 # ── seeded violation: empty §05 followup prompt ───────────────────────────
 
 
-def test_doctor_reports_empty_followup_prompt(setup):
+def test_audit_reports_empty_followup_prompt(setup):
     docs_dir, _, project = setup
     _make_plan_html(
         docs_dir,
@@ -126,7 +126,7 @@ def test_doctor_reports_empty_followup_prompt(setup):
             ],
         },
     )
-    r = mcp_module._doctor(project)
+    r = mcp_module._audit(project)
     bad = next(v for v in r["violations"] if v["slug"] == "withfu")
     assert any("prompt" in e.lower() for e in bad["errors"])
 
@@ -134,7 +134,7 @@ def test_doctor_reports_empty_followup_prompt(setup):
 # ── doctor is read-only — does not mutate plans ───────────────────────────
 
 
-def test_doctor_does_not_mutate(setup):
+def test_audit_does_not_mutate(setup):
     docs_dir, _, project = setup
     p = _make_plan_html(
         docs_dir,
@@ -143,7 +143,7 @@ def test_doctor_does_not_mutate(setup):
     )
     before = p.read_text(encoding="utf-8")
     _, ver_before = _store_module.read_plan(project, "bad")
-    mcp_module._doctor(project)
+    mcp_module._audit(project)
     after = p.read_text(encoding="utf-8")
     _, ver_after = _store_module.read_plan(project, "bad")
     assert before == after
@@ -153,10 +153,10 @@ def test_doctor_does_not_mutate(setup):
 # ── rollups recomputed in response ────────────────────────────────────────
 
 
-def test_doctor_returns_rollups(setup):
+def test_audit_returns_rollups(setup):
     docs_dir, state_root, project = setup
     _make_plan_html(docs_dir, "alpha", {**_valid_state("alpha"), "sprint": "S1"})
-    r = mcp_module._doctor(project)
+    r = mcp_module._audit(project)
     assert "rollups" in r
     assert r["rollups"]["plans"] == 1
     # S1 referenced by a plan is synthesised into the sprint rollup
@@ -166,7 +166,7 @@ def test_doctor_returns_rollups(setup):
 # ── unknown project ───────────────────────────────────────────────────────
 
 
-def test_doctor_unknown_project(setup):
+def test_audit_unknown_project(setup):
     _, _, _ = setup
-    r = mcp_module._doctor("nope")
+    r = mcp_module._audit("nope")
     assert r["ok"] is False

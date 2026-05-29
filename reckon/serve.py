@@ -175,6 +175,8 @@ _NON_PLAN_FILES = frozenset(
         "questions.html",
         "home.html",
         "project.html",
+        "plan.html",  # legacy static-site per-plan-detail template (not a plan)
+        "README.html",  # generated index/landing page (a prose README belongs in .md)
     ]
 )
 _NON_PLAN_DIRS = frozenset(

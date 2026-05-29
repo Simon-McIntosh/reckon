@@ -1034,10 +1034,10 @@ def _edit_plan(
     return result
 
 
-# ── doctor — plan-schema conformance audit (warn half; never mutates) ───────
+# ── audit — plan-schema conformance audit (warn half; never mutates) ────────
 
 
-def _doctor(project: str) -> dict[str, Any]:
+def _audit(project: str) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
 
@@ -1109,7 +1109,7 @@ def _doctor(project: str) -> dict[str, Any]:
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + doctor. The granular
+# Agent-facing MCP surface = read_plan + edit_plan + audit. The granular
 # _funcs below remain for tests/internal use but are intentionally NOT
 # registered (collapsed per the schema-and-tooling plan); full removal is a
 # later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
@@ -1120,7 +1120,7 @@ def _doctor(project: str) -> dict[str, Any]:
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
     edit_plan_tool = mcp.tool()(_edit_plan)
-    doctor_tool = mcp.tool()(_doctor)
+    audit_tool = mcp.tool()(_audit)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────

@@ -227,7 +227,7 @@ ops fold the old writes):
 |------|---------|
 | `read_plan` | Read + context-inject. `read_plan(project, slug)` → one plan's parsed state + `version`. `with_schema=True` adds the published JSON Schema, a dos/don'ts note, and the op-vocabulary. `read_plan(project)` (slug omitted) → DISCOVERY (plans + followups + questions + sprints + milestones + `active_sprint_id`). `read_plan()` → all mounted projects. |
 | `edit_plan` | The one validated write. `edit_plan(project, slug, ops, expected_version[, create])`. `ops` is an ordered list applied to a working copy, schema-validated, then written atomically. Verbs: `set` / `append` / `resolve` / `lock` / `move`; `create=True` (with `expected_version=0`) scaffolds a new plan then applies ops. Routes `slug="index"` to project config (sprints/milestones/timeline/blockers). |
-| `doctor` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
+| `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). The "warn" half of reject-write-warn. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
 
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
 for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
