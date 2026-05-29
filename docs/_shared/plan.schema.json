@@ -1,0 +1,506 @@
+{
+  "$defs": {
+    "Comment": {
+      "description": "A comment (``.r-comment`` element). Anchored to a section via the dict\nkey (default ``_top``) \u2014 the anchor is the mapping key, not a field here.",
+      "properties": {
+        "id": {
+          "default": "",
+          "title": "Id",
+          "type": "string"
+        },
+        "who": {
+          "default": "",
+          "title": "Who",
+          "type": "string"
+        },
+        "when": {
+          "default": "",
+          "title": "When",
+          "type": "string"
+        },
+        "quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quote"
+        },
+        "body": {
+          "default": "",
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "title": "Comment",
+      "type": "object"
+    },
+    "Decision": {
+      "description": "A single decision (``.r-dec`` element). Keyed by ``data-key`` in the\nplan's ``decisions`` dict \u2014 the key lives in the mapping, not here.\n\n``choice == \"\"`` means open. ``chosen`` is intentionally absent: the SPA's\nlist view derives it from ``choice``; storing it would be redundant.",
+      "properties": {
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "context": {
+          "default": "",
+          "title": "Context",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Choices",
+          "type": "array"
+        },
+        "option_labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Option Labels",
+          "type": "object"
+        },
+        "choice": {
+          "default": "",
+          "title": "Choice",
+          "type": "string"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        },
+        "when": {
+          "default": "",
+          "title": "When",
+          "type": "string"
+        },
+        "by": {
+          "default": "",
+          "title": "By",
+          "type": "string"
+        }
+      },
+      "title": "Decision",
+      "type": "object"
+    },
+    "Followup": {
+      "description": "A followup (``.r-fu`` element). ``status`` mirrors read_state's value;\nwrite_state re-derives ``data-status`` from ``resolved_at`` on render.\n\n``resolved_at`` / ``resolved_by`` / ``outcome`` are present in the dict only\nwhen the followup is resolved \u2014 they MUST stay unset otherwise so\n``exclude_unset`` reproduces read_state's conditional shape.",
+      "properties": {
+        "id": {
+          "default": "",
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "default": "open",
+          "title": "Status",
+          "type": "string"
+        },
+        "tier": {
+          "default": "",
+          "title": "Tier",
+          "type": "string"
+        },
+        "written_by": {
+          "default": "",
+          "title": "Written By",
+          "type": "string"
+        },
+        "written_at": {
+          "default": "",
+          "title": "Written At",
+          "type": "string"
+        },
+        "recommends_skill": {
+          "default": "",
+          "title": "Recommends Skill",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "title": "Body",
+          "type": "string"
+        },
+        "prompt": {
+          "default": "",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved At"
+        },
+        "resolved_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved By"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome"
+        }
+      },
+      "title": "Followup",
+      "type": "object"
+    },
+    "Question": {
+      "description": "A question (``.r-q`` element). No ``status`` *field* \u2014 read_state omits it\nfrom question dicts. Use the :attr:`status` property for views; a Pydantic\nfield (or computed_field) would force-include it and break the round-trip.",
+      "properties": {
+        "id": {
+          "default": "",
+          "title": "Id",
+          "type": "string"
+        },
+        "section": {
+          "default": "",
+          "title": "Section",
+          "type": "string"
+        },
+        "opened_by": {
+          "default": "",
+          "title": "Opened By",
+          "type": "string"
+        },
+        "opened_at": {
+          "default": "",
+          "title": "Opened At",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "title": "Body",
+          "type": "string"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved At"
+        },
+        "resolved_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved By"
+        }
+      },
+      "title": "Question",
+      "type": "object"
+    },
+    "ResearchItem": {
+      "description": "A research entry (``.r-research`` element).",
+      "properties": {
+        "id": {
+          "default": "",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "default": "",
+          "title": "Type",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "title": "Title",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        },
+        "added_by": {
+          "default": "",
+          "title": "Added By",
+          "type": "string"
+        },
+        "when": {
+          "default": "",
+          "title": "When",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        }
+      },
+      "title": "ResearchItem",
+      "type": "object"
+    }
+  },
+  "description": "Typed contract for a single plan's state.\n\n``extra='ignore'`` on read so unknown attrs/metas drop cleanly. The\ncanonical dump (:meth:`canonical_dump`) reproduces the read_state dict\nshape byte-for-byte through write_state.",
+  "properties": {
+    "project": {
+      "default": "",
+      "description": "docs-project meta; required-on-write",
+      "title": "Project",
+      "type": "string"
+    },
+    "type": {
+      "default": "plan",
+      "enum": [
+        "plan",
+        "research"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "slug": {
+      "default": "",
+      "title": "Slug",
+      "type": "string"
+    },
+    "title": {
+      "default": "",
+      "title": "Title",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "status": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "pending",
+        "active",
+        "in-progress",
+        "blocked",
+        "shipped",
+        "done",
+        "superseded",
+        "abandoned",
+        "archived",
+        "historical",
+        "reference"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "roi": {
+      "default": "mid",
+      "enum": [
+        "high",
+        "mid",
+        "low"
+      ],
+      "title": "Roi",
+      "type": "string"
+    },
+    "effort": {
+      "default": "M",
+      "enum": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "title": "Effort",
+      "type": "string"
+    },
+    "milestone": {
+      "default": "\u2014",
+      "title": "Milestone",
+      "type": "string"
+    },
+    "sprint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sprint"
+    },
+    "tier": {
+      "default": "sonnet",
+      "enum": [
+        "haiku",
+        "sonnet",
+        "opus"
+      ],
+      "title": "Tier",
+      "type": "string"
+    },
+    "owner": {
+      "default": "",
+      "title": "Owner",
+      "type": "string"
+    },
+    "archived": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Archived"
+    },
+    "read": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Read"
+    },
+    "depends_on": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Depends On",
+      "type": "array"
+    },
+    "blocks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Blocks",
+      "type": "array"
+    },
+    "informs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Informs",
+      "type": "array"
+    },
+    "modified": {
+      "default": "",
+      "title": "Modified",
+      "type": "string"
+    },
+    "impl": {
+      "default": 0.0,
+      "title": "Impl",
+      "type": "number"
+    },
+    "version": {
+      "default": 0,
+      "title": "Version",
+      "type": "integer"
+    },
+    "decisions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Decision"
+      },
+      "title": "Decisions",
+      "type": "object"
+    },
+    "followups": {
+      "items": {
+        "$ref": "#/$defs/Followup"
+      },
+      "title": "Followups",
+      "type": "array"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/Question"
+      },
+      "title": "Questions",
+      "type": "array"
+    },
+    "research": {
+      "items": {
+        "$ref": "#/$defs/ResearchItem"
+      },
+      "title": "Research",
+      "type": "array"
+    },
+    "comments": {
+      "additionalProperties": {
+        "items": {
+          "$ref": "#/$defs/Comment"
+        },
+        "type": "array"
+      },
+      "title": "Comments",
+      "type": "object"
+    }
+  },
+  "title": "reckon PlanState",
+  "type": "object",
+  "$id": "https://reckon/schema/plan/1.0/plan.schema.json",
+  "schemaVersion": "1.0"
+}

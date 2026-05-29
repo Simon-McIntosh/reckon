@@ -85,6 +85,14 @@ def read_state(html_text: str) -> dict:
     rt = soup.find("meta", attrs={"name": "reckon-type"})
     st["type"] = ((rt.get("content") if rt else "") or "plan").strip().lower()
 
+    # Owning project (<meta name="docs-project">). Captured additively so the
+    # typed PlanState can carry it; write_state never re-emits this meta (it is
+    # authored head that survives writes untouched), so the read/write asymmetry
+    # is intentional. Absent → omitted (PlanState defaults it to '').
+    dp = soup.find("meta", attrs={"name": "docs-project"})
+    if dp is not None:
+        st["project"] = (dp.get("content") or "").strip()
+
     title_tag = soup.find("title")
     if title_tag and not st.get("title"):
         st["title"] = title_tag.get_text(strip=True).split("|")[0].strip()
@@ -356,6 +364,39 @@ def write_state(html_text: str, state: dict) -> str:
         if sid in state:
             out = _splice_section(out, sid, _RENDERERS[sid](state[sid]))
     return out
+
+
+# ── Schema-typed wrappers (PlanState contract) ──────────────────────────────
+#
+# These WRAP read_state/write_state — they do not replace them. read_state and
+# write_state keep their dict signatures and current output; existing callers
+# (serve.py, _store.py) stay untouched. The typed layer is opt-in: edit_plan /
+# doctor (wired by F3) call from_html / validate_for_write at the write boundary.
+
+def from_html(html_text: str) -> "PlanState":  # noqa: F821  (forward ref)
+    """Parse HTML into a typed :class:`reckon._schema.PlanState` — LENIENT.
+
+    Equivalent to ``PlanState.model_validate(read_state(html_text))`` with the
+    schema's lenient coercion (roi med→mid, type doc→research, derived statuses,
+    unknown attrs dropped). NEVER raises on a real plan — every existing plan
+    validates on read; required-on-write fields carry read defaults. Use
+    :meth:`PlanState.validate_for_write` for the strict write path.
+    """
+    from reckon._schema import PlanState
+    return PlanState.model_validate(read_state(html_text))
+
+
+def to_html(html_text: str, state: "PlanState") -> str:  # noqa: F821
+    """Render a typed :class:`PlanState` back into HTML.
+
+    Equivalent to ``write_state(html_text, state.canonical_dump())``. The
+    canonical dump uses ``exclude_unset`` so the regenerated meta + sections
+    match what ``write_state(html_text, read_state(html_text))`` would produce
+    on a round-trip (byte-identical reckon-owned sections). ``state.project`` is
+    carried in the dump but write_state ignores it — the authored docs-project
+    meta survives untouched.
+    """
+    return write_state(html_text, state.canonical_dump())
 
 
 # ── Lightweight inventory record (scales to thousands of docs) ──────────────
