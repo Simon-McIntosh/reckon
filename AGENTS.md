@@ -150,9 +150,9 @@ is binding. Surface a violation explicitly when you spot one.
 
 ### Where docs live and how the server works
 
-Every project keeps its plans under `<repo>/docs/`. The
-host-wide `docs-server` at `127.0.0.1:8765` serves them under stable
-URL prefixes (`http://localhost:8765/<project>/`).
+Every project keeps its plans under `<repo>/docs/`. The host-wide
+**reckon server** (`reckon serve`) at `127.0.0.1:8765` serves them under
+stable URL prefixes (`http://localhost:8765/<project>/`).
 
 **The plan HTML is the sole store.** All plan data (status, impl,
 decisions, followups, comments, questions, research) lives as semantic
@@ -189,10 +189,22 @@ Any existing `plans/` markdown is read-only history — archive it under
 
 ### Server operations
 
-- Start (login node, persistent in tmux):
-  `tmux new -d -s docs-server 'uv run --project ~/Code/reckon reckon serve'`
-- Stop: `tmux kill-session -t docs-server`
-- Mounts: `~/docs-server/mounts.json` — re-read on every request, no restart needed
+The HTTP server is `reckon serve` (the `reckon` Python package) — **one**
+process listening on `127.0.0.1:8765`. Run it inside a persistent terminal
+multiplexer; the canonical one on this workstation is a **zellij session
+named `reckon`** (not tmux — the old `tmux -s docs-server` guidance was
+stale). Config + state live under reckon's config home (currently
+`~/docs-server/` — a legacy name; the rename to `~/.config/reckon/` is
+tracked in the `reckon-schema-and-tooling` plan, F5).
+
+- Start (detached, survives logout): launch inside the `reckon` zellij
+  session — `uv run --project ~/Code/reckon reckon serve`
+- Find it: `ss -ltnp | grep :8765` → the listening `reckon` pid
+- Stop: `kill <pid>` (the pid from the line above)
+- Restart: stop then start. **Server/parse/render code changes are NOT hot** —
+  a running `reckon serve` (and every `reckon mcp` stdio server) holds the old
+  code in memory until restarted/reconnected. Coordinate restarts (F5).
+- Mounts: `<config-home>/mounts.json` — re-read on every request, no restart needed
 - Plan state (GET): `curl http://127.0.0.1:8765/plan/<project>/<slug>` (parsed semantic elements + `version`)
 - Plan patch (POST): `curl -X POST -H 'If-Match: <version>' -d '{"status":"shipped"}' http://127.0.0.1:8765/plan/<project>/<slug>`
 - Discovery: `curl http://127.0.0.1:8765/_discover/<project>` (all plans + full parsed state)
