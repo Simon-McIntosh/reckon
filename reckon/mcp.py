@@ -34,18 +34,23 @@ from typing import Any
 # ── SDK import ─────────────────────────────────────────────────────────────
 try:
     from mcp.server.fastmcp import FastMCP
+
     _HAS_MCP = True
 except ImportError:
     _HAS_MCP = False
     FastMCP = None  # type: ignore[assignment,misc]
 
 from reckon._store import (
+    OpError,
     VersionConflict,
+    _docs_dir_for_project,
     _mounts_path,
     _state_root,
     append_to_list,
+    apply_ops,
     list_followups_across,
     list_questions_across,
+    new_plan_html,
     patch_plan,
     read_plan,
     resolve_in_list,
@@ -81,16 +86,93 @@ def _conflict_response(exc: VersionConflict) -> dict[str, Any]:
 
 # ── Tool definitions ───────────────────────────────────────────────────────
 
-def _read_plan(project: str, slug: str) -> dict[str, Any]:
-    """Return the full data blob for one plan, plus its current version.
 
-    For plan slugs, data is the plan's parsed state (version = state["version"]).
-    For "index"/"project" slugs, data is the JSON envelope data sub-object.
+def _read_plan(
+    project: str | None = None,
+    slug: str | None = None,
+    with_schema: bool = False,
+) -> dict[str, Any]:
+    """Read plan state — the single read entrypoint (folds the read tools in).
 
-    Returns { project, slug, version, data }.
+    Three modes (all additive — the original (project, slug) shape is unchanged):
+
+      read_plan(project, slug)
+          → { project, slug, version, data } — one plan's parsed state, or the
+            index/project JSON envelope data for those special slugs.
+
+      read_plan(project, slug, with_schema=True)
+          → the above PLUS "schema" (the published JSON Schema), a compact
+            dos/don'ts note, and an op-vocabulary summary — the context injector
+            an agent reads before calling edit_plan.
+
+      read_plan(project)                 [slug omitted/None]
+          → DISCOVERY: { project, plans, followups, questions, sprints,
+            milestones, active_sprint_id } — folds list_plans / list_followups /
+            list_questions / list_sprints into one call.
+
+      read_plan()  or  read_plan("*")    [project omitted/"*"]
+          → { projects: [...] } — folds list_projects.
     """
+    # ── projects-list mode ──
+    if project is None or project == "*":
+        return _list_projects()
+
+    # ── discovery mode (no slug) ──
+    if slug is None:
+        plans = _list_plans(project).get("plans", [])
+        sprints_info = _list_sprints(project)
+        return {
+            "project": project,
+            "plans": plans,
+            "followups": list_followups_across(project, unresolved_only=True),
+            "questions": list_questions_across(project, unresolved_only=True),
+            "sprints": sprints_info.get("sprints", []),
+            "milestones": sprints_info.get("milestones", []),
+            "active_sprint_id": sprints_info.get("active_sprint_id"),
+        }
+
+    # ── single-plan mode (original shape) ──
     data, version = read_plan(project, slug)
-    return {"project": project, "slug": slug, "version": version, "data": data}
+    result: dict[str, Any] = {
+        "project": project,
+        "slug": slug,
+        "version": version,
+        "data": data,
+    }
+    if with_schema:
+        from reckon._schema import gen_json_schema
+
+        result["schema"] = gen_json_schema()
+        result["dos_donts"] = _DOS_DONTS
+        result["op_vocab"] = _OP_VOCAB
+    return result
+
+
+#: Compact dos/don'ts surfaced by read_plan(..., with_schema=True).
+_DOS_DONTS = {
+    "do": [
+        "read_plan first to get the current version; pass it as expected_version.",
+        "use edit_plan with an ops list — one call may carry several ops applied in order.",
+        "give every followup a non-empty §05 prompt (mandatory; empty is rejected).",
+        "slug='index' targets project config (sprints/milestones/timeline/blockers).",
+    ],
+    "dont": [
+        "never set plan-version yourself — the server owns it.",
+        "off-enum status/roi/effort/tier/type are rejected at the write boundary.",
+        "index inventory[] is synthesised live; a set on it is a durable no-op.",
+        "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
+    ],
+}
+
+#: The edit_plan op vocabulary, inlined for the context injector.
+_OP_VOCAB = {
+    "set": "{op:'set', path:'<dotted>', value:<any>} — plan scalars + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1; sprint status active/done updates active_sprint_id.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; index sprints, sprints.<id>.items, milestones, timeline, blockers. followup needs a §05 prompt.",
+    "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
+    "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
+    "move": "{op:'move', target:'sprint_item', slug, from, to} — index only; preserves item metadata.",
+    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → writes a template then applies ops.",
+}
 
 
 def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
@@ -109,6 +191,7 @@ def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
             docs_dir_str = mounts.get(project)
             if docs_dir_str:
                 from reckon.serve import discover_plans
+
                 discovered = discover_plans(Path(docs_dir_str), project, _state_root())
                 inventory = discovered.get("inventory", [])
         except Exception:
@@ -126,13 +209,13 @@ def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
         "project": project,
         "plans": [
             {
-                "slug":   p.get("slug"),
-                "title":  p.get("title"),
+                "slug": p.get("slug"),
+                "title": p.get("title"),
                 "status": p.get("status"),
-                "impl":   p.get("impl"),
-                "ms":     p.get("ms"),
+                "impl": p.get("impl"),
+                "ms": p.get("ms"),
                 "sprint": p.get("sprint"),
-                "roi":    p.get("roi"),
+                "roi": p.get("roi"),
                 "effort": p.get("effort"),
             }
             for p in inventory
@@ -155,7 +238,12 @@ def _patch_plan(
     """
     try:
         new_version = patch_plan(project, slug, patch, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -176,7 +264,9 @@ def _append_comment(
     """
     cur_data, cur_version = read_plan(project, slug)
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     comments = dict(cur_data.get("comments", {}))
     arr = list(comments.get(section_id, []))
@@ -193,8 +283,16 @@ def _append_comment(
     comments[section_id] = arr
 
     try:
-        new_version = write_plan(project, slug, {**cur_data, "comments": comments}, cur_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version, "comment_id": comment_id}
+        new_version = write_plan(
+            project, slug, {**cur_data, "comments": comments}, cur_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+            "comment_id": comment_id,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -224,8 +322,15 @@ def _lock_decision(
         "by": by,
     }
     try:
-        new_version = set_nested(project, slug, "decisions", key, decision, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        new_version = set_nested(
+            project, slug, "decisions", key, decision, expected_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -250,8 +355,15 @@ def _append_followup(
             "error": f"followup missing required fields: {sorted(missing)}",
         }
     try:
-        new_version = append_to_list(project, slug, "followups", followup, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        new_version = append_to_list(
+            project, slug, "followups", followup, expected_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -277,7 +389,12 @@ def _resolve_followup(
         new_version = resolve_in_list(
             project, slug, "followups", followup_id, updates, expected_version
         )
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
     except KeyError as e:
@@ -299,7 +416,12 @@ def _set_status(
         return {"ok": False, "error": f"status must be one of {sorted(valid)}"}
     try:
         new_version = patch_plan(project, slug, {"status": status}, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -315,12 +437,18 @@ def _set_impl(
         return {"ok": False, "error": "impl must be between 0.0 and 1.0"}
     try:
         new_version = patch_plan(project, slug, {"impl": impl}, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
 
 # ── Sprint management ──────────────────────────────────────────────────────
+
 
 def _list_sprints(project: str) -> dict[str, Any]:
     """Return sprints[], milestones[], and active_sprint_id from index.json.
@@ -330,11 +458,11 @@ def _list_sprints(project: str) -> dict[str, Any]:
     """
     data, version = read_plan(project, "index")
     return {
-        "project":          project,
-        "version":          version,
+        "project": project,
+        "version": version,
         "active_sprint_id": data.get("active_sprint_id"),
-        "sprints":          data.get("sprints", []),
-        "milestones":       data.get("milestones", []),
+        "sprints": data.get("sprints", []),
+        "milestones": data.get("milestones", []),
     }
 
 
@@ -357,11 +485,16 @@ def _update_sprint(
 
     valid_statuses = {"planned", "active", "done"}
     if "status" in updates and updates["status"] not in valid_statuses:
-        return {"ok": False, "error": f"sprint status must be one of {sorted(valid_statuses)}"}
+        return {
+            "ok": False,
+            "error": f"sprint status must be one of {sorted(valid_statuses)}",
+        }
 
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     sprints = list(cur_data.get("sprints", []))
     found = False
@@ -369,7 +502,14 @@ def _update_sprint(
     for i, s in enumerate(sprints):
         if s.get("id") == sprint_id:
             if updates.get("status") == "active":
-                already = next((x for x in sprints if x.get("status") == "active" and x.get("id") != sprint_id), None)
+                already = next(
+                    (
+                        x
+                        for x in sprints
+                        if x.get("status") == "active" and x.get("id") != sprint_id
+                    ),
+                    None,
+                )
                 if already:
                     warning = f"sprint {already['id']} is already active — consider closing it first"
             sprints[i] = {**s, **updates}
@@ -385,8 +525,15 @@ def _update_sprint(
         return {"ok": False, "error": f"sprint {sprint_id!r} not found"}
 
     try:
-        new_version = write_plan(project, "index", {**cur_data, "sprints": sprints}, cur_version)
-        result: dict[str, Any] = {"ok": True, "project": project, "sprint_id": sprint_id, "new_version": new_version}
+        new_version = write_plan(
+            project, "index", {**cur_data, "sprints": sprints}, cur_version
+        )
+        result: dict[str, Any] = {
+            "ok": True,
+            "project": project,
+            "sprint_id": sprint_id,
+            "new_version": new_version,
+        }
         if warning:
             result["warning"] = warning
         return result
@@ -408,7 +555,9 @@ def _add_sprint_item(
     """
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     slug = item if isinstance(item, str) else item.get("slug", "")
     if not slug:
@@ -431,8 +580,16 @@ def _add_sprint_item(
         return {"ok": False, "error": f"sprint {sprint_id!r} not found"}
 
     try:
-        new_version = write_plan(project, "index", {**cur_data, "sprints": sprints}, cur_version)
-        return {"ok": True, "project": project, "sprint_id": sprint_id, "slug": slug, "new_version": new_version}
+        new_version = write_plan(
+            project, "index", {**cur_data, "sprints": sprints}, cur_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "sprint_id": sprint_id,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -458,17 +615,30 @@ def _create_sprint(
     """
     valid_statuses = {"planned", "active", "done"}
     if status not in valid_statuses:
-        return {"ok": False, "error": f"sprint status must be one of {sorted(valid_statuses)}"}
+        return {
+            "ok": False,
+            "error": f"sprint status must be one of {sorted(valid_statuses)}",
+        }
 
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     sprints = list(cur_data.get("sprints", []))
     if any(isinstance(s, dict) and s.get("id") == sprint_id for s in sprints):
-        return {"ok": False, "error": f"sprint {sprint_id!r} already exists — use update_sprint to edit it"}
+        return {
+            "ok": False,
+            "error": f"sprint {sprint_id!r} already exists — use update_sprint to edit it",
+        }
 
-    new_sprint: dict[str, Any] = {"id": sprint_id, "status": status, "theme": theme, "items": []}
+    new_sprint: dict[str, Any] = {
+        "id": sprint_id,
+        "status": status,
+        "theme": theme,
+        "items": [],
+    }
     if starts:
         new_sprint["starts"] = starts
     if ends:
@@ -489,7 +659,10 @@ def _create_sprint(
     try:
         new_version = write_plan(project, "index", new_data, cur_version)
         result: dict[str, Any] = {
-            "ok": True, "project": project, "sprint_id": sprint_id, "new_version": new_version,
+            "ok": True,
+            "project": project,
+            "sprint_id": sprint_id,
+            "new_version": new_version,
         }
         if warning:
             result["warning"] = warning
@@ -511,7 +684,9 @@ def _move_sprint_item(
     """
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     sprints = list(cur_data.get("sprints", []))
     sprint_map: dict[str, tuple[int, dict]] = {
@@ -549,10 +724,15 @@ def _move_sprint_item(
     sprints[ti] = {**ts, "items": to_items}
 
     try:
-        new_version = write_plan(project, "index", {**cur_data, "sprints": sprints}, cur_version)
+        new_version = write_plan(
+            project, "index", {**cur_data, "sprints": sprints}, cur_version
+        )
         return {
-            "ok": True, "project": project, "slug": slug,
-            "from_sprint": from_sprint, "to_sprint": to_sprint,
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "from_sprint": from_sprint,
+            "to_sprint": to_sprint,
             "new_version": new_version,
         }
     except VersionConflict as e:
@@ -572,7 +752,9 @@ def _update_inventory_item(
     """
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
-        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
 
     inventory = list(cur_data.get("inventory", []))
     found = False
@@ -583,16 +765,27 @@ def _update_inventory_item(
             break
 
     if not found:
-        return {"ok": False, "error": f"{slug!r} not found in inventory — run reckon sync to register it"}
+        return {
+            "ok": False,
+            "error": f"{slug!r} not found in inventory — run reckon sync to register it",
+        }
 
     try:
-        new_version = write_plan(project, "index", {**cur_data, "inventory": inventory}, cur_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        new_version = write_plan(
+            project, "index", {**cur_data, "inventory": inventory}, cur_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
 
 
 # ── Cross-plan read tools ──────────────────────────────────────────────────
+
 
 def _list_followups(project: str, unresolved_only: bool = True) -> dict[str, Any]:
     """Return all followups across every per-plan state file in a project.
@@ -620,7 +813,10 @@ def _list_projects() -> dict[str, Any]:
     """
     mounts_file = _mounts_path()
     if not mounts_file.exists():
-        return {"projects": [], "hint": "no mounts.json found — run reckon sync to register a project"}
+        return {
+            "projects": [],
+            "hint": "no mounts.json found — run reckon sync to register a project",
+        }
     try:
         mounts = json.loads(mounts_file.read_text())
     except (OSError, json.JSONDecodeError):
@@ -635,6 +831,7 @@ def _list_projects() -> dict[str, Any]:
 
 
 # ── Per-plan write tools ───────────────────────────────────────────────────
+
 
 def _resolve_question(
     project: str,
@@ -654,8 +851,16 @@ def _resolve_question(
         "resolution": resolution,
     }
     try:
-        new_version = resolve_in_list(project, slug, "questions", question_id, updates, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "question_id": question_id, "new_version": new_version}
+        new_version = resolve_in_list(
+            project, slug, "questions", question_id, updates, expected_version
+        )
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "question_id": question_id,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
     except KeyError as e:
@@ -676,43 +881,265 @@ def _add_research(
     recommended = {"id", "type", "title", "source", "added_by", "when"}
     missing = recommended - set(item.keys())
     if missing:
-        return {"ok": False, "error": f"research item missing fields: {sorted(missing)}"}
+        return {
+            "ok": False,
+            "error": f"research item missing fields: {sorted(missing)}",
+        }
     try:
         new_version = append_to_list(project, slug, "research", item, expected_version)
-        return {"ok": True, "project": project, "slug": slug, "new_version": new_version}
+        return {
+            "ok": True,
+            "project": project,
+            "slug": slug,
+            "new_version": new_version,
+        }
     except VersionConflict as e:
         return _conflict_response(e)
+
+
+# ── edit_plan — the one collapsed write tool ────────────────────────────────
+
+
+def _validate_working(slug: str, working: dict) -> list[str] | None:
+    """Schema-validate the working dict. Returns a list of error lines on
+    failure, or None when valid. Constructs the model FROM the dict (never
+    mutates a model and dumps it — see reckon/_schema.py header)."""
+    from reckon._schema import IndexData, PlanState
+
+    try:
+        if slug in ("index", "project"):
+            IndexData.model_validate(working)
+        else:
+            PlanState.model_validate(working).validate_for_write()
+    except ValueError as e:
+        # Split the multi-line validate_for_write message into discrete lines;
+        # pydantic ValidationError stringifies to a useful block too.
+        msg = str(e)
+        lines = [ln.strip(" -") for ln in msg.splitlines() if ln.strip()]
+        return lines or [msg]
+    return None
+
+
+def _edit_plan(
+    project: str,
+    slug: str,
+    ops: list[dict[str, Any]],
+    expected_version: int,
+    create: bool = False,
+) -> dict[str, Any]:
+    """Apply an ordered list of ops to one plan (or the project index), then
+    schema-validate and write atomically with an optimistic-concurrency check.
+
+    This is the single collapsed write tool. ``ops`` are applied IN ORDER to a
+    working copy of the current state dict; the result is schema-validated; only
+    then is it persisted (version-checked). On a bad op or a validation failure
+    NOTHING is written and field-level errors are returned.
+
+    Routing: slug="index" → project config (sprints/milestones/timeline/blockers,
+    version = data._version); any other slug → a plan HTML (version = state.version).
+
+    Verbs (the "op" key): set | append | resolve | lock | move. See read_plan(
+    ..., with_schema=True)["op_vocab"] for the full op grammar.
+
+    Create: edit_plan(..., expected_version=0, create=True) on a NON-existent
+    plan slug writes a minimal schema-valid template, then applies ops.
+
+    Returns { ok: True, project, slug, new_version[, warnings] } on success, or
+    { ok: False, error, ... } (op_error | schema_validation | version_conflict |
+    create errors) on failure.
+    """
+    is_index = slug in ("index", "project")
+
+    # ── create path (plan slugs only) ──
+    if create:
+        if is_index:
+            return {"ok": False, "error": "cannot create the index slug"}
+        docs_dir = _docs_dir_for_project(project)
+        if docs_dir is None:
+            return {
+                "ok": False,
+                "error": f"no docs dir for project {project!r} — check mounts.json",
+            }
+        html_file = docs_dir / f"{slug}.html"
+        # Reject if a plan already exists at this slug (direct or via resolution).
+        from reckon.serve import _resolve_plan_file
+
+        if html_file.exists() or _resolve_plan_file(docs_dir, slug) is not None:
+            return {
+                "ok": False,
+                "error": f"plan {slug!r} already exists — drop create=True to edit it",
+            }
+        if expected_version != 0:
+            return {"ok": False, "error": "create requires expected_version=0"}
+        html_file.write_text(new_plan_html(project, slug), encoding="utf-8")
+        created_file = html_file  # cleaned up below if the create then fails
+    else:
+        created_file = None
+
+    # ── read current state (after any template write) ──
+    cur_data, cur_version = read_plan(project, slug)
+    if not create and not cur_data and not is_index:
+        # An empty plan dict for a non-index slug means the HTML file is absent.
+        from reckon.serve import _resolve_plan_file
+
+        docs_dir = _docs_dir_for_project(project)
+        if docs_dir is None or _resolve_plan_file(docs_dir, slug) is None:
+            return {
+                "ok": False,
+                "error": f"plan {slug!r} not found — pass create=True to create it",
+            }
+    if expected_version != cur_version:
+        if created_file is not None:
+            created_file.unlink(missing_ok=True)
+        return _conflict_response(
+            VersionConflict(expected_version, cur_version, cur_data)
+        )
+
+    # ── apply ops to a working copy ──
+    import copy
+
+    working = copy.deepcopy(cur_data)
+    try:
+        warnings = apply_ops(working, ops or [], is_index)
+    except OpError as e:
+        # A failed create must leave NO trace — drop the just-written stub so the
+        # contract clause "on failure → no write" holds and a retry is unblocked.
+        if created_file is not None:
+            created_file.unlink(missing_ok=True)
+        return {"ok": False, "error": "op_error", "detail": str(e)}
+
+    # ── schema-validate the working dict (reject on failure, write nothing) ──
+    errors = _validate_working(slug, working)
+    if errors:
+        if created_file is not None:
+            created_file.unlink(missing_ok=True)
+        return {"ok": False, "error": "schema_validation", "details": errors}
+
+    # ── persist the working DICT via the version-checked atomic write ──
+    try:
+        new_version = write_plan(project, slug, working, cur_version)
+    except VersionConflict as e:
+        return _conflict_response(e)
+
+    result: dict[str, Any] = {
+        "ok": True,
+        "project": project,
+        "slug": slug,
+        "new_version": new_version,
+    }
+    if warnings:
+        result["warnings"] = warnings
+    if create:
+        result["created"] = True
+    return result
+
+
+# ── doctor — plan-schema conformance audit (warn half; never mutates) ───────
+
+
+def _doctor(project: str) -> dict[str, Any]:
+    """Audit every plan in a project against the PlanState schema (the WARN half
+    of reject-write-warn-doctor) and recompute the index rollups.
+
+    For each plan HTML, parse it leniently then run validate_for_write semantics
+    NON-RAISINGLY, collecting any messages. Recomputes sprint/milestone/projects
+    rollups in the response (inventory[] stays synthesised live — not persisted).
+    Returns { project, checked, conformant, violations:[{slug, errors}],
+    reindexed: True }.
+
+    WARN/report ONLY — this NEVER mutates a plan or writes index.json. (Distinct
+    from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema.)
+    """
+    from reckon import _plan_html
+    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES, discover_plans
+
+    docs_dir = _docs_dir_for_project(project)
+    if docs_dir is None:
+        return {
+            "ok": False,
+            "error": f"no docs dir for project {project!r} — check mounts.json",
+        }
+
+    checked = 0
+    violations: list[dict[str, Any]] = []
+    for html_file in sorted(docs_dir.rglob("*.html")):
+        rel = html_file.relative_to(docs_dir)
+        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if html_file.name in _NON_PLAN_FILES:
+            continue
+        try:
+            text = html_file.read_text(encoding="utf-8", errors="replace")
+            state = _plan_html.from_html(text)
+        except Exception as e:  # noqa: BLE001 — audit must not crash on one bad file
+            violations.append({"slug": html_file.stem, "errors": [f"parse error: {e}"]})
+            checked += 1
+            continue
+        slug = state.slug or html_file.stem
+        checked += 1
+        try:
+            state.validate_for_write()
+        except ValueError as e:
+            lines = [ln.strip(" -") for ln in str(e).splitlines() if ln.strip()]
+            # Drop the leading "PlanState.validate_for_write failed:" header line.
+            lines = [ln for ln in lines if not ln.endswith("failed:")]
+            violations.append({"slug": slug, "errors": lines})
+
+    # Recompute index rollups (sprints/milestones; inventory stays live, unpersisted).
+    rollups: dict[str, Any] = {}
+    try:
+        disc = discover_plans(docs_dir, project, _state_root())
+        rollups = {
+            "sprints": disc.get("sprints", []),
+            "milestones": disc.get("milestones", []),
+            "plans": len(disc.get("inventory", [])),
+        }
+    except Exception:  # noqa: BLE001 — rollups are best-effort, never fatal
+        rollups = {}
+
+    return {
+        "project": project,
+        "checked": checked,
+        "conformant": checked - len(violations),
+        "violations": violations,
+        "rollups": rollups,
+        "reindexed": True,
+    }
 
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 
 if mcp is not None:
-    read_plan_tool            = mcp.tool()(_read_plan)
-    list_plans_tool           = mcp.tool()(_list_plans)
-    patch_plan_tool           = mcp.tool()(_patch_plan)
-    append_comment_tool       = mcp.tool()(_append_comment)
-    lock_decision_tool        = mcp.tool()(_lock_decision)
-    append_followup_tool      = mcp.tool()(_append_followup)
-    resolve_followup_tool     = mcp.tool()(_resolve_followup)
-    set_status_tool           = mcp.tool()(_set_status)
-    set_impl_tool             = mcp.tool()(_set_impl)
+    read_plan_tool = mcp.tool()(_read_plan)
+    list_plans_tool = mcp.tool()(_list_plans)
+    patch_plan_tool = mcp.tool()(_patch_plan)
+    append_comment_tool = mcp.tool()(_append_comment)
+    lock_decision_tool = mcp.tool()(_lock_decision)
+    append_followup_tool = mcp.tool()(_append_followup)
+    resolve_followup_tool = mcp.tool()(_resolve_followup)
+    set_status_tool = mcp.tool()(_set_status)
+    set_impl_tool = mcp.tool()(_set_impl)
     # Sprint management
-    list_sprints_tool         = mcp.tool()(_list_sprints)
-    update_sprint_tool        = mcp.tool()(_update_sprint)
-    add_sprint_item_tool      = mcp.tool()(_add_sprint_item)
-    create_sprint_tool        = mcp.tool()(_create_sprint)
-    move_sprint_item_tool     = mcp.tool()(_move_sprint_item)
+    list_sprints_tool = mcp.tool()(_list_sprints)
+    update_sprint_tool = mcp.tool()(_update_sprint)
+    add_sprint_item_tool = mcp.tool()(_add_sprint_item)
+    create_sprint_tool = mcp.tool()(_create_sprint)
+    move_sprint_item_tool = mcp.tool()(_move_sprint_item)
     update_inventory_item_tool = mcp.tool()(_update_inventory_item)
     # Cross-plan reads
-    list_followups_tool       = mcp.tool()(_list_followups)
-    list_questions_tool       = mcp.tool()(_list_questions)
-    list_projects_tool        = mcp.tool()(_list_projects)
+    list_followups_tool = mcp.tool()(_list_followups)
+    list_questions_tool = mcp.tool()(_list_questions)
+    list_projects_tool = mcp.tool()(_list_projects)
     # Per-plan writes
-    resolve_question_tool     = mcp.tool()(_resolve_question)
-    add_research_tool         = mcp.tool()(_add_research)
+    resolve_question_tool = mcp.tool()(_resolve_question)
+    add_research_tool = mcp.tool()(_add_research)
+    # Collapsed surface (RFC-001 tool consolidation) — additive, non-breaking
+    edit_plan_tool = mcp.tool()(_edit_plan)
+    doctor_tool = mcp.tool()(_doctor)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     if not _HAS_MCP or mcp is None:

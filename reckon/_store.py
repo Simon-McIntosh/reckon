@@ -49,12 +49,11 @@ class VersionConflict(Exception):
         self.expected = expected
         self.current = current
         self.current_data = current_data
-        super().__init__(
-            f"version conflict: expected {expected}, got {current}"
-        )
+        super().__init__(f"version conflict: expected {expected}, got {current}")
 
 
 # ── Path helpers ───────────────────────────────────────────────────────────
+
 
 def _state_root() -> Path:
     """Resolve the state root directory for JSON-backed slugs (index/project).
@@ -119,10 +118,12 @@ def _resolve_html_file(project: str, slug: str) -> Path | None:
     # Import lazily to avoid circular issues at module load time; serve.py has
     # no import side-effects and this call is cheap.
     from reckon.serve import _resolve_plan_file
+
     return _resolve_plan_file(docs_dir, slug)
 
 
 # ── JSON-backed helpers (index / project slugs) ────────────────────────────
+
 
 def _load_json_envelope(path: Path) -> tuple[dict, int]:
     """Load the JSON envelope from disk.
@@ -158,6 +159,7 @@ def _write_json_envelope(
     Returns the new _version.
     """
     from datetime import datetime
+
     cur_data, cur_version = _load_json_envelope(path)
     if expected_version != cur_version:
         raise VersionConflict(expected_version, cur_version, cur_data)
@@ -181,6 +183,7 @@ def _write_json_envelope(
 
 # ── HTML-state helpers ────────────────────────────────────────────────────
 
+
 def _read_state(project: str, slug: str) -> tuple[dict, int]:
     """Read the semantic HTML state for a plan slug.
 
@@ -189,6 +192,7 @@ def _read_state(project: str, slug: str) -> tuple[dict, int]:
         Returns ({}, 0) if the HTML file or state is absent.
     """
     from reckon import _plan_html
+
     html_file = _resolve_html_file(project, slug)
     if html_file is None or not html_file.is_file():
         return {}, 0
@@ -210,6 +214,7 @@ def _write_state(
     Returns the new version.
     """
     from reckon import _plan_html
+
     html_file = _resolve_html_file(project, slug)
     if html_file is None or not html_file.is_file():
         # Cannot write to a non-existent HTML file; create one only if the
@@ -229,7 +234,7 @@ def _write_state(
                 f'<!doctype html>\n<html lang="en">\n<head>'
                 f'<meta charset="utf-8">'
                 f'<meta name="docs-project" content="{project}">'
-                f'<title>{slug}</title></head>\n'
+                f"<title>{slug}</title></head>\n"
                 f'<body><main class="plan-doc"></main></body>\n</html>\n',
                 encoding="utf-8",
             )
@@ -257,6 +262,7 @@ def _write_state(
 
 
 # ── Public API ─────────────────────────────────────────────────────────────
+
 
 def read_plan(project: str, slug: str) -> tuple[dict, int]:
     """Read the data blob and version for a plan (or JSON config doc).
@@ -402,6 +408,7 @@ def resolve_in_list(
 
 # ── Cross-plan scan ────────────────────────────────────────────────────────
 
+
 def list_followups_across(project: str, unresolved_only: bool = True) -> list[dict]:
     """Return followups from all plan HTML files in a project.
 
@@ -467,3 +474,463 @@ def list_questions_across(project: str, unresolved_only: bool = True) -> list[di
                 continue
             results.append({"plan_slug": slug, "plan_title": title, **q})
     return results
+
+
+# ── Op-application engine (edit_plan) ───────────────────────────────────────
+#
+# A single, pure, version-free op applier shared by the collapsed edit_plan
+# tool. It MUTATES a working DICT in place (the read_state / index-data shape)
+# and returns a list of non-fatal warnings. On a structurally invalid op it
+# raises OpError — edit_plan catches that and returns ok:false WITHOUT writing.
+# Schema validation (PlanState/IndexState) and the version-checked atomic write
+# are the caller's job — this helper never touches disk.
+
+from datetime import datetime as _dt  # noqa: E402
+
+
+class OpError(Exception):
+    """Raised by apply_ops on a structurally invalid op (bad verb, dup id,
+    move-not-found, …). Carries a human-readable message; edit_plan turns it
+    into {ok: false, error: "op_error", detail: <message>} and writes nothing.
+    """
+
+
+def _utc_ts() -> str:
+    """Server UTC timestamp (seconds precision) for resolved_at/when fields."""
+    from datetime import timezone
+
+    return _dt.now(tz=timezone.utc).isoformat(timespec="seconds")
+
+
+def _gen_id(prefix: str) -> str:
+    """Generate a server-side id like ``c-20260529T101112123456`` (UTC, µs)."""
+    from datetime import timezone
+
+    return f"{prefix}-{_dt.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
+
+
+# Top-level plan scalar fields a `set` op may target directly (everything else
+# routes through dotted handling for decisions.<key>.<field>).
+_PLAN_SET_TOP = frozenset(
+    {
+        "status",
+        "impl",
+        "roi",
+        "effort",
+        "milestone",
+        "sprint",
+        "tier",
+        "owner",
+        "summary",
+        "title",
+        "type",
+        "archived",
+        "read",
+        "slug",
+        "depends_on",
+        "blocks",
+        "informs",
+    }
+)
+
+# Index top-level scalar fields a `set` op may target directly.
+_INDEX_SET_TOP = frozenset({"active_sprint_id"})
+
+
+def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict] | None:
+    for i, el in enumerate(lst):
+        if isinstance(el, dict) and el.get(id_field) == ident:
+            return i, el
+    return None
+
+
+def _item_slug(it: Any) -> str:
+    return (
+        it
+        if isinstance(it, str)
+        else (it.get("slug", "") if isinstance(it, dict) else "")
+    )
+
+
+def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    path = op.get("path")
+    if not path or not isinstance(path, str):
+        raise OpError("set op requires a non-empty 'path'")
+    if "value" not in op:
+        raise OpError(f"set op for {path!r} requires a 'value'")
+    value = op["value"]
+    parts = path.split(".")
+    head = parts[0]
+
+    if is_index:
+        if head == "active_sprint_id" and len(parts) == 1:
+            working["active_sprint_id"] = value
+            return
+        if head in ("sprints", "milestones") and len(parts) >= 3:
+            # list-by-id dotted path: sprints.<id>.<field>[.<sub>...]
+            ident = parts[1]
+            lst = working.get(head)
+            if not isinstance(lst, list):
+                raise OpError(f"index has no {head} list")
+            hit = _find_by_id(lst, ident)
+            if hit is None:
+                raise OpError(f"{head[:-1]} {ident!r} not found")
+            idx, el = hit
+            new_el = dict(el)
+            field = parts[2]
+            if len(parts) == 3:
+                if head == "sprints" and field == "status":
+                    _apply_sprint_status(
+                        working, lst, idx, new_el, ident, value, warnings
+                    )
+                    return
+                new_el[field] = value
+            else:
+                # deeper nesting — build dotted into the element
+                cur = new_el
+                for p in parts[2:-1]:
+                    nxt = cur.get(p)
+                    if not isinstance(nxt, dict):
+                        nxt = {}
+                        cur[p] = nxt
+                    cur = nxt
+                cur[parts[-1]] = value
+            lst[idx] = new_el
+            return
+        if head in _INDEX_SET_TOP and len(parts) == 1:
+            working[head] = value
+            return
+        if head == "inventory":
+            # inventory[] is SYNTHESISED live by discover_plans and never
+            # persisted — a set here is accepted (folds update_inventory_item)
+            # but is a durable no-op. Mutate the working copy so the op "applies",
+            # knowing _write_json_envelope's data is overwritten by discovery on
+            # the next GET. Honours the frozen contract: "keep it accepted but
+            # document it does nothing lasting."
+            inv = working.setdefault("inventory", [])
+            if len(parts) >= 3 and isinstance(inv, list):
+                hit = _find_by_id(inv, parts[1], id_field="slug")
+                if hit is not None:
+                    idx, el = hit
+                    inv[idx] = {**el, parts[2]: value}
+            return
+        raise OpError(f"unsupported index set path {path!r}")
+
+    # ── plan set ──
+    if head == "decisions" and len(parts) >= 3:
+        decisions = working.setdefault("decisions", {})
+        if not isinstance(decisions, dict):
+            raise OpError("plan has no decisions map")
+        key = parts[1]
+        dec = dict(decisions.get(key, {}))
+        cur = dec
+        for p in parts[2:-1]:
+            nxt = cur.get(p)
+            if not isinstance(nxt, dict):
+                nxt = {}
+                cur[p] = nxt
+            cur = nxt
+        cur[parts[-1]] = value
+        decisions[key] = dec
+        return
+    if len(parts) != 1 or head not in _PLAN_SET_TOP:
+        raise OpError(f"unsupported plan set path {path!r}")
+    if head == "impl":
+        try:
+            f = float(value)
+        except (TypeError, ValueError):
+            raise OpError(f"impl must be a number, got {value!r}") from None
+        working["impl"] = max(0.0, min(1.0, f))  # clamp 0..1 (was reject)
+        return
+    working[head] = value
+
+
+def _apply_sprint_status(
+    working: dict,
+    sprints: list,
+    idx: int,
+    new_el: dict,
+    sprint_id: str,
+    value: Any,
+    warnings: list[str],
+) -> None:
+    """Mirror update_sprint's active_sprint_id side-effects for a status set."""
+    new_el["status"] = value
+    sprints[idx] = new_el
+    active_id = working.get("active_sprint_id")
+    if value == "active":
+        already = next(
+            (
+                x
+                for x in sprints
+                if isinstance(x, dict)
+                and x.get("status") == "active"
+                and x.get("id") != sprint_id
+            ),
+            None,
+        )
+        if already:
+            warnings.append(
+                f"sprint {already['id']} is already active — consider closing it first"
+            )
+        working["active_sprint_id"] = sprint_id
+    elif value == "done" and active_id == sprint_id:
+        working["active_sprint_id"] = None
+
+
+def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    target = op.get("target")
+    if not target or not isinstance(target, str):
+        raise OpError("append op requires a 'target' collection")
+    item = op.get("item")
+
+    if is_index:
+        if target == "sprints":
+            if not isinstance(item, dict) or not item.get("id"):
+                raise OpError("append sprints requires an item object with an 'id'")
+            sprints = working.setdefault("sprints", [])
+            if _find_by_id(sprints, item["id"]) is not None:
+                raise OpError(f"sprint {item['id']!r} already exists")
+            new_sprint = {
+                "id": item["id"],
+                "status": item.get("status", "planned"),
+                "theme": item.get("theme", ""),
+                "items": list(item.get("items", [])),
+            }
+            for k in ("starts", "ends", "description", "summary"):
+                if k in item:
+                    new_sprint[k] = item[k]
+            sprints.append(new_sprint)
+            if new_sprint["status"] == "active":
+                prev = working.get("active_sprint_id")
+                if prev and prev != new_sprint["id"]:
+                    warnings.append(f"sprint {prev} was active — consider closing it")
+                working["active_sprint_id"] = new_sprint["id"]
+            return
+        if target.startswith("sprints.") and target.endswith(".items"):
+            sprint_id = target[len("sprints.") : -len(".items")]
+            sprints = working.get("sprints", [])
+            hit = _find_by_id(sprints, sprint_id)
+            if hit is None:
+                raise OpError(f"sprint {sprint_id!r} not found")
+            idx, el = hit
+            slug = _item_slug(item)
+            if not slug:
+                raise OpError("sprint item must have a slug")
+            items = list(el.get("items", []))
+            if slug in {_item_slug(x) for x in items}:
+                raise OpError(f"{slug!r} already in sprint {sprint_id}")
+            items.append(item)
+            sprints[idx] = {**el, "items": items}
+            return
+        if target == "milestones":
+            if not isinstance(item, dict) or not item.get("id"):
+                raise OpError("append milestones requires an item object with an 'id'")
+            milestones = working.setdefault("milestones", [])
+            if _find_by_id(milestones, item["id"]) is not None:
+                raise OpError(f"milestone {item['id']!r} already exists")
+            milestones.append(item)
+            return
+        if target in ("timeline", "blockers"):
+            lst = working.setdefault(target, [])
+            lst.append(item)
+            return
+        raise OpError(f"unsupported index append target {target!r}")
+
+    # ── plan append ──
+    if target == "followups":
+        if not isinstance(item, dict):
+            raise OpError("append followups requires an item object")
+        required = {"id", "written_by", "written_at", "title", "body", "prompt"}
+        fu = dict(item)
+        if not fu.get("id"):
+            fu["id"] = _gen_id("f")
+        missing = [k for k in sorted(required) if not str(fu.get(k, "")).strip()]
+        if missing:
+            raise OpError(f"followup missing required fields: {missing}")
+        working.setdefault("followups", []).append(fu)
+        return
+    if target == "research":
+        if not isinstance(item, dict):
+            raise OpError("append research requires an item object")
+        r = dict(item)
+        if not r.get("id"):
+            r["id"] = _gen_id("r")
+        working.setdefault("research", []).append(r)
+        return
+    if target == "questions":
+        if not isinstance(item, dict):
+            raise OpError("append questions requires an item object")
+        q = dict(item)
+        if not q.get("id"):
+            q["id"] = _gen_id("q")
+        working.setdefault("questions", []).append(q)
+        return
+    if target == "comments":
+        if not isinstance(item, dict):
+            raise OpError("append comments requires an item object")
+        section = op.get("section") or "_top"
+        c = dict(item)
+        if not c.get("id"):
+            c["id"] = _gen_id("c")
+        comments = working.setdefault("comments", {})
+        comments.setdefault(section, []).append(c)
+        return
+    if target == "decisions":
+        key = op.get("key")
+        if not key:
+            raise OpError("append decisions requires a 'key'")
+        decisions = working.setdefault("decisions", {})
+        if key in decisions:
+            raise OpError(f"decision {key!r} already exists")
+        decisions[key] = item if isinstance(item, dict) else {}
+        return
+    raise OpError(f"unsupported plan append target {target!r}")
+
+
+def _apply_resolve(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    if is_index:
+        raise OpError("resolve op is plan-only")
+    target = op.get("target")
+    ident = op.get("id")
+    if target not in ("followups", "questions"):
+        raise OpError("resolve target must be 'followups' or 'questions'")
+    if not ident:
+        raise OpError("resolve op requires an 'id'")
+    lst = working.get(target, [])
+    hit = _find_by_id(lst, ident)
+    if hit is None:
+        raise OpError(f"{ident!r} not found in {target}")
+    idx, el = hit
+    updates: dict[str, Any] = {
+        "resolved_at": _utc_ts(),
+        "resolved_by": op.get("by", ""),
+    }
+    if target == "followups":
+        updates["outcome"] = op.get("outcome", "")
+        updates["status"] = "resolved"
+    else:
+        updates["resolution"] = op.get("resolution", "")
+    lst[idx] = {**el, **updates}
+
+
+def _apply_lock(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    if is_index:
+        raise OpError("lock op is plan-only")
+    key = op.get("key")
+    if not key:
+        raise OpError("lock op requires a 'key'")
+    decisions = working.setdefault("decisions", {})
+    existing = decisions.get(key)
+    merged = {
+        "choice": op.get("choice", ""),
+        "rationale": op.get("rationale", ""),
+        "when": _utc_ts(),
+        "by": op.get("by", ""),
+    }
+    # Preserve authored title/context/choices/option_labels (merge semantics).
+    if isinstance(existing, dict):
+        decisions[key] = {**existing, **merged}
+    else:
+        decisions[key] = merged
+
+
+def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    if not is_index:
+        raise OpError("move op is index-only")
+    if op.get("target") != "sprint_item":
+        raise OpError("move target must be 'sprint_item'")
+    slug = op.get("slug")
+    frm = op.get("from")
+    to = op.get("to")
+    if not (slug and frm and to):
+        raise OpError("move op requires slug, from, and to")
+    sprints = working.get("sprints", [])
+    fhit = _find_by_id(sprints, frm)
+    thit = _find_by_id(sprints, to)
+    if fhit is None:
+        raise OpError(f"from sprint {frm!r} not found")
+    if thit is None:
+        raise OpError(f"to sprint {to!r} not found")
+    fi, fs = fhit
+    ti, ts = thit
+    from_items = list(fs.get("items", []))
+    moved = None
+    new_from: list = []
+    for it in from_items:
+        if _item_slug(it) == slug:
+            moved = it
+        else:
+            new_from.append(it)
+    if moved is None:
+        raise OpError(f"{slug!r} not found in sprint {frm}")
+    to_items = list(ts.get("items", []))
+    if slug in {_item_slug(x) for x in to_items}:
+        raise OpError(f"{slug!r} already in sprint {to}")
+    to_items.append(moved)
+    sprints[fi] = {**fs, "items": new_from}
+    sprints[ti] = {**ts, "items": to_items}
+
+
+_OP_DISPATCH = {
+    "set": _apply_set,
+    "append": _apply_append,
+    "resolve": _apply_resolve,
+    "lock": _apply_lock,
+    "move": _apply_move,
+}
+
+
+def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
+    """Apply ``ops`` IN ORDER to the working DICT in place.
+
+    ``working`` is the read_state dict (plan) or the index ``data`` sub-object.
+    Returns accumulated non-fatal warnings (e.g. double-active-sprint).
+    Raises :class:`OpError` on any structurally invalid op — the caller then
+    rejects WITHOUT writing. Pure: never touches disk or version fields.
+    """
+    if not isinstance(ops, list):
+        raise OpError("ops must be a list")
+    warnings: list[str] = []
+    for n, op in enumerate(ops):
+        if not isinstance(op, dict):
+            raise OpError(f"op #{n} is not an object")
+        verb = op.get("op")
+        handler = _OP_DISPATCH.get(verb)
+        if handler is None:
+            raise OpError(f"op #{n}: unknown verb {verb!r}")
+        handler(working, op, is_index, warnings)
+    return warnings
+
+
+# ── New-plan HTML template (create=True) ────────────────────────────────────
+
+
+def new_plan_html(project: str, slug: str, title: str | None = None) -> str:
+    """Return a minimal, schema-valid plan HTML head for a brand-new plan.
+
+    Carries docs-project + plan-slug metas, a <title>, reckon-type=plan, the two
+    shared CSS links, and empty decisions/followups sections so a freshly created
+    plan validates and round-trips. edit_plan applies ops on top of this.
+    """
+    t = title or slug
+    return (
+        '<!doctype html>\n<html lang="en">\n<head>\n'
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+        f'<meta name="docs-project" content="{project}">\n'
+        f'<meta name="plan-slug" content="{slug}">\n'
+        '<meta name="reckon-type" content="plan">\n'
+        f"<title>{t}</title>\n"
+        '<link rel="stylesheet" href="/_shared/foundation.css">\n'
+        '<link rel="stylesheet" href="/_shared/dashboard.css">\n'
+        "</head>\n"
+        '<body>\n<main class="plan-doc">\n'
+        '<section data-reckon="decisions" id="decisions" class="r-decisions">'
+        '\n<h2><span class="sec">§</span> Decisions</h2>\n</section>\n'
+        '<section data-reckon="followups" id="followups" class="r-followups">'
+        '\n<h2><span class="sec">§</span> Followups</h2>\n</section>\n'
+        "</main>\n</body>\n</html>\n"
+    )

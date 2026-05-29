@@ -1,0 +1,907 @@
+"""Tests for the collapsed edit_plan write tool + read_plan enrichment.
+
+edit_plan(project, slug, ops, expected_version, create=False) is the single
+write surface that folds the 15 mutators into one verb-dispatched tool. It
+applies ops IN ORDER to a working dict, schema-validates, then persists via the
+existing version-checked atomic write. read_plan gains additive with_schema and
+discovery (slug=None) modes.
+
+Hermetic fixture mirrors tests/test_mcp_tools.py (tmp docs + mounts via
+RECKON_MOUNTS_PATH + RECKON_STATE_ROOT, reload _store + mcp).
+"""
+
+from __future__ import annotations
+
+import importlib
+import json
+from pathlib import Path
+
+import pytest
+
+import reckon._store as _store_module
+import reckon.mcp as mcp_module
+
+
+# ── Fixtures ───────────────────────────────────────────────────────────────
+
+
+@pytest.fixture()
+def setup(tmp_path, monkeypatch):
+    """Hermetic temp docs dir + mounts + state root. Returns (docs, state, proj)."""
+    project = "proj"
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    state_root = tmp_path / "state"
+    state_root.mkdir()
+
+    mounts_file = tmp_path / "mounts.json"
+    mounts_file.write_text(json.dumps({project: str(docs_dir)}))
+
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
+
+    import reckon.serve as serve_mod
+
+    serve_mod._MOUNTS_FILE = mounts_file
+    serve_mod._STATE_ROOT = state_root
+
+    importlib.reload(_store_module)
+    importlib.reload(mcp_module)
+
+    return docs_dir, state_root, project
+
+
+def _make_plan_html(docs_dir: Path, slug: str, state: dict) -> Path:
+    from reckon._plan_html import write_state
+
+    base = dict(state)
+    base.setdefault("slug", slug)
+    base.setdefault("title", slug.title())
+    base.setdefault("status", "active")
+    bare = (
+        '<!doctype html>\n<html lang="en">\n<head>'
+        '<meta charset="utf-8">'
+        '<meta name="docs-project" content="proj">'
+        f"<title>{slug}</title></head>\n"
+        '<body><main class="plan-doc"></main></body>\n</html>\n'
+    )
+    html = write_state(bare, base)
+    path = docs_dir / f"{slug}.html"
+    path.write_text(html, encoding="utf-8")
+    return path
+
+
+def _seed_index(state_root: Path, project: str, data: dict) -> None:
+    proj_dir = state_root / project
+    proj_dir.mkdir(parents=True, exist_ok=True)
+    envelope = {
+        "updated": "2026-01-01T00:00:00",
+        "project": project,
+        "doc": "index",
+        "data": {"_version": 0, **data},
+    }
+    (proj_dir / "index.json").write_text(json.dumps(envelope, indent=2))
+
+
+# ── set verb ────────────────────────────────────────────────────────────────
+
+
+def test_set_scalar(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["status"] == "shipped"
+
+
+def test_set_impl_clamps(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "impl", "value": 2.5}], 0
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["impl"] == 1.0
+    r2 = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "impl", "value": -3}], data["version"]
+    )
+    assert r2["ok"] is True
+    data2, _ = _store_module.read_plan(project, "plan-a")
+    assert data2["impl"] == 0.0
+
+
+def test_set_decision_field(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "decisions": {
+                "transport": {"title": "T?", "choices": ["a", "b"], "choice": ""}
+            },
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "decisions.transport.choice", "value": "a"}],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["decisions"]["transport"]["choice"] == "a"
+    assert data["decisions"]["transport"]["title"] == "T?"  # preserved
+
+
+def test_set_sprint_status_active_side_effect(setup):
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {
+            "active_sprint_id": None,
+            "sprints": [{"id": "S1", "status": "planned", "items": []}],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "set", "path": "sprints.S1.status", "value": "active"}],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    assert data["active_sprint_id"] == "S1"
+    assert data["sprints"][0]["status"] == "active"
+
+
+def test_set_sprint_status_double_active_warns(setup):
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {
+            "active_sprint_id": "S1",
+            "sprints": [
+                {"id": "S1", "status": "active", "items": []},
+                {"id": "S2", "status": "planned", "items": []},
+            ],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "set", "path": "sprints.S2.status", "value": "active"}],
+        0,
+    )
+    assert r["ok"] is True
+    assert "warnings" in r and any("already active" in w for w in r["warnings"])
+
+
+def test_set_sprint_status_done_clears_active(setup):
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {
+            "active_sprint_id": "S1",
+            "sprints": [{"id": "S1", "status": "active", "items": []}],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "set", "path": "sprints.S1.status", "value": "done"}],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    assert data["active_sprint_id"] is None
+
+
+def test_set_active_sprint_id_index(setup):
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {"active_sprint_id": None, "sprints": [{"id": "S1", "items": []}]},
+    )
+    r = mcp_module._edit_plan(
+        project, "index", [{"op": "set", "path": "active_sprint_id", "value": "S1"}], 0
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    assert data["active_sprint_id"] == "S1"
+
+
+def test_set_inventory_accepted_as_noop(setup):
+    """inventory[] is synthesised live; a set on it is accepted (folds
+    update_inventory_item) but is a durable no-op — the contract requires it
+    stay accepted, not rejected."""
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {"inventory": [{"slug": "plan-x", "status": "active"}]},
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "set", "path": "inventory.plan-x.status", "value": "shipped"}],
+        0,
+    )
+    assert r["ok"] is True  # accepted, not an op_error
+
+
+# ── append verb ───────────────────────────────────────────────────────────
+
+
+def test_append_followup(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+    fu = {
+        "id": "f1",
+        "written_by": "smc",
+        "written_at": "2026-01-01",
+        "title": "next",
+        "body": "do it",
+        "prompt": "Project: proj\nDone-when: x",
+    }
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["followups"][0]["id"] == "f1"
+
+
+def test_append_followup_empty_prompt_rejected(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+    fu = {
+        "id": "f1",
+        "written_by": "smc",
+        "written_at": "2026-01-01",
+        "title": "next",
+        "body": "do it",
+        "prompt": "   ",
+    }
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+    # nothing written
+    data, ver = _store_module.read_plan(project, "plan-a")
+    assert data["followups"] == []
+    assert ver == 0
+
+
+def test_append_followup_autogen_id(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+    fu = {
+        "written_by": "smc",
+        "written_at": "2026-01-01",
+        "title": "next",
+        "body": "do it",
+        "prompt": "Done-when: x",
+    }
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["followups"][0]["id"].startswith("f-")
+
+
+def test_append_comment_section_and_autogen_id(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "comments": {}})
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "append",
+                "target": "comments",
+                "section": "s1",
+                "item": {"who": "agent", "when": "2026-01-01", "body": "hi"},
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["comments"]["s1"][0]["body"] == "hi"
+    assert data["comments"]["s1"][0]["id"].startswith("c-")
+
+
+def test_append_decision_with_key(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "append",
+                "target": "decisions",
+                "key": "transport",
+                "item": {"title": "Which?", "choices": ["a", "b"], "choice": ""},
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    assert data["decisions"]["transport"]["title"] == "Which?"
+
+
+def test_append_sprint_new_index(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"active_sprint_id": None, "sprints": []})
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [
+            {
+                "op": "append",
+                "target": "sprints",
+                "item": {"id": "S1", "theme": "alpha", "status": "active"},
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    assert data["sprints"][0]["id"] == "S1"
+    assert data["active_sprint_id"] == "S1"
+
+
+def test_append_sprint_duplicate_rejected(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"sprints": [{"id": "S1", "items": []}]})
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "append", "target": "sprints", "item": {"id": "S1"}}],
+        0,
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+
+
+def test_append_sprint_item_and_dup_reject(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"sprints": [{"id": "S1", "items": []}]})
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "append", "target": "sprints.S1.items", "item": "plan-x"}],
+        0,
+    )
+    assert r["ok"] is True
+    data, v = _store_module.read_plan(project, "index")
+    assert "plan-x" in data["sprints"][0]["items"]
+    r2 = mcp_module._edit_plan(
+        project,
+        "index",
+        [{"op": "append", "target": "sprints.S1.items", "item": "plan-x"}],
+        v,
+    )
+    assert r2["ok"] is False
+    assert r2["error"] == "op_error"
+
+
+def test_append_milestone_index(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"milestones": []})
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [
+            {
+                "op": "append",
+                "target": "milestones",
+                "item": {"id": "M1", "name": "launch"},
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    assert data["milestones"][0]["id"] == "M1"
+
+
+# ── resolve verb ────────────────────────────────────────────────────────────
+
+
+def test_resolve_followup(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "followups": [
+                {
+                    "id": "f1",
+                    "title": "x",
+                    "body": "y",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "prompt": "Done-when: z",
+                }
+            ],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "resolve",
+                "target": "followups",
+                "id": "f1",
+                "by": "smc",
+                "outcome": "landed",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    fu = data["followups"][0]
+    assert fu["outcome"] == "landed"
+    assert fu["resolved_by"] == "smc"
+    assert fu["resolved_at"]
+
+
+def test_resolve_question(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "questions": [
+                {
+                    "id": "q1",
+                    "section": "§2",
+                    "body": "How?",
+                    "opened_by": "smc",
+                    "opened_at": "2026-01-01",
+                }
+            ],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "resolve",
+                "target": "questions",
+                "id": "q1",
+                "by": "smc",
+                "resolution": "use X",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    q = data["questions"][0]
+    assert q["resolution"] == "use X"
+    assert q["resolved_at"]
+
+
+def test_resolve_missing_id_rejected(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "resolve", "target": "followups", "id": "nope", "by": "x"}],
+        0,
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+
+
+# ── lock verb ───────────────────────────────────────────────────────────────
+
+
+def test_lock_preserves_authored_fields(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "decisions": {
+                "transport": {
+                    "title": "Which transport?",
+                    "context": "ctx",
+                    "choices": ["stdio", "http"],
+                    "choice": "",
+                }
+            },
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "lock",
+                "key": "transport",
+                "choice": "stdio",
+                "rationale": "default",
+                "by": "simon",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "plan-a")
+    dec = data["decisions"]["transport"]
+    assert dec["title"] == "Which transport?"
+    assert dec["context"] == "ctx"
+    assert dec["choices"] == ["stdio", "http"]
+    assert dec["choice"] == "stdio"
+    assert dec["rationale"] == "default"
+    assert dec["by"] == "simon"
+    assert dec["when"]
+
+
+# ── move verb ───────────────────────────────────────────────────────────────
+
+
+def test_move_sprint_item(setup):
+    _, state_root, project = setup
+    item = {"slug": "plan-a", "why_now": "priority", "tier": "opus"}
+    _seed_index(
+        state_root,
+        project,
+        {
+            "sprints": [
+                {"id": "S1", "items": [item]},
+                {"id": "S2", "items": []},
+            ]
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [
+            {
+                "op": "move",
+                "target": "sprint_item",
+                "slug": "plan-a",
+                "from": "S1",
+                "to": "S2",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, _ = _store_module.read_plan(project, "index")
+    s1 = next(s for s in data["sprints"] if s["id"] == "S1")
+    s2 = next(s for s in data["sprints"] if s["id"] == "S2")
+    assert s1["items"] == []
+    assert s2["items"][0]["why_now"] == "priority"  # metadata preserved
+
+
+def test_move_not_in_from_rejected(setup):
+    _, state_root, project = setup
+    _seed_index(
+        state_root,
+        project,
+        {
+            "sprints": [
+                {"id": "S1", "items": []},
+                {"id": "S2", "items": []},
+            ]
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [
+            {
+                "op": "move",
+                "target": "sprint_item",
+                "slug": "x",
+                "from": "S1",
+                "to": "S2",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+
+
+# ── create ──────────────────────────────────────────────────────────────────
+
+
+def test_create_new_plan(setup):
+    docs_dir, _, project = setup
+    r = mcp_module._edit_plan(
+        project,
+        "brand-new",
+        [
+            {"op": "set", "path": "title", "value": "Brand New"},
+            {"op": "set", "path": "status", "value": "active"},
+        ],
+        expected_version=0,
+        create=True,
+    )
+    assert r["ok"] is True
+    assert r.get("created") is True
+    assert (docs_dir / "brand-new.html").exists()
+    data, _ = _store_module.read_plan(project, "brand-new")
+    assert data["title"] == "Brand New"
+    assert data["status"] == "active"
+    assert data["slug"] == "brand-new"
+
+
+def test_create_existing_rejected(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    r = mcp_module._edit_plan(project, "plan-a", [], expected_version=0, create=True)
+    assert r["ok"] is False
+    assert "already exists" in r["error"]
+
+
+def test_edit_missing_plan_rejected(setup):
+    _, _, project = setup
+    r = mcp_module._edit_plan(
+        project, "ghost", [{"op": "set", "path": "status", "value": "active"}], 0
+    )
+    assert r["ok"] is False
+    assert "not found" in r["error"]
+
+
+# ── schema REJECT (write nothing) ─────────────────────────────────────────
+
+
+def test_reject_invalid_status_enum(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "status", "value": "bogus"}], 0
+    )
+    assert r["ok"] is False
+    assert r["error"] == "schema_validation"
+    assert any("status" in d for d in r["details"])
+    # nothing written: status unchanged, version unchanged
+    data, ver = _store_module.read_plan(project, "plan-a")
+    assert data["status"] == "active"
+    assert ver == 0
+
+
+def test_reject_blank_required_title(setup):
+    """Setting a required-on-write scalar (title) to empty is rejected by
+    validate_for_write — nothing is written."""
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir, "plan-a", {"version": 0, "title": "T", "status": "active"}
+    )
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "title", "value": ""}], 0
+    )
+    assert r["ok"] is False
+    assert r["error"] == "schema_validation"
+    assert any("title" in d for d in r["details"])
+    data, ver = _store_module.read_plan(project, "plan-a")
+    assert data["title"] == "T"
+    assert ver == 0
+
+
+def test_reject_preexisting_empty_followup_prompt_via_validate(setup):
+    """A plan carrying a followup with an empty §05 prompt becomes un-editable via
+    edit_plan: even an UNRELATED edit re-validates the whole dict and is rejected
+    at the validate_for_write boundary (the reject half of reject-write-warn).
+    This is the documented sharp edge — the granular tools are the escape hatch."""
+    docs_dir, _, project = setup
+    # Seed a plan whose existing followup already has an empty prompt (a violation
+    # that the lenient read path tolerates).
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "title": "Plan A",
+            "status": "active",
+            "followups": [
+                {
+                    "id": "f1",
+                    "title": "x",
+                    "body": "y",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "prompt": "",  # pre-existing violation
+                }
+            ],
+        },
+    )
+    # An unrelated edit (set status) must still be rejected — the whole dict is
+    # validated, and the empty prompt trips validate_for_write.
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+    )
+    assert r["ok"] is False
+    assert r["error"] == "schema_validation"
+    assert any("prompt" in d.lower() for d in r["details"])
+    data, ver = _store_module.read_plan(project, "plan-a")
+    assert data["status"] == "active"  # unchanged
+    assert ver == 0
+
+
+def test_create_missing_required_rejected_and_no_orphan(setup):
+    """A create that fails schema validation must leave NO stub file behind
+    (contract: on failure → no write) and must not block a later retry."""
+    docs_dir, _, project = setup
+    r = mcp_module._edit_plan(
+        project,
+        "new-plan",
+        [{"op": "set", "path": "slug", "value": ""}],
+        expected_version=0,
+        create=True,
+    )
+    assert r["ok"] is False
+    assert r["error"] == "schema_validation"
+    assert any("slug" in d for d in r["details"])
+    # No orphan stub: the failed create wrote nothing durable.
+    assert not (docs_dir / "new-plan.html").exists()
+    data, ver = _store_module.read_plan(project, "new-plan")
+    assert data == {}
+    assert ver == 0
+    # And a clean retry is unblocked (not "already exists").
+    r2 = mcp_module._edit_plan(
+        project,
+        "new-plan",
+        [{"op": "set", "path": "title", "value": "New Plan"}],
+        expected_version=0,
+        create=True,
+    )
+    assert r2["ok"] is True
+    assert (docs_dir / "new-plan.html").exists()
+
+
+def test_create_op_error_no_orphan(setup):
+    """A create whose ops fail at the op layer also leaves no stub behind."""
+    docs_dir, _, project = setup
+    r = mcp_module._edit_plan(
+        project,
+        "new-plan",
+        [{"op": "frobnicate"}],
+        expected_version=0,
+        create=True,
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+    assert not (docs_dir / "new-plan.html").exists()
+
+
+# ── version conflict ──────────────────────────────────────────────────────
+
+
+def test_version_conflict(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 99
+    )
+    assert r["ok"] is False
+    assert r["error"] == "version_conflict"
+
+
+# ── multi-op ordering ─────────────────────────────────────────────────────
+
+
+def test_multiple_ops_applied_in_order(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "decisions": {}})
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "append",
+                "target": "decisions",
+                "key": "d1",
+                "item": {"title": "Q?", "choices": ["a", "b"], "choice": ""},
+            },
+            {"op": "lock", "key": "d1", "choice": "a", "rationale": "r", "by": "smc"},
+            {"op": "set", "path": "status", "value": "shipped"},
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, ver = _store_module.read_plan(project, "plan-a")
+    assert data["decisions"]["d1"]["choice"] == "a"
+    assert data["status"] == "shipped"
+    assert ver == 1  # one version bump for the whole batch
+
+
+# ── unknown verb ───────────────────────────────────────────────────────────
+
+
+def test_unknown_verb_rejected(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    r = mcp_module._edit_plan(project, "plan-a", [{"op": "frobnicate"}], 0)
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+
+
+# ── read_plan enrichment ──────────────────────────────────────────────────
+
+
+def test_read_plan_unchanged_shape(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+    r = mcp_module._read_plan(project, "plan-a")
+    assert set(r.keys()) == {"project", "slug", "version", "data"}
+    assert r["data"]["status"] == "active"
+
+
+def test_read_plan_with_schema(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    r = mcp_module._read_plan(project, "plan-a", with_schema=True)
+    assert "schema" in r
+    assert r["schema"]["title"] == "reckon PlanState"
+    assert "op_vocab" in r and "set" in r["op_vocab"]
+    assert "dos_donts" in r
+
+
+def test_read_plan_discovery(setup):
+    docs_dir, state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "alpha",
+        {
+            "version": 0,
+            "status": "active",
+            "followups": [
+                {
+                    "id": "f1",
+                    "title": "t",
+                    "body": "b",
+                    "written_by": "x",
+                    "written_at": "2026-01-01",
+                    "prompt": "p",
+                }
+            ],
+        },
+    )
+    _seed_index(
+        state_root,
+        project,
+        {"sprints": [{"id": "S1", "items": []}], "active_sprint_id": "S1"},
+    )
+    r = mcp_module._read_plan(project)  # slug omitted
+    slugs = {p["slug"] for p in r["plans"]}
+    assert "alpha" in slugs
+    assert r["active_sprint_id"] == "S1"
+    assert any(f["id"] == "f1" for f in r["followups"])
+
+
+def test_read_plan_projects_list(setup):
+    _, _, project = setup
+    r = mcp_module._read_plan()  # no project
+    names = {p["name"] for p in r["projects"]}
+    assert project in names
+    r2 = mcp_module._read_plan("*")
+    names2 = {p["name"] for p in r2["projects"]}
+    assert project in names2
