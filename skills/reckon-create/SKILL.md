@@ -27,15 +27,33 @@ If the user wants to execute work in a plan → hand off to `reckon-ship`.
 **Guard:** if `docs/_shared/` does not exist in the target repo, stop immediately
 and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
 
+## The model — plans are HTML documents
+
+**The plan HTML is the document AND the store.** You are authoring an HTML file;
+the machine-readable tags (`<meta name="plan-*">`) and section elements
+(`<section data-reckon="…">`) are baked into that same file. There is no
+separate state file, no sidecar JSON, no POST needed to create a plan. Just write
+the HTML with the right elements and the server discovers it.
+
+`edit_plan(create=True)` is the version-safe path for initial state ops when
+other agents or a human might be concurrently writing to the same project — it
+creates the plan atomically with a version counter from zero. For a new plan
+where you are the sole author, writing the HTML file directly is fine; announce
+"authoring HTML directly" in your reply.
+
 ## Document types
 
 | Type | `reckon-type` | Use when |
 |---|---|---|
 | **plan** | `plan` (default) | Actionable work with lifecycle: status, decisions, followups, sprints |
-| **doc** | `plan` with plain `<body>` | Standalone prose — RCA, explainer, review |
+| **doc / explainer / RCA** | `doc` (stored as `research`) | Standalone prose — RCA, explainer, ticket, review |
 | **research** | `research` | Non-actionable input/reference; no decision/followup workflow |
 
-Research docs carry `plan-informs` listing the plans they feed, and appear with a "research" banner in the SPA. Use them for literature surveys, data characterisations, and reference analyses that inform — but do not describe — work.
+Authoring `reckon-type=doc` is accepted. The schema normalises `doc`→`research`
+on read, so `doc` never appears in parsed state — only `plan` or `research`.
+Research docs carry `plan-informs` listing the plans they feed, and appear with
+a "research" banner in the SPA. Use them for literature surveys, data
+characterisations, and reference analyses that inform — but do not describe — work.
 
 **When ambiguous, default to plan.**
 
@@ -69,9 +87,53 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 - Title: Title Case from slug
 - If `/reckon-create <slug>` provided, use that slug verbatim.
 
-### Step 3 — Create HTML
+### Step 3 — Write the HTML
 
-## ✅ Good plan head — fully wired
+Use the Write tool to create `docs/<slug>.html` from the template below.
+Then, optionally, use `edit_plan(create=True)` to register initial state
+via the version-safe MCP path (required if other agents may be writing
+concurrently to the same project's index).
+
+**Authoring the file directly is the primary path.** The MCP tool is an
+optional version-safety wrapper, not a gate.
+
+### Step 4 — (Optional) Register initial state via edit_plan
+
+Only needed if other agents are concurrently active on the same project, or if
+you need the plan to appear immediately in the server's version-tracked state:
+
+```python
+# Minimal create call — expected_version=0 for a new plan, create=True
+edit_plan(
+  project="imas-ambix",
+  slug="plasma-decoder-finetune",
+  ops=[
+    {"op": "set", "path": "status", "value": "draft"},
+    {"op": "set", "path": "roi", "value": "high"},
+    {"op": "set", "path": "effort", "value": "L"},
+    {"op": "set", "path": "tier", "value": "opus"},
+    {"op": "set", "path": "summary", "value": "Fine-tune the plasma decoder on curated IMAS shots"},
+    {"op": "set", "path": "milestone", "value": "M2"},
+    {"op": "append", "target": "followups", "item": {
+      "id": "f-pdf-001",
+      "status": "open",
+      "tier": "sonnet",
+      "written_by": "reckon-create",
+      "written_at": "2026-05-29",
+      "title": "Implement plasma decoder fine-tune §1 — data prep",
+      "body": "Initial authoring complete. Next: run data curation pipeline and validate.",
+      "recommends_skill": "/reckon-ship plasma-decoder-finetune §1",
+      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §1\nTier: sonnet\n\nContext\n  Plan authored; data prep is the first shippable section.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  (none yet)\n\nDone-when\n  1. Data pipeline script committed\n  2. Tests green\n  3. Followup written + this one resolved"
+    }}
+  ],
+  expected_version=0,
+  create=True
+)
+```
+
+## Templates
+
+### ✅ New plan — minimal valid skeleton
 
 ```html
 <!doctype html>
@@ -79,17 +141,20 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="docs-project"  content="imas-ambix">
-  <meta name="reckon-type"   content="plan">
-  <meta name="plan-slug"     content="plasma-decoder-finetune">
-  <meta name="plan-roi"      content="high">
-  <meta name="plan-effort"   content="L">
-  <meta name="plan-tier"     content="opus">
-  <meta name="plan-summary"  content="Fine-tune the plasma decoder on curated IMAS shots">
+  <meta name="docs-project"   content="imas-ambix">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="plasma-decoder-finetune">
+  <meta name="plan-title"     content="Plasma Decoder Fine-tune">
+  <meta name="plan-summary"   content="Fine-tune the plasma decoder on curated IMAS shots">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="L">
+  <meta name="plan-tier"      content="opus">
   <meta name="plan-milestone" content="M2">
-  <meta name="plan-sprint"   content="S4">
+  <meta name="plan-sprint"    content="S4">
+  <meta name="plan-owner"     content="Simon McIntosh">
   <meta name="plan-depends-on" content="tokenizer-eval,data-curation">
-  <!-- server-written scalars — omit from authored head; server adds on first write -->
+  <!-- plan-impl / plan-version / plan-modified: server-owned — do NOT author -->
   <title>Plasma Decoder Fine-tune | imas-ambix</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -98,6 +163,9 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
   <main class="plan-doc">
     <h2 id="s1">§1 — Overview</h2>
     <p>Full authored prose here. Not a stub.</p>
+
+    <h2 id="s2">§2 — Implementation plan</h2>
+    <p>Concrete deliverables with done-when criteria…</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
       <h2><span class="sec">§</span> Decisions</h2>
@@ -113,11 +181,43 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 
     <section data-reckon="followups" id="followups" class="r-followups">
       <h2><span class="sec">§</span> Followups</h2>
+      <!-- first followup will be appended here -->
     </section>
   </main>
 </body>
 </html>
 ```
+
+### ✅ Research / doc skeleton
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="imas-ambix">
+  <meta name="reckon-type"   content="research">
+  <meta name="plan-slug"     content="plasma-decoder-survey">
+  <meta name="plan-title"    content="Plasma Decoder Architecture Survey">
+  <meta name="plan-summary"  content="Survey of plasma decoder architectures for IMAS shots">
+  <meta name="plan-informs"  content="plasma-decoder-finetune,tokenizer-eval">
+  <title>Plasma Decoder Architecture Survey | imas-ambix</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Findings</h2>
+    <p>Full prose — no decision or followup sections needed for research docs.</p>
+  </main>
+</body>
+</html>
+```
+
+Use `reckon-type=doc` for RCAs, incident reports, and explainers; the schema
+normalises it to `research`. Research docs show a "research" banner in the SPA
+and link to the plans they inform.
 
 ## ❌ Anti-pattern — missing metadata, stub body
 
@@ -130,43 +230,37 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 <body><p>See state §2 for details</p></body>
 ```
 
-Missing: `reckon-type`, `plan-roi`, `plan-tier`, `plan-summary`, `plan-sprint`, `plan-milestone`,
-CSS links, prose body, decisions and followups sections.
+Missing: `reckon-type`, `plan-title`, `plan-roi`, `plan-tier`, `plan-summary`,
+`plan-status`, CSS links, full prose body, decisions and followups sections.
 
-## Research doc head
+## Machine-readable fields — what each tag is for
 
-```html
-<head>
-  <meta charset="utf-8">
-  <meta name="docs-project"  content="imas-ambix">
-  <meta name="reckon-type"   content="research">
-  <meta name="plan-slug"     content="plasma-decoder-survey">
-  <meta name="plan-summary"  content="Survey of plasma decoder architectures for IMAS shots">
-  <meta name="plan-informs"  content="plasma-decoder-finetune,tokenizer-eval">
-  <title>Plasma Decoder Architecture Survey | imas-ambix</title>
-  <link rel="stylesheet" href="/_shared/foundation.css">
-  <link rel="stylesheet" href="/_shared/dashboard.css">
-</head>
-<body>
-  <main class="plan-doc">
-    <h2 id="s1">§1 — Findings</h2>
-    <p>Full prose — no decision or followup sections needed.</p>
-  </main>
-</body>
-```
+Only author fields that a view downstream consumes:
 
-Research docs show a "research" banner in the SPA and link to the plans they inform.
-Use `plan-depends-on` on the consuming plan to create the reverse link.
+| Tag | Who reads it / why |
+|---|---|
+| `plan-slug` / `docs-project` | Server keys the plan + project; discovery + cross-plan links |
+| `plan-title` / `plan-summary` | Dashboard cards, search, the fleet-prompt header |
+| `plan-status` | Lifecycle filter; kanban columns; "what's open" queries |
+| `plan-roi` / `plan-effort` | Sprint ordering, capacity planning (ROI × effort) |
+| `plan-milestone` / `plan-sprint` | Milestone rollup, sprint membership |
+| `plan-tier` | Model-tier hint for dispatch (haiku/sonnet/opus) |
+| `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
+| `plan-archived` | `1` hides plan from default inventory (retirements) |
+| `plan-read` | `1` marks a research/doc reviewed |
+| `plan-impl` / `plan-version` | **Server-owned.** impl computed; version is concurrency counter. Never author. |
+| `plan-modified` | Staleness detection; server-stamped on write. Never author. |
 
-### Step 4 — Meta scalars reference
+## Meta scalars reference
 
 **Author these** (plus `plan-sprint` and `plan-milestone` when applicable):
 
 | Meta tag | Default | Values |
 |---|---|---|
 | `docs-project` | — | basename of repo root |
-| `reckon-type` | `plan` | `plan` / `research` |
+| `reckon-type` | `plan` | `plan` / `research` / `doc` (→ normalised to `research`) |
 | `plan-slug` | filename stem | kebab-case override |
+| `plan-title` | (empty) | Title Case |
 | `plan-roi` | `mid` | `high` / `mid` / `low` |
 | `plan-effort` | `M` | `S` / `M` / `L` / `XL` |
 | `plan-tier` | `sonnet` | `haiku` / `sonnet` / `opus` |
@@ -175,19 +269,18 @@ Use `plan-depends-on` on the consuming plan to create the reverse link.
 | `plan-sprint` | (empty) | e.g. `S4` |
 | `plan-depends-on` | (empty) | Comma-separated slugs |
 | `plan-informs` | (empty) | Comma-separated slugs (research type only) |
+| `plan-archived` | (empty) | `1` to hide from inventory |
+| `plan-read` | (empty) | `1` to mark reviewed |
 
-**Do NOT author** (server-owned): `plan-status`, `plan-impl`, `plan-version`, `plan-modified`.
+**Do NOT author** (server-owned): `plan-impl`, `plan-version`, `plan-modified`.
 
-### Step 5 — Confirm
-
-Report:
-- Created file: `docs/<slug>.html`
-- Live URL: `http://localhost:8765/<project>/<slug>.html`
-- Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
+`plan-status` is authored on lifecycle transitions (draft → active → shipped).
+Set it to `draft` on initial scaffolding; update it as the plan progresses.
 
 ## §05 followup template
 
-Every followup's `<pre class="r-fu-prompt">` MUST be built from this template:
+Every followup's `<pre class="r-fu-prompt">` MUST be built from this template.
+A followup without a non-empty prompt is rejected at write time.
 
 ```
 Project: <project-name>
@@ -222,13 +315,20 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 **Decision (select-from-options):** `<div class="r-dec" data-key="…" data-choice="">` with `<p class="r-dec-q">`, optional `<p class="r-dec-opts">` containing `<button class="r-opt" data-value="…">`, and `<p class="r-dec-rat">`.
 
-**Decision (free-form, no options):** same but omit `<p class="r-dec-opts">`; `data-choice` holds the typed answer when locked.
+**Decision (free-form, no options):** same but omit `<p class="r-dec-opts">`; `data-choice` holds the typed answer when locked. The locked state is derived from `data-choice` being non-empty — no separate flag.
 
-**Followup:** `<article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet" data-written-by="…" data-written-at="…">` with `<h4 class="r-fu-title">`, `<div class="r-fu-body">`, and `<pre class="r-fu-prompt">` (mandatory).
+**Followup:** `<article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet" data-written-by="…" data-written-at="…">` with `<h4 class="r-fu-title">`, `<div class="r-fu-body">`, and `<pre class="r-fu-prompt">` (mandatory). Resolved by setting `data-resolved-at` + `data-resolved-by`; `status=resolved` is derived from `resolved_at`, not stored separately.
 
 **Research item:** `<div class="r-research" data-id="r1" data-type="paper" data-url="https://…">` with `<span class="r-research-title">`.
 
 **Comment:** `<div class="r-comment" data-section="s1" data-id="c1" data-who="…" data-when="…">` with `<div class="r-comment-body">`. Comments are created by text selection in the SPA — a "¶ Comment" button appears on hover; clicking it opens a popover. The comment anchors to the nearest `h2[id]`. Agents reading plans should check the `comments` section for human feedback left this way.
+
+### Step 5 — Confirm
+
+Report:
+- Created file: `docs/<slug>.html`
+- Live URL: `http://localhost:8765/<project>/<slug>.html`
+- Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
 
 ## Cross-references
 
@@ -236,4 +336,5 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 - `reckon-edit/SKILL.md` — modify an existing plan.
 - `reckon-ship/SKILL.md` — execute the work a plan describes.
 - `reckon-status/SKILL.md` — read-only inspection.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (all element shapes, endpoints).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (all element shapes, schema contract, endpoints).
+- `docs/_shared/plan.schema.json` — published JSON Schema (machine-checkable contract).

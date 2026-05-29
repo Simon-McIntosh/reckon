@@ -25,6 +25,22 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent
 
 If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → `reckon-create` first.
 
+## The model — the plan HTML is the document AND the store
+
+**The plan HTML is the source of truth.** Read it first, implement what it
+describes, then write back outcomes. The HTML documents the work; the
+`data-reckon` sections carry structured state (decisions, followups). Do not
+implement items marked "deferred", "post-v1", or behind an unmet trigger.
+
+**Write path:** use `edit_plan` to record outcomes atomically:
+1. `read_plan(project, slug)` → get `version`.
+2. `edit_plan(…, ops=[set status/impl + resolve driving followup + append next followup], expected_version=…)`.
+3. On 412 conflict: re-read + retry.
+
+**Bypass-with-announcement rule:** if you edit the plan HTML directly rather than
+via `edit_plan` (acceptable when you are the sole writer), announce "editing HTML
+directly because X".
+
 ## Hard rules
 
 1. **Plan HTML is the source of truth.** Do not implement items marked "deferred", "post-v1", or behind an unmet trigger.
@@ -38,6 +54,13 @@ If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → 
 ## Workflow
 
 ### 1. Read the plan — classify items
+
+```python
+state = read_plan(project="imas-ambix", slug="plasma-decoder-finetune")
+# read state["data"]["decisions"], state["data"]["followups"], prose from GET /<project>/<slug>.html
+```
+
+Or use `read_plan(project, slug, with_schema=True)` to get the schema + dos/don'ts inline.
 
 | Signal | Action |
 |---|---|
@@ -103,26 +126,46 @@ Once a section ships, the evergreen shows only current state. Replace the sectio
 - Trigger: the moment status flips to `shipped`. Don't collapse incrementally.
 - **Why:** plans that don't collapse become unreadable after 2-3 sprints.
 
-### 6. Update plan state and write followup
+### 6. Record outcomes via `edit_plan`
 
-```bash
-PROJECT="$(basename "$(git rev-parse --show-toplevel)")"
-SLUG="<slug>"
-PLAN=$(curl -s "http://127.0.0.1:8765/plan/$PROJECT/$SLUG")
-CUR_VER=$(echo "$PLAN" | jq -r '.version // 0')
-curl -s -X POST \
-  -H 'Content-Type: application/json' \
-  -H "If-Match: $CUR_VER" \
-  -d '{"impl": 1.0, "status": "shipped"}' \
-  "http://127.0.0.1:8765/plan/$PROJECT/$SLUG"
+```python
+# Read current version first
+state = read_plan(project="imas-ambix", slug="plasma-decoder-finetune")
+cur_ver = state["version"]  # e.g. 8
+
+# Apply all outcome ops in one atomic call
+edit_plan(
+  project="imas-ambix",
+  slug="plasma-decoder-finetune",
+  ops=[
+    {"op": "set", "path": "status", "value": "shipped"},
+    {"op": "set", "path": "impl", "value": 1.0},
+    {"op": "resolve", "target": "followups", "id": "f-pdf-002",
+     "by": "reckon-ship", "outcome": "§2 data prep landed — commit abc1234; pipeline smoke-test green"},
+    {"op": "append", "target": "followups", "item": {
+      "id": "f-pdf-003",
+      "status": "open",
+      "tier": "opus",
+      "written_by": "reckon-ship",
+      "written_at": "2026-05-29",
+      "title": "Run full fine-tune and evaluate §3",
+      "body": "Data prep shipped. Fine-tune is now unblocked and ready to run on compute.",
+      "recommends_skill": "/reckon-ship plasma-decoder-finetune §3",
+      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §3\nTier: opus\n\nContext\n  §2 data prep landed (abc1234). Fine-tune is unblocked.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  base-model → t5-large\n\nOpen decisions to surface (do not resolve)\n  training-batch-size\n\nDone-when\n  1. Fine-tune run completed; eval metrics committed\n  2. tests green\n  3. followup written + this followup resolved"
+    }}
+  ],
+  expected_version=cur_ver
+)
 ```
 
-Write (or confirm) the §05 followup via MCP `append_followup`. If triggered by a followup, mark it resolved. Also update `docs/state/<project>/index.json` sprints/milestones if central-index is in use.
+Note: `impl` is normally computed by the server from section counts. Setting it
+explicitly via `edit_plan` is permitted by the contract when the coordinator
+wants to mark full completion without waiting for server recomputation.
 
 **Eat-the-dog-food check.** Before declaring done:
-- `GET /plan/<project>/<slug>` → `status` matches reality
-- Driving followup is resolved (`data-status="resolved"`)
-- Next followup or `outcome: "done — no followup"` is present
+- `read_plan(project, slug)` → `status` matches reality
+- Driving followup is resolved (`data-status="resolved"` / `resolved_at` set)
+- Next followup or outcome `"done — no followup"` is present
 - `version` has incremented
 
 Commit:
@@ -197,21 +240,25 @@ End every worker prompt with:
 
 ```
 FOLLOWUP REQUIREMENT (binding):
-After tests pass, write a followup into the plan via MCP append_followup
-or POST /plan/<project>/<slug>.
-{
-  "id":               "f-<timestamp-base36>",
-  "status":           "open",
-  "written_by":       "<worker name>",
-  "written_at":       "<iso-now>",
-  "title":            "<imperative one-liner>",
-  "body":             "<2–3 sentences on what's next>",
-  "recommends_skill": "/reckon-ship <slug> [section]" | "/reckon-edit <slug>" | null,
-  "tier":             "haiku" | "sonnet" | "opus",
-  "prompt":           "<§05 template body, ready to paste>"
-}
-Then resolve your driving followup: set resolved_at, resolved_by, outcome, status="resolved".
-If nothing follows, set prompt = "done — no followup".
+After tests pass, write a followup into the plan via edit_plan ops or
+GET /plan/<project>/<slug> (read version) then edit_plan with:
+  ops=[
+    {"op": "append", "target": "followups", "item": {
+      "id": "f-<timestamp>",
+      "status": "open",
+      "written_by": "<worker name>",
+      "written_at": "<iso-now>",
+      "title": "<imperative one-liner>",
+      "body": "<2–3 sentences on what's next>",
+      "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
+      "tier": "haiku | sonnet | opus",
+      "prompt": "<§05 template body, ready to paste — non-empty>"
+    }},
+    {"op": "resolve", "target": "followups", "id": "<driving-followup-id>",
+     "by": "<worker name>", "outcome": "<what landed>"}
+  ]
+Then resolve your driving followup.
+If nothing follows, set prompt = "done — no followup" and outcome accordingly.
 ```
 
 ## Model selection
@@ -226,7 +273,8 @@ When in doubt, escalate upward.
 
 ## Cross-references
 
-- `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; state write pattern (MCP + HTTP).
+- `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
 - `reckon-create/SKILL.md` — first-time plan scaffolding and §05 template.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.
-- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, endpoints).
+- `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, schema contract, endpoints).
+- `docs/_shared/plan.schema.json` — published JSON Schema.
