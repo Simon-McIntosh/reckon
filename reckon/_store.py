@@ -55,28 +55,50 @@ class VersionConflict(Exception):
 # ── Path helpers ───────────────────────────────────────────────────────────
 
 
+def _config_home() -> Path:
+    """Resolve the reckon config home directory (mounts.json + state/).
+
+    Resolution order (the shared precedence used across reckon):
+    1. RECKON_HOME env var (explicit override — always wins)
+    2. ~/.config/reckon  (XDG location — preferred when it exists)
+    3. ~/docs-server     (legacy fallback — keeps existing installs working)
+
+    The fallback is deliberate: until the on-disk directory is migrated to
+    ~/.config/reckon, every caller keeps reading ~/docs-server unchanged.
+    """
+    env = os.environ.get("RECKON_HOME")
+    if env:
+        return Path(env).expanduser().resolve()
+    xdg = Path.home() / ".config" / "reckon"
+    if xdg.exists():
+        return xdg
+    return Path.home() / "docs-server"
+
+
 def _state_root() -> Path:
     """Resolve the state root directory for JSON-backed slugs (index/project).
 
     Priority:
     1. RECKON_STATE_ROOT env var
-    2. ~/docs-server/state (same default as reckon/serve.py)
+    2. <config-home>/state  (see _config_home: ~/.config/reckon then ~/docs-server)
     """
     env = os.environ.get("RECKON_STATE_ROOT")
     if env:
         return Path(env).expanduser().resolve()
-    return Path.home() / "docs-server" / "state"
+    return _config_home() / "state"
 
 
 def _mounts_path() -> Path:
     """Return the canonical path to mounts.json.
 
-    Override with RECKON_MOUNTS_PATH env var.
+    Priority:
+    1. RECKON_MOUNTS_PATH env var (always wins)
+    2. <config-home>/mounts.json (see _config_home)
     """
     env = os.environ.get("RECKON_MOUNTS_PATH")
     if env:
         return Path(env).expanduser().resolve()
-    return Path.home() / "docs-server" / "mounts.json"
+    return _config_home() / "mounts.json"
 
 
 def state_path(project: str, slug: str) -> Path:

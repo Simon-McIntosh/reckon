@@ -47,6 +47,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from reckon import _plan_html
+from reckon._store import _config_home
 
 HOME = Path.home()
 
@@ -60,13 +61,14 @@ _SHARED_ROOT: Path | None = None
 
 def _resolve_paths(mounts_file: Path | None = None) -> None:
     global _MOUNTS_FILE, _STATE_ROOT, _HOME_HTML, _SHARED_ROOT
-    legacy_root = HOME / "docs-server"
-    _MOUNTS_FILE = mounts_file or (legacy_root / "mounts.json")
-    _STATE_ROOT = legacy_root / "state"
+    # Config home: RECKON_HOME env → ~/.config/reckon (if present) → ~/docs-server.
+    config_root = _config_home()
+    _MOUNTS_FILE = mounts_file or (config_root / "mounts.json")
+    _STATE_ROOT = config_root / "state"
     # Prefer the home page bundled in the reckon docs/ directory; fall back to
-    # the legacy ~/docs-server/home.html from dotfiles if it doesn't exist yet.
+    # the config-home home.html from dotfiles if it doesn't exist yet.
     reckon_home = Path(__file__).parent.parent / "docs" / "home.html"
-    legacy_home = legacy_root / "home.html"
+    legacy_home = config_root / "home.html"
     _HOME_HTML = reckon_home if reckon_home.is_file() else legacy_home
     # Shared assets: prefer reckon repo's own docs/_shared, fall back to dotfiles.
     repo_shared = Path(__file__).parent.parent / "docs" / "_shared"
@@ -97,7 +99,7 @@ def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> byte
     for name, path in sorted(mounts.items()):
         rows.append(
             f'<tr><td><a href="/{name}/">{name}</a></td>'
-            f'<td><code>{path}</code></td></tr>'
+            f"<td><code>{path}</code></td></tr>"
         )
     body = (
         "<!doctype html><html><head><meta charset=utf-8>"
@@ -114,12 +116,12 @@ def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> byte
         "</style></head><body>"
         "<h1>reckon</h1>"
         f'<div class="meta">{host}:{port} &middot; '
-        f'{len(mounts)} project(s) mounted &middot; '
-        f'{datetime.now().strftime("%Y-%m-%d %H:%M")} &middot; '
+        f"{len(mounts)} project(s) mounted &middot; "
+        f"{datetime.now().strftime('%Y-%m-%d %H:%M')} &middot; "
         "<em>home.html missing — install reckon to get the rollup view</em>"
         "</div>"
-        '<table><thead><tr><th align=left>Project</th>'
-        '<th align=left>Path</th></tr></thead><tbody>'
+        "<table><thead><tr><th align=left>Project</th>"
+        "<th align=left>Path</th></tr></thead><tbody>"
         + "".join(rows)
         + "</tbody></table>"
         "</body></html>"
@@ -135,7 +137,9 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
         if state_file.is_file():
             try:
                 envelope = json.loads(state_file.read_text())
-                proj["data"] = envelope.get("data", envelope) if isinstance(envelope, dict) else {}
+                proj["data"] = (
+                    envelope.get("data", envelope) if isinstance(envelope, dict) else {}
+                )
                 if isinstance(envelope, dict) and "updated" in envelope:
                     proj["updated"] = envelope["updated"]
             except (OSError, json.JSONDecodeError) as e:
@@ -158,18 +162,33 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
 # marks non-actionable input docs. See PLAN-FORMAT.md for the convention.
 
 _PLAN_META_PREFIX = "plan-"
-_NON_PLAN_FILES = frozenset([
-    "index.html", "sprint.html", "sprints.html", "milestones.html",
-    "decisions.html", "inventory.html", "blockers.html",
-    "implementation.html", "questions.html", "home.html",
-    "project.html",
-])
-_NON_PLAN_DIRS = frozenset([
-    "_shared", "ui", "state", "assets", "images",
-    # Per-stage / archival history (e.g. <plan>-shipped.html, *-locked.html)
-    # lives under archive/ so it does not clutter the live inventory.
-    "archive",
-])
+_NON_PLAN_FILES = frozenset(
+    [
+        "index.html",
+        "sprint.html",
+        "sprints.html",
+        "milestones.html",
+        "decisions.html",
+        "inventory.html",
+        "blockers.html",
+        "implementation.html",
+        "questions.html",
+        "home.html",
+        "project.html",
+    ]
+)
+_NON_PLAN_DIRS = frozenset(
+    [
+        "_shared",
+        "ui",
+        "state",
+        "assets",
+        "images",
+        # Per-stage / archival history (e.g. <plan>-shipped.html, *-locked.html)
+        # lives under archive/ so it does not clutter the live inventory.
+        "archive",
+    ]
+)
 
 
 class _HeadParser(html.parser.HTMLParser):
@@ -226,9 +245,19 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     try:
         rel_docs = str(docs_dir.relative_to(repo_dir))
         result = subprocess.run(
-            ["git", "log", "--diff-filter=A", "--format=COMMIT %at",
-             "--name-only", "--", rel_docs],
-            capture_output=True, text=True, cwd=repo_dir, timeout=10,
+            [
+                "git",
+                "log",
+                "--diff-filter=A",
+                "--format=COMMIT %at",
+                "--name-only",
+                "--",
+                rel_docs,
+            ],
+            capture_output=True,
+            text=True,
+            cwd=repo_dir,
+            timeout=10,
         )
         if result.returncode != 0:
             return {}
@@ -296,30 +325,35 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         rel_no_ext = str(rel.with_suffix(""))
         href = rel_no_ext if rel_no_ext != slug else slug
 
-        inventory.append({
-            "slug":       slug,
-            "href":       href,
-            "title":      rec["title"],
-            "type":       rec.get("type", "plan"),
-            "informs":    rec.get("informs", []),
-            "status":     rec["status"],
-            "ms":         rec.get("milestone", "—"),
-            "roi":        rec.get("roi", "mid"),
-            "effort":     rec.get("effort", "M"),
-            "sprint":     rec.get("sprint") or None,
-            "summary":    rec.get("summary", ""),
-            "tier":       rec.get("tier", "sonnet"),
-            "owner":      rec.get("owner", ""),
-            "impl":       rec["impl"],
-            "dec_open":   rec["dec_open"],
-            "blockers":   rec["blockers"],
-            "last":       rec.get("modified", ""),
-            "created":    git_times.get(str(html_file.relative_to(repo_dir)))
-                          or int(getattr(html_file.stat(), "st_birthtime", None) or html_file.stat().st_ctime),
-            "version":    rec["version"],
-            "depends_on": rec.get("depends_on", []),
-            "blocks":     rec.get("blocks", []),
-        })
+        inventory.append(
+            {
+                "slug": slug,
+                "href": href,
+                "title": rec["title"],
+                "type": rec.get("type", "plan"),
+                "informs": rec.get("informs", []),
+                "status": rec["status"],
+                "ms": rec.get("milestone", "—"),
+                "roi": rec.get("roi", "mid"),
+                "effort": rec.get("effort", "M"),
+                "sprint": rec.get("sprint") or None,
+                "summary": rec.get("summary", ""),
+                "tier": rec.get("tier", "sonnet"),
+                "owner": rec.get("owner", ""),
+                "impl": rec["impl"],
+                "dec_open": rec["dec_open"],
+                "blockers": rec["blockers"],
+                "last": rec.get("modified", ""),
+                "created": git_times.get(str(html_file.relative_to(repo_dir)))
+                or int(
+                    getattr(html_file.stat(), "st_birthtime", None)
+                    or html_file.stat().st_ctime
+                ),
+                "version": rec["version"],
+                "depends_on": rec.get("depends_on", []),
+                "blocks": rec.get("blocks", []),
+            }
+        )
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
     # docs/sprints/<id>.html and docs/milestones/<id>.html carry sprint/milestone
@@ -334,15 +368,17 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             sid = meta.get("sprint-id")
             if not sid:
                 continue
-            sprints.append({
-                "id":          sid,
-                "theme":       meta.get("sprint-theme", f"Sprint {sid}"),
-                "description": meta.get("sprint-description", ""),
-                "status":      meta.get("sprint-status", "planned"),
-                "starts":      meta.get("sprint-starts", ""),
-                "ends":        meta.get("sprint-ends", ""),
-                "items":       [],
-            })
+            sprints.append(
+                {
+                    "id": sid,
+                    "theme": meta.get("sprint-theme", f"Sprint {sid}"),
+                    "description": meta.get("sprint-description", ""),
+                    "status": meta.get("sprint-status", "planned"),
+                    "starts": meta.get("sprint-starts", ""),
+                    "ends": meta.get("sprint-ends", ""),
+                    "items": [],
+                }
+            )
 
     milestones_dir = docs_dir / "milestones"
     if milestones_dir.is_dir():
@@ -351,12 +387,14 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             mid = meta.get("milestone-id")
             if not mid:
                 continue
-            milestones.append({
-                "id":     mid,
-                "name":   meta.get("milestone-name", mid),
-                "status": meta.get("milestone-status", "planned"),
-                "pct":    int(meta.get("milestone-pct", "0")),
-            })
+            milestones.append(
+                {
+                    "id": mid,
+                    "name": meta.get("milestone-name", mid),
+                    "status": meta.get("milestone-status", "planned"),
+                    "pct": int(meta.get("milestone-pct", "0")),
+                }
+            )
 
     # Fall back to state/project.json or index.json if no HTML sprint files found
     if not sprints and not milestones and state_root is not None:
@@ -380,13 +418,15 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     referenced_sprint_ids = {item["sprint"] for item in inventory if item.get("sprint")}
     missing_sprint_ids = referenced_sprint_ids - existing_sprint_ids
     for sid in sorted(missing_sprint_ids):
-        sprints.append({
-            "id": sid,
-            "theme": f"Sprint {sid}",
-            "description": "Auto-synthesized from plan inventory",
-            "status": "planned",
-            "items": [],
-        })
+        sprints.append(
+            {
+                "id": sid,
+                "theme": f"Sprint {sid}",
+                "description": "Auto-synthesized from plan inventory",
+                "status": "planned",
+                "items": [],
+            }
+        )
 
     result = {"inventory": inventory, "sprints": sprints, "milestones": milestones}
     _DISC_CACHE[project] = (sig, result)
@@ -517,15 +557,20 @@ class Handler(BaseHTTPRequestHandler):
             if _HOME_HTML and _HOME_HTML.is_file():
                 ctype, _ = mimetypes.guess_type(str(_HOME_HTML))
                 try:
-                    self._send(HTTPStatus.OK, _HOME_HTML.read_bytes(), ctype or "text/html")
+                    self._send(
+                        HTTPStatus.OK, _HOME_HTML.read_bytes(), ctype or "text/html"
+                    )
                 except OSError as e:
                     self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             else:
-                self._send(HTTPStatus.OK, render_index_fallback(load_mounts(), self._host, self._port))
+                self._send(
+                    HTTPStatus.OK,
+                    render_index_fallback(load_mounts(), self._host, self._port),
+                )
             return
 
         if path.startswith("/_shared/"):
-            rel = path[len("/_shared/"):]
+            rel = path[len("/_shared/") :]
             fname = rel.lstrip("/")
             if not SAFE_NAME.match(fname):
                 self._send(HTTPStatus.BAD_REQUEST, b"bad shared filename")
@@ -536,13 +581,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
             ctype, _ = mimetypes.guess_type(str(target))
             try:
-                self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+                self._send(
+                    HTTPStatus.OK,
+                    target.read_bytes(),
+                    ctype or "application/octet-stream",
+                )
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             return
 
         if path.startswith("/_ui/"):
-            rel = path[len("/_ui/"):]
+            rel = path[len("/_ui/") :]
             fname = rel.lstrip("/")
             if not SAFE_NAME.match(fname):
                 self._send(HTTPStatus.BAD_REQUEST, b"bad ui filename")
@@ -570,18 +619,22 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/_projects/"):
-            rel = path[len("/_projects/"):]
+            rel = path[len("/_projects/") :]
             fname = rel.lstrip("/")
             if not SAFE_NAME.match(fname):
                 self._send(HTTPStatus.BAD_REQUEST, b"bad projects filename")
                 return
-            target = (HOME / "docs-server") / fname
+            target = _config_home() / fname
             if not target.is_file():
                 self._send(HTTPStatus.NOT_FOUND, b"not found")
                 return
             ctype, _ = mimetypes.guess_type(str(target))
             try:
-                self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+                self._send(
+                    HTTPStatus.OK,
+                    target.read_bytes(),
+                    ctype or "application/octet-stream",
+                )
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             return
@@ -590,7 +643,7 @@ class Handler(BaseHTTPRequestHandler):
             # GET /plan/<project>/<slug> — the plan's embedded semantic state
             # (raw, with version), for clients that need the current version
             # before a write. {} if the plan/state is absent.
-            parts = path[len("/plan/"):].strip("/").split("/", 1)
+            parts = path[len("/plan/") :].strip("/").split("/", 1)
             if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
                 return
@@ -606,7 +659,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/state/"):
-            parts = path[len("/state/"):].strip("/").split("/", 1)
+            parts = path[len("/state/") :].strip("/").split("/", 1)
             if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
                 return
@@ -615,7 +668,11 @@ class Handler(BaseHTTPRequestHandler):
             if not SAFE_NAME.match(doc_stem):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad doc"})
                 return
-            state_file = (_STATE_ROOT or Path("/dev/null")) / project / (doc if doc.endswith(".json") else f"{doc}.json")
+            state_file = (
+                (_STATE_ROOT or Path("/dev/null"))
+                / project
+                / (doc if doc.endswith(".json") else f"{doc}.json")
+            )
 
             # index.json: serve live inventory merged with static structure.
             # Scanning HTML for <meta name="plan-*"> tags on every read means
@@ -645,7 +702,9 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json(HTTPStatus.OK, {})
                     return
                 try:
-                    self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
+                    self._send(
+                        HTTPStatus.OK, state_file.read_bytes(), "application/json"
+                    )
                 except OSError as e:
                     self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
                 return
@@ -660,7 +719,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/_discover/"):
-            project = path[len("/_discover/"):].strip("/")
+            project = path[len("/_discover/") :].strip("/")
             if not project or not SAFE_NAME.match(project):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
                 return
@@ -697,9 +756,12 @@ class Handler(BaseHTTPRequestHandler):
         # uses a relative state URL that resolves here instead of to /state/.
         # Apply the same live-discovery logic so the SPA always gets fresh inventory.
         rel_parts = rel.split("/")
-        if (len(rel_parts) == 3 and rel_parts[0] == "state"
-                and rel_parts[2] == "index.json"
-                and SAFE_NAME.match(rel_parts[1])):
+        if (
+            len(rel_parts) == 3
+            and rel_parts[0] == "state"
+            and rel_parts[2] == "index.json"
+            and SAFE_NAME.match(rel_parts[1])
+        ):
             sub_project = rel_parts[1]
             sf = (_STATE_ROOT or Path("/dev/null")) / sub_project / "index.json"
             envelope: dict = {}
@@ -711,7 +773,9 @@ class Handler(BaseHTTPRequestHandler):
             mts = load_mounts()
             if sub_project in mts:
                 try:
-                    disc = discover_plans(Path(mts[sub_project]), sub_project, _STATE_ROOT)
+                    disc = discover_plans(
+                        Path(mts[sub_project]), sub_project, _STATE_ROOT
+                    )
                     data = dict(envelope.get("data") or {})
                     data["inventory"] = disc.get("inventory", [])
                     if not data.get("sprints") and disc.get("sprints"):
@@ -740,14 +804,19 @@ class Handler(BaseHTTPRequestHandler):
 
         ctype, _ = mimetypes.guess_type(str(target))
         try:
-            self._send(HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream")
+            self._send(
+                HTTPStatus.OK, target.read_bytes(), ctype or "application/octet-stream"
+            )
         except OSError as e:
             self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
 
     def _read_body(self) -> tuple[bool, object]:
         length = int(self.headers.get("Content-Length", "0"))
         if length > MAX_POST_BYTES:
-            self._send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": f"body > {MAX_POST_BYTES} bytes"})
+            self._send_json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {"error": f"body > {MAX_POST_BYTES} bytes"},
+            )
             return False, None
         raw = self.rfile.read(length) if length else b""
         try:
@@ -764,7 +833,7 @@ class Handler(BaseHTTPRequestHandler):
         Optimistic concurrency: send `If-Match: <version>`; a mismatch returns
         412 with the current state so the client can rebase and retry.
         """
-        parts = path[len("/plan/"):].strip("/").split("/", 1)
+        parts = path[len("/plan/") :].strip("/").split("/", 1)
         if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
             return
@@ -786,7 +855,9 @@ class Handler(BaseHTTPRequestHandler):
         if not ok:
             return
         if not isinstance(patch, dict):
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "patch must be an object"})
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "patch must be an object"}
+            )
             return
 
         text = plan_file.read_text(encoding="utf-8", errors="replace")
@@ -795,19 +866,33 @@ class Handler(BaseHTTPRequestHandler):
 
         if_match = self.headers.get("If-Match")
         if if_match is None:
-            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
-                "error": "version_mismatch", "current_version": cur_version,
-                "expected_version": None, "current_data": state})
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": cur_version,
+                    "expected_version": None,
+                    "current_data": state,
+                },
+            )
             return
         try:
             expected = int(if_match.strip().strip('"'))
         except (ValueError, TypeError):
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"})
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"}
+            )
             return
         if expected != cur_version:
-            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
-                "error": "version_mismatch", "current_version": cur_version,
-                "expected_version": expected, "current_data": state})
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": cur_version,
+                    "expected_version": expected,
+                    "current_data": state,
+                },
+            )
             return
 
         patch.pop("version", None)
@@ -821,7 +906,9 @@ class Handler(BaseHTTPRequestHandler):
         tmp = plan_file.with_suffix(".html.tmp")
         tmp.write_text(new_text, encoding="utf-8")
         tmp.replace(plan_file)
-        self._send_json(HTTPStatus.OK, {"ok": True, "slug": slug, "version": state["version"]})
+        self._send_json(
+            HTTPStatus.OK, {"ok": True, "slug": slug, "version": state["version"]}
+        )
 
     def do_POST(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
@@ -829,9 +916,11 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_plan_write(path)
             return
         if not path.startswith("/state/"):
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "POST to /plan/<project>/<slug>"})
+            self._send_json(
+                HTTPStatus.NOT_FOUND, {"error": "POST to /plan/<project>/<slug>"}
+            )
             return
-        parts = path[len("/state/"):].strip("/").split("/", 1)
+        parts = path[len("/state/") :].strip("/").split("/", 1)
         if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
             return
@@ -843,7 +932,10 @@ class Handler(BaseHTTPRequestHandler):
 
         length = int(self.headers.get("Content-Length", "0"))
         if length > MAX_POST_BYTES:
-            self._send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": f"body > {MAX_POST_BYTES} bytes"})
+            self._send_json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {"error": f"body > {MAX_POST_BYTES} bytes"},
+            )
             return
         raw = self.rfile.read(length) if length else b""
         try:
@@ -861,7 +953,9 @@ class Handler(BaseHTTPRequestHandler):
         if out_file.exists():
             try:
                 envelope = json.loads(out_file.read_text())
-                cur_data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                cur_data = (
+                    envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                )
                 cur_version = int(cur_data.get("_version", 0))
             except (OSError, json.JSONDecodeError, ValueError):
                 cur_data = {}
@@ -869,27 +963,35 @@ class Handler(BaseHTTPRequestHandler):
 
         if_match_raw = self.headers.get("If-Match")
         if if_match_raw is None:
-            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
-                "error": "version_mismatch",
-                "current_version": cur_version,
-                "expected_version": None,
-                "current_data": cur_data,
-            })
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": cur_version,
+                    "expected_version": None,
+                    "current_data": cur_data,
+                },
+            )
             return
 
         try:
             expected_version = int(if_match_raw.strip().strip('"'))
         except (ValueError, TypeError):
-            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"})
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"}
+            )
             return
 
         if expected_version != cur_version:
-            self._send_json(HTTPStatus.PRECONDITION_FAILED, {
-                "error": "version_mismatch",
-                "current_version": cur_version,
-                "expected_version": expected_version,
-                "current_data": cur_data,
-            })
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": cur_version,
+                    "expected_version": expected_version,
+                    "current_data": cur_data,
+                },
+            )
             return
 
         new_data = dict(payload)
@@ -905,10 +1007,15 @@ class Handler(BaseHTTPRequestHandler):
         tmp = out_file.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(envelope, indent=2) + "\n")
         tmp.replace(out_file)
-        self._send_json(HTTPStatus.OK, {"ok": True, "path": str(out_file), "version": new_data["_version"]})
+        self._send_json(
+            HTTPStatus.OK,
+            {"ok": True, "path": str(out_file), "version": new_data["_version"]},
+        )
 
 
-def main(port: int = 8765, host: str | None = None, mounts_file: Path | None = None) -> None:
+def main(
+    port: int = 8765, host: str | None = None, mounts_file: Path | None = None
+) -> None:
     _resolve_paths(mounts_file)
     _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
     _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
@@ -927,7 +1034,10 @@ def main(port: int = 8765, host: str | None = None, mounts_file: Path | None = N
     if _host == "0.0.0.0":  # noqa: S104
         print(f"  team URL:  http://{fqdn}:{_port}/", flush=True)
     else:
-        print(f"  reach from a laptop: ssh -L {_port}:localhost:{_port} <user>@{fqdn}", flush=True)
+        print(
+            f"  reach from a laptop: ssh -L {_port}:localhost:{_port} <user>@{fqdn}",
+            flush=True,
+        )
     print(f"  mounts:  {_MOUNTS_FILE}", flush=True)
     print(f"  state:   {_STATE_ROOT}", flush=True)
     print(f"  shared:  {_SHARED_ROOT}", flush=True)

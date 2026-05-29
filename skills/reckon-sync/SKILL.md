@@ -7,8 +7,9 @@ description: >-
   Pages compatibility (the live server serves CSS/JSX directly via /_shared/ and
   /_ui/ routes — no per-project JSX copies needed), sets up docs/state/<project>/
   with index.json for project config only (no per-plan state JSON), symlinks
-  ~/docs-server/state/<project> into the repo, and registers the project in
-  ~/docs-server/mounts.json. Plans are auto-discovered from any HTML file in
+  ~/.config/reckon/state/<project> into the repo, and registers the project in
+  ~/.config/reckon/mounts.json (legacy ~/docs-server still resolves as a
+  fallback). Plans are auto-discovered from any HTML file in
   docs/ — no opt-in meta tag required. Idempotent.
   Trigger verbs: "init plans / set up reckon / set up plans / refresh styles /
   sync plan system / update CSS from reckon / /reckon-sync".
@@ -126,6 +127,21 @@ PROJECT="$(basename "$REPO_ROOT")"
 DOCS="$REPO_ROOT/docs"
 RECKON="$HOME/Code/reckon"
 
+# Config home: RECKON_HOME env → ~/.config/reckon (preferred) → ~/docs-server
+# (legacy fallback). Mirrors reckon._store._config_home so the symlink and
+# mounts.json land where the server reads them.
+if [ -n "$RECKON_HOME" ]; then
+  CONFIG_HOME="$RECKON_HOME"
+elif [ -d "$HOME/.config/reckon" ]; then
+  CONFIG_HOME="$HOME/.config/reckon"
+elif [ -d "$HOME/docs-server" ]; then
+  CONFIG_HOME="$HOME/docs-server"      # legacy install — still resolves
+else
+  CONFIG_HOME="$HOME/.config/reckon"   # fresh install → XDG location
+fi
+mkdir -p "$CONFIG_HOME"
+echo "config-home=$CONFIG_HOME"
+
 [ ! -d "$DOCS" ] || [ ! -d "$DOCS/_shared" ] && INTENT=first-run || INTENT=refresh
 echo "intent=$INTENT  project=$PROJECT"
 ```
@@ -199,22 +215,22 @@ fi
 ### Step 3 — State directory setup
 
 ```bash
-mkdir -p "$DOCS/state/$PROJECT" ~/docs-server/state
+mkdir -p "$DOCS/state/$PROJECT" "$CONFIG_HOME/state"
 
 # Migrate real directory → symlink
-if [ -d ~/docs-server/state/"$PROJECT" ] && [ ! -L ~/docs-server/state/"$PROJECT" ]; then
-  mv ~/docs-server/state/"$PROJECT"/*.json "$DOCS/state/$PROJECT/" 2>/dev/null || true
-  rmdir ~/docs-server/state/"$PROJECT"
+if [ -d "$CONFIG_HOME/state/$PROJECT" ] && [ ! -L "$CONFIG_HOME/state/$PROJECT" ]; then
+  mv "$CONFIG_HOME/state/$PROJECT"/*.json "$DOCS/state/$PROJECT/" 2>/dev/null || true
+  rmdir "$CONFIG_HOME/state/$PROJECT"
 fi
 
-[ -L ~/docs-server/state/"$PROJECT" ] || \
-  ln -s "$DOCS/state/$PROJECT" ~/docs-server/state/"$PROJECT"
+[ -L "$CONFIG_HOME/state/$PROJECT" ] || \
+  ln -s "$DOCS/state/$PROJECT" "$CONFIG_HOME/state/$PROJECT"
 ```
 
 ### Step 4 — Register in mounts.json
 
 ```bash
-MOUNTS=~/docs-server/mounts.json
+MOUNTS="$CONFIG_HOME/mounts.json"
 [ -f "$MOUNTS" ] || echo '{}' > "$MOUNTS"
 
 python3 - <<EOF
@@ -263,7 +279,8 @@ fi
 
 Confirm to user:
 
-> **reckon-sync complete — docs/ ready, docs-server registered.**
+> **reckon-sync complete — docs/ ready, registered in the reckon config home**
+> (`~/.config/reckon`, or legacy `~/docs-server` on existing installs).
 > Run `/reckon-create <slug>` to add a plan.
 
 Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`

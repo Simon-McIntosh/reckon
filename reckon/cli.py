@@ -5,6 +5,8 @@ from pathlib import Path
 
 import click
 
+from reckon._store import _config_home
+
 
 @click.group()
 def main():
@@ -13,11 +15,22 @@ def main():
 
 @main.command()
 @click.option("--port", default=8765, show_default=True, help="Port to listen on.")
-@click.option("--host", default=None, help="Bind address (default: $DOCS_SERVER_BIND or 127.0.0.1).")
-@click.option("--mounts", "mounts_file", default=None, type=click.Path(path_type=Path), help="Path to mounts.json.")
+@click.option(
+    "--host",
+    default=None,
+    help="Bind address (default: $DOCS_SERVER_BIND or 127.0.0.1).",
+)
+@click.option(
+    "--mounts",
+    "mounts_file",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Path to mounts.json.",
+)
 def serve(port, host, mounts_file):
     """Start the reckon server (HTTP + state store on port 8765)."""
     from reckon.serve import main as serve_main
+
     serve_main(port=port, host=host, mounts_file=mounts_file)
 
 
@@ -25,15 +38,34 @@ def serve(port, host, mounts_file):
 def mcp():
     """Start the reckon MCP server (stdio transport)."""
     from reckon.mcp import main as mcp_main
+
     mcp_main()
 
 
 @main.command()
 @click.argument("docs_path", type=click.Path(path_type=Path))
-@click.option("--project", default=None, help="Project key (defaults to docs parent dir name).")
-@click.option("--mounts", "mounts_file", default=None, type=click.Path(path_type=Path), help="Path to mounts.json.")
-@click.option("--state-root", default=None, type=click.Path(path_type=Path), help="State root dir.")
-@click.option("--generate-ci", is_flag=True, default=False, help="Write .github/workflows/reckon-pages.yml.")
+@click.option(
+    "--project", default=None, help="Project key (defaults to docs parent dir name)."
+)
+@click.option(
+    "--mounts",
+    "mounts_file",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Path to mounts.json.",
+)
+@click.option(
+    "--state-root",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="State root dir.",
+)
+@click.option(
+    "--generate-ci",
+    is_flag=True,
+    default=False,
+    help="Write .github/workflows/reckon-pages.yml.",
+)
 def sync(docs_path, project, mounts_file, state_root, generate_ci):
     """Register a project and copy reckon UI files into its docs directory.
 
@@ -60,7 +92,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     click.echo(f"Syncing {proj_name} → {docs_dir}")
 
     # ── Copy shared CSS + state.js ─────────────────────────────────────────
-    shared_src  = reckon_root / "docs" / "_shared"
+    shared_src = reckon_root / "docs" / "_shared"
     shared_dest = docs_dir / "_shared"
     shared_dest.mkdir(parents=True, exist_ok=True)
     for fname in ("foundation.css", "dashboard.css"):
@@ -121,7 +153,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
         click.echo("  created .nojekyll")
 
     # ── State directory + symlink ──────────────────────────────────────────
-    ds_root = (state_root or Path.home() / "docs-server" / "state").expanduser().resolve()
+    ds_root = (state_root or _config_home() / "state").expanduser().resolve()
     ds_root.mkdir(parents=True, exist_ok=True)
 
     state_dir = docs_dir / "state" / proj_name
@@ -157,6 +189,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     # Inventory is discovered live by the server on every request — writing it
     # here would create stale data that the MCP tools read instead of the live view.
     from reckon.serve import discover_plans
+
     discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
 
     index_json = state_dir / "index.json"
@@ -174,7 +207,10 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     if not idx_data.get("milestones") and discovered.get("milestones"):
         idx_data["milestones"] = discovered["milestones"]
     if not idx_data.get("active_sprint_id"):
-        active = next((s for s in (idx_data.get("sprints") or []) if s.get("status") == "active"), None)
+        active = next(
+            (s for s in (idx_data.get("sprints") or []) if s.get("status") == "active"),
+            None,
+        )
         if active:
             idx_data["active_sprint_id"] = active["id"]
 
@@ -191,10 +227,12 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     index_json.write_text(json.dumps(envelope, indent=2) + "\n")
     n_sprints = len(idx_data.get("sprints") or [])
     n_miles = len(idx_data.get("milestones") or [])
-    click.echo(f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) — inventory discovered live")
+    click.echo(
+        f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) — inventory discovered live"
+    )
 
     # ── Register in mounts.json ────────────────────────────────────────────
-    mounts_path = (mounts_file or Path.home() / "docs-server" / "mounts.json").expanduser()
+    mounts_path = (mounts_file or _config_home() / "mounts.json").expanduser()
     mounts_path.parent.mkdir(parents=True, exist_ok=True)
     mounts: dict = {}
     if mounts_path.exists():
@@ -218,9 +256,15 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
         ci_yml.write_text(_CI_WORKFLOW_TEMPLATE.format(docs_path=docs_path))
         click.echo(f"  wrote {ci_yml.relative_to(repo_root)}")
 
-    click.echo(f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running.")
-    click.echo("New plan pages appear live — the server discovers HTML <meta name=\"plan-*\"> tags on every request.")
-    click.echo("UI assets (JSX, CSS) are served directly from the reckon install — no per-project copies needed.")
+    click.echo(
+        f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running."
+    )
+    click.echo(
+        'New plan pages appear live — the server discovers HTML <meta name="plan-*"> tags on every request.'
+    )
+    click.echo(
+        "UI assets (JSX, CSS) are served directly from the reckon install — no per-project copies needed."
+    )
     click.echo("Re-run sync only to update shared CSS after a reckon upgrade.")
 
 
@@ -261,7 +305,9 @@ jobs:
 
 @main.command()
 @click.argument("docs_path", type=click.Path(path_type=Path))
-@click.option("--project", default=None, help="Project key (defaults to docs parent dir name).")
+@click.option(
+    "--project", default=None, help="Project key (defaults to docs parent dir name)."
+)
 def build(docs_path, project):
     """Bundle UI assets and generate a portable static site for CI/GitHub Pages.
 
@@ -285,7 +331,7 @@ def build(docs_path, project):
     click.echo(f"Building static site: {proj_name} → {docs_dir}")
 
     # ── Copy UI assets (JSX + CSS) ─────────────────────────────────────────
-    ui_src  = reckon_root / "docs" / "ui"
+    ui_src = reckon_root / "docs" / "ui"
     ui_dest = docs_dir / "_ui"
     if ui_src.is_dir():
         if ui_dest.exists() and not ui_dest.is_dir():
@@ -299,7 +345,7 @@ def build(docs_path, project):
         click.echo(f"  copied _ui/ ({copied} files)")
 
     # ── Copy shared CSS + state.js ─────────────────────────────────────────
-    shared_src  = reckon_root / "docs" / "_shared"
+    shared_src = reckon_root / "docs" / "_shared"
     shared_dest = docs_dir / "_shared"
     if shared_src.is_dir():
         shared_dest.mkdir(parents=True, exist_ok=True)
@@ -336,11 +382,13 @@ def build(docs_path, project):
         except json.JSONDecodeError:
             pass
 
-    idx_data["inventory"]   = discovered["inventory"]
-    idx_data["sprints"]     = discovered["sprints"]
-    idx_data["milestones"]  = discovered["milestones"]
+    idx_data["inventory"] = discovered["inventory"]
+    idx_data["sprints"] = discovered["sprints"]
+    idx_data["milestones"] = discovered["milestones"]
     if not idx_data.get("active_sprint_id"):
-        active = next((s for s in idx_data["sprints"] if s.get("status") == "active"), None)
+        active = next(
+            (s for s in idx_data["sprints"] if s.get("status") == "active"), None
+        )
         if active:
             idx_data["active_sprint_id"] = active["id"]
     idx_data["_version"] = (idx_data.get("_version") or 0) + 1
@@ -348,15 +396,19 @@ def build(docs_path, project):
     envelope = {
         "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
         "project": proj_name,
-        "doc":     "index",
-        "data":    idx_data,
+        "doc": "index",
+        "data": idx_data,
     }
     index_json.write_text(json.dumps(envelope, indent=2) + "\n")
     n_plans = len(idx_data["inventory"])
     n_sprints = len(idx_data["sprints"])
-    click.echo(f"  wrote state/{proj_name}/index.json ({n_plans} plans, {n_sprints} sprints)")
+    click.echo(
+        f"  wrote state/{proj_name}/index.json ({n_plans} plans, {n_sprints} sprints)"
+    )
 
-    click.echo(f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site.")
+    click.echo(
+        f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site."
+    )
 
 
 @main.command()
@@ -372,8 +424,15 @@ def doctor():
     Prints a green checkmark on pass or a named fix suggestion on fail.
     """
     import sys
+
     ok = True
-    SKILLS = ["reckon-create", "reckon-edit", "reckon-ship", "reckon-status", "reckon-sync"]
+    SKILLS = [
+        "reckon-create",
+        "reckon-edit",
+        "reckon-ship",
+        "reckon-status",
+        "reckon-sync",
+    ]
     skills_dir = Path.home() / ".claude" / "skills"
 
     click.echo("reckon doctor\n")
@@ -390,7 +449,7 @@ def doctor():
 
     # ── mounts.json check ───────────────────────────────────────────────────
     click.echo("\nMounts")
-    mounts_path = Path.home() / "docs-server" / "mounts.json"
+    mounts_path = _config_home() / "mounts.json"
     if not mounts_path.exists():
         click.echo(f"  ✗  mounts.json not found at {mounts_path}")
         click.echo(f"       create it:  echo '{{}}' > {mounts_path}")
@@ -398,7 +457,9 @@ def doctor():
     else:
         try:
             mounts = json.loads(mounts_path.read_text())
-            click.echo(f"  ✓  mounts.json  ({len(mounts)} project{'s' if len(mounts) != 1 else ''})")
+            click.echo(
+                f"  ✓  mounts.json  ({len(mounts)} project{'s' if len(mounts) != 1 else ''})"
+            )
             for name, path in mounts.items():
                 p = Path(path).expanduser()
                 if p.is_dir():
@@ -422,7 +483,9 @@ def doctor():
             mcp_found = candidate
             break
     if mcp_found is None:
-        click.echo("  ✗  claude_desktop_config.json not found — MCP server may not be registered")
+        click.echo(
+            "  ✗  claude_desktop_config.json not found — MCP server may not be registered"
+        )
         click.echo("       see: https://docs.reckon.dev/mcp")
         ok = False
     else:
@@ -489,7 +552,9 @@ def install_skills():
                 updated += 1
                 click.echo(f"  updated  {skill_dir.name}/{rel}")
 
-    click.echo(f"\nDone. {updated} file{'s' if updated != 1 else ''} updated, {skipped} unchanged.")
+    click.echo(
+        f"\nDone. {updated} file{'s' if updated != 1 else ''} updated, {skipped} unchanged."
+    )
     if updated == 0 and skipped == 0:
         click.echo("(No skills found in the reckon install's skills/ directory.)")
 
