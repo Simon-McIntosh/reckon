@@ -237,6 +237,30 @@ const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc", status: "asc", prog
 
 const ROI_ORDER = { high: 0, mid: 1, low: 2 };
 
+// Format a Unix timestamp. Plans within 7 days show "YYYY-MM-DD HH:MM" (local time);
+// older plans show "YYYY-MM-DD".
+function fmtTimestamp(ts) {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  const pad = n => String(n).padStart(2, "0");
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (Date.now() - d < 7 * 24 * 60 * 60 * 1000) {
+    return `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  return date;
+}
+
+// Pick the date label for a row given the active sort key.
+// • "created" sort  → always show git-commit timestamp (has local time for recent plans)
+// • other sorts     → prefer plan-modified date string; fall back to git timestamp
+//                     so plans without plan-modified still show something
+function fmtPlanDate(p, sortBy) {
+  if (sortBy === "created" && p.created) return fmtTimestamp(p.created);
+  if (p.last) return p.last;
+  if (p.created) return fmtTimestamp(p.created);
+  return "";
+}
+
 function sortItems(items, sortBy, dir) {
   const arr = [...items];
   const m = dir === "asc" ? 1 : -1;
@@ -357,7 +381,13 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
                 <span className="sp">·</span>
                 <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
                 <span className="sp">·</span>
-                <span>{p.last}</span>
+                {(() => {
+                  const ds = fmtPlanDate(p, sortBy);
+                  if (!ds) return null;
+                  const sp = ds.indexOf(" ");
+                  if (sp === -1) return <span className="date">{ds}</span>;
+                  return <><span className="date">{ds.slice(0, sp)}</span><span className="time">{ds.slice(sp + 1)}</span></>;
+                })()}
               </div>
               {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
                 <div className="sigs">
