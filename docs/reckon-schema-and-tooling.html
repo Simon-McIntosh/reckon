@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="reckon">
+  <meta name="reckon-type"   content="plan">
+  <meta name="plan-slug"     content="reckon-schema-and-tooling">
+  <meta name="plan-title"    content="Plan schema-as-contract + tool-surface collapse">
+  <meta name="plan-status"   content="active">
+  <meta name="plan-roi"      content="high">
+  <meta name="plan-effort"   content="L">
+  <meta name="plan-tier"     content="opus">
+  <meta name="plan-summary"  content="Make a versioned plan SCHEMA the contract between agent-generated HTML and reckon-served content; collapse the 19 granular MCP tools to ~4 (read/context-injector, schema-validated edit_plan with create, doctor=validate+reindex, discovery); let the reckon-* skills own all prose authoring. Designed for consistency across all served projects (imas-ambix, imas-efit, reckon, vv).">
+  <meta name="plan-depends-on" content="agent-plan-authoring,reckon-mcp-plan,reckon-mcp-gaps">
+  <title>Plan schema-as-contract + tool-surface collapse | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Plan schema-as-contract + tool-surface collapse</h1>
+    <p><em>Realises the reframe in <a href="/reckon/agent-plan-authoring.html">agent-plan-authoring</a>
+    (prompts/exemplars over tool straitjackets) with two concrete backbones the draft lacked: a
+    <strong>versioned plan schema as the generate↔serve contract</strong>, and a <strong>collapse of the
+    19 MCP plan tools to ~4</strong>. History: <a href="/reckon/reckon-mcp-plan.html">reckon-mcp-plan</a>
+    (the original surface), <a href="/reckon/reckon-mcp-gaps.html">reckon-mcp-gaps</a> (power-user adds).
+    Authored 2026-05-29 — and authored as a reckon HTML plan, because writing a markdown design doc for an
+    HTML planning system was the very inconsistency this plan exists to end.</em></p>
+
+    <h2 id="s1">§1 — Problem</h2>
+    <p>Two coupled problems, both surfaced by using the system heavily this week:</p>
+    <ol>
+      <li><strong>No formal schema = no contract.</strong> What a valid plan "is" lives in three places that
+      can drift: <code>PLAN-FORMAT.md</code> (prose), <code>_plan_html.py</code> (parse/render code), and the
+      skills (examples). Agents <em>generate</em> HTML; the server <em>serves/parses</em> it; nothing
+      machine-checkable guarantees the two agree. Malformed <code>data-reckon</code> state can be written and
+      only discovered when the SPA fails to render it. And the head meta already differs between projects
+      (reckon plans carry <code>plan-title</code>/<code>plan-status</code>; imas-ambix plans don't) — drift in
+      the wild, today.</li>
+      <li><strong>Tool sprawl + gaps.</strong> 19 MCP tools (<code>reckon/mcp.py</code>), all one shape
+      (<code>read dict → mutate one path → version-checked write</code>) — thin presets over 5 store
+      primitives, yet with real gaps (no <code>create_sprint</code> until this plan; no <code>create_plan</code>;
+      no reindex). Both too many and too limited.</li>
+    </ol>
+
+    <h2 id="s2">§2 — The schema IS the contract (the backbone)</h2>
+    <p>A single, versioned, machine-readable <strong>plan schema</strong> becomes the contract between
+    agent-generated HTML and reckon-served content. This is the architectural keystone — it is what makes
+    "let agents write HTML, keep tools thin" <em>safe</em>: the schema (not a thicket of per-field tools) is
+    what enforces validity.</p>
+    <ul>
+      <li><strong>One source of truth.</strong> A Pydantic model <code>PlanState</code> (reckon already depends
+      on pydantic) defining every field: head meta (slug, type, status, roi, effort, tier, summary, milestone,
+      sprint, depends_on, informs, version, modified, impl) and body sections (decisions[], followups[],
+      questions[], research[], comments{}, plus the index/sprint envelope). A JSON Schema is <em>derived</em>
+      from it and published (served at <code>/_shared/plan.schema.json</code>) — the artifact agents and the
+      server both reference.</li>
+      <li><strong>Validated on BOTH sides.</strong> <em>Generate side:</em> the write boundary
+      (<code>edit_plan</code>, §3) parses the candidate HTML → <code>PlanState</code> and rejects on
+      validation failure with field-level errors, so malformed state never lands. <em>Serve side:</em> the
+      parser/renderer (<code>_plan_html</code>) becomes schema-typed (parse → model → render), and
+      <code>doctor</code> validates every served plan against the schema to catch drift.</li>
+      <li><strong>Versioned + maintained.</strong> The schema carries a <code>schema_version</code>; plans
+      declare the version they target. Format changes are made in ONE place (the model); parser, renderer,
+      skills, validator, and the published JSON Schema all regenerate/reference from it; <code>doctor</code>
+      migrates or flags older plans. This is the explicit answer to "creation AND maintenance of a schema":
+      the maintenance contract is "change the model → everything else follows; never hand-edit the three
+      drifting copies again."</li>
+    </ul>
+    <p>This directly serves your framing: <em>the schema is our contract between generated and served
+    content.</em> With it, agents can author HTML freely (their strength) and the system still guarantees what
+    the server receives.</p>
+
+    <h2 id="s3">§3 — Tool-surface collapse (19 → ~4), built on the schema</h2>
+    <p>The 19 tools are presets over 5 store primitives; the store already supports create
+    (<code>write_plan</code> at version 0; <code>patch_plan</code> on the index slug). So this is a
+    <strong>surface</strong> change, not a store rewrite. Target surface:</p>
+    <table>
+      <thead><tr><th>Tool</th><th>Role</th><th>Replaces</th></tr></thead>
+      <tbody>
+        <tr><td><code>read_plan</code></td><td><strong>Context injector</strong> — returns parsed state +
+          version + the schema/dos-don'ts inline; no <code>slug</code> → project discovery</td>
+          <td>read_plan, list_plans, list_projects, list_sprints, list_followups, list_questions</td></tr>
+        <tr><td><code>edit_plan</code></td><td><strong>The one safe write</strong> — small op vocabulary
+          (set / append / resolve / lock), <code>slug="index"</code> covers sprints+inventory,
+          <code>create</code> via version 0; <strong>schema-validates</strong> the result, version-checks,
+          renders schema-correct HTML, stamps</td>
+          <td>patch_plan, append_comment, lock_decision, append_followup, resolve_followup, set_status,
+          set_impl, resolve_question, add_research, update_sprint, add_sprint_item, move_sprint_item,
+          update_inventory_item, +create_plan, +create_sprint</td></tr>
+        <tr><td><code>doctor</code></td><td><strong>Maintenance</strong> — validate every plan against the
+          schema; reindex index.json rollups; report/migrate nonconformant plans</td><td>(new)</td></tr>
+        <tr><td>(discovery)</td><td>folded into <code>read_plan</code> (project mode)</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Why any tools at all?</strong> Only for what direct HTML editing can't safely give in a
+    multi-agent (fleet) world: version-checked atomic writes (concurrency), schema-validated structured-state
+    HTML, auto-stamping, and reindex. Everything else — all prose, structure, new sections — is skill-driven
+    direct HTML authoring. The read tool is a <em>prompt injector</em>; the write tool is a thin, real safety
+    boundary.</p>
+
+    <h2 id="s4">§4 — Skills own authoring</h2>
+    <p>The <code>reckon-*</code> skills become the primary surface for <em>making</em> plans: they carry the
+    schema, worked exemplars, dos/don'ts, and the lifecycle workflow, and they author/edit prose directly in
+    HTML. <code>agent-plan-authoring</code> already drafts this philosophy; this plan makes it real by giving
+    it the schema (what to conform to) and <code>edit_plan</code> (the safe boundary). Net division: <em>skills
+    = how to author; schema = what's valid; edit_plan = how to write it safely.</em></p>
+
+    <h2 id="s5">§5 — Cross-project consistency (design once, for all served projects)</h2>
+    <p>The schema must cover what is <em>actually</em> in use, not just one project's habits. Four projects are
+    served (mounts.json): <strong>imas-ambix (32 plans), imas-efit (9), reckon (its own), vv</strong>. The
+    schema-design research reads plans across all four to catalogue the real variety of meta fields and
+    <code>data-reckon</code> sections/attributes (the <code>plan-title</code>/<code>plan-status</code>
+    divergence is one known example), then defines the unifying schema as their normalisation. One contract,
+    all projects — so a plan authored in any repo renders consistently and validates against the same schema.</p>
+
+    <h2 id="s6">§6 — Already shipped (this session)</h2>
+    <ul>
+      <li><code>create_sprint</code> MCP tool — fills the gap that blocked opening a sprint (both existing
+      sprint tools require the sprint to pre-exist). +3 tests; full suite 33 passed; committed to reckon main.</li>
+      <li>This analysis, grounded in reading <code>mcp.py</code> + <code>_store.py</code> + <code>_plan_html.py</code>.</li>
+    </ul>
+
+    <h2 id="s7">§7 — Migration (non-breaking → deprecate → remove)</h2>
+    <ol>
+      <li>Author the schema (§2) + publish the JSON Schema. Add <code>edit_plan</code> + <code>create_plan</code>
+      + <code>doctor</code> + schema-injecting <code>read_plan</code> — additive, non-breaking.</li>
+      <li>Wire schema validation into <code>edit_plan</code> and the parser/renderer; tests.</li>
+      <li>Rewrite the <code>reckon-*</code> skills to schema + exemplars + dos/don'ts, using only
+      <code>read_plan</code> + <code>edit_plan</code>.</li>
+      <li>Deprecate the 15 granular mutators as thin aliases → <code>edit_plan</code>; run <code>doctor</code>
+      across all four projects; migrate nonconformant plans; then remove the aliases. MCP changes take effect
+      on server restart, so the 3-repo cutover is coordinated, not hot.</li>
+    </ol>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+
+      <div class="r-dec" data-key="schema-source-of-truth" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What is the authoritative form of the plan schema?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="pydantic-derives-jsonschema">Pydantic model is source; JSON Schema derived + published (recommended — reckon already uses pydantic; one model types parse/render/validate)</button>
+          <button class="r-opt" data-value="jsonschema-source">hand-written JSON Schema as source</button>
+          <button class="r-opt" data-value="prose-only">keep PLAN-FORMAT.md prose (status quo)</button>
+        </p>
+        <p class="r-dec-rat">Recommend a Pydantic PlanState model as the single source, with JSON Schema derived and served at /_shared/plan.schema.json. Types the parse→model→render round-trip AND the edit_plan validation from one definition.</p>
+      </div>
+
+      <div class="r-dec" data-key="validation-strictness" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How strict is schema validation at the write boundary?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="reject-write-warn-doctor">edit_plan REJECTS nonconformant writes; doctor WARNS/migrates existing plans (recommended)</button>
+          <button class="r-opt" data-value="warn-only">warn only, never block</button>
+        </p>
+        <p class="r-dec-rat">Recommend reject-on-write (malformed state never lands) but lenient doctor (existing plans get migrated/flagged, not broken). Belt: serve side tolerates+flags, write side enforces.</p>
+      </div>
+
+      <div class="r-dec" data-key="tool-count-target" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Target tool surface?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="four">~4: read_plan(+discovery), edit_plan(+create), doctor (recommended)</button>
+          <button class="r-opt" data-value="two">2: read_plan + edit_plan (doctor → CLI only)</button>
+          <button class="r-opt" data-value="keep-19">keep the 19 (status quo)</button>
+        </p>
+        <p class="r-dec-rat">Recommend ~4. doctor is worth exposing (agents reindex/validate after bulk edits). 2 is viable if doctor stays a CLI/serve concern.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups (the fleet)</h2>
+
+      <article class="r-fu" data-id="f-schema-research" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29">
+        <h4 class="r-fu-title">F1 — Cross-project schema research (read ALL served projects)</h4>
+        <div class="r-fu-body">Catalogue the real plan structure across imas-ambix, imas-efit, reckon, vv + the current implicit schema (PLAN-FORMAT.md, _plan_html.py), so the schema is their normalisation, not one project's habit.</div>
+        <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§2, §5)
+Tier:    sonnet
+
+Read the CURRENT implicit schema and ALL served projects, produce a variety report that the schema must cover:
+  - reckon/PLAN-FORMAT.md  +  reckon/reckon/_plan_html.py (parse/render — the de-facto schema)
+  - reckon/docs/agent-plan-authoring.html §3 (the machine-readable-contract reasoning)
+  - Every *.html plan across the 4 mounts (~/docs-server/mounts.json): imas-ambix (32), imas-efit (9),
+    reckon, vv. Enumerate: head meta fields used (note divergences e.g. plan-title/plan-status present in
+    reckon+efit but not imas-ambix), and every data-reckon section + its element attributes
+    (decisions/followups/questions/research/comments + index sprints/milestones/inventory).
+Output: a normalised field inventory (required vs optional vs project-specific), the divergences to
+reconcile, and a proposed PlanState field list. DO NOT change any plan. Report only.</pre>
+      </article>
+
+      <article class="r-fu" data-id="f-schema-author" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
+        <h4 class="r-fu-title">F2 — Author the versioned PlanState schema (the contract)</h4>
+        <div class="r-fu-body">From F1: a Pydantic PlanState model (source of truth) + derived JSON Schema served at /_shared/plan.schema.json, versioned (schema_version). Type the _plan_html parse→model→render round-trip from it.</div>
+        <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§2)
+Tier:    opus
+
+Depends on F1. Author reckon/reckon/_schema.py: a Pydantic PlanState (+ IndexState) model covering the
+normalised inventory, with schema_version. Derive + write a JSON Schema to docs/_shared/plan.schema.json
+(served). Re-type _plan_html parse→PlanState and render PlanState→HTML so the round-trip is schema-checked.
+Tests: every existing plan across the 4 projects parses into PlanState (xfail+catalogue any that don't —
+those are F5 migrations). Keep optimistic-concurrency + atomic .tmp write unchanged.</pre>
+      </article>
+
+      <article class="r-fu" data-id="f-tool-collapse" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
+        <h4 class="r-fu-title">F3 — edit_plan + doctor + read-injector (additive, non-breaking)</h4>
+        <div class="r-fu-body">The ~4-tool surface, built on the schema. Add alongside the 19; don't remove yet.</div>
+        <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§3)
+Tier:    opus
+
+Depends on F2. In reckon/mcp.py + _store.py: add edit_plan(project, slug, ops[], expected_version, create=False)
+— op vocab set/append/resolve/lock; slug="index" covers sprints+inventory; create via version 0; validates the
+resulting PlanState against the schema (reject with field errors); version-check; render schema-correct HTML.
+Add doctor(project) — validate every plan vs schema + reindex index.json rollups. Enrich read_plan to inject
+schema/dos-don'ts + a discovery mode. Keep all 19 existing tools working. Tests via `uv run --with pytest
+pytest tests/ -q` (NOT global pytest — it runs a python without bs4). 33 existing must stay green.</pre>
+      </article>
+
+      <article class="r-fu" data-id="f-skills-rewrite" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29">
+        <h4 class="r-fu-title">F4 — Rewrite reckon-* skills around schema + edit_plan</h4>
+        <div class="r-fu-body">Skills own prose authoring; reference the schema + exemplars + dos/don'ts; use only read_plan + edit_plan.</div>
+        <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§4)
+Tier:    sonnet
+
+Depends on F2/F3. Rewrite skills/reckon-create, reckon-edit, reckon-ship, reckon-status to: lead with the
+canonical authoring prompt + copy-paste exemplars + dos/don'ts (fold in agent-plan-authoring §3-§5), point at
+docs/_shared/plan.schema.json as the contract, and use ONLY read_plan (context) + edit_plan (write). Remove
+references to the 15 granular tools.</pre>
+      </article>
+
+      <article class="r-fu" data-id="f-migrate-remove" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
+        <h4 class="r-fu-title">F5 — Migrate all projects to schema; deprecate→remove granular tools</h4>
+        <div class="r-fu-body">doctor across all 4 projects; migrate nonconformant plans (incl. the plan-title/plan-status divergence); alias the 15 mutators → edit_plan; validate a real edit session; remove aliases.</div>
+        <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§5, §7)
+Tier:    opus
+
+Depends on F2/F3/F4. Run doctor on imas-ambix, imas-efit, reckon, vv; migrate nonconformant plans to the
+schema (reconcile divergent meta). Make the 15 granular mutators thin aliases → edit_plan (back-compat).
+Validate a real multi-plan edit session across 2 repos. Then remove the aliases + bump. Coordinate the
+server restart (MCP changes are not hot). Lock the three decisions in this plan with rationale.</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
