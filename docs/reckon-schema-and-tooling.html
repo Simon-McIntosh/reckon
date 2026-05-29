@@ -4,18 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"  content="reckon">
-  <meta name="reckon-type"   content="plan">
-  <meta name="plan-slug"     content="reckon-schema-and-tooling">
-  <meta name="plan-title"    content="Plan schema-as-contract + tool-surface collapse">
-  <meta name="plan-status"   content="active">
-  <meta name="plan-roi"      content="high">
-  <meta name="plan-effort"   content="L">
-  <meta name="plan-tier"     content="opus">
-  <meta name="plan-summary"  content="Make a versioned plan SCHEMA the contract between agent-generated HTML and reckon-served content; collapse the 19 granular MCP tools to ~4 (read/context-injector, schema-validated edit_plan with create, doctor=validate+reindex, discovery); let the reckon-* skills own all prose authoring. Designed for consistency across all served projects (imas-ambix, imas-efit, reckon, vv).">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="reckon-schema-and-tooling">
+  <meta name="plan-title" content="Plan schema-as-contract + tool-surface collapse">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-summary" content="Make a versioned plan SCHEMA the contract between agent-generated HTML and reckon-served content; collapse the 19 granular MCP tools to ~4 (read/context-injector, schema-validated edit_plan with create, doctor=validate+reindex, discovery); let the reckon-* skills own all prose authoring. Designed for consistency across all served projects (imas-ambix, imas-efit, reckon, vv).">
   <meta name="plan-depends-on" content="agent-plan-authoring,reckon-mcp-plan,reckon-mcp-gaps">
   <title>Plan schema-as-contract + tool-surface collapse | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-05-29">
+<meta name="plan-version" content="6">
 </head>
 <body>
   <main class="plan-doc">
@@ -135,45 +137,41 @@
     </ol>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-
-      <div class="r-dec" data-key="schema-source-of-truth" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What is the authoritative form of the plan schema?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="pydantic-derives-jsonschema">Pydantic model is source; JSON Schema derived + published (recommended — reckon already uses pydantic; one model types parse/render/validate)</button>
-          <button class="r-opt" data-value="jsonschema-source">hand-written JSON Schema as source</button>
-          <button class="r-opt" data-value="prose-only">keep PLAN-FORMAT.md prose (status quo)</button>
-        </p>
-        <p class="r-dec-rat">Recommend a Pydantic PlanState model as the single source, with JSON Schema derived and served at /_shared/plan.schema.json. Types the parse→model→render round-trip AND the edit_plan validation from one definition.</p>
-      </div>
-
-      <div class="r-dec" data-key="validation-strictness" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How strict is schema validation at the write boundary?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="reject-write-warn-doctor">edit_plan REJECTS nonconformant writes; doctor WARNS/migrates existing plans (recommended)</button>
-          <button class="r-opt" data-value="warn-only">warn only, never block</button>
-        </p>
-        <p class="r-dec-rat">Recommend reject-on-write (malformed state never lands) but lenient doctor (existing plans get migrated/flagged, not broken). Belt: serve side tolerates+flags, write side enforces.</p>
-      </div>
-
-      <div class="r-dec" data-key="tool-count-target" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Target tool surface?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="four">~4: read_plan(+discovery), edit_plan(+create), doctor (recommended)</button>
-          <button class="r-opt" data-value="two">2: read_plan + edit_plan (doctor → CLI only)</button>
-          <button class="r-opt" data-value="keep-19">keep the 19 (status quo)</button>
-        </p>
-        <p class="r-dec-rat">Recommend ~4. doctor is worth exposing (agents reindex/validate after bulk edits). 2 is viable if doctor stays a CLI/serve concern.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="schema-source-of-truth" data-choice="pydantic-derives-jsonschema" data-by="agent/opus" data-when="2026-05-29T13:12:29+00:00">
+    <p class="r-dec-q">What is the authoritative form of the plan schema?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="pydantic-derives-jsonschema">Pydantic model is source; JSON Schema derived + published (recommended — reckon already uses pydantic; one model types parse/render/validate)</button>
+      <button class="r-opt" data-value="jsonschema-source">hand-written JSON Schema as source</button>
+      <button class="r-opt" data-value="prose-only">keep PLAN-FORMAT.md prose (status quo)</button>
+      </p>
+    <p class="r-dec-rat">Pydantic PlanState is the single source of truth; JSON Schema derived from it and published at /_shared/plan.schema.json. reckon already depends on pydantic&gt;=2; one model types the parse→model→render round-trip AND the edit_plan write-boundary validation, ending the three-way drift between PLAN-FORMAT.md, _plan_html.py, and the skills. Locked up-front by the orchestrator because it gates F2&#x27;s design (the schema must exist before the tools and skills can be built on it).</p>
+    </div>
+<div class="r-dec" data-key="validation-strictness" data-choice="reject-write-warn-doctor" data-by="agent/opus" data-when="2026-05-29T13:36:37+00:00">
+    <p class="r-dec-q">How strict is schema validation at the write boundary?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="reject-write-warn-doctor">edit_plan REJECTS nonconformant writes; doctor WARNS/migrates existing plans (recommended)</button>
+      <button class="r-opt" data-value="warn-only">warn only, never block</button>
+      </p>
+    <p class="r-dec-rat">edit_plan REJECTS nonconformant writes (malformed state never lands), while read_state() stays LENIENT and never raises and doctor WARNS/migrates existing plans. This is the keystone constraint for F2: PlanState wraps read_state/write_state (from_html/to_html); validation is invoked only at the edit_plan/doctor boundary, so the running server + the 54 tests + every existing plan across 4 repos keep parsing. &#x27;required&#x27; (docs-project/slug/title/status) means required-on-write, with read defaults (status→draft, title→&lt;title&gt;→slug). Locked up-front; gates F2/F3.</p>
+    </div>
+<div class="r-dec" data-key="tool-count-target" data-choice="four" data-by="agent/opus" data-when="2026-05-29T13:36:47+00:00">
+    <p class="r-dec-q">Target tool surface?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="four">~4: read_plan(+discovery), edit_plan(+create), doctor (recommended)</button>
+      <button class="r-opt" data-value="two">2: read_plan + edit_plan (doctor → CLI only)</button>
+      <button class="r-opt" data-value="keep-19">keep the 19 (status quo)</button>
+      </p>
+    <p class="r-dec-rat">Target surface ~4: read_plan (context injector + discovery), edit_plan (the one safe write: op-vocab set/append/resolve/lock + create, slug=index covers sprints/inventory, schema-validated), doctor (validate + reindex), discovery folded into read_plan. doctor is worth exposing as an MCP tool because agents reindex/validate after bulk edits — distinct from the existing CLI `reckon doctor` (an infra-checker), so name/scope the MCP plan-validator to avoid collision. The 15 granular mutators become thin aliases→edit_plan in F5, then removed. Locked up-front.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups (the fleet)</h2>
-
-      <article class="r-fu" data-id="f-schema-research" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29">
-        <h4 class="r-fu-title">F1 — Cross-project schema research (read ALL served projects)</h4>
-        <div class="r-fu-body">Catalogue the real plan structure across imas-ambix, imas-efit, reckon, vv + the current implicit schema (PLAN-FORMAT.md, _plan_html.py), so the schema is their normalisation, not one project's habit.</div>
-        <pre class="r-fu-prompt">Project: reckon
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-schema-research" data-status="resolved" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="2026-05-29T13:37:05+00:00" data-resolved-by="agent/opus">
+    <h4 class="r-fu-title">F1 — Cross-project schema research (read ALL served projects)</h4>
+    <div class="r-fu-body">Catalogue the real plan structure across imas-ambix, imas-efit, reckon, vv + the current implicit schema (PLAN-FORMAT.md, _plan_html.py), so the schema is their normalisation, not one project&#x27;s habit.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-schema-and-tooling (§2, §5)
 Tier:    sonnet
 
@@ -186,54 +184,52 @@ Read the CURRENT implicit schema and ALL served projects, produce a variety repo
     (decisions/followups/questions/research/comments + index sprints/milestones/inventory).
 Output: a normalised field inventory (required vs optional vs project-specific), the divergences to
 reconcile, and a proposed PlanState field list. DO NOT change any plan. Report only.</pre>
-      </article>
-
-      <article class="r-fu" data-id="f-schema-author" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
-        <h4 class="r-fu-title">F2 — Author the versioned PlanState schema (the contract)</h4>
-        <div class="r-fu-body">From F1: a Pydantic PlanState model (source of truth) + derived JSON Schema served at /_shared/plan.schema.json, versioned (schema_version). Type the _plan_html parse→model→render round-trip from it.</div>
-        <pre class="r-fu-prompt">Project: reckon
+    <p class="r-fu-outcome">DONE (F1 workflow weun9ks12, 6 agents). Catalogued the current implicit schema + all 4 served projects: imas-ambix 27 plans, imas-efit 502 (!), reckon 5, vv 4 (1 marked). Normalised field inventory + divergences delivered. KEY FINDINGS for F2: (1) plan-title/plan-status are universal in efit/reckon/vv but 81% in ambix — the gap is the LENIENT-READ path (read_state never raises; status→draft, title→&lt;title&gt;→slug), NOT a write downgrade → mark required-on-write. (2) docs-project is required identity but read_state() DROPS it — PlanState must add a `project` field and read_state must capture it. (3) Canonical shapes: decisions = dict[str,Decision] keyed by data-key (write contract); comments = dict[str,list] keyed by section anchor (default _top); parse_plan()&#x27;s decision LIST is a read-only SPA projection (.as_list()), not a second store — `chosen` there is redundant with `choice`. (4) Normalisations: roi med→mid; reckon-type doc→research; status enum must be the UNION draft|pending|active|in-progress|blocked|shipped|done|superseded|abandoned|archived|historical|reference or reject-on-write rejects valid plans. (5) Drop stray plan-project (2 efit root plans; not in _SCALARS). (6) IndexState: envelope {updated,project,doc,data{_version,active_sprint_id,sprints[],milestones[],timeline[],blockers[],projects?}}; inventory[] is SYNTHESISED live by discover_plans (never persisted); sprint items heterogeneous (bare-string|object → coerce). (7) Undocumented-in-prose but live in code: plan-archived/plan-read flags, the index envelope, timeline[]/blockers[]. Full proposed PlanState/IndexState field lists in the workflow output; fed verbatim into F2.</p>
+    </article>
+<article class="r-fu" data-id="f-schema-author" data-status="resolved" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="2026-05-29T14:08:45+00:00" data-resolved-by="agent/opus">
+    <h4 class="r-fu-title">F2 — Author the versioned PlanState schema (the contract)</h4>
+    <div class="r-fu-body">From F1: a Pydantic PlanState model (source of truth) + derived JSON Schema served at /_shared/plan.schema.json, versioned (schema_version). Type the _plan_html parse→model→render round-trip from it.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-schema-and-tooling (§2)
 Tier:    opus
 
 Depends on F1. Author reckon/reckon/_schema.py: a Pydantic PlanState (+ IndexState) model covering the
 normalised inventory, with schema_version. Derive + write a JSON Schema to docs/_shared/plan.schema.json
 (served). Re-type _plan_html parse→PlanState and render PlanState→HTML so the round-trip is schema-checked.
-Tests: every existing plan across the 4 projects parses into PlanState (xfail+catalogue any that don't —
+Tests: every existing plan across the 4 projects parses into PlanState (xfail+catalogue any that don&#x27;t —
 those are F5 migrations). Keep optimistic-concurrency + atomic .tmp write unchanged.</pre>
-      </article>
-
-      <article class="r-fu" data-id="f-tool-collapse" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
-        <h4 class="r-fu-title">F3 — edit_plan + doctor + read-injector (additive, non-breaking)</h4>
-        <div class="r-fu-body">The ~4-tool surface, built on the schema. Add alongside the 19; don't remove yet.</div>
-        <pre class="r-fu-prompt">Project: reckon
+    <p class="r-fu-outcome">SHIPPED (commit cf5fb2b). reckon/_schema.py: PlanState (source of truth) + Decision/Followup/Question/ResearchItem/Comment + IndexState/IndexData envelope; SCHEMA_VERSION=1.0; derived JSON Schema at docs/_shared/plan.schema.json (gen_json_schema/write_json_schema). _plan_html.py: ADDED from_html/to_html wrappers + additive docs-project capture; read_state/write_state behaviour byte-identical (existing callers untouched). Lenient read (never raises: med→mid, doc→research, status union via json_schema_extra not Literal, derived statuses, extra=ignore); strict validate_for_write() is the reject boundary. canonical_dump()=model_dump(exclude_unset=True) reproduces read_state&#x27;s sparse-top/dense-nested shape; IndexData._version alias + by_alias dump override avoids the index-counter-zeroing trap. Verified: model_dump-shape==read_state dict, byte-identity to_html∘from_html==write_state∘read_state, state-level round-trip. Tests: 702 passed (54 pre-existing green); cross-project conformance 600/600 plans parse — ZERO F5 migrations needed. NEXT: f-tool-collapse (F3 edit_plan+doctor+read-injector, opus) + f-skills-rewrite (F4 skills, sonnet) dispatch in parallel on this schema.</p>
+    </article>
+<article class="r-fu" data-id="f-tool-collapse" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">F3 — edit_plan + doctor + read-injector (additive, non-breaking)</h4>
+    <div class="r-fu-body">The ~4-tool surface, built on the schema. Add alongside the 19; don&#x27;t remove yet.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-schema-and-tooling (§3)
 Tier:    opus
 
 Depends on F2. In reckon/mcp.py + _store.py: add edit_plan(project, slug, ops[], expected_version, create=False)
-— op vocab set/append/resolve/lock; slug="index" covers sprints+inventory; create via version 0; validates the
+— op vocab set/append/resolve/lock; slug=&quot;index&quot; covers sprints+inventory; create via version 0; validates the
 resulting PlanState against the schema (reject with field errors); version-check; render schema-correct HTML.
 Add doctor(project) — validate every plan vs schema + reindex index.json rollups. Enrich read_plan to inject
-schema/dos-don'ts + a discovery mode. Keep all 19 existing tools working. Tests via `uv run --with pytest
+schema/dos-don&#x27;ts + a discovery mode. Keep all 19 existing tools working. Tests via `uv run --with pytest
 pytest tests/ -q` (NOT global pytest — it runs a python without bs4). 33 existing must stay green.</pre>
-      </article>
-
-      <article class="r-fu" data-id="f-skills-rewrite" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29">
-        <h4 class="r-fu-title">F4 — Rewrite reckon-* skills around schema + edit_plan</h4>
-        <div class="r-fu-body">Skills own prose authoring; reference the schema + exemplars + dos/don'ts; use only read_plan + edit_plan.</div>
-        <pre class="r-fu-prompt">Project: reckon
+    </article>
+<article class="r-fu" data-id="f-skills-rewrite" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">F4 — Rewrite reckon-* skills around schema + edit_plan</h4>
+    <div class="r-fu-body">Skills own prose authoring; reference the schema + exemplars + dos/don&#x27;ts; use only read_plan + edit_plan.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-schema-and-tooling (§4)
 Tier:    sonnet
 
 Depends on F2/F3. Rewrite skills/reckon-create, reckon-edit, reckon-ship, reckon-status to: lead with the
-canonical authoring prompt + copy-paste exemplars + dos/don'ts (fold in agent-plan-authoring §3-§5), point at
+canonical authoring prompt + copy-paste exemplars + dos/don&#x27;ts (fold in agent-plan-authoring §3-§5), point at
 docs/_shared/plan.schema.json as the contract, and use ONLY read_plan (context) + edit_plan (write). Remove
 references to the 15 granular tools.</pre>
-      </article>
-
-      <article class="r-fu" data-id="f-migrate-remove" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29">
-        <h4 class="r-fu-title">F5 — Migrate all projects to schema; deprecate→remove granular tools</h4>
-        <div class="r-fu-body">doctor across all 4 projects; migrate nonconformant plans (incl. the plan-title/plan-status divergence); alias the 15 mutators → edit_plan; validate a real edit session; remove aliases.</div>
-        <pre class="r-fu-prompt">Project: reckon
+    </article>
+<article class="r-fu" data-id="f-migrate-remove" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">F5 — Migrate all projects to schema; deprecate→remove granular tools</h4>
+    <div class="r-fu-body">doctor across all 4 projects; migrate nonconformant plans (incl. the plan-title/plan-status divergence); alias the 15 mutators → edit_plan; validate a real edit session; remove aliases.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-schema-and-tooling (§5, §7)
 Tier:    opus
 
@@ -241,8 +237,45 @@ Depends on F2/F3/F4. Run doctor on imas-ambix, imas-efit, reckon, vv; migrate no
 schema (reconcile divergent meta). Make the 15 granular mutators thin aliases → edit_plan (back-compat).
 Validate a real multi-plan edit session across 2 repos. Then remove the aliases + bump. Coordinate the
 server restart (MCP changes are not hot). Lock the three decisions in this plan with rationale.</pre>
-      </article>
-    </section>
+    </article>
+<article class="r-fu" data-id="f-infra-consolidation" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">F6 — Infra consolidation: rename config home ~/docs-server → ~/.config/reckon (XDG); coordinate with F5 cutover</h4>
+    <div class="r-fu-body">Raised by the user mid-fleet on 2026-05-29: ensure reckon is served consistently and remove legacy &#x27;docs-server&#x27;-era infra. ALREADY DONE this session (committed): removed dead dotfiles symlinks (~/docs-server/{serve.py,ui.jsx,README.md}); removed stale ~/docs-server/state/imas-ambix.old.1779364556; terminated 6 abandoned `reckon mcp` stdio servers (multi-day-old sessions); corrected AGENTS.md server-ops (the live server is `reckon serve` in a zellij session named &#x27;reckon&#x27;, NOT tmux &#x27;docs-server&#x27;). DECIDED by the user: rename the config home from ~/docs-server/ to ~/.config/reckon/ (XDG). This is a cross-cutting, restart-coordinated change → fold into F5 (server restart is not hot). Still pending: ~/docs-server/home.html symlink removal (kept until /_projects/ route dependence is confirmed; reckon ships its own docs/home.html so the fallback is unused).</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (§7, with F5)
+Section: infra consolidation
+Tier:    opus
+
+Context
+  User asked (2026-05-29) for consistent reckon serving + removal of legacy &#x27;docs-server&#x27; infra. Symlink/backup/process/AGENTS.md cleanups already landed. This followup is the cross-cutting CONFIG-HOME RENAME, coordinated with F5&#x27;s server restart (MCP/serve code changes are not hot).
+
+State to read
+  GET /plan/reckon/reckon-schema-and-tooling   (decisions, followups, version)
+  reckon/reckon/_store.py (_state_root, _mounts_path), reckon/reckon/serve.py (_resolve_paths, /_projects/ route), reckon/reckon/cli.py (sync/serve/doctor defaults)
+  ~/docs-server/ (current config home: mounts.json + state/ symlinks + home.html)
+
+Locked decisions to honour
+  config-home target → ~/.config/reckon/ (XDG)  [user, 2026-05-29]
+  validation-strictness → reject-write-warn-doctor
+  tool-count-target → four
+  schema-source-of-truth → pydantic-derives-jsonschema
+
+Open decisions to surface (do not resolve)
+  whether to keep a back-compat fallback to ~/docs-server/ for a deprecation window vs hard cutover
+
+Constraints
+  - Add a resolution order in _store.py/serve.py/cli.py: RECKON_* env override → ~/.config/reckon/ → (optional, deprecation-window) ~/docs-server/ fallback. Keep RECKON_MOUNTS_PATH / RECKON_STATE_ROOT working (tests depend on them).
+  - Physically migrate: mkdir -p ~/.config/reckon; move mounts.json; recreate the per-project state symlinks; remove the dead ~/docs-server/home.html symlink (confirm /_projects/ first).
+  - Update reckon-sync skill + AGENTS.md (this repo) + the imas-codex tunnel config ([tool.imas-codex.docs-server] in ~/Code/imas-codex/pyproject.toml) to the new path.
+  - This is NOT hot: restart `reckon serve` (in the zellij &#x27;reckon&#x27; session) and reconnect MCP as part of the F5 cutover, after F2/F3 land.
+
+Done-when
+  1. reckon resolves config home at ~/.config/reckon/ (env override still wins); mounts.json + state symlinks live there; server + MCP restarted and serving all 4 projects (GET /&lt;project&gt;/ → 200).
+  2. No remaining references to ~/docs-server/ as the canonical path in reckon code, skills, AGENTS.md, or imas-codex tunnel config (a documented deprecation fallback is acceptable if that open decision lands that way).
+  3. tests green via `uv run --with pytest pytest tests/ -q`.
+  4. followup written into plan + this followup marked resolved.</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>

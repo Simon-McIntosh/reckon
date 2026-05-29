@@ -9,17 +9,18 @@
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="reckon-type" content="plan">
-<meta name="plan-title" content="Agent ↔ Plan authoring — prompts & exemplars over tool straitjackets">
-<meta name="plan-summary" content="Reframe how agents interact with reckon plans: agents already write HTML well, so lead with a canonical authoring prompt, copy-paste templates, dos/don'ts, exemplars, and the REASONING behind every machine-readable tag — and make the MCP tools an optional version-safe writer, not a mandatory straitjacket. Covers the full lifecycle model and the agile primitives (sprints, milestones, ROI/effort, followup chains) reckon supports.">
+<meta name="plan-title" content="Agent ↔ Plan authoring — prompts &amp; exemplars over tool straitjackets">
+<meta name="plan-summary" content="Reframe how agents interact with reckon plans: agents already write HTML well, so lead with a canonical authoring prompt, copy-paste templates, dos/don&#x27;ts, exemplars, and the REASONING behind every machine-readable tag — and make the MCP tools an optional version-safe writer, not a mandatory straitjacket. Covers the full lifecycle model and the agile primitives (sprints, milestones, ROI/effort, followup chains) reckon supports.">
 <meta name="plan-status" content="draft">
 <meta name="plan-roi" content="high">
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="—">
 <meta name="plan-tier" content="opus">
 <meta name="plan-owner" content="Simon McIntosh">
-<meta name="plan-modified" content="2026-05-27">
+<meta name="plan-modified" content="2026-05-29">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
+<meta name="plan-version" content="1">
 </head>
 <body>
 <main class="plan-doc">
@@ -261,71 +262,72 @@ version mismatch never blocks progress.</li>
 one). If the authoring experience hurts here, fix it here first.</li>
 </ul>
 
-<section data-reckon="decisions" id="decisions">
+<section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="tool-mediation" data-choice="prompt-first-mcp-optional" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
-  <p class="r-dec-q">Are MCP tools the mandatory interface, or optional?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt chosen" data-value="prompt-first-mcp-optional">Prompt + exemplars primary; MCP optional for version-safety</button>
-    <button class="r-opt" data-value="mcp-mandatory">MCP tools mandatory for all state writes</button>
-  </p>
-  <p class="r-dec-rat">Agents write HTML fluently; mandating 19 tools adds friction and couples authoring to server availability (it caused a markdown slip during an outage). Keep tools for concurrent-write safety + parsing; lead with prompt/templates/exemplars.</p>
-</div>
+    <p class="r-dec-q">Are MCP tools the mandatory interface, or optional?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="prompt-first-mcp-optional">Prompt + exemplars primary; MCP optional for version-safety</button>
+      <button class="r-opt" data-value="mcp-mandatory">MCP tools mandatory for all state writes</button>
+      </p>
+    <p class="r-dec-rat">Agents write HTML fluently; mandating 19 tools adds friction and couples authoring to server availability (it caused a markdown slip during an outage). Keep tools for concurrent-write safety + parsing; lead with prompt/templates/exemplars.</p>
+    </div>
 <div class="r-dec" data-key="schema-enforcement" data-choice="ci-roundtrip" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
-  <p class="r-dec-q">How do we keep render/parse in sync?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt chosen" data-value="ci-roundtrip">CI round-trip parity test (render∘parse idempotent)</button>
-    <button class="r-opt" data-value="trust">Trust authors + tools</button>
-  </p>
-  <p class="r-dec-rat">Three render/parse symmetry bugs shipped on 2026-05-27 (chosen/choice, followup status, generate-prompt gate). A round-trip test is the cheapest durable guard.</p>
-</div>
+    <p class="r-dec-q">How do we keep render/parse in sync?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="ci-roundtrip">CI round-trip parity test (render∘parse idempotent)</button>
+      <button class="r-opt" data-value="trust">Trust authors + tools</button>
+      </p>
+    <p class="r-dec-rat">Three render/parse symmetry bugs shipped on 2026-05-27 (chosen/choice, followup status, generate-prompt gate). A round-trip test is the cheapest durable guard.</p>
+    </div>
 <div class="r-dec" data-key="state-derivation" data-choice="derive-single-source" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
-  <p class="r-dec-q">Duplicate state flags, or derive from one source?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt chosen" data-value="derive-single-source">Derive (status←resolved_at, locked←choice, impl←sections)</button>
-    <button class="r-opt" data-value="explicit-flags">Explicit flags per field</button>
-  </p>
-  <p class="r-dec-rat">Duplicated flags are where drift bugs live. One source of truth per field, derived everywhere else.</p>
-</div>
+    <p class="r-dec-q">Duplicate state flags, or derive from one source?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derive-single-source">Derive (status←resolved_at, locked←choice, impl←sections)</button>
+      <button class="r-opt" data-value="explicit-flags">Explicit flags per field</button>
+      </p>
+    <p class="r-dec-rat">Duplicated flags are where drift bugs live. One source of truth per field, derived everywhere else.</p>
+    </div>
 </section>
 
-<section data-reckon="followups" id="followups">
+<section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring">
-  <h4 class="r-fu-title">Write the canonical authoring prompt + in-repo exemplar plan</h4>
-  <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it's the first thing an agent reads.</div>
-  <pre class="r-fu-prompt">Project: reckon
+<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Write the canonical authoring prompt + in-repo exemplar plan</h4>
+    <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it&#x27;s the first thing an agent reads.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    agent-plan-authoring (§4–§5)
 Tier:    sonnet
 Context  This design plan landed; now make it operational.
 Done-when
   1. docs/_exemplar-plan.html — annotated, copy-paste-ready, passes the parser.
-  2. A "Authoring prompt" block added to reckon-create + reckon-edit SKILL.md
-     (templates + dos/don'ts + the reasoning table from §3).
+  2. A &quot;Authoring prompt&quot; block added to reckon-create + reckon-edit SKILL.md
+     (templates + dos/don&#x27;ts + the reasoning table from §3).
   3. This followup resolved; followup written for the CI round-trip test.</pre>
-</article>
-<article class="r-fu" data-id="f-apa-roundtrip" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon">
-  <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
-  <div class="r-fu-body">Guard against the symmetry bugs: assert render(parse(html))==html and parse(render(state))==state across decisions, followups (incl. resolved), questions, meta scalars. Seed it with the three 2026-05-27 regressions.</div>
-  <pre class="r-fu-prompt">Project: reckon
+    </article>
+<article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
+    <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
+    <div class="r-fu-body">Guard against the symmetry bugs: assert render(parse(html))==html and parse(render(state))==state across decisions, followups (incl. resolved), questions, meta scalars. Seed it with the three 2026-05-27 regressions.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    agent-plan-authoring (§9)
 Tier:    sonnet
 Done-when
   1. tests/test_roundtrip.py — render∘parse idempotent on a fixture plan.
   2. Regression cases: chosen/choice, followup status←resolved_at, gen-prompt gate.
   3. Wired into the reckon test run; this followup resolved.</pre>
-</article>
-<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring">
-  <h4 class="r-fu-title">Close the milestone-tooling gap</h4>
-  <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.</div>
-  <pre class="r-fu-prompt">Project: reckon
+    <p class="r-fu-outcome">DONE via the schema work (commit cf5fb2b) — the canonical round-trip parity test landed in tests/test_schema.py (test_state_round_trip + the model_dump-shape == read_state and to_html∘from_html == write_state∘read_state byte-identity assertions). Deliberate improvement on the original done-when: the byte-equality render(parse(html))==html invariant is fragile (write_state normalises whitespace/attr-order, so it flags every hand-authored plan); replaced by the robust STATE-LEVEL invariant parse(render(state))==state PLUS byte-identity of the regenerated reckon-owned sections. Covers the 2026-05-27 symmetry regressions: choice-vs-chosen (chosen is now derived, never stored) and followup/question status←resolved_at (derived in both parser and model). Wired into the standard reckon run (uv run --with pytest pytest tests/ -q); 702 passed.</p>
+    </article>
+<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the milestone-tooling gap</h4>
+    <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren&#x27;t read-only-and-empty.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    agent-plan-authoring (§7)
 Tier:    sonnet
 Done-when
   1. Milestone create/update path (MCP tool or documented index.json edit).
   2. imas-ambix M0–M3/PS milestones repopulated as a test case.
   3. This followup resolved.</pre>
-</article>
+    </article>
 </section>
 
 </main>
