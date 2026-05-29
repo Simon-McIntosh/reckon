@@ -200,6 +200,38 @@ def test_add_sprint_item_duplicate_rejected(setup):
     assert "already in sprint" in result["error"]
 
 
+# ── _create_sprint ─────────────────────────────────────────────────────────
+
+def test_create_sprint_new(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {
+        "active_sprint_id": None,
+        "sprints": [{"id": "S1", "status": "done", "items": []}],
+    })
+    result = mcp_module._create_sprint(project, "S2", "next sprint", expected_version=0, status="active")
+    assert result["ok"] is True
+    assert result["sprint_id"] == "S2"
+    data, _ = _store_module.read_plan(project, "index")
+    assert [s["id"] for s in data["sprints"]] == ["S1", "S2"]
+    assert data["active_sprint_id"] == "S2"
+
+
+def test_create_sprint_duplicate_rejected(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"sprints": [{"id": "S1", "status": "active", "items": []}]})
+    result = mcp_module._create_sprint(project, "S1", "dup", expected_version=0)
+    assert result["ok"] is False
+    assert "already exists" in result["error"]
+
+
+def test_create_sprint_version_conflict(setup):
+    _, state_root, project = setup
+    _seed_index(state_root, project, {"sprints": []})
+    result = mcp_module._create_sprint(project, "S2", "x", expected_version=99)
+    assert result["ok"] is False
+    assert result["error"] == "version_conflict"
+
+
 def test_add_sprint_item_sprint_not_found(setup):
     _, state_root, project = setup
     _seed_index(state_root, project, {"sprints": []})

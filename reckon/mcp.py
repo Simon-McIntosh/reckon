@@ -437,6 +437,67 @@ def _add_sprint_item(
         return _conflict_response(e)
 
 
+def _create_sprint(
+    project: str,
+    sprint_id: str,
+    theme: str,
+    expected_version: int,
+    status: str = "planned",
+    starts: str | None = None,
+    ends: str | None = None,
+    description: str | None = None,
+) -> dict[str, Any]:
+    """Create a NEW sprint in index.json#sprints[].
+
+    Fills the gap left by update_sprint / add_sprint_item, both of which require
+    the sprint to already exist. ``status`` is planned|active|done; "active"
+    also sets active_sprint_id (and warns if another sprint was active). Rejects
+    a sprint_id that already exists — use update_sprint to edit one in place.
+
+    Returns { ok, project, sprint_id, new_version[, warning] } or a conflict.
+    """
+    valid_statuses = {"planned", "active", "done"}
+    if status not in valid_statuses:
+        return {"ok": False, "error": f"sprint status must be one of {sorted(valid_statuses)}"}
+
+    cur_data, cur_version = read_plan(project, "index")
+    if expected_version != cur_version:
+        return _conflict_response(VersionConflict(expected_version, cur_version, cur_data))
+
+    sprints = list(cur_data.get("sprints", []))
+    if any(isinstance(s, dict) and s.get("id") == sprint_id for s in sprints):
+        return {"ok": False, "error": f"sprint {sprint_id!r} already exists — use update_sprint to edit it"}
+
+    new_sprint: dict[str, Any] = {"id": sprint_id, "status": status, "theme": theme, "items": []}
+    if starts:
+        new_sprint["starts"] = starts
+    if ends:
+        new_sprint["ends"] = ends
+    if description:
+        new_sprint["description"] = description
+    new_sprint["summary"] = None
+    sprints.append(new_sprint)
+
+    new_data = {**cur_data, "sprints": sprints}
+    warning = None
+    if status == "active":
+        prev = cur_data.get("active_sprint_id")
+        if prev and prev != sprint_id:
+            warning = f"sprint {prev} was active — consider closing it"
+        new_data["active_sprint_id"] = sprint_id
+
+    try:
+        new_version = write_plan(project, "index", new_data, cur_version)
+        result: dict[str, Any] = {
+            "ok": True, "project": project, "sprint_id": sprint_id, "new_version": new_version,
+        }
+        if warning:
+            result["warning"] = warning
+        return result
+    except VersionConflict as e:
+        return _conflict_response(e)
+
+
 def _move_sprint_item(
     project: str,
     slug: str,
@@ -639,6 +700,7 @@ if mcp is not None:
     list_sprints_tool         = mcp.tool()(_list_sprints)
     update_sprint_tool        = mcp.tool()(_update_sprint)
     add_sprint_item_tool      = mcp.tool()(_add_sprint_item)
+    create_sprint_tool        = mcp.tool()(_create_sprint)
     move_sprint_item_tool     = mcp.tool()(_move_sprint_item)
     update_inventory_item_tool = mcp.tool()(_update_inventory_item)
     # Cross-plan reads
