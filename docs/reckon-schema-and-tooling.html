@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="reckon-schema-and-tooling">
   <meta name="plan-title" content="Plan schema-as-contract + tool-surface collapse">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-tier" content="opus">
@@ -17,7 +17,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-05-29">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -279,7 +280,7 @@ Done-when
   4. followup written into plan + this followup marked resolved.</pre>
     <p class="r-fu-outcome">CODE-COMPLETE + committed; live cutover handed to F7 (f-cutover). DONE this session: removed dead dotfiles symlinks (~/docs-server/{serve.py,ui.jsx,README.md}); removed stale imas-ambix.old backup; terminated 6 abandoned reckon mcp servers; corrected AGENTS.md server-ops (zellij not tmux); shipped the XDG config-home resolution code (_config_home: RECKON_HOME → ~/.config/reckon → ~/docs-server fallback; 75c5b06) non-breaking; COPIED (not moved) ~/docs-server → ~/.config/reckon (mounts.json + 4 state symlinks, dead home.html omitted) and verified the new home serves all 4 projects; updated reckon-sync skill to the new path. CORRECTION to the original F6 plan: imas-codex tunnel config needs NO edit — it consumes only port 8765 (unchanged), not the ~/docs-server path (its references are stale comments only). PENDING in F7 (user-gated): the reckon serve restart + MCP reconnect that flips to ~/.config/reckon, then dropping the ~/docs-server fallback after a soak, and removing the now-stale ~/docs-server/home.html symlink.</p>
     </article>
-<article class="r-fu" data-id="f-cutover" data-status="open" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cutover" data-status="resolved" data-tier="opus" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="2026-05-29T16:15:27+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">F7 — Execute the cutover: restart reckon serve + MCP reconnect; post-restart validation; deferred cleanups</h4>
     <div class="r-fu-body">All reckon-repo code is shipped + committed and NON-BREAKING (schema cf5fb2b, edit_plan+doctor 622ead9, skills 9c17c35, surface-collapse c03edfd, config-home 75c5b06). ~/.config/reckon is copied + verified (serves all 4 projects); ~/docs-server retained as fallback. The running `reckon serve` + every `reckon mcp` stdio server still run OLD code (19 tools, ~/docs-server) until restarted. This is the single USER-GATED cutover (it bounces the live SPA + resets MCP) plus post-restart validation + deferred cleanups.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -317,6 +318,33 @@ Done-when
   4. A real cross-repo edit_plan session validated (a lock + followup on a plan in 2 repos via MCP).
   5. Optional cleanups once soaked: drop the ~/docs-server fallback; delete the dead private granular _funcs + redundant test_mcp_tools.py coverage (keep the edit_plan equivalents).
   6. F5 + F6 confirmed resolved; this followup resolved; plan-status → shipped when the cutover lands.</pre>
+    <p class="r-fu-outcome">CUTOVER LANDED + VALIDATED (this resolution written via the live edit_plan tool — dogfood). Server restarted (pid 1150279) on new code reading ~/.config/reckon; all 4 projects → 200 and /_shared/plan.schema.json → 200. MCP reconnected → live agent surface is read_plan + edit_plan + audit (doctor renamed → audit per user; commits e479e22 + f2b8bfd). Validated via the LIVE `audit` MCP tool across all four: reckon 5/5 and imas-ambix 28/28 conformant (0 violations); imas-efit 555/561 + vv 1/4 = the documented, intentional content backlog (handed off, not a gate — serve.py POST stays unvalidated so all remain fixable). Legacy generator infra (plan.html/README.html) now excluded from discovery. Remaining work is OPTIONAL/soak → f-soak-cleanup.</p>
+    </article>
+<article class="r-fu" data-id="f-soak-cleanup" data-status="open" data-tier="sonnet" data-written-by="agent/opus" data-written-at="2026-05-29" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Post-cutover soak cleanups + cross-repo content backlog (all optional)</h4>
+    <div class="r-fu-body">The schema-as-contract + read_plan/edit_plan/audit surface + XDG config home are live and validated. These are the non-urgent post-soak cleanups; the system is fully functional without them.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-schema-and-tooling (post-cutover soak + optional cleanups)
+Tier:    sonnet
+
+Context
+  The schema + 3-tool surface (read_plan/edit_plan/audit) + XDG config home shipped, are live, and were
+  validated via the audit tool. None of the below is urgent.
+
+State to read
+  reckon audit &lt;project&gt;  for all 4 ; reckon/mcp.py registration block (dead private _funcs) ;
+  reckon/_store.py _config_home ; ~/.config/reckon vs the ~/docs-server fallback
+
+Done-when
+  1. After a soak on the XDG home: decide whether to DROP the ~/docs-server fallback from _config_home()
+     (or keep as permanent insurance) and remove the stale ~/docs-server/home.html symlink.
+  2. Delete the ~24 unregistered private granular _funcs in mcp.py + prune test_mcp_tools.py (the
+     edit_plan-equivalent coverage already lives in test_edit_plan.py). Low-risk cleanup.
+  3. Cross-repo content backlog cleared: imas-efit via its docs-html-migration-cleanup plan (committed
+     a1adb415); vv&#x27;s 3 bare analyses (vv-lateral-displacement-analysis, vv-previous-analysis-critique,
+     vvgs-pendulum-mechanism) → reckon-type=research + docs-project/slug/title/status=reference (do NOT
+     fabricate plan metadata). reckon audit &lt;proj&gt; → 0 violations.
+  4. This followup resolved or closed (&quot;done — no followup&quot;).</pre>
     </article>
 </section>
   </main>
