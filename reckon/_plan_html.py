@@ -31,6 +31,10 @@ from bs4 import BeautifulSoup
 _SCALARS = (
     "slug", "title", "summary", "status", "roi", "effort", "milestone",
     "sprint", "tier", "owner", "modified",
+    # Lifecycle visibility — set via UI status menu.
+    # archived: "1" hides the plan from default inventory views (separate from status).
+    # read:     "1" marks a research/doc as reviewed (de-emphasises in lists).
+    "archived", "read",
 )
 _LIST_SCALARS = ("depends_on", "blocks", "informs")  # comma-separated in meta
 

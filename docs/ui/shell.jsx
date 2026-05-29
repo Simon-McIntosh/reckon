@@ -125,7 +125,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
 // ─── Filters column ─────────────────────────────────────────────────────
 
-function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
+function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArchived, setShowArchived }) {
   const M = window.STATE;
   const milestones = M.projects?.[0]?.milestones || M.milestones || [];
   const sprints = M.sprints || [];
@@ -153,6 +153,16 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
   const allTypes = Object.entries(typeCounts).sort((a, b) => a[0].localeCompare(b[0]));
   const showTypeFilter = allTypes.length > 1;
 
+  // Archived count (independent of status — orthogonal axis).
+  const archivedCount = M.inventory.filter(p => p.archived === "1" || p.archived === true || p.archived === "true").length;
+
+  // Statuses to surface in the filter. We always show active workflow ones plus
+  // any status that has at least one plan (so on-hold/superseded show up when used).
+  const ALWAYS = ["active", "blocked", "pending", "shipped"];
+  const allStatuses = new Set([...ALWAYS, ...M.inventory.map(p => p.status).filter(Boolean)]);
+  const statusOrder = ["active", "blocked", "pending", "in-progress", "on-hold", "shipped", "done", "superseded", "abandoned", "draft", "historical"];
+  const statusList = [...allStatuses].sort((a, b) => (statusOrder.indexOf(a) + 99) - (statusOrder.indexOf(b) + 99));
+
   return (
     <aside className="r-filters">
       {anyActive && (
@@ -163,7 +173,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
 
       <div className="r-filter-group">
         <div className="r-filter-h">Status</div>
-        {["active", "blocked", "pending", "shipped"].map(s => {
+        {statusList.map(s => {
           const n = M.inventory.filter(p => p.status === s).length;
           const on = (filters.status || []).includes(s);
           if (n === 0) return null;
@@ -175,6 +185,18 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped }) {
             </div>
           );
         })}
+        {archivedCount > 0 && (
+          <button
+            type="button"
+            className={`r-chip r-chip-archived ${showArchived ? "on" : ""}`}
+            onClick={() => setShowArchived(v => !v)}
+            title={showArchived ? "Hide archived plans from the list" : "Reveal archived plans"}
+          >
+            <span className="r-archive-glyph" aria-hidden="true">▦</span>
+            <span>{showArchived ? "Hide archived" : "Show archived"}</span>
+            <span className="n">{archivedCount}</span>
+          </button>
+        )}
       </div>
 
       {sprintsWithPlans.length > 0 && (
@@ -292,9 +314,34 @@ function sortItems(items, sortBy, dir) {
   return arr;
 }
 
+const SORT_OPTIONS = [
+  { value: "edited",   label: "Edited"   },
+  { value: "created",  label: "Created"  },
+  { value: "status",   label: "Status"   },
+  { value: "progress", label: "Progress" },
+  { value: "priority", label: "Priority" },
+  { value: "title",    label: "Title"    },
+];
+
 function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext, onSetContext }) {
   const sorted = React.useMemo(() => sortItems(items, sortBy, sortDir), [items, sortBy, sortDir]);
   const contextSlug = filters.context || null;
+  const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
+  const sortRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!sortMenuOpen) return;
+    const onDown = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) setSortMenuOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setSortMenuOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [sortMenuOpen]);
+  const currentLabel = (SORT_OPTIONS.find(o => o.value === sortBy) || SORT_OPTIONS[0]).label;
 
   const SortAscIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -319,21 +366,39 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
     <div className="r-list">
       <div className="r-sort-bar">
         <span className="r-sort-n">{items.length}</span>
-        <div className="r-sort-select-wrap">
-          <svg className="r-sort-icon" width="11" height="8" viewBox="0 0 11 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-            <path d="M1 1h9M1 4h6M1 7h3"/>
-          </svg>
-          <select className="r-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            <option value="edited">Edited</option>
-            <option value="created">Created</option>
-            <option value="status">Status</option>
-            <option value="progress">Progress</option>
-            <option value="priority">Priority</option>
-            <option value="title">Title</option>
-          </select>
-          <svg className="r-sort-chevron" width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 1l3.5 3.5L8 1"/>
-          </svg>
+        <div className={`r-sort-popover ${sortMenuOpen ? "open" : ""}`} ref={sortRef}>
+          <button
+            type="button"
+            className="r-sort-trigger"
+            onClick={() => setSortMenuOpen(o => !o)}
+            aria-expanded={sortMenuOpen}
+            aria-haspopup="listbox"
+          >
+            <svg className="r-sort-icon" width="11" height="8" viewBox="0 0 11 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <path d="M1 1h9M1 4h6M1 7h3"/>
+            </svg>
+            <span className="r-sort-trigger-label">{currentLabel}</span>
+            <svg className="r-sort-chevron" width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 1.5l3.5 3.5L8 1.5"/>
+            </svg>
+          </button>
+          {sortMenuOpen && (
+            <div className="r-sort-menu" role="listbox">
+              {SORT_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="option"
+                  aria-selected={opt.value === sortBy}
+                  className={`r-sort-item ${opt.value === sortBy ? "current" : ""}`}
+                  onClick={() => { setSortBy(opt.value); setSortMenuOpen(false); }}
+                >
+                  <span className="r-sort-item-check">{opt.value === sortBy ? "✓" : ""}</span>
+                  <span>{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button
           className={`r-sort-dir ${sortDir !== (SORT_DIR_DEFAULTS[sortBy] || "asc") ? "active" : ""}`}
@@ -367,10 +432,12 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         </div>
       ) : sorted.map(p => {
         const active = route.view === "plan" && route.slug === p.slug;
+        const isArchived = p.archived === "1" || p.archived === true || p.archived === "true";
+        const isRead = p.read === "1" || p.read === true || p.read === "true";
         return (
           <div
             key={p.slug}
-            className={`r-row ${active ? "active" : ""}`}
+            className={`r-row ${active ? "active" : ""} ${isArchived ? "archived" : ""} ${isRead ? "read" : ""}`}
             onClick={() => onSelectPlan(p.slug)}
           >
             <span className={`dot ${p.status}`}></span>
@@ -405,7 +472,147 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
 
 // ─── Title bar ──────────────────────────────────────────────────────────
 
-function TitleBar({ route, onNav, onOpenPrompt }) {
+// ─── Plan view mode tabs (Reading / Graph) ──────────────────────────────
+// Lifted out of plan.jsx so that navigating between plans via the graph
+// preserves the user's chosen mode. Rendered as proper tabs with an
+// underline indicator, not stand-alone buttons.
+
+function PlanModeTabs({ viewMode, setViewMode }) {
+  return (
+    <div className="r-plan-tabs" role="tablist" aria-label="Plan view mode">
+      <button
+        role="tab"
+        aria-selected={viewMode === "reading"}
+        className={`r-plan-tab ${viewMode === "reading" ? "active" : ""}`}
+        onClick={() => setViewMode("reading")}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3.5h7a2 2 0 0 1 2 2V13H5a2 2 0 0 1-2-2V3.5z"/>
+          <path d="M3 3.5a2 2 0 0 1 2-2h2v9.5H5a2 2 0 0 0-2 2"/>
+        </svg>
+        Reading
+      </button>
+      <button
+        role="tab"
+        aria-selected={viewMode === "graph"}
+        className={`r-plan-tab ${viewMode === "graph" ? "active" : ""}`}
+        onClick={() => setViewMode("graph")}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="3" cy="4" r="1.6"/>
+          <circle cx="3" cy="12" r="1.6"/>
+          <circle cx="13" cy="8" r="1.6"/>
+          <path d="M4.4 4.8L11.6 7.5M4.4 11.2L11.6 8.5"/>
+        </svg>
+        Graph
+      </button>
+    </div>
+  );
+}
+
+// Statuses surfaced in the lifecycle menu. Workflow group is the day-to-day
+// active set; the second group covers paused / completed / abandoned states.
+const LIFECYCLE_STATUSES = [
+  { value: "active",     label: "Active",     group: "workflow" },
+  { value: "blocked",    label: "Blocked",    group: "workflow" },
+  { value: "pending",    label: "Pending",    group: "workflow" },
+  { value: "on-hold",    label: "On hold",    group: "paused"   },
+  { value: "shipped",    label: "Shipped",    group: "done"     },
+  { value: "superseded", label: "Superseded", group: "done"     },
+  { value: "abandoned",  label: "Abandoned",  group: "done"     },
+];
+
+function StatusMenu({ slug, plan, onAfterChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const isResearch = plan.type === "research" || plan.type === "doc";
+  const isArchived = plan.archived === "1" || plan.archived === true || plan.archived === "true";
+  const isRead = plan.read === "1" || plan.read === true || plan.read === "true";
+
+  const apply = (patch) => {
+    // Update local inventory immediately so the UI reflects the change
+    // before the server round-trips.
+    Object.assign(plan, patch);
+    if (window.planSave) window.planSave(slug, patch);
+    else if (window.reckon?.planSave) window.reckon.planSave(slug, patch);
+    if (onAfterChange) onAfterChange();
+    if (window.flashSaved) window.flashSaved(`${slug} · ${Object.keys(patch).join(", ")} updated`);
+  };
+
+  const setStatus = (s) => { apply({ status: s }); setOpen(false); };
+  const toggleArchive = () => { apply({ archived: isArchived ? "" : "1" }); setOpen(false); };
+  const toggleRead = () => { apply({ read: isRead ? "" : "1" }); setOpen(false); };
+
+  return (
+    <div className="r-status-menu-wrap" ref={ref}>
+      <button
+        type="button"
+        className={`status-pill clickable ${plan.status} ${isArchived ? "archived" : ""}`}
+        onClick={() => setOpen(o => !o)}
+        title="Change status"
+      >
+        <span className="dot"></span>
+        <span>{plan.status}</span>
+        {isArchived && <span className="r-status-tag">archived</span>}
+        {isResearch && isRead && <span className="r-status-tag read">read</span>}
+        <svg className="r-status-caret" width="8" height="6" viewBox="0 0 8 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 1.5l3 3 3-3"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="r-status-popover" role="menu">
+          <div className="r-status-section">
+            <div className="r-status-section-h">Workflow</div>
+            {LIFECYCLE_STATUSES.filter(s => s.group === "workflow").map(s => (
+              <button key={s.value} type="button" className={`r-status-item ${plan.status === s.value ? "current" : ""}`} onClick={() => setStatus(s.value)}>
+                <span className={`r-status-dot ${s.value}`}></span>{s.label}
+              </button>
+            ))}
+          </div>
+          <div className="r-status-section">
+            <div className="r-status-section-h">Paused</div>
+            {LIFECYCLE_STATUSES.filter(s => s.group === "paused").map(s => (
+              <button key={s.value} type="button" className={`r-status-item ${plan.status === s.value ? "current" : ""}`} onClick={() => setStatus(s.value)}>
+                <span className={`r-status-dot ${s.value}`}></span>{s.label}
+              </button>
+            ))}
+          </div>
+          <div className="r-status-section">
+            <div className="r-status-section-h">Closed</div>
+            {LIFECYCLE_STATUSES.filter(s => s.group === "done").map(s => (
+              <button key={s.value} type="button" className={`r-status-item ${plan.status === s.value ? "current" : ""}`} onClick={() => setStatus(s.value)}>
+                <span className={`r-status-dot ${s.value}`}></span>{s.label}
+              </button>
+            ))}
+          </div>
+          <div className="r-status-section r-status-actions">
+            <button type="button" className={`r-status-item r-status-action ${isArchived ? "on" : ""}`} onClick={toggleArchive} title="Archive removes the plan from the default list — it still exists, just out of the way.">
+              <span className="r-status-action-glyph">{isArchived ? "↺" : "▦"}</span>
+              {isArchived ? "Unarchive" : "Archive"}
+            </button>
+            {isResearch && (
+              <button type="button" className={`r-status-item r-status-action ${isRead ? "on" : ""}`} onClick={toggleRead} title="Mark this research/doc as reviewed.">
+                <span className="r-status-action-glyph">{isRead ? "↺" : "✓"}</span>
+                {isRead ? "Mark unread" : "Mark read"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
   const M = window.STATE;
   if (route.view === "cockpit") {
     return null;
@@ -448,7 +655,7 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
           </div>
         </div>
         <div className="row2">
-          <span className={`status-pill ${p.status}`}><span className="dot"></span><span>{p.status}</span></span>
+          <StatusMenu slug={route.slug} plan={p} onAfterChange={onPlanMutated} />
           <span className="dot-sep">·</span>
           <span className="meta-item"><span className="k">ms</span><span className="v">{p.ms}</span></span>
           {p.sprint && <>
@@ -527,6 +734,8 @@ function TitleBar({ route, onNav, onOpenPrompt }) {
 }
 
 // ─── Dependency strip (top of plan body) ────────────────────────────────
+// Renders two distinct rows: "DEPENDS ON" and "BLOCKS", each with its own
+// pill list. Either row is omitted when empty.
 
 function PlanDeps({ slug }) {
   const M = window.STATE;
@@ -535,21 +744,29 @@ function PlanDeps({ slug }) {
   const deps = p.depends_on || [];
   const blocks = p.blocks || [];
   if (deps.length === 0 && blocks.length === 0) return null;
+  const renderPill = (s, kind) => {
+    const target = M.inventory.find(i => i.slug === s);
+    const blocked = target?.status === "blocked";
+    return (
+      <a key={s} className={`pill ${blocked ? "blocked" : ""}`} href={`#plan/${s}`}>
+        {s}
+      </a>
+    );
+  };
   return (
     <div className="r-deps">
-      {deps.length > 0 && <>
-        <span className="lbl">depends on</span>
-        {deps.map(s => {
-          const target = M.inventory.find(i => i.slug === s);
-          const blocked = target?.status === "blocked";
-          return <a key={s} className={`pill ${blocked ? "blocked" : ""}`} href={`#plan/${s}`}>{s}</a>;
-        })}
-      </>}
-      {blocks.length > 0 && <>
-        {deps.length > 0 && <span className="lbl" style={{ marginLeft: 14 }}>blocks</span>}
-        {deps.length === 0 && <span className="lbl">blocks</span>}
-        {blocks.map(s => <a key={s} className="pill" href={`#plan/${s}`}>{s}</a>)}
-      </>}
+      {deps.length > 0 && (
+        <div className="r-deps-row">
+          <span className="lbl">depends on</span>
+          <div className="r-deps-pills">{deps.map(s => renderPill(s, "dep"))}</div>
+        </div>
+      )}
+      {blocks.length > 0 && (
+        <div className="r-deps-row">
+          <span className="lbl">blocks</span>
+          <div className="r-deps-pills">{blocks.map(s => renderPill(s, "blk"))}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -578,6 +795,8 @@ function App() {
     collapsed: `reckon:${PROJECT}:filtersCollapsed`,
     groupBy:   `reckon:${PROJECT}:groupBy`,
     sortDirs:  `reckon:${PROJECT}:sortDirs`,
+    archived:  `reckon:${PROJECT}:showArchived`,
+    viewMode:  `reckon:${PROJECT}:planViewMode`,
   };
   const [filters, setFilters] = useState(() => {
     try { return JSON.parse(localStorage.getItem(SK.filters) || "{}"); } catch { return {}; }
@@ -607,6 +826,24 @@ function App() {
   useEffect(() => {
     if (route.view === "plan" && route.slug) setGraphFocal(route.slug);
   }, [route.view, route.slug]);
+  // Plan view mode (reading vs graph) — lifted to App so navigating between
+  // plans via the graph keeps the user in graph mode.
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem(SK.viewMode) || "reading"; } catch { return "reading"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SK.viewMode, viewMode); } catch {}
+  }, [viewMode]);
+  const [showArchived, setShowArchived] = useState(() => {
+    try { return localStorage.getItem(SK.archived) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SK.archived, showArchived ? "1" : "0"); } catch {}
+  }, [showArchived]);
+  // Inventory revision — bumped whenever a plan is mutated locally so memoised
+  // views (filter list, graph) recompute against the updated inventory record.
+  const [invRev, setInvRev] = useState(0);
+  const bumpInv = useCallback(() => setInvRev(r => r + 1), []);
   useEffect(() => {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
   }, [filtersHidden]);
@@ -685,6 +922,11 @@ function App() {
   const items = useMemo(() => {
     if (!M) return [];
     let list = M.inventory;
+    // Archived axis is orthogonal to status. Hide by default unless the user
+    // toggled it on OR is explicitly filtering for a specific status.
+    if (!showArchived) {
+      list = list.filter(p => !(p.archived === "1" || p.archived === true || p.archived === "true"));
+    }
     if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
     if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
     if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
@@ -702,7 +944,9 @@ function App() {
       }
     }
     return list;
-  }, [M, filters]);
+    // invRev is included to recompute when a plan's archived/status flips
+    // without requiring a full inventory reload.
+  }, [M, filters, showArchived, invRev]);
 
   const onSelectPlan = useCallback((slug) => {
     nav({ view: "plan", slug });
@@ -758,15 +1002,18 @@ function App() {
         >
           <span></span><span></span>
         </button>
-        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} />
+        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} showArchived={showArchived} setShowArchived={setShowArchived} />
         <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />
         <div className="r-content">
-          <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} />
+          <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
+          {route.view === "plan" && (
+            <PlanModeTabs viewMode={viewMode} setViewMode={setViewMode} />
+          )}
           <div className="r-body">
             {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-            {route.view === "plan" && <PlanDeps slug={route.slug} />}
+            {route.view === "plan" && viewMode === "reading" && <PlanDeps slug={route.slug} />}
             {route.view === "cockpit" && <CockpitBody onNav={nav} />}
-            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
+            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} viewMode={viewMode} setViewMode={setViewMode} />}
             {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
             {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
           </div>

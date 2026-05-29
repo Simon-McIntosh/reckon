@@ -433,159 +433,177 @@ window.GraphView = CriticalPathView;
 window.CriticalPathView = CriticalPathView;
 window.PathPromptModal = PathPromptModal;
 
-// ─── Radial fan (plan view sub-mode) ─────────────────────────────────────
+// ─── Plan-view focal graph (card-based, three-column) ────────────────────
+// Layout:
+//   ┌───────────────┬──────────────────────┬───────────────┐
+//   │  DEPENDS ON   │       FOCAL          │    BLOCKS     │
+//   │   cards       │       card           │     cards     │
+//   └───────────────┴──────────────────────┴───────────────┘
+// Edges are drawn as an SVG overlay using getBoundingClientRect once after
+// layout settles. Clicking any satellite card navigates to that plan — the
+// App-level viewMode keeps us in the Graph tab across the slug change, so the
+// new focal slides in with its own dependency cone.
+
+function _PlanCard({ plan, role, focal, onClick }) {
+  if (!plan) return null;
+  const pct = Math.round((plan.impl || 0) * 100);
+  const isArchived = plan.archived === "1" || plan.archived === true || plan.archived === "true";
+  return (
+    <button
+      type="button"
+      className={`r-gcard r-gcard-${role} ${focal ? "focal" : ""} ${plan.status} ${isArchived ? "archived" : ""}`}
+      data-graph-slug={plan.slug}
+      onClick={onClick}
+      title={plan.title}
+    >
+      <div className="r-gcard-top">
+        <span className={`r-gcard-dot ${plan.status}`}></span>
+        <span className="r-gcard-title">{plan.title}</span>
+      </div>
+      <div className="r-gcard-meta">
+        <code>/{plan.slug}</code>
+        <span className="sep">·</span>
+        <span>{plan.ms || "—"}</span>
+        {plan.sprint && (<><span className="sep">·</span><span>{plan.sprint}</span></>)}
+      </div>
+      <div className="r-gcard-bar"><i style={{ width: `${pct}%` }}></i></div>
+      <div className="r-gcard-foot">
+        <span className="r-gcard-status">{plan.status}</span>
+        <span className="r-gcard-pct">{pct}%</span>
+      </div>
+    </button>
+  );
+}
 
 function RadialFan({ focalSlug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
-  const bySlug = Object.fromEntries(M.inventory.map(p => [p.slug, p]));
+  const bySlug = React.useMemo(() => Object.fromEntries(M.inventory.map(p => [p.slug, p])), [M.inventory]);
   const focal = bySlug[focalSlug];
+
+  const containerRef = React.useRef(null);
+  const [edges, setEdges] = React.useState([]);
+  const [boxSize, setBoxSize] = React.useState({ w: 0, h: 0 });
+
+  // Compute the dep/block sets. Skip stuff the inventory doesn't know about.
+  const deps   = React.useMemo(() => (focal?.depends_on || []).map(s => bySlug[s]).filter(Boolean), [focal, bySlug]);
+  const blocks = React.useMemo(() => (focal?.blocks     || []).map(s => bySlug[s]).filter(Boolean), [focal, bySlug]);
+
+  // Recompute edge geometry whenever the layout could shift.
+  React.useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const measure = () => {
+      const root = containerRef.current;
+      if (!root) return;
+      const rect = root.getBoundingClientRect();
+      setBoxSize({ w: rect.width, h: rect.height });
+      const focalCard = root.querySelector('.r-gcard.focal');
+      if (!focalCard) { setEdges([]); return; }
+      const fr = focalCard.getBoundingClientRect();
+      // Inset endpoints by GAP px so the arrow-tip marker is fully visible
+      // (cards have z-index:1 so anything underneath them is clipped).
+      const GAP = 6;
+      const next = [];
+      root.querySelectorAll('.r-gcard-dep').forEach(el => {
+        const r = el.getBoundingClientRect();
+        next.push({
+          id: el.dataset.graphSlug,
+          x1: r.right - rect.left + GAP, y1: r.top - rect.top + r.height / 2,
+          x2: fr.left - rect.left - GAP, y2: fr.top - rect.top + fr.height / 2,
+          dir: "dep",
+        });
+      });
+      root.querySelectorAll('.r-gcard-blk').forEach(el => {
+        const r = el.getBoundingClientRect();
+        next.push({
+          id: el.dataset.graphSlug,
+          x1: fr.right - rect.left + GAP, y1: fr.top - rect.top + fr.height / 2,
+          x2: r.left   - rect.left - GAP, y2: r.top - rect.top + r.height / 2,
+          dir: "blk",
+        });
+      });
+      setEdges(next);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(containerRef.current);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [focalSlug, deps.length, blocks.length]);
+
   if (!focal) return <div style={{ padding: 24, color: "var(--muted)" }}>No plan selected.</div>;
 
-  const MAX_PER_SIDE = 6;
-  const deps = (focal.depends_on || []).map(s => bySlug[s]).filter(Boolean);
-  const blocks = (focal.blocks || []).map(s => bySlug[s]).filter(Boolean);
-  const depsOverflow = Math.max(0, deps.length - MAX_PER_SIDE);
-  const blocksOverflow = Math.max(0, blocks.length - MAX_PER_SIDE);
-  const depsShown = deps.slice(0, MAX_PER_SIDE);
-  const blocksShown = blocks.slice(0, MAX_PER_SIDE);
-
-  const { chain } = _criticalPath(M.inventory);
-  const onPath = new Set(chain);
-
-  function statusColor(s) {
-    return s === "active" ? "var(--accent)" :
-      s === "blocked" ? "var(--bad)" :
-      s === "pending" ? "var(--warn)" :
-      s === "shipped" ? "var(--good)" : "var(--muted)";
-  }
-
-  // Layout
-  const W = 880, H = 420;
-  const CX = W / 2, CY = H / 2;
-  const R = 170;
-  const focalR = 70;
-  const satR = 44;
-
-  function arcPos(items, side) {
-    const n = items.length;
-    if (n === 0) return [];
-    const base = side === "left" ? Math.PI : 0;
-    const span = Math.min(Math.PI * 0.85, Math.max(0.5, n * 0.28));
-    return items.map((p, i) => {
-      const t = n === 1 ? 0 : (i / (n - 1) - 0.5) * 2;
-      const angle = base + t * (span / 2);
-      return { plan: p, x: CX + Math.cos(angle) * R, y: CY + Math.sin(angle) * R };
-    });
-  }
-  const left = arcPos(depsShown, "left");
-  const right = arcPos(blocksShown, "right");
+  const goTo = (slug) => onNav({ view: "plan", slug });
+  const empty = deps.length === 0 && blocks.length === 0;
 
   return (
-    <div className="r-fan">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <marker id="fanArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
-          </marker>
-          <marker id="fanArrC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
-          </marker>
-        </defs>
+    <div className="r-fan-wrap">
+      <div className="r-fan-grid" ref={containerRef}>
+        {/* Edges overlay — absolute-positioned SVG behind the cards */}
+        <svg className="r-fan-edges" width={boxSize.w} height={boxSize.h} aria-hidden="true">
+          <defs>
+            <marker id="fanArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 Z" fill="var(--line-2, #c4c4b8)" />
+            </marker>
+          </defs>
+          {edges.map((e, i) => {
+            // Smooth horizontal cubic bezier (left/right columns)
+            const mx = (e.x1 + e.x2) / 2;
+            const d = `M ${e.x1} ${e.y1} C ${mx} ${e.y1}, ${mx} ${e.y2}, ${e.x2} ${e.y2}`;
+            return (
+              <path
+                key={`${e.dir}-${e.id}-${i}`}
+                d={d}
+                fill="none"
+                stroke="var(--line-2, #c4c4b8)"
+                strokeWidth="1.5"
+                markerEnd="url(#fanArrow)"
+              />
+            );
+          })}
+        </svg>
 
-        {/* zone labels */}
-        <text x={50} y={CY - 4} fontSize="10" fontFamily="var(--mono)" fill="var(--muted)" letterSpacing="0.10em">DEPENDS ON</text>
-        <text x={50} y={CY + 14} fontSize="9" fontFamily="var(--mono)" fill="var(--faint)">{deps.length} {deps.length === 1 ? "plan" : "plans"}</text>
-        <text x={W - 120} y={CY - 4} fontSize="10" fontFamily="var(--mono)" fill="var(--muted)" letterSpacing="0.10em">BLOCKS</text>
-        <text x={W - 120} y={CY + 14} fontSize="9" fontFamily="var(--mono)" fill="var(--faint)">{blocks.length} {blocks.length === 1 ? "plan" : "plans"}</text>
+        {/* Column: depends on */}
+        <div className="r-fan-col r-fan-col-left">
+          <div className="r-fan-col-h">
+            <span className="r-fan-col-lbl">Depends on</span>
+            <span className="r-fan-col-n">{deps.length}</span>
+          </div>
+          <div className="r-fan-col-body">
+            {deps.length === 0 && <div className="r-fan-col-empty">No upstream dependencies</div>}
+            {deps.map(p => (
+              <_PlanCard key={p.slug} plan={p} role="dep" focal={false} onClick={() => goTo(p.slug)} />
+            ))}
+          </div>
+        </div>
 
-        {/* edges */}
-        {left.map((n, i) => {
-          const isCrit = onPath.has(n.plan.slug) && onPath.has(focalSlug);
-          const dx = CX - n.x, dy = CY - n.y;
-          const d = Math.hypot(dx, dy);
-          const ux = dx / d, uy = dy / d;
-          return (
-            <line key={"el" + i}
-              x1={n.x + ux * satR} y1={n.y + uy * satR}
-              x2={CX - ux * focalR} y2={CY - uy * focalR}
-              stroke={isCrit ? "var(--accent)" : "var(--hair)"}
-              strokeWidth={isCrit ? 2.5 : 1.5}
-              markerEnd={isCrit ? "url(#fanArrC)" : "url(#fanArr)"}/>
-          );
-        })}
-        {right.map((n, i) => {
-          const isCrit = onPath.has(n.plan.slug) && onPath.has(focalSlug);
-          const dx = n.x - CX, dy = n.y - CY;
-          const d = Math.hypot(dx, dy);
-          const ux = dx / d, uy = dy / d;
-          return (
-            <line key={"er" + i}
-              x1={CX + ux * focalR} y1={CY + uy * focalR}
-              x2={n.x - ux * satR} y2={n.y - uy * satR}
-              stroke={isCrit ? "var(--accent)" : "var(--hair)"}
-              strokeWidth={isCrit ? 2.5 : 1.5}
-              markerEnd={isCrit ? "url(#fanArrC)" : "url(#fanArr)"}/>
-          );
-        })}
+        {/* Column: focal */}
+        <div className="r-fan-col r-fan-col-focal">
+          <div className="r-fan-col-h centred">
+            <span className="r-fan-col-lbl">Focal</span>
+          </div>
+          <div className="r-fan-col-body centred">
+            <_PlanCard plan={focal} role="focal" focal={true} onClick={() => {}} />
+          </div>
+        </div>
 
-        {/* satellites */}
-        {[...left, ...right].map((n, i) => {
-          const onP = onPath.has(n.plan.slug);
-          return (
-            <g key={"sat" + n.plan.slug} transform={`translate(${n.x},${n.y})`}
-               style={{ cursor: "pointer" }}
-               onClick={() => onNav({ view: "plan", slug: n.plan.slug })}>
-              {onP && <circle r={satR + 4} fill="var(--accent)" opacity="0.08"/>}
-              <circle r={satR} fill="#fff" stroke={onP ? "var(--accent)" : "var(--line)"} strokeWidth={onP ? 2 : 1}/>
-              <circle r={satR} fill="none" stroke={statusColor(n.plan.status)} strokeWidth="3"
-                      strokeDasharray={`${(n.plan.impl || 0) * 2 * Math.PI * satR} ${2 * Math.PI * satR}`}
-                      transform="rotate(-90)"/>
-              <text y={-4} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--ink)">
-                {n.plan.title.length > 14 ? n.plan.title.slice(0, 14) + "…" : n.plan.title}
-              </text>
-              <text y={10} textAnchor="middle" fontSize="9" fontFamily="var(--mono)" fill="var(--muted)">
-                {n.plan.ms || "—"} · {Math.round((n.plan.impl || 0) * 100)}%
-              </text>
-            </g>
-          );
-        })}
+        {/* Column: blocks */}
+        <div className="r-fan-col r-fan-col-right">
+          <div className="r-fan-col-h">
+            <span className="r-fan-col-lbl">Blocks</span>
+            <span className="r-fan-col-n">{blocks.length}</span>
+          </div>
+          <div className="r-fan-col-body">
+            {blocks.length === 0 && <div className="r-fan-col-empty">Nothing downstream</div>}
+            {blocks.map(p => (
+              <_PlanCard key={p.slug} plan={p} role="blk" focal={false} onClick={() => goTo(p.slug)} />
+            ))}
+          </div>
+        </div>
+      </div>
 
-        {/* overflow pills */}
-        {depsOverflow > 0 && (
-          <g transform={`translate(${CX - R - 100},${CY + 90})`}>
-            <rect x="0" y="0" width="80" height="22" rx="11" fill="var(--bg-2)" stroke="var(--hair)"/>
-            <text x="40" y="15" textAnchor="middle" fontSize="11" fontFamily="var(--mono)" fill="var(--muted)">+{depsOverflow} more</text>
-          </g>
-        )}
-        {blocksOverflow > 0 && (
-          <g transform={`translate(${CX + R + 20},${CY + 90})`}>
-            <rect x="0" y="0" width="80" height="22" rx="11" fill="var(--bg-2)" stroke="var(--hair)"/>
-            <text x="40" y="15" textAnchor="middle" fontSize="11" fontFamily="var(--mono)" fill="var(--muted)">+{blocksOverflow} more</text>
-          </g>
-        )}
-
-        {/* focal */}
-        <g transform={`translate(${CX},${CY})`}>
-          {onPath.has(focalSlug) && <circle r={focalR + 6} fill="var(--accent)" opacity="0.10"/>}
-          <circle r={focalR} fill="#fff" stroke="var(--ink)" strokeWidth="1.5"/>
-          <circle r={focalR} fill="none" stroke={statusColor(focal.status)} strokeWidth="4"
-                  strokeDasharray={`${(focal.impl || 0) * 2 * Math.PI * focalR} ${2 * Math.PI * focalR}`}
-                  transform="rotate(-90)"/>
-          <text y={-12} textAnchor="middle" fontSize="14" fontWeight="600" fill="var(--ink)">
-            {focal.title.length > 24 ? focal.title.slice(0, 24) + "…" : focal.title}
-          </text>
-          <text y={6} textAnchor="middle" fontSize="10" fontFamily="var(--mono)" fill="var(--muted)">
-            /{focal.slug}
-          </text>
-          <text y={22} textAnchor="middle" fontSize="11" fontFamily="var(--mono)" fill={statusColor(focal.status)}>
-            {focal.status} · {Math.round((focal.impl || 0) * 100)}%
-          </text>
-        </g>
-      </svg>
-
-      {(deps.length === 0 && blocks.length === 0) && (
-        <div className="r-fan-empty">No direct dependencies or blocks. This plan stands alone.</div>
+      {empty && (
+        <div className="r-fan-empty">This plan stands alone — no direct dependencies or downstream items.</div>
       )}
     </div>
   );

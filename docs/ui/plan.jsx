@@ -94,7 +94,7 @@ function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
   );
 }
 
-function Plan({ slug, onNav }) {
+function Plan({ slug, onNav, viewMode: viewModeProp, setViewMode: setViewModeProp }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
@@ -111,8 +111,12 @@ function Plan({ slug, onNav }) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
-  const [viewMode, setViewMode] = useState("reading");
-  useEffect(() => { setViewMode("reading"); }, [slug]);
+  // viewMode is owned by App (shell.jsx) so it persists across slug changes —
+  // satellite clicks in the Graph view shouldn't bounce the user back to Reading.
+  // Local fallback for callers that haven't been migrated yet.
+  const [localViewMode, setLocalViewMode] = useState("reading");
+  const viewMode = viewModeProp ?? localViewMode;
+  const setViewMode = setViewModeProp ?? setLocalViewMode;
 
   // ── Fetch HTML plan body ────────────────────────────────────────────────
   const [planHtml, setPlanHtml] = useState(null);
@@ -323,11 +327,6 @@ function Plan({ slug, onNav }) {
 
   return (
     <div className="r-page">
-      <div className="r-plan-mode-toggle">
-        <button className={`r-mode-pill${viewMode === "reading" ? " active" : ""}`} onClick={() => setViewMode("reading")}>Reading</button>
-        <button className={`r-mode-pill${viewMode === "graph" ? " active" : ""}`} onClick={() => setViewMode("graph")}>Graph</button>
-      </div>
-
       {viewMode === "graph" ? (
         window.RadialFan
           ? <window.RadialFan focalSlug={slug} onNav={onNav} />
