@@ -112,8 +112,8 @@ Concretely:
 
 2. **When a decision is resolved**:
    - `decisions.<key>.choice`, `rationale`, `when`, `by` updated
-     via MCP `lock_decision` or `POST /plan/<project>/<slug>` with
-     a dotted patch. The server sets `data-choice` on the `.r-dec`
+     via the MCP `edit_plan` `lock` op or `POST /plan/<project>/<slug>`
+     with a dotted patch. The server sets `data-choice` on the `.r-dec`
      element in the HTML. Direct HTML edits are permitted ONLY if you
      announce the bypass reason in your reply.
 
@@ -219,24 +219,19 @@ the plan's semantic HTML elements directly.
 
 **Invocation** (if needed manually): `uv run --project ~/Code/reckon reckon mcp`
 
-**Core tools:**
+**The surface is three tools** (the granular mutators/reads are collapsed into
+these — `read_plan` discovery + `with_schema` fold the old reads; `edit_plan`
+ops fold the old writes):
 
 | Tool | Purpose |
 |------|---------|
-| `list_projects` | List all mounted projects |
-| `list_plans` | List plans for a project |
-| `read_plan` | Read current parsed plan state + `version` |
-| `patch_plan` | Apply dotted-key patch (rewrites HTML elements in place) |
-| `set_status` | Update `<meta name="plan-status">` |
-| `set_impl` | Update `<meta name="plan-impl">` (0.0–1.0) |
-| `lock_decision` | Set `data-choice` on a `.r-dec` element (+ mark chosen option) |
-| `append_followup` | Add an `<article class="r-fu">` to the followups section |
-| `resolve_followup` | Set `data-status="resolved"` + write `<p class="r-fu-outcome">` |
-| `append_comment` | Add a `<div class="r-comment">` to the comments section |
-| `list_followups` | List open followups |
-| `list_questions` | List open questions |
-| `resolve_question` | Mark a question resolved |
-| `add_research` | Add a `<div class="r-research">` to the research section |
+| `read_plan` | Read + context-inject. `read_plan(project, slug)` → one plan's parsed state + `version`. `with_schema=True` adds the published JSON Schema, a dos/don'ts note, and the op-vocabulary. `read_plan(project)` (slug omitted) → DISCOVERY (plans + followups + questions + sprints + milestones + `active_sprint_id`). `read_plan()` → all mounted projects. |
+| `edit_plan` | The one validated write. `edit_plan(project, slug, ops, expected_version[, create])`. `ops` is an ordered list applied to a working copy, schema-validated, then written atomically. Verbs: `set` / `append` / `resolve` / `lock` / `move`; `create=True` (with `expected_version=0`) scaffolds a new plan then applies ops. Routes `slug="index"` to project config (sprints/milestones/timeline/blockers). |
+| `doctor` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
+
+**Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
+for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
++ create rules alongside the schema).
 
 **Mandatory rule:** always call `read_plan` first to get the current `version`
 before any write — writes are rejected (412) if `version` doesn't match.

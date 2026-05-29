@@ -1108,32 +1108,17 @@ def _doctor(project: str) -> dict[str, Any]:
 
 
 # ── Register tools with SDK ────────────────────────────────────────────────
+#
+# Agent-facing MCP surface = read_plan + edit_plan + doctor. The granular
+# _funcs below remain for tests/internal use but are intentionally NOT
+# registered (collapsed per the schema-and-tooling plan); full removal is a
+# later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
+# list_sprints/list_followups/list_questions) via its discovery + with_schema
+# modes; edit_plan folds the granular mutators via its set/append/resolve/lock/
+# move + create ops.
 
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
-    list_plans_tool = mcp.tool()(_list_plans)
-    patch_plan_tool = mcp.tool()(_patch_plan)
-    append_comment_tool = mcp.tool()(_append_comment)
-    lock_decision_tool = mcp.tool()(_lock_decision)
-    append_followup_tool = mcp.tool()(_append_followup)
-    resolve_followup_tool = mcp.tool()(_resolve_followup)
-    set_status_tool = mcp.tool()(_set_status)
-    set_impl_tool = mcp.tool()(_set_impl)
-    # Sprint management
-    list_sprints_tool = mcp.tool()(_list_sprints)
-    update_sprint_tool = mcp.tool()(_update_sprint)
-    add_sprint_item_tool = mcp.tool()(_add_sprint_item)
-    create_sprint_tool = mcp.tool()(_create_sprint)
-    move_sprint_item_tool = mcp.tool()(_move_sprint_item)
-    update_inventory_item_tool = mcp.tool()(_update_inventory_item)
-    # Cross-plan reads
-    list_followups_tool = mcp.tool()(_list_followups)
-    list_questions_tool = mcp.tool()(_list_questions)
-    list_projects_tool = mcp.tool()(_list_projects)
-    # Per-plan writes
-    resolve_question_tool = mcp.tool()(_resolve_question)
-    add_research_tool = mcp.tool()(_add_research)
-    # Collapsed surface (RFC-001 tool consolidation) — additive, non-breaking
     edit_plan_tool = mcp.tool()(_edit_plan)
     doctor_tool = mcp.tool()(_doctor)
 
