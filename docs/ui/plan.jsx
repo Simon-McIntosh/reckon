@@ -83,7 +83,8 @@ function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
         <div key={c.id} className="r-inline-comment">
           <div className="meta">{c.who} · {c.when}</div>
           {c.quote && <div className="quote">"{c.quote}"</div>}
-          <div>{c.body}</div>
+          {/* Comment bodies are authored HTML (see reckon/_plan_html._inner_html). */}
+          <div dangerouslySetInnerHTML={{ __html: c.body || "" }} />
           <div className="r-comment-actions">
             <button className="r-cr-edit" onClick={() => onEdit(c, sectionId)}>Edit</button>
             <button className="r-cr-del" onClick={() => onDelete(c.id)}>Delete</button>
@@ -139,8 +140,16 @@ function Plan({ slug, onNav }) {
         article.querySelector("nav.plan-nav")?.remove();
         // The decisions section is re-rendered interactively below from parsed
         // state; drop the static copy so it isn't shown twice. Followups /
-        // questions / comments stay as readable prose.
+        // questions / comments otherwise stay as authored HTML (passthrough is
+        // their single render source — see the suppressed React panels below).
         article.querySelector('section[data-reckon="decisions"]')?.remove();
+        // Decision-anchored comments are the one exception: they are rendered by
+        // the interactive ActionableCommentList under the decision widgets (with
+        // Edit/Delete). Strip them from the passthrough comments section so they
+        // render once, not twice. All other comments render from passthrough.
+        article
+          .querySelectorAll('section[data-reckon="comments"] .r-comment[data-section="decisions"]')
+          .forEach(el => el.remove());
         // Strip inline scripts — they target the standalone page, not the SPA
         article.querySelectorAll("script").forEach(s => s.remove());
         setPlanHtml(article.innerHTML);
@@ -349,29 +358,26 @@ function Plan({ slug, onNav }) {
                 </>
               )}
 
-              {/* Comments on non-decisions HTML body sections */}
-              {Object.entries(comments).filter(([id, arr]) => id !== "decisions" && (arr || []).length > 0).length > 0 && (
-                <>
-                  <h2 id="comments-panel"><span className="sec">§</span>Comments</h2>
-                  {Object.entries(comments)
-                    .filter(([id, arr]) => id !== "decisions" && (arr || []).length > 0)
-                    .map(([id, arr]) => (
-                      <div key={id} className="r-comment-section">
-                        <div className="r-comment-section-h">↳ {id === "_top" ? "top of page" : `#${id}`}</div>
-                        <ActionableCommentList sectionId={id} arr={arr} onEdit={editComment} onDelete={deleteComment} />
-                      </div>
-                    ))
-                  }
-                </>
-              )}
+              {/* Comments on non-decisions body sections are NOT re-rendered here.
+                  They survive in the passthrough HTML (section[data-reckon="comments"])
+                  and render once, faithfully, as authored HTML — avoiding the
+                  escaped-text double-render. Inline quote-marks (injectCommentMark)
+                  still annotate the passthrough body from `comments` state.
+                  Decisions keep their interactive ActionableCommentList above
+                  because the decisions section is stripped from passthrough. */}
             </>
           ) : (
             /* Fallback: no HTML file — render from state JSON sections */
             <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
           )}
 
-          {/* Followups — from the doc's parsed state */}
-          {(fullState?.followups || []).length > 0 && (
+          {/* Followups are NOT re-rendered here. When the authored HTML body is
+              present it carries section[data-reckon="followups"] through the
+              passthrough, which renders the title, HTML body, plain-text prompt
+              and outcome once. Re-rendering from fullState here would escape the
+              body and duplicate the section. The GenericBody fallback (no HTML
+              file) still renders followups from state for legacy docs. */}
+          {!planHtml && (fullState?.followups || []).length > 0 && (
             <>
               <h2 id="log"><span className="sec">§</span>Followups</h2>
               <div className="followup-log">
@@ -383,7 +389,7 @@ function Plan({ slug, onNav }) {
                       <div>
                         <div className="title">{f.title}</div>
                         <div className="meta">{f.written_by}{f.resolved_by ? ` → ${f.resolved_by}` : ""} · {f.written_at}{f.resolved_at ? ` → ${f.resolved_at}` : ""}</div>
-                        {f.outcome && <div className="outcome">{f.outcome}</div>}
+                        {f.outcome && <div className="outcome" dangerouslySetInnerHTML={{ __html: f.outcome }} />}
                       </div>
                     </div>
                   );
@@ -509,7 +515,7 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
                 <div>
                   <div className="title">{f.title}</div>
                   <div className="meta">{f.written_by} → {f.resolved_by} · {f.written_at} → {f.resolved_at}</div>
-                  <div className="outcome">{f.outcome}</div>
+                  <div className="outcome" dangerouslySetInnerHTML={{ __html: f.outcome || "" }} />
                 </div>
               </div>
             ))}

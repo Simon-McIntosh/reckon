@@ -270,7 +270,8 @@ function CommentReviewPopover({ reviewing, onClose, onDelete, onEdit }) {
           <span className="r-cc-qtext">"{comment.quote.length > 100 ? comment.quote.slice(0, 100) + "…" : comment.quote}"</span>
         </div>
       )}
-      <div className="r-cr-body">{comment.body}</div>
+      {/* Comment bodies are authored HTML (see reckon/_plan_html._inner_html). */}
+      <div className="r-cr-body" dangerouslySetInnerHTML={{ __html: comment.body || "" }} />
       <div className="r-cr-foot">
         <button className="r-cr-del" onClick={() => onDelete(comment.id)} title="Delete comment">Delete</button>
         <span style={{ flex: 1 }} />
@@ -336,7 +337,8 @@ function SectionComments({ comments }) {
         <div key={c.id} className="r-inline-comment">
           <div className="meta">{c.who} · {c.when}</div>
           {c.quote && <div className="quote">"{c.quote}"</div>}
-          <div>{c.body}</div>
+          {/* Comment bodies are authored HTML (see reckon/_plan_html._inner_html). */}
+          <div dangerouslySetInnerHTML={{ __html: c.body || "" }} />
         </div>
       ))}
     </div>

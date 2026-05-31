@@ -53,8 +53,36 @@ def _esc(s) -> str:
     return _htmlmod.escape("" if s is None else str(s), quote=True)
 
 
+def _body(s) -> str:
+    """Emit a body field verbatim — body fields ARE authored HTML.
+
+    The matching read path (:func:`_inner_html`) preserves the field's inner
+    HTML, so write must re-emit it raw (NOT ``_esc``) to round-trip
+    ``<strong>``, ``<code>``, ``<a>``, ``<p>`` etc. Applies only to body /
+    outcome / resolution fields whose readers use ``_inner_html``; every other
+    field (titles, attributes, the plain-text fleet prompt) still uses ``_esc``.
+    """
+    return "" if s is None else str(s)
+
+
 def _txt(el) -> str:
     return el.get_text(" ", strip=True) if el else ""
+
+
+def _inner_html(el) -> str:
+    """Return the inner HTML of an element, preserving authored markup.
+
+    Body fields (comment / followup / question bodies and outcomes) are authored
+    as HTML — ``<strong>``, ``<code>``, ``<a>``, ``<p>`` — and the SPA renders
+    them as HTML. Flattening them with ``_txt`` would destroy that markup on the
+    next ``write_state`` (every MCP edit regenerates ALL reckon-owned sections),
+    so body fields are read with their inner HTML intact and re-emitted raw.
+    ``str.strip`` only trims surrounding whitespace; entity normalisation by
+    BeautifulSoup (``&#x27;`` → ``'``) is cosmetic and round-trip stable.
+    """
+    if el is None:
+        return ""
+    return el.decode_contents().strip()
 
 
 # ── Read ───────────────────────────────────────────────────────────────────
@@ -132,14 +160,16 @@ def read_state(html_text: str) -> dict:
             "written_at": fu.get("data-written-at", ""),
             "recommends_skill": fu.get("data-recommends-skill", ""),
             "title": _txt(fu.select_one(".r-fu-title")),
-            "body": _txt(fu.select_one(".r-fu-body")),
+            "body": _inner_html(fu.select_one(".r-fu-body")),
+            # prompt is a plain-text fleet-dispatch block (preserved verbatim,
+            # rendered as preformatted text — never as HTML).
             "prompt": (fu.select_one(".r-fu-prompt").get_text() if fu.select_one(".r-fu-prompt") else ""),
         }
         if fu.get("data-resolved-at"):
             f["resolved_at"] = fu.get("data-resolved-at")
         if fu.get("data-resolved-by"):
             f["resolved_by"] = fu.get("data-resolved-by")
-        outcome = _txt(fu.select_one(".r-fu-outcome"))
+        outcome = _inner_html(fu.select_one(".r-fu-outcome"))
         if outcome:
             f["outcome"] = outcome
         followups.append(f)
@@ -153,8 +183,8 @@ def read_state(html_text: str) -> dict:
             "section": q.get("data-section", ""),
             "opened_by": q.get("data-opened-by", ""),
             "opened_at": q.get("data-opened-at", ""),
-            "body": _txt(q.select_one(".r-q-body")) or _txt(q),
-            "resolution": _txt(q.select_one(".r-q-resolution")) or None,
+            "body": _inner_html(q.select_one(".r-q-body")) or _txt(q),
+            "resolution": _inner_html(q.select_one(".r-q-resolution")) or None,
             "resolved_at": q.get("data-resolved-at", "") or None,
             "resolved_by": q.get("data-resolved-by", "") or None,
         })
@@ -183,7 +213,7 @@ def read_state(html_text: str) -> dict:
             "who": c.get("data-who", ""),
             "when": c.get("data-when", ""),
             "quote": c.get("data-quote", "") or None,
-            "body": _txt(c.select_one(".r-comment-body")) or _txt(c),
+            "body": _inner_html(c.select_one(".r-comment-body")) or _txt(c),
         })
     st["comments"] = comments
     return st
@@ -223,8 +253,9 @@ def _render_followups(followups: list) -> str:
     arts = []
     for f in followups:
         f = f or {}
+        # prompt is plain text → escaped; body / outcome are authored HTML → raw.
         prompt = f'<pre class="r-fu-prompt">{_esc(f.get("prompt"))}</pre>\n    ' if f.get("prompt") else ""
-        outcome = f'<p class="r-fu-outcome">{_esc(f.get("outcome"))}</p>\n    ' if f.get("outcome") else ""
+        outcome = f'<p class="r-fu-outcome">{_body(f.get("outcome"))}</p>\n    ' if f.get("outcome") else ""
         # Derive status from resolved_at (mirrors _render_questions). A followup
         # with a resolved_at is resolved regardless of a stale literal status —
         # resolve_followup sets resolved_at/by/outcome but not the status field.
@@ -235,7 +266,7 @@ def _render_followups(followups: list) -> str:
             f' data-written-at="{_esc(f.get("written_at"))}" data-recommends-skill="{_esc(f.get("recommends_skill"))}"'
             f' data-resolved-at="{_esc(f.get("resolved_at") or "")}" data-resolved-by="{_esc(f.get("resolved_by") or "")}">\n    '
             f'<h4 class="r-fu-title">{_esc(f.get("title"))}</h4>\n    '
-            f'<div class="r-fu-body">{_esc(f.get("body"))}</div>\n    '
+            f'<div class="r-fu-body">{_body(f.get("body"))}</div>\n    '
             f'{prompt}{outcome}</article>'
         )
     return ('<section data-reckon="followups" id="followups" class="r-followups">\n'
@@ -249,14 +280,14 @@ def _render_questions(questions: list) -> str:
     items = []
     for q in questions:
         q = q or {}
-        res = f'<p class="r-q-resolution">{_esc(q.get("resolution"))}</p>\n    ' if q.get("resolution") else ""
+        res = f'<p class="r-q-resolution">{_body(q.get("resolution"))}</p>\n    ' if q.get("resolution") else ""
         status = "resolved" if q.get("resolved_at") else "open"
         items.append(
             f'<div class="r-q" data-id="{_esc(q.get("id"))}" data-section="{_esc(q.get("section"))}"'
             f' data-status="{status}" data-opened-by="{_esc(q.get("opened_by"))}"'
             f' data-opened-at="{_esc(q.get("opened_at"))}"'
             f' data-resolved-at="{_esc(q.get("resolved_at") or "")}" data-resolved-by="{_esc(q.get("resolved_by") or "")}">\n    '
-            f'<p class="r-q-body">{_esc(q.get("body"))}</p>\n    {res}</div>'
+            f'<p class="r-q-body">{_body(q.get("body"))}</p>\n    {res}</div>'
         )
     return ('<section data-reckon="questions" id="questions" class="r-questions">\n'
             '<h2><span class="sec">§</span> Open questions</h2>\n'
@@ -294,7 +325,7 @@ def _render_comments(comments: dict) -> str:
             items.append(
                 f'<div class="r-comment" data-section="{_esc(sid)}" data-id="{_esc(c.get("id"))}"'
                 f' data-who="{_esc(c.get("who"))}" data-when="{_esc(c.get("when"))}"{quote}>\n    '
-                f'<div class="r-comment-body">{_esc(c.get("body"))}</div>\n</div>'
+                f'<div class="r-comment-body">{_body(c.get("body"))}</div>\n</div>'
             )
     if not items:
         return ""

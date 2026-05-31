@@ -511,6 +511,37 @@ def doctor():
         sys.exit(1)
 
 
+@main.command(name="audit-doc")
+@click.argument("paths", nargs=-1, required=True, type=click.Path(path_type=Path))
+@click.option(
+    "--project",
+    default=None,
+    help="Project key for image-path checks (default: <meta name=docs-project>).",
+)
+def audit_doc(paths, project):
+    """Validate authored plan/doc HTML against the SPA render contract.
+
+    The reckon SPA renders authored HTML faithfully (raw-HTML passthrough): no
+    markdown is rendered, the doc's <head><style> is dropped, and images resolve
+    against the project mount (/<project>/figures/...). This command flags docs
+    that rely on markdown, head-local CSS, or relative image paths — problems
+    that render wrong in the SPA.
+
+    Exits non-zero if any ERROR-level problem is found (relative <img src>,
+    literal **markdown** in a rendered body, missing required meta).
+
+    Example:
+
+        reckon audit-doc docs/my-plan.html
+        reckon audit-doc docs/*.html
+    """
+    import sys
+
+    from reckon.doccheck import run
+
+    sys.exit(run([str(p) for p in paths], project=project))
+
+
 @main.command(name="install-skills")
 def install_skills():
     """Install reckon skills into ~/.claude/skills/ idempotently.
