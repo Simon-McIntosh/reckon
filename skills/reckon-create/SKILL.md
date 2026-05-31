@@ -67,6 +67,43 @@ characterisations, and reference analyses that inform — but do not describe �
 6. **Do not commit automatically.** Report what was created and suggest a commit message.
 7. **Write full prose in HTML.** `<p>See state §2 for details</p>` is a hard failure.
 
+## Authoring for faithful display (the SPA render contract)
+
+The reckon SPA renders the authored `<main class="plan-doc">` body by **raw-HTML
+passthrough** — the browser parses your HTML directly. There is **no markdown
+processor**. Author accordingly:
+
+1. **Body fields are HTML, never markdown.** `<strong>`, `<code>`, `<a>`, `<p>`,
+   `<ul>/<li>` render. Literal `**bold**`, leading `- ` or `# ` render
+   **verbatim** as those characters. This applies to all section prose and to
+   every body field: `data-reckon="comments"` `.r-comment-body`, followup
+   `.r-fu-body` and outcomes, and question bodies. (The one exception: a fleet
+   followup's `<pre class="r-fu-prompt">` stays **plain text** — preserved
+   verbatim and wrapped by CSS.)
+2. **Images use a project-absolute `src`:** `src="/<project>/figures/<name>.svg"`
+   (e.g. `/imas-ambix/figures/foo.svg`). `docs/figures/` is served at
+   `/<project>/figures/`. A relative `src="figures/..."` **404s** under the
+   no-trailing-slash plan URL.
+3. **`<head><style>` is DROPPED by the SPA** — doc-local CSS never applies. Use
+   the shared `/_shared/*.css` links, or sparing inline `style=` on elements.
+   Never put plan/doc styling in a `<head><style>` block.
+4. **Each comment / followup renders exactly once.** The parser preserves your
+   authored inner-HTML in body fields across MCP edits — write real HTML once.
+
+**Run `reckon audit-doc` before you rely on the doc.** After authoring, validate:
+
+```bash
+reckon audit-doc docs/<slug>.html              # uses <meta name=docs-project>
+reckon audit-doc docs/<slug>.html --project imas-ambix
+python -m reckon.doccheck docs/<slug>.html     # equivalent module form
+```
+
+It flags relative/wrong-project image `src` (**ERROR**), literal `**markdown**`
+in a rendered body (**ERROR**), missing required meta `plan-slug`/`plan-status`
+(**ERROR**); reliance on `<head><style>` and leading `- `/`# ` markers (WARN);
+over-long `<pre>` lines, stub prose, empty sections (INFO). It exits non-zero
+only on ERRORs. **Clear all ERRORs before ending your turn.**
+
 ## Workflow
 
 ### Step 1 — Guard check

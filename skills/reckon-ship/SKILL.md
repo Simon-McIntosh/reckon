@@ -100,9 +100,14 @@ Build each prompt from the §05 template. Embed parallel-safety preamble verbati
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup
 
-### 5b. Collapse-on-landing — evergreen is a dashboard, not a transcript
+### 5b. Collapse-on-landing — evergreen is a dashboard, not a transcript (MANDATORY)
 
-Once a section ships, the evergreen shows only current state. Replace the section body with a landed-summary card:
+Collapsing a shipped section is **mandatory, not optional**. The moment a
+section's status flips to `shipped`, the evergreen must show only current state.
+Replace the section body with a landed-summary card whose prose states **WHAT
+WAS DONE + THE RESULTS**: quantitative outcomes (numbers, verdict),
+artifact paths, commit SHAs, and any locked decisions. Move the full detail to
+`docs/archive/<slug>-<section>-landed.html` and leave only a 2–4 line summary.
 
 ```html
 <section id="s12-5" class="section-landed">
@@ -119,11 +124,22 @@ Once a section ships, the evergreen shows only current state. Replace the sectio
 ```
 
 **Rules:**
-- 2-4 lines max: what was built (past tense), quantitative outcome, link + SHAs.
+- 2-4 lines max: what was built (past tense), the **quantitative result**
+  (numbers, verdict), artifact paths, link + SHAs. A summary that omits the
+  result is incomplete — "landed §2" is not a summary; "encoded 11,237 shots in
+  3h12m; eval MAE 0.04 — passing" is.
 - Section header gets `✓ landed YYYY-MM-DD` badge (`.badge-shipped`).
 - Original prose moves to per-stage HTML — gone from evergreen.
 - Keep: locked decisions, open followups, tests pulse for the section.
 - Trigger: the moment status flips to `shipped`. Don't collapse incrementally.
+- **Author the card as HTML, never markdown** — the SPA renders by raw-HTML
+  passthrough (no markdown processor). Use `<strong>`/`<code>`/`<a>`; literal
+  `**bold**` and leading `- ` render verbatim. Images use
+  `src="/<project>/figures/..."`.
+- **Run `reckon audit-doc docs/<slug>.html` after collapsing** (or
+  `python -m reckon.doccheck docs/<slug>.html`) and clear all ERRORs before
+  committing — it catches markdown that slipped into the collapsed prose,
+  relative image `src`, and missing required meta.
 - **Why:** plans that don't collapse become unreadable after 2-3 sprints.
 
 ### 6. Record outcomes via `edit_plan`
@@ -162,11 +178,19 @@ Note: `impl` is normally computed by the server from section counts. Setting it
 explicitly via `edit_plan` is permitted by the contract when the coordinator
 wants to mark full completion without waiting for server recomputation.
 
+**Record outcomes in the same session — stale plans are a defect.** The work and
+its plan-state update are one unit: never land code and leave the plan to be
+reconciled later. Resolve the driving followup, set `status`/`impl`, collapse
+the shipped section (§5b), and queue the next followup all in this run. A plan
+whose status disagrees with the code/results is wrong, not pending.
+
 **Eat-the-dog-food check.** Before declaring done:
 - `read_plan(project, slug)` → `status` matches reality
 - Driving followup is resolved (`data-status="resolved"` / `resolved_at` set)
+- Shipped section collapsed to a what-done + results summary (§5b)
 - Next followup or outcome `"done — no followup"` is present
 - `version` has incremented
+- `reckon audit-doc docs/<slug>.html` reports no ERRORs
 
 Commit:
 ```bash

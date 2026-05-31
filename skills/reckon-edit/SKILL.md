@@ -73,6 +73,39 @@ Silent bypasses hide drift.
 <p>New module <code>src/preprocess.py</code> exposes …</p>
 ```
 
+## Authoring for faithful display (the SPA render contract)
+
+The SPA renders the authored body by **raw-HTML passthrough** — there is **no
+markdown processor**. When you edit prose, a comment body, or a followup
+body/outcome, author **HTML, never markdown**:
+
+- `<strong>`, `<code>`, `<a>`, `<p>`, `<ul>/<li>` render. Literal `**bold**`,
+  leading `- ` or `# ` render **verbatim** as those characters. This covers all
+  body fields: `.r-comment-body`, followup `.r-fu-body` + outcomes, question
+  bodies, and section prose. The parser preserves your authored inner-HTML
+  across `edit_plan` writes — so when you pass `body`/`outcome`/`resolution`
+  strings to `edit_plan`, write **HTML markup** in them, not markdown.
+- **Exception:** a followup's `<pre class="r-fu-prompt">` stays **plain text**
+  (preserved verbatim, wrapped by CSS).
+- Images use a project-absolute `src="/<project>/figures/<name>.svg"` —
+  relative `src="figures/..."` 404s under the no-trailing-slash plan URL.
+- `<head><style>` is **dropped** by the SPA — never style via a head block; use
+  `/_shared/*.css` or sparing inline `style=`.
+
+## Update-as-you-go + audit before finishing (MANDATORY)
+
+- **Record outcomes in the same session.** Studies, tests, benchmarks,
+  decisions, and negative results go into the plan the moment they land —
+  via `edit_plan` resolve/append ops or a prose edit. A stale plan whose state
+  disagrees with the code/results is a **defect**, not a backlog item.
+- **No build-up.** Resolve followups when their work lands; close/retire sprints
+  and plans when finished. Don't accumulate open followups for completed work.
+- **Run `reckon audit-doc docs/<slug>.html` before ending your turn** (or
+  `python -m reckon.doccheck docs/<slug>.html`). It flags relative/wrong-project
+  image `src` and literal `**markdown**` in a rendered body as **ERRORs**
+  (non-zero exit), plus `<head><style>` reliance and markdown list/heading
+  markers as WARNs. **Clear all ERRORs before relying on the edited doc.**
+
 ## State write pattern — `edit_plan`
 
 `edit_plan` is the version-safe write path. Always call `read_plan` first to get
