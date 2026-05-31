@@ -98,11 +98,11 @@ reckon audit-doc docs/<slug>.html --project imas-ambix
 python -m reckon.doccheck docs/<slug>.html     # equivalent module form
 ```
 
-It flags relative/wrong-project image `src` (**ERROR**), literal `**markdown**`
-in a rendered body (**ERROR**), missing required meta `plan-slug`/`plan-status`
-(**ERROR**); reliance on `<head><style>` and leading `- `/`# ` markers (WARN);
-over-long `<pre>` lines, stub prose, empty sections (INFO). It exits non-zero
-only on ERRORs. **Clear all ERRORs before ending your turn.**
+It flags relative image `src` (**ERROR**), literal `**markdown**` in a rendered
+body (**ERROR**), missing required meta `plan-slug`/`plan-status` (**ERROR**);
+wrong-project image `src`, reliance on `<head><style>`, and leading `- `/`# `
+markers (WARN); over-long `<pre>` lines, stub prose, empty sections (INFO). It
+exits non-zero only on ERRORs. **Clear all ERRORs before ending your turn.**
 
 ## Workflow
 

@@ -101,10 +101,11 @@ body/outcome, author **HTML, never markdown**:
 - **No build-up.** Resolve followups when their work lands; close/retire sprints
   and plans when finished. Don't accumulate open followups for completed work.
 - **Run `reckon audit-doc docs/<slug>.html` before ending your turn** (or
-  `python -m reckon.doccheck docs/<slug>.html`). It flags relative/wrong-project
-  image `src` and literal `**markdown**` in a rendered body as **ERRORs**
-  (non-zero exit), plus `<head><style>` reliance and markdown list/heading
-  markers as WARNs. **Clear all ERRORs before relying on the edited doc.**
+  `python -m reckon.doccheck docs/<slug>.html`). It flags relative image `src`
+  and literal `**markdown**` in a rendered body as **ERRORs** (non-zero exit),
+  plus wrong-project image `src`, `<head><style>` reliance, and markdown
+  list/heading markers as WARNs. **Clear all ERRORs before relying on the
+  edited doc.**
 
 ## State write pattern — `edit_plan`
 
