@@ -272,11 +272,26 @@ def _write_state(
 
     new_data = dict(data)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
-    new_data["version"] = cur_version + 1
     new_data["modified"] = date.today().isoformat()
+    new_data["version"] = cur_version + 1
 
     text = html_file.read_text(encoding="utf-8", errors="replace")
     new_text = _plan_html.write_state(text, new_data)
+
+    # Idempotency guard: if the patch carries no real content change (e.g. a
+    # no-op edit or a round-trip through BeautifulSoup entity-normalisation),
+    # skip the disk write and return the current version unchanged.  We detect
+    # a no-op by comparing the *parsed* state dicts (excluding version/modified
+    # stamps) of the rendered text vs the current on-disk text.
+    _STAMP = frozenset(["version", "modified"])
+    cur_parsed = _plan_html.read_state(text)
+    new_parsed = _plan_html.read_state(new_text)
+    if (
+        {k: v for k, v in new_parsed.items() if k not in _STAMP}
+        == {k: v for k, v in cur_parsed.items() if k not in _STAMP}
+    ):
+        return cur_version
+
     tmp = html_file.with_suffix(".html.tmp")
     tmp.write_text(new_text, encoding="utf-8")
     tmp.replace(html_file)

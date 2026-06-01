@@ -79,6 +79,25 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
 
+# Fields that are updated on every write and therefore excluded from the
+# content-equality check in _content_equal.
+_STAMP_FIELDS = frozenset(["version", "modified"])
+
+
+def _content_equal(patched: dict, reparsed: dict, *, cur_state: dict) -> bool:
+    """Return True if `reparsed` (parsed from newly rendered HTML) is semantically
+    equal to `cur_state` (parsed from the current on-disk file), ignoring the
+    version and modified stamp fields.
+
+    This is the idempotency guard: when the patch carries no real content change
+    the only differences between cur_state and reparsed would be version/modified,
+    so we can safely skip the disk write and return the current version.
+    """
+    def _strip(d: dict) -> dict:
+        return {k: v for k, v in d.items() if k not in _STAMP_FIELDS}
+
+    return _strip(reparsed) == _strip(cur_state)
+
 
 def load_mounts() -> dict[str, Path]:
     if not _MOUNTS_FILE or not _MOUNTS_FILE.exists():
@@ -901,10 +920,28 @@ class Handler(BaseHTTPRequestHandler):
         patch.pop("_version", None)
         _patch_into(state, patch)
         state.setdefault("slug", slug)
-        state["version"] = cur_version + 1
         state["modified"] = datetime.now().strftime("%Y-%m-%d")
+        state["version"] = cur_version + 1
 
         new_text = _plan_html.write_state(text, state)
+
+        # Idempotency guard: if the only difference between the new and current
+        # file would be the version/modified stamps (i.e. the patch carried no
+        # real content change), skip the disk write and return the current version
+        # unchanged.  This prevents churn from no-op edits or round-trips through
+        # BeautifulSoup's entity-normalisation pass.
+        #
+        # We detect a no-op by comparing the parsed state dicts with version and
+        # modified stripped out.  A string comparison would fail for trivially
+        # equivalent HTML (different entity encoding, whitespace) but a state-dict
+        # comparison correctly reflects semantic content equality.
+        new_state_parsed = _plan_html.read_state(new_text)
+        if _content_equal(state, new_state_parsed, cur_state=_plan_html.read_state(text)):
+            self._send_json(
+                HTTPStatus.OK, {"ok": True, "slug": slug, "version": cur_version}
+            )
+            return
+
         tmp = plan_file.with_suffix(".html.tmp")
         tmp.write_text(new_text, encoding="utf-8")
         tmp.replace(plan_file)
