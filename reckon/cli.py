@@ -518,7 +518,13 @@ def doctor():
     default=None,
     help="Project key for image-path checks (default: <meta name=docs-project>).",
 )
-def audit_doc(paths, project):
+@click.option(
+    "--check-links",
+    is_flag=True,
+    default=False,
+    help="Also check internal links for dangling targets (corpus-aware).",
+)
+def audit_doc(paths, project, check_links):
     """Validate authored plan/doc HTML against the SPA render contract.
 
     The reckon SPA renders authored HTML faithfully (raw-HTML passthrough): no
@@ -527,6 +533,11 @@ def audit_doc(paths, project):
     that rely on markdown, head-local CSS, or relative image paths — problems
     that render wrong in the SPA.
 
+    With --check-links, also verifies that internal <a href> links and
+    plan-depends-on/plan-blocks/plan-informs slug references resolve to existing
+    doc files and in-page anchors. Requires all audited docs to live in the same
+    docs directory (corpus is built from that directory).
+
     Exits non-zero if any ERROR-level problem is found (relative <img src>,
     literal **markdown** in a rendered body, missing required meta).
 
@@ -534,12 +545,13 @@ def audit_doc(paths, project):
 
         reckon audit-doc docs/my-plan.html
         reckon audit-doc docs/*.html
+        reckon audit-doc docs/*.html --check-links
     """
     import sys
 
     from reckon.doccheck import run
 
-    sys.exit(run([str(p) for p in paths], project=project))
+    sys.exit(run([str(p) for p in paths], project=project, check_links=check_links))
 
 
 @main.command(name="install-skills")

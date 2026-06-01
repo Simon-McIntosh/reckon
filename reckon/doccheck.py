@@ -16,6 +16,8 @@ Contract enforced (see AGENTS.md "agents author HTML directly"):
   - ``<pre>`` lines over ~120 chars wrap (informational — handled by CSS now).
   - Required ``<meta name="plan-*">`` tags must be present.
   - Stub prose ("See state §…", empty reckon sections) is flagged.
+  - Internal links (<a href> and plan-* meta slug references) must resolve to
+    an existing doc file or in-page anchor id.
 
 Severity: ERROR (exit non-zero) for things that render visibly wrong;
 WARN for fragile-but-rendering; INFO for advisory.
@@ -24,6 +26,7 @@ Usage:
     python -m reckon.doccheck docs/my-plan.html
     reckon audit-doc docs/my-plan.html            # via the reckon CLI
     reckon audit-doc docs/*.html                  # multiple files
+    reckon audit-doc docs/*.html --check-links    # also check internal links
 """
 
 from __future__ import annotations
@@ -225,12 +228,256 @@ def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     return audit_html(text, project=project)
 
 
-def run(paths: list[str], *, project: str | None = None) -> int:
+# ── Dangling internal-link check (corpus-aware) ────────────────────────────
+#
+# Internal links that reference a plan slug or in-page anchor id that does not
+# exist produce a 404 in the SPA.  This is a corpus-level check: we first scan
+# all HTML files in a docs directory to build a slug→file and file→id map, then
+# check each doc's links against it.
+#
+# Link forms recognised (per grep of the existing docs corpus):
+#   /<project>/<slug>.html       → must resolve to a known slug
+#   /<project>/<slug>            → same (no extension)
+#   archive/<slug>.html          → relative to docs/; archive/ is a valid target
+#   <slug>.html                  → relative to the same directory as the source
+#   #anchor                      → must match an id attribute in the same file
+#   <slug>.html#anchor           → slug must resolve; anchor must be in that file
+#
+# Meta slug references (plan-depends-on, plan-blocks, plan-informs) are
+# comma-separated slug lists that are also checked for resolution.
+#
+# Skipped: http(s):// · // · mailto: · data: · /_shared/ · /_ui/ · bare
+# non-slug hrefs (like index.html which is the SPA shell).
+
+_SKIP_HREF_PREFIXES = ("http:", "https:", "//", "mailto:", "data:", "/_shared/", "/_ui/")
+# Infrastructure filenames the SPA generates (not real plan slugs).
+_INFRA_FILENAMES = frozenset(
+    [
+        "index.html",
+        "sprint.html",
+        "sprints.html",
+        "milestones.html",
+        "decisions.html",
+        "inventory.html",
+        "blockers.html",
+        "implementation.html",
+        "questions.html",
+        "home.html",
+        "project.html",
+        "plan.html",
+        "README.html",
+    ]
+)
+# Meta fields that hold comma-separated plan-slug references.
+_SLUG_META_FIELDS = ("plan-depends-on", "plan-blocks", "plan-informs")
+
+
+def _collect_corpus(docs_dir: Path) -> tuple[dict[str, Path], dict[Path, set[str]]]:
+    """Scan a docs directory and return:
+
+    - slug_to_file: {slug → Path} for every HTML doc (including archive/ targets).
+    - file_to_ids: {Path → set(id)} collecting element id attributes per file.
+
+    Archive files are valid link targets even though they are excluded from the
+    live inventory; they are included here so links into docs/archive/ resolve.
+    """
+    slug_to_file: dict[str, Path] = {}
+    file_to_ids: dict[Path, set[str]] = {}
+
+    for html_file in sorted(docs_dir.rglob("*.html")):
+        if html_file.name in _INFRA_FILENAMES:
+            continue
+        try:
+            text = html_file.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        soup = BeautifulSoup(text, "html.parser")
+
+        # Determine slug: prefer <meta name="plan-slug">, fall back to stem.
+        slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
+        slug = (
+            (slug_meta.get("content") or "").strip() if slug_meta else ""
+        ) or html_file.stem
+        # First file wins (mirrors _resolve_plan_file behaviour in serve.py).
+        if slug not in slug_to_file:
+            slug_to_file[slug] = html_file
+        # Also index by stem so relative <slug>.html links resolve.
+        stem = html_file.stem
+        if stem not in slug_to_file:
+            slug_to_file[stem] = html_file
+
+        # Collect all id= attributes in the document.
+        ids: set[str] = set()
+        for el in soup.find_all(id=True):
+            eid = (el.get("id") or "").strip()
+            if eid:
+                ids.add(eid)
+        file_to_ids[html_file] = ids
+
+    return slug_to_file, file_to_ids
+
+
+def _resolve_href(
+    href: str,
+    source_file: Path,
+    docs_dir: Path,
+    project: str | None,
+    slug_to_file: dict[str, Path],
+) -> tuple[Path | None, str | None]:
+    """Parse an href and return (target_path, anchor) — target_path is None if unresolvable.
+
+    Skips external hrefs; returns (None, None) for hrefs that should be ignored.
+    Returns (False, None) to signal "link recognised but target file not found".
+    """
+    if not href or any(href.startswith(p) for p in _SKIP_HREF_PREFIXES):
+        return None, None
+
+    # Split off #anchor.
+    if "#" in href:
+        file_part, anchor = href.split("#", 1)
+    else:
+        file_part, anchor = href, None
+
+    # Bare anchor (same-file link: "#id").
+    if not file_part:
+        return source_file, anchor
+
+    # Strip leading / for project-absolute links: /<project>/<slug>.html
+    if file_part.startswith("/") and project:
+        prefix = f"/{project}/"
+        if file_part.startswith(prefix):
+            file_part = file_part[len(prefix):]
+        elif file_part.startswith("/"):
+            # /<other-project>/... — can't validate cross-project from here.
+            return None, None
+
+    # Normalise: strip .html suffix to get slug/relative-path stem.
+    stem = file_part.removesuffix(".html")
+
+    # Infra files are always valid (they are served by the SPA engine).
+    base_name = Path(file_part).name
+    if base_name in _INFRA_FILENAMES:
+        return None, None
+
+    # Try: slug_to_file lookup (covers both root slugs and archive/ targets).
+    resolved = slug_to_file.get(stem) or slug_to_file.get(Path(stem).name)
+    if resolved is not None:
+        return resolved, anchor
+
+    # Try relative resolution from source directory.
+    candidate = (source_file.parent / file_part).resolve()
+    if candidate.is_file():
+        return candidate, anchor
+
+    # Couldn't resolve.
+    return False, anchor  # type: ignore[return-value]
+
+
+def audit_links(
+    paths: list[Path],
+    docs_dir: Path,
+    *,
+    project: str | None = None,
+) -> dict[Path, list[Finding]]:
+    """Corpus-aware dangling internal-link check.
+
+    Scans all HTML files in ``docs_dir`` to build a slug/id corpus, then checks
+    each path in ``paths`` for links that reference slugs or anchors that do not
+    exist.
+
+    Returns {path → [Finding, …]} — only paths with findings are included.
+    """
+    slug_to_file, file_to_ids = _collect_corpus(docs_dir)
+
+    results: dict[Path, list[Finding]] = {}
+    for path in paths:
+        findings: list[Finding] = []
+
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            findings.append(Finding("error", "io", f"cannot read {path}: {e}"))
+            results[path] = findings
+            continue
+
+        soup = BeautifulSoup(text, "html.parser")
+
+        # Infer project from meta if not supplied.
+        dp = soup.find("meta", attrs={"name": "docs-project"})
+        proj = ((dp.get("content") if dp else "") or project or "").strip() or None
+
+        # (g) Check <a href> internal links.
+        for a in soup.find_all("a", href=True):
+            href = (a.get("href") or "").strip()
+            target, anchor = _resolve_href(href, path, docs_dir, proj, slug_to_file)
+            if target is None:
+                continue  # external or infra — skip
+            if target is False:
+                findings.append(
+                    Finding(
+                        "warn",
+                        "dangling-link",
+                        f'<a href="{href}"> — target file not found',
+                    )
+                )
+                continue
+            # Check anchor resolution in target file.
+            if anchor:
+                known_ids = file_to_ids.get(target, set())
+                if anchor not in known_ids:
+                    findings.append(
+                        Finding(
+                            "warn",
+                            "dangling-anchor",
+                            f'<a href="{href}"> — anchor #{anchor} not found in target',
+                        )
+                    )
+
+        # (g) Check plan-depends-on / plan-blocks / plan-informs slug references.
+        for meta_name in _SLUG_META_FIELDS:
+            m = soup.find("meta", attrs={"name": meta_name})
+            if not m:
+                continue
+            raw = (m.get("content") or "").strip()
+            if not raw:
+                continue
+            for slug_ref in [s.strip() for s in raw.split(",") if s.strip()]:
+                if slug_ref not in slug_to_file:
+                    findings.append(
+                        Finding(
+                            "warn",
+                            "dangling-slug-ref",
+                            f'<meta name="{meta_name}"> references unknown slug "{slug_ref}"',
+                        )
+                    )
+
+        if findings:
+            results[path] = findings
+
+    return results
+
+
+def run(paths: list[str], *, project: str | None = None, check_links: bool = False) -> int:
     """Audit each path; print findings; return process exit code (0 = no errors)."""
+    path_objs = [Path(raw).expanduser() for raw in paths]
+
+    # Build corpus for link check if requested.
+    link_findings: dict[Path, list[Finding]] = {}
+    if check_links:
+        # Infer docs_dir from the paths: use their common ancestor if they share one,
+        # otherwise fall back to each file's parent.
+        parents = {p.parent for p in path_objs}
+        docs_dir = parents.pop() if len(parents) == 1 else Path(".")
+        link_findings = audit_links(path_objs, docs_dir, project=project)
+
     any_error = False
-    for raw in paths:
-        p = Path(raw).expanduser()
+    for p in path_objs:
         findings = audit_file(p, project=project)
+        # Merge in link findings for this path.
+        findings = findings + link_findings.get(p, [])
+        # Re-sort worst-first.
+        findings.sort(key=lambda f: SEVERITIES.index(f.severity))
+
         errors = [f for f in findings if f.severity == "error"]
         warns = [f for f in findings if f.severity == "warn"]
         infos = [f for f in findings if f.severity == "info"]
@@ -262,8 +509,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="project key for image-path checks (default: <meta name=docs-project>)",
     )
+    ap.add_argument(
+        "--check-links",
+        action="store_true",
+        default=False,
+        help="also check internal links for dangling targets (corpus-aware; requires"
+        " all docs to be in the same directory)",
+    )
     ns = ap.parse_args(argv)
-    return run(ns.paths, project=ns.project)
+    return run(ns.paths, project=ns.project, check_links=ns.check_links)
 
 
 if __name__ == "__main__":
