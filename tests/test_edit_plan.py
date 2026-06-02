@@ -905,3 +905,167 @@ def test_read_plan_projects_list(setup):
     r2 = mcp_module._read_plan("*")
     names2 = {p["name"] for p in r2["projects"]}
     assert project in names2
+
+
+# ── checkout_path / multi-worktree routing ─────────────────────────────────
+#
+# A stdio MCP server resolves every project to the single FIXED docs dir in
+# mounts.json (the MAIN checkout) — it has NO access to a caller's cwd. A
+# sub-agent running in a git worktree (a separate checkout of the same repo)
+# therefore had its writes land in the MAIN checkout, not its worktree. The
+# `checkout_path` param (root in the store layer) redirects both the plan-HTML
+# path AND the index/project JSON state path into the named checkout.
+
+
+@pytest.fixture()
+def worktree(tmp_path):
+    """A second checkout NOT registered in mounts.json — the 'agent worktree'.
+
+    Returns its repo root (the dir containing docs/), simulating
+    .claude/worktrees/agent-XXX. Its docs/ tree is independent of the mounts-
+    registered MAIN checkout created by the `setup` fixture.
+    """
+    root = tmp_path / "worktree"
+    (root / "docs").mkdir(parents=True)
+    (root / "docs" / "state").mkdir()
+    return root
+
+
+def test_edit_plan_checkout_path_writes_to_worktree_html(setup, worktree):
+    """A plan HTML edit with checkout_path lands in the worktree, NOT in the
+    mounts-registered main checkout."""
+    docs_dir, _, project = setup
+    # Same slug exists in BOTH checkouts; the worktree copy is what we target.
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+    _make_plan_html(worktree / "docs", "plan-a", {"version": 0, "status": "draft"})
+
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "status", "value": "shipped"}],
+        0,
+        checkout_path=str(worktree),
+    )
+    assert r["ok"] is True
+    # The returned path is the worktree file (reconciliation aid).
+    assert r["path"] == str((worktree / "docs" / "plan-a.html").resolve())
+
+    # Worktree copy changed; MAIN copy is UNTOUCHED.
+    wt_data, _ = _store_module.read_plan(project, "plan-a", str(worktree))
+    assert wt_data["status"] == "shipped"
+    main_data, main_ver = _store_module.read_plan(project, "plan-a")
+    assert main_data["status"] == "draft"
+    assert main_ver == 0
+
+
+def test_edit_plan_checkout_path_writes_index_to_worktree(setup, worktree):
+    """THE reported bug: an index (sprint) edit with checkout_path must write
+    <worktree>/docs/state/<project>/index.json — NOT the config-home state root
+    (symlinked to the main checkout)."""
+    _, state_root, project = setup
+    # Seed BOTH the main state root and the worktree state dir with the index.
+    _seed_index(
+        state_root,
+        project,
+        {"active_sprint_id": None, "sprints": []},
+    )
+    wt_state = worktree / "docs" / "state" / project
+    wt_state.mkdir(parents=True)
+    (wt_state / "index.json").write_text(
+        json.dumps(
+            {
+                "updated": "2026-01-01T00:00:00",
+                "project": project,
+                "doc": "index",
+                "data": {"_version": 0, "active_sprint_id": None, "sprints": []},
+            },
+            indent=2,
+        )
+    )
+
+    r = mcp_module._edit_plan(
+        project,
+        "index",
+        [
+            {
+                "op": "append",
+                "target": "sprints",
+                "item": {"id": "S6", "theme": "worktree sprint", "status": "planned"},
+            }
+        ],
+        0,
+        checkout_path=str(worktree),
+    )
+    assert r["ok"] is True
+    assert r["path"] == str((wt_state / "index.json").resolve())
+
+    # Sprint S6 is in the WORKTREE index.
+    wt_data, _ = _store_module.read_plan(project, "index", str(worktree))
+    assert any(s["id"] == "S6" for s in wt_data["sprints"])
+
+    # MAIN checkout's index is UNTOUCHED — no duplicate left behind.
+    main_data, main_ver = _store_module.read_plan(project, "index")
+    assert main_data["sprints"] == []
+    assert main_ver == 0
+
+
+def test_edit_plan_no_checkout_path_uses_mounts(setup, worktree):
+    """Backward-compat: omitting checkout_path writes the mounts-registered MAIN
+    checkout, leaving the worktree untouched (existing single-checkout behaviour
+    is preserved)."""
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+    _make_plan_html(worktree / "docs", "plan-a", {"version": 0, "status": "draft"})
+
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+    )
+    assert r["ok"] is True
+    assert r["path"] == str((docs_dir / "plan-a.html").resolve())
+
+    main_data, _ = _store_module.read_plan(project, "plan-a")
+    assert main_data["status"] == "shipped"
+    wt_data, _ = _store_module.read_plan(project, "plan-a", str(worktree))
+    assert wt_data["status"] == "draft"  # worktree untouched
+
+
+def test_read_plan_checkout_path_reads_worktree(setup, worktree):
+    """read_plan(checkout_path=...) reads the worktree copy, not the main one."""
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
+    _make_plan_html(worktree / "docs", "plan-a", {"version": 0, "status": "active"})
+
+    r_main = mcp_module._read_plan(project, "plan-a")
+    assert r_main["data"]["status"] == "draft"
+    r_wt = mcp_module._read_plan(project, "plan-a", checkout_path=str(worktree))
+    assert r_wt["data"]["status"] == "active"
+
+
+def test_edit_plan_create_in_worktree(setup, worktree):
+    """create=True with checkout_path scaffolds the new plan in the worktree."""
+    docs_dir, _, project = setup
+    r = mcp_module._edit_plan(
+        project,
+        "brand-new",
+        [
+            {"op": "set", "path": "title", "value": "Brand New"},
+            {"op": "set", "path": "status", "value": "active"},
+        ],
+        expected_version=0,
+        create=True,
+        checkout_path=str(worktree),
+    )
+    assert r["ok"] is True
+    assert r.get("created") is True
+    # Created in the WORKTREE, not the main docs dir.
+    assert (worktree / "docs" / "brand-new.html").exists()
+    assert not (docs_dir / "brand-new.html").exists()
+
+
+def test_edit_plan_read_unchanged_shape_has_no_path(setup):
+    """Guard the read-result contract: the single-plan read shape stays exactly
+    {project, slug, version, data} — `path` is a WRITE-result field only."""
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+    r = mcp_module._read_plan(project, "plan-a", checkout_path=str(docs_dir.parent))
+    assert set(r.keys()) == {"project", "slug", "version", "data"}

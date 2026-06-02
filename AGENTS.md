@@ -240,6 +240,51 @@ before any write — writes are rejected (412) if `version` doesn't match.
 current parsed state, or `/_discover/<project>` for plan inventory with full state.
 MCP tool descriptions are self-documenting — query them via the MCP inspector if needed.
 
+#### Multi-worktree agents — `checkout_path` (avoid main-checkout cross-writes)
+
+The MCP server is a **stdio** process; it has **no access to the caller's
+working directory**. It resolves every project to the single FIXED docs dir
+registered in `mounts.json` — the canonical **main** checkout. So when a
+sub-agent runs inside a **git worktree** (a separate checkout of the same
+repo, e.g. `.claude/worktrees/agent-XXX`), a bare `edit_plan`/`read_plan`
+reads and writes the **main** checkout, not the agent's worktree. Symptoms:
+the worktree agent can't commit the change (it isn't in its tree), and the
+main checkout is left with a dirty/uncommitted duplicate someone must
+reconcile.
+
+`read_plan` and `edit_plan` take an **optional** `checkout_path` — the
+absolute path to the desired checkout's **repo root** (the directory that
+contains `docs/`). When given, both the plan HTML **and** the
+index/project JSON config resolve under `<checkout_path>/docs` (and
+`<checkout_path>/docs/state/<project>/` for `index`). Omit it (the default)
+to target the registered main checkout — existing single-checkout behaviour
+is completely unchanged.
+
+```text
+# A worktree agent at /repo/.claude/worktrees/agent-XYZ:
+read_plan(project, "index", checkout_path="/repo/.claude/worktrees/agent-XYZ")   # → version from THAT checkout
+edit_plan(project, "index", ops=[...], expected_version=<that version>,
+          checkout_path="/repo/.claude/worktrees/agent-XYZ")
+# → writes <worktree>/docs/state/<project>/index.json; the agent commits it from its own tree.
+```
+
+Rules when using `checkout_path`:
+- **Pair the read and the write.** `expected_version` must come from a
+  `read_plan` that used the **same** `checkout_path`, or the write 412s.
+- `edit_plan` now returns **`path`** — the absolute file it wrote — so you
+  can reconcile deterministically (`git -C "$(dirname <path>)" status`).
+- **Discovery is not redirected.** `read_plan(project)` with the slug
+  omitted (cross-plan inventory/followups/sprints) always scans the
+  registered mounts. To read a worktree plan, name its slug explicitly with
+  `checkout_path`.
+
+**Recommended workflow for orchestrators with worktree fleets:** prefer that
+the **orchestrator** (running in the main checkout) perform `index`/sprint/
+followup state mutations, while worktree workers author their plan **HTML**
+in their own tree and `read_plan(..., checkout_path=…)` for state. When a
+worktree worker must mutate state itself, it passes `checkout_path=<its repo
+root>` and commits the resulting `path` from its own tree.
+
 ### Forwarding the port (from a laptop)
 
 Do **not** add `LocalForward` to `~/.ssh/config` under `Host iter` —

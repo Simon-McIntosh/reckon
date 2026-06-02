@@ -31,6 +31,30 @@ unchanged — they are used by sprint/milestone tooling.
 Slug routing uses mounts.json to find the project docs dir, then
 _resolve_plan_file to locate the HTML file by stem.  RECKON_MOUNTS_PATH
 env var overrides the default mounts path (mirrors RECKON_STATE_ROOT).
+
+Multi-worktree resolution (``root`` parameter)
+----------------------------------------------
+A stdio MCP server has NO access to the caller's working directory — it
+resolves every project to the single FIXED path registered in mounts.json
+(the canonical/main checkout).  When a sub-agent runs inside a git worktree
+(a separate checkout of the same repo, e.g. ``.claude/worktrees/agent-XXX``),
+a write made via the MCP lands in the MAIN checkout, not the agent's worktree.
+
+To fix this, every read/write entry point accepts an OPTIONAL ``root`` — the
+absolute path to the desired checkout's repo root (the directory that
+contains ``docs/``).  When given:
+
+  - HTML plan slugs resolve under ``<root>/docs``
+  - JSON config slugs (index/project) resolve under
+    ``<root>/docs/state/<project>/<slug>.json``
+
+Resolution precedence (per resolver):
+  1. explicit ``root`` argument (always wins — the multi-worktree caller)
+  2. RECKON_* env vars (RECKON_STATE_ROOT / RECKON_MOUNTS_PATH)
+  3. mounts.json / config-home (the registered main checkout — default)
+
+``root`` defaults to ``None`` everywhere, so existing callers (the granular
+mutators, serve.py, single-checkout agents) are completely unaffected.
 """
 
 from __future__ import annotations
@@ -101,8 +125,23 @@ def _mounts_path() -> Path:
     return _config_home() / "mounts.json"
 
 
-def state_path(project: str, slug: str) -> Path:
-    """Return the Path for a given project/slug JSON state file (index/project only)."""
+def state_path(project: str, slug: str, root: str | Path | None = None) -> Path:
+    """Return the Path for a given project/slug JSON state file (index/project only).
+
+    When ``root`` is given (a checkout's repo root), the JSON state file is
+    resolved under ``<root>/docs/state/<project>/<slug>.json`` — this redirects
+    index/project config writes into a specific worktree instead of the
+    config-home state root (which is symlinked to the MAIN checkout).
+    ``root=None`` keeps the default config-home behaviour unchanged.
+    """
+    if root is not None:
+        return (
+            Path(root).expanduser().resolve()
+            / "docs"
+            / "state"
+            / project
+            / f"{slug}.json"
+        )
     return _state_root() / project / f"{slug}.json"
 
 
@@ -116,8 +155,17 @@ def _is_json_slug(slug: str) -> bool:
     return slug in _JSON_SLUGS
 
 
-def _docs_dir_for_project(project: str) -> Path | None:
-    """Return the docs dir for a project from mounts.json, or None if unavailable."""
+def _docs_dir_for_project(project: str, root: str | Path | None = None) -> Path | None:
+    """Return the docs dir for a project, or None if unavailable.
+
+    When ``root`` is given (a checkout's repo root), the docs dir is
+    ``<root>/docs`` — bypassing mounts.json so a multi-worktree caller can
+    target its own checkout.  ``root=None`` falls back to mounts.json (the
+    registered MAIN checkout) — the default, unchanged behaviour.
+    """
+    if root is not None:
+        p = Path(root).expanduser().resolve() / "docs"
+        return p if p.is_dir() else None
     mp = _mounts_path()
     if not mp.exists():
         return None
@@ -132,9 +180,15 @@ def _docs_dir_for_project(project: str) -> Path | None:
         return None
 
 
-def _resolve_html_file(project: str, slug: str) -> Path | None:
-    """Locate the HTML file for a plan slug, using mounts.json + _resolve_plan_file."""
-    docs_dir = _docs_dir_for_project(project)
+def _resolve_html_file(
+    project: str, slug: str, root: str | Path | None = None
+) -> Path | None:
+    """Locate the HTML file for a plan slug, using mounts.json + _resolve_plan_file.
+
+    ``root`` (a checkout repo root) targets ``<root>/docs`` instead of the
+    mounts-registered docs dir; defaults to mounts.json.
+    """
+    docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return None
     # Import lazily to avoid circular issues at module load time; serve.py has
@@ -206,8 +260,13 @@ def _write_json_envelope(
 # ── HTML-state helpers ────────────────────────────────────────────────────
 
 
-def _read_state(project: str, slug: str) -> tuple[dict, int]:
+def _read_state(
+    project: str, slug: str, root: str | Path | None = None
+) -> tuple[dict, int]:
     """Read the semantic HTML state for a plan slug.
+
+    ``root`` (a checkout repo root) targets that checkout's ``docs`` dir;
+    defaults to the mounts-registered (main) checkout.
 
     Returns:
         (state_dict, current_version) where version = state.get("version", 0).
@@ -215,7 +274,7 @@ def _read_state(project: str, slug: str) -> tuple[dict, int]:
     """
     from reckon import _plan_html
 
-    html_file = _resolve_html_file(project, slug)
+    html_file = _resolve_html_file(project, slug, root)
     if html_file is None or not html_file.is_file():
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
@@ -229,21 +288,25 @@ def _write_state(
     slug: str,
     data: dict,
     expected_version: int,
+    root: str | Path | None = None,
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
+
+    ``root`` (a checkout repo root) targets that checkout's ``docs`` dir;
+    defaults to the mounts-registered (main) checkout.
 
     Raises VersionConflict on mismatch.
     Returns the new version.
     """
     from reckon import _plan_html
 
-    html_file = _resolve_html_file(project, slug)
+    html_file = _resolve_html_file(project, slug, root)
     if html_file is None or not html_file.is_file():
         # Cannot write to a non-existent HTML file; create one only if the
         # docs dir exists and expected_version==0 (first write).
         if expected_version != 0:
             raise VersionConflict(expected_version, 0, {})
-        docs_dir = _docs_dir_for_project(project)
+        docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None:
             raise FileNotFoundError(
                 f"No docs dir found for project {project!r} — "
@@ -286,10 +349,9 @@ def _write_state(
     _STAMP = frozenset(["version", "modified"])
     cur_parsed = _plan_html.read_state(text)
     new_parsed = _plan_html.read_state(new_text)
-    if (
-        {k: v for k, v in new_parsed.items() if k not in _STAMP}
-        == {k: v for k, v in cur_parsed.items() if k not in _STAMP}
-    ):
+    if {k: v for k, v in new_parsed.items() if k not in _STAMP} == {
+        k: v for k, v in cur_parsed.items() if k not in _STAMP
+    }:
         return cur_version
 
     tmp = html_file.with_suffix(".html.tmp")
@@ -301,18 +363,24 @@ def _write_state(
 # ── Public API ─────────────────────────────────────────────────────────────
 
 
-def read_plan(project: str, slug: str) -> tuple[dict, int]:
+def read_plan(
+    project: str, slug: str, root: str | Path | None = None
+) -> tuple[dict, int]:
     """Read the data blob and version for a plan (or JSON config doc).
 
     For plan slugs: reads the semantic HTML state; version = state["version"].
     For JSON slugs (index/project): reads the JSON envelope; version = data["_version"].
 
+    ``root`` (a checkout repo root) targets that checkout's ``docs`` tree for
+    BOTH plan HTML and JSON config (index/project) — the multi-worktree path.
+    Defaults to the mounts-registered / config-home (main) checkout.
+
     Returns:
         (data, version) — returns ({}, 0) if absent/unparseable.
     """
     if _is_json_slug(slug):
-        return _load_json_envelope(state_path(project, slug))
-    return _read_state(project, slug)
+        return _load_json_envelope(state_path(project, slug, root))
+    return _read_state(project, slug, root)
 
 
 def write_plan(
@@ -320,20 +388,25 @@ def write_plan(
     slug: str,
     data: dict,
     expected_version: int,
+    root: str | Path | None = None,
 ) -> int:
     """Write a full data blob back with version check.
 
     For plan slugs: rewrites the semantic HTML state atomically.
     For JSON slugs: rewrites the JSON envelope atomically.
 
+    ``root`` (a checkout repo root) targets that checkout's ``docs`` tree for
+    BOTH plan HTML and JSON config (index/project) — the multi-worktree path.
+    Defaults to the mounts-registered / config-home (main) checkout.
+
     Raises VersionConflict if expected_version does not match current.
     Returns the new version.
     """
     if _is_json_slug(slug):
         return _write_json_envelope(
-            state_path(project, slug), project, slug, data, expected_version
+            state_path(project, slug, root), project, slug, data, expected_version
         )
-    return _write_state(project, slug, data, expected_version)
+    return _write_state(project, slug, data, expected_version, root)
 
 
 def patch_plan(

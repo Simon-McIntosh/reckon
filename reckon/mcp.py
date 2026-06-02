@@ -91,6 +91,7 @@ def _read_plan(
     project: str | None = None,
     slug: str | None = None,
     with_schema: bool = False,
+    checkout_path: str | None = None,
 ) -> dict[str, Any]:
     """Read plan state — the single read entrypoint (folds the read tools in).
 
@@ -112,12 +113,25 @@ def _read_plan(
 
       read_plan()  or  read_plan("*")    [project omitted/"*"]
           → { projects: [...] } — folds list_projects.
+
+    Multi-worktree (``checkout_path``):
+      When an agent runs inside a git worktree (a separate checkout of the same
+      repo whose ``docs/`` tree differs from the registered MAIN checkout), pass
+      ``checkout_path`` = the absolute path to that checkout's repo root (the
+      directory containing ``docs/``).  Single-plan reads (slug given) then read
+      from ``<checkout_path>/docs`` for plan HTML and from
+      ``<checkout_path>/docs/state/<project>/`` for index/project config.  Omit
+      it (the default) to read the mounts-registered MAIN checkout.
+
+      NOTE: discovery mode (slug omitted) is NOT redirected by ``checkout_path``
+      — cross-plan inventory/followup/sprint scans always use the registered
+      mounts.  Read a worktree plan by naming its slug explicitly.
     """
     # ── projects-list mode ──
     if project is None or project == "*":
         return _list_projects()
 
-    # ── discovery mode (no slug) ──
+    # ── discovery mode (no slug) ── (always mounts-based — see docstring note)
     if slug is None:
         plans = _list_plans(project).get("plans", [])
         sprints_info = _list_sprints(project)
@@ -132,7 +146,7 @@ def _read_plan(
         }
 
     # ── single-plan mode (original shape) ──
-    data, version = read_plan(project, slug)
+    data, version = read_plan(project, slug, checkout_path)
     result: dict[str, Any] = {
         "project": project,
         "slug": slug,
@@ -926,6 +940,7 @@ def _edit_plan(
     ops: list[dict[str, Any]],
     expected_version: int,
     create: bool = False,
+    checkout_path: str | None = None,
 ) -> dict[str, Any]:
     """Apply an ordered list of ops to one plan (or the project index), then
     schema-validate and write atomically with an optimistic-concurrency check.
@@ -944,21 +959,40 @@ def _edit_plan(
     Create: edit_plan(..., expected_version=0, create=True) on a NON-existent
     plan slug writes a minimal schema-valid template, then applies ops.
 
-    Returns { ok: True, project, slug, new_version[, warnings] } on success, or
+    Multi-worktree (``checkout_path``): when an agent runs inside a git worktree
+    (a separate checkout of the same repo), pass ``checkout_path`` = the absolute
+    path to that checkout's repo root (the directory containing ``docs/``).  The
+    write then lands in ``<checkout_path>/docs`` (plan HTML) or
+    ``<checkout_path>/docs/state/<project>/`` (index/project config) — i.e. in
+    the AGENT'S OWN worktree, so the agent can commit it from there.  Omit it
+    (the default) to target the mounts-registered MAIN checkout (existing
+    behaviour).  This closes the "MCP write lands in main, agent commits in
+    worktree → duplicate" failure mode.  Always pair it with a read_plan that
+    used the SAME ``checkout_path`` so ``expected_version`` matches that file.
+
+    Returns { ok: True, project, slug, new_version, path[, warnings][, created] }
+    on success — ``path`` is the ABSOLUTE file the write landed in, so a caller
+    can reconcile deterministically (e.g. ``git -C <dir> status``).  On failure:
     { ok: False, error, ... } (op_error | schema_validation | version_conflict |
-    create errors) on failure.
+    create errors).
     """
     is_index = slug in ("index", "project")
+    root = checkout_path  # alias: the tool-surface name vs the store-layer name
 
     # ── create path (plan slugs only) ──
     if create:
         if is_index:
             return {"ok": False, "error": "cannot create the index slug"}
-        docs_dir = _docs_dir_for_project(project)
+        docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None:
+            hint = (
+                f"check checkout_path {checkout_path!r} contains a docs/ dir"
+                if root is not None
+                else "check mounts.json"
+            )
             return {
                 "ok": False,
-                "error": f"no docs dir for project {project!r} — check mounts.json",
+                "error": f"no docs dir for project {project!r} — {hint}",
             }
         html_file = docs_dir / f"{slug}.html"
         # Reject if a plan already exists at this slug (direct or via resolution).
@@ -977,12 +1011,12 @@ def _edit_plan(
         created_file = None
 
     # ── read current state (after any template write) ──
-    cur_data, cur_version = read_plan(project, slug)
+    cur_data, cur_version = read_plan(project, slug, root)
     if not create and not cur_data and not is_index:
         # An empty plan dict for a non-index slug means the HTML file is absent.
         from reckon.serve import _resolve_plan_file
 
-        docs_dir = _docs_dir_for_project(project)
+        docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None or _resolve_plan_file(docs_dir, slug) is None:
             return {
                 "ok": False,
@@ -1017,7 +1051,7 @@ def _edit_plan(
 
     # ── persist the working DICT via the version-checked atomic write ──
     try:
-        new_version = write_plan(project, slug, working, cur_version)
+        new_version = write_plan(project, slug, working, cur_version, root)
     except VersionConflict as e:
         return _conflict_response(e)
 
@@ -1026,12 +1060,32 @@ def _edit_plan(
         "project": project,
         "slug": slug,
         "new_version": new_version,
+        "path": _written_path(project, slug, root),
     }
     if warnings:
         result["warnings"] = warnings
     if create:
         result["created"] = True
     return result
+
+
+def _written_path(project: str, slug: str, root: str | None) -> str | None:
+    """Best-effort absolute path of the file edit_plan just wrote.
+
+    For index/project slugs → the JSON state file; for plan slugs → the resolved
+    HTML file.  Returned to callers so they can reconcile the write
+    deterministically (e.g. ``git -C <dir> status`` in the right checkout).
+    Never raises — returns None if the path cannot be resolved.
+    """
+    from reckon._store import _resolve_html_file, state_path
+
+    try:
+        if slug in ("index", "project"):
+            return str(state_path(project, slug, root))
+        hit = _resolve_html_file(project, slug, root)
+        return str(hit) if hit is not None else None
+    except Exception:  # noqa: BLE001 — path reporting must never fail the write
+        return None
 
 
 # ── audit — plan-schema conformance audit (warn half; never mutates) ────────

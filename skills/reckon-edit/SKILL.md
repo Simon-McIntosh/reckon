@@ -143,6 +143,33 @@ edit_plan(
 
 **On 412:** `read_plan(project, slug)` → new `version` → retry `edit_plan`.
 
+### Running inside a git worktree — pass `checkout_path`
+
+The MCP server is a stdio process with **no access to your working
+directory**; it resolves every project to the FIXED docs dir in `mounts.json`
+— the **main** checkout. If you are a worker running in a worktree
+(`.claude/worktrees/agent-XXX`, a separate checkout), a bare `edit_plan`
+writes the **main** checkout, not your tree — you can't commit it and the
+main checkout is left with an uncommitted duplicate.
+
+Pass `checkout_path=<your repo root>` (the dir containing `docs/`) to both
+`read_plan` and `edit_plan` so they read/write **your** worktree. The
+read's `version` must come from the same `checkout_path` as the write.
+`edit_plan` returns `path` — the absolute file written — commit that from
+your tree. Omit `checkout_path` (default) when you are in the main checkout.
+
+```python
+root = "/repo/.claude/worktrees/agent-XYZ"
+state = read_plan(project="imas-efit", slug="index", checkout_path=root)
+edit_plan(project="imas-efit", slug="index", ops=[...],
+          expected_version=state["version"], checkout_path=root)
+# → returns path=<root>/docs/state/imas-efit/index.json — git add + commit it from <root>
+```
+
+Better still, let the **orchestrator** (in the main checkout) own
+`index`/sprint/followup state writes; worktree workers author plan HTML in
+their own tree and `read_plan(..., checkout_path=…)` for state.
+
 ## Op reference
 
 | Op | Required keys | Notes |

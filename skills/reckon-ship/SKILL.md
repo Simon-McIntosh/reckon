@@ -37,6 +37,19 @@ implement items marked "deferred", "post-v1", or behind an unmet trigger.
 2. `edit_plan(…, ops=[set status/impl + resolve driving followup + append next followup], expected_version=…)`.
 3. On 412 conflict: re-read + retry.
 
+**Worktree workers — `checkout_path`.** The MCP server (stdio) cannot see a
+worker's cwd; it resolves projects to the FIXED docs dir in `mounts.json` —
+the **main** checkout. A fleet worker running in an isolated worktree must
+pass `checkout_path=<its repo root>` to both `read_plan` and `edit_plan`, or
+its state write lands in the main checkout (uncommittable from the worker's
+tree, and a duplicate the orchestrator must discard). The read's `version`
+must come from the same `checkout_path`; `edit_plan` returns `path` — commit
+that file from the worker's tree. **Preferred division of labour:** workers
+author plan/per-stage HTML in their own worktree and read state with
+`checkout_path`, while the **orchestrator** (in the main checkout) records
+`index`/sprint/followup state mutations — avoiding cross-worktree state
+contention entirely.
+
 **Bypass-with-announcement rule:** if you edit the plan HTML directly rather than
 via `edit_plan` (acceptable when you are the sole writer), announce "editing HTML
 directly because X".
