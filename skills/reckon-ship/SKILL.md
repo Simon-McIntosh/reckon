@@ -112,6 +112,10 @@ Build each prompt from the §05 template. Embed parallel-safety preamble verbati
 - Quick-status grid (shipped vs deferred)
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup
+- **Figures where they communicate (user mandate 2026-06-03)**: embed result
+  graphics — geometry overlays, convergence traces, before/after panels —
+  under `docs/figures/<topic>/` with project-absolute `src`. Worker prompts
+  for doc-producing tasks MUST carry the graphics requirement explicitly.
 
 ### 5b. Collapse-on-landing — evergreen is a dashboard, not a transcript (MANDATORY)
 

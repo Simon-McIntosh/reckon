@@ -66,6 +66,13 @@ characterisations, and reference analyses that inform — but do not describe �
 5. **Every plan ships with a followup placeholder** — a `<section data-reckon="followups">` block.
 6. **Do not commit automatically.** Report what was created and suggest a commit message.
 7. **Write full prose in HTML.** `<p>See state §2 for details</p>` is a hard failure.
+8. **Illustrate with graphics (user mandate 2026-06-03).** Plans and research
+   docs MUST embed figures/diagrams wherever a graphic improves understanding
+   or communication with the lead — geometry, topology, per-machine
+   comparisons, pipelines, before/after evidence. Save under
+   `docs/figures/<topic>/`, embed with project-absolute
+   `src="/<project>/figures/..."`. A geometry/topology claim without a figure
+   is under-communicated; multi-pane grids for per-machine content.
 
 ## Authoring for faithful display (the SPA render contract)
 
