@@ -432,7 +432,40 @@ def to_html(html_text: str, state: "PlanState") -> str:  # noqa: F821
 
 # ── Lightweight inventory record (scales to thousands of docs) ──────────────
 
-_OPEN_DEC_RE = re.compile(r'class="r-dec"[^>]*\bdata-choice=""', re.IGNORECASE)
+# A decision is OPEN until it has a choice OR a recorded rationale — mirrors the
+# SPA decision widget's isTaken predicate (docs/ui/decision.jsx). Counting a
+# rationale-only (deferred) decision as open showed "Resolve N" over a green
+# decision (bug 2026-06-04). The block regex captures each whole .r-dec element
+# (decisions contain only <p> children, so the first </div> closes it) so the
+# fast inventory path can inspect both data-choice and the .r-dec-rat text.
+_DEC_BLOCK_RE = re.compile(r'<div\b[^>]*\bclass="r-dec".*?</div>', re.IGNORECASE | re.DOTALL)
+_DEC_CHOICE_RE = re.compile(r'\bdata-choice="([^"]*)"', re.IGNORECASE)
+_DEC_RAT_RE = re.compile(r'class="r-dec-rat"[^>]*>(.*?)</p>', re.IGNORECASE | re.DOTALL)
+_TAG_RE = re.compile(r'<[^>]+>')
+
+
+def _decision_open(choice: str | None, rationale: str | None) -> bool:
+    """True iff a decision has neither a choice nor a rationale (i.e. untaken)."""
+    return not ((choice or "").strip() or (rationale or "").strip())
+
+
+def count_open_decisions(text: str) -> int:
+    """Regex-count open decisions from raw plan HTML (fast inventory path).
+
+    Honours rationale: a .r-dec with empty data-choice but non-empty .r-dec-rat
+    is taken, not open — matching the widget and parse_plan.
+    """
+    n = 0
+    for block in _DEC_BLOCK_RE.findall(text):
+        cm = _DEC_CHOICE_RE.search(block)
+        choice = cm.group(1) if cm else ""
+        rm = _DEC_RAT_RE.search(block)
+        rationale = _TAG_RE.sub("", rm.group(1)) if rm else ""
+        if _decision_open(choice, rationale):
+            n += 1
+    return n
+
+
 _META_RE = re.compile(r'<meta\b[^>]*>', re.IGNORECASE)
 _NAME_RE = re.compile(r'\bname=["\']([^"\']+)["\']', re.IGNORECASE)
 _CONTENT_RE = re.compile(r'\bcontent=["\']([^"\']*)["\']', re.IGNORECASE)
@@ -483,7 +516,7 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
     rec["title"] = rec.get("title") or rec["slug"]
     rec["informs"] = rec.get("informs") or []
     rec["depends_on"] = rec.get("depends_on") or []
-    rec["dec_open"] = len(_OPEN_DEC_RE.findall(text))
+    rec["dec_open"] = count_open_decisions(text)
     rec["impl"] = float(rec.get("impl", 0) or 0)
     rec["version"] = int(rec.get("version", 0) or 0)
     rec["blockers"] = 0
@@ -516,7 +549,7 @@ def parse_plan(path: Path, slug: str | None = None) -> dict:
     rec["research"] = st.get("research") or []
     rec["depends_on"] = st.get("depends_on") or []
     rec["blocks"] = st.get("blocks") or []
-    rec["dec_open"] = sum(1 for d in rec["decisions"] if not d.get("choice"))
+    rec["dec_open"] = sum(1 for d in rec["decisions"] if _decision_open(d.get("choice"), d.get("rationale")))
     rec["blockers"] = int(st.get("blockers", 0) or 0)
     rec["impl"] = float(rec.get("impl", 0) or 0)
     rec["version"] = int(st.get("version", 0) or 0)
