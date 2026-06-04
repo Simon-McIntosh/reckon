@@ -455,9 +455,11 @@ function Plan({ slug, onNav }) {
                     followups: fullState?.followups || [],
                     comments,  // live state — always current; fullState snapshot can be stale
                   })],
-                  window.STATE,
-                  null,
-                  { expandDeps: false }  // handoff for THIS plan only — prereqs are context, not work sections
+                  window.STATE
+                  // Default fleet mode: walk depends_on so the worker is grounded
+                  // in the dependency chain. The actionability filter keeps only
+                  // in-progress prerequisites as sections (done/reference/100% are
+                  // excluded), so the fleet stays relevant.
                 )
               : "(prompts.js not loaded)"
           }

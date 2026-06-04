@@ -30,6 +30,29 @@
     return (p && p.status ? p.status : "?") + " · " + Math.round(((p && p.impl) || 0) * 100) + "%";
   }
 
+  // Preamble prepended to every generated prompt. Grounds the worker(s) in the
+  // repository the prompt is launched against and the conventions/safety rails
+  // that govern it, and mandates adviser consultation at critical points.
+  function groundingBlock(projectName) {
+    return ""
+      + "Working context — ground yourself before acting\n"
+      + "  Repository: the " + projectName + " repo. FIRST read its AGENTS.md and\n"
+      + "    CLAUDE.md at the repo root — they declare the primary branch,\n"
+      + "    commit/push discipline, build & test commands, compute/SLURM rules, and\n"
+      + "    safety constraints. Honour them over any default behaviour.\n"
+      + "  Branch: commit to the project's primary branch as declared in AGENTS.md;\n"
+      + "    never create feature/topic branches unilaterally. Commit and push each\n"
+      + "    coherent change.\n"
+      + "  Plan state: read each plan at /plan/" + projectName + "/<slug> for live\n"
+      + "    decisions, followups, and version before editing; record outcomes back\n"
+      + "    into the plan (reckon-ship) as work lands.\n"
+      + "  Advisers (mandatory at critical points): before committing to an approach,\n"
+      + "    before any irreversible or outward-facing action, and before declaring\n"
+      + "    work done — consult an adviser (stronger-reviewer / advisor tool) and\n"
+      + "    weigh the feedback. Don't crystallise an approach or claim completion\n"
+      + "    without one.\n\n";
+  }
+
   function buildSection(p, num, total, projectName, bySlug) {
     var decisions = p.decisions || [];
     var locked = decisions.filter(function(d) { return d.chosen || d.choice; });
@@ -152,13 +175,14 @@
       return "(no actionable plans to include — all requested plans are complete or reference.)";
     }
 
-    // Single plan: clean handoff, no orchestration wrapper.
+    // Single plan: grounding preamble + one section, no orchestration wrapper.
     if (n === 1) {
-      return buildSection(bySlug[order[0]], 1, 1, projectName, bySlug);
+      return groundingBlock(projectName) + buildSection(bySlug[order[0]], 1, 1, projectName, bySlug);
     }
 
-    // Multi-plan: Orchestration block + per-plan sections.
-    var txt = "Orchestration\n  You are coordinating a fleet of workers across " + n + " plans.\n";
+    // Multi-plan: grounding preamble + Orchestration block + per-plan sections.
+    var txt = groundingBlock(projectName);
+    txt += "Orchestration\n  You are coordinating a fleet of workers across " + n + " plans.\n";
     txt += "  Dispatch in the order below; honour dependency edges.\n";
     txt += "  Workers whose dependencies are satisfied may run in parallel.\n\n";
     txt += "Project: " + projectName + "\n";
