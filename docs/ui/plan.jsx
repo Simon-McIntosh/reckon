@@ -194,10 +194,14 @@ function Plan({ slug, onNav }) {
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
     const open = () => {
+      // Open decisions are NOT a blocker. The fleet prompt is built to carry
+      // them — see prompts.js "Open decisions (surface, do not resolve)".
+      // Deferring a decision to be resolved DURING the work (e.g. an I/O
+      // strategy decided in the first task) is a valid, intended state, so the
+      // prompt must still generate. Inform the author, then open it.
       const openDecs = decs.filter(d => !d.chosen && !d.choice);
-      if (openDecs.length > 0) {
-        if (window.flashSaved) window.flashSaved(`✗ ${openDecs.length} open decision${openDecs.length === 1 ? "" : "s"} — resolve them first`);
-        return;
+      if (openDecs.length > 0 && window.flashSaved) {
+        window.flashSaved(`ℹ ${openDecs.length} open decision${openDecs.length === 1 ? "" : "s"} surfaced in the prompt (to resolve during the work)`);
       }
       setShowPrompt(true);
     };

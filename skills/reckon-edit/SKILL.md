@@ -89,6 +89,11 @@ body/outcome, author **HTML, never markdown**:
   (preserved verbatim, wrapped by CSS).
 - Images use a project-absolute `src="/<project>/figures/<name>.svg"` —
   relative `src="figures/..."` 404s under the no-trailing-slash plan URL.
+- **Figures follow the figure-style rules** in `reckon-create` SKILL.md
+  (hard-rule 8): Tufte / high data-ink, legible-first. When you add or revise a
+  figure, light fills + dark text + thin borders + one semantic accent; **never
+  gray/muted text on a dark or saturated fill** (banned — unreadable). If a
+  figure already in the plan violates this, fix it as part of your edit.
 - `<head><style>` is **dropped** by the SPA — never style via a head block; use
   `/_shared/*.css` or sparing inline `style=`.
 

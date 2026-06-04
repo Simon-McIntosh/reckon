@@ -108,31 +108,53 @@ window.STATE_READY = (async function () {
   // have data.plans[] + data.counts + data.milestones at the top level and no
   // data.projects[]. Synthesise one so the SPA components can read uniformly.
   let projects = Array.isArray(idx.projects) ? idx.projects.slice() : [];
+
+  // Live counts derived from the discovered inventory. /_discover is the
+  // authoritative plan list; the persisted projects[] counts in index.json go
+  // stale (the audit recomputes rollups in its response but never writes them).
+  // So whenever a live inventory is present, the counts shown MUST come from it
+  // — never from the persisted block. When inventory is empty (GitHub Pages /
+  // server down), liveCounts is null and we keep whatever the persisted block
+  // holds as the only available fallback.
+  const liveCounts = mergedInventory.length > 0 ? (() => {
+    const count = (s) => mergedInventory.filter(p => p.status === s).length;
+    const lastMods = mergedInventory.map(p => p.last || "").filter(Boolean).sort();
+    return {
+      plans_count:   mergedInventory.length,
+      active:        count("active"),
+      blocked:       count("blocked"),
+      pending:       count("pending"),
+      shipped:       count("shipped"),
+      last_modified: lastMods.length ? lastMods[lastMods.length - 1] : (idx.audit_date || ""),
+    };
+  })() : null;
+
   if (projects.length === 0) {
-    const status = (idx.counts && idx.counts.status) || {};
-    const total  = (idx.counts && idx.counts.total) || mergedInventory.length;
-    const count  = (s) => status[s] !== undefined
-                          ? status[s]
-                          : mergedInventory.filter(p => p.status === s).length;
     projects = [{
       project:       PROJECT,
       path:          window.location.pathname.replace(/\/$/, "").split("/").pop() || PROJECT,
       published:     "",
       owner:         "",
-      plans_count:   total,
-      active:        count("active"),
-      blocked:       count("blocked"),
-      pending:       count("pending"),
-      shipped:       count("shipped"),
-      last_modified: idx.audit_date || "",
+      ...(liveCounts || {
+        plans_count:   (idx.counts && idx.counts.total) || mergedInventory.length,
+        active: 0, blocked: 0, pending: 0, shipped: 0,
+        last_modified: idx.audit_date || "",
+      }),
       milestones,
       top:           [],
       activity30:    [],
       tests_30d:     { pass: 0, runs: 0 },
     }];
-  } else if (!Array.isArray(projects[0].milestones) || projects[0].milestones.length === 0) {
-    // projects[0] exists but lacks milestones — merge from top-level if any
-    projects = projects.map((p, i) => i === 0 ? { ...p, milestones: p.milestones || milestones } : p);
+  } else {
+    // Persisted projects[0] exists: overlay live counts (when available) so the
+    // cockpit never shows a stale plan count, and backfill milestones if absent.
+    projects = projects.map((p, i) => i === 0
+      ? {
+          ...p,
+          ...(liveCounts || {}),
+          milestones: (Array.isArray(p.milestones) && p.milestones.length) ? p.milestones : milestones,
+        }
+      : p);
   }
 
   window.STATE = {

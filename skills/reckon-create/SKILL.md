@@ -74,6 +74,33 @@ characterisations, and reference analyses that inform — but do not describe �
    `src="/<project>/figures/..."`. A geometry/topology claim without a figure
    is under-communicated; multi-pane grids for per-machine content.
 
+   **Figure style — Tufte, high data-ink, legible (user mandate 2026-06-04).**
+   A figure that cannot be read is worse than no figure. Every figure (inline
+   SVG or saved asset) MUST satisfy:
+   - **Legibility is non-negotiable — contrast first.** Body text ≥ 13px,
+     system-ui; titles ≥ 14px. Text-on-fill must clear WCAG-AA (~4.5:1). The
+     classic failure (banned): **gray/muted text on a dark or saturated fill**
+     — it is unreadable. If a box has a dark fill, its text is near-white
+     (`#f5f5f7`), never gray. Prefer the opposite: light/white fills with dark
+     text and a thin 1px border.
+   - **Maximize the data-ink ratio (Tufte).** Default to light/transparent
+     backgrounds, thin 1px rules/borders, and dark text. No gradients, drop
+     shadows, 3-D, glows, or heavy filled blocks used decoratively. Ink should
+     encode information, not decoration.
+   - **Colour is semantic and sparing.** One accent hue per logical role
+     (e.g. one colour for "arm A", one for "verdict"), carried as a thin
+     border / header rule / small swatch — not a full saturated background
+     behind text. Monochrome + a single accent beats a rainbow of fills. The
+     figure must still read in grayscale / when printed.
+   - **Label directly; minimize indirection.** Put labels on the elements they
+     describe rather than in a separate legend where a direct label fits. One
+     clear caption beneath the figure stating what it shows.
+   - **Honest and minimal.** Right-size the canvas (`viewBox` for scaling), no
+     duplicated chrome, no unexplained jargon. If a flow has N stages, show N
+     boxes and N-1 arrows — nothing else competing for attention.
+   - **Self-check before finishing:** "Could the lead read every label at a
+     glance, and would it survive a black-and-white printout?" If not, fix it.
+
 ## Authoring for faithful display (the SPA render contract)
 
 The reckon SPA renders the authored `<main class="plan-doc">` body by **raw-HTML
