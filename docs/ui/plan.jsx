@@ -455,11 +455,14 @@ function Plan({ slug, onNav }) {
                     followups: fullState?.followups || [],
                     comments,  // live state — always current; fullState snapshot can be stale
                   })],
-                  window.STATE
-                  // Default fleet mode: walk depends_on so the worker is grounded
-                  // in the dependency chain. The actionability filter keeps only
-                  // in-progress prerequisites as sections (done/reference/100% are
-                  // excluded), so the fleet stays relevant.
+                  window.STATE,
+                  null,
+                  { expandDeps: false }  // single-plan focus: this plan only.
+                  // Its dependencies are CALLED OUT (soft, with status) for the
+                  // orchestrator to judge relevance — never auto-dispatched as
+                  // work. A 70%-complete upstream strategy doc is context, not a
+                  // hard prerequisite for the focused task. Sprint-level fleet
+                  // prompts (sprint.jsx) keep full dependency expansion.
                 )
               : "(prompts.js not loaded)"
           }

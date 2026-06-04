@@ -53,7 +53,7 @@
       + "    without one.\n\n";
   }
 
-  function buildSection(p, num, total, projectName, bySlug) {
+  function buildSection(p, num, total, projectName, bySlug, soft) {
     var decisions = p.decisions || [];
     var locked = decisions.filter(function(d) { return d.chosen || d.choice; });
     var open = decisions.filter(function(d) { return !(d.chosen || d.choice); });
@@ -79,16 +79,27 @@
 
     if (p.summary) txt += "\nSummary\n  " + p.summary + "\n";
 
-    // Prerequisites — context only. The worker reads their state; it does NOT
-    // re-do them. Incomplete prerequisites are flagged so the worker coordinates.
+    // Dependencies. In SOFT (single-plan focus) mode they are called out for the
+    // orchestrator to judge — never auto-dispatched: an upstream strategy doc at
+    // 70% is context, not a hard prerequisite for the focused task. In fleet mode
+    // the actionable ones are already their own sections, so this is just a
+    // read-their-state context list.
     var deps = (p.depends_on || []).filter(Boolean);
     if (deps.length) {
-      txt += "\nPrerequisites (context — read their state, do not re-do)\n";
-      txt += deps.map(function(slug) {
+      var depList = deps.map(function(slug) {
         var dp = bySlug && bySlug[slug];
-        var note = dp ? pctStatus(dp) : "unknown";
-        return "  " + slug + " (" + note + ")" + (dp && !isActionable(dp) ? "" : "  ⚠ still open — coordinate");
-      }).join("\n") + "\n";
+        return "    " + slug + " (" + (dp ? pctStatus(dp) : "unknown") + ")";
+      }).join("\n");
+      if (soft) {
+        txt += "\nDependencies of this plan (soft — orchestrator's call)\n"
+             + "  This plan declares the dependencies below. Decide whether each is\n"
+             + "  actually required for THIS focused task before acting: a partial or\n"
+             + "  strategy-level dependency is context, not a hard blocker, and is NOT\n"
+             + "  auto-dispatched. Pull one in (generate its own prompt) only if you\n"
+             + "  judge it a genuine prerequisite for this task.\n" + depList + "\n";
+      } else {
+        txt += "\nPrerequisites (context — read their state, do not re-do)\n" + depList + "\n";
+      }
     }
 
     // Human feedback — highest priority for agents to read
@@ -175,9 +186,11 @@
       return "(no actionable plans to include — all requested plans are complete or reference.)";
     }
 
-    // Single plan: grounding preamble + one section, no orchestration wrapper.
+    // Single plan: grounding preamble + one section. Dependencies are SOFT when
+    // we did not expand them (single-plan focus) — called out for the
+    // orchestrator's judgement, not dispatched.
     if (n === 1) {
-      return groundingBlock(projectName) + buildSection(bySlug[order[0]], 1, 1, projectName, bySlug);
+      return groundingBlock(projectName) + buildSection(bySlug[order[0]], 1, 1, projectName, bySlug, !expandDeps);
     }
 
     // Multi-plan: grounding preamble + Orchestration block + per-plan sections.
@@ -198,7 +211,7 @@
     }
     txt += "\nEach plan's detail follows below.\n\n";
     for (var si = 0; si < order.length; si++) {
-      txt += buildSection(bySlug[order[si]], si + 1, n, projectName, bySlug);
+      txt += buildSection(bySlug[order[si]], si + 1, n, projectName, bySlug, false);
     }
     return txt;
   };
