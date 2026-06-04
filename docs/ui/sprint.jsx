@@ -16,6 +16,7 @@ function Sprint({ sprintId, onNav }) {
   if (!sprint) return <div className="r-page">No sprint.</div>;
 
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
+  const [sprintPromptText, setSprintPromptText] = useState(null);
 
   // Materialise items with their plan info + justification
   const items = sprint.items.map(it => {
@@ -24,6 +25,21 @@ function Sprint({ sprintId, onNav }) {
     const plan = M.inventory.find(p => p.slug === slug);
     return plan ? { ...plan, justification } : null;
   }).filter(Boolean);
+
+  // Build the fleet prompt via the shared builder, hydrating each plan's live
+  // state first (the inventory has no decisions/followups).
+  useEffect(() => {
+    if (!showSprintPrompt) { setSprintPromptText(null); return; }
+    let alive = true;
+    const win = (sprint.starts || "") + (sprint.ends ? " → " + sprint.ends : "");
+    const opts = { sprint: { id: sprint.id, window: win } };
+    Promise.resolve(
+      window.buildFleetPromptAsync
+        ? window.buildFleetPromptAsync(items, window.STATE, sprint.theme, opts)
+        : window.buildFleetPrompt(items, window.STATE, sprint.theme, opts)
+    ).then(t => { if (alive) setSprintPromptText(t); });
+    return () => { alive = false; };
+  }, [showSprintPrompt, sprint.id]);
 
   // Local kanban state — overrides plan.status for drag-drop demo
   const [localStatus, setLocalStatus] = useState({});
@@ -145,14 +161,10 @@ function Sprint({ sprintId, onNav }) {
         ))}
       </div>
 
-      {showSprintPrompt && window.reckon?.PromptModal && (
+      {showSprintPrompt && window.reckon?.PromptModal && sprintPromptText != null && (
         <window.reckon.PromptModal
           planSlug={`sprint-${sprint.id}`}
-          initialPrompt={
-            window.buildFleetPrompt
-              ? window.buildFleetPrompt(items, window.STATE, sprint.theme)
-              : "(prompts.js not loaded)"
-          }
+          initialPrompt={sprintPromptText}
           onClose={() => setShowSprintPrompt(false)}
         />
       )}

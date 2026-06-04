@@ -455,14 +455,10 @@ function Plan({ slug, onNav }) {
                     followups: fullState?.followups || [],
                     comments,  // live state — always current; fullState snapshot can be stale
                   })],
-                  window.STATE,
-                  null,
-                  { expandDeps: false }  // single-plan focus: this plan only.
-                  // Its dependencies are CALLED OUT (soft, with status) for the
-                  // orchestrator to judge relevance — never auto-dispatched as
-                  // work. A 70%-complete upstream strategy doc is context, not a
-                  // hard prerequisite for the focused task. Sprint-level fleet
-                  // prompts (sprint.jsx) keep full dependency expansion.
+                  window.STATE
+                  // Single requested item → the builder emits fleet framing for
+                  // this one plan; its dependencies are called out softly (never
+                  // auto-dispatched). Same builder/format as the sprint surface.
                 )
               : "(prompts.js not loaded)"
           }

@@ -1,21 +1,25 @@
-// Prereq-aware fleet prompt builder.
-// Exposes window.buildFleetPrompt(items, state, title, opts).
-//   items  — array of plan objects to include (from M.inventory or custom)
-//   state  — window.STATE (provides inventory for dep resolution)
-//   title  — optional context string for the Orchestration block
-//   opts   — { expandDeps?: boolean }  default true.
-//            true  → fleet mode: walk depends_on and emit a full section per
-//                    incomplete prerequisite (sprint-level orchestration).
-//            false → handoff mode: emit ONLY the requested plan(s); their
-//                    prerequisites appear as a one-line context note, never as
-//                    work sections. The single-plan "generate prompt" button
-//                    passes false — you asked for THIS plan's handoff, not its
-//                    whole dependency tree.
+// Fleet prompt builder. One builder for every "generate prompt" surface —
+// the single-plan button and the sprint fleet button both call it, so the
+// output format never diverges.
+//
+//   window.buildFleetPrompt(items, state, title, opts)      — sync; items must
+//       already carry decisions/followups/comments (the plan view hydrates).
+//   window.buildFleetPromptAsync(items, state, title, opts) — fetches each
+//       plan's live state first (the sprint surfaces use this; the lean
+//       /_discover inventory has no decisions/followups).
+//
+// Design (settled with the lead, 2026-06-04):
+//   • Fleet framing ALWAYS — even for a single plan (an efficient, grounded
+//     pattern). Orchestrators are told to consult advisers at critical points.
+//   • Requested items only. Dependencies are NEVER auto-dispatched as work
+//     sections; they are called out SOFTLY per section for the orchestrator to
+//     judge (a partial / strategy-level dependency is context, not a blocker).
+//     Dependencies that are themselves requested items order the sequence.
+//   • Decisions are injected LIVE, once, by the builder; the §05 handoff brief
+//     must not re-list them (it goes stale). No per-section plan-URL line — the
+//     Working-context preamble already says to read live plan state.
 
 (function () {
-  // A plan is actionable (worth dispatching a worker at) only if it is neither
-  // a finished/non-work doc nor already 100% complete. Reference/research docs,
-  // archived/superseded/abandoned plans, and anything at impl≥1 carry no work.
   var NONACTIONABLE = {
     shipped: 1, done: 1, archived: 1, superseded: 1,
     abandoned: 1, reference: 1, research: 1, historical: 1,
@@ -30,9 +34,6 @@
     return (p && p.status ? p.status : "?") + " · " + Math.round(((p && p.impl) || 0) * 100) + "%";
   }
 
-  // Preamble prepended to every generated prompt. Grounds the worker(s) in the
-  // repository the prompt is launched against and the conventions/safety rails
-  // that govern it, and mandates adviser consultation at critical points.
   function groundingBlock(projectName) {
     return ""
       + "Working context — ground yourself before acting\n"
@@ -43,21 +44,41 @@
       + "  Branch: commit to the project's primary branch as declared in AGENTS.md;\n"
       + "    never create feature/topic branches unilaterally. Commit and push each\n"
       + "    coherent change.\n"
-      + "  Plan state: read each plan at /plan/" + projectName + "/<slug> for live\n"
-      + "    decisions, followups, and version before editing; record outcomes back\n"
-      + "    into the plan (reckon-ship) as work lands.\n"
+      + "  Plan state: read each plan's live decisions/followups/version before\n"
+      + "    editing; record outcomes back into the plan (reckon-ship) as work lands.\n"
       + "  Advisers (mandatory at critical points): before committing to an approach,\n"
       + "    before any irreversible or outward-facing action, and before declaring\n"
       + "    work done — consult an adviser (stronger-reviewer / advisor tool) and\n"
       + "    weigh the feedback. Don't crystallise an approach or claim completion\n"
-      + "    without one.\n\n";
+      + "    without one.\n";
   }
 
-  function buildSection(p, num, total, projectName, bySlug, soft) {
+  function orchestrationBlock(n, projectName, title, sprintMeta) {
+    var t = "\nOrchestration\n";
+    if (n === 1) {
+      t += "  You are the orchestrator for this task. Do the work yourself or dispatch\n"
+        +  "  sub-workers as useful. Honour the locked decisions below and surface (do\n"
+        +  "  not unilaterally resolve) the open ones. Pull in a dependency only if you\n"
+        +  "  judge it a genuine prerequisite. Consult advisers at the critical points\n"
+        +  "  named in Working context.\n";
+    } else {
+      t += "  You are coordinating a fleet of workers across " + n + " plans. Dispatch in\n"
+        +  "  the order below; honour dependency edges. Workers whose dependencies are\n"
+        +  "  satisfied may run in parallel. Honour locked decisions, never resolve open\n"
+        +  "  decisions unilaterally, and consult advisers at the critical points named\n"
+        +  "  in Working context.\n";
+    }
+    t += "\nProject: " + projectName + "\n";
+    if (sprintMeta && sprintMeta.id) t += "Sprint:  " + sprintMeta.id + "\n";
+    if (title) t += "Goal:    " + title + "\n";
+    if (sprintMeta && sprintMeta.window) t += "Window:  " + sprintMeta.window + "\n";
+    return t;
+  }
+
+  function buildSection(p, num, total, projectName, bySlug) {
     var decisions = p.decisions || [];
     var locked = decisions.filter(function(d) { return d.chosen || d.choice; });
     var open = decisions.filter(function(d) { return !(d.chosen || d.choice); });
-    // Drive from the first UNRESOLVED followup (the live next step), not just [0].
     var fus = p.followups || [];
     var next = fus.filter(function(f) { return !(f.resolved_at || f.status === "resolved"); })[0] || fus[0];
 
@@ -70,39 +91,33 @@
     var openBlock = open.length === 0 ? "  (none)"
       : open.map(function(d) { return "  " + d.key + " — " + (d.title || d.key); }).join("\n");
 
-    var txt = "─── " + num + "/" + total + " · " + p.slug + " ───\n";
+    var txt = "\n─── " + num + "/" + total + " · " + p.slug + " ───\n";
     txt += "Plan:   " + p.slug + "\n";
     txt += "Title:  " + (p.title || p.slug) + "\n";
     txt += "Status: " + (p.status || "?") + (p.phase ? " · " + p.phase : "") + " · " + Math.round((p.impl || 0) * 100) + "% complete\n";
     if (p.ms) txt += "MS:     " + p.ms + "\n";
     if (p.sprint) txt += "Sprint: " + p.sprint + "\n";
+    if (p.justification) txt += "Why (sprint): " + p.justification + "\n";
 
     if (p.summary) txt += "\nSummary\n  " + p.summary + "\n";
 
-    // Dependencies. In SOFT (single-plan focus) mode they are called out for the
-    // orchestrator to judge — never auto-dispatched: an upstream strategy doc at
-    // 70% is context, not a hard prerequisite for the focused task. In fleet mode
-    // the actionable ones are already their own sections, so this is just a
-    // read-their-state context list.
     var deps = (p.depends_on || []).filter(Boolean);
     if (deps.length) {
       var depList = deps.map(function(slug) {
         var dp = bySlug && bySlug[slug];
         return "    " + slug + " (" + (dp ? pctStatus(dp) : "unknown") + ")";
       }).join("\n");
-      if (soft) {
-        txt += "\nDependencies of this plan (soft — orchestrator's call)\n"
-             + "  This plan declares the dependencies below. Decide whether each is\n"
-             + "  actually required for THIS focused task before acting: a partial or\n"
-             + "  strategy-level dependency is context, not a hard blocker, and is NOT\n"
-             + "  auto-dispatched. Pull one in (generate its own prompt) only if you\n"
-             + "  judge it a genuine prerequisite for this task.\n" + depList + "\n";
-      } else {
-        txt += "\nPrerequisites (context — read their state, do not re-do)\n" + depList + "\n";
-      }
+      txt += "\nDependencies of this plan (soft — orchestrator's call)\n"
+           + "  Decide whether each is actually required for THIS task before acting:\n"
+           + "  a partial or strategy-level dependency is context, not a hard blocker,\n"
+           + "  and is NOT auto-dispatched. Pull one in only if you judge it a genuine\n"
+           + "  prerequisite.\n" + depList + "\n";
     }
 
-    // Human feedback — highest priority for agents to read
+    txt += "\nLocked decisions (honour these)\n" + lockedBlock + "\n";
+    txt += "\nOpen decisions (surface, do not resolve)\n" + openBlock + "\n";
+
+    // Human feedback — highest priority for agents to read.
     var allComments = [];
     var comments = p.comments || {};
     Object.keys(comments).forEach(function(sid) {
@@ -118,46 +133,35 @@
       });
     }
 
-    txt += "\nState to read\n  /plan/" + projectName + "/" + p.slug + "\n";
-    txt += "\nLocked decisions (honour these)\n" + lockedBlock + "\n";
-    txt += "\nOpen decisions (surface, do not resolve)\n" + openBlock + "\n";
-
     if (next && next.prompt) {
-      // The authored §05 followup prompt IS the handoff — the carefully written
-      // launch brief. Surface it as the task. It carries its own Done-when, so
-      // do NOT append a generic trailer (that produced the confusing duplicate).
       txt += "\n── Handoff brief" + (next.title ? " · " + next.title : "") + " ──\n";
-      txt += next.prompt.replace(/\s+$/, "") + "\n\n";
+      txt += next.prompt.replace(/\s+$/, "") + "\n";
     } else if (next) {
       txt += "\nNext-up\n  " + (next.title || "") + "\n";
       if (next.body) txt += "  " + next.body + "\n";
-      txt += "\nDone-when\n  1. Land the work described.\n  2. POST followup to /plan/" + projectName + "/" + p.slug + " with outcome.\n  3. Mark driving followup resolved.\n\n";
+      txt += "\nDone-when\n  1. Land the work described.\n  2. Record a followup outcome on the plan.\n  3. Mark the driving followup resolved.\n";
     } else {
-      // No followup at all — generic fallback so the section is still actionable.
-      txt += "\nDone-when\n  1. Land the work described.\n  2. POST followup to /plan/" + projectName + "/" + p.slug + " with outcome.\n  3. Mark driving followup resolved.\n\n";
+      txt += "\nDone-when\n  1. Land the work described.\n  2. Record a followup outcome on the plan.\n  3. Mark the driving followup resolved.\n";
     }
     return txt;
   }
 
   window.buildFleetPrompt = function buildFleetPrompt(items, state, title, opts) {
     opts = opts || {};
-    var expandDeps = opts.expandDeps !== false; // default true (fleet); handoff passes false
     var projectName = (state && state.projects && state.projects[0] && state.projects[0].project)
       || (state && state.project) || "project";
     var inv = (state && state.inventory) || [];
 
-    // Build bySlug from inventory, merge in richer data from items.
     var bySlug = {};
     for (var i = 0; i < inv.length; i++) bySlug[inv[i].slug] = inv[i];
     for (var j = 0; j < items.length; j++) {
       bySlug[items[j].slug] = Object.assign({}, bySlug[items[j].slug] || {}, items[j]);
     }
 
-    // Resolve dispatch order. In fleet mode, walk depends_on (dependency-first)
-    // and include only ACTIONABLE prerequisites. In handoff mode, take the
-    // requested items as-is. Either way, non-actionable plans (shipped / done /
-    // reference / research / archived / superseded / abandoned / 100%) never
-    // become work sections.
+    // Order the REQUESTED items by their mutual dependencies (dependency-first).
+    // Never recurse into non-requested plans — external deps stay soft context.
+    var reqSet = {};
+    for (var r = 0; r < items.length; r++) reqSet[items[r].slug] = true;
     var visited = {};
     var order = [];
     function visit(slug) {
@@ -165,10 +169,8 @@
       visited[slug] = true;
       var p = bySlug[slug];
       if (!p) return;
-      if (expandDeps) {
-        var deps = p.depends_on || [];
-        for (var k = 0; k < deps.length; k++) visit(deps[k]);
-      }
+      var deps = p.depends_on || [];
+      for (var k = 0; k < deps.length; k++) if (reqSet[deps[k]]) visit(deps[k]);
       if (!isActionable(p)) return; // finished / reference / 100% → skip
       order.push(slug);
     }
@@ -176,8 +178,6 @@
 
     var n = order.length;
     if (n === 0) {
-      // Nothing to dispatch. If a single plan was requested, explain why rather
-      // than emitting an empty work prompt for a done/reference/100% plan.
       if (items.length === 1) {
         var rp = bySlug[items[0].slug] || items[0];
         return "(" + items[0].slug + " is " + pctStatus(rp) + " — no actionable work to dispatch. "
@@ -186,33 +186,49 @@
       return "(no actionable plans to include — all requested plans are complete or reference.)";
     }
 
-    // Single plan: grounding preamble + one section. Dependencies are SOFT when
-    // we did not expand them (single-plan focus) — called out for the
-    // orchestrator's judgement, not dispatched.
-    if (n === 1) {
-      return groundingBlock(projectName) + buildSection(bySlug[order[0]], 1, 1, projectName, bySlug, !expandDeps);
+    var sprintMeta = opts.sprint || null;
+    var txt = groundingBlock(projectName);
+    txt += orchestrationBlock(n, projectName, title, sprintMeta);
+
+    if (n > 1) {
+      txt += "\nExecution sequence (dependency-ordered within this set):\n";
+      for (var idx = 0; idx < order.length; idx++) {
+        var s = order[idx];
+        var d2 = (bySlug[s].depends_on || []).filter(function(d) { return reqSet[d]; });
+        txt += "  " + (idx + 1) + ". " + s + (d2.length ? "  (← " + d2.join(", ") + ")" : "") + "\n";
+      }
+      txt += "\nEach plan's section follows.\n";
     }
 
-    // Multi-plan: grounding preamble + Orchestration block + per-plan sections.
-    var txt = groundingBlock(projectName);
-    txt += "Orchestration\n  You are coordinating a fleet of workers across " + n + " plans.\n";
-    txt += "  Dispatch in the order below; honour dependency edges.\n";
-    txt += "  Workers whose dependencies are satisfied may run in parallel.\n\n";
-    txt += "Project: " + projectName + "\n";
-    if (title) txt += "Goal:    " + title + "\n";
-    txt += "\nExecution sequence (resolved from depends_on):\n";
-    for (var idx = 0; idx < order.length; idx++) {
-      var slug = order[idx];
-      var p = bySlug[slug];
-      var deps = (p && p.depends_on || []).filter(function(d) { return bySlug[d]; });
-      txt += "  " + (idx + 1) + ". " + slug;
-      if (deps.length) txt += "  (← " + deps.join(", ") + ")";
-      txt += "\n";
-    }
-    txt += "\nEach plan's detail follows below.\n\n";
     for (var si = 0; si < order.length; si++) {
-      txt += buildSection(bySlug[order[si]], si + 1, n, projectName, bySlug, false);
+      txt += buildSection(bySlug[order[si]], si + 1, n, projectName, bySlug);
     }
     return txt;
+  };
+
+  // Hydrate lean inventory items with live per-plan state, then build. Sprint
+  // surfaces pass /_discover inventory entries (no decisions/followups), so they
+  // must hydrate or every section shows "(none)" decisions and no handoff brief.
+  window.buildFleetPromptAsync = async function buildFleetPromptAsync(items, state, title, opts) {
+    var projectName = (state && state.projects && state.projects[0] && state.projects[0].project)
+      || (state && state.project) || "project";
+    var hydrated = await Promise.all((items || []).map(async function(it) {
+      try {
+        var resp = await fetch("/plan/" + projectName + "/" + encodeURIComponent(it.slug), { cache: "no-store" });
+        if (!resp.ok) return it;
+        var j = await resp.json();
+        var d = (j && j.data) || j || {};
+        return Object.assign({}, it, {
+          decisions: d.decisions || it.decisions || [],
+          followups: d.followups || it.followups || [],
+          comments: d.comments || it.comments || {},
+          depends_on: d.depends_on || it.depends_on || [],
+          summary: it.summary || d.summary || "",
+        });
+      } catch (e) {
+        return it;
+      }
+    }));
+    return window.buildFleetPrompt(hydrated, state, title, opts);
   };
 })();

@@ -743,9 +743,11 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
             <span className="dot-sep">·</span>
             <span className="meta-item"><span className="k">items</span><span className="v">{s.items.length}</span></span>
             <span style={{ flex: 1 }}></span>
-            <button className={`resolve-btn ${blocked ? "" : "done"}`} onClick={handleResolve} title={blocked ? "Take the next open decision" : "All decisions taken"}>
-              Resolve <span className="resolve-badge">{totalOpen}</span>
-            </button>
+            {totalOpen > 0 && (
+              <button className="resolve-btn" onClick={handleResolve} title="Take the next open decision">
+                Resolve <span className="resolve-badge">{totalOpen}</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1217,72 +1219,55 @@ function FleetPrompt({ sprintId }) {
   const M = window.STATE;
   const sprint = M.sprints.find(s => s.id === sprintId);
   const [open, setOpen] = useState(false);
+  const [text, setText] = useState(null);
 
   useEffect(() => {
-    const h = () => setOpen(true);
+    const h = () => { setText(null); setOpen(true); };
     window.addEventListener("r-open-fleet-prompt", h);
     return () => window.removeEventListener("r-open-fleet-prompt", h);
   }, []);
 
-  if (!sprint) return null;
+  // Build via the shared builder (same format as the single-plan button).
+  // Hydrate first — the /_discover inventory has no decisions/followups, so
+  // without this every section would show "(none)" decisions + no handoff brief.
+  useEffect(() => {
+    if (!open || !sprint) return;
+    let alive = true;
+    const slugSet = new Set(sprint.items.map(it => typeof it === "string" ? it : it.slug));
+    const items = [...slugSet].map(slug => {
+      const p = M.inventory.find(x => x.slug === slug);
+      const meta = sprint.items.find(it => (typeof it === "string" ? it : it.slug) === slug);
+      const just = typeof meta === "object" ? meta.justification : null;
+      return p ? { ...p, justification: just } : null;
+    }).filter(Boolean);
+    const win = (sprint.starts || "") + (sprint.ends ? " → " + sprint.ends : "");
+    const opts = { sprint: { id: sprint.id, window: win } };
+    Promise.resolve(
+      window.buildFleetPromptAsync
+        ? window.buildFleetPromptAsync(items, M, sprint.theme, opts)
+        : window.buildFleetPrompt(items, M, sprint.theme, opts)
+    ).then(t => { if (alive) setText(t); });
+    return () => { alive = false; };
+  }, [open, sprintId]);
 
-  const slugSet = new Set(sprint.items.map(it => typeof it === "string" ? it : it.slug));
-  const itemsArr = [...slugSet].map(slug => {
-    const p = M.inventory.find(x => x.slug === slug);
-    const meta = sprint.items.find(it => (typeof it === "string" ? it : it.slug) === slug);
-    const just = typeof meta === "object" ? meta.justification : null;
-    return p ? { ...p, justification: just } : null;
-  }).filter(Boolean);
-
-  const order = [];
-  const visited = new Set();
-  const visit = (p) => {
-    if (visited.has(p.slug)) return;
-    visited.add(p.slug);
-    for (const dep of (p.depends_on || [])) {
-      const depPlan = itemsArr.find(x => x.slug === dep);
-      if (depPlan) visit(depPlan);
-    }
-    order.push(p);
-  };
-  for (const p of itemsArr) visit(p);
-
-  const buildPrompt = () => {
-    const proj = M.projects?.[0]?.project || M.project || "project";
-    let txt = `Orchestration\n  You are coordinating a fleet of workers across ${order.length} plans in a single\n  sprint. Dispatch in the order below; honour the dependency edges. Workers\n  whose dependencies are satisfied may run in parallel. Each worker must read\n  every plan it depends on in full, develop the plan further as it works,\n  inspect code under the project repo when ambiguous, honour locked decisions,\n  and never resolve open decisions unilaterally.\n\nProject: ${proj}\nSprint:  ${sprint.id}\nGoal:    ${sprint.theme}\nWindow:  ${sprint.starts} → ${sprint.ends}\n\nExecution sequence (resolved from depends_on within the sprint):\n`;
-    order.forEach((p, i) => {
-      txt += `  ${i + 1}. ${p.slug}${(p.depends_on || []).length ? "  (← " + p.depends_on.join(", ") + ")" : ""}\n`;
-    });
-    txt += `\nEach plan's individual prompt follows below as a numbered section.\n\n`;
-    order.forEach((p, i) => {
-      txt += `\n─── ${i + 1}/${order.length} · ${p.slug} ───\n`;
-      const decisions = (p.decisions || []);
-      const locked = decisions.filter(d => (d.chosen || d.choice));
-      const openD = decisions.filter(d => !(d.chosen || d.choice));
-      const lockedBlock = locked.length === 0 ? "  (none)" : locked.map(d => `  ${d.key} → ${d.chosen || d.choice}`).join("\n");
-      const openBlock = openD.length === 0 ? "  (none)" : openD.map(d => `  ${d.key} — ${d.title}`).join("\n");
-      const next = (p.followups || [])[0];
-      const comments = (p.comments) || (window.reckon.planLoad?.(p.slug)?.comments) || {};
-      const commentEntries = Object.entries(comments).filter(([_, arr]) => (arr || []).length > 0);
-      const commentsBlock = commentEntries.length === 0 ? "  (none)" :
-        commentEntries.map(([sid, arr]) =>
-          arr.map(c =>
-            `  §${sid} · ${c.who} · ${c.when}\n` +
-            (c.quote ? `      quote: "${c.quote.length > 200 ? c.quote.slice(0, 200) + "…" : c.quote}"\n` : "") +
-            `      body: ${c.body}`
-          ).join("\n")
-        ).join("\n");
-      txt += `Plan: ${p.slug}\nStatus: ${p.status} · ${p.phase || ""}\nJustification (sprint): ${p.justification || "—"}\n\nPlan page to read\n  ${proj}/${p.slug}.html\n\nLocked decisions to honour\n${lockedBlock}\n\nOpen decisions to surface\n${openBlock}\n\nComments (anchored to sections)\n${commentsBlock}\n\nNext-up\n  ${next?.title || "—"}\n  ${next?.body || ""}\n\nDone-when\n  1. Land the work this prompt describes.\n  2. POST a followup to ${p.slug}.json#followups.\n  3. Mark the current followup resolved.\n`;
-    });
-    return txt;
-  };
-
-  if (!open) return null;
+  if (!open || !sprint) return null;
+  if (text == null) {
+    return (
+      <div className="r-modal-scrim" onClick={() => setOpen(false)}>
+        <div className="r-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="head">
+            <h3 style={{ margin: 0, fontSize: 16 }}>Generating fleet prompt…</h3>
+            <button className="btn ghost" onClick={() => setOpen(false)}>Close · Esc</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <PromptModalAdHoc
       title={`Fleet · ${sprint.id}`}
-      subtitle={`Orchestrate ${order.length} workers — sequence honours depends_on`}
-      buildText={buildPrompt}
+      subtitle={`Orchestrate ${sprint.items.length} plan(s) — sequence honours depends_on`}
+      buildText={() => text}
       onClose={() => setOpen(false)}
     />
   );
