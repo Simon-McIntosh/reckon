@@ -194,11 +194,19 @@ function Plan({ slug, onNav }) {
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
     const open = () => {
-      // Open decisions are NOT a blocker. The fleet prompt is built to carry
-      // them — see prompts.js "Open decisions (surface, do not resolve)".
-      // Deferring a decision to be resolved DURING the work (e.g. an I/O
-      // strategy decided in the first task) is a valid, intended state, so the
-      // prompt must still generate. Inform the author, then open it.
+      // Don't generate a work prompt for a plan that has no work: finished /
+      // reference / archived plans, or anything at 100%. Dispatching a fleet
+      // against a done plan is the bug this guards.
+      const NONACTIONABLE = ["shipped", "done", "archived", "superseded", "abandoned", "reference", "research", "historical"];
+      const impl = (fullState && fullState.impl != null) ? fullState.impl : (P.impl || 0);
+      if (NONACTIONABLE.includes((P.status || "").toLowerCase()) || impl >= 1) {
+        if (window.flashSaved) window.flashSaved(`ℹ ${slug} is ${P.status || "complete"} (${Math.round(impl * 100)}%) — no work to dispatch`);
+        return;
+      }
+      // Open decisions are NOT a blocker. The prompt is built to carry them —
+      // see prompts.js "Open decisions (surface, do not resolve)". Deferring a
+      // decision to be resolved DURING the work (e.g. an I/O strategy decided
+      // in the first task) is a valid state, so the prompt still generates.
       const openDecs = decs.filter(d => !d.chosen && !d.choice);
       if (openDecs.length > 0 && window.flashSaved) {
         window.flashSaved(`ℹ ${openDecs.length} open decision${openDecs.length === 1 ? "" : "s"} surfaced in the prompt (to resolve during the work)`);
@@ -447,7 +455,9 @@ function Plan({ slug, onNav }) {
                     followups: fullState?.followups || [],
                     comments,  // live state — always current; fullState snapshot can be stale
                   })],
-                  window.STATE
+                  window.STATE,
+                  null,
+                  { expandDeps: false }  // handoff for THIS plan only — prereqs are context, not work sections
                 )
               : "(prompts.js not loaded)"
           }
