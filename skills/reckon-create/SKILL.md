@@ -353,6 +353,13 @@ Set it to `draft` on initial scaffolding; update it as the plan progresses.
 Every followup's `<pre class="r-fu-prompt">` MUST be built from this template.
 A followup without a non-empty prompt is rejected at write time.
 
+**Do NOT re-list decisions or plan state in the prompt.** The generate-prompt
+builder injects the live plan URL and the CURRENT Locked/Open decisions directly
+above this brief — copying them into the prompt duplicates the builder and, worse,
+goes **stale** the moment a decision is locked (the frozen copy then contradicts
+the live list above). The brief carries only what the builder can't: the task
+narrative, the specific files to read, non-decision constraints, and done-when.
+
 ```
 Project: <project-name>
 Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
@@ -361,18 +368,16 @@ Tier:    <haiku | sonnet | opus>
 
 Context
   2–3 sentences on why this is queued now and what landed before it.
+  (Honour the Locked decisions and surface the Open decisions shown live above
+   this brief — do not re-list them.)
 
-State to read
-  GET /plan/<project>/<slug>   (parsed state — decisions, followups, status, version)
+State to read  (CODE / FILES / DATA — not the plan itself; the builder already
+                injects the live plan-state URL above)
+  <specific source files, dirs, datasets, prior artefacts the worker must read>
 
-Locked decisions to honour
-  <key> → <choice>
-
-Open decisions to surface (do not resolve)
-  <key>, <key>
-
-Constraints
-  <licence, format, environment, blockers cleared>
+Scope locks / constraints  (non-decision)
+  <pre-registered scope that must not be re-litigated; licence, format,
+   environment, compute/SLURM rules, blockers cleared>
 
 Done-when
   1. <measurable artefact: commit, file, test result>

@@ -284,6 +284,12 @@ prose edit. Agents may also append comments via `edit_plan` append op to `target
 Every followup `prompt` MUST be built from this template. It is the dispatch
 prompt for the next agent. A non-empty prompt is enforced at write time.
 
+**Do NOT re-list decisions or plan state.** The generate-prompt builder injects
+the live plan URL and the current Locked/Open decisions directly above this
+brief; copying them here duplicates the builder and goes stale once a decision
+is locked. Carry only what the builder can't: narrative, specific files,
+non-decision constraints, done-when.
+
 ```
 Project: <project-name>
 Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
@@ -292,18 +298,13 @@ Tier:    <haiku | sonnet | opus>
 
 Context
   2–3 sentences on why this is queued now.
+  (Honour the Locked / surface the Open decisions shown live above — don't re-list.)
 
-State to read
-  GET /plan/<project>/<slug>   (decisions, followups, status, version)
+State to read  (CODE / FILES / DATA — the builder already injects the plan URL)
+  <specific source files, dirs, datasets, prior artefacts to read>
 
-Locked decisions to honour
-  <key> → <choice>
-
-Open decisions to surface (do not resolve)
-  <key>, <key>
-
-Constraints
-  <licence, format, environment>
+Scope locks / constraints  (non-decision)
+  <pre-registered scope not to re-litigate; licence, format, environment, SLURM>
 
 Done-when
   1. <measurable artefact>
