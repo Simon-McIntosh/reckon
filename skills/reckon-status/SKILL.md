@@ -127,7 +127,10 @@ Run all checks; emit a prioritised punch-list.
 | **Open decision** | `<div class="r-dec">` with empty or absent `data-choice` |
 | **Stale plan** | `plan-status=active` and `plan-modified` > 30 days ago |
 | **Tier mismatch** | sprint item `tier` differs from `<meta name="plan-tier">` on the plan page |
+| **Non-actionable sprint item** | sprint item slug resolves to a research/doc, archived plan, or done plan |
 | **Archived flag but not archived status** | `plan-archived=1` but `plan-status != archived` |
+| **Stale markdown link** | internal `<a href=\"...md\">` still points at a markdown source after migration |
+| **Sparse relationship metadata** | plan prose clearly references another live plan/research doc but `plan-depends-on` / `plan-blocks` / `plan-informs` is empty |
 
 Output format:
 
@@ -145,6 +148,11 @@ Output format:
 - plan-alpha: modified 45d ago, status still active — confirm or ship
 - plan-beta: item tier=haiku but plan tier=sonnet
 ```
+
+When reviewing a project after a migration wave, add three short passes:
+1. **Inventory** — live plan vs research vs archive counts
+2. **Relationship audit** — explicit `depends_on` / `blocks` / `informs`
+3. **Sprint fit** — only actionable live plans belong in sprint items
 
 ---
 

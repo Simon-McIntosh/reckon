@@ -57,6 +57,22 @@ characterisations, and reference analyses that inform — but do not describe �
 
 **When ambiguous, default to plan.**
 
+## Routing + relationship metadata
+
+- **Live actionable work** → `docs/<slug>.html` with `reckon-type=plan`.
+- **Live reference / analysis** that feeds work → `docs/<slug>.html` with `reckon-type=research` (or `doc`) plus `plan-informs`.
+- **Completed or historical material** → `docs/archive/`; do not crowd the live inventory with migrated history.
+
+**Relationship fields use slugs only** — never file paths or `.html` / `.md` suffixes:
+
+- `plan-depends-on` = prerequisites this doc cannot close without
+- `plan-blocks` = downstream live plans this plan unblocks
+- `plan-informs` = research/reference inputs that feed a plan
+
+Set only the relationships that are clear from the source. If you are migrating
+an old markdown doc, fix internal links to the final `.html` targets in the
+same pass.
+
 ## Hard rules
 
 1. **HTML is the source of truth.** Never create a markdown plan file.
@@ -132,6 +148,10 @@ reckon audit-doc docs/<slug>.html --project imas-ambix
 python -m reckon.doccheck docs/<slug>.html     # equivalent module form
 ```
 
+If the current repo environment cannot import `reckon`, run the module form
+from the reckon checkout (or with `PYTHONPATH` pointing at it) rather than
+skipping validation.
+
 It flags relative image `src` (**ERROR**), literal `**markdown**` in a rendered
 body (**ERROR**), missing required meta `plan-slug`/`plan-status` (**ERROR**);
 wrong-project image `src`, reliance on `<head><style>`, and leading `- `/`# `
@@ -157,6 +177,15 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 - Slug: kebab-case, lowercase (`plasma-decoder-finetune`, not `Plasma Decoder`)
 - Title: Title Case from slug
 - If `/reckon-create <slug>` provided, use that slug verbatim.
+
+### Step 2.5 — Decide live vs archive and relationship fields
+
+Before writing the file:
+
+1. Decide whether it belongs in **live `docs/`** or **`docs/archive/`**.
+2. Decide whether it is a **plan** or **research/doc**.
+3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` with **slugs** for
+   the relationships that are already explicit in the source material.
 
 ### Step 3 — Write the HTML
 

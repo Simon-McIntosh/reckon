@@ -105,12 +105,19 @@ body/outcome, author **HTML, never markdown**:
   disagrees with the code/results is a **defect**, not a backlog item.
 - **No build-up.** Resolve followups when their work lands; close/retire sprints
   and plans when finished. Don't accumulate open followups for completed work.
+- **Keep relationship metadata current.** If a plan now clearly depends on,
+  blocks, or is informed by another live doc, update `plan-depends-on`,
+  `plan-blocks`, and/or `plan-informs` in the same edit. Use slug lists, not
+  file paths.
 - **Run `reckon audit-doc docs/<slug>.html` before ending your turn** (or
   `python -m reckon.doccheck docs/<slug>.html`). It flags relative image `src`
   and literal `**markdown**` in a rendered body as **ERRORs** (non-zero exit),
   plus wrong-project image `src`, `<head><style>` reliance, and markdown
   list/heading markers as WARNs. **Clear all ERRORs before relying on the
   edited doc.**
+- **Use an environment that can import `reckon`.** If the project venv cannot,
+  run the module form from the reckon checkout (or with `PYTHONPATH` pointing
+  at it) rather than skipping validation.
 
 ## State write pattern — `edit_plan`
 
@@ -382,16 +389,25 @@ edit_plan(
 
 **Propose a sprint (manual workflow):**
 1. Discover plans via `read_plan(project, slug=None)` (discovery mode).
-2. Filter `status in {active, pending}`.
-3. Score: `roi × effort_inverse × milestone_priority`. Apply dependency-aware ordering.
+2. Keep only **actionable live plans**: usually `status in {active, pending}`.
+   Exclude research docs, archived/done plans, README/reference pages, and
+   cross-repo coordination plans unless the user explicitly wants them tracked.
+3. Score by dependency order first, then `roi × effort_inverse × milestone_priority`.
 4. Partition into N sprints; each item has `why_now`, `tier`, `done_when`.
-5. Print proposal; ask to confirm before writing.
+5. Keep **one active sprint** at a time. Future sprints start as `planned`.
+6. Use the plan's own `plan-tier` unless there is a deliberate reason to override it.
+7. Print proposal; ask to confirm before writing.
 
 ## Intent: archive
 
 1. Write `docs/archive/<slug>-final.html` — frozen snapshot.
 2. Edit `docs/<slug>.html` — add landed-summary card, update prose to past-tense.
 3. `edit_plan(project, slug, ops=[{"op":"set","path":"status","value":"archived"}], expected_version=…)`.
+
+**Migration routing rule:** if you are converting old markdown, move active or
+pending work into live `docs/`, but route completed/historical material into
+`docs/archive/`. Keep research inputs live only while they still inform current
+plans; otherwise archive them too.
 
 ## Cross-references
 
