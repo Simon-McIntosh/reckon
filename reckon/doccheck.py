@@ -31,12 +31,20 @@ Usage:
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import sys
+import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from bs4 import BeautifulSoup
+
+from reckon import _plan_html
+from reckon._store import _mounts_path
 
 # Required scalar meta tags for a plan doc (research/doc types relax `status`).
 _REQUIRED_META = ("plan-slug", "plan-status")
@@ -68,8 +76,130 @@ class Finding:
         return f"  {glyph} [{self.code}] {self.message}"
 
 
+@dataclass(frozen=True)
+class LifecycleFinding:
+    project: str
+    slug: str
+    flag: str
+    age_days: int
+    impl: float | None
+    last_modified: str
+
+
 def _visible_text(el) -> str:
     return el.get_text(" ", strip=True) if el else ""
+
+
+def _load_mounts() -> dict[str, Path]:
+    mounts_file = _mounts_path()
+    if not mounts_file.exists():
+        return {}
+    try:
+        raw = json.loads(mounts_file.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    mounts: dict[str, Path] = {}
+    for project, docs_dir in raw.items():
+        if isinstance(project, str) and isinstance(docs_dir, str):
+            mounts[project] = Path(docs_dir).expanduser().resolve()
+    return mounts
+
+
+def _iter_doc_files(docs_dir: Path):
+    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
+
+    for html_file in sorted(docs_dir.rglob("*.html")):
+        rel = html_file.relative_to(docs_dir)
+        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if html_file.name in _NON_PLAN_FILES:
+            continue
+        yield html_file
+
+
+def _read_lifecycle_state(path: Path) -> dict[str, Any]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"slug": path.stem, "type": "plan", "status": "", "impl": None}
+    state = _plan_html.read_state(text)
+    impl = state.get("impl")
+    return {
+        "slug": (state.get("slug") or path.stem),
+        "type": ((state.get("type") or "plan").strip().lower()),
+        "status": ((state.get("status") or "").strip().lower()),
+        "impl": float(impl) if impl is not None else None,
+    }
+
+
+def audit_lifecycle(
+    *,
+    project: str | None = None,
+    now_ts: float | None = None,
+) -> list[LifecycleFinding]:
+    mounts = _load_mounts()
+    if project is not None:
+        if project not in mounts:
+            raise ValueError(f"project {project!r} not found in {_mounts_path()}")
+        mounts = {project: mounts[project]}
+
+    current_ts = time.time() if now_ts is None else now_ts
+    findings: list[LifecycleFinding] = []
+    flag_order = {"MISSING_IMPL": 0, "STALE": 1, "STALE_RCA": 2}
+
+    for project_name, docs_dir in mounts.items():
+        if not docs_dir.is_dir():
+            continue
+        for html_file in _iter_doc_files(docs_dir):
+            state = _read_lifecycle_state(html_file)
+            modified_ts = os.path.getmtime(html_file)
+            age_days = max(0, int((current_ts - modified_ts) // 86400))
+            last_modified = datetime.fromtimestamp(modified_ts).strftime("%Y-%m-%d")
+            status = state["status"]
+            doc_type = state["type"]
+            impl = state["impl"]
+
+            if doc_type == "research":
+                if status not in {"done", "archived"} and age_days > 60:
+                    findings.append(
+                        LifecycleFinding(
+                            project=project_name,
+                            slug=state["slug"],
+                            flag="STALE_RCA",
+                            age_days=age_days,
+                            impl=impl,
+                            last_modified=last_modified,
+                        )
+                    )
+                continue
+
+            if status == "active" and (impl or 0.0) < 1.0 and age_days > 30:
+                findings.append(
+                    LifecycleFinding(
+                        project=project_name,
+                        slug=state["slug"],
+                        flag="STALE",
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                    )
+                )
+            if status in {"shipped", "done"} and (impl is None or impl == 0.0):
+                findings.append(
+                    LifecycleFinding(
+                        project=project_name,
+                        slug=state["slug"],
+                        flag="MISSING_IMPL",
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                    )
+                )
+
+    findings.sort(key=lambda item: (item.project, flag_order[item.flag], item.slug))
+    return findings
 
 
 def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:

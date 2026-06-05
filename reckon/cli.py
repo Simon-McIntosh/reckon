@@ -511,6 +511,61 @@ def doctor():
         sys.exit(1)
 
 
+@main.command()
+@click.option(
+    "--project",
+    default=None,
+    help="Limit the lifecycle audit to one mounted project.",
+)
+def audit(project):
+    """Report stale lifecycle state across mounted reckon projects.
+
+    Flags:
+      - STALE: active plans older than 30 days with impl < 1.0
+      - MISSING_IMPL: shipped/done plans with missing or zero impl
+      - STALE_RCA: research docs older than 60 days that are not done/archived
+
+    Exits 1 when any MISSING_IMPL row is found (CI-friendly).
+    """
+    import sys
+
+    from reckon.doccheck import audit_lifecycle
+
+    try:
+        findings = audit_lifecycle(project=project)
+    except ValueError as e:
+        raise click.ClickException(str(e)) from e
+
+    if not findings:
+        click.echo("No lifecycle hygiene findings.")
+        return
+
+    rows = [
+        (
+            item.project,
+            item.slug,
+            item.flag,
+            f"{item.age_days}d",
+            "-" if item.impl is None else f"{item.impl:.2f}",
+            item.last_modified,
+        )
+        for item in findings
+    ]
+    headers = ("project", "plan-slug", "flag", "age", "impl", "last-modified")
+    widths = [
+        max(len(header), *(len(row[idx]) for row in rows))
+        for idx, header in enumerate(headers)
+    ]
+    fmt = "  ".join(f"{{:<{width}}}" for width in widths)
+    click.echo(fmt.format(*headers))
+    click.echo(fmt.format(*("-" * width for width in widths)))
+    for row in rows:
+        click.echo(fmt.format(*row))
+
+    if any(item.flag == "MISSING_IMPL" for item in findings):
+        sys.exit(1)
+
+
 @main.command(name="audit-doc")
 @click.argument("paths", nargs=-1, required=True, type=click.Path(path_type=Path))
 @click.option(
