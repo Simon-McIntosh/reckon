@@ -8,7 +8,8 @@
   <meta name="plan-slug"      content="plan-lifecycle-hygiene">
   <meta name="plan-title"     content="Plan lifecycle hygiene — sync, status, archive at scale">
   <meta name="plan-summary"   content="The repo carries ~819 reckon docs; we are very good at producing new plans and very bad at keeping them in sync, updating status, and archiving them once done (lead, 2026-06-03). Root-cause the sync defects (impl never set; collapse-on-ship skipped; RCAs left active; no archive waves) and land MECHANISMS, not resolutions: lifecycle invariants enforced at write time, an audit cadence, archive policy, and a plan-creation diet.">
-  <meta name="plan-status"    content="draft">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-impl"      content="0.33">
   <meta name="plan-roi"       content="high">
   <meta name="plan-effort"    content="M">
   <meta name="plan-tier"      content="opus">
@@ -62,7 +63,7 @@
       out-competes a new plan unless the work has its own lifecycle.</li>
     </ul>
 
-    <h2 id="s3">§3 — Proposed mechanisms (each lands as its own §4 milestone)</h2>
+    <h2 id="s3">§3 — Proposed mechanisms (tracked below as milestones)</h2>
     <ol>
       <li><strong>Write-time lifecycle invariants (reckon server)</strong>:
         <ul>
@@ -94,7 +95,23 @@
       diff summary, not each doc.</li>
     </ol>
 
-    <h2 id="s4">§4 — Open questions for the lead</h2>
+    <h2 id="s4">§4 — Milestone progress</h2>
+    <ul>
+      <li><strong>M1 — write-time lifecycle invariants:</strong> blocked pending the lead's
+      strictness decision.</li>
+      <li><strong>M2 — audit cadence:</strong> landed in reckon via the new
+      <code>reckon audit</code> CLI command plus test coverage.</li>
+      <li><strong>M3 — archive waves:</strong> groundwork landed in reckon's AGENTS.md via a
+      quarterly archive-wave policy (<code>plan-archived=1</code> on done/superseded docs
+      older than 90 days); automated sweep still pending.</li>
+      <li><strong>M4 — plan-creation diet:</strong> blocked pending design review.</li>
+      <li><strong>M5 — sprint-close gate:</strong> blocked pending the same strictness choice
+      as M1.</li>
+      <li><strong>M6 — backfill wave:</strong> not implemented yet; the audit output now
+      provides the candidate list for a later supervised pass.</li>
+    </ul>
+
+    <h2 id="s5">§5 — Open questions for the lead</h2>
     <ul>
       <li>Enforcement strictness: reject-on-write (hard) vs warn-on-write + audit-ERROR
       (soft) for §3.1? Hard rejection fights fleet workers; soft rot fights the lead.</li>
@@ -120,21 +137,22 @@
       <h2><span class="sec">§</span> Followups</h2>
       <article class="r-fu" data-id="f-plh-001" data-status="open" data-tier="opus"
                data-written-by="reckon-create" data-written-at="2026-06-03">
-        <h4 class="r-fu-title">Design review with the lead — pick mechanisms + strictness, then land §3.1 invariants in reckon</h4>
-        <div class="r-fu-body"><p>This plan needs the lead's §4 answers before any
-        implementation. The reckon server changes (§3.1, §3.5) live in ~/Code/reckon, not
-        imas-efit — cross-repo scope.</p></div>
+        <h4 class="r-fu-title">Design review with the lead — lock strictness, then land the remaining reckon lifecycle gates</h4>
+        <div class="r-fu-body"><p>The audit command and archive-policy groundwork are now
+        landed in reckon. Remaining server-side enforcement changes (§3.1, §3.5) still need
+        the lead's §5 answers before implementation.</p></div>
         <pre class="r-fu-prompt">Project: imas-efit (mechanisms land in ~/Code/reckon)
 Plan:    plan-lifecycle-hygiene
-Section: SS3.1 + SS3.5 after SS4 answers
+Section: SS3.1 + SS3.5 after SS5 answers
 Tier:    opus
 
 Context
   ~819 reckon docs; sync defects diagnosed in SS1 (impl never set, RCAs left active,
-  SS5b skipped under fleet pressure, no archive waves). Lead requested major treatment.
+  SS5b skipped under fleet pressure, no archive waves). M2 audit command and M3 archive
+  policy groundwork are landed; the strictness-sensitive gates remain open.
 
 State to read
-  GET /plan/imas-efit/plan-lifecycle-hygiene  (SS4 answers locked as decisions)
+  GET /plan/imas-efit/plan-lifecycle-hygiene  (SS5 answers locked as decisions)
   ~/Code/reckon/PLAN-FORMAT.md + reckon/_plan_html.py + reckon/mcp.py (_set_impl, patch_plan)
 
 Done-when
