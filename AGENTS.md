@@ -148,6 +148,38 @@ Concretely:
 This is enforced by discipline, not by tooling — but the discipline
 is binding. Surface a violation explicitly when you spot one.
 
+## Plan Lifecycle Invariants
+
+The `plan-lifecycle-hygiene` review proposed six lifecycle-hygiene mechanisms.
+Treat them as the operating checklist below until the remaining design-review
+questions are resolved.
+
+1. **Write-time lifecycle invariants** — **pending lead design review**.
+   Do not add hard/soft write-time enforcement for `impl`, landed summaries, or
+   research-doc closure until the lead locks the strictness choice.
+2. **Audit cadence** — **implemented** via `reckon audit`.
+   Run `uv run reckon audit` (or `uv run reckon audit --project <name>`) to scan
+   mounted projects for:
+   - `STALE`: active plans older than 30 days with `plan-impl < 1.0`
+   - `MISSING_IMPL`: shipped/done plans with missing or zero `plan-impl`
+   - `STALE_RCA`: `reckon-type=research` docs older than 60 days whose status is
+     not `done`/`archived`
+   The command exits with code 1 when any `MISSING_IMPL` row is present, so it is
+   safe to wire into CI or a weekly hygiene job.
+3. **Archive waves** — **policy active; automation pending**.
+   Run a quarterly archive pass that sets `plan-archived=1` on done or
+   superseded docs older than 90 days. Per-stage records continue to live under
+   `docs/archive/`; the default dashboard should stay focused on live docs.
+4. **Plan-creation diet** — **pending lead design review**.
+   Do not tighten `reckon-create` pre-flight behaviour until the lead decides how
+   hard to bias new work toward existing plans.
+5. **Sprint-close gate** — **pending lead design review**.
+   Do not add close-sprint refusal logic for unresolved followups / unset impl /
+   missing landed summaries until the lead chooses the enforcement mode.
+6. **Backfill wave** — **groundwork only**.
+   Use `reckon audit` output to identify candidate stale docs, but defer any
+   fleet-scale backfill pass until milestones 1/4/5 are reviewed and approved.
+
 ### Where docs live and how the server works
 
 Every project keeps its plans under `<repo>/docs/`. The host-wide
