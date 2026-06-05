@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="plan-lifecycle-hygiene">
+  <meta name="plan-title"     content="Plan lifecycle hygiene — sync, status, archive at scale">
+  <meta name="plan-summary"   content="The repo carries ~819 reckon docs; we are very good at producing new plans and very bad at keeping them in sync, updating status, and archiving them once done (lead, 2026-06-03). Root-cause the sync defects (impl never set; collapse-on-ship skipped; RCAs left active; no archive waves) and land MECHANISMS, not resolutions: lifecycle invariants enforced at write time, an audit cadence, archive policy, and a plan-creation diet.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="M">
+  <meta name="plan-tier"      content="opus">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Plan lifecycle hygiene | imas-efit</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The problem, with evidence</h2>
+    <p>Lead, 2026-06-03: <em>"We seem to be very good at producing new plans (the imas-efit
+    repo has ~800) but very bad at keeping them in-sync, updating their status and archiving
+    them once done. This needs major thought and consideration."</em></p>
+    <p>Measured state (reckon audit, 2026-06-03): <strong>819 docs</strong>, 811
+    schema-conformant. Dashboard symptoms and their diagnosed causes:</p>
+    <ul>
+      <li><strong>Shipped plans showing 0% impl.</strong> Root cause: <code>impl</code> is a
+      settable scalar that the server does <em>not</em> auto-compute in practice
+      (PLAN-FORMAT calls it server-computed; <code>_set_impl</code>/<code>edit_plan</code>
+      is the only writer) — and no workflow ever set it. Fixed for the S8 dependency graph
+      on 2026-06-03 (8 plans, commit <code>4f6f8402</code>); the mechanism gap remains for
+      the other ~810.</li>
+      <li><strong>Delivered RCAs sitting "active" forever.</strong> Research docs get a
+      verdict, inform a fix, and nobody flips them to <code>done</code> — they then render
+      as stale 0% dependencies on every plan that cites them.</li>
+      <li><strong>Collapse-on-ship (§5b) skipped under fleet pressure.</strong> The S8
+      orchestration resolved followups and set statuses promptly but deferred landed-summary
+      cards and per-stage archive HTMLs "to close-out" — exactly how evergreens rot. The
+      §5b step is mandatory in reckon-ship but nothing <em>enforces</em> it.</li>
+      <li><strong>No archive waves.</strong> <code>plan-archived=1</code> exists but is
+      rarely used; <code>docs/completed/</code>, <code>docs/superseded/</code>,
+      <code>docs/research/closed/</code> conventions are inconsistent. 819 live docs is the
+      result.</li>
+      <li><strong>Plan-creation is cheap, reconciliation is manual.</strong> Every sprint
+      mints new plans + research docs; nothing retires the superseded ones at the moment of
+      supersession (the only moment anyone has the context).</li>
+    </ul>
+
+    <h2 id="s2">§2 — Design principles</h2>
+    <ul>
+      <li><strong>Mechanisms over manual resolutions.</strong> A one-time cleanup of 819
+      docs without write-time invariants reverts within two sprints.</li>
+      <li><strong>The moment of work IS the moment of record.</strong> Status, impl,
+      collapse, and archive transitions happen in the same session as the work that causes
+      them (existing AGENTS.md rule — needs teeth, not restatement).</li>
+      <li><strong>Make the dashboard the lint.</strong> Stale state must be VISIBLE as a
+      violation (audit ERROR/WARN), not discoverable only by the lead noticing 0%.</li>
+      <li><strong>Bias against new plans.</strong> A followup on an existing plan
+      out-competes a new plan unless the work has its own lifecycle.</li>
+    </ul>
+
+    <h2 id="s3">§3 — Proposed mechanisms (each lands as its own §4 milestone)</h2>
+    <ol>
+      <li><strong>Write-time lifecycle invariants (reckon server)</strong>:
+        <ul>
+          <li>resolve-final-followup OR status→shipped/done ⟹ require impl set in the same
+          edit (reject or auto-set 1.0 with warning);</li>
+          <li>status shipped/done + no <code>section-landed</code> card in prose ⟹ WARN on
+          write + audit ERROR after N days;</li>
+          <li>research docs: verdict-delivered marker (informs + a resolved outcome) ⟹
+          prompt status done.</li>
+        </ul>
+      </li>
+      <li><strong>Audit cadence</strong>: a scheduled (cron/CI) <code>reckon audit</code> +
+      staleness sweep — plans modified &gt;30d with status active and impl &lt;1 get flagged
+      into a weekly hygiene report; the lead sees a SHORT list, not 819 docs.</li>
+      <li><strong>Archive waves</strong>: quarterly (or per-sprint-close) pass setting
+      <code>plan-archived=1</code> on done/superseded docs older than a threshold;
+      consistent home (<code>docs/archive/</code>) for per-stage records; the dashboard
+      default view shows ONLY live docs.</li>
+      <li><strong>Plan-creation diet</strong>: reckon-create gains a pre-flight question —
+      "does an existing plan own this lifecycle?" — and research docs default to
+      <code>plan-informs</code>-linked notes rather than standalone status-bearing docs
+      unless they carry followups.</li>
+      <li><strong>Sprint-close checklist as code</strong>: reckon-edit close-sprint intent
+      refuses to close while sprint items have unresolved followups, unset impl, or
+      uncollapsed shipped sections — turning the S8-style deferral into a hard gate.</li>
+      <li><strong>Backfill wave</strong>: one supervised fleet pass over the existing
+      inventory (batched ~50/worker, haiku/sonnet) applying §3.1 invariants retroactively:
+      set impl, flip delivered RCAs to done, archive superseded docs. Lead reviews the
+      diff summary, not each doc.</li>
+    </ol>
+
+    <h2 id="s4">§4 — Open questions for the lead</h2>
+    <ul>
+      <li>Enforcement strictness: reject-on-write (hard) vs warn-on-write + audit-ERROR
+      (soft) for §3.1? Hard rejection fights fleet workers; soft rot fights the lead.</li>
+      <li>Where does the hygiene report land — reckon dashboard panel, weekly scheduled
+      session, or CI artifact?</li>
+      <li>Is the backfill wave (§3.6) worth ~one fleet-day now, or do invariants + organic
+      touch suffice?</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="enforcement-strictness" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Write-time lifecycle invariants: reject-on-write or warn+audit?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="reject-on-write">Hard: reject non-conformant lifecycle writes</button>
+          <button class="r-opt" data-value="warn-plus-audit">Soft: warn on write, ERROR in scheduled audit</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-plh-001" data-status="open" data-tier="opus"
+               data-written-by="reckon-create" data-written-at="2026-06-03">
+        <h4 class="r-fu-title">Design review with the lead — pick mechanisms + strictness, then land §3.1 invariants in reckon</h4>
+        <div class="r-fu-body"><p>This plan needs the lead's §4 answers before any
+        implementation. The reckon server changes (§3.1, §3.5) live in ~/Code/reckon, not
+        imas-efit — cross-repo scope.</p></div>
+        <pre class="r-fu-prompt">Project: imas-efit (mechanisms land in ~/Code/reckon)
+Plan:    plan-lifecycle-hygiene
+Section: SS3.1 + SS3.5 after SS4 answers
+Tier:    opus
+
+Context
+  ~819 reckon docs; sync defects diagnosed in SS1 (impl never set, RCAs left active,
+  SS5b skipped under fleet pressure, no archive waves). Lead requested major treatment.
+
+State to read
+  GET /plan/imas-efit/plan-lifecycle-hygiene  (SS4 answers locked as decisions)
+  ~/Code/reckon/PLAN-FORMAT.md + reckon/_plan_html.py + reckon/mcp.py (_set_impl, patch_plan)
+
+Done-when
+  1. SS3.1 write-time invariants landed in reckon (per locked strictness) + tests.
+  2. SS3.5 close-sprint gate landed.
+  3. Audit cadence (SS3.2) scheduled; first hygiene report produced.
+  4. Backfill wave (SS3.6) dispatched if the lead approved it.
+  5. Outcomes recorded; this followup resolved.</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
