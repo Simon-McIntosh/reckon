@@ -897,6 +897,92 @@ def test_read_plan_discovery(setup):
     assert any(f["id"] == "f1" for f in r["followups"])
 
 
+def test_read_plan_discovery_filters_and_summary(setup):
+    docs_dir, state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "alpha",
+        {
+            "slug": "alpha",
+            "title": "Alpha Plan",
+            "summary": "Architecture baseline",
+            "status": "active",
+            "impl": 0.4,
+            "roi": "high",
+            "effort": "L",
+            "tier": "opus",
+            "owner": "smc",
+            "sprint": "S1",
+            "milestone": "M1",
+            "depends_on": ["beta"],
+            "blocks": ["gamma"],
+            "informs": ["delta"],
+            "followups": [
+                {
+                    "id": "f1",
+                    "title": "next",
+                    "body": "b",
+                    "written_by": "x",
+                    "written_at": "2026-01-01",
+                    "prompt": "p",
+                }
+            ],
+            "version": 2,
+        },
+    )
+    _make_plan_html(
+        docs_dir,
+        "beta",
+        {
+            "slug": "beta",
+            "title": "Beta Plan",
+            "summary": "Operational doc",
+            "status": "pending",
+            "impl": 0.1,
+            "roi": "mid",
+            "effort": "M",
+            "tier": "sonnet",
+            "owner": "other",
+            "sprint": "S2",
+            "milestone": "M2",
+            "version": 1,
+        },
+    )
+    _seed_index(
+        state_root,
+        project,
+        {
+            "sprints": [{"id": "S1", "items": [{"slug": "alpha"}]}],
+            "active_sprint_id": "S1",
+        },
+    )
+    r = mcp_module._read_plan(
+        project,
+        status="active",
+        owner="smc",
+        search="architecture",
+        include_followups=False,
+        include_questions=False,
+    )
+    assert [p["slug"] for p in r["plans"]] == ["alpha"]
+    plan = r["plans"][0]
+    assert plan["type"] == "plan"
+    assert plan["tier"] == "opus"
+    assert plan["owner"] == "smc"
+    assert plan["href"] == "alpha"
+    assert plan["version"] == 2
+    assert plan["depends_on"] == ["beta"]
+    assert plan["blocks"] == ["gamma"]
+    assert plan["informs"] == ["delta"]
+    assert r["followups"] == []
+    assert r["questions"] == []
+    assert r["summary"]["plans"] == 1
+    assert r["summary"]["open_followups"] == 1
+    assert r["summary"]["by_status"] == {"active": 1}
+    assert r["summary"]["by_sprint"] == {"S1": 1}
+    assert r["summary"]["by_milestone"] == {"M1": 1}
+
+
 def test_read_plan_projects_list(setup):
     _, _, project = setup
     r = mcp_module._read_plan()  # no project
@@ -1039,6 +1125,32 @@ def test_read_plan_checkout_path_reads_worktree(setup, worktree):
     assert r_main["data"]["status"] == "draft"
     r_wt = mcp_module._read_plan(project, "plan-a", checkout_path=str(worktree))
     assert r_wt["data"]["status"] == "active"
+
+
+def test_read_plan_discovery_checkout_path_reads_worktree_inventory(setup, worktree):
+    """Discovery mode should use the checkout_path inventory, not the main mount."""
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {"slug": "plan-a", "title": "Plan A", "status": "draft", "impl": 0.1, "version": 0},
+    )
+    _make_plan_html(
+        worktree / "docs",
+        "plan-a",
+        {"slug": "plan-a", "title": "Plan A", "status": "active", "impl": 0.9, "version": 3},
+    )
+
+    r_main = mcp_module._read_plan(project)
+    r_wt = mcp_module._read_plan(project, checkout_path=str(worktree))
+    main_plan = next(p for p in r_main["plans"] if p["slug"] == "plan-a")
+    wt_plan = next(p for p in r_wt["plans"] if p["slug"] == "plan-a")
+
+    assert main_plan["status"] == "draft"
+    assert main_plan["impl"] == 0.1
+    assert wt_plan["status"] == "active"
+    assert wt_plan["impl"] == 0.9
+    assert wt_plan["version"] == 3
 
 
 def test_edit_plan_create_in_worktree(setup, worktree):

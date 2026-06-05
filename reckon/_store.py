@@ -519,7 +519,11 @@ def resolve_in_list(
 # ── Cross-plan scan ────────────────────────────────────────────────────────
 
 
-def list_followups_across(project: str, unresolved_only: bool = True) -> list[dict]:
+def list_followups_across(
+    project: str,
+    unresolved_only: bool = True,
+    root: str | Path | None = None,
+) -> list[dict]:
     """Return followups from all plan HTML files in a project.
 
     Scans the project docs dir via _plan_html.parse_plan, collecting
@@ -529,7 +533,7 @@ def list_followups_across(project: str, unresolved_only: bool = True) -> list[di
     from reckon import _plan_html
     from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
 
-    docs_dir = _docs_dir_for_project(project)
+    docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return []
 
@@ -554,7 +558,11 @@ def list_followups_across(project: str, unresolved_only: bool = True) -> list[di
     return results
 
 
-def list_questions_across(project: str, unresolved_only: bool = True) -> list[dict]:
+def list_questions_across(
+    project: str,
+    unresolved_only: bool = True,
+    root: str | Path | None = None,
+) -> list[dict]:
     """Return questions from all plan HTML files in a project.
 
     Adds plan_slug and plan_title to each entry.
@@ -562,7 +570,7 @@ def list_questions_across(project: str, unresolved_only: bool = True) -> list[di
     from reckon import _plan_html
     from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
 
-    docs_dir = _docs_dir_for_project(project)
+    docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return []
 

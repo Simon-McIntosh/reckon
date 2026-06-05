@@ -258,7 +258,7 @@ def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
         return "", {}
 
 
-_DISC_CACHE: dict = {}
+_DISC_CACHE: dict[tuple[str, str], tuple[tuple[int, int], dict]] = {}
 
 
 def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
@@ -307,7 +307,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     """
     html_files = sorted(docs_dir.rglob("*.html"))
     sig = (len(html_files), max((f.stat().st_mtime_ns for f in html_files), default=0))
-    cached = _DISC_CACHE.get(project)
+    cache_key = (project, str(docs_dir.resolve()))
+    cached = _DISC_CACHE.get(cache_key)
     if cached and cached[0] == sig:
         return cached[1]
 
@@ -450,7 +451,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         )
 
     result = {"inventory": inventory, "sprints": sprints, "milestones": milestones}
-    _DISC_CACHE[project] = (sig, result)
+    _DISC_CACHE[cache_key] = (sig, result)
     return result
 
 

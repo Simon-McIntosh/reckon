@@ -163,6 +163,49 @@ def test_audit_returns_rollups(setup):
     assert any(s.get("id") == "S1" for s in r["rollups"]["sprints"])
 
 
+def test_audit_returns_machine_readable_findings(setup):
+    docs_dir, state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "alpha",
+        {
+            "slug": "alpha",
+            "title": "Alpha",
+            "status": "shipped",
+            "impl": 0.0,
+            "depends_on": ["ghost"],
+            "sprint": "S1",
+            "version": 0,
+        },
+    )
+    proj_dir = state_root / project
+    proj_dir.mkdir(parents=True, exist_ok=True)
+    (proj_dir / "index.json").write_text(
+        json.dumps(
+            {
+                "updated": "2026-01-01T00:00:00",
+                "project": project,
+                "doc": "index",
+                "data": {
+                    "_version": 0,
+                    "active_sprint_id": "S1",
+                    "sprints": [{"id": "S1", "status": "active", "items": ["ghost"]}],
+                },
+            },
+            indent=2,
+        )
+    )
+
+    r = mcp_module._audit(project)
+    codes = {(f["category"], f["code"]) for f in r["findings"]}
+    assert ("lifecycle", "MISSING_IMPL") in codes
+    assert ("references", "dangling-slug-ref") in codes
+    assert ("sprint", "sprint-item-missing-plan") in codes
+    assert r["finding_counts"]["by_category"]["lifecycle"] >= 1
+    assert r["finding_counts"]["by_severity"]["error"] >= 1
+    assert r["rollups"]["summary"]["plans"] == 1
+
+
 # ── unknown project ───────────────────────────────────────────────────────
 
 
@@ -170,3 +213,28 @@ def test_audit_unknown_project(setup):
     _, _, _ = setup
     r = mcp_module._audit("nope")
     assert r["ok"] is False
+
+
+def test_audit_checkout_path_uses_worktree(setup, tmp_path):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "alpha",
+        {"slug": "alpha", "title": "Alpha", "status": "active", "impl": 0.5, "version": 0},
+    )
+    worktree = tmp_path / "worktree"
+    (worktree / "docs").mkdir(parents=True)
+    (worktree / "docs" / "state").mkdir()
+    _make_plan_html(
+        worktree / "docs",
+        "alpha",
+        {"slug": "alpha", "title": "Alpha", "status": "shipped", "impl": 0.0, "version": 0},
+    )
+
+    main_r = mcp_module._audit(project)
+    worktree_r = mcp_module._audit(project, checkout_path=str(worktree))
+
+    main_codes = {(f["category"], f["code"]) for f in main_r["findings"]}
+    wt_codes = {(f["category"], f["code"]) for f in worktree_r["findings"]}
+    assert ("lifecycle", "MISSING_IMPL") not in main_codes
+    assert ("lifecycle", "MISSING_IMPL") in wt_codes

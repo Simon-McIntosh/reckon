@@ -27,6 +27,7 @@ SDK note: this file uses the FastMCP pattern from mcp >= 1.0.0:
 from __future__ import annotations
 
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -92,6 +93,15 @@ def _read_plan(
     slug: str | None = None,
     with_schema: bool = False,
     checkout_path: str | None = None,
+    status: str | None = None,
+    doc_type: str | None = None,
+    sprint: str | None = None,
+    milestone: str | None = None,
+    owner: str | None = None,
+    search: str | None = None,
+    limit: int | None = None,
+    include_followups: bool = True,
+    include_questions: bool = True,
 ) -> dict[str, Any]:
     """Read plan state — the single read entrypoint (folds the read tools in).
 
@@ -108,8 +118,11 @@ def _read_plan(
 
       read_plan(project)                 [slug omitted/None]
           → DISCOVERY: { project, plans, followups, questions, sprints,
-            milestones, active_sprint_id } — folds list_plans / list_followups /
-            list_questions / list_sprints into one call.
+            milestones, active_sprint_id, summary } — folds list_plans /
+            list_followups / list_questions / list_sprints into one call.
+            Optional filters: status, doc_type, sprint, milestone, owner,
+            search, limit. ``include_followups`` / ``include_questions`` trim
+            payload size without losing the plan inventory.
 
       read_plan()  or  read_plan("*")    [project omitted/"*"]
           → { projects: [...] } — folds list_projects.
@@ -118,31 +131,58 @@ def _read_plan(
       When an agent runs inside a git worktree (a separate checkout of the same
       repo whose ``docs/`` tree differs from the registered MAIN checkout), pass
       ``checkout_path`` = the absolute path to that checkout's repo root (the
-      directory containing ``docs/``).  Single-plan reads (slug given) then read
-      from ``<checkout_path>/docs`` for plan HTML and from
-      ``<checkout_path>/docs/state/<project>/`` for index/project config.  Omit
-      it (the default) to read the mounts-registered MAIN checkout.
-
-      NOTE: discovery mode (slug omitted) is NOT redirected by ``checkout_path``
-      — cross-plan inventory/followup/sprint scans always use the registered
-      mounts.  Read a worktree plan by naming its slug explicitly.
+      directory containing ``docs/``). Reads then use ``<checkout_path>/docs``
+      for plan HTML and ``<checkout_path>/docs/state/<project>/`` for
+      index/project config — including discovery mode and audit-adjacent rollups.
+      Omit it (the default) to read the mounts-registered MAIN checkout.
     """
     # ── projects-list mode ──
     if project is None or project == "*":
         return _list_projects()
 
-    # ── discovery mode (no slug) ── (always mounts-based — see docstring note)
+    # ── discovery mode (no slug) ──
     if slug is None:
-        plans = _list_plans(project).get("plans", [])
-        sprints_info = _list_sprints(project)
+        discovered = _discover_project(project, checkout_path)
+        plans = _filter_inventory(
+            [_inventory_row(item) for item in discovered.get("inventory", [])],
+            status=status,
+            doc_type=doc_type,
+            sprint=sprint,
+            milestone=milestone,
+            owner=owner,
+            search=search,
+            limit=limit,
+        )
+        selected_slugs = {plan.get("slug") for plan in plans if plan.get("slug")}
+        followups_all = list_followups_across(
+            project, unresolved_only=True, root=checkout_path
+        )
+        questions_all = list_questions_across(
+            project, unresolved_only=True, root=checkout_path
+        )
+        followups = [f for f in followups_all if f.get("plan_slug") in selected_slugs]
+        questions = [q for q in questions_all if q.get("plan_slug") in selected_slugs]
+        index_data, _ = read_plan(project, "index", checkout_path)
+        active_sprint_id = index_data.get("active_sprint_id")
+        if not active_sprint_id:
+            active = next(
+                (
+                    item.get("id")
+                    for item in discovered.get("sprints", [])
+                    if isinstance(item, dict) and item.get("status") == "active"
+                ),
+                None,
+            )
+            active_sprint_id = active
         return {
             "project": project,
             "plans": plans,
-            "followups": list_followups_across(project, unresolved_only=True),
-            "questions": list_questions_across(project, unresolved_only=True),
-            "sprints": sprints_info.get("sprints", []),
-            "milestones": sprints_info.get("milestones", []),
-            "active_sprint_id": sprints_info.get("active_sprint_id"),
+            "followups": followups if include_followups else [],
+            "questions": questions if include_questions else [],
+            "sprints": discovered.get("sprints", []),
+            "milestones": discovered.get("milestones", []),
+            "active_sprint_id": active_sprint_id,
+            "summary": _discovery_summary(plans, followups, questions),
         }
 
     # ── single-plan mode (original shape) ──
@@ -189,51 +229,294 @@ _OP_VOCAB = {
 }
 
 
-def _list_plans(project: str, status: str | None = None) -> dict[str, Any]:
+def _discovery_state_root(root: str | None) -> Path:
+    if root is not None:
+        return Path(root).expanduser().resolve() / "docs" / "state"
+    return _state_root()
+
+
+def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
+    from reckon.serve import discover_plans
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return {"inventory": [], "sprints": [], "milestones": []}
+    return discover_plans(docs_dir, project, _discovery_state_root(root))
+
+
+def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
+    milestone = item.get("milestone", item.get("ms", "—"))
+    modified = item.get("modified", item.get("last", ""))
+    return {
+        "slug": item.get("slug"),
+        "title": item.get("title"),
+        "status": item.get("status"),
+        "impl": item.get("impl"),
+        "ms": milestone,
+        "milestone": milestone,
+        "sprint": item.get("sprint"),
+        "roi": item.get("roi"),
+        "effort": item.get("effort"),
+        "type": item.get("type", "plan"),
+        "tier": item.get("tier", "sonnet"),
+        "owner": item.get("owner", ""),
+        "summary": item.get("summary", ""),
+        "href": item.get("href"),
+        "dec_open": int(item.get("dec_open", 0) or 0),
+        "blockers": int(item.get("blockers", 0) or 0),
+        "last": modified,
+        "modified": modified,
+        "version": int(item.get("version", 0) or 0),
+        "depends_on": list(item.get("depends_on") or []),
+        "blocks": list(item.get("blocks") or []),
+        "informs": list(item.get("informs") or []),
+    }
+
+
+def _matches_search(item: dict[str, Any], search: str | None) -> bool:
+    if not search:
+        return True
+    needle = search.strip().lower()
+    if not needle:
+        return True
+    haystack = " ".join(
+        str(item.get(field, "") or "")
+        for field in ("slug", "title", "summary", "owner")
+    ).lower()
+    return needle in haystack
+
+
+def _filter_inventory(
+    inventory: list[dict[str, Any]],
+    *,
+    status: str | None = None,
+    doc_type: str | None = None,
+    sprint: str | None = None,
+    milestone: str | None = None,
+    owner: str | None = None,
+    search: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    filtered = []
+    for item in inventory:
+        if status and item.get("status") != status:
+            continue
+        if doc_type and item.get("type") != doc_type:
+            continue
+        if sprint and (item.get("sprint") or "") != sprint:
+            continue
+        if milestone and (item.get("milestone", item.get("ms", "—")) or "—") != milestone:
+            continue
+        if owner and (item.get("owner") or "") != owner:
+            continue
+        if not _matches_search(item, search):
+            continue
+        filtered.append(item)
+    if limit is not None:
+        filtered = filtered[: max(0, limit)]
+    return filtered
+
+
+def _rollup_counts(values: list[str]) -> dict[str, int]:
+    return dict(Counter(values))
+
+
+def _discovery_summary(
+    plans: list[dict[str, Any]], followups: list[dict[str, Any]], questions: list[dict[str, Any]]
+) -> dict[str, Any]:
+    sprint_values = [plan.get("sprint") or "—" for plan in plans]
+    milestone_values = [plan.get("milestone") or plan.get("ms") or "—" for plan in plans]
+    impl_values = [float(plan.get("impl", 0.0) or 0.0) for plan in plans]
+    return {
+        "plans": len(plans),
+        "sprints": len({sid for sid in sprint_values if sid != "—"}),
+        "milestones": len({mid for mid in milestone_values if mid != "—"}),
+        "open_followups": len(followups),
+        "open_questions": len(questions),
+        "open_decisions": sum(int(plan.get("dec_open", 0) or 0) for plan in plans),
+        "impl_mean": round(sum(impl_values) / len(impl_values), 3) if impl_values else 0.0,
+        "by_status": _rollup_counts([str(plan.get("status") or "draft") for plan in plans]),
+        "by_type": _rollup_counts([str(plan.get("type") or "plan") for plan in plans]),
+        "by_sprint": _rollup_counts(sprint_values),
+        "by_milestone": _rollup_counts(milestone_values),
+    }
+
+
+def _finding(
+    category: str,
+    code: str,
+    severity: str,
+    message: str,
+    *,
+    slug: str | None = None,
+    path: str | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "category": category,
+        "code": code,
+        "severity": severity,
+        "message": message,
+    }
+    if slug is not None:
+        row["slug"] = slug
+    if path is not None:
+        row["path"] = path
+    if extra:
+        row["extra"] = extra
+    return row
+
+
+def _sprint_item_slug(item: Any) -> str:
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        return str(item.get("slug", "") or "")
+    return ""
+
+
+def _audit_sprint_findings(index_data: dict[str, Any], plans: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    sprints = list(index_data.get("sprints", []) or [])
+    sprint_map = {
+        sprint["id"]: sprint
+        for sprint in sprints
+        if isinstance(sprint, dict) and sprint.get("id")
+    }
+    active_ids = [
+        sprint_id
+        for sprint_id, sprint in sprint_map.items()
+        if sprint.get("status") == "active"
+    ]
+    active_sprint_id = index_data.get("active_sprint_id")
+    if len(active_ids) > 1:
+        findings.append(
+            _finding(
+                "sprint",
+                "multiple-active-sprints",
+                "warn",
+                f"multiple sprints are marked active: {', '.join(active_ids)}",
+                extra={"active_ids": active_ids},
+            )
+        )
+    if active_sprint_id and active_sprint_id not in sprint_map:
+        findings.append(
+            _finding(
+                "sprint",
+                "active-sprint-missing",
+                "warn",
+                f"active_sprint_id {active_sprint_id!r} does not match any sprint",
+                extra={"active_sprint_id": active_sprint_id},
+            )
+        )
+    if active_ids and active_sprint_id not in active_ids:
+        findings.append(
+            _finding(
+                "sprint",
+                "active-sprint-mismatch",
+                "warn",
+                "active_sprint_id does not match the sprint marked active",
+                extra={"active_sprint_id": active_sprint_id, "active_status_ids": active_ids},
+            )
+        )
+
+    plan_map = {plan["slug"]: plan for plan in plans if plan.get("slug")}
+    assigned: dict[str, str] = {}
+    for sprint_id, sprint in sprint_map.items():
+        for item in sprint.get("items", []) or []:
+            slug = _sprint_item_slug(item)
+            if not slug:
+                continue
+            if slug not in plan_map:
+                findings.append(
+                    _finding(
+                        "sprint",
+                        "sprint-item-missing-plan",
+                        "warn",
+                        f"sprint {sprint_id!r} contains {slug!r}, which is not a live plan slug",
+                        slug=slug,
+                        extra={"sprint_id": sprint_id},
+                    )
+                )
+            prev = assigned.get(slug)
+            if prev and prev != sprint_id:
+                findings.append(
+                    _finding(
+                        "sprint",
+                        "sprint-item-duplicate",
+                        "warn",
+                        f"{slug!r} appears in multiple sprints ({prev}, {sprint_id})",
+                        slug=slug,
+                        extra={"sprints": [prev, sprint_id]},
+                    )
+                )
+            else:
+                assigned[slug] = sprint_id
+
+    for slug, plan in plan_map.items():
+        plan_sprint = plan.get("sprint")
+        if not plan_sprint:
+            continue
+        if plan_sprint not in sprint_map:
+            findings.append(
+                _finding(
+                    "sprint",
+                    "plan-sprint-missing",
+                    "warn",
+                    f"plan metadata assigns sprint {plan_sprint!r}, but that sprint is not defined",
+                    slug=slug,
+                    extra={"sprint_id": plan_sprint},
+                )
+            )
+            continue
+        assigned_sprint = assigned.get(slug)
+        if assigned_sprint is None:
+            findings.append(
+                _finding(
+                    "sprint",
+                    "plan-sprint-missing-item",
+                    "warn",
+                    f"plan metadata assigns sprint {plan_sprint!r}, but the index sprint items do not include it",
+                    slug=slug,
+                    extra={"sprint_id": plan_sprint},
+                )
+            )
+        elif assigned_sprint != plan_sprint:
+            findings.append(
+                _finding(
+                    "sprint",
+                    "plan-sprint-mismatch",
+                    "warn",
+                    f"plan metadata sprint {plan_sprint!r} disagrees with index sprint {assigned_sprint!r}",
+                    slug=slug,
+                    extra={"plan_sprint": plan_sprint, "index_sprint": assigned_sprint},
+                )
+            )
+    return findings
+
+
+def _list_plans(
+    project: str,
+    status: str | None = None,
+    *,
+    root: str | None = None,
+) -> dict[str, Any]:
     """Return a lightweight index of plans for the project.
 
     Always uses live HTML meta-tag discovery so impl/status are never stale.
     Falls back to index.json inventory only when discovery is unavailable.
-    Each entry: { slug, title, status, impl, ms, sprint, roi, effort }.
+    Each entry includes the legacy summary fields plus richer discovery metadata.
     If status is given, filters to only plans matching that status value.
     """
-    inventory: list[dict] = []
-    mounts_path = _mounts_path()
-    if mounts_path.exists():
-        try:
-            mounts = json.loads(mounts_path.read_text())
-            docs_dir_str = mounts.get(project)
-            if docs_dir_str:
-                from reckon.serve import discover_plans
-
-                discovered = discover_plans(Path(docs_dir_str), project, _state_root())
-                inventory = discovered.get("inventory", [])
-        except Exception:
-            pass
-
+    discovered = _discover_project(project, root)
+    inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
     if not inventory:
         # Discovery unavailable — fall back to index.json (may be stale)
-        data, _ = read_plan(project, "index")
-        inventory = data.get("inventory", [])
-
-    if status:
-        inventory = [p for p in inventory if p.get("status") == status]
-
+        data, _ = read_plan(project, "index", root)
+        inventory = list(data.get("inventory", []))
     return {
         "project": project,
-        "plans": [
-            {
-                "slug": p.get("slug"),
-                "title": p.get("title"),
-                "status": p.get("status"),
-                "impl": p.get("impl"),
-                "ms": p.get("ms"),
-                "sprint": p.get("sprint"),
-                "roi": p.get("roi"),
-                "effort": p.get("effort"),
-            }
-            for p in inventory
-        ],
+        "plans": _filter_inventory(inventory, status=status),
     }
 
 
@@ -1091,7 +1374,7 @@ def _written_path(project: str, slug: str, root: str | None) -> str | None:
 # ── audit — plan-schema conformance audit (warn half; never mutates) ────────
 
 
-def _audit(project: str) -> dict[str, Any]:
+def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
 
@@ -1103,25 +1386,35 @@ def _audit(project: str) -> dict[str, Any]:
 
     WARN/report ONLY — this NEVER mutates a plan or writes index.json. (Distinct
     from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema.)
+    With ``checkout_path``, the audit runs against that checkout's docs/state
+    instead of the mounts-registered main checkout.
     """
     from reckon import _plan_html
-    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES, discover_plans
+    from reckon.doccheck import audit_lifecycle, audit_links
+    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
 
-    docs_dir = _docs_dir_for_project(project)
+    docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
+        hint = (
+            f"check checkout_path {checkout_path!r} contains a docs/ dir"
+            if checkout_path is not None
+            else "check mounts.json"
+        )
         return {
             "ok": False,
-            "error": f"no docs dir for project {project!r} — check mounts.json",
+            "error": f"no docs dir for project {project!r} — {hint}",
         }
 
     checked = 0
     violations: list[dict[str, Any]] = []
+    html_files: list[Path] = []
     for html_file in sorted(docs_dir.rglob("*.html")):
         rel = html_file.relative_to(docs_dir)
         if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
             continue
         if html_file.name in _NON_PLAN_FILES:
             continue
+        html_files.append(html_file)
         try:
             text = html_file.read_text(encoding="utf-8", errors="replace")
             state = _plan_html.from_html(text)
@@ -1139,23 +1432,80 @@ def _audit(project: str) -> dict[str, Any]:
             lines = [ln for ln in lines if not ln.endswith("failed:")]
             violations.append({"slug": slug, "errors": lines})
 
-    # Recompute index rollups (sprints/milestones; inventory stays live, unpersisted).
-    rollups: dict[str, Any] = {}
+    plans = _filter_inventory(
+        [_inventory_row(item) for item in _discover_project(project, checkout_path).get("inventory", [])]
+    )
+    plan_lookup = {plan["slug"]: plan for plan in plans if plan.get("slug")}
+    followups = list_followups_across(project, unresolved_only=True, root=checkout_path)
+    questions = list_questions_across(project, unresolved_only=True, root=checkout_path)
+    index_data, _ = read_plan(project, "index", checkout_path)
+
+    findings: list[dict[str, Any]] = []
     try:
-        disc = discover_plans(docs_dir, project, _state_root())
-        rollups = {
-            "sprints": disc.get("sprints", []),
-            "milestones": disc.get("milestones", []),
-            "plans": len(disc.get("inventory", [])),
-        }
-    except Exception:  # noqa: BLE001 — rollups are best-effort, never fatal
-        rollups = {}
+        for item in audit_lifecycle(project=project, docs_dir=docs_dir):
+            severity = "error" if item.flag == "MISSING_IMPL" else "warn"
+            findings.append(
+                _finding(
+                    "lifecycle",
+                    item.flag,
+                    severity,
+                    f"{item.slug}: {item.flag} (age={item.age_days}d, impl={item.impl}, last={item.last_modified})",
+                    slug=item.slug,
+                    path=(
+                        f"{plan_lookup[item.slug]['href']}.html"
+                        if item.slug in plan_lookup and plan_lookup[item.slug].get("href")
+                        else None
+                    ),
+                    extra={
+                        "age_days": item.age_days,
+                        "impl": item.impl,
+                        "last_modified": item.last_modified,
+                    },
+                )
+            )
+    except Exception:  # noqa: BLE001 — audit should degrade, not fail
+        pass
+    try:
+        link_findings = audit_links(html_files, docs_dir, project=project)
+        for path, path_findings in link_findings.items():
+            rel = str(path.relative_to(docs_dir))
+            slug = path.stem
+            for item in path_findings:
+                findings.append(
+                    _finding(
+                        "references",
+                        item.code,
+                        item.severity,
+                        item.message,
+                        slug=slug,
+                        path=rel,
+                    )
+                )
+    except Exception:  # noqa: BLE001 — audit should degrade, not fail
+        pass
+    findings.extend(_audit_sprint_findings(index_data, plans))
+
+    discovered = _discover_project(project, checkout_path)
+    rollups = {
+        "sprints": discovered.get("sprints", []),
+        "milestones": discovered.get("milestones", []),
+        "plans": len(plans),
+        "summary": _discovery_summary(plans, followups, questions),
+    }
+    finding_counts = {
+        "total": len(findings),
+        "by_severity": _rollup_counts([finding["severity"] for finding in findings]),
+        "by_category": _rollup_counts([finding["category"] for finding in findings]),
+        "by_code": _rollup_counts([finding["code"] for finding in findings]),
+    }
 
     return {
         "project": project,
         "checked": checked,
         "conformant": checked - len(violations),
         "violations": violations,
+        "findings": findings,
+        "finding_counts": finding_counts,
         "rollups": rollups,
         "reindexed": True,
     }

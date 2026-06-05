@@ -137,13 +137,19 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
 def audit_lifecycle(
     *,
     project: str | None = None,
+    docs_dir: Path | None = None,
     now_ts: float | None = None,
 ) -> list[LifecycleFinding]:
-    mounts = _load_mounts()
-    if project is not None:
-        if project not in mounts:
-            raise ValueError(f"project {project!r} not found in {_mounts_path()}")
-        mounts = {project: mounts[project]}
+    if docs_dir is not None:
+        if project is None:
+            raise ValueError("project is required when docs_dir is provided")
+        mounts = {project: docs_dir.resolve()}
+    else:
+        mounts = _load_mounts()
+        if project is not None:
+            if project not in mounts:
+                raise ValueError(f"project {project!r} not found in {_mounts_path()}")
+            mounts = {project: mounts[project]}
 
     current_ts = time.time() if now_ts is None else now_ts
     findings: list[LifecycleFinding] = []
