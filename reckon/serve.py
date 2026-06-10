@@ -820,6 +820,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         if target.is_dir():
             target = target / "index.html"
+        if not target.is_file() and not target.suffix:
+            # Extensionless plan URL (/<project>/<slug>) — resolve to the
+            # .html document so bare links and typed URLs render instead of
+            # 404ing. Mirrors the /plan/ endpoint's slug semantics.
+            html_target = target.with_suffix(".html")
+            if html_target.is_file():
+                target = html_target
         if not target.is_file():
             self._send(HTTPStatus.NOT_FOUND, b"not found")
             return
