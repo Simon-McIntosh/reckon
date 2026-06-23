@@ -1,9 +1,7 @@
 """Tests for reckon doctor and reckon install-skills commands."""
 
 import json
-from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main
