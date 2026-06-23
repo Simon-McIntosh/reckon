@@ -4,18 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="reckon-skill-overhaul">
-  <meta name="plan-title"     content="Reckon skill overhaul: fix adoption friction, rename ship→implement, surface dependency order">
-  <meta name="plan-summary"   content="The reckon skill family is under-used for four mechanical reasons (impl never advances, MCP tools ungranted, redundancy with SPA/CLI, high activation energy) plus dependency-order blindness. Keep the reckon- prefix, rename only reckon-ship→reckon-implement, and apply systemic + structural fixes across all five skills.">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="L">
-  <meta name="plan-tier"      content="opus">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="reckon-skill-overhaul">
+  <meta name="plan-title" content="Reckon skill overhaul: fix adoption friction, rename ship→implement, surface dependency order">
+  <meta name="plan-summary" content="The reckon skill family is under-used for four mechanical reasons (impl never advances, MCP tools ungranted, redundancy with SPA/CLI, high activation energy) plus dependency-order blindness. Keep the reckon- prefix, rename only reckon-ship→reckon-implement, and apply systemic + structural fixes across all five skills.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Reckon skill overhaul | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-06-23">
+<meta name="plan-impl" content="0.45">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -111,39 +114,39 @@
     </ul>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="naming" data-choice="keep-prefix-rename-ship" data-by="Simon McIntosh" data-when="2026-06-23">
-        <p class="r-dec-q">Rename scheme for the skill family?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="keep-prefix-rename-ship">keep reckon- prefix; rename only reckon-ship→reckon-implement</button>
-          <button class="r-opt" data-value="drop-prefix-plan-suffix">drop prefix, -plan suffix on all five</button>
-        </p>
-        <p class="r-dec-rat">LOCKED. The prefix is namescoping (groups the family in autocomplete, dodges edit_plan/generic collisions). The full rename carries all the migration risk and fixes none of the usability causes. Only "ship" is a poor noun; "implement" fits the execute-and-record job and still autocompletes under /reckon-.</p>
-      </div>
-      <div class="r-dec" data-key="sprint-extraction" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Extract sprint management out of reckon-edit?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="delimited-section">keep in reckon-edit as a clearly-delimited section (lower risk)</button>
-          <button class="r-opt" data-value="new-skill">new reckon-sprint skill (cleaner trigger surface; +1 skill to maintain)</button>
-        </p>
-        <p class="r-dec-rat">A new skill expands the family (cli.py list, symlinks, AGENTS.md) — the same blast radius we just avoided. Lean delimited-section unless the lead wants the cleaner separation.</p>
-      </div>
-      <div class="r-dec" data-key="dep-order-home" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where does dependency-order / ready-set logic live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="skill-only">skill instructions only (read depends_on, compute ready-set in-skill)</button>
-          <button class="r-opt" data-value="also-server">also server-side (add ready-set/critical-path + computed impl to the MCP discovery payload)</button>
-        </p>
-        <p class="r-dec-rat">Skill-only is faster/lower-risk and sufficient now. Server-side is the robust single-source-of-truth (the logic already exists in graph.jsx) but is a code change. Default skill-only; queue server-side as a follow-up if the in-skill computation proves fiddly.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="naming" data-choice="keep-prefix-rename-ship" data-by="Simon McIntosh" data-when="2026-06-23">
+    <p class="r-dec-q">Rename scheme for the skill family?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="keep-prefix-rename-ship">keep reckon- prefix; rename only reckon-ship→reckon-implement</button>
+      <button class="r-opt" data-value="drop-prefix-plan-suffix">drop prefix, -plan suffix on all five</button>
+      </p>
+    <p class="r-dec-rat">LOCKED. The prefix is namescoping (groups the family in autocomplete, dodges edit_plan/generic collisions). The full rename carries all the migration risk and fixes none of the usability causes. Only &quot;ship&quot; is a poor noun; &quot;implement&quot; fits the execute-and-record job and still autocompletes under /reckon-.</p>
+    </div>
+<div class="r-dec" data-key="sprint-extraction" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Extract sprint management out of reckon-edit?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="delimited-section">keep in reckon-edit as a clearly-delimited section (lower risk)</button>
+      <button class="r-opt" data-value="new-skill">new reckon-sprint skill (cleaner trigger surface; +1 skill to maintain)</button>
+      </p>
+    <p class="r-dec-rat">A new skill expands the family (cli.py list, symlinks, AGENTS.md) — the same blast radius we just avoided. Lean delimited-section unless the lead wants the cleaner separation.</p>
+    </div>
+<div class="r-dec" data-key="dep-order-home" data-choice="skill-only" data-by="reckon-implement" data-when="2026-06-23T12:49:49+00:00">
+    <p class="r-dec-q">Where does dependency-order / ready-set logic live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="skill-only">skill instructions only (read depends_on, compute ready-set in-skill)</button>
+      <button class="r-opt" data-value="also-server">also server-side (add ready-set/critical-path + computed impl to the MCP discovery payload)</button>
+      </p>
+    <p class="r-dec-rat">Shipped the skill-side dependency gate in reckon-implement (read depends_on; STOP if a prerequisite is not shipped/done; name blocks successors on completion). Server-side ready-set/computed-impl deferred as an optional follow-up.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-rso-001" data-status="open" data-tier="opus" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-implement reckon-skill-overhaul §1" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">§1 rename + §2 systemic fixes, then §3 structural</h4>
-        <div class="r-fu-body">Execute §1 (rename reckon-ship→reckon-implement, full sweep, keep prefix) and §2 (systemic fixes) first — concrete, decision-free, high-value. Then §3 structural redesigns, honouring the sprint-extraction + dep-order-home decisions. Commit reckon repo and imas-codex separately; verify with reckon doctor.</div>
-        <pre class="r-fu-prompt">Project: reckon
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rso-001" data-status="resolved" data-tier="opus" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-implement reckon-skill-overhaul §1" data-resolved-at="2026-06-23T12:49:49+00:00" data-resolved-by="reckon-implement">
+    <h4 class="r-fu-title">§1 rename + §2 systemic fixes, then §3 structural</h4>
+    <div class="r-fu-body">Execute §1 (rename reckon-ship→reckon-implement, full sweep, keep prefix) and §2 (systemic fixes) first — concrete, decision-free, high-value. Then §3 structural redesigns, honouring the sprint-extraction + dep-order-home decisions. Commit reckon repo and imas-codex separately; verify with reckon doctor.</div>
+    <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-skill-overhaul (http://localhost:8765/reckon/reckon-skill-overhaul.html)
 Section: §1 (rename) then §2 (systemic) then §3 (structural)
 Tier:    opus
@@ -161,7 +164,7 @@ State to read  (code/files, not the plan)
   ~/Code/reckon/PLAN-FORMAT.md (impl row ~85; §05 template)
   ~/Code/reckon/AGENTS.md (routing table) ; reckon/_store.py + serve.py (impl, depends_on)
   ~/.claude/skills/reckon-* + ~/.agents/skills/reckon-* (symlinks to re-point)
-  imas-codex docs/*.html (recommends_skill="/reckon-ship …" to migrate, ~10 plans)
+  imas-codex docs/*.html (recommends_skill=&quot;/reckon-ship …&quot; to migrate, ~10 plans)
 
 Scope locks / constraints  (non-decision)
   Keep the reckon- prefix on all five; rename ONLY reckon-ship→reckon-implement.
@@ -177,8 +180,42 @@ Done-when
   3. §3: status leads with DAG/ready-set + audit tool; sync→thin wrapper;
      sprint per decision.
   4. uv run pytest (reckon) clean if tests exist; followups written + this resolved.</pre>
-      </article>
-    </section>
+    <p class="r-fu-outcome">§1 rename + §2 core systemic fixes landed. reckon: plan 49f76f3, rename 0d666aa (1092 tests pass), §2 a397bd1 (MCP allowed-tools + impl-truth + dependency gate). imas-codex: 5ff2b82d (recommends_skill migration, 9 plans). Symlinks re-pointed in ~/.claude + ~/.agents; ~/.agents/AGENTS.md routing table updated. Remaining (queued in f-rso-002): §2 fast-path recipes + §05 template dedup; §3 structural (status DAG, sync wrapper, sprint).</p>
+    </article>
+<article class="r-fu" data-id="f-rso-002" data-status="open" data-tier="opus" data-written-by="reckon-implement" data-written-at="2026-06-23" data-recommends-skill="/reckon-implement reckon-skill-overhaul §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish §2 (fast-path + §05 dedup) and §3 structural redesigns</h4>
+    <div class="r-fu-body">§1 + §2-core landed. Remaining §2: add a 4-6 line fast-path recipe atop each of the five skills; de-dupe the three divergent §05 templates to one canonical copy + fix the reckon-edit example that violates its own 'don't re-list decisions' rule. §3 structural: reckon-status leads with the dependency DAG/ready-set + calls the audit MCP tool; reckon-sync shrinks to a thin wrapper over reckon sync/install-skills/doctor; sprint management per the sprint-extraction decision (LOCK it first — new reckon-sprint skill vs delimited section).</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-skill-overhaul (http://localhost:8765/reckon/reckon-skill-overhaul.html)
+Section: §2 (finish) + §3 (structural)
+Tier:    opus
+
+Context
+  §1 rename + §2 core fixes (allowed-tools, impl-truth, dependency gate) landed.
+  Finish the activation-energy fixes and the structural redesigns. The
+  dep-order-home decision is LOCKED skill-only; the sprint-extraction decision
+  is still OPEN — lock it before touching sprint code.
+
+State to read  (code/files, not the plan)
+  ~/Code/reckon/skills/reckon-{create,edit,implement,status,sync}/SKILL.md
+  ~/Code/reckon/reckon/cli.py (sync ~69; install_skills ~613; doctor ~415)
+  ~/Code/reckon/docs/ui/graph.jsx (critical-path/ready-set logic to mirror in status)
+  ~/Code/reckon/reckon/mcp.py (audit tool the status skill should call)
+
+Scope locks / constraints  (non-decision)
+  Keep the reckon- prefix. One canonical §05 template; others reference it.
+  reckon primary branch = main; commit + push; no co-author trailers.
+  A new reckon-sprint skill (if chosen) needs cli.py SKILLS + doctor test +
+  symlinks + AGENTS.md — same coordinated change as the rename.
+
+Done-when
+  1. Fast-path recipe atop all 5 skills; demote checkout_path/edit_plan(create) deep-dives.
+  2. One canonical §05 template; reckon-edit self-contradicting example fixed.
+  3. reckon-status leads with DAG/ready-set + audit tool; dangling/cyclic depends_on check.
+  4. reckon-sync = thin wrapper over reckon sync/install-skills/doctor + ~/.agents leg.
+  5. sprint per locked decision. uv run pytest clean. impl advanced; this followup resolved.</pre>
+    </article>
+</section>
 
   </main>
 </body>
