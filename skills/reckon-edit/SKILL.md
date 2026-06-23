@@ -9,7 +9,7 @@ description: >-
   sprint / close sprint / rebalance / archive / retire the plan /
   /reckon-edit <slug>". For new plans use reckon-create; for executing work use
   reckon-implement; for read-only inspection use reckon-status.
-allowed-tools: Read Write Edit Bash(*) Grep
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
 # reckon-edit — mutations to existing plans and the central index

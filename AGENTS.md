@@ -417,7 +417,7 @@ per-plan `state/<project>/<slug>.json` sidecar files.
 |---|---|---|
 | `plan-slug` | kebab-case | Optional; defaults to filename stem |
 | `plan-status` | `draft`/`pending`/`active`/`in-progress`/`blocked`/`shipped`/`done`/`abandoned` | Server-written |
-| `plan-impl` | `0.0`–`1.0` | Server-written progress fraction |
+| `plan-impl` | `0.0`–`1.0` | Progress fraction; `reckon-implement` sets it (shipped/total) per landing — not auto-computed |
 | `plan-version` | integer | Server-owned concurrency counter; never author |
 | `plan-roi` | `high`/`mid`/`low` | |
 | `plan-effort` | `S`/`M`/`L`/`XL` | |

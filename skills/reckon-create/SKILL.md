@@ -8,7 +8,7 @@ description: >-
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
   create an explainer / author a doc / /reckon-create <slug>". For editing an
   existing plan use reckon-edit; for executing plan work use reckon-implement.
-allowed-tools: Read Write Edit Bash(*) Grep
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
 # reckon-create — scaffold a new HTML plan or doc
@@ -348,7 +348,8 @@ Only author fields that a view downstream consumes:
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
 | `plan-read` | `1` marks a research/doc reviewed |
-| `plan-impl` / `plan-version` | **Server-owned.** impl computed; version is concurrency counter. Never author. |
+| `plan-impl` | Set by `reckon-implement` (shipped/total) on each landing — **not** server-computed; unset = 0%. |
+| `plan-version` | **Server-owned** concurrency counter. Never author. |
 | `plan-modified` | Staleness detection; server-stamped on write. Never author. |
 
 ## Meta scalars reference
@@ -372,7 +373,9 @@ Only author fields that a view downstream consumes:
 | `plan-archived` | (empty) | `1` to hide from inventory |
 | `plan-read` | (empty) | `1` to mark reviewed |
 
-**Do NOT author** (server-owned): `plan-impl`, `plan-version`, `plan-modified`.
+**Do NOT author** (server-owned): `plan-version`, `plan-modified`. (`plan-impl`
+starts at 0 and is advanced by `reckon-implement` as sections ship — not
+server-computed.)
 
 `plan-status` is authored on lifecycle transitions (draft → active → shipped).
 Set it to `draft` on initial scaffolding; update it as the plan progresses.

@@ -82,7 +82,7 @@ may write `doc` for clarity; the parser handles it.
 | `plan-informs` | author | comma-separated slugs | research docs only |
 | `plan-archived` | author | `1` | hides plan from default inventory; use when retiring a plan without deleting it |
 | `plan-read` | author | `1` | marks a research/doc as reviewed; no effect on plans |
-| `plan-impl` | **server-owned** | `0.0`–`1.0` | computed from section counts; do not author |
+| `plan-impl` | set by `reckon-implement` | `0.0`–`1.0` | progress fraction; `reckon-implement` sets it (shipped sections / total) on each landing. **Not** auto-computed by the server — leaving it unset keeps a plan at 0%. |
 | `plan-version` | **server-owned** | integer | optimistic-concurrency counter; never author |
 | `plan-modified` | **server-owned** | `YYYY-MM-DD` | server-stamped on each write |
 
@@ -114,7 +114,7 @@ rejected at the write boundary.
   <meta name="plan-summary" content="one-line synopsis">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="slug-a,research-x">
-  <!-- plan-impl / plan-version / plan-modified are server-owned — NEVER author -->
+  <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-implement per landing (shipped/total). -->
   <title>Human Title | <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">

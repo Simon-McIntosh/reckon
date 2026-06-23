@@ -10,7 +10,7 @@ description: >-
   land items from / do the work in / /reckon-implement <slug> [section]". For editing
   plan text use reckon-edit; for new plans use reckon-create; for sprint
   orchestration use reckon-edit (sprint intent).
-allowed-tools: Read Write Edit Bash(*) Grep Agent
+allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
 # reckon-implement — execute work described in a plan and record outcomes
@@ -82,7 +82,15 @@ Or use `read_plan(project, slug, with_schema=True)` to get the schema + dos/don'
 | `Trigger:` subsection with unmet condition | Skip — surface to user |
 | Concrete deliverable, no deferral signal | Implement |
 
-Report audit (implementable / deferred / blocked) before dispatching.
+**Dependency precondition — check before implementing.** Read the plan's
+`depends_on` (meta `plan-depends-on`). For each prerequisite slug,
+`read_plan(project, prereq)` and check its `status`. If any prerequisite is not
+`shipped`/`done`, **STOP and surface it** — recommend implementing the named
+prerequisite first; never implement a plan ahead of its prerequisites. When the
+plan completes, name its `blocks` successors as the unblocked next work.
+
+Report audit (implementable / deferred / blocked / **blocked-by-prerequisite**)
+before dispatching.
 
 ### 2. Scope allocation
 
@@ -191,9 +199,11 @@ edit_plan(
 )
 ```
 
-Note: `impl` is normally computed by the server from section counts. Setting it
-explicitly via `edit_plan` is permitted by the contract when the coordinator
-wants to mark full completion without waiting for server recomputation.
+Note: `impl` is **not** computed by the server — it persists whatever was last
+set, so a plan left untouched sits at 0% forever. `reckon-implement` MUST set it
+on **every** landing as `impl = shipped_sections / total_sections` (monotonic),
+so the progress bar reflects reality. (`version`/`modified` are the genuinely
+server-owned scalars.)
 
 **Record outcomes in the same session — stale plans are a defect.** The work and
 its plan-state update are one unit: never land code and leave the plan to be

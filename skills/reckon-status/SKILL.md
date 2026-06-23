@@ -8,7 +8,7 @@ description: >-
   state. Never modifies files. Trigger verbs: "what plans are open / where are we
   on X / show plan status / what sprint are we on / summarise plans / review the
   plan / audit plan health / is the plan stale / /reckon-status [slug]".
-allowed-tools: Read Bash(*) Grep
+allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit
 ---
 
 # reckon-status — read-only plan inspection and quality audit
