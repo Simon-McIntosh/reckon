@@ -143,7 +143,7 @@ rejected at the write boundary.
     <section data-reckon="followups" id="followups" class="r-followups">
       <article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet"
                data-written-by="smc" data-written-at="2026-05-27"
-               data-recommends-skill="/reckon-ship slug"
+               data-recommends-skill="/reckon-implement slug"
                data-resolved-at="" data-resolved-by="">
         <h4 class="r-fu-title">…</h4>
         <div class="r-fu-body">…</div>

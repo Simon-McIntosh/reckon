@@ -7,7 +7,7 @@ description: >-
   Trigger verbs:
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
   create an explainer / author a doc / /reckon-create <slug>". For editing an
-  existing plan use reckon-edit; for executing plan work use reckon-ship.
+  existing plan use reckon-edit; for executing plan work use reckon-implement.
 allowed-tools: Read Write Edit Bash(*) Grep
 ---
 
@@ -22,7 +22,7 @@ Trigger on any of:
 - the user names a plan or doc that does not yet exist in `docs/`
 
 If the plan already exists → hand off to `reckon-edit`.
-If the user wants to execute work in a plan → hand off to `reckon-ship`.
+If the user wants to execute work in a plan → hand off to `reckon-implement`.
 
 **Guard:** if `docs/_shared/` does not exist in the target repo, stop immediately
 and say: _"Run `/reckon-sync` first — `docs/_shared/` is missing."_
@@ -222,7 +222,7 @@ edit_plan(
       "written_at": "2026-05-29",
       "title": "Implement plasma decoder fine-tune §1 — data prep",
       "body": "Initial authoring complete. Next: run data curation pipeline and validate.",
-      "recommends_skill": "/reckon-ship plasma-decoder-finetune §1",
+      "recommends_skill": "/reckon-implement plasma-decoder-finetune §1",
       "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §1\nTier: sonnet\n\nContext\n  Plan authored; data prep is the first shippable section.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  (none yet)\n\nDone-when\n  1. Data pipeline script committed\n  2. Tests green\n  3. Followup written + this one resolved"
     }}
   ],
@@ -439,7 +439,7 @@ Report:
 
 - `reckon-sync/SKILL.md` — runs first; owns mounts, symlinks, `_shared/`.
 - `reckon-edit/SKILL.md` — modify an existing plan.
-- `reckon-ship/SKILL.md` — execute the work a plan describes.
+- `reckon-implement/SKILL.md` — execute the work a plan describes.
 - `reckon-status/SKILL.md` — read-only inspection.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (all element shapes, schema contract, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema (machine-checkable contract).

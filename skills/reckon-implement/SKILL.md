@@ -1,25 +1,25 @@
 ---
-name: reckon-ship
+name: reckon-implement
 description: >-
   Execute the work an HTML plan describes — read the plan, identify implementable
   vs deferred items, dispatch a Sonnet fleet for multi-item sections with
   non-overlapping file scopes, then record outcomes by writing a per-stage HTML
   (docs/archive/<slug>-<section>-landed.html), appending a landed summary to the
   evergreen, and writing a §05 followup. Also invoked via §05 followup prompts
-  queued by earlier reckon-ship runs. Trigger verbs: "implement / execute / ship /
-  land items from / do the work in / /reckon-ship <slug> [section]". For editing
+  queued by earlier reckon-implement runs. Trigger verbs: "implement / execute / ship /
+  land items from / do the work in / /reckon-implement <slug> [section]". For editing
   plan text use reckon-edit; for new plans use reckon-create; for sprint
   orchestration use reckon-edit (sprint intent).
 allowed-tools: Read Write Edit Bash(*) Grep Agent
 ---
 
-# reckon-ship — execute work described in a plan and record outcomes
+# reckon-implement — execute work described in a plan and record outcomes
 
 ## When to invoke
 
 - "implement / execute / ship X" / "land items from X"
-- "do the work in X plan" / `/reckon-ship <slug> [section]`
-- reading a §05 followup whose `recommends_skill` is `/reckon-ship`
+- "do the work in X plan" / `/reckon-implement <slug> [section]`
+- reading a §05 followup whose `recommends_skill` is `/reckon-implement`
 
 **Dual-role:** invoked by human or orchestrator AND generates §05 dispatch prompts for workers.
 
@@ -174,16 +174,16 @@ edit_plan(
     {"op": "set", "path": "status", "value": "shipped"},
     {"op": "set", "path": "impl", "value": 1.0},
     {"op": "resolve", "target": "followups", "id": "f-pdf-002",
-     "by": "reckon-ship", "outcome": "§2 data prep landed — commit abc1234; pipeline smoke-test green"},
+     "by": "reckon-implement", "outcome": "§2 data prep landed — commit abc1234; pipeline smoke-test green"},
     {"op": "append", "target": "followups", "item": {
       "id": "f-pdf-003",
       "status": "open",
       "tier": "opus",
-      "written_by": "reckon-ship",
+      "written_by": "reckon-implement",
       "written_at": "2026-05-29",
       "title": "Run full fine-tune and evaluate §3",
       "body": "Data prep shipped. Fine-tune is now unblocked and ready to run on compute.",
-      "recommends_skill": "/reckon-ship plasma-decoder-finetune §3",
+      "recommends_skill": "/reckon-implement plasma-decoder-finetune §3",
       "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §3\nTier: opus\n\nContext\n  §2 data prep landed (abc1234). Fine-tune is unblocked.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  base-model → t5-large\n\nOpen decisions to surface (do not resolve)\n  training-batch-size\n\nDone-when\n  1. Fine-tune run completed; eval metrics committed\n  2. tests green\n  3. followup written + this followup resolved"
     }}
   ],
@@ -296,7 +296,7 @@ GET /plan/<project>/<slug> (read version) then edit_plan with:
       "written_at": "<iso-now>",
       "title": "<imperative one-liner>",
       "body": "<2–3 sentences on what's next>",
-      "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
+      "recommends_skill": "/reckon-implement <slug> [section] | /reckon-edit <slug> | null",
       "tier": "haiku | sonnet | opus",
       "prompt": "<§05 template body, ready to paste — non-empty>"
     }},

@@ -19,7 +19,7 @@ class TestDoctor:
 
         skills_dir = home / ".claude" / "skills"
         if has_skills:
-            for skill in ["reckon-create", "reckon-edit", "reckon-ship", "reckon-status", "reckon-sync"]:
+            for skill in ["reckon-create", "reckon-edit", "reckon-implement", "reckon-status", "reckon-sync"]:
                 skill_path = skills_dir / skill
                 skill_path.mkdir(parents=True)
                 (skill_path / "SKILL.md").write_text(f"# {skill}\n")

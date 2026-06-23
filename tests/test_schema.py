@@ -90,7 +90,7 @@ FULL_PLAN = (
     '<h2><span class="sec">§</span> Followups</h2>\n'
     '<article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet"'
     ' data-written-by="smc" data-written-at="2026-05-27"'
-    ' data-recommends-skill="/reckon-ship sample"'
+    ' data-recommends-skill="/reckon-implement sample"'
     ' data-resolved-at="" data-resolved-by="">\n'
     '<h4 class="r-fu-title">Open followup</h4>\n'
     '<div class="r-fu-body">do the thing</div>\n'

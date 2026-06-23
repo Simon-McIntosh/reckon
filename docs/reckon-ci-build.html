@@ -264,7 +264,7 @@ wheel and the dist is renamed, the install collapses to one uv line, pinned to a
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ci-build-2026-05-26" data-status="resolved" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="2026-05-26T16:42:01+00:00" data-resolved-by="Claude (sonnet-4.6)">
+<article class="r-fu" data-id="f-ci-build-2026-05-26" data-status="resolved" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-26" data-recommends-skill="/reckon-implement reckon-ci-build" data-resolved-at="2026-05-26T16:42:01+00:00" data-resolved-by="Claude (sonnet-4.6)">
     <h4 class="r-fu-title">Implement reckon build command + sprint/milestone HTML discovery</h4>
     <div class="r-fu-body">Design and decisions are locked in the plan. Implement: (1) cli.py reckon build command, (2) discover_plans extension for sprint/milestone HTML meta tags, (3) reckon sync --generate-ci flag for CI YAML, (4) index.json elimination once sprint discovery lands.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -295,7 +295,7 @@ Done-when
   5. Followup written + this followup resolved</pre>
     <p class="r-fu-outcome">Landed: reckon build command (cli.py) copies _ui/ + _shared/ assets, writes relative-path index.html, drops .nojekyll, writes plan inventory to index.json. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml. discover_plans() extended to scan docs/sprints/*.html and docs/milestones/*.html for sprint/milestone meta tags. Committed 5c9a71c. Tests and q1/q2 resolution remain.</p>
     </article>
-<article class="r-fu" data-id="f-ci-build-tests-2026-05-26" data-status="open" data-tier="sonnet" data-written-by="Claude (sonnet-4.6)" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ci-build-tests-2026-05-26" data-status="open" data-tier="sonnet" data-written-by="Claude (sonnet-4.6)" data-written-at="2026-05-26" data-recommends-skill="/reckon-implement reckon-ci-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Add tests for reckon build command + resolve q1 (state.js copy)</h4>
     <div class="r-fu-body">build command and sprint/milestone discovery are implemented. Remaining: (1) tests/test_build.py covering reckon build output correctness, (2) resolve q1 — confirm whether reckon build should copy state.js to _shared/ alongside the CSS (check what standalone plan pages need), (3) resolve q2 — already resolved by implementation: docs/sprints/ + docs/milestones/.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -324,7 +324,7 @@ Done-when
   3. impl updated to 1.0, status → shipped if tests pass
   4. This followup resolved with outcome</pre>
     </article>
-<article class="r-fu" data-id="f-6a16a1ab" data-status="open" data-tier="sonnet" data-written-by="Claude (opus-4.7)" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-6a16a1ab" data-status="open" data-tier="sonnet" data-written-by="Claude (opus-4.7)" data-written-at="2026-05-27" data-recommends-skill="/reckon-implement reckon-ci-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Make reckon CI-installable via uv: rename PyPI dist, ship UI assets in wheel, switch CI to uv</h4>
     <div class="r-fu-body">Review on 2026-05-27 surfaced three blockers to the §4/§5 CI story: the PyPI name `reckon` belongs to an unrelated caching package; the wheel excludes docs/ui + docs/_shared so `reckon build` only works from a source checkout; and the generated CI uses pip, not uv. Fix packaging + naming and make CI install reckon as a uv-managed dependency (see §6 recommendations).</div>
     <pre class="r-fu-prompt">Project: reckon

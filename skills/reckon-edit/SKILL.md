@@ -8,7 +8,7 @@ description: >-
   lock decision / resolve decisions / queue followup / propose sprint / start
   sprint / close sprint / rebalance / archive / retire the plan /
   /reckon-edit <slug>". For new plans use reckon-create; for executing work use
-  reckon-ship; for read-only inspection use reckon-status.
+  reckon-implement; for read-only inspection use reckon-status.
 allowed-tools: Read Write Edit Bash(*) Grep
 ---
 
@@ -29,7 +29,7 @@ allowed-tools: Read Write Edit Bash(*) Grep
 | `/reckon-edit <slug>` | detect from args or ask |
 
 If the plan doesn't exist → hand off to `reckon-create`.
-If the user wants to execute the work → hand off to `reckon-ship`.
+If the user wants to execute the work → hand off to `reckon-implement`.
 
 ## The model — the plan HTML is the document AND the store
 
@@ -145,7 +145,7 @@ edit_plan(
       "written_at": "2026-05-29",
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
-      "recommends_skill": "/reckon-ship plasma-decoder-finetune §2",
+      "recommends_skill": "/reckon-implement plasma-decoder-finetune §2",
       "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nTier: sonnet\n\nContext\n  base-model locked to t5-large. Data prep is now unblocked.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  base-model → t5-large\n\nOpen decisions to surface (do not resolve)\n  training-batch-size\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
     }}
   ],
@@ -254,7 +254,7 @@ Minimum followup item shape:
   "written_at":       "YYYY-MM-DD HH:MM",
   "title":            "<imperative short title>",
   "body":             "<2–3 sentences of context>",
-  "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
+  "recommends_skill": "/reckon-implement <slug> [section] | /reckon-edit <slug> | null",
   "tier":             "haiku | sonnet | opus",
   "prompt":           "<§05 template body — mandatory, non-empty>"
 }
@@ -323,7 +323,7 @@ Done-when
 
 Sprint state lives in `docs/state/<project>/index.json`, accessed via
 `read_plan(project, "index")` and mutated via `edit_plan(project, "index", ops=…)`.
-Does NOT dispatch workers (use `reckon-ship`).
+Does NOT dispatch workers (use `reckon-implement`).
 
 **Read sprints:**
 ```python
@@ -412,7 +412,7 @@ plans; otherwise archive them too.
 ## Cross-references
 
 - `reckon-create` — scaffold a new plan.
-- `reckon-ship` — execute the work a plan describes.
+- `reckon-implement` — execute the work a plan describes.
 - `reckon-status` — read-only inspection.
 - `reckon-sync` — register a project mount and seed shared assets.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, endpoints).

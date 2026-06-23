@@ -63,7 +63,7 @@ writeback, content parity, fleet safety).
 |---|---|---|
 | Create a brand-new plan | `reckon-create` | `/reckon-create <slug>` |
 | Edit an existing plan, lock a decision, record an outcome, write a followup, manage sprints | `reckon-edit` | `/reckon-edit <slug>` |
-| Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-ship` | `/reckon-ship <slug> [section]` |
+| Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-implement` | `/reckon-implement <slug> [section]` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
 | Non-plan docs (RCAs, incident reports, tickets, reviews, explainers, dashboards) | `reckon-create` (with `reckon-type=doc`) | `/reckon-create <slug>` |
@@ -79,7 +79,7 @@ them is cheap.
 plans-infra in dotfiles + ambix without updating the plan's state
 to reflect that it shipped. The plan-system told a different story
 than the codebase. RCA: the coordinator authored a custom sub-agent
-dispatch prompt instead of routing through `/reckon-ship` (which has
+dispatch prompt instead of routing through `/reckon-implement` (which has
 the followup-write requirement baked in), AND failed to write a
 closing followup on the parent plan when work completed.
 
@@ -131,7 +131,7 @@ Concretely:
    omitted the followup, the coordinator writes it themselves
    (reflecting what the worker reported).
 
-4. **Eat-the-dog-food check.** Before marking any reckon-ship work
+4. **Eat-the-dog-food check.** Before marking any reckon-implement work
    "done" in chat, verify the plan-system itself reflects the work:
    - `GET /plan/<project>/<slug>` → `status` matches reality
    - The driving followup is resolved (`data-status="resolved"` on its `<article class="r-fu">`)
@@ -382,7 +382,7 @@ Done-when
   3. followup written into plan + this followup marked resolved
 ```
 
-The reckon-edit and reckon-ship skills enforce this. A followup
+The reckon-edit and reckon-implement skills enforce this. A followup
 without a prompt is a hard failure — the supervisor either fills it in
 or rejects the worker's report.
 
@@ -596,13 +596,13 @@ The recorded incidents that motivated this skill set:
    reckon-* skills' descriptions are tuned so this no longer slips by.
 2. **Per-stage rule missed.** Landed work appended to the evergreen
    instead of producing an archival `<plan>-<phase>.html` under
-   `docs/archive/`. `reckon-edit` and `reckon-ship` enforce this.
+   `docs/archive/`. `reckon-edit` and `reckon-implement` enforce this.
 3. **Plan HTML not updated.** Decisions discussed in chat never reached
    the plan's semantic elements. `reckon-edit` requires the MCP call
    or `POST /plan/<project>/<slug>`.
 4. **`git commit -a` swept peer fleet edits.** Multiple workers,
    non-overlapping scopes, but `-a` swept WIP into the wrong commit.
-   `reckon-ship`'s dispatch boilerplate explicitly bans `-a`/`-am`
+   `reckon-implement`'s dispatch boilerplate explicitly bans `-a`/`-am`
    and `git add -A/./*` in every worker prompt.
 5. **Decisions baked into a generator.** Centralised decision list in
    a Python script meant editing the script to add a decision. The

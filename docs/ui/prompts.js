@@ -45,7 +45,7 @@
       + "    never create feature/topic branches unilaterally. Commit and push each\n"
       + "    coherent change.\n"
       + "  Plan state: read each plan's live decisions/followups/version before\n"
-      + "    editing; record outcomes back into the plan (reckon-ship) as work lands.\n"
+      + "    editing; record outcomes back into the plan (reckon-implement) as work lands.\n"
       + "  Advisers (mandatory at critical points): before committing to an approach,\n"
       + "    before any irreversible or outward-facing action, and before declaring\n"
       + "    work done — consult an adviser (stronger-reviewer / advisor tool) and\n"
