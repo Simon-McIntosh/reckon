@@ -1,22 +1,28 @@
 ---
 name: reckon-sync
 description: >-
-  Set up or refresh the reckon plan infrastructure in a repo — ensures reckon
-  skills are symlinked into ~/.claude/skills/, creates docs/, copies the 3-layer
-  CSS (foundation/dashboard/project) from ~/Code/reckon/docs/_shared/ for GitHub
-  Pages compatibility (the live server serves CSS/JSX directly via /_shared/ and
-  /_ui/ routes — no per-project JSX copies needed), sets up docs/state/<project>/
-  with index.json for project config only (no per-plan state JSON), symlinks
-  ~/.config/reckon/state/<project> into the repo, and registers the project in
-  ~/.config/reckon/mounts.json (legacy ~/docs-server still resolves as a
-  fallback). Plans are auto-discovered from any HTML file in
-  docs/ — no opt-in meta tag required. Idempotent.
-  Trigger verbs: "init plans / set up reckon / set up plans / refresh styles /
-  sync plan system / update CSS from reckon / /reckon-sync".
+  Set up or refresh the reckon plan infrastructure in a repo — copies shared
+  CSS, writes the SPA index.html, registers the project mount + state dir, and
+  links the reckon skills into the agent skill dirs. Idempotent. Trigger verbs:
+  "init plans / set up reckon / set up plans / refresh styles / sync plan system
+  / update CSS from reckon / /reckon-sync".
 allowed-tools: Read Write Edit Bash(*) Grep
 ---
 
 # reckon-sync — set up or refresh plan infrastructure
+
+## Fast path
+
+- First-time setup / refresh CSS → `uv run --project ~/Code/reckon reckon sync <repo>/docs`
+- Link the skills → run **Step S** below (the skill owns this; see why it isn't `install-skills`)
+- Verify → `uv run --project ~/Code/reckon reckon doctor`
+
+`reckon sync` does the CSS copy, the SPA `index.html`, `.nojekyll`, the
+`state/<project>/` dir + config-home symlink, the `project.json`/`index.json`
+seed, and the `mounts.json` registration in one idempotent command — it is the
+single source of truth for that logic. The step-by-step below is the
+**fallback** when the CLI is unavailable; only the skill-linking step is always
+the skill's job (`reckon install-skills` copies into `~/.claude/skills/` only).
 
 Replaces `plan-init` and `plan-style`. Idempotent — safe on already-initialised
 repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
@@ -30,13 +36,17 @@ repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
 ## Hard rules
 
 1. **Idempotent.** Every step is a no-op if already applied correctly.
-2. **Never overwrite `docs/state/<project>/index.json`** — only seed when absent.
-3. **Never overwrite per-plan HTML** the user has already authored.
-4. **No per-plan state JSON.** Plan state lives as semantic HTML inside each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json` (project config only).
-5. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
-6. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
-7. **Never commit automatically.** Print a suggested commit message.
-8. **Use `python3` for JSON manipulation** — `jq` may not be available.
+2. **`reckon sync` owns the docs scaffold.** CSS, `index.html`, `.nojekyll`, the
+   state dir + symlink, `project.json`/`index.json`, and `mounts.json` are all
+   created/refreshed by the CLI. Do not hand-write any of them when the CLI is
+   available — the fallback below exists only for when it is not.
+3. **Never overwrite `docs/state/<project>/index.json`** — the CLI only seeds it
+   when absent and otherwise preserves authored sprint/milestone data.
+4. **Never overwrite per-plan HTML** the user has already authored.
+5. **No per-plan state JSON.** Plan state lives as semantic HTML inside each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json` (project config) and `project.json` (sprint/milestone definitions).
+6. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
+7. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
+8. **Never commit automatically.** Print a suggested commit message.
 
 ## What appears in the plan inventory
 
@@ -54,40 +64,86 @@ Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under `doc
 
 ## Workflow
 
-### Intent detection
+Two steps. **Step D** delegates the docs scaffold to the CLI; **Step S** links
+the skills (the one job the CLI does not fully do). Then verify with `doctor`.
 
-| Condition | Intent |
-|---|---|
-| `docs/` absent **or** `docs/_shared/` absent | **first-run** — all steps |
-| Both present | **refresh** — Steps 0 and 2 only; steps 3–5 are no-ops |
+### Step D — Sync the docs scaffold (CLI)
 
-### Step 0 — Link reckon skills and clean up dead links
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PROJECT="$(basename "$REPO_ROOT")"
 
-Always run. Link each reckon skill individually into both skill dirs:
+uv run --project ~/Code/reckon reckon sync "$REPO_ROOT/docs"
+# Pass --project to override the key (defaults to the docs parent dir name):
+#   uv run --project ~/Code/reckon reckon sync "$REPO_ROOT/docs" --project my-key
+```
+
+`reckon sync` is idempotent and does **all** of:
+
+- copies `_shared/foundation.css` + `_shared/dashboard.css` from the canonical
+  `~/Code/reckon/docs/_shared/` (JSX is served live at `/_ui/<file>`; no
+  per-project copies — use `reckon build` for offline/static deploys);
+- writes `docs/index.html` (the SPA entry point) on first run, and refreshes it
+  on later runs **only if** the existing file is already a reckon SPA — a
+  hand-authored page is left untouched;
+- drops `.nojekyll` for GitHub Pages;
+- creates `docs/state/<project>/`, seeds `project.json` and `index.json` (only
+  when absent / preserving authored sprint+milestone data), and symlinks
+  `<config-home>/state/<project>` → it;
+- registers `<project> → docs/` in `<config-home>/mounts.json` (re-read on every
+  request — no server restart needed).
+
+The CLI resolves `<config-home>` itself (`RECKON_HOME` env → `~/.config/reckon`
+→ legacy `~/docs-server`), so the skill does not compute it. Confirm the
+`PROJECT` key with the user on first-run.
+
+### Step S — Link reckon skills into the agent skill dirs
+
+The skill owns this leg. `reckon install-skills` **copies** the skill dirs into
+`~/.claude/skills/` *only* — it does not touch `~/.agents/skills/`, does not use
+symlinks, and does not clean up legacy whole-dir links. We want symlinks (so a
+skill edit in `~/Code/reckon` is live immediately) into **both** runtime dirs,
+so we do it here:
+
 - `~/.claude/skills/` — Claude Code
 - `~/.agents/skills/` — other agent runtimes
+
+Enumerate skills by the **presence of a `SKILL.md`** in each subdirectory, not
+by a name prefix — a future rename that drops the `reckon-` prefix must not
+silently skip a skill. The family currently has six skills (`reckon-create`,
+`reckon-edit`, `reckon-implement`, `reckon-status`, `reckon-sync`,
+`reckon-sprint`), but never hardcode that list; discover it.
 
 ```bash
 RECKON_SKILLS="$HOME/Code/reckon/skills"
 
+# Skill dirs = subdirs that contain a SKILL.md (prefix-agnostic).
+reckon_skill_dirs() {
+  for d in "$RECKON_SKILLS"/*/; do
+    [ -f "$d/SKILL.md" ] && printf '%s\n' "${d%/}"
+  done
+}
+
 link_skills() {
   local DEST="$1"
 
-  # Migrate legacy whole-dir symlink → individual links
+  # Migrate a legacy whole-dir symlink (DEST itself is a symlink) → a real dir
+  # of individual per-skill links.
   if [ -L "$DEST" ]; then
     LINK_TARGET="$(readlink "$DEST")"
     rm "$DEST"
     mkdir -p "$DEST"
     for skill_dir in "$LINK_TARGET"/*/; do
+      [ -f "$skill_dir/SKILL.md" ] || continue
       skill_name="$(basename "$skill_dir")"
-      case "$skill_name" in reckon-*) continue;; esac
-      ln -sfn "$skill_dir" "$DEST/$skill_name"
+      ln -sfn "${skill_dir%/}" "$DEST/$skill_name"
     done
   fi
 
   mkdir -p "$DEST"
 
-  for skill_dir in "$RECKON_SKILLS"/*/; do
+  # Link each canonical skill dir individually.
+  while IFS= read -r skill_dir; do
     skill_name="$(basename "$skill_dir")"
     target="$DEST/$skill_name"
     if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_dir" ]; then
@@ -96,19 +152,17 @@ link_skills() {
       ln -sfn "$skill_dir" "$target"
       echo "  link $skill_name"
     fi
-  done
+  done < <(reckon_skill_dirs)
 
-  # Remove dead links pointing into reckon/skills/ (handles renames/deletes)
-  for link in "$DEST"/*/; do
-    link="${link%/}"
+  # Remove dead links pointing into reckon/skills/ (handles renames/deletes).
+  # Glob entries directly (not "*/") so broken symlinks — which no longer
+  # resolve to a directory — are still seen.
+  for link in "$DEST"/*; do
     if [ -L "$link" ]; then
       target="$(readlink "$link")"
       case "$target" in
         "$RECKON_SKILLS"/*)
-          if [ ! -e "$link" ]; then
-            rm "$link"
-            echo "  removed dead link $(basename "$link")"
-          fi
+          [ -e "$link" ] || { rm "$link"; echo "  removed dead link $(basename "$link")"; }
           ;;
       esac
     fi
@@ -119,7 +173,29 @@ echo "~/.claude/skills:"; link_skills "$HOME/.claude/skills"
 echo "~/.agents/skills:"; link_skills "$HOME/.agents/skills"
 ```
 
-### Step 1 — Detect intent
+### Verify
+
+```bash
+uv run --project ~/Code/reckon reckon doctor
+```
+
+`doctor` checks the skills are present, `mounts.json` is reachable with every
+mounted dir existing, and the MCP config registers the `reckon` server.
+
+Confirm to user:
+
+> **reckon-sync complete — docs/ synced via `reckon sync`, skills linked into
+> `~/.claude/skills` + `~/.agents/skills`, verified with `reckon doctor`.**
+> Run `/reckon-create <slug>` to add a plan.
+
+Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`
+
+## Fallback — CLI unavailable
+
+Run this **only** when `reckon sync` cannot run (no reckon checkout / broken
+install). It reproduces Step D by hand and will drift from the CLI — prefer the
+CLI whenever possible. Step S (skill linking) above is unaffected: run it
+regardless.
 
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -139,39 +215,16 @@ elif [ -d "$HOME/docs-server" ]; then
 else
   CONFIG_HOME="$HOME/.config/reckon"   # fresh install → XDG location
 fi
-mkdir -p "$CONFIG_HOME"
-echo "config-home=$CONFIG_HOME"
+mkdir -p "$CONFIG_HOME/state"
 
-[ ! -d "$DOCS" ] || [ ! -d "$DOCS/_shared" ] && INTENT=first-run || INTENT=refresh
-echo "intent=$INTENT  project=$PROJECT"
-```
-
-Confirm the `PROJECT` key with the user on first-run.
-
-### Step 2 — Copy canonical CSS files
-
-Always run. Overwrites system-owned CSS only; never touches per-plan HTML or `index.json`.
-
-```bash
+# CSS (overwrites system-owned CSS only; never per-plan HTML)
 mkdir -p "$DOCS/_shared"
 cp "$RECKON/docs/_shared/foundation.css" "$DOCS/_shared/foundation.css"
 cp "$RECKON/docs/_shared/dashboard.css"  "$DOCS/_shared/dashboard.css"
-```
 
-JSX components are served by the reckon server at `/_ui/<file>` from `~/Code/reckon/docs/ui/`. Per-project JSX copies are NOT created. Use `reckon build` for offline/static deployment.
-
-### Step 2b — Create or update docs/index.html (SPA entry point)
-
-On first-run, create `docs/index.html`. On refresh, update only if the file already uses v7 format. Never overwrite a hand-authored plan page.
-
-```bash
+# index.html — create on first run, refresh only if already a reckon SPA.
 INDEX="$DOCS/index.html"
-IS_V7_ALREADY=false
-if [ -f "$INDEX" ] && grep -q '_shared/' "$INDEX" 2>/dev/null; then
-  IS_V7_ALREADY=true
-fi
-
-if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
+if [ ! -f "$INDEX" ] || grep -q '_shared/' "$INDEX" 2>/dev/null; then
   cat > "$INDEX" <<HTMLEOF
 <!doctype html>
 <html lang="en">
@@ -179,7 +232,7 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
   <meta charset="utf-8">
   <meta name="docs-project" content="${PROJECT}">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>reckon · plan system</title>
+  <title>reckon · ${PROJECT}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -208,82 +261,50 @@ if [ "$INTENT" = "first-run" ] || [ "$IS_V7_ALREADY" = "true" ]; then
 HTMLEOF
   echo "wrote $INDEX (project=$PROJECT)"
 else
-  echo "skipped index.html — not v7 SPA (manual review needed)"
+  echo "skipped index.html — not a reckon SPA (manual review needed)"
 fi
-```
 
-### Step 3 — State directory setup
+# .nojekyll
+[ -f "$DOCS/.nojekyll" ] || touch "$DOCS/.nojekyll"
 
-```bash
-mkdir -p "$DOCS/state/$PROJECT" "$CONFIG_HOME/state"
-
-# Migrate real directory → symlink
+# State dir + config-home symlink (migrate a real dir → symlink first)
+mkdir -p "$DOCS/state/$PROJECT"
 if [ -d "$CONFIG_HOME/state/$PROJECT" ] && [ ! -L "$CONFIG_HOME/state/$PROJECT" ]; then
   mv "$CONFIG_HOME/state/$PROJECT"/*.json "$DOCS/state/$PROJECT/" 2>/dev/null || true
   rmdir "$CONFIG_HOME/state/$PROJECT"
 fi
+[ -L "$CONFIG_HOME/state/$PROJECT" ] || ln -s "$DOCS/state/$PROJECT" "$CONFIG_HOME/state/$PROJECT"
 
-[ -L "$CONFIG_HOME/state/$PROJECT" ] || \
-  ln -s "$DOCS/state/$PROJECT" "$CONFIG_HOME/state/$PROJECT"
-```
-
-### Step 4 — Register in mounts.json
-
-```bash
+# Register in mounts.json (python3 — jq may be absent)
 MOUNTS="$CONFIG_HOME/mounts.json"
 [ -f "$MOUNTS" ] || echo '{}' > "$MOUNTS"
-
-python3 - <<EOF
-import json
-p, d = '$PROJECT', '$DOCS'
-data = json.load(open('$MOUNTS'))
+python3 - "$MOUNTS" "$PROJECT" "$DOCS" <<'EOF'
+import json, sys
+mpath, p, d = sys.argv[1], sys.argv[2], sys.argv[3]
+data = json.load(open(mpath))
 if p not in data:
     data[p] = d
-    json.dump(data, open('$MOUNTS', 'w'), indent=2)
-    print(f'registered {p} → {d}')
+    json.dump(data, open(mpath, 'w'), indent=2)
+    print(f'registered {p} -> {d}')
 else:
     print(f'{p} already registered')
 EOF
-```
 
-`mounts.json` is re-read on every request — no server restart needed.
-
-### Step 5 — Seed index.json (project config only)
-
-```bash
+# Seed index.json (project config only) when absent
 PROJ="$DOCS/state/$PROJECT/index.json"
-if [ ! -f "$PROJ" ]; then
-  python3 - <<EOF
-import json, datetime
+[ -f "$PROJ" ] || python3 - "$PROJ" "$PROJECT" <<'EOF'
+import json, sys, datetime
+path, project = sys.argv[1], sys.argv[2]
 seed = {
   "updated": datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
-  "project": "$PROJECT",
-  "data": {
-    "active_sprint_id": None,
-    "sprints":    [],
-    "milestones": [],
-    "timeline":   []
-  }
+  "project": project,
+  "doc": "index",
+  "data": {"active_sprint_id": None, "sprints": [], "milestones": []},
 }
-json.dump(seed, open('$PROJ', 'w'), indent=2)
-print('seeded $PROJ')
+json.dump(seed, open(path, 'w'), indent=2)
+print(f'seeded {path}')
 EOF
-fi
 ```
-
-### Step 6 — Drop .nojekyll
-
-```bash
-[ -f "$DOCS/.nojekyll" ] || touch "$DOCS/.nojekyll"
-```
-
-Confirm to user:
-
-> **reckon-sync complete — docs/ ready, registered in the reckon config home**
-> (`~/.config/reckon`, or legacy `~/docs-server` on existing installs).
-> Run `/reckon-create <slug>` to add a plan.
-
-Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`
 
 ## Canonical plan meta tags
 
@@ -311,7 +332,7 @@ Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`
 
 ## CSS layout
 
-Two layers copied from `~/Code/reckon/docs/_shared/`:
+`reckon sync` copies two layers from `~/Code/reckon/docs/_shared/`:
 
 | File | Role |
 |---|---|
@@ -322,6 +343,9 @@ JSX UI components are served by the reckon server at `/_ui/<file>` directly from
 
 ## Cross-references
 
+- `~/Code/reckon/reckon/cli.py` — **canonical source** for the docs scaffold
+  (`sync`), the SPA `index.html` template, `install-skills`, and `doctor`. The
+  Fallback section here mirrors `sync`; if they diverge, the CLI wins.
 - `reckon-create/SKILL.md` — create the first plan after sync.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, endpoints, exclusion lists).
 - `~/Code/reckon/reckon/serve.py` — mounts.json path, `_NON_PLAN_FILES`, `_NON_PLAN_DIRS`.

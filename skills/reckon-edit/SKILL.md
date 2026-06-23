@@ -1,18 +1,25 @@
 ---
 name: reckon-edit
 description: >-
-  Edit an existing plan or manage the central index — prose edits, per-stage
-  files, decision locking, followup creation (§05 template), sprint management,
-  and plan archiving. Decides between evergreen edit vs new stage file for phase
-  transitions. Trigger verbs: "update / amend / record / add to / revise /
-  lock decision / resolve decisions / queue followup / propose sprint / start
-  sprint / close sprint / rebalance / archive / retire the plan /
-  /reckon-edit <slug>". For new plans use reckon-create; for executing work use
-  reckon-implement; for read-only inspection use reckon-status.
+  Edit an existing plan — prose edits, per-stage files, decision locking,
+  followup creation (§05 template), and plan archiving. Decides between evergreen
+  edit vs new stage file for phase transitions. Trigger verbs: "update / amend /
+  record / add to / revise / lock decision / resolve decisions / queue followup /
+  archive / retire the plan / /reckon-edit <slug>". For new plans use
+  reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
+  executing work use reckon-implement; for read-only inspection use reckon-status.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
-# reckon-edit — mutations to existing plans and the central index
+# reckon-edit — mutations to an existing plan
+
+## Fast path
+- Lock a decision → `read_plan(project, slug)` then `edit_plan` `lock` op.
+- Add / resolve a followup → `edit_plan` `append` / `resolve` op (prompt mandatory).
+- Fix prose / add a section → edit `docs/<slug>.html` directly + announce the bypass.
+- Sprints / milestones / roadmap → use `reckon-sprint` (the index, not a plan).
+
+Full detail below.
 
 ## When to invoke
 
@@ -23,13 +30,13 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 | "walk me through open decisions" | **decision** (interactive) |
 | "queue followup / add note / add research / add comment" | **followup / note** |
 | "resolve followup / mark followup done" + id | **followup** |
-| "propose / start / close / rebalance sprint" | **sprint** |
-| "move item X to sprint Y" | **sprint** |
+| "propose / start / close / rebalance sprint", "move item to sprint Y" | → use **reckon-sprint** |
 | "archive / retire / ship the plan" | **archive** |
 | `/reckon-edit <slug>` | detect from args or ask |
 
 If the plan doesn't exist → hand off to `reckon-create`.
 If the user wants to execute the work → hand off to `reckon-implement`.
+If the intent is sprint / milestone / roadmap state → hand off to `reckon-sprint`.
 
 ## The model — the plan HTML is the document AND the store
 
@@ -146,7 +153,7 @@ edit_plan(
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
       "recommends_skill": "/reckon-implement plasma-decoder-finetune §2",
-      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nTier: sonnet\n\nContext\n  base-model locked to t5-large. Data prep is now unblocked.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  base-model → t5-large\n\nOpen decisions to surface (do not resolve)\n  training-batch-size\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
+      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nTier: sonnet\n\nContext\n  Data prep is now unblocked. (Honour the locked / surface the open decisions shown live above — do not re-list them.)\n\nState to read  (code/files, not the plan URL — the builder injects it)\n  src/ and the data sources the curation pipeline reads\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
     }}
   ],
   expected_version=5
@@ -319,84 +326,13 @@ Done-when
   3. followup written + this followup marked resolved
 ```
 
-## Intent: sprint management (index slug)
+## Sprint / roadmap state → reckon-sprint
 
-Sprint state lives in `docs/state/<project>/index.json`, accessed via
-`read_plan(project, "index")` and mutated via `edit_plan(project, "index", ops=…)`.
-Does NOT dispatch workers (use `reckon-implement`).
-
-**Read sprints:**
-```python
-state = read_plan(project="imas-ambix", slug="index")
-# state["data"]["sprints"], state["data"]["active_sprint_id"], state["version"]
-```
-
-**Create a sprint:**
-```python
-edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "append", "target": "sprints", "item": {
-    "id": "S5", "theme": "Foundation hardening",
-    "description": "Schema, tooling, test coverage.",
-    "status": "planned", "starts": "2026-05-26", "ends": "2026-06-06", "items": []
-  }}],
-  expected_version=7
-)
-```
-
-**Start sprint (set active):**
-```python
-edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[
-    {"op": "set", "path": "active_sprint_id", "value": "S5"},
-    {"op": "set", "path": "sprints.S5.status", "value": "active"}
-  ],
-  expected_version=8
-)
-```
-
-**Add item to sprint:**
-```python
-edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "append", "target": "sprints.S5.items", "item": {
-    "slug": "plasma-decoder-finetune", "why_now": "Highest ROI; gates M2",
-    "tier": "opus", "done_when": "Fine-tune run green; eval passing"
-  }}],
-  expected_version=9
-)
-```
-
-**Move item between sprints:**
-```python
-edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "move", "target": "sprint_item", "slug": "plasma-decoder-finetune",
-        "from": "S4", "to": "S5"}],
-  expected_version=9
-)
-```
-
-**Close sprint:**
-```python
-edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "set", "path": "sprints.S5.status", "value": "done"}],
-  expected_version=10
-)
-```
-
-**Propose a sprint (manual workflow):**
-1. Discover plans via `read_plan(project, slug=None)` (discovery mode).
-2. Keep only **actionable live plans**: usually `status in {active, pending}`.
-   Exclude research docs, archived/done plans, README/reference pages, and
-   cross-repo coordination plans unless the user explicitly wants them tracked.
-3. Score by dependency order first, then `roi × effort_inverse × milestone_priority`.
-4. Partition into N sprints; each item has `why_now`, `tier`, `done_when`.
-5. Keep **one active sprint** at a time. Future sprints start as `planned`.
-6. Use the plan's own `plan-tier` unless there is a deliberate reason to override it.
-7. Print proposal; ask to confirm before writing.
+Sprint, milestone, timeline, and blocker state lives in
+`docs/state/<project>/index.json` and is managed by the **`reckon-sprint`**
+skill — propose / start / close / rebalance sprints, move items between
+sprints, and edit milestones / timeline / blockers. It is the project *index*,
+not a plan, and never dispatches workers. Use `reckon-sprint` for all of it.
 
 ## Intent: archive
 
@@ -412,6 +348,7 @@ plans; otherwise archive them too.
 ## Cross-references
 
 - `reckon-create` — scaffold a new plan.
+- `reckon-sprint` — sprint / milestone / roadmap state (the project index).
 - `reckon-implement` — execute the work a plan describes.
 - `reckon-status` — read-only inspection.
 - `reckon-sync` — register a project mount and seed shared assets.

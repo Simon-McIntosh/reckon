@@ -62,8 +62,9 @@ writeback, content parity, fleet safety).
 | Intent | Skill | Slash command |
 |---|---|---|
 | Create a brand-new plan | `reckon-create` | `/reckon-create <slug>` |
-| Edit an existing plan, lock a decision, record an outcome, write a followup, manage sprints | `reckon-edit` | `/reckon-edit <slug>` |
+| Edit an existing plan, lock a decision, record an outcome, write a followup | `reckon-edit` | `/reckon-edit <slug>` |
 | Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-implement` | `/reckon-implement <slug> [section]` |
+| Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
 | Non-plan docs (RCAs, incident reports, tickets, reviews, explainers, dashboards) | `reckon-create` (with `reckon-type=doc`) | `/reckon-create <slug>` |

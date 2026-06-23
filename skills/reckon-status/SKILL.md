@@ -13,6 +13,14 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit
 
 # reckon-status — read-only plan inspection and quality audit
 
+## Fast path
+- What's open / where are we → `read_plan(project)` (discovery), scan the inventory.
+- Status of one plan → `read_plan(project, slug)` → status, impl, open decisions/followups.
+- What to ship next → compute the ready-set (see §Step 5 — dependency order and ready-set).
+- Audit health → call the `audit` MCP tool, then layer the extra checks below.
+
+Full detail below.
+
 ## When to invoke
 
 **Intent: status** — "what plans are open?" / "show plan status" / "where are we on X?" / `/reckon-status`
@@ -110,27 +118,68 @@ with `data-resolved-at` set is resolved regardless of `data-status`.
 
 Format: `plan-slug / <id>: "<title>" (written <age>)`
 
-### Step 5 — suggest one next action
+### Step 5 — dependency order and ready-set
+
+Compute what is actually shippable **before** suggesting anything — never recommend a
+plan ahead of its prerequisites.
+
+1. **Read `depends_on` for every plan** from the `read_plan(project)` discovery payload
+   (`plan-depends-on`, comma-separated slugs). Resolve each slug against the live
+   inventory.
+2. **Ready-set** = `active`/`pending`/`in-progress` plans whose `depends_on` all resolve
+   to a plan with `status` in `{shipped, done}` (or have no deps). These are what to ship
+   next. A plan with **no** deps is ready by default.
+3. **Blocked-by-prerequisite** = a successor with at least one `depends_on` that is not yet
+   `shipped`/`done`. List the unshipped prerequisite slug(s) alongside it.
+4. **Order**: process prerequisites before successors — DFS through `depends_on`, deepest
+   first (the same topological order the Graph tab's fleet prompt uses). The longest chain
+   ending at an `active`/`blocked` plan is the critical path.
+
+**Integrity checks** (both break the ready-set computation — surface as audit findings, see Intent: review):
+- **Dangling `depends_on`** — a slug that resolves to no live plan. It is silently dropped
+  from the DAG, so a plan can look ready when its real prerequisite is missing/renamed.
+- **Cyclic `depends_on`** — `A → B → A`. The cycle is never `shipped`, so neither member
+  can ever enter the ready-set; report the cycle members.
+
+### Step 6 — suggest one next action
 
 Scan the report; offer the single most actionable next step. Do not execute it.
+
+**Gate on prerequisites.** If the highest-ROI candidate is **blocked-by-prerequisite**,
+do NOT recommend it — recommend its earliest unshipped prerequisite instead, and **name
+it**. (e.g. `plan-beta` is highest ROI but depends on `plan-alpha` (active) → suggest
+`/reckon-implement plan-alpha`, not `plan-beta`.) Only a plan in the ready-set may be the
+suggested next action.
 
 ---
 
 ## Intent: review
 
-Run all checks; emit a prioritised punch-list.
+**Call `audit(project)` first — it is the source of truth.** The `audit` MCP tool runs the
+code-side checks non-mutatingly and returns `findings[]` (each with `category`, `code`,
+`severity`, `slug`, `path`) plus `violations[]` (schema conformance) and `finding_counts`.
+Render those findings into the punch-list below grouped by severity. Do NOT re-derive the
+codes it already emits by hand — they would drift from the code.
 
-| Check | Condition |
+`audit` already covers, among others:
+- **schema conformance** — `violations[]` (empty followup prompt, missing required fields,
+  off-enum status, parse errors)
+- **lifecycle** — `MISSING_IMPL`, `STALE`, `STALE_RCA`
+- **references** — stale/broken internal links (`audit_links`)
+- **sprint** — `multiple-active-sprints`, `active-sprint-missing`, `active-sprint-mismatch`,
+  `sprint-item-missing-plan`, `sprint-item-duplicate`, `plan-sprint-missing`,
+  `plan-sprint-missing-item`, `plan-sprint-mismatch`
+
+**Then add only the heuristic checks `audit` does NOT do** (these need prose-reading or the
+dependency-DAG analysis from Step 5):
+
+| Extra check | Condition |
 |-------|-----------|
-| **Empty followup prompt** | `<article class="r-fu">` exists but `<pre class="r-fu-prompt">` absent or empty |
 | **Missing NEXT card** | `plan-status=active` plan has no open `<article class="r-fu" data-status="open">` |
-| **Open decision** | `<div class="r-dec">` with empty or absent `data-choice` |
-| **Stale plan** | `plan-status=active` and `plan-modified` > 30 days ago |
-| **Tier mismatch** | sprint item `tier` differs from `<meta name="plan-tier">` on the plan page |
-| **Non-actionable sprint item** | sprint item slug resolves to a research/doc, archived plan, or done plan |
-| **Archived flag but not archived status** | `plan-archived=1` but `plan-status != archived` |
-| **Stale markdown link** | internal `<a href=\"...md\">` still points at a markdown source after migration |
 | **Sparse relationship metadata** | plan prose clearly references another live plan/research doc but `plan-depends-on` / `plan-blocks` / `plan-informs` is empty |
+| **Stale markdown link** | internal `<a href=\"...md\">` still points at a markdown source after migration (beyond what `audit_links` flags) |
+| **Dangling `depends_on`** | a `plan-depends-on` slug resolves to no live plan (Step 5) — breaks the ready-set |
+| **Cyclic `depends_on`** | a `depends_on` cycle (`A → B → A`, Step 5) — members can never enter the ready-set |
 
 Output format:
 
@@ -151,7 +200,8 @@ Output format:
 
 When reviewing a project after a migration wave, add three short passes:
 1. **Inventory** — live plan vs research vs archive counts
-2. **Relationship audit** — explicit `depends_on` / `blocks` / `informs`
+2. **Relationship audit** — explicit `depends_on` / `blocks` / `informs`; run the
+   dangling/cyclic `depends_on` checks from Step 5
 3. **Sprint fit** — only actionable live plans belong in sprint items
 
 ---

@@ -13,6 +13,14 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 
 # reckon-create — scaffold a new HTML plan or doc
 
+## Fast path
+- New plan → write `docs/<slug>.html` from the skeleton below (author HTML directly).
+- New non-plan doc (RCA / explainer) → same skeleton with `reckon-type=doc`.
+- Seed the first followup → `edit_plan` `append` op (or hand to reckon-edit).
+- Missing `docs/_shared/`? → run `/reckon-sync` first.
+
+Full detail below.
+
 ## When to invoke
 
 Trigger on any of:
@@ -381,6 +389,8 @@ server-computed.)
 Set it to `draft` on initial scaffolding; update it as the plan progresses.
 
 ## §05 followup template
+
+> **Canonical §05 template: `reckon-edit` SKILL.md.** Keep this copy in sync; the rule “don't re-list decisions” applies (the prompt builder injects them live).
 
 Every followup's `<pre class="r-fu-prompt">` MUST be built from this template.
 A followup without a non-empty prompt is rejected at write time.

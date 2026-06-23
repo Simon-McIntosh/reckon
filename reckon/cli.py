@@ -430,6 +430,7 @@ def doctor():
         "reckon-create",
         "reckon-edit",
         "reckon-implement",
+        "reckon-sprint",
         "reckon-status",
         "reckon-sync",
     ]

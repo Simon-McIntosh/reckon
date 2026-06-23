@@ -9,11 +9,18 @@ description: >-
   queued by earlier reckon-implement runs. Trigger verbs: "implement / execute / ship /
   land items from / do the work in / /reckon-implement <slug> [section]". For editing
   plan text use reckon-edit; for new plans use reckon-create; for sprint
-  orchestration use reckon-edit (sprint intent).
+  orchestration use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
 # reckon-implement — execute work described in a plan and record outcomes
+
+## Fast path
+- Read the plan → `read_plan(project, slug)`; classify items; check `depends_on` (STOP if a prerequisite isn't shipped).
+- Implement → inline for 1 item; a parallel fleet (one worker per item, non-overlapping scopes) for ≥3.
+- Record outcomes → per-stage archive HTML + collapse the section + `edit_plan` (set `impl=shipped/total`, resolve driving followup, queue next).
+
+Full detail below.
 
 ## When to invoke
 
@@ -228,6 +235,8 @@ git push origin <branch>
 ```
 
 ## §05 dispatch prompt template
+
+> **Canonical §05 template: `reckon-edit` SKILL.md.** Keep this copy in sync; the rule “don't re-list decisions” applies (the prompt builder injects them live).
 
 Embed in every worker prompt, substituting angle-bracket fields:
 
