@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="reckon-skill-overhaul">
   <meta name="plan-title" content="Reckon skill overhaul: fix adoption friction, rename ship→implement, surface dependency order">
   <meta name="plan-summary" content="The reckon skill family is under-used for four mechanical reasons (impl never advances, MCP tools ungranted, redundancy with SPA/CLI, high activation energy) plus dependency-order blindness. Keep the reckon- prefix, rename only reckon-ship→reckon-implement, and apply systemic + structural fixes across all five skills.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-tier" content="opus">
@@ -17,11 +17,29 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-06-23">
-<meta name="plan-impl" content="0.45">
-<meta name="plan-version" content="1">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
+
+    <section style="border:1px solid #16a34a;border-radius:6px;padding:10px 14px;margin-bottom:18px">
+      <p style="margin:0 0 6px;font-weight:600;color:#166534">✓ Shipped 2026-06-23 — all items landed (impl 1.0)</p>
+      <p style="margin:0;font-size:13px;color:#111827">
+        <strong>§1</strong> renamed <code>reckon-ship</code> → <code>reckon-implement</code>
+        (kept the prefix; full sweep across the reckon repo + both symlink trees +
+        <code>~/.agents</code> + 9 imas-codex plans; 1092 tests).
+        <strong>§2</strong> granted the MCP tools in <code>allowed-tools</code>, corrected the
+        impl-is-server-computed falsehood (<code>reckon-implement</code> now sets
+        <code>impl = shipped/total</code>), added a dependency-precondition gate, and a
+        fast-path atop every skill.
+        <strong>§3</strong> made <code>reckon-status</code> lead with the dependency DAG /
+        ready-set + audit-as-source-of-truth, shrank <code>reckon-sync</code> to a thin CLI
+        wrapper, and extracted a standalone <code>reckon-sprint</code> skill (six skills total).
+        Commits: rename <code>0d666aa</code>, §2 <code>a397bd1</code>, §3 <code>017cbe5</code>.
+        Both decisions locked.
+      </p>
+    </section>
 
     <h2 id="s0">§0 — Why the skills go unused (diagnosis)</h2>
     <p>
@@ -123,13 +141,13 @@
       </p>
     <p class="r-dec-rat">LOCKED. The prefix is namescoping (groups the family in autocomplete, dodges edit_plan/generic collisions). The full rename carries all the migration risk and fixes none of the usability causes. Only &quot;ship&quot; is a poor noun; &quot;implement&quot; fits the execute-and-record job and still autocompletes under /reckon-.</p>
     </div>
-<div class="r-dec" data-key="sprint-extraction" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="sprint-extraction" data-choice="new-skill" data-by="reckon-implement" data-when="2026-06-23T15:44:41+00:00">
     <p class="r-dec-q">Extract sprint management out of reckon-edit?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="delimited-section">keep in reckon-edit as a clearly-delimited section (lower risk)</button>
-      <button class="r-opt" data-value="new-skill">new reckon-sprint skill (cleaner trigger surface; +1 skill to maintain)</button>
+      <button class="r-opt chosen" data-value="new-skill">new reckon-sprint skill (cleaner trigger surface; +1 skill to maintain)</button>
       </p>
-    <p class="r-dec-rat">A new skill expands the family (cli.py list, symlinks, AGENTS.md) — the same blast radius we just avoided. Lean delimited-section unless the lead wants the cleaner separation.</p>
+    <p class="r-dec-rat">Shipped a standalone reckon-sprint skill for sprint/milestone/roadmap state. Extracted from reckon-edit (which is now single-plan-edits only); wired into cli.py SKILLS, the doctor test, the ~/.claude + ~/.agents symlinks, and both AGENTS.md routing tables. reckon-sync&#x27;s skill enumeration was made prefix-agnostic so the +1 skill is picked up automatically.</p>
     </div>
 <div class="r-dec" data-key="dep-order-home" data-choice="skill-only" data-by="reckon-implement" data-when="2026-06-23T12:49:49+00:00">
     <p class="r-dec-q">Where does dependency-order / ready-set logic live?</p>
@@ -182,7 +200,7 @@ Done-when
   4. uv run pytest (reckon) clean if tests exist; followups written + this resolved.</pre>
     <p class="r-fu-outcome">§1 rename + §2 core systemic fixes landed. reckon: plan 49f76f3, rename 0d666aa (1092 tests pass), §2 a397bd1 (MCP allowed-tools + impl-truth + dependency gate). imas-codex: 5ff2b82d (recommends_skill migration, 9 plans). Symlinks re-pointed in ~/.claude + ~/.agents; ~/.agents/AGENTS.md routing table updated. Remaining (queued in f-rso-002): §2 fast-path recipes + §05 template dedup; §3 structural (status DAG, sync wrapper, sprint).</p>
     </article>
-<article class="r-fu" data-id="f-rso-002" data-status="open" data-tier="opus" data-written-by="reckon-implement" data-written-at="2026-06-23" data-recommends-skill="/reckon-implement reckon-skill-overhaul §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rso-002" data-status="resolved" data-tier="opus" data-written-by="reckon-implement" data-written-at="2026-06-23" data-recommends-skill="/reckon-implement reckon-skill-overhaul §3" data-resolved-at="2026-06-23T15:44:41+00:00" data-resolved-by="reckon-implement">
     <h4 class="r-fu-title">Finish §2 (fast-path + §05 dedup) and §3 structural redesigns</h4>
     <div class="r-fu-body">§1 + §2-core landed. Remaining §2: add a 4-6 line fast-path recipe atop each of the five skills; de-dupe the three divergent §05 templates to one canonical copy + fix the reckon-edit example that violates its own 'don't re-list decisions' rule. §3 structural: reckon-status leads with the dependency DAG/ready-set + calls the audit MCP tool; reckon-sync shrinks to a thin wrapper over reckon sync/install-skills/doctor; sprint management per the sprint-extraction decision (LOCK it first — new reckon-sprint skill vs delimited section).</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -214,6 +232,7 @@ Done-when
   3. reckon-status leads with DAG/ready-set + audit tool; dangling/cyclic depends_on check.
   4. reckon-sync = thin wrapper over reckon sync/install-skills/doctor + ~/.agents leg.
   5. sprint per locked decision. uv run pytest clean. impl advanced; this followup resolved.</pre>
+    <p class="r-fu-outcome">All items landed (commits 017cbe5 structural + 5df5d7f lint). §2 finish: fast-path recipe atop all six skills; §05 marked canonical in reckon-edit + self-contradicting example fixed. §3: reckon-status leads with dependency DAG/ready-set + audit-as-source-of-truth + dangling/cyclic checks; reckon-sync shrunk to a thin wrapper over the CLI (prefix-agnostic enumeration); NEW reckon-sprint skill extracted from reckon-edit. 1092 reckon tests pass; doctor verifies all six skills.</p>
     </article>
 </section>
 
