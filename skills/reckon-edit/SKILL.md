@@ -7,7 +7,7 @@ description: >-
   record / add to / revise / lock decision / resolve decisions / queue followup /
   archive / retire the plan / /reckon-edit <slug>". For new plans use
   reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
-  executing work use reckon-implement; for read-only inspection use reckon-status.
+  executing work use reckon-ship; for read-only inspection use reckon-status.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
@@ -35,7 +35,7 @@ Full detail below.
 | `/reckon-edit <slug>` | detect from args or ask |
 
 If the plan doesn't exist → hand off to `reckon-create`.
-If the user wants to execute the work → hand off to `reckon-implement`.
+If the user wants to execute the work → hand off to `reckon-ship`.
 If the intent is sprint / milestone / roadmap state → hand off to `reckon-sprint`.
 
 ## The model — the plan HTML is the document AND the store
@@ -152,7 +152,7 @@ edit_plan(
       "written_at": "2026-05-29",
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
-      "recommends_skill": "/reckon-implement plasma-decoder-finetune §2",
+      "recommends_skill": "/reckon-ship plasma-decoder-finetune §2",
       "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nTier: sonnet\n\nContext\n  Data prep is now unblocked. (Honour the locked / surface the open decisions shown live above — do not re-list them.)\n\nState to read  (code/files, not the plan URL — the builder injects it)\n  src/ and the data sources the curation pipeline reads\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
     }}
   ],
@@ -261,7 +261,7 @@ Minimum followup item shape:
   "written_at":       "YYYY-MM-DD HH:MM",
   "title":            "<imperative short title>",
   "body":             "<2–3 sentences of context>",
-  "recommends_skill": "/reckon-implement <slug> [section] | /reckon-edit <slug> | null",
+  "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
   "tier":             "haiku | sonnet | opus",
   "prompt":           "<§05 template body — mandatory, non-empty>"
 }
@@ -349,7 +349,7 @@ plans; otherwise archive them too.
 
 - `reckon-create` — scaffold a new plan.
 - `reckon-sprint` — sprint / milestone / roadmap state (the project index).
-- `reckon-implement` — execute the work a plan describes.
+- `reckon-ship` — execute the work a plan describes.
 - `reckon-status` — read-only inspection.
 - `reckon-sync` — register a project mount and seed shared assets.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, endpoints).

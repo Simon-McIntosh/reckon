@@ -111,7 +111,7 @@ so we do it here:
 Enumerate skills by the **presence of a `SKILL.md`** in each subdirectory, not
 by a name prefix — a future rename that drops the `reckon-` prefix must not
 silently skip a skill. The family currently has six skills (`reckon-create`,
-`reckon-edit`, `reckon-implement`, `reckon-status`, `reckon-sync`,
+`reckon-edit`, `reckon-ship`, `reckon-status`, `reckon-sync`,
 `reckon-sprint`), but never hardcode that list; discover it.
 
 ```bash

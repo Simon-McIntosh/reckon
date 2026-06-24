@@ -148,7 +148,7 @@ Scan the report; offer the single most actionable next step. Do not execute it.
 **Gate on prerequisites.** If the highest-ROI candidate is **blocked-by-prerequisite**,
 do NOT recommend it — recommend its earliest unshipped prerequisite instead, and **name
 it**. (e.g. `plan-beta` is highest ROI but depends on `plan-alpha` (active) → suggest
-`/reckon-implement plan-alpha`, not `plan-beta`.) Only a plan in the ready-set may be the
+`/reckon-ship plan-alpha`, not `plan-beta`.) Only a plan in the ready-set may be the
 suggested next action.
 
 ---
@@ -224,7 +224,7 @@ When reviewing a project after a migration wave, add three short passes:
 - plan-alpha / f-001: "Implement alias layer" (written 3d ago)
 
 ### Suggested next action
-> Run `/reckon-implement plan-alpha §3` — 3 items implementable, S2 in progress
+> Run `/reckon-ship plan-alpha §3` — 3 items implementable, S2 in progress
 ```
 
 For ≤ 2 plans, skip the table; give one paragraph per plan.
@@ -235,6 +235,6 @@ For ≤ 2 plans, skip the table; give one paragraph per plan.
 
 - `reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive) via `edit_plan`.
 - `reckon-create/SKILL.md` — create new plans.
-- `reckon-implement/SKILL.md` — execute plan work.
+- `reckon-ship/SKILL.md` — execute plan work.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, discovery, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema.

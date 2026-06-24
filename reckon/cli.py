@@ -429,7 +429,7 @@ def doctor():
     SKILLS = [
         "reckon-create",
         "reckon-edit",
-        "reckon-implement",
+        "reckon-ship",
         "reckon-sprint",
         "reckon-status",
         "reckon-sync",

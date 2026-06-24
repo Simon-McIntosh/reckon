@@ -8,7 +8,7 @@ description: >-
   sprint / close sprint / rebalance sprint / move item to sprint / plan the
   roadmap / add milestone / add blocker / /reckon-sprint". For editing a single
   plan's text or followups use reckon-edit; for executing plan work use
-  reckon-implement; for read-only inspection use reckon-status.
+  reckon-ship; for read-only inspection use reckon-status.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
@@ -20,7 +20,7 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 - Move an item between sprints → `edit_plan` `move` op (`target="sprint_item"`).
 - Propose a sprint → discover plans, score by **dependency order first**, confirm, then write.
 
-Full detail below. Sprint state is the project **index**, not a plan — never dispatches workers (that's `reckon-implement`).
+Full detail below. Sprint state is the project **index**, not a plan — never dispatches workers (that's `reckon-ship`).
 
 ## The model — sprints live in the project index
 
@@ -149,7 +149,7 @@ milestone field with `{"op":"set","path":"milestones.<id>.<field>","value":…}`
 ## Cross-references
 
 - `reckon-edit` — edit a single plan's prose, decisions, followups (+ the full `edit_plan` op reference and worktree `checkout_path` detail).
-- `reckon-implement` — execute the work a plan describes.
+- `reckon-ship` — execute the work a plan describes.
 - `reckon-status` — read-only inspection; ready-set / dependency-order view.
 - `reckon-create` — scaffold a new plan.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (index schema, endpoints).

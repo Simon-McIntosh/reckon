@@ -82,7 +82,7 @@ may write `doc` for clarity; the parser handles it.
 | `plan-informs` | author | comma-separated slugs | research docs only |
 | `plan-archived` | author | `1` | hides plan from default inventory; use when retiring a plan without deleting it |
 | `plan-read` | author | `1` | marks a research/doc as reviewed; no effect on plans |
-| `plan-impl` | set by `reckon-implement` | `0.0`–`1.0` | progress fraction; `reckon-implement` sets it (shipped sections / total) on each landing. **Not** auto-computed by the server — leaving it unset keeps a plan at 0%. |
+| `plan-impl` | set by `reckon-ship` | `0.0`–`1.0` | progress fraction; `reckon-ship` sets it (shipped sections / total) on each landing. **Not** auto-computed by the server — leaving it unset keeps a plan at 0%. |
 | `plan-version` | **server-owned** | integer | optimistic-concurrency counter; never author |
 | `plan-modified` | **server-owned** | `YYYY-MM-DD` | server-stamped on each write |
 
@@ -114,7 +114,7 @@ rejected at the write boundary.
   <meta name="plan-summary" content="one-line synopsis">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="slug-a,research-x">
-  <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-implement per landing (shipped/total). -->
+  <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-ship per landing (shipped/total). -->
   <title>Human Title | <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -143,7 +143,7 @@ rejected at the write boundary.
     <section data-reckon="followups" id="followups" class="r-followups">
       <article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet"
                data-written-by="smc" data-written-at="2026-05-27"
-               data-recommends-skill="/reckon-implement slug"
+               data-recommends-skill="/reckon-ship slug"
                data-resolved-at="" data-resolved-by="">
         <h4 class="r-fu-title">…</h4>
         <div class="r-fu-body">…</div>
