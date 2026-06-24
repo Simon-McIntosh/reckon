@@ -213,8 +213,7 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 **Evergreen steps:**
 1. Read `docs/<slug>.html`.
 2. Make the smallest edit; add new `<h3>` blocks rather than modifying existing paragraphs.
-3. Update `modified` via `edit_plan` set op (`{"op":"set","path":"modified","value":"YYYY-MM-DD"}`)
-   — or the server stamps it automatically on any write.
+3. The server stamps `modified` automatically on every successful `edit_plan` write — do not set it manually.
 4. Suggest commit: `docs(<slug>): <short summary>`. Do not commit unless asked.
 
 **Phase transition steps:**

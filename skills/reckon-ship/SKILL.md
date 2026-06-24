@@ -407,10 +407,6 @@ The MCP server (stdio) cannot see a worker's cwd; it resolves projects to the FI
 
 When in doubt, escalate upward.
 
-## Worktree workers — `checkout_path`
-
-When a worker runs in an isolated git worktree, always pass `checkout_path=<its repo root>` to both `read_plan` and `edit_plan`. The orchestrator owns index/sprint state; workers own their plan HTML.
-
 ## Cross-references
 
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.

@@ -34,7 +34,7 @@ to the docs-server. Fixes go through `reckon-edit`.
 
 1. **Pure read.** Never write a file. Never call `edit_plan`. Never POST to the docs-server.
 2. **Literal.** Report what the plan's semantic HTML says; do not invent status.
-3. **Synthetic examples only.** Use `plan-alpha`, `plan-beta`, `my-project` — never real project names.
+3. **Report what is there.** Use the real project and plan names from the repo — the purpose of this skill is real-status reporting. Use synthetic names (`plan-alpha`, `my-project`) only in examples inside this SKILL.md document itself.
 4. **One suggestion, not an action.** Offer a single next-step hint; do not execute.
 
 ---
