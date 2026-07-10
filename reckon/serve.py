@@ -205,11 +205,14 @@ _NON_PLAN_DIRS = frozenset(
         "state",
         "assets",
         "images",
-        # Per-stage / archival history (e.g. <plan>-shipped.html, *-locked.html)
-        # lives under archive/ so it does not clutter the live inventory.
-        "archive",
     ]
 )
+# Per-stage / archival history (e.g. <plan>-…-landed.html) lives under
+# archive/.  Those docs ARE discovered and served — they carry the plan
+# system's landed records — but every one is stamped archived so the SPA
+# keeps them behind its "Show archived" toggle instead of cluttering the
+# live inventory.
+_ARCHIVE_DIR = "archive"
 
 
 class _HeadParser(html.parser.HTMLParser):
@@ -327,6 +330,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             continue
         if html_file.name in _NON_PLAN_FILES:
             continue
+        in_archive = _ARCHIVE_DIR in rel.parts[:-1]
 
         # Lightweight inventory: head <meta> + a regex open-decision count, no
         # full-body parse — so a project with thousands of docs stays cheap.
@@ -374,6 +378,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 "version": rec["version"],
                 "depends_on": rec.get("depends_on", []),
                 "blocks": rec.get("blocks", []),
+                "archived": rec.get("archived") or ("1" if in_archive else ""),
             }
         )
 
