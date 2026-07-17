@@ -318,6 +318,32 @@ git pull --no-rebase origin <branch>
 git push origin <branch>
 ```
 
+### 8. Surface follow-on work to the user — MANDATORY final-report format
+
+Followup ids (`f-<...>`) are internal plan-state keys — NEVER the primary way
+follow-on work is presented to the user. Every session that ends with open
+follow-on work MUST close its final report with a **"Next up"** block that
+names each follow-on by PLAN + SECTION/RUNG (the human handles), and gives a
+fenced, paste-ready prompt so switching to a fresh session is seamless:
+
+````markdown
+**Next up** — paste into a fresh session:
+
+```
+/reckon-ship <slug> §<N>   (<rung/step label> — <one-line what it does>)
+```
+````
+
+Rules:
+- One fenced prompt per advised follow-on; if several follow-ons are advised
+  for one session, stack them in ONE fence in execution order.
+- The fenced line is exactly the slash invocation the next session needs —
+  the skill reads the full §05 prompt from the plan itself, so the fence
+  stays SHORT (slash command + parenthetical label), never a pasted wall.
+- Mention the followup id at most once, in passing (e.g. "tracked as
+  f-tps-03"), and always AFTER the plan/section name — the id is for plan
+  audits, the name is for humans.
+
 ## §05 dispatch prompt template
 
 > **Canonical §05 template: `reckon-edit` SKILL.md.** Keep this copy in sync.

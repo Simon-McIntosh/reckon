@@ -274,6 +274,24 @@ edit_plan(project, slug, ops=[{
 }], expected_version=…)
 ```
 
+**Surfacing followups to the user (binding).** Followup ids (`f-<...>`) are
+internal plan-state keys. When telling the USER about queued or advised
+follow-on work, always lead with the PLAN + SECTION/RUNG name (e.g.
+"temporal-physics-spine §3, rung P1b"), and close the report with a fenced,
+paste-ready invocation so a fresh session starts seamlessly:
+
+````markdown
+**Next up** — paste into a fresh session:
+
+```
+/reckon-ship <slug> §<N>   (<rung label> — <one-line what it does>)
+```
+````
+
+Several follow-ons advised for one session → stack them in ONE fence in
+execution order. The fence stays short (the skill reads the full §05 prompt
+from the plan); the id appears at most once, in passing, after the name.
+
 **Research items:** `edit_plan` append op to `target="research"`. No prompt required.
 
 **Questions:** `edit_plan` append op to `target="questions"`.
