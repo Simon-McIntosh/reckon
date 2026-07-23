@@ -220,6 +220,22 @@ per-stage history and is the anti-pattern that motivated these skills.
 Any existing `plans/` markdown is read-only history — archive it under
 `plans/archive/` when migrating an old project.
 
+**The server serves the mounted checkout's _working tree_.** `mounts.json`
+points at one checkout per project and the server reads whatever is on that
+checkout's current branch (MCP writes land there too). Two consequences: an
+uncommitted plan edit is branch-local — lost if the checkout switches branches,
+and invisible from any other branch; and switching the mounted checkout's branch
+silently swaps the served plan state. **General rule: author and maintain a plan
+on the branch that implements it, and keep the mounted checkout on that branch.**
+In the common single-branch (trunk) case this is automatic — there is no hazard.
+It only bites when a plan governs work on a _different_ branch than it lives on
+(e.g. a gitflow refactor with the plan on `main` but code landing on `develop`).
+Then pin the mounted checkout to the plans branch and do the other-branch work in
+a **git worktree** (read/write its state with `checkout_path`, per the
+multi-worktree section below) — never switch the mounted checkout out from under
+live plan state. Repo-specific branch policy belongs in that repo's own
+`AGENTS.md`.
+
 ### Server operations
 
 The HTTP server is `reckon serve` (the `reckon` Python package) — **one**
