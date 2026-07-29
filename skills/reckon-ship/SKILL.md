@@ -1,14 +1,15 @@
 ---
 name: reckon-ship
 description: >-
-  Execute a complete Reckon plan OR an entire sprint. Resolves a plan slug with
-  an optional section, `/reckon-ship S1`, and a project-qualified sprint id;
-  reads dependencies plus prior research/evidence, builds execution waves,
-  delegates through isolated worktrees with a model-neutral one-below policy,
-  integrates and verifies worker commits, records outcomes continuously, and
-  cleans up worktrees. Trigger verbs: "implement / execute / ship / land /
-  deliver the sprint / run the sprint / /reckon-ship". For editing plan text
-  use reckon-edit; for defining or rebalancing sprint state use reckon-sprint.
+  Execute a complete Reckon plan, or coordinate an entire sprint without doing
+  implementation inline. Resolves a plan slug with an optional section,
+  `/reckon-ship S1`, and a project-qualified sprint id. Sprint mode is strictly
+  coordinator-only: build the execution DAG, delegate every implementation,
+  investigation, test, pipeline, and repair node through isolated worktrees by
+  default, audit and integrate worker commits, record outcomes continuously,
+  and clean up worktrees. Trigger verbs: "implement / execute / ship / land /
+  deliver the sprint / run the sprint / /reckon-ship". For editing plan text use
+  reckon-edit; for defining or rebalancing sprint state use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
@@ -23,7 +24,7 @@ There are two execution modes:
 - **Sprint mode:** `/reckon-ship S1` executes the current project's sprint;
   `/reckon-ship <project>:S1` selects a project explicitly. It reads every
   sprint plan, transitive dependencies, linked research, and prior evidence,
-  then executes ready dependency waves. Use `plan:<slug>` or `sprint:<id>`
+  then coordinates ready dependency waves. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
 
 In plan mode without a section, you MUST:
@@ -37,6 +38,22 @@ In sprint mode, read `references/sprint-orchestration.md` completely before
 dispatch. The sprint invocation authorises the listed plans and their actionable
 same-project prerequisites; it does not broaden authority to unrelated projects,
 external systems, destructive actions, or new outward-facing effects.
+
+### Sprint mode is coordinator-only
+
+For a full sprint, preserve coordinator context for orchestration. The coordinator
+may resolve/read state, checkpoint the DAG/scopes, create worktrees, dispatch or
+message workers, audit evidence, integrate/push, write state, clean, and report.
+
+The coordinator MUST NOT implement, investigate implementation details beyond
+scoping/review, edit product/source/test files, execute tests or operational
+pipelines, or repair worker code. Every implementation, investigation, test
+execution, operational pipeline run, and corrective repair is a worker node,
+even when only one item is ready and a worker slot is available. On failure,
+redispatch a corrective worker. Inline fallback is exceptional: use it only
+when no capable worker or slot exists, report and context-budget it before
+implementation, and prefer pausing the node. The detailed contract, manifest,
+and checkpoint discipline live in `references/sprint-orchestration.md`.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
@@ -55,7 +72,7 @@ Continue through ordinary complexity, validation, and recoverable integration:
 | "This change is high-blast-radius / touches core code" | Allocate it to an appropriately capable worker, test it, and validate integration. |
 | "Better to confirm the approach before executing" | The plan IS the approved approach. Locked decisions ARE the confirmation. Asking again is re-litigating settled decisions. |
 | "This is a lot of work / the session is long / I've done enough" | Length and effort are not blockers. Continue until every implementable item is done or you hit a valid stop. |
-| "It needs full-suite validation first" | Then run the full suite — that's part of doing the work, not a reason to hand back. |
+| "It needs full-suite validation first" | Then run it in plan mode or dispatch a test worker in sprint mode — validation is part of the work, not a reason to hand back. |
 | "I'll present options A/B and let the user choose" | If the plan already determines the path, there is no choice to present. Pick the plan's path and execute. Offering A/B on already-decided work is a checkpoint in disguise. |
 
 Plans do not override global safety or expand user authority. A locked decision
@@ -66,12 +83,12 @@ settles implementation choices only inside the already-authorised scope.
 ```text
 resolve target
 ├─ plan → read full plan → classify sections → execute dependency order
-└─ sprint → read index + all plans/research/evidence → build DAG → execute waves
+└─ sprint → read index + all plans/research/evidence → build DAG → coordinate waves
      ↓
 select worker capability (one-below by default) + applicable skill
 → create detached worktree per delegated task
 → dispatch independent ready nodes in parallel
-→ verify commits/tests → orchestrator merges and resolves conflicts
+→ audit worker manifests/commits/tests → orchestrator merges
 → record plan/evidence/sprint outcomes
 → prove commits reachable → remove worktrees → close sprint when complete
 ```
@@ -93,10 +110,11 @@ If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → 
 
 ## The model — the plan HTML is the document AND the store
 
-**The plan HTML is the source of truth.** Read it first — ALL of it — implement what it
-describes, then write back outcomes. The HTML documents the work; the
-`data-reckon` sections carry structured state (decisions, followups). Do not
-implement items marked "deferred", "post-v1", or behind an unmet trigger.
+**The plan HTML is the source of truth.** Read it first — ALL of it. Plan mode
+implements what it describes; sprint mode delegates it and coordinates the
+outcomes. The HTML documents the work; the `data-reckon` sections carry
+structured state (decisions, followups). Do not implement items marked
+"deferred", "post-v1", or behind an unmet trigger.
 
 **Write path:** use `edit_plan` to record outcomes atomically:
 1. `read_plan(resource={project,type:"plan",id:slug}, view="raw")` → get `version`.
@@ -108,15 +126,15 @@ implement items marked "deferred", "post-v1", or behind an unmet trigger.
 1. **Read the FULL selected scope before ANY implementation.** In plan mode, read the complete plan. In sprint mode, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Delegate independent ready nodes when workers are available.** Use isolated worktrees by default. If delegation is unavailable, execute the same DAG serially and record the capability fallback.
-5. **Verify every worker.** Retrieve its complete result, audit `git show --stat <sha>` against declared scope, and run relevant tests before integration.
-6. **Scope allocation precedes dispatch.** List each worker's exclusive write paths before sending a prompt. No two workers share a file.
+4. **Sprint coordinators delegate every executable node.** This includes a single ready item, investigation, test execution, operational pipelines, and corrective repair. Plan mode may still execute inline.
+5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. In sprint mode, test execution is a worker node.
+6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
 8. **Update the plan continuously.** After EACH section lands: collapse it in the evergreen, write a per-stage archive HTML, and call `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final write.
 9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/plans/archive/<slug>-<section>-landed.html` and an updated §05 followup.
 10. **Collapse the evergreen when a section ships.** Replace the section body with a 2-4 line landed-summary + link to per-stage HTML.
 11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
-12. **The orchestrator owns integration and shared state.** Workers commit in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
+12. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
 13. **Cleanup is mandatory and conservative.** Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch. Never force-remove unmerged or dirty worktrees.
 
 ## §Prerequisite blocking — STOP and ask for authorization
@@ -219,7 +237,7 @@ Audit for <slug>:
 Dispatch plan:
   §2: fleet of 3 (parallel) — workers A/B/C
   §3: fleet of 2 (parallel) — workers D/E
-  §4: inline — 1 item
+  §4: one worker — 1 item
   Sequential order: §2 → §3 → §4 (§3 depends on §2 output)
 ```
 
@@ -230,6 +248,11 @@ List **exclusive write paths** per item. If two items share a file, serialise th
 **Never dispatch two workers that write the same file.**
 
 ### 4. Dispatch workers
+
+The following table applies to plan mode. In sprint mode, delegate every ready
+node under the coordinator-only contract, including one-item and cross-cutting
+nodes; assign an appropriately capable worker rather than making the
+coordinator the implementation owner.
 
 | Items | Strategy |
 |---|---|
@@ -254,16 +277,20 @@ For each completed agent:
 1. Use the runtime's result/wait tool to retrieve the complete report
 2. Check the agent's report for success/failure
 3. Run `git show --stat <sha>` — confirm ONLY assigned paths appear
-4. Run the project test suite (or targeted tests for modified paths)
+4. In plan mode, run the relevant tests; in sprint mode, dispatch a test worker
+   and audit its compact result manifest
 5. Confirm the worker returned commit, test, artifact, and evidence inputs.
    The orchestrator writes plan/index state after integration.
 
 If an agent FAILS or produces incomplete work:
-- Do the work yourself, or dispatch a corrective agent
+- In plan mode, repair inline or dispatch a corrective agent
+- In sprint mode, dispatch a corrective worker; pause the node if no capable
+  worker or slot exists
 - Do NOT proceed to the next section while a failed section's work is outstanding
 
-If a worker fails, inspect its worktree and report. Repair inline or dispatch a
-corrective worker; do not advance the dependency wave with incomplete work.
+Inspect only the summary, scoped diff, and evidence needed to diagnose the
+failure. Sprint coordinators do not repair worker code themselves. Do not
+advance the dependency wave with incomplete work.
 
 ### 6. Record outcomes — after EACH section
 
@@ -368,6 +395,9 @@ remains. Close the sprint only when all executable nodes are complete.
 uv run --project ~/Code/reckon reckon audit-doc docs/plans/<slug>.html
 # Must report no ERRORs before committing
 ```
+
+Run that command directly in plan mode. In sprint mode, dispatch it as a
+validation worker node and audit the returned result.
 
 Commit:
 ```bash
