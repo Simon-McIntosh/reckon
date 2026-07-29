@@ -113,6 +113,12 @@ def canonical_relative_path(
     artifact_type: str, slug: str, *, archived: bool = False
 ) -> PurePosixPath:
     """Return the canonical path below a docs root."""
+    ResourceIdentity(
+        project="path-validation",
+        type=artifact_type,
+        slug=slug,
+        archived=archived,
+    ).validate_for_write()
     root = TYPE_ROOTS[artifact_type]
     parts = [root]
     if archived:
@@ -121,9 +127,20 @@ def canonical_relative_path(
     return PurePosixPath(*parts)
 
 
-def canonical_href(project: str, artifact_type: str, slug: str) -> str:
+def canonical_href(
+    project: str, artifact_type: str, slug: str, *, archived: bool = False
+) -> str:
     """Return the extensionless canonical live route."""
-    return f"/{project}/{TYPE_ROOTS[artifact_type]}/{slug}"
+    identity = ResourceIdentity(
+        project=project,
+        type=artifact_type,
+        slug=slug,
+        archived=archived,
+    ).validate_for_write()
+    archive_part = "/archive" if identity.archived else ""
+    return (
+        f"/{identity.project}/{TYPE_ROOTS[identity.type]}{archive_part}/{identity.slug}"
+    )
 
 
 def _path_context(relative_path: PurePosixPath) -> tuple[str | None, bool, bool]:
@@ -131,7 +148,16 @@ def _path_context(relative_path: PurePosixPath) -> tuple[str | None, bool, bool]
     if not parts:
         return None, False, True
     typed = ROOT_TYPES.get(parts[0])
-    archived = "archive" in parts[:-1]
+    if typed is not None and not (
+        len(parts) == 2 or (len(parts) == 3 and parts[1] == "archive")
+    ):
+        raise ResourceCollision(
+            f"{relative_path}: typed resource path must be "
+            "<root>/<slug>.html or <root>/archive/<slug>.html"
+        )
+    archived = (typed is not None and len(parts) == 3 and parts[1] == "archive") or (
+        typed is None and parts[0] == "archive"
+    )
     legacy = typed is None or (typed != "sprint" and parts[0] == "archive")
     return typed, archived, legacy
 
@@ -187,7 +213,7 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
         path=path,
         relative_path=relative,
         canonical_relative_path=canonical,
-        canonical_href=canonical_href(project, artifact_type, slug),
+        canonical_href=canonical_href(project, artifact_type, slug, archived=archived),
         legacy=legacy,
     )
 
@@ -289,11 +315,36 @@ def resolve_route(
     docs_dir: Path, project: str, route: str
 ) -> tuple[Resource | None, bool]:
     """Resolve a project-relative route and report whether it is a legacy alias."""
-    clean = route.strip("/").removesuffix(".html")
-    parts = clean.split("/", 1)
-    if len(parts) == 2 and parts[0] in ROOT_TYPES:
-        resource = resolve_resource(docs_dir, project, parts[1], ROOT_TYPES[parts[0]])
-        return resource, False
+    stripped = route.strip("/")
+    html_alias = stripped.endswith(".html")
+    clean = stripped.removesuffix(".html")
+    parts = clean.split("/")
+    if parts[0] in ROOT_TYPES:
+        if len(parts) not in {2, 3}:
+            raise ResourceCollision(f"invalid typed resource route: {route!r}")
+        archived = len(parts) == 3 and parts[1] == "archive"
+        if len(parts) == 3 and not archived:
+            raise ResourceCollision(f"invalid typed resource route: {route!r}")
+        slug = parts[-1]
+        try:
+            ResourceIdentity(
+                project=project,
+                type=ROOT_TYPES[parts[0]],
+                slug=slug,
+                archived=archived,
+            ).validate_for_write()
+        except ValueError as exc:
+            raise ResourceCollision(f"invalid typed resource route: {route!r}") from exc
+        resource = resolve_resource(
+            docs_dir,
+            project,
+            slug,
+            ROOT_TYPES[parts[0]],
+            include_archived=archived,
+        )
+        if resource is not None and resource.archived != archived:
+            return None, False
+        return resource, html_alias
     if "/" not in clean:
         return resolve_resource(docs_dir, project, clean), True
     return None, False
@@ -301,6 +352,129 @@ def resolve_route(
 
 def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
+
+
+def _contained_path(docs_dir: Path, relative: PurePosixPath, *, label: str) -> Path:
+    """Resolve one manifest path and prove it remains below the docs root."""
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise ResourceCollision(f"{label} is not a contained relative path: {relative}")
+    root = docs_dir.resolve()
+    candidate = root.joinpath(*relative.parts).resolve(strict=False)
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise ResourceCollision(
+            f"{label} escapes the docs directory: {relative}"
+        ) from exc
+    return candidate
+
+
+def _load_prior_manifest(docs_dir: Path, project: str) -> dict:
+    """Load and validate cumulative migration provenance."""
+    manifest_path = _contained_path(
+        docs_dir, MANIFEST_PATH, label="migration manifest path"
+    )
+    if not manifest_path.is_file():
+        return {"format": 1, "project": project, "moves": [], "rewrites": []}
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ResourceCollision(f"migration manifest is unreadable: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise ResourceCollision("migration manifest must be an object")
+    if manifest.get("format") != 1:
+        raise ResourceCollision("migration manifest format must be 1")
+    if manifest.get("project") != project:
+        raise ResourceCollision(
+            "migration manifest project does not match the requested project"
+        )
+    moves = manifest.get("moves")
+    rewrites = manifest.get("rewrites", [])
+    if not isinstance(moves, list) or not isinstance(rewrites, list):
+        raise ResourceCollision("migration manifest moves and rewrites must be lists")
+
+    destinations: dict[str, str] = {}
+    sources: dict[str, str] = {}
+    normalised_moves: list[dict] = []
+    for item in moves:
+        if not isinstance(item, dict):
+            raise ResourceCollision("migration manifest move must be an object")
+        required = {
+            "resource",
+            "type",
+            "slug",
+            "archived",
+            "from",
+            "to",
+            "sha256",
+        }
+        if not required.issubset(item):
+            raise ResourceCollision("migration manifest move is missing fields")
+        source = PurePosixPath(str(item["from"]))
+        destination = PurePosixPath(str(item["to"]))
+        _contained_path(docs_dir, source, label="migration source")
+        _contained_path(docs_dir, destination, label="migration destination")
+        identity = ResourceIdentity(
+            project=project,
+            type=str(item["type"]),
+            slug=str(item["slug"]),
+            archived=bool(item["archived"]),
+        ).validate_for_write()
+        if item["resource"] != identity.key:
+            raise ResourceCollision(
+                "migration manifest resource identity is inconsistent"
+            )
+        expected = canonical_relative_path(
+            identity.type, identity.slug, archived=identity.archived
+        )
+        if destination != expected:
+            raise ResourceCollision(
+                "migration manifest destination contradicts resource identity"
+            )
+        if str(source) in sources and sources[str(source)] != str(destination):
+            raise ResourceCollision("migration manifest source is contradictory")
+        if str(destination) in destinations and destinations[str(destination)] != str(
+            source
+        ):
+            raise ResourceCollision("migration manifest destination is contradictory")
+        sources[str(source)] = str(destination)
+        destinations[str(destination)] = str(source)
+        normalised_moves.append(dict(item))
+
+    normalised_rewrites: list[dict] = []
+    for item in rewrites:
+        if not isinstance(item, dict) or not {
+            "from",
+            "to",
+            "from_sha256",
+            "to_sha256",
+        }.issubset(item):
+            raise ResourceCollision("migration manifest rewrite is malformed")
+        _contained_path(
+            docs_dir, PurePosixPath(str(item["from"])), label="rewrite source"
+        )
+        _contained_path(
+            docs_dir, PurePosixPath(str(item["to"])), label="rewrite destination"
+        )
+        normalised_rewrites.append(dict(item))
+    return {
+        "format": 1,
+        "project": project,
+        "moves": sorted(normalised_moves, key=lambda item: str(item["to"])),
+        "rewrites": sorted(
+            normalised_rewrites,
+            key=lambda item: (
+                str(item["to"]),
+                str(item["from"]),
+                str(item["from_sha256"]),
+                str(item["to_sha256"]),
+            ),
+        ),
+    }
 
 
 def _migration_candidates(docs_dir: Path, project: str) -> list[Resource]:
@@ -342,11 +516,15 @@ def _rewrite_url(
         destination = target
     else:
         return raw_url
+    is_html_resource = destination.suffix == ".html"
     if parsed.path.startswith(prefix):
-        new_path = f"/{project}/{destination.with_suffix('')}"
+        rendered_destination = (
+            destination.with_suffix("") if is_html_resource else destination
+        )
+        new_path = f"/{project}/{rendered_destination}"
     else:
         new_path = os.path.relpath(destination, migrated_document.parent)
-        if extensionless:
+        if extensionless and is_html_resource:
             new_path = str(PurePosixPath(new_path).with_suffix(""))
     return urlunsplit(("", "", new_path, parsed.query, parsed.fragment))
 
@@ -379,18 +557,36 @@ def _rewrite_links(
 
 def build_migration_manifest(docs_dir: Path, project: str) -> dict:
     """Preflight an explicit typed-root migration without modifying files."""
+    docs_dir = docs_dir.resolve()
+    ResourceIdentity(
+        project=project, type="plan", slug="identity-validation"
+    ).validate_for_write()
+    prior = _load_prior_manifest(docs_dir, project)
+    prior_by_source = {item["from"]: item for item in prior["moves"]}
+    prior_by_destination = {item["to"]: item for item in prior["moves"]}
     candidates = _migration_candidates(docs_dir, project)
     moves: list[MigrationMove] = []
     destinations: dict[PurePosixPath, PurePosixPath] = {}
     for resource in candidates:
         destination = resource.canonical_relative_path
+        _contained_path(docs_dir, resource.relative_path, label="migration source")
+        _contained_path(docs_dir, destination, label="migration destination")
+        if resource.relative_path.as_posix() in prior_by_source:
+            raise ResourceCollision(
+                f"{resource.relative_path}: source contradicts prior manifest"
+            )
+        prior_destination = prior_by_destination.get(destination.as_posix())
+        if prior_destination is not None:
+            raise ResourceCollision(
+                f"{destination}: destination contradicts prior manifest"
+            )
         existing_source = destinations.get(destination)
         if existing_source is not None:
             raise ResourceCollision(
                 f"migration destination collision at {destination}: "
                 f"{existing_source}, {resource.relative_path}"
             )
-        target = docs_dir / destination
+        target = _contained_path(docs_dir, destination, label="migration destination")
         if target.exists() and target.resolve() != resource.path.resolve():
             raise ResourceCollision(
                 f"migration destination already exists: {destination}"
@@ -406,37 +602,57 @@ def build_migration_manifest(docs_dir: Path, project: str) -> dict:
             )
         )
 
+    new_moves = [
+        {
+            "resource": move.identity.key,
+            "type": move.identity.type,
+            "slug": move.identity.slug,
+            "archived": move.identity.archived,
+            "from": str(move.source),
+            "to": str(move.destination),
+            "sha256": move.sha256,
+        }
+        for move in moves
+    ]
     return {
         "format": 1,
         "project": project,
-        "moves": [
-            {
-                "resource": move.identity.key,
-                "type": move.identity.type,
-                "slug": move.identity.slug,
-                "archived": move.identity.archived,
-                "from": str(move.source),
-                "to": str(move.destination),
-                "sha256": move.sha256,
-            }
-            for move in sorted(moves, key=lambda item: str(item.destination))
-        ],
+        "moves": sorted(
+            [*prior["moves"], *new_moves], key=lambda item: str(item["to"])
+        ),
+        "rewrites": prior["rewrites"],
     }
 
 
 def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
-    """Execute the preflighted migration transaction and emit its manifest."""
+    """Execute migration and emit cumulative provenance.
+
+    Process-level failures roll back installed files. The sequence is not
+    crash-atomic because portable filesystems do not provide a directory-wide
+    transaction; the cumulative manifest makes an interrupted run auditable and
+    safely repeatable after filesystem inspection.
+    """
     docs_dir = docs_dir.resolve()
-    manifest_path = docs_dir / MANIFEST_PATH
+    manifest_path = _contained_path(
+        docs_dir, MANIFEST_PATH, label="migration manifest path"
+    )
+    prior = _load_prior_manifest(docs_dir, project)
     manifest = build_migration_manifest(docs_dir, project)
-    if not manifest["moves"]:
+    prior_sources = {item["from"] for item in prior["moves"]}
+    active_items = [
+        item for item in manifest["moves"] if item["from"] not in prior_sources
+    ]
+    if not active_items:
         if manifest_path.is_file():
-            return json.loads(manifest_path.read_text())
+            return prior
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
         return manifest
 
     moves = {
+        PurePosixPath(item["from"]): PurePosixPath(item["to"]) for item in active_items
+    }
+    rewrite_moves = {
         PurePosixPath(item["from"]): PurePosixPath(item["to"])
         for item in manifest["moves"]
     }
@@ -449,7 +665,9 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
     }
     for path in sorted(docs_dir.rglob("*.html")):
         relative = PurePosixPath(path.relative_to(docs_dir).as_posix())
+        _contained_path(docs_dir, relative, label="migration document")
         destination = moves.get(relative, relative)
+        _contained_path(docs_dir, destination, label="migration document destination")
         content = path.read_bytes()
         originals[relative] = content
         rewritten = _rewrite_links(
@@ -457,12 +675,40 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
             project=project,
             original_document=relative,
             migrated_document=destination,
-            moves=moves,
+            moves=rewrite_moves,
             known_paths=known_paths,
         ).encode("utf-8")
         if relative in moves or rewritten != content:
             transformed[destination] = rewritten
 
+    rewrite_records = list(prior["rewrites"])
+    for destination, content in sorted(
+        transformed.items(), key=lambda item: str(item[0])
+    ):
+        source = next(
+            (candidate for candidate, target in moves.items() if target == destination),
+            destination,
+        )
+        original = originals[source]
+        if content == original:
+            continue
+        record = {
+            "from": str(source),
+            "to": str(destination),
+            "from_sha256": _sha256(original),
+            "to_sha256": _sha256(content),
+        }
+        if record not in rewrite_records:
+            rewrite_records.append(record)
+    manifest["rewrites"] = sorted(
+        rewrite_records,
+        key=lambda item: (
+            str(item["to"]),
+            str(item["from"]),
+            str(item["from_sha256"]),
+            str(item["to_sha256"]),
+        ),
+    )
     manifest_bytes = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
     transformed[MANIFEST_PATH] = manifest_bytes
     prior_manifest = manifest_path.read_bytes() if manifest_path.is_file() else None
@@ -470,26 +716,31 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
     installed: list[PurePosixPath] = []
     try:
         for relative, content in transformed.items():
-            staged = staging / relative
+            staged = _contained_path(staging, relative, label="staged migration path")
             staged.parent.mkdir(parents=True, exist_ok=True)
             staged.write_bytes(content)
         for relative in sorted(transformed, key=str):
-            destination = docs_dir / relative
+            destination = _contained_path(
+                docs_dir, relative, label="migration install destination"
+            )
             destination.parent.mkdir(parents=True, exist_ok=True)
             os.replace(staging / relative, destination)
             installed.append(relative)
         for source in sorted(moves, key=str):
-            if source not in transformed and (docs_dir / source).exists():
-                (docs_dir / source).unlink()
-            elif source != moves[source] and (docs_dir / source).exists():
-                (docs_dir / source).unlink()
+            source_path = _contained_path(
+                docs_dir, source, label="migration removal source"
+            )
+            if source not in transformed and source_path.exists():
+                source_path.unlink()
+            elif source != moves[source] and source_path.exists():
+                source_path.unlink()
     except Exception:
         for relative in installed:
-            path = docs_dir / relative
+            path = _contained_path(docs_dir, relative, label="rollback path")
             if relative not in originals and path.exists():
                 path.unlink()
         for relative, content in originals.items():
-            path = docs_dir / relative
+            path = _contained_path(docs_dir, relative, label="rollback source")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
         if prior_manifest is not None:

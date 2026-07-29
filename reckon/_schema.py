@@ -105,6 +105,7 @@ EFFORT_ENUM = ["S", "M", "L", "XL"]
 TYPE_ENUM = ["plan", "research", "evidence"]
 RESOURCE_TYPE_ENUM = [*TYPE_ENUM, "sprint"]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
+_RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
@@ -128,18 +129,25 @@ class ResourceIdentity(BaseModel):
 
     def validate_for_write(self) -> "ResourceIdentity":
         errors: list[str] = []
-        if not self.project.strip():
-            errors.append("project: required")
+        if not _is_safe_resource_segment(self.project):
+            errors.append("project: must be a single safe path segment")
         if self.type not in RESOURCE_TYPE_ENUM:
             errors.append(f"type: {self.type!r} not in {RESOURCE_TYPE_ENUM}")
-        if not self.slug.strip():
-            errors.append("slug: required")
+        if not _is_safe_resource_segment(self.slug):
+            errors.append("slug: must be a single safe path segment")
         if errors:
             raise ValueError(
                 "ResourceIdentity.validate_for_write failed:\n  - "
                 + "\n  - ".join(errors)
             )
         return self
+
+
+def _is_safe_resource_segment(value: str) -> bool:
+    """Return whether an identity is safe to interpolate into a path or URL."""
+    return bool(
+        value and value not in {".", ".."} and _RESOURCE_SEGMENT_RE.fullmatch(value)
+    )
 
 
 # ── Cross-project plan references ────────────────────────────────────────────

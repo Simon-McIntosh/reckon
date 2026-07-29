@@ -297,6 +297,7 @@ def _write_state(
     data: dict,
     expected_version: int,
     root: str | Path | None = None,
+    artifact_type: str | None = None,
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
 
@@ -308,18 +309,51 @@ def _write_state(
     """
     from reckon import _plan_html
 
-    html_file = _resolve_html_file(project, slug, root)
+    from reckon.resources import canonical_type, resource_map
+
+    docs_dir = _docs_dir_for_project(project, root)
+    selected_type = canonical_type(artifact_type) if artifact_type else None
+    if docs_dir is None:
+        html_file = None
+        selected_resource_type = selected_type
+    else:
+        matches = [
+            resource
+            for resource in resource_map(
+                docs_dir, project, include_archived=False
+            ).values()
+            if resource.slug == slug
+            and (selected_type is None or resource.type == selected_type)
+        ]
+        if selected_type is None and len(matches) > 1:
+            kinds = ", ".join(sorted(resource.type for resource in matches))
+            raise ValueError(
+                f"resource slug {slug!r} is ambiguous across types: {kinds}; "
+                "supply artifact_type"
+            )
+        if len(matches) > 1:
+            raise ValueError(
+                f"resource slug {slug!r} has duplicate {selected_type!r} artifacts"
+            )
+        selected = matches[0] if matches else None
+        html_file = selected.path if selected else None
+        selected_resource_type = selected.type if selected else selected_type
     if html_file is None or not html_file.is_file():
         # Cannot write to a non-existent HTML file; create one only if the
         # docs dir exists and expected_version==0 (first write).
         if expected_version != 0:
             raise VersionConflict(expected_version, 0, {})
-        docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None:
             raise FileNotFoundError(
                 f"No docs dir found for project {project!r} — "
                 "check mounts.json or RECKON_MOUNTS_PATH"
             )
+        if selected_type not in {None, "plan"}:
+            raise FileNotFoundError(
+                f"{selected_type} resource {slug!r} does not exist; "
+                "typed creation is not supported"
+            )
+        selected_resource_type = "plan"
         html_file = docs_dir / "plans" / f"{slug}.html"
         html_file.parent.mkdir(parents=True, exist_ok=True)
         if not html_file.exists():
@@ -343,6 +377,12 @@ def _write_state(
         raise VersionConflict(expected_version, cur_version, cur_state)
 
     new_data = dict(data)
+    state_type = canonical_type(new_data.get("type"))
+    if selected_resource_type and state_type != selected_resource_type:
+        raise ValueError(
+            f"state type {state_type!r} does not match selected resource type "
+            f"{selected_resource_type!r}"
+        )
     new_data.pop("_version", None)  # never allow the old JSON key in the state
     new_data["modified"] = date.today().isoformat()
     new_data["version"] = cur_version + 1
@@ -408,6 +448,7 @@ def write_plan(
     data: dict,
     expected_version: int,
     root: str | Path | None = None,
+    artifact_type: str | None = None,
 ) -> int:
     """Write a full data blob back with version check.
 
@@ -425,7 +466,7 @@ def write_plan(
         return _write_json_envelope(
             state_path(project, slug, root), project, slug, data, expected_version
         )
-    return _write_state(project, slug, data, expected_version, root)
+    return _write_state(project, slug, data, expected_version, root, artifact_type)
 
 
 def patch_plan(

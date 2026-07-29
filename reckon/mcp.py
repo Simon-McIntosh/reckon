@@ -1392,6 +1392,7 @@ def _edit_plan(
     expected_version: int,
     create: bool = False,
     checkout_path: str | None = None,
+    doc_type: str | None = None,
 ) -> dict[str, Any]:
     """Apply an ordered list of ops to one plan (or the project index), then
     schema-validate and write atomically with an optimistic-concurrency check.
@@ -1402,7 +1403,9 @@ def _edit_plan(
     NOTHING is written and field-level errors are returned.
 
     Routing: slug="index" → project config (sprints/milestones/timeline/blockers,
-    version = data._version); any other slug → a plan HTML (version = state.version).
+    version = data._version); any other slug → typed HTML selected by
+    ``doc_type`` (version = state.version). Untyped edits retain compatibility
+    only when the leaf slug identifies one live artifact unambiguously.
 
     Verbs (the "op" key): set | append | resolve | lock | move. See read_plan(
     ..., with_schema=True)["op_vocab"] for the full op grammar.
@@ -1429,12 +1432,44 @@ def _edit_plan(
     """
     is_index = slug in ("index", "project")
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
+    from reckon.resources import canonical_type, resource_map
+
+    canonical_doc_type = canonical_type(doc_type) if doc_type else None
+    if is_index and canonical_doc_type is not None:
+        return {"ok": False, "error": "doc_type is not valid for index/project"}
+    if create and canonical_doc_type not in {None, "plan"}:
+        return {
+            "ok": False,
+            "error": "typed creation is not supported; create=True creates plans only",
+        }
+
+    docs_dir = _docs_dir_for_project(project, root)
+    selected_type = canonical_doc_type
+    if not is_index and not create and docs_dir is not None:
+        slug_matches = [
+            resource
+            for resource in resource_map(
+                docs_dir, project, include_archived=False
+            ).values()
+            if resource.slug == slug
+        ]
+        if selected_type is None and len(slug_matches) > 1:
+            kinds = ", ".join(sorted(resource.type for resource in slug_matches))
+            return {
+                "ok": False,
+                "error": "ambiguous_resource",
+                "detail": (
+                    f"resource slug {slug!r} exists as {kinds}; "
+                    "supply doc_type matching the preceding read_plan call"
+                ),
+            }
+        if selected_type is None and len(slug_matches) == 1:
+            selected_type = slug_matches[0].type
 
     # ── create path (plan slugs only) ──
     if create:
         if is_index:
             return {"ok": False, "error": "cannot create the index slug"}
-        docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None:
             hint = (
                 f"check checkout_path {checkout_path!r} contains a docs/ dir"
@@ -1466,7 +1501,7 @@ def _edit_plan(
         created_file = None
 
     # ── read current state (after any template write) ──
-    cur_data, cur_version = read_plan(project, slug, root)
+    cur_data, cur_version = read_plan(project, slug, root, artifact_type=selected_type)
     if not create and not cur_data and not is_index:
         # An empty plan dict for a non-index slug means the HTML file is absent.
         from reckon.serve import _resolve_plan_file
@@ -1502,6 +1537,13 @@ def _edit_plan(
 
     # ── schema-validate the working dict (reject on failure, write nothing) ──
     errors = _validate_working(slug, working)
+    if not errors and selected_type is not None and not is_index:
+        working_type = canonical_type(working.get("type"))
+        if working_type != selected_type:
+            errors = [
+                f"type: {working_type!r} does not match selected doc_type "
+                f"{selected_type!r}"
+            ]
     if errors:
         if created_file is not None:
             created_file.unlink(missing_ok=True)
@@ -1509,16 +1551,25 @@ def _edit_plan(
 
     # ── persist the working DICT via the version-checked atomic write ──
     try:
-        new_version = write_plan(project, slug, working, cur_version, root)
+        new_version = write_plan(
+            project,
+            slug,
+            working,
+            cur_version,
+            root,
+            artifact_type=selected_type,
+        )
     except VersionConflict as e:
         return _conflict_response(e)
+    except (ValueError, FileNotFoundError) as e:
+        return {"ok": False, "error": "resource_selection", "detail": str(e)}
 
     result: dict[str, Any] = {
         "ok": True,
         "project": project,
         "slug": slug,
         "new_version": new_version,
-        "path": _written_path(project, slug, root),
+        "path": _written_path(project, slug, root, selected_type),
     }
     if warnings:
         result["warnings"] = warnings
@@ -1527,7 +1578,12 @@ def _edit_plan(
     return result
 
 
-def _written_path(project: str, slug: str, root: str | None) -> str | None:
+def _written_path(
+    project: str,
+    slug: str,
+    root: str | None,
+    doc_type: str | None = None,
+) -> str | None:
     """Best-effort absolute path of the file edit_plan just wrote.
 
     For index/project slugs → the JSON state file; for plan slugs → the resolved
@@ -1540,7 +1596,7 @@ def _written_path(project: str, slug: str, root: str | None) -> str | None:
     try:
         if slug in ("index", "project"):
             return str(state_path(project, slug, root))
-        hit = _resolve_html_file(project, slug, root)
+        hit = _resolve_html_file(project, slug, root, doc_type)
         return str(hit) if hit is not None else None
     except Exception:  # noqa: BLE001 — path reporting must never fail the write
         return None

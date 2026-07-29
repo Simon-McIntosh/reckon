@@ -19,6 +19,8 @@ from reckon.cli import main
 from reckon.resources import (
     ResourceCollision,
     build_migration_manifest,
+    canonical_href,
+    canonical_relative_path,
     iter_resources,
     migrate_typed_layout,
     resolve_resource,
@@ -91,6 +93,62 @@ def test_typed_identity_distinguishes_equal_leaf_slugs(tmp_path):
         == "research"
     )
     assert resolve_resource(docs, "sample", "shared").type == "plan"
+
+
+@pytest.mark.parametrize(
+    ("project", "slug"),
+    [
+        ("../outside", "safe"),
+        ("/absolute", "safe"),
+        ("sample", "../outside"),
+        ("sample", "/absolute"),
+        ("sample", "nested/path"),
+        ("sample", "."),
+        ("sample", ".."),
+    ],
+)
+def test_resource_identity_rejects_unsafe_path_segments(project, slug):
+    if slug != "safe":
+        with pytest.raises(ValueError, match="single safe path segment"):
+            canonical_relative_path("plan", slug)
+    with pytest.raises(ValueError, match="single safe path segment"):
+        canonical_href(project, "plan", slug)
+
+
+def test_typed_discovery_rejects_arbitrary_nested_paths(tmp_path):
+    docs = tmp_path / "docs"
+    nested = _artifact(
+        docs / "plans" / "nested" / "work.html",
+        "sample",
+        "plan",
+        "work",
+    )
+    with pytest.raises(ResourceCollision, match="typed resource path"):
+        iter_resources(docs, "sample")
+    assert nested.is_file()
+
+
+@pytest.mark.parametrize("route", ["plans/..", "plans/nested/work", "plans//work"])
+def test_typed_route_rejects_unsafe_or_nested_identity(tmp_path, route):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    with pytest.raises(ResourceCollision, match="invalid typed resource route"):
+        resolve_route(docs, "sample", route)
+
+
+def test_migration_rejects_destination_symlink_escape(tmp_path):
+    docs = tmp_path / "docs"
+    outside = tmp_path / "outside"
+    docs.mkdir()
+    outside.mkdir()
+    _artifact(docs / "work.html", "sample", "plan", "work")
+    (docs / "plans").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ResourceCollision, match="escapes the docs directory"):
+        migrate_typed_layout(docs, "sample")
+
+    assert not (outside / "work.html").exists()
+    assert (docs / "work.html").is_file()
 
 
 def test_discovery_keeps_typed_duplicates_and_excludes_sprint_from_inventory(tmp_path):
@@ -200,6 +258,25 @@ def test_live_server_typed_routes_and_legacy_redirect(
         response = connection.getresponse()
         assert response.status == 200
         assert json.loads(response.read())["type"] == "research"
+
+        archived = _artifact(
+            docs / "evidence" / "archive" / "shared.html",
+            "sample",
+            "evidence",
+            "shared",
+        )
+        assert archived.is_file()
+        serve_module._DISC_CACHE.clear()
+        connection.request("GET", "/sample/evidence/archive/shared")
+        response = connection.getresponse()
+        assert response.status == 200
+        assert b'reckon-type" content="evidence"' in response.read()
+
+        connection.request("GET", "/sample/evidence/archive/shared.html")
+        response = connection.getresponse()
+        assert response.status == 308
+        assert response.getheader("Location") == "/sample/evidence/archive/shared"
+        response.read()
     finally:
         connection.close()
         server.shutdown()
@@ -218,12 +295,17 @@ def test_migration_moves_by_semantic_type_and_rewrites_links(tmp_path):
         body=(
             '<a href="study.html#result">study</a>'
             '<a href="/sample/check.html">check</a>'
+            '<a href="/sample/assets/guide.pdf?download=1#page=2">guide</a>'
+            '<img src="/sample/figures/diagram.svg?theme=dark#shape">'
             '<img src="figures/diagram.svg">'
         ),
     )
     figure = docs / "figures" / "diagram.svg"
     figure.parent.mkdir()
     figure.write_text("<svg></svg>")
+    guide = docs / "assets" / "guide.pdf"
+    guide.parent.mkdir()
+    guide.write_bytes(b"%PDF")
     research = _artifact(docs / "study.html", "sample", "research", "study")
     evidence = _artifact(docs / "check.html", "sample", "evidence", "check")
     archived = _artifact(
@@ -251,6 +333,8 @@ def test_migration_moves_by_semantic_type_and_rewrites_links(tmp_path):
     text = moved_plan.read_text()
     assert 'href="../research/study.html#result"' in text
     assert 'href="/sample/evidence/check"' in text
+    assert 'href="/sample/assets/guide.pdf?download=1#page=2"' in text
+    assert 'src="/sample/figures/diagram.svg?theme=dark#shape"' in text
     assert 'src="../figures/diagram.svg"' in text
     assert _plan_html.read_state(text) == before["plan"]
     assert (
@@ -289,6 +373,65 @@ def test_migration_is_idempotent_and_manifest_is_stable(tmp_path):
     ).read_bytes() == manifest_bytes
 
 
+def test_incremental_migration_preserves_manifest_provenance(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _artifact(docs / "first.html", "sample", "plan", "first")
+    first = migrate_typed_layout(docs, "sample")
+
+    _artifact(
+        docs / "second.html",
+        "sample",
+        "research",
+        "second",
+        body='<a href="/sample/first.html">first</a>',
+    )
+    second = migrate_typed_layout(docs, "sample")
+
+    assert [move["from"] for move in first["moves"]] == ["first.html"]
+    assert [move["from"] for move in second["moves"]] == [
+        "first.html",
+        "second.html",
+    ]
+    assert second["moves"][0] == first["moves"][0]
+    assert second["rewrites"]
+    stable = (docs / ".reckon" / "typed-resource-manifest.json").read_bytes()
+    assert migrate_typed_layout(docs, "sample") == second
+    assert (docs / ".reckon" / "typed-resource-manifest.json").read_bytes() == stable
+
+
+@pytest.mark.parametrize(
+    "manifest",
+    [
+        {"format": 99, "project": "sample", "moves": []},
+        {"format": 1, "project": "other", "moves": []},
+        {"format": 1, "project": "sample", "moves": "bad"},
+    ],
+)
+def test_incremental_migration_rejects_invalid_prior_manifest(tmp_path, manifest):
+    docs = tmp_path / "docs"
+    (docs / ".reckon").mkdir(parents=True)
+    (docs / ".reckon" / "typed-resource-manifest.json").write_text(json.dumps(manifest))
+    _artifact(docs / "work.html", "sample", "plan", "work")
+    before = (docs / "work.html").read_bytes()
+
+    with pytest.raises(ResourceCollision, match="manifest"):
+        migrate_typed_layout(docs, "sample")
+
+    assert (docs / "work.html").read_bytes() == before
+
+
+def test_incremental_migration_rejects_contradictory_prior_move(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _artifact(docs / "work.html", "sample", "plan", "work")
+    migrate_typed_layout(docs, "sample")
+    _artifact(docs / "work.html", "sample", "research", "work")
+
+    with pytest.raises(ResourceCollision, match="contradicts prior manifest"):
+        migrate_typed_layout(docs, "sample")
+
+
 def test_migration_collision_preflight_does_not_mutate(tmp_path):
     docs = tmp_path / "docs"
     docs.mkdir()
@@ -315,7 +458,9 @@ def test_migration_install_failure_rolls_back(
     originals = {first: first.read_bytes(), second: second.read_bytes()}
     prior_manifest = docs / ".reckon" / "typed-resource-manifest.json"
     prior_manifest.parent.mkdir()
-    prior_manifest.write_text('{"retained": true}\n')
+    prior_manifest.write_text(
+        '{"format":1,"moves":[],"project":"sample","retained":true,"rewrites":[]}\n'
+    )
     real_replace = resources_module.os.replace
     calls = 0
 
@@ -333,7 +478,10 @@ def test_migration_install_failure_rolls_back(
     assert all(path.read_bytes() == content for path, content in originals.items())
     assert not (docs / "plans" / "first.html").exists()
     assert not (docs / "research" / "second.html").exists()
-    assert prior_manifest.read_text() == '{"retained": true}\n'
+    assert (
+        prior_manifest.read_text()
+        == '{"format":1,"moves":[],"project":"sample","retained":true,"rewrites":[]}\n'
+    )
 
 
 def test_static_build_inventory_matches_live_discovery(tmp_path):
@@ -362,3 +510,19 @@ def test_static_build_inventory_matches_live_discovery(tmp_path):
     assert [
         tuple(item[field] for field in project_fields) for item in mcp_inventory
     ] == [tuple(item[field] for field in project_fields) for item in live]
+
+
+def test_spa_graph_uses_typed_navigation_identity():
+    root = Path(__file__).resolve().parents[1]
+    graph = (root / "docs/ui/graph.jsx").read_text()
+    loader = (root / "docs/ui/state-loader.js").read_text()
+
+    assert "function _artifactKey(artifact)" in graph
+    assert "Object.fromEntries(M.inventory.map(p => [_artifactKey(p), p]))" in graph
+    assert "pos[_artifactKey(p)]" in graph
+    assert "key={_artifactKey(p)}" in graph
+    assert 'onNav({ view: "plan", slug: navKey })' in graph
+    assert 'isArchivedArtifact(inv) ? "archive:" : ""' in loader
+    assert (
+        "Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]))" in loader
+    )

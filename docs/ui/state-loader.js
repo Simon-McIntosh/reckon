@@ -128,12 +128,14 @@ window.STATE_READY = (async function () {
   // <script id="reckon-owned sections in (status, decisions, followups,
   // comments, questions). The plan HTML is the sole store — there is no
   // per-plan state JSON to fetch.
+  const isArchivedArtifact = (inv) =>
+    inv.archived === true || inv.archived === "1" || inv.archived === "true";
   const mergedInventory = inventory.map(inv => ({
     ...mapLegacyCapability(inv),
     type: canonicalType(inv.type),
-    nav_key: canonicalType(inv.type) === "plan"
+    nav_key: canonicalType(inv.type) === "plan" && !isArchivedArtifact(inv)
       ? inv.slug
-      : `${canonicalType(inv.type)}:${inv.slug}`,
+      : `${canonicalType(inv.type)}:${isArchivedArtifact(inv) ? "archive:" : ""}${inv.slug}`,
   }));
   const plans = Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]));
 

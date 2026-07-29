@@ -51,13 +51,21 @@ def setup(tmp_path, monkeypatch):
     return docs_dir, state_root, project
 
 
-def _make_plan_html(docs_dir: Path, slug: str, state: dict) -> Path:
+def _make_plan_html(
+    docs_dir: Path,
+    slug: str,
+    state: dict,
+    *,
+    artifact_type: str = "plan",
+    relative: str | None = None,
+) -> Path:
     from reckon._plan_html import write_state
 
     base = dict(state)
     base.setdefault("slug", slug)
     base.setdefault("title", slug.title())
     base.setdefault("status", "active")
+    base.setdefault("type", artifact_type)
     bare = (
         '<!doctype html>\n<html lang="en">\n<head>'
         '<meta charset="utf-8">'
@@ -66,7 +74,8 @@ def _make_plan_html(docs_dir: Path, slug: str, state: dict) -> Path:
         '<body><main class="plan-doc"></main></body>\n</html>\n'
     )
     html = write_state(bare, base)
-    path = docs_dir / f"{slug}.html"
+    path = docs_dir / (relative or f"{slug}.html")
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html, encoding="utf-8")
     return path
 
@@ -95,6 +104,117 @@ def test_set_scalar(setup):
     assert r["ok"] is True
     data, _ = _store_module.read_plan(project, "plan-a")
     assert data["status"] == "shipped"
+
+
+def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):
+    docs_dir, _, project = setup
+    plan_path = _make_plan_html(
+        docs_dir,
+        "shared",
+        {"version": 3, "summary": "plan"},
+        relative="plans/shared.html",
+    )
+    research_path = _make_plan_html(
+        docs_dir,
+        "shared",
+        {"version": 7, "summary": "research", "status": ""},
+        artifact_type="research",
+        relative="research/shared.html",
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        "shared",
+        [{"op": "set", "path": "summary", "value": "selected research"}],
+        expected_version=7,
+        doc_type="research",
+    )
+
+    assert result["ok"] is True
+    assert result["path"] == str(research_path)
+    assert (
+        _store_module.read_plan(project, "shared", artifact_type="research")[0][
+            "summary"
+        ]
+        == "selected research"
+    )
+    assert (
+        _store_module.read_plan(project, "shared", artifact_type="plan")[0]["summary"]
+        == "plan"
+    )
+    assert plan_path.is_file()
+
+
+def test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "shared", {"version": 3}, relative="plans/shared.html")
+    _make_plan_html(
+        docs_dir,
+        "shared",
+        {"version": 7, "status": ""},
+        artifact_type="research",
+        relative="research/shared.html",
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        "shared",
+        [{"op": "set", "path": "summary", "value": "unsafe"}],
+        expected_version=3,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "ambiguous_resource"
+    assert "supply doc_type" in result["detail"]
+
+
+def test_edit_plan_typed_version_and_state_type_are_paired(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "shared", {"version": 3}, relative="plans/shared.html")
+    research = _make_plan_html(
+        docs_dir,
+        "shared",
+        {"version": 7, "status": ""},
+        artifact_type="research",
+        relative="research/shared.html",
+    )
+    before = research.read_bytes()
+
+    conflict = mcp_module._edit_plan(
+        project,
+        "shared",
+        [{"op": "set", "path": "summary", "value": "wrong version"}],
+        expected_version=3,
+        doc_type="research",
+    )
+    assert conflict["error"] == "version_conflict"
+    assert conflict["current_version"] == 7
+
+    mismatch = mcp_module._edit_plan(
+        project,
+        "shared",
+        [{"op": "set", "path": "type", "value": "evidence"}],
+        expected_version=7,
+        doc_type="research",
+    )
+    assert mismatch["error"] == "schema_validation"
+    assert "does not match selected doc_type" in mismatch["details"][0]
+    assert research.read_bytes() == before
+
+
+def test_edit_plan_rejects_typed_non_plan_creation(setup):
+    docs_dir, _, project = setup
+    result = mcp_module._edit_plan(
+        project,
+        "new-study",
+        [{"op": "set", "path": "title", "value": "Study"}],
+        expected_version=0,
+        create=True,
+        doc_type="research",
+    )
+    assert result["ok"] is False
+    assert "typed creation is not supported" in result["error"]
+    assert not (docs_dir / "research" / "new-study.html").exists()
 
 
 def test_set_impl_clamps(setup):

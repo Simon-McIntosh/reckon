@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from bs4 import BeautifulSoup
 
@@ -435,7 +436,9 @@ def _local_ref_slug(ref: str, project: str | None) -> str | None:
     return slug if project and ref_project == project else None
 
 
-def _collect_corpus(docs_dir: Path) -> tuple[dict[str, Path], dict[Path, set[str]]]:
+def _collect_corpus(
+    docs_dir: Path, project: str
+) -> tuple[dict[str, Path], dict[Path, set[str]]]:
     """Scan a docs directory and return:
 
     - slug_to_file: {slug → Path} for every HTML doc (including archive/ targets).
@@ -447,23 +450,22 @@ def _collect_corpus(docs_dir: Path) -> tuple[dict[str, Path], dict[Path, set[str
     slug_to_file: dict[str, Path] = {}
     file_to_ids: dict[Path, set[str]] = {}
 
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        if html_file.name in _INFRA_FILENAMES:
-            continue
+    from reckon.resources import resource_map
+
+    resources = resource_map(docs_dir, project, include_archived=True)
+    for resource in sorted(
+        resources.values(), key=lambda item: str(item.relative_path)
+    ):
+        html_file = resource.path
         try:
             text = html_file.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         soup = BeautifulSoup(text, "html.parser")
 
-        # Determine slug: prefer <meta name="plan-slug">, fall back to stem.
-        slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
-        slug = (
-            (slug_meta.get("content") or "").strip() if slug_meta else ""
-        ) or html_file.stem
-        # First file wins (mirrors _resolve_plan_file behaviour in serve.py).
-        if slug not in slug_to_file:
-            slug_to_file[slug] = html_file
+        # Untyped compatibility links retain the historical plan preference.
+        if resource.type == "plan" and not resource.archived:
+            slug_to_file[resource.slug] = html_file
         # Also index by stem so relative <slug>.html links resolve.
         stem = html_file.stem
         if stem not in slug_to_file:
@@ -495,11 +497,9 @@ def _resolve_href(
     if not href or any(href.startswith(p) for p in _SKIP_HREF_PREFIXES):
         return None, None
 
-    # Split off #anchor.
-    if "#" in href:
-        file_part, anchor = href.split("#", 1)
-    else:
-        file_part, anchor = href, None
+    parsed = urlsplit(href)
+    file_part = parsed.path
+    anchor = parsed.fragment or None
 
     # Bare anchor (same-file link: "#id").
     if not file_part:
@@ -509,7 +509,16 @@ def _resolve_href(
     if file_part.startswith("/") and project:
         prefix = f"/{project}/"
         if file_part.startswith(prefix):
-            file_part = file_part[len(prefix) :]
+            project_route = file_part[len(prefix) :]
+            from reckon.resources import ResourceCollision, resolve_route
+
+            try:
+                resource, _ = resolve_route(docs_dir, project, project_route)
+            except (ResourceCollision, ValueError):
+                return False, anchor  # type: ignore[return-value]
+            if resource is not None:
+                return resource.path, anchor
+            file_part = project_route
         elif file_part.startswith("/"):
             # /<other-project>/... — can't validate cross-project from here.
             return None, None
@@ -522,15 +531,19 @@ def _resolve_href(
     if base_name in _INFRA_FILENAMES:
         return None, None
 
-    # Try: slug_to_file lookup (covers both root slugs and archive/ targets).
+    # Try relative resolution from source directory.
+    candidate = (source_file.parent / file_part).resolve()
+    try:
+        candidate.relative_to(docs_dir.resolve())
+    except ValueError:
+        return False, anchor  # type: ignore[return-value]
+    if candidate.is_file():
+        return candidate, anchor
+
+    # Try legacy untyped lookup only after exact relative/typed resolution.
     resolved = slug_to_file.get(stem) or slug_to_file.get(Path(stem).name)
     if resolved is not None:
         return resolved, anchor
-
-    # Try relative resolution from source directory.
-    candidate = (source_file.parent / file_part).resolve()
-    if candidate.is_file():
-        return candidate, anchor
 
     # Couldn't resolve.
     return False, anchor  # type: ignore[return-value]
@@ -550,7 +563,18 @@ def audit_links(
 
     Returns {path → [Finding, …]} — only paths with findings are included.
     """
-    slug_to_file, file_to_ids = _collect_corpus(docs_dir)
+    corpus_project = project
+    if not corpus_project:
+        for candidate in paths:
+            try:
+                soup = BeautifulSoup(candidate.read_text(), "html.parser")
+            except OSError:
+                continue
+            meta = soup.find("meta", attrs={"name": "docs-project"})
+            corpus_project = ((meta.get("content") if meta else "") or "").strip()
+            if corpus_project:
+                break
+    slug_to_file, file_to_ids = _collect_corpus(docs_dir, corpus_project or "doccheck")
 
     results: dict[Path, list[Finding]] = {}
     for path in paths:
