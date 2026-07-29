@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="codex-agent-context-compatibility">
   <meta name="plan-title" content="Codex Agent Context Compatibility">
   <meta name="plan-summary" content="Make user, repository and nested agent instructions and validated skills reliably visible to Codex and Claude, with a verifiable context manifest.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="M">
   <meta name="plan-tier" content="opus">
@@ -19,7 +19,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -29,16 +30,31 @@
       <img src="/reckon/figures/codex-agent-context-compatibility/context-chain.svg" alt="Canonical user instructions feed agent-specific entrypoints, then project and target-path instructions, with a context manifest proving the loaded chain.">
       <figcaption>One canonical policy source feeds compatible entrypoints; a target-path preflight adds the applicable project chain and records evidence.</figcaption>
     </figure>
-    <h2 id="s2">§2 — Implementation</h2>
-    <ol>
-      <li>Create <code>~/.codex/AGENTS.md</code> as a managed link or generated shim to the canonical <code>~/.agents/AGENTS.md</code>.</li>
-      <li>Raise <code>project_doc_max_bytes</code> to a measured safe value and add a budget report so truncation is visible.</li>
-      <li>Add an <code>agent-context doctor</code> that reports canonical path, agent-specific entrypoint, root-to-target instruction chain, byte count, digest, skill metadata roots, and which skill bodies were activated.</li>
-      <li>Require target-path preflight before dispatch so nested <code>AGENTS.md</code> files are included even when the orchestrator launched at repository root.</li>
-      <li>Reconcile Nova main/develop instructions and remove stale git recipes; validate Claude-only HPC skills before mirroring them into <code>~/.agents/skills</code>.</li>
-    </ol>
-    <h2 id="s3">§3 — Acceptance and evidence</h2>
-    <p>The research input is <a href="codex-agent-context-audit.html">Codex Agent Context Audit</a>. Landed evidence must cover black-box launches from user home, repo root and nested physics/GPU directories; instruction digests and byte counts; skill discovery and trigger activation; and negative cases for stale, missing and conflicting files.</p>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-07-29</span>
+        <h2>§2 — Implementation</h2>
+      </header>
+      <p class="landed-summary">
+        Added the reusable target-path context manifest and <code>reckon agent-context doctor</code>,
+        then linked <code>~/.codex/AGENTS.md</code> to the canonical policy and raised the measured
+        project budget to 65,536 bytes. Live preflight passed with 32,782 bytes of headroom.
+        Full record: <a href="archive/codex-agent-context-compatibility-s2-s3-landed.html">§2–§3 landed</a>
+        (commits <code>02d7276</code>, <code>32d7e46</code>).
+      </p>
+    </section>
+    <section id="s3" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-07-29</span>
+        <h2>§3 — Acceptance and evidence</h2>
+      </header>
+      <p class="landed-summary">
+        Exercised 12 black-box context fixtures and the complete Python suite:
+        1,193 passed in 28.84 seconds. The live manifest reports no findings and records
+        content-free path, byte-count, digest, skill-discovery and activation evidence.
+        Full record: <a href="archive/codex-agent-context-compatibility-s2-s3-landed.html">verified evidence</a>.
+      </p>
+    </section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="canonical-source" data-choice="agents-home-canonical" data-by="Simon McIntosh" data-when="2026-07-29">
@@ -52,7 +68,7 @@
 </section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-cacc-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship codex-agent-context-compatibility" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cacc-01" data-status="resolved" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship codex-agent-context-compatibility" data-resolved-at="2026-07-29T10:26:36+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement the compatibility shim and context doctor</h4>
     <div class="r-fu-body"><p>Build the cross-agent compatibility layer and prove it with black-box launch fixtures before changing any project instructions.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -76,6 +92,38 @@ Done-when
   1. Compatibility shim, doctor and black-box fixtures land
   2. tests still green
   3. followup written + this followup marked resolved</pre>
+    <p class="r-fu-outcome">§2–§3 landed — commits 02d7276 and 32d7e46; 12 context fixtures and 1,193 total tests passed; live doctor exit 0 with 32,782 project-budget bytes remaining.</p>
+    </article>
+<article class="r-fu" data-id="f-cacc-next-eoh-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Consume the context manifest in bounded execution</h4>
+    <div class="r-fu-body">The canonical entrypoint, measured budget and reusable target-path manifest are shipped and verified. The dependent execution hardening plan can now require this preflight before dispatch and persist the manifest in its execution ledger.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    execution-orchestration-hardening (http://localhost:8765/reckon/execution-orchestration-hardening.html)
+Section: context preflight integration
+Capability: orchestrator-level
+
+Context
+  Codex context compatibility shipped with a reusable manifest builder, CLI doctor, 12 black-box fixtures and a live zero-finding report. Integrate that manifest into bounded dispatch only after the remaining S5 provenance substrate lands.
+
+State to read
+  GET /plan/reckon/codex-agent-context-compatibility
+  GET /plan/reckon/execution-orchestration-hardening
+  docs/archive/codex-agent-context-compatibility-s2-s3-landed.html
+
+Locked decisions to honour
+  canonical-source → agents-home-canonical
+
+Open decisions to surface (do not resolve)
+  none
+
+Constraints
+  Preserve content-free digests and paths; never persist instruction contents or secrets. Respect S6 scheduling and its provenance dependency.
+
+Done-when
+  1. bounded execution invokes target-path preflight before dispatch
+  2. interruption and worker-failure fixtures retain the manifest
+  3. tests stay green
+  4. followup written into the plan and this followup marked resolved</pre>
     </article>
 </section>
   <section data-reckon="research" id="research" class="r-research-list">

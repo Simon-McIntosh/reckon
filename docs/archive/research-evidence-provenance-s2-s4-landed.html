@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="research-evidence-provenance-s2-s4-landed">
+  <meta name="plan-title" content="Typed knowledge provenance — landed evidence">
+  <meta name="plan-summary" content="Schema, MCP, audit and SPA evidence for first-class research and evidence artifacts.">
+  <meta name="plan-evidence-for" content="reckon:research-evidence-provenance">
+  <meta name="plan-verifies" content="reckon:research-evidence-provenance#s2,reckon:research-evidence-provenance#s3,reckon:research-evidence-provenance#s4">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Python 3.12; React 18 JSX; Linux">
+  <meta name="plan-commits" content="e622bcc,8e6a9a37548b47f4fb3479665ea36292af0ac14e">
+  <meta name="plan-artifacts" content="docs/_shared/plan.schema.json,tests/test_provenance.py,docs/ui/shell.jsx,reckon/_schema.py">
+  <title>Typed knowledge provenance — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Typed knowledge provenance — landed evidence</h1>
+    <p class="plan-summary">The HTML store, validated write boundary, discovery surface and SPA now agree on three artifact classes and qualified provenance.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/research-evidence-provenance/provenance-flow.svg" alt="Research pointing into a plan and evidence pointing back to the plan and its verified stages.">
+    <figcaption>Research informs work; implementation produces evidence; only the plan carries actionable progress.</figcaption>
+  </figure>
+
+  <section id="status">
+    <h2>Quick status</h2>
+    <div class="quick-status-grid">
+      <article><span class="badge badge-shipped">shipped</span><h3>Schema</h3><p>Version 2.0; three canonical types; legacy <code>doc</code> migrates to research.</p></article>
+      <article><span class="badge badge-shipped">shipped</span><h3>Relations</h3><p>Qualified project, plan and optional stage references round-trip through HTML.</p></article>
+      <article><span class="badge badge-shipped">shipped</span><h3>SPA</h3><p>Four typed facets with directional research → plan → evidence graph edges.</p></article>
+      <article><span class="badge badge-shipped">pass</span><h3>Gate</h3><p>1,199 tests passed in 25.19 seconds.</p></article>
+    </div>
+  </section>
+
+  <section id="outcomes">
+    <h2>Outcomes</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Result</th><th>Commit / artifact</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Typed HTML contract</td><td><span class="badge badge-shipped">landed</span></td><td><code>e622bcc</code> · <code>reckon/_schema.py</code></td><td>Generated schema parity at version 2.0.</td></tr>
+        <tr><td>Parser and strict writer</td><td><span class="badge badge-shipped">landed</span></td><td><code>reckon/_plan_html.py</code></td><td>Lenient legacy reads; canonical writes reject meaningful plan-only fields on non-plans.</td></tr>
+        <tr><td>Discovery, MCP and audit</td><td><span class="badge badge-shipped">landed</span></td><td><code>reckon/mcp.py</code> · <code>reckon/serve.py</code></td><td>Typed bounded filters, unlinked-artifact warnings and truthful non-mutating audit semantics.</td></tr>
+        <tr><td>Typed SPA</td><td><span class="badge badge-shipped">landed</span></td><td><code>docs/ui/</code></td><td>Plans, Research, Evidence and Archive facets share live/static fields.</td></tr>
+        <tr><td>Regression coverage</td><td><span class="badge badge-shipped">pass</span></td><td><code>tests/test_provenance.py</code></td><td>Migration, relations, filters, archive handling and sprint-definition inventory exclusion.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="negative-findings">
+    <h2>Negative findings retained</h2>
+    <p>Definition pages under <code>docs/sprints/</code> and <code>docs/milestones/</code> previously leaked into plan inventory. They now remain dedicated rollup inputs. Unlinked research/evidence is reported as an audit warning and is never assigned fake implementation progress.</p>
+  </section>
+
+  <section id="next">
+    <h2>What’s next</h2>
+    <article class="next-card">
+      <h3>Use evidence as an execution gate</h3>
+      <p>The S6 execution and lifecycle plans can now consume qualified evidence without treating knowledge artifacts as incomplete plans.</p>
+      <a href="../execution-orchestration-hardening.html">Execution and Orchestration Hardening</a>
+    </article>
+  </section>
+</main>
+</body>
+</html>

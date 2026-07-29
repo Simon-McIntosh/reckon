@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="codex-agent-context-compatibility-s2-s3-landed">
+  <meta name="plan-title" content="Agent context compatibility — landed evidence">
+  <meta name="plan-summary" content="Verified context-manifest, Codex entrypoint and instruction-budget outcome.">
+  <meta name="plan-evidence-for" content="reckon:codex-agent-context-compatibility">
+  <meta name="plan-verifies" content="reckon:codex-agent-context-compatibility#s2,reckon:codex-agent-context-compatibility#s3">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Codex CLI workstation; Python 3.12; Linux">
+  <meta name="plan-commits" content="02d7276fbe8564b6b4f13411740f092481612f35,32d7e46739f8fccdccbef37259b530c59c9daaf6">
+  <meta name="plan-artifacts" content="reckon/agent_context.py,reckon/cli.py,tests/test_agent_context.py,/tmp/reckon-context-live.json">
+  <title>Agent context compatibility — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Agent context compatibility — landed evidence</h1>
+    <p class="plan-summary">The canonical policy link, measured context budget, reusable manifest and black-box acceptance fixtures are live and passing.</p>
+  </header>
+
+  <figure>
+    <img src="/reckon/figures/codex-agent-context-compatibility/context-chain.svg" alt="Canonical user policy flowing through the Codex entrypoint and project instruction chain into a verified context manifest.">
+    <figcaption>The implementation verifies each layer by path, byte count and digest without exposing instruction contents.</figcaption>
+  </figure>
+
+  <section id="status">
+    <h2>Quick status</h2>
+    <div class="quick-status-grid">
+      <article><span class="badge badge-shipped">shipped</span><h3>Compatibility shim</h3><p><code>~/.codex/AGENTS.md</code> resolves to <code>~/.agents/AGENTS.md</code>.</p></article>
+      <article><span class="badge badge-shipped">pass</span><h3>Budget</h3><p>65,536-byte limit; 32,754 project bytes; 32,782 bytes remaining.</p></article>
+      <article><span class="badge badge-shipped">pass</span><h3>Acceptance</h3><p>12 focused fixtures and 1,193 total tests passed.</p></article>
+      <article><span class="badge badge-shipped">clean</span><h3>Live doctor</h3><p>Exit 0 with no findings for the Reckon checkout.</p></article>
+    </div>
+  </section>
+
+  <section id="outcomes">
+    <h2>Outcomes</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Result</th><th>Commit / artifact</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Reusable target-path preflight</td><td><span class="badge badge-shipped">landed</span></td><td><code>02d7276</code> · <code>reckon/agent_context.py</code></td><td>Deterministic JSON and concise human reports.</td></tr>
+        <tr><td>CLI doctor</td><td><span class="badge badge-shipped">landed</span></td><td><code>reckon agent-context doctor</code></td><td>Missing, unreadable, split-brain and overflow failures return nonzero.</td></tr>
+        <tr><td>Canonical entrypoint</td><td><span class="badge badge-shipped">verified</span></td><td><code>~/.codex/AGENTS.md</code></td><td>Canonical-link relationship; matching SHA-256 digest.</td></tr>
+        <tr><td>Instruction budget</td><td><span class="badge badge-shipped">verified</span></td><td><code>~/.codex/config.toml</code></td><td>Largest measured nested project chain is 35,547 bytes; configured limit is 65,536.</td></tr>
+        <tr><td>Regression suite</td><td><span class="badge badge-shipped">pass</span></td><td><code>tests/test_agent_context.py</code></td><td>12 focused; 1,193 total passed in 28.84 seconds.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="negative-findings">
+    <h2>Negative findings retained</h2>
+    <p>Read-only inspection confirmed Nova still contains stale worktree recipes that conflict with the canonical global git policy. S5 did not mutate that unrelated repository; the doctor now makes split-brain and target-path drift observable without silently mirroring policy.</p>
+  </section>
+
+  <section id="next">
+    <h2>What’s next</h2>
+    <article class="next-card">
+      <h3>Use the manifest in bounded execution</h3>
+      <p>The next dependent plan can consume this target-path preflight before dispatch. Typed provenance work in the same sprint will make this page a first-class Evidence artifact.</p>
+      <a href="../execution-orchestration-hardening.html">Execution and Orchestration Hardening</a>
+    </article>
+  </section>
+</main>
+</body>
+</html>

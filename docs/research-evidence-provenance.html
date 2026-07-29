@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="research-evidence-provenance">
   <meta name="plan-title" content="Research and Evidence Provenance">
   <meta name="plan-summary" content="Separate plans, research and evidence in Reckon; only plans carry progress, while typed provenance links show research feeding and evidence verifying work.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-tier" content="opus">
@@ -19,7 +19,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -29,17 +30,43 @@
       <img src="/reckon/figures/research-evidence-provenance/provenance-flow.svg" alt="Research artifacts point into a plan; the plan produces implementation; evidence artifacts point back to the source plan and verify its stages.">
       <figcaption>The default lifecycle is research → plan → implementation → evidence. Progress belongs only to the plan.</figcaption>
     </figure>
-    <h2 id="s2">§2 — Schema and relationships</h2>
-    <ul>
-      <li>Add first-class <code>research</code> and <code>evidence</code> types; retain <code>doc</code> only as a migration alias with an explicit target type.</li>
-      <li>Add qualified relations: <code>informs</code> from research to plans and <code>evidence_for</code>/<code>verifies</code> from evidence to project-qualified plan or stage keys.</li>
-      <li>Reject or ignore <code>plan-impl</code>, sprint, ROI and effort on non-plan artifacts; expose lifecycle-neutral fields such as reviewed-at, recorded-at, verdict and supersedes.</li>
-      <li>Keep archive as location/lifecycle, not a competing live document type.</li>
-    </ul>
-    <h2 id="s3">§3 — Server and UI</h2>
-    <p>Split the SPA into Plans, Research, Evidence and Archive facets. The Plans view retains roadmap, sprint, dependency and percent-complete UI. Research cards show source quality, freshness and plans informed. Evidence cards show verdict, stage, environment, commits, artifacts and plans verified. The graph renders arrows into plans for research and arrows out of plans for evidence. Search remains global but returns typed, bounded result sets.</p>
-    <h2 id="s4">§4 — Migration and gates</h2>
-    <p>Inventory existing <code>doc</code>, <code>research</code>, archive and landed-stage pages; classify without inventing progress; backfill source-plan links; and keep compatibility reads during migration. Acceptance requires schema round trips, MCP filters, archive exclusion, static and live SPA parity, and an audit that reports unlinked research/evidence without treating them as incomplete plans.</p>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-07-29</span>
+        <h2>§2 — Schema and relationships</h2>
+      </header>
+      <p class="landed-summary">
+        Published schema 2.0 with canonical <code>plan</code>, <code>research</code> and
+        <code>evidence</code> types, qualified <code>project:slug#stage</code> provenance,
+        strict non-plan writes and lenient <code>doc</code> migration reads.
+        Full record: <a href="archive/research-evidence-provenance-s2-s4-landed.html">§2–§4 landed</a>
+        (commits <code>e622bcc</code>, <code>8e6a9a3</code>).
+      </p>
+    </section>
+    <section id="s3" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-07-29</span>
+        <h2>§3 — Server and UI</h2>
+      </header>
+      <p class="landed-summary">
+        Added typed discovery/MCP filters, Plans–Research–Evidence–Archive facets and
+        directional graph edges. Static and live state loaders expose the same provenance
+        fields; plan-only progress stays off knowledge artifacts.
+        Full record: <a href="archive/research-evidence-provenance-s2-s4-landed.html">verified evidence</a>.
+      </p>
+    </section>
+    <section id="s4" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-07-29</span>
+        <h2>§4 — Migration and gates</h2>
+      </header>
+      <p class="landed-summary">
+        Added round-trip, migration, audit, archive and definition-page regression coverage:
+        1,199 tests passed in 25.19 seconds. Audit now reports no mutation
+        (<code>reindexed=false</code>) while recomputing rollups explicitly.
+        Full record: <a href="archive/research-evidence-provenance-s2-s4-landed.html">acceptance record</a>.
+      </p>
+    </section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="artifact-separation" data-choice="three-first-class-types" data-by="Simon McIntosh" data-when="2026-07-29">
@@ -53,7 +80,7 @@
 </section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rep-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship research-evidence-provenance" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rep-01" data-status="resolved" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship research-evidence-provenance" data-resolved-at="2026-07-29T10:39:41+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement typed provenance from schema through SPA</h4>
     <div class="r-fu-body"><p>Start from migration fixtures and add the schema, parser/writer, MCP filters, typed views and provenance graph as one tested vertical slice.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -77,6 +104,39 @@ Done-when
   1. Schema, MCP, audit and SPA typed-provenance slice lands with migration tests
   2. tests still green
   3. followup written + this followup marked resolved</pre>
+    <p class="r-fu-outcome">§2–§4 landed — commits e622bcc and 8e6a9a3; schema 2.0, typed MCP/audit/SPA facets and qualified provenance shipped; 1,199 tests passed in 25.19s.</p>
+    </article>
+<article class="r-fu" data-id="f-rep-next-eoh-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Gate bounded execution with typed evidence</h4>
+    <div class="r-fu-body">The three-type schema, qualified plan/stage links, audit warnings and typed SPA facets are shipped. The dependent execution plan can now require research-before and evidence-after records without assigning progress to knowledge artifacts.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    execution-orchestration-hardening (http://localhost:8765/reckon/execution-orchestration-hardening.html)
+Section: evidence-gated execution
+Capability: orchestrator-level
+
+Context
+  Research and Evidence Provenance shipped schema 2.0 and the complete parser, MCP, audit and SPA vertical slice. Use the qualified relations and evidence metadata in the bounded execution ledger during S6.
+
+State to read
+  GET /plan/reckon/research-evidence-provenance
+  GET /plan/reckon/execution-orchestration-hardening
+  docs/archive/research-evidence-provenance-s2-s4-landed.html
+
+Locked decisions to honour
+  artifact-separation → three-first-class-types
+
+Open decisions to surface (do not resolve)
+  none
+
+Constraints
+  Only plans carry actionable progress. Research informs plans; evidence verifies project-qualified plans or stages. Preserve optimistic concurrency and archive exclusion.
+
+Done-when
+  1. execution ledger requires research-before and evidence-after records
+  2. interruption and worker-failure fixtures preserve qualified provenance
+  3. static and live views remain consistent
+  4. tests stay green
+  5. followup written into the plan and this followup marked resolved</pre>
     </article>
 </section>
   <section data-reckon="research" id="research" class="r-research-list">
