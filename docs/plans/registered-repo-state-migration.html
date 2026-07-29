@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
@@ -27,7 +27,7 @@
 <meta name="plan-capability-tool-autonomy" content="autonomous">
 <meta name="plan-capability-verification" content="strict">
 <meta name="plan-capability-risk" content="elevated">
-<meta name="plan-impl" content="0.35">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -61,11 +61,13 @@
     <p>Each repository migrates as an independent, resumable transaction. The transaction writes a before snapshot, applies the canonical typed-directory and distributed-state migration, rewrites internal references through the shared resolver, converts legacy provider tiers, and validates the new MCP response contract. It then runs document audit, schema audit, static build, targeted tests, and relationship checks before declaring that repository migrated.</p>
     <p>State writes in alternate worktrees must pair <code>read_plan</code> and <code>edit_plan</code> with the same <code>checkout_path</code>. The coordinator owns shared sprint and migration-ledger updates. No fleet worker may stage broad paths, sweep another worker’s edits, change the mount registry, or publish externally.</p>
 
-    <h2 id="s4">§4 — Rollout waves and rollback</h2>
+    <h2 id="s4">§4 — Rollout waves and rollback <span class="badge badge-shipped">canary passed</span></h2>
+    <p><strong>Reckon canary verified:</strong> 26 legacy resources moved into typed roots, 16 internal reference rewrites landed, 33 legacy capability records became neutral capability objects, and an existing distributed-state store remained parity-valid. The post-install suite passed 1,378 tests. <a href="/reckon/evidence/archive/registered-repo-migration-canary">Read the canary evidence</a>.</p>
     <p>Reckon itself is the canary because it owns the parser, migration code, schemas, and audit tools. Remaining repositories are ordered from least coupled to most coupled using preflight evidence rather than a hard-coded project order. A failure stops promotion to the next wave but does not roll back repositories that have already passed their independent transaction.</p>
     <p>Rollback restores the recorded pre-migration files for one repository and re-runs its old-format audit. Destructive removal of compatibility files is deferred until every registered repository has passed and a separate compatibility-retirement decision is locked. Server and MCP processes must be restarted or reconnected when parser, renderer, or schema code changes so verification never uses stale in-memory code.</p>
 
-    <h2 id="s5">§5 — Migration ledger and evidence</h2>
+    <h2 id="s5">§5 — Migration ledger and evidence <span class="badge badge-active">12/12 terminal</span></h2>
+    <p>The registry snapshot contains 12 projects and every row now has a content-bearing snapshot plus a terminal state: one verified, five deferred only for explicit external write authority, and six deferred for exact preflight blockers. <a href="/reckon/evidence/archive/registered-repo-migration-fleet-ledger">Read the fleet ledger evidence</a>.</p>
     <p>The coordinator maintains one fleet ledger with the states <code>discovered</code>, <code>preflight-passed</code>, <code>deferred</code>, <code>migrated</code>, <code>verified</code>, and <code>rolled-back</code>. Each row records the project-qualified resource, source commit, migration version, output commit or working-tree path, verification results, evidence location, and any operator action required.</p>
     <p>Each successful repository produces typed evidence containing before/after counts, migrated paths, reference rewrites, schema and build results, and the exact migration version. A fleet-level evidence record summarizes coverage and names every deferred or failed project. No repository is silently omitted.</p>
 

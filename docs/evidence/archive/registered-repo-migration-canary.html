@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="registered-repo-migration-canary">
+  <meta name="plan-title" content="Registered Repository Migration — Reckon Canary">
+  <meta name="plan-summary" content="The Reckon canary completed typed layout and capability migration with clean audits, static build and 1,378-test verification.">
+  <meta name="plan-evidence-for" content="registered-repo-state-migration">
+  <meta name="plan-verifies" content="registered-repo-state-migration#s3,registered-repo-state-migration#s4,registered-repo-state-migration#s6">
+  <meta name="plan-commits" content="157f1c8">
+  <meta name="plan-artifacts" content="docs/.reckon/typed-resource-manifest.json,tests/test_schema.py">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Registered Repository Migration — Reckon Canary | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Registered repository migration — Reckon canary</h1>
+    <p class="lead">The canonical repository completed the real transaction and was pushed to <code>origin/main</code> at <code>157f1c8</code>.</p>
+
+    <figure>
+      <img src="/reckon/figures/registered-repo-state-migration/fleet.svg" alt="The Reckon canary passes through snapshot, staged migration, verification, installation, commit and push.">
+      <figcaption>The content-bearing snapshot remains outside the repository under the immutable registry run.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Before and after</h2>
+      <table>
+        <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Legacy resource paths</td><td>26</td><td>0</td><td>Pass</td></tr>
+          <tr><td>Typed resource paths</td><td>9</td><td>35</td><td>Pass</td></tr>
+          <tr><td>Legacy capability records</td><td>33</td><td>0</td><td>Pass</td></tr>
+          <tr><td>Plan/research/evidence resources</td><td>30</td><td>30</td><td>Parity</td></tr>
+          <tr><td>Sprint/blocker/timeline/project resources</td><td>7</td><td>7</td><td>Parity</td></tr>
+          <tr><td>Project-state format</td><td>distributed</td><td>distributed</td><td>Preserved</td></tr>
+        </tbody>
+      </table>
+      <p>The typed manifest records 26 moves and 16 link rewrites. The source snapshot is SHA-256 <code>23f82116d059bfd4bd01103bab5491867ac4ff00fe853bbddc457170c163d67d</code>.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Document audit</td><td>0 errors</td></tr>
+          <tr><td>Schema audit</td><td>17 checked, 17 conformant, 0 violations</td></tr>
+          <tr><td>Relationship and project-state audit</td><td>0 errors</td></tr>
+          <tr><td>Progressive discovery</td><td>34 resources returned through the bounded summary stream</td></tr>
+          <tr><td>Legacy capability audit</td><td>0 findings</td></tr>
+          <tr><td>Isolated static build</td><td>Pass; 30 plans and 4 sprints projected</td></tr>
+          <tr><td>Post-install repository suite</td><td><strong>1,378 passed</strong> in 33.03 seconds</td></tr>
+          <tr><td>Commit and push</td><td><code>157f1c8</code> equals <code>origin/main</code></td></tr>
+        </tbody>
+      </table>
+      <p>The canary found one stale flat-directory assumption in the repository's byte-identity test. It was changed to use the shared typed resolver, then the failing test and full suite passed.</p>
+    </section>
+  </main>
+</body>
+</html>

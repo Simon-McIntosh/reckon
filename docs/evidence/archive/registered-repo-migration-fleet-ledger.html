@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="registered-repo-migration-fleet-ledger">
+  <meta name="plan-title" content="Registered Repository Migration — Fleet Ledger">
+  <meta name="plan-summary" content="All 12 registered repositories have content-bearing snapshots and terminal migration-ledger states.">
+  <meta name="plan-evidence-for" content="registered-repo-state-migration">
+  <meta name="plan-verifies" content="registered-repo-state-migration#s1,registered-repo-state-migration#s2,registered-repo-state-migration#s5">
+  <meta name="plan-artifacts" content="~/.config/reckon/migrations/registry-canary-20260729/ledger.json">
+  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Registered Repository Migration — Fleet Ledger | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Registered repository migration — fleet ledger</h1>
+    <p class="lead">Runtime discovery fixed the effective 12-project registry at SHA-256 <code>ce521fc435f51c893ccf7a334cdfdedf13d1452ca987c3b5cb3bd820d4616034</code>. Every row has a content-bearing snapshot and a terminal state.</p>
+
+    <section>
+      <h2>Coverage</h2>
+      <table>
+        <thead><tr><th>Project</th><th>Before resources</th><th>State</th><th>Evidence or required action</th></tr></thead>
+        <tbody>
+          <tr><td><code>L2G</code></td><td>1 legacy</td><td>Deferred</td><td>Create the missing project index, then authorise a reviewed wave.</td></tr>
+          <tr><td><code>hanney</code></td><td>21 legacy</td><td>Deferred</td><td>Preflight clean; explicit external repository write authority required.</td></tr>
+          <tr><td><code>helix</code></td><td>3 legacy</td><td>Deferred</td><td>Preflight clean; explicit external repository write authority required.</td></tr>
+          <tr><td><code>imas-ambix</code></td><td>162 legacy, 1 typed</td><td>Deferred</td><td>Four active alternate worktrees must finish or stand down.</td></tr>
+          <tr><td><code>imas-codex</code></td><td>112 legacy, 37 typed</td><td>Deferred</td><td>Three active worktrees and a nested research path violate the canonical resolver contract.</td></tr>
+          <tr><td><code>imas-efit</code></td><td>458 legacy, 439 typed</td><td>Deferred</td><td>A nested research path violates the canonical resolver contract.</td></tr>
+          <tr><td><code>imas-standard-names</code></td><td>48 legacy</td><td>Deferred</td><td>One active worktree; mounted branch is two commits behind its upstream.</td></tr>
+          <tr><td><code>norma</code></td><td>11 legacy</td><td>Deferred</td><td>Preflight clean; explicit external repository write authority required.</td></tr>
+          <tr><td><code>nova</code></td><td>49 legacy</td><td>Deferred</td><td>Two active alternate worktrees must finish or stand down.</td></tr>
+          <tr><td><code>reckon</code></td><td>26 legacy, 9 typed</td><td><strong>Verified</strong></td><td><code>157f1c8</code> pushed to <code>origin/main</code>; 0 legacy and 35 typed after.</td></tr>
+          <tr><td><code>tessera</code></td><td>5 legacy</td><td>Deferred</td><td>Preflight clean; explicit external repository write authority required.</td></tr>
+          <tr><td><code>vv</code></td><td>4 legacy</td><td>Deferred</td><td>Preflight clean; explicit external repository write authority required.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Snapshot and promotion guarantees</h2>
+      <ul>
+        <li>All 12 snapshots exist under <code>~/.config/reckon/migrations/registry-canary-20260729/snapshots/</code> and have independent SHA-256 values in the machine ledger.</li>
+        <li>The five clean external repositories were not selected and therefore received no writes.</li>
+        <li>The six repositories with preflight blockers received no writes and preserve exact blocker evidence.</li>
+        <li>Promotion stopped at the authorisation boundary; compatibility retirement remains outside this migration.</li>
+      </ul>
+      <p>The next reviewed wave can start with <code>helix</code> and <code>hanney</code> after explicit cross-repository write authority. Blocked repositories remain independently resumable after their named conditions clear.</p>
+    </section>
+  </main>
+</body>
+</html>

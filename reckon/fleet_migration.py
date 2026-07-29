@@ -33,14 +33,19 @@ from reckon._schema import PlanState
 from reckon._store import _config_home, _mounts_path
 from reckon.capability import from_legacy_tier
 from reckon.project_state import (
+    ProjectStateError,
     migrate_project_state,
     project_state_mode,
     read_resource,
     write_resource,
 )
 from reckon.resources import (
+    INFRA_DIRS,
+    NON_RESOURCE_FILES,
+    ROOT_TYPES,
     ResourceCollision,
     build_migration_manifest,
+    canonical_type,
     iter_resources,
     migrate_typed_layout,
 )
@@ -246,6 +251,119 @@ def create_snapshot(
             row["kind"] == "file" and _content_bearing(row["path"]) for row in inventory
         ),
     }
+
+
+def repository_inventory(docs_dir: Path, project: str) -> dict[str, Any]:
+    """Return migration-relevant before/after counts without strict discovery."""
+    docs_dir = docs_dir.resolve()
+    counts = {
+        "plan": 0,
+        "research": 0,
+        "evidence": 0,
+        "sprint": 0,
+        "milestone": 0,
+        "blocker": 0,
+        "timeline": 0,
+        "project": 0,
+    }
+    typed = legacy = legacy_capabilities = 0
+    html_files = 0
+    for path in sorted(docs_dir.rglob("*.html")):
+        relative = path.relative_to(docs_dir)
+        if not relative.parts:
+            continue
+        root_type = ROOT_TYPES.get(relative.parts[0])
+        if root_type is not None:
+            counts[root_type] += 1
+            typed += 1
+            if root_type not in {"plan", "research", "evidence"}:
+                continue
+        elif relative.parts[0] == "state":
+            if path.name == "timeline.html":
+                counts["timeline"] += 1
+            continue
+        elif relative.parts[0] in INFRA_DIRS or path.name in NON_RESOURCE_FILES:
+            continue
+        else:
+            legacy += 1
+        html_files += 1
+        try:
+            state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        if root_type is None:
+            artifact_type = canonical_type(state.get("type"))
+            if artifact_type in {"plan", "research", "evidence"}:
+                counts[artifact_type] += 1
+        legacy_capabilities += int(bool(state.get("tier")))
+        legacy_capabilities += sum(
+            bool(item.get("tier")) for item in state.get("followups", [])
+        )
+
+    mode = project_state_mode(docs_dir)
+    if mode.format == "distributed":
+        project_path = docs_dir / "state" / project / "project.json"
+        counts["project"] = int(project_path.is_file())
+        for sprint_path in sorted((docs_dir / "sprints").glob("*.html")):
+            try:
+                sprint, _ = read_resource(docs_dir, project, "sprint", sprint_path.stem)
+            except (OSError, ValueError, ProjectStateError):
+                continue
+            legacy_capabilities += sum(
+                bool(item.get("tier")) for item in sprint.get("items", [])
+            )
+    else:
+        index_path = docs_dir / "state" / project / "index.json"
+        try:
+            envelope = json.loads(index_path.read_text())
+            index = envelope.get("data", {})
+        except (OSError, json.JSONDecodeError, AttributeError):
+            index = {}
+        for sprint in index.get("sprints", []) if isinstance(index, dict) else []:
+            if not isinstance(sprint, dict):
+                continue
+            legacy_capabilities += sum(
+                isinstance(item, dict) and bool(item.get("tier"))
+                for item in sprint.get("items", [])
+            )
+    return {
+        "html_files": html_files,
+        "resources": counts,
+        "layout": {"typed": typed, "legacy": legacy},
+        "legacy_capabilities": legacy_capabilities,
+        "project_state": mode.format,
+    }
+
+
+def snapshot_inventory(snapshot: Path) -> dict[str, Any]:
+    """Reconstruct inventory evidence from a content-bearing snapshot."""
+    manifest = _snapshot_manifest(snapshot)
+    holder = tempfile.TemporaryDirectory(prefix="reckon-snapshot-inventory-")
+    docs_dir = Path(holder.name) / "docs"
+    docs_dir.mkdir()
+    try:
+        with zipfile.ZipFile(snapshot) as archive:
+            for name in archive.namelist():
+                if not name.startswith("contents/"):
+                    continue
+                relative = PurePosixPath(name).relative_to("contents")
+                if (
+                    not relative.parts
+                    or relative.is_absolute()
+                    or any(part in {"", ".", ".."} for part in relative.parts)
+                ):
+                    raise FleetMigrationError(
+                        f"snapshot contains an unsafe content path: {name}"
+                    )
+                destination = docs_dir.joinpath(*relative.parts)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(archive.read(name))
+        return repository_inventory(
+            docs_dir,
+            str(manifest.get("project") or ""),
+        )
+    finally:
+        holder.cleanup()
 
 
 def _snapshot_manifest(snapshot: Path) -> dict[str, Any]:
@@ -933,6 +1051,7 @@ def run_fleet_migration(
                 repository=repository,
                 registry_sha256=registry_sha,
             )
+            row["before"] = repository_inventory(docs_dir, project)
             preflight = preflight_repository(docs_dir, project)
             row["preflight"] = preflight
             if not preflight["ok"]:
@@ -972,6 +1091,7 @@ def run_fleet_migration(
                 else:
                     row["state"] = "verified"
                     row["result"] = result
+                    row["after"] = repository_inventory(docs_dir, project)
                     row["output_commit"] = None
                     row["push_ref"] = None
         except Exception as exc:  # noqa: BLE001 - no registered mount is omitted
@@ -982,6 +1102,28 @@ def run_fleet_migration(
             )
         _write_ledger(ledger_path, ledger)
     ledger["ledger_path"] = str(ledger_path)
+    _write_ledger(ledger_path, ledger)
+    return ledger
+
+
+def enrich_ledger_inventories(ledger_path: Path) -> dict[str, Any]:
+    """Backfill before/after counts without rerunning a migration."""
+    ledger_path = ledger_path.expanduser().resolve()
+    try:
+        ledger = json.loads(ledger_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise FleetMigrationError(
+            f"ledger is unreadable: {ledger_path}: {exc}"
+        ) from exc
+    for row in ledger.get("repositories", []):
+        snapshot = row.get("snapshot", {}).get("path")
+        if snapshot:
+            row["before"] = snapshot_inventory(Path(snapshot))
+        if row.get("state") == "verified":
+            row["after"] = repository_inventory(
+                Path(str(row["docs_dir"])),
+                str(row["project"]),
+            )
     _write_ledger(ledger_path, ledger)
     return ledger
 

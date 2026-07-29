@@ -719,6 +719,22 @@ def migration_record(ledger_path, project, commit, push_ref):
     click.echo(f"recorded {row['project']}: {row['output_commit']} → {row['push_ref']}")
 
 
+@main.command(name="migration-inventory")
+@click.argument("ledger_path", type=click.Path(path_type=Path))
+def migration_inventory(ledger_path):
+    """Backfill before/after resource counts from snapshots and verified trees."""
+    from reckon.fleet_migration import (
+        FleetMigrationError,
+        enrich_ledger_inventories,
+    )
+
+    try:
+        ledger = enrich_ledger_inventories(ledger_path)
+    except FleetMigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"inventoried {len(ledger.get('repositories', []))} repository row(s)")
+
+
 @main.command(name="migration-rollback")
 @click.argument("snapshot", type=click.Path(path_type=Path))
 @click.argument("docs_path", type=click.Path(path_type=Path))

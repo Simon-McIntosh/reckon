@@ -15,6 +15,7 @@ from reckon.cli import main
 from reckon.fleet_migration import (
     create_snapshot,
     discover_registry,
+    enrich_ledger_inventories,
     migrate_repository,
     preflight_repository,
     record_repository_commit,
@@ -161,6 +162,10 @@ def test_fleet_run_snapshots_every_mount_and_applies_only_selected_project(tmp_p
     assert "authorize this repository write scope" in rows["second"]["required_action"]
     assert Path(rows["first"]["snapshot"]["path"]).is_file()
     assert Path(rows["second"]["snapshot"]["path"]).is_file()
+    assert rows["first"]["before"]["layout"] == {"typed": 0, "legacy": 1}
+    assert rows["first"]["before"]["legacy_capabilities"] == 3
+    assert rows["first"]["after"]["layout"] == {"typed": 2, "legacy": 0}
+    assert rows["first"]["after"]["legacy_capabilities"] == 0
     with zipfile.ZipFile(rows["second"]["snapshot"]["path"]) as archive:
         assert "manifest.json" in archive.namelist()
         assert "contents/work.html" in archive.namelist()
@@ -275,6 +280,13 @@ def test_cli_and_commit_record_keep_ledger_machine_readable(tmp_path):
     assert result.exit_code == 0, result.output
     ledger_path = output / "ledger.json"
     assert f"ledger: {ledger_path}" in result.output
+    ledger = json.loads(ledger_path.read_text())
+    ledger["repositories"][0].pop("before")
+    ledger["repositories"][0].pop("after")
+    ledger_path.write_text(json.dumps(ledger))
+    enriched = enrich_ledger_inventories(ledger_path)
+    assert enriched["repositories"][0]["before"]["legacy_capabilities"] == 3
+    assert enriched["repositories"][0]["after"]["legacy_capabilities"] == 0
     row = record_repository_commit(
         ledger_path,
         "sample",
