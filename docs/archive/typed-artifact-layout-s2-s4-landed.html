@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="typed-artifact-layout-s2-s4-landed">
+  <meta name="plan-title" content="Typed Artifact Layout — Landed Record">
+  <meta name="plan-summary" content="Implementation and verification record for typed resource identity, routing, migration, and shared resolver parity.">
+  <meta name="plan-status" content="historical">
+  <meta name="plan-evidence-for" content="typed-artifact-layout">
+  <meta name="plan-commits" content="5dec5be,74ddd7b,7dbac54">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <title>Typed Artifact Layout — Landed Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Typed artifact layout — landed record</h1>
+    <p>This immutable record preserves the implementation contract and verification evidence collapsed from the evergreen plan after shipping.</p>
+
+    <h2 id="identity-routing">Identity and routing</h2>
+    <p>Each artifact has a safe project, type, slug, and archive-state identity. Canonical locations are <code>plans/</code>, <code>research/</code>, <code>evidence/</code>, and <code>sprints/</code>, with history under each type’s <code>archive/</code>. Canonical URLs include the type; bounded flat aliases preserve legacy reads.</p>
+    <p>Duplicate leaf slugs remain distinct through typed resolver keys and SPA <code>nav_key</code> identities. MCP reads and writes accept the same type selector, enforce optimistic concurrency against that exact resource, and reject ambiguous untyped edits.</p>
+
+    <figure>
+      <img src="/reckon/figures/typed-artifact-layout/tree.svg" alt="Typed artifact hierarchy with type-local archives.">
+      <figcaption>Filesystem location and semantic metadata jointly establish resource identity.</figcaption>
+    </figure>
+
+    <h2 id="migration">Migration</h2>
+    <p>The migration command classifies legacy HTML, validates source and destination containment, moves resources into typed roots, rewrites HTML links, and records cumulative move and rewrite provenance. It is deterministic and idempotent across incremental runs.</p>
+    <p>Project-absolute and relative non-HTML assets preserve their extensions, query strings, and fragments. Type-local archive routes resolve canonically. Process-level failures restore original bytes; a host crash during the multi-file install remains the documented residual risk, with the manifest providing deterministic inspection and recovery evidence.</p>
+
+    <h2 id="verification">Verification</h2>
+    <ul>
+      <li><code>5dec5be</code> introduced typed resource resolution across server, store, MCP, CLI, SPA, static build, audits, skills, and format documentation.</li>
+      <li>An independent review identified six blockers: traversal, asset-extension loss, archive-route failure, graph collisions, type-blind link audit, and overwritten migration history.</li>
+      <li><code>74ddd7b</code> corrected all six and added symmetric typed writes plus state-type protection.</li>
+      <li><code>7dbac54</code> integrated both commits on <code>main</code>.</li>
+      <li>Corrective targeted gate: 115 passed. Worker full suite: 1,308 passed. Main integration suite: 1,308 passed in 31.11 seconds. Ruff: clean.</li>
+    </ul>
+
+    <h2 id="verdict">Verdict</h2>
+    <p><strong>PASS.</strong> The canonical typed layout, compatibility resolver, migration, routing, collision handling, and live/static integration meet the plan’s done-when contract. Repository-wide physical migration remains intentionally assigned to the registered-repository migration work.</p>
+  </main>
+</body>
+</html>

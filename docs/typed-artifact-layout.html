@@ -8,10 +8,9 @@
   <meta name="plan-slug" content="typed-artifact-layout">
   <meta name="plan-title" content="Typed Artifact Directory Layout">
   <meta name="plan-summary" content="Give plans, research, and evidence distinct directories while preserving stable identity, links, and history.">
-  <meta name="plan-status" content="pending">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
-  <meta name="plan-tier" content="opus">
   <meta name="plan-sprint" content="S5">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="research-evidence-provenance">
@@ -20,35 +19,29 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="1">
-</head>
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="5dec5be,74ddd7b,7dbac54">
+<meta name="plan-artifacts" content="reckon/resources.py,tests/test_typed_resources.py,docs/archive/typed-artifact-layout-s2-s4-landed.html">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
+<meta name="plan-capability-reasoning" content="deep">
+<meta name="plan-capability-context" content="extended">
+<meta name="plan-capability-tool-autonomy" content="autonomous">
+<meta name="plan-capability-verification" content="strict">
+<meta name="plan-capability-risk" content="elevated">
+<meta name="plan-impl" content="1.0">
+  </head>
 <body>
   <main class="plan-doc">
-    <h2 id="s1">§1 — Current state</h2>
-    <p>Reckon now has first-class <code>plan</code>, <code>research</code>, and <code>evidence</code> types, but live documents still share the <code>docs/</code> root and landed evidence shares <code>docs/archive/</code>. Type metadata lets software distinguish them, while the filesystem gives humans little help and makes discovery exclusions increasingly fragile.</p>
-    <p>The target is a visible, typed hierarchy: <code>docs/plans/</code>, <code>docs/research/</code>, <code>docs/evidence/</code>, and <code>docs/sprints/</code>. Infrastructure remains in <code>docs/_shared/</code>, <code>docs/ui/</code>, <code>docs/figures/</code>, and project configuration locations selected by the distributed-state plan.</p>
+    <h2 id="landed">Landed outcome</h2>
+    <p><strong>Shipped in <code>7dbac54</code>.</strong> Reckon now resolves plans, research, evidence, and sprints through stable typed identities and canonical typed routes, with bounded legacy aliases and type-local archives. Server, MCP, SPA, static build, audit, and skills share the resolver.</p>
+    <p>The explicit migration is idempotent, rewrites links without stripping non-HTML asset extensions, retains cumulative move and rewrite provenance, rejects path traversal and identity collisions, and restores files after process-level failures. Typed MCP reads and writes select the same resource and reject ambiguous leaf slugs.</p>
+    <p>Independent review found six integration blockers; all were corrected before merge. Final verification: <strong>1,308 tests passed</strong> and Ruff passed. The complete design and verification record is preserved in <a href="/reckon/archive/typed-artifact-layout-s2-s4-landed.html">the landed-stage archive</a>.</p>
 
     <figure>
       <img src="/reckon/figures/typed-artifact-layout/tree.svg" alt="Proposed docs hierarchy with separate plans, research, evidence, and sprint directories.">
-      <figcaption>Directory location reinforces type while metadata remains the validation contract.</figcaption>
+      <figcaption>Typed location reinforces resource identity while metadata remains the validation contract.</figcaption>
     </figure>
-
-    <h2 id="s2">§2 — Identity and routing</h2>
-    <p>Directory layout must not make identity depend on an arbitrary relative path. Each artifact keeps a stable project-qualified identifier and type. The server should offer canonical typed routes such as <code>/reckon/plans/model-capability-schema</code> while maintaining redirects or aliases for existing flat URLs during migration.</p>
-    <p>Relationships must become type-aware references, so a plan can depend on another plan, research can inform a plan, and evidence can verify a plan or stage without ambiguous collisions between identical leaf names. Discovery should scan only declared artifact roots rather than treating every HTML file as an actionable plan.</p>
-
-    <h2 id="s3">§3 — Migration</h2>
-    <p>A migration command should classify existing HTML by <code>reckon-type</code>, move it to the corresponding directory, rewrite internal links and figure references, and emit a deterministic manifest. It must be idempotent and safe in repositories that contain legacy flat documents. Per-stage history needs an explicit home: either type-local archive directories or evidence records linked to the evergreen plan.</p>
-    <p>Static build, server discovery, MCP reads and writes, plan creation, audits, SPA navigation, mounts, and every reckon skill must use the same resolver. Tests must cover duplicate leaf identifiers, legacy routes, cross-project references, archive exclusion, and mixed-layout repositories.</p>
-
-    <h2 id="s4">§4 — Done-when</h2>
-    <ol>
-      <li>The canonical layout and stable resource-identity rules are documented and schema-backed.</li>
-      <li>Server, MCP, SPA, build, audit, and skills discover all four typed roots consistently.</li>
-      <li>An idempotent migration moves the existing fleet without broken links or lost semantic state.</li>
-      <li>Mixed old/new layouts remain readable for a bounded compatibility window.</li>
-      <li>Repository and cross-repository fixtures prove routing, collision handling, and static parity.</li>
-    </ol>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -73,7 +66,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tal-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship typed-artifact-layout" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tal-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship typed-artifact-layout" data-resolved-at="2026-07-29T13:09:17+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement typed artifact roots and migration</h4>
     <div class="r-fu-body"><p>Define the canonical directory and identity contract, then migrate discovery and authoring through a compatibility-tested resolver.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -96,6 +89,7 @@ Done-when
   1. typed roots, resolver and migration land with cross-layout fixtures
   2. tests still green
   3. followup written into plan + this followup marked resolved</pre>
+    <p class="r-fu-outcome">Typed roots, stable resource identities, canonical typed and archive routes, safe idempotent migration, typed MCP read/write selection, SPA graph identity, and typed audit resolution landed in 5dec5be and 74ddd7b; integrated by 7dbac54. Independent review found six blockers, all corrected. Full integration: 1,308 tests passed; Ruff clean. done — no followup; downstream work continues in distributed-sprint-state.</p>
     </article>
 </section>
   </main>

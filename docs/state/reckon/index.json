@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29T14:17:04",
+  "updated": "2026-07-29T15:11:14",
   "project": "reckon",
   "doc": "index",
   "data": {
@@ -49,67 +49,105 @@
           {
             "slug": "codex-agent-context-compatibility",
             "why_now": "Instruction and skill drift can invalidate every later execution; fix the context substrate first.",
-            "tier": "opus",
             "done_when": "Cross-agent entrypoints, target-path doctor and black-box fixtures prove the effective instruction/skill chain.",
-            "status": "shipped"
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "research-evidence-provenance",
             "why_now": "Physics migration work needs research-before and evidence-after artifacts without fake progress percentages.",
-            "tier": "opus",
             "done_when": "Plan/research/evidence schema, MCP, audit and SPA facets land with provenance and migration tests.",
-            "status": "shipped"
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "model-capability-schema",
             "why_now": "Provider model-family names are embedded in persisted state and must be replaced before orchestration hardening.",
-            "tier": "opus",
             "done_when": "A provider-neutral capability schema, legacy migration and runtime matcher pass compatibility and risk-escalation tests.",
-            "status": "shipped"
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "typed-artifact-layout",
             "why_now": "First-class plan, research and evidence types need matching filesystem roots and stable typed identity.",
-            "tier": "opus",
             "done_when": "Typed directories, routing and an idempotent mixed-layout migration pass server, MCP, SPA and static-build tests.",
-            "status": "pending"
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {
+                "reasoning": "deep",
+                "context": "extended",
+                "tool_autonomy": "autonomous",
+                "verification": "strict",
+                "risk": "elevated"
+              }
+            }
           },
           {
             "slug": "distributed-sprint-state",
             "why_now": "The required project index is a version-contention and payload monolith; split it only after typed roots exist.",
-            "tier": "opus",
             "done_when": "Separate sprint and project-state resources replace the index with parity, rollback and concurrency evidence.",
-            "status": "pending"
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "reckon-ci-build",
             "why_now": "Portable builds are verified locally; closure waits on distributed sprint state and an explicit distribution name.",
-            "tier": "sonnet",
             "done_when": "Validation-only CI is retained, automatic publishing is removed, project-state migration lands, and the local distribution name is resolved.",
             "status": "blocked",
             "blocked_by": [
               "s5-project-state-contract"
-            ]
+            ],
+            "capability": {
+              "version": "1.0",
+              "class": "general",
+              "requirements": {}
+            }
           },
           {
             "slug": "mcp-readable-responses",
             "why_now": "Readable MCP responses should target the final typed and distributed resource model rather than reformat the monolith twice.",
-            "tier": "opus",
             "done_when": "Layered summary/detail/raw resource responses are smaller, clearer and backwards-compatible.",
-            "status": "pending"
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "registered-repo-state-migration",
             "why_now": "After the new contracts stabilize, every host-registered repository must migrate or the fleet will retain contradictory state models.",
-            "tier": "opus",
             "done_when": "Runtime discovery gives every registered repository a terminal migration-ledger state, recoverable snapshot, fresh audit/build result and typed evidence.",
-            "status": "pending"
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           }
         ],
         "starts": "2026-07-29",
         "ends": "2026-08-12",
         "description": "Make agent context verifiable across Codex and Claude, complete the portable build, and separate plans, research and evidence with typed provenance.",
-        "summary": "Context compatibility and typed provenance shipped. S5 now establishes neutral capabilities, typed roots, distributed sprint state and concise MCP responses, then migrates every host-registered repository; CI remains local validation only."
+        "summary": "Context compatibility, typed provenance, neutral capability contracts, and typed artifact layout shipped. Distributed sprint/project state is now the critical path; CI closure and readable MCP responses follow, then the registered-repository migration."
       },
       {
         "id": "S6",
@@ -119,20 +157,32 @@
           {
             "slug": "execution-orchestration-hardening",
             "why_now": "Codex needs bounded, resumable, capability-aware execution rather than a Claude-specific fleet assumption.",
-            "tier": "opus",
-            "done_when": "Bounded sprint operations and a portable execution ledger pass interruption, conflict and worker-failure tests."
+            "done_when": "Bounded sprint operations and a portable execution ledger pass interruption, conflict and worker-failure tests.",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "plan-lifecycle-hygiene",
             "why_now": "Typed evidence enables lifecycle gates without treating research and evidence as incomplete plans.",
-            "tier": "opus",
-            "done_when": "Lead-approved close/archive/write invariants land with audits and compatibility migration."
+            "done_when": "Lead-approved close/archive/write invariants land with audits and compatibility migration.",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
           },
           {
             "slug": "agent-plan-authoring",
             "why_now": "Refresh authoring guidance after the type and orchestration contracts are stable.",
-            "tier": "sonnet",
-            "done_when": "Canonical examples describe plan, research and evidence authoring on both agent surfaces."
+            "done_when": "Canonical examples describe plan, research and evidence authoring on both agent surfaces.",
+            "capability": {
+              "version": "1.0",
+              "class": "general",
+              "requirements": {}
+            }
           }
         ],
         "starts": "2026-08-13",
@@ -200,8 +250,13 @@
         "when": "2026-07-29",
         "who": "reckon-ship",
         "what": "Portable capability contract shipped: versioned neutral requirements, deterministic runtime matching, legacy diagnostics and 1,270-suite pass."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Typed artifact layout shipped: safe typed identities and routes, idempotent migration, symmetric typed MCP access, six review defects corrected, and 1,308-suite pass."
       }
     ],
-    "_version": 13
+    "_version": 14
   }
 }
