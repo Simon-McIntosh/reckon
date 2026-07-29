@@ -9,8 +9,8 @@
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-title" content="reckon build — CI static site generation">
-<meta name="plan-summary" content="reckon build command bundles canonical UI assets into docs/ and generates a portable index.html for static deployment. Eliminates index.json by wiring sprints and milestones from HTML meta tags.">
-<meta name="plan-status" content="active">
+<meta name="plan-summary" content="reckon build packages canonical UI assets and generates portable static sites with uv-native CI while preserving project-level sprint state; the legacy index-deprecation decision is under review.">
+<meta name="plan-status" content="blocked">
 <meta name="plan-roi" content="mid">
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="—">
@@ -19,8 +19,8 @@
 <meta name="plan-owner" content="">
 <meta name="plan-modified" content="2026-07-29">
 <meta name="plan-depends-on" content="">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="15">
+<meta name="plan-impl" content="0.8333333333">
+<meta name="plan-version" content="17">
 <meta name="reckon-type" content="plan">
 </head>
 <body>
@@ -59,84 +59,67 @@ but breaks for static deployment — GitHub Pages has no reckon process to serve
 by hand. This is the last piece of wiring that plans do not have: plans auto-discover from
 HTML meta tags; sprints and milestones do not.</p>
 </section>
-<section id="s2">
+<section id="s2" class="section-landed">
+<header>
+<span class="badge badge-shipped">✓ landed 2026-07-29</span>
 <h2>§ 2 — reckon build command</h2>
-<p><code>reckon build &lt;docs_path&gt; [--project &lt;name&gt;]</code></p>
-<p>What it does (static-site only — no mounts, no symlinks):</p>
-<ol>
-<li>Copies <code>reckon/docs/ui/</code> → <code>docs/_ui/</code> (all JSX + CSS)</li>
-<li>Copies <code>reckon/docs/_shared/</code> → <code>docs/_shared/</code> (foundation, dashboard, state.js)</li>
-<li>Generates <code>docs/index.html</code> with RELATIVE paths (<code>_shared/</code>, <code>_ui/</code>) — not absolute <code>/_shared/</code></li>
-<li>Calls <code>discover_plans()</code> and writes <code>docs/state/&lt;project&gt;/index.json</code>
-    with discovered inventory + sprints/milestones (for static environments without a live server)</li>
-<li>Does NOT create symlinks, does NOT register in mounts.json</li>
-</ol>
-<p>Distinction from <code>reckon sync</code>: <code>sync</code> is for developer setup (live server,
-mounts, symlink, state directory). <code>build</code> is for CI — produces a portable static artifact.</p>
+</header>
+<p class="landed-summary">
+Packaged all 16 UI and 4 shared assets inside the <code>reckon-plans</code> wheel
+and made <code>reckon build</code> fail loudly when assets are missing. Installed-wheel
+smoke generation produced relative paths, <code>.nojekyll</code> and usable static state.
+Full record: <a href="archive/reckon-ci-build-s2-s6-landed.html">§2–§6 landed</a>
+(commits <code>e827e56</code>, <code>948b2c5</code>).
+</p>
 </section>
-<section id="s3">
+<section id="s3" class="section-blocked">
+<header>
+<span class="badge status-blocked">⚠ decision review</span>
 <h2>§ 3 — Sprint and milestone discovery from HTML</h2>
-<p>The zero-wiring principle applied to sprints: define a sprint by dropping an HTML file with meta tags.</p>
-<pre><code>&lt;!-- docs/sprints/s5.html --&gt;
-&lt;meta name="sprint-id"      content="S5"&gt;
-&lt;meta name="sprint-theme"   content="CI + zero-wiring"&gt;
-&lt;meta name="sprint-status"  content="active"&gt;
-&lt;meta name="sprint-starts"  content="2026-05-26"&gt;
-&lt;meta name="sprint-ends"    content="2026-06-09"&gt;</code></pre>
-<pre><code>&lt;!-- docs/milestones/m2.html --&gt;
-&lt;meta name="milestone-id"     content="M2"&gt;
-&lt;meta name="milestone-name"   content="Zero-wiring complete"&gt;
-&lt;meta name="milestone-status" content="active"&gt;</code></pre>
-<p><code>discover_plans()</code> scans <code>docs/sprints/*.html</code> and <code>docs/milestones/*.html</code>
-in addition to plan pages. Sprint IDs found this way replace auto-synthesized stubs.
-<code>index.json</code> becomes entirely optional — it holds only <code>active_sprint_id</code> if
-the user wants to pin it, and that can also come from a sprint page with <code>status="active"</code>.</p>
+</header>
+<p class="landed-summary">
+Verified dedicated sprint/milestone HTML discovery and excluded definition pages from plan inventory;
+static builds preserve authored sprint, milestone, timeline and blocker state. The old
+<code>index-json-fate → deprecate entirely</code> lock conflicts with the canonical project-state
+contract and is queued through the dissent flow before this section can close.
+Full record: <a href="archive/reckon-ci-build-s2-s6-landed.html">qualified result</a>.
+</p>
 </section>
-<section id="s4">
+<section id="s4" class="section-landed">
+<header>
+<span class="badge badge-shipped">✓ landed 2026-07-29</span>
 <h2>§ 4 — CI YAML template</h2>
-<p><code>reckon sync --generate-ci</code> writes <code>.github/workflows/reckon-pages.yml</code>:</p>
-<pre><code>name: Deploy plans to GitHub Pages
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with: { python-version: "3.12" }
-      - run: pip install reckon
-      - run: reckon build docs/
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: docs/ }
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment</code></pre>
+</header>
+<p class="landed-summary">
+Replaced the wrong-package pip workflow with uv-native generation:
+consumer workflows use <code>uvx --from</code> pinned to <code>v0.2.0rc25</code>,
+while Reckon’s own Pages workflow builds its checked-out SHA with
+<code>uv run --frozen</code>. Full record:
+<a href="archive/reckon-ci-build-s2-s6-landed.html">CI evidence</a>.
+</p>
 </section>
-<section id="s5">
-<h2>§ 5 — reckon as a versioned PyPI package</h2>
-<p>For CI reproducibility, reckon must be a versioned package on PyPI (or a GitHub release).
-<code>pip install reckon==1.2.3</code> in CI ensures deterministic builds. This requires:</p>
-<ul>
-<li>PyPI registration (currently only on PyPI if published — verify)</li>
-<li>GitHub Actions release workflow: tag → build → publish to PyPI</li>
-<li>Version pinning guidance in generated CI YAML</li>
-</ul>
+<section id="s5" class="section-landed">
+<header>
+<span class="badge badge-shipped">✓ landed 2026-07-29</span>
+<h2>§ 5 — reckon as a versioned package</h2>
+</header>
+<p class="landed-summary">
+Renamed only the distribution to <code>reckon-plans</code>, retaining the
+<code>reckon</code> import and console command. The verified wheel contains 35 entries,
+including every SPA asset; tag <code>v0.2.0rc25</code> pins the consumer workflow.
+Publishing to PyPI remains deliberately outside this sprint.
+Full record: <a href="archive/reckon-ci-build-s2-s6-landed.html">package evidence</a>.
+</p>
 </section>
 <section id="s6">
 <h2>§ 6 — Implementation review &amp; recommendations (2026-05-27, Opus)</h2>
+<p class="landed-summary">
+  <span class="badge status-blocked">5 of 6 actions landed</span>
+  Distribution naming, installed-wheel assets, uv CI, build tests and a release tag are complete.
+  The sole open action is the project-index decision review; the historical analysis below is retained
+  as the dissent evidence. Current verification: 11 focused build tests and 1,222 total tests passed.
+  <a href="archive/reckon-ci-build-s2-s6-landed.html">Landed record</a>.
+</p>
 <p>Reviewed the shipped code against this plan. The <code>build</code> command, sprint/milestone
 HTML discovery, and the <code>sync --generate-ci</code> flag all landed. But the CI <em>install</em>
 story (§4 + §5) is not deployable as written — three blockers, detailed below. The driving
@@ -295,7 +278,7 @@ Done-when
   5. Followup written + this followup resolved</pre>
     <p class="r-fu-outcome">Landed: reckon build command (cli.py) copies _ui/ + _shared/ assets, writes relative-path index.html, drops .nojekyll, writes plan inventory to index.json. reckon sync --generate-ci writes .github/workflows/reckon-pages.yml. discover_plans() extended to scan docs/sprints/*.html and docs/milestones/*.html for sprint/milestone meta tags. Committed 5c9a71c. Tests and q1/q2 resolution remain.</p>
     </article>
-<article class="r-fu" data-id="f-ci-build-tests-2026-05-26" data-status="open" data-tier="sonnet" data-written-by="Claude (sonnet-4.6)" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ci-build-tests-2026-05-26" data-status="resolved" data-tier="sonnet" data-written-by="Claude (sonnet-4.6)" data-written-at="2026-05-26" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="2026-07-29T10:44:57+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Add tests for reckon build command + resolve q1 (state.js copy)</h4>
     <div class="r-fu-body">build command and sprint/milestone discovery are implemented. Remaining: (1) tests/test_build.py covering reckon build output correctness, (2) resolve q1 — confirm whether reckon build should copy state.js to _shared/ alongside the CSS (check what standalone plan pages need), (3) resolve q2 — already resolved by implementation: docs/sprints/ + docs/milestones/.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -323,8 +306,9 @@ Done-when
   2. q1 resolved (check standalone plan page needs)
   3. impl updated to 1.0, status → shipped if tests pass
   4. This followup resolved with outcome</pre>
+    <p class="r-fu-outcome">Build coverage landed in e827e56: 11 focused tests cover assets, relative paths, .nojekyll, state preservation, wheel contents and installed-wheel generation; state.js ships in the wheel.</p>
     </article>
-<article class="r-fu" data-id="f-6a16a1ab" data-status="open" data-tier="sonnet" data-written-by="Claude (opus-4.7)" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-6a16a1ab" data-status="resolved" data-tier="sonnet" data-written-by="Claude (opus-4.7)" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon-ci-build" data-resolved-at="2026-07-29T10:44:57+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Make reckon CI-installable via uv: rename PyPI dist, ship UI assets in wheel, switch CI to uv</h4>
     <div class="r-fu-body">Review on 2026-05-27 surfaced three blockers to the §4/§5 CI story: the PyPI name `reckon` belongs to an unrelated caching package; the wheel excludes docs/ui + docs/_shared so `reckon build` only works from a source checkout; and the generated CI uses pip, not uv. Fix packaging + naming and make CI install reckon as a uv-managed dependency (see §6 recommendations).</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -375,10 +359,11 @@ Done-when
   5. index-json-fate reconciled: code still writes/reads index.json, so either
      realise &quot;deprecate entirely&quot; or reopen the decision via the dissent flow.
   6. followup written into plan + this followup marked resolved.</pre>
+    <p class="r-fu-outcome">Packaging and CI landed in e827e56 and 948b2c5: distribution renamed to reckon-plans; 35-entry wheel ships 16 UI + 4 shared assets; uv-native workflows and installed-wheel smoke pass. Project-index dissent remains open separately.</p>
     </article>
-<article class="r-fu" data-id="f-ci-index-dissent-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-edit reckon-ci-build --reopen index-json-fate" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ci-index-dissent-20260729" data-status="resolved" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-edit reckon-ci-build --reopen index-json-fate" data-resolved-at="2026-07-29T10:44:57+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Review the project-index deprecation decision</h4>
-    <div class="r-fu-body">The locked choice `deprecate entirely` predates the current canonical format. Current evidence shows `docs/state/<project>/index.json` is the sole project-level store for sprints, milestones, timeline and blockers; deleting it would contradict the repository contract and break S5 state. Reopen the decision and choose whether to retain the project index while keeping plan inventory live-discovered.</div>
+    <div class="r-fu-body">The locked choice `deprecate entirely` predates the current canonical format. Current evidence shows `docs/state/<project>/index.json` is the sole project-level store for sprints, milestones, timeline and blockers; deleting it would contradict the repository contract and break S5 state. Reopen the decision and choose whether to retain the project index while keeping plan inventory live-discovered.</project></div>
     <pre class="r-fu-prompt">Project: reckon
 Plan:    reckon-ci-build (http://localhost:8765/reckon/reckon-ci-build.html)
 Section: §3 — project-index contract
@@ -406,6 +391,39 @@ Constraints
 Done-when
   1. The lead accepts or rejects reopening with rationale
   2. Any accepted choice is recorded through the dissent workflow
+  3. this followup is resolved and the next implementation followup is written</pre>
+    <p class="r-fu-outcome">Superseded by f-ci-index-dissent-20260729b because the literal project placeholder in this body was parsed as HTML. The locked decision remains under review.</p>
+    </article>
+<article class="r-fu" data-id="f-ci-index-dissent-20260729b" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-edit reckon-ci-build --reopen index-json-fate" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Review the project-index deprecation decision</h4>
+    <div class="r-fu-body"><p>The locked choice <code>deprecate entirely</code> predates the current canonical format. Current evidence shows <code>docs/state/{project}/index.json</code> is the sole project-level store for sprints, milestones, timeline and blockers; deleting it would contradict the repository contract. Reopen the decision and choose whether to retain project-only state while inventory stays live-discovered.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-ci-build (http://localhost:8765/reckon/reckon-ci-build.html)
+Section: §3 — project-index contract
+Capability: orchestrator-level
+
+Context
+  Installed-wheel assets, build tests and uv CI are landed and verified. The sole remaining blocker is the locked choice to deprecate index.json, which now conflicts with the canonical project-state format.
+
+State to read
+  GET /plan/reckon/reckon-ci-build
+  docs/state/reckon/index.json
+  PLAN-FORMAT.md and AGENTS.md project-index contract
+
+Locked decisions to honour
+  index-json-fate → deprecate entirely (under review; do not overwrite silently)
+  command-name → build
+  sprint-discovery-dir → docs/sprints/
+
+Open decisions to surface (do not resolve)
+  Whether to reopen index-json-fate and retain project-only sprint, milestone, timeline and blocker state while inventory remains live-discovered.
+
+Constraints
+  Preserve the audit trail through /reckon-edit --reopen. Do not delete active project state. Packaging and CI commits are already landed; do not relitigate them.
+
+Done-when
+  1. the lead accepts or rejects reopening with rationale
+  2. any accepted choice is recorded through the dissent workflow
   3. this followup is resolved and the next implementation followup is written</pre>
     </article>
 </section>

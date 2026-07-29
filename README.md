@@ -27,9 +27,11 @@ with `uv tool install "git+https://github.com/Simon-McIntosh/reckon"`.
 
 ## How it works
 
-Each project keeps its plans under `<repo>/docs/`. Any `.html` file in that
-directory is a plan — existence is sufficient. Plan state (status, decisions,
-followups, etc.) lives as semantic HTML inside the plan file:
+Each project keeps its planning documents under `<repo>/docs/`. Any `.html`
+file is discovered; documents default to actionable plans, while
+`<meta name="reckon-type">` selects first-class `research` or `evidence`
+artifacts. Plan state (status, decisions, followups, etc.) lives as semantic
+HTML inside the plan file:
 
 ```html
 <meta name="plan-status" content="active">
@@ -105,6 +107,6 @@ After `uv sync`, register in `~/.claude/mcp.json`:
 ```
 
 Then any MCP client can call `reckon.read_plan(project, slug)`,
-`reckon.patch_plan(...)`, `reckon.lock_decision(...)`, etc. The MCP transport
-writes to the same plan HTML elements as `reckon serve` — they are two faces of
+`reckon.edit_plan(...)`, and `reckon.audit(project)`. The MCP transport writes
+to the same semantic HTML elements as `reckon serve` — they are two faces of
 one backend.

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="reckon-ci-build-s2-s6-landed">
+  <meta name="plan-title" content="Portable static build — landed evidence">
+  <meta name="plan-summary" content="Installed-wheel assets, uv-native CI and static-state preservation evidence.">
+  <meta name="plan-evidence-for" content="reckon:reckon-ci-build">
+  <meta name="plan-verifies" content="reckon:reckon-ci-build#s2,reckon:reckon-ci-build#s3-discovery,reckon:reckon-ci-build#s4,reckon:reckon-ci-build#s5,reckon:reckon-ci-build#s6-packaging">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-verdict" content="qualified-pass">
+  <meta name="plan-environment" content="Python 3.12; uv; Hatch; GitHub Actions">
+  <meta name="plan-commits" content="e827e561fc54a216421275a44f97d5801710cb78,948b2c54ec7ad86f2f1c77aeee7f608617808735">
+  <meta name="plan-artifacts" content="tests/test_build.py,.github/workflows/reckon-pages.yml,pyproject.toml,reckon/cli.py">
+  <title>Portable static build — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Portable static build — landed evidence</h1>
+    <p class="plan-summary">All executable packaging and CI work is verified; the stale project-index decision remains explicitly blocked behind the dissent workflow.</p>
+  </header>
+
+  <section id="status">
+    <h2>Quick status</h2>
+    <div class="quick-status-grid">
+      <article><span class="badge badge-shipped">shipped</span><h3>Wheel assets</h3><p>35 entries: 16 UI and 4 shared assets, including <code>state.js</code>.</p></article>
+      <article><span class="badge badge-shipped">pass</span><h3>Installed build</h3><p>Wheel-only smoke produced relative paths, <code>.nojekyll</code> and usable state.</p></article>
+      <article><span class="badge badge-shipped">shipped</span><h3>CI</h3><p>uv-native workflows; consumer install pinned to <code>v0.2.0rc25</code>.</p></article>
+      <article><span class="badge status-blocked">blocked</span><h3>Project index</h3><p>Locked deprecation choice awaits lead review through the dissent flow.</p></article>
+    </div>
+  </section>
+
+  <section id="outcomes">
+    <h2>Outcomes</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Result</th><th>Commit / artifact</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Distribution identity</td><td><span class="badge badge-shipped">landed</span></td><td><code>reckon-plans</code></td><td>Import package and <code>reckon</code> command unchanged.</td></tr>
+        <tr><td>Installed-wheel assets</td><td><span class="badge badge-shipped">pass</span></td><td><code>e827e56</code> · <code>pyproject.toml</code></td><td>35 wheel entries; 16 UI + 4 shared assets copied in smoke build.</td></tr>
+        <tr><td>Static state</td><td><span class="badge badge-shipped">pass</span></td><td><code>tests/test_build.py</code></td><td>Inventory is derived; authored sprint, milestone, timeline and blocker state is preserved.</td></tr>
+        <tr><td>GitHub Pages workflow</td><td><span class="badge badge-shipped">landed</span></td><td><code>.github/workflows/reckon-pages.yml</code></td><td>No bare pip install; uv lock or pinned git tag supplies the tool.</td></tr>
+        <tr><td>Regression gate</td><td><span class="badge badge-shipped">pass</span></td><td><code>/tmp/reckon-s5-full.log</code></td><td>11 focused build tests; 1,222 total tests passed in 22.98 seconds.</td></tr>
+        <tr><td>Project-index contract</td><td><span class="badge status-blocked">review</span></td><td><code>f-ci-index-dissent-20260729</code></td><td>Current canonical state requires the index; no silent decision rewrite occurred.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="next">
+    <h2>What’s next</h2>
+    <article class="next-card">
+      <h3>Review the project-index decision</h3>
+      <p>Accepting the dissent reopens the old lock without erasing its audit trail; rejecting it requires an explicit replacement for active sprint, milestone, timeline and blocker state.</p>
+      <a href="../reckon-ci-build.html#decisions">Open decision record</a>
+    </article>
+  </section>
+</main>
+</body>
+</html>
