@@ -41,6 +41,13 @@ It returns `source_format`, `resource_versions`, and the active sprint derived
 from the unique sprint whose status is `active`. Never write the aggregate
 index after distributed activation.
 
+Check `summary["state"]["source_format"]` before writing. In
+`distributed` mode, read and edit the named resource. In `legacy-index` mode,
+typed raw reads are projections carrying the aggregate version, but named
+resource writes are intentionally inactive: read `slug="index"` and use the
+legacy aggregate op vocabulary until explicit project-state migration
+activates distributed resources.
+
 `edit_plan` is the version-safe write path: call `read_plan` first for the
 current `version`, pass it as `expected_version`; on a 412 conflict re-read and
 retry.

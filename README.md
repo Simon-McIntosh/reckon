@@ -146,3 +146,7 @@ audit(project="sample", view="summary")
 `include_prompts=True` when a prompt is specifically needed. `history` and
 large discovery/audit detail responses use `cursor` plus a bounded `limit`.
 Calls that omit both `resource` and `view` preserve the legacy response shape.
+Before distributed project-state activation, typed sprint/project reads are
+safe projections of the canonical legacy index and identify that source in
+their warning/state metadata. Writes continue through `slug="index"` until the
+explicit migration activates independently versioned named resources.

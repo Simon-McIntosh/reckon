@@ -18,6 +18,7 @@ from reckon.mcp_views import (
     discovery_view,
     error_response,
     resource_view,
+    storage_schema_for,
 )
 
 
@@ -48,6 +49,7 @@ def _plan(
     *,
     relative: str | None = None,
     summary: str = "A readable plan.",
+    resource_type: str = "plan",
 ) -> Path:
     from reckon._plan_html import write_state
 
@@ -55,43 +57,55 @@ def _plan(
         "slug": slug,
         "title": "Readable Plan",
         "summary": summary,
-        "status": "active",
-        "impl": 0.4,
         "version": 3,
-        "decisions": {
-            "open-choice": {
-                "title": "Choose a route",
-                "choices": ["a", "b"],
-                "choice": "",
-            },
-            "locked-choice": {
-                "title": "Locked",
-                "choices": ["x", "y"],
-                "choice": "x",
-            },
-        },
-        "followups": [
-            {
-                "id": "next",
-                "status": "open",
-                "title": "Continue",
-                "body": "<p>Do the next thing.</p>",
-                "prompt": "Project: proj\nDone-when\n  1. shipped",
-                "written_by": "test",
-                "written_at": "2026-01-01",
-            },
-            {
-                "id": "done",
-                "status": "resolved",
-                "title": "Finished",
-                "body": "<p>Done.</p>",
-                "prompt": "historical prompt",
-                "outcome": "landed",
-                "written_by": "test",
-                "written_at": "2026-01-01",
-            },
-        ],
+        "type": resource_type,
     }
+    if resource_type == "plan":
+        state.update(
+            {
+                "status": "active",
+                "impl": 0.4,
+                "decisions": {
+                    "open-choice": {
+                        "title": "Choose a route",
+                        "choices": ["a", "b"],
+                        "choice": "",
+                    },
+                    "locked-choice": {
+                        "title": "Locked",
+                        "choices": ["x", "y"],
+                        "choice": "x",
+                    },
+                },
+                "followups": [
+                    {
+                        "id": "next",
+                        "status": "open",
+                        "title": "Continue",
+                        "body": "<p>Do the next thing.</p>",
+                        "prompt": "Project: proj\nDone-when\n  1. shipped",
+                        "written_by": "test",
+                        "written_at": "2026-01-01",
+                    },
+                    {
+                        "id": "done",
+                        "status": "resolved",
+                        "title": "Finished",
+                        "body": "<p>Done.</p>",
+                        "prompt": "historical prompt",
+                        "outcome": "landed",
+                        "written_by": "test",
+                        "written_at": "2026-01-01",
+                    },
+                ],
+            }
+        )
+    elif resource_type == "research":
+        state.update({"source": "local", "source_quality": "verified"})
+    elif resource_type == "evidence":
+        state.update({"verdict": "pass", "evidence_for": ["typed-plan"]})
+    else:
+        raise ValueError(f"unsupported fixture resource type {resource_type!r}")
     bare = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="docs-project" content="proj"><title>Readable</title></head>'
@@ -210,7 +224,156 @@ def test_raw_and_schema_are_explicit_layers(setup):
     assert schema["schema_version"] == 1
     assert schema["response_schema"]["type"] == "object"
     assert schema["storage_schema"]["title"] == "reckon PlanState"
+    response_schemas = schema["response_schemas"]
+    assert "data" in response_schemas["raw"]["required"]
+    assert {"records", "pagination"} <= set(response_schemas["history"]["required"])
+    assert {"metadata", "relations", "followups", "questions"} <= set(
+        response_schemas["detail"]["required"]
+    )
+    assert {
+        "schema_version",
+        "response_schema",
+        "response_schemas",
+        "storage_schema",
+        "op_vocab",
+        "dos_donts",
+    } <= set(response_schemas["schema"]["required"])
     assert compact_size(schema) <= 24 * 1024
+
+
+def test_storage_schema_matches_selected_resource_type():
+    sprint = storage_schema_for("sprint")
+    project = storage_schema_for("project")
+    timeline = storage_schema_for("timeline")
+
+    assert sprint["title"] == "reckon SprintResource"
+    assert sprint["properties"]["type"]["const"] == "sprint"
+    assert {"id", "type", "version"} <= set(sprint["required"])
+    assert project["title"] == "reckon ProjectResource"
+    assert project["properties"]["type"]["const"] == "project"
+    assert timeline["properties"]["events"]["items"]["title"] == "TimelineEntry"
+
+
+def test_schema_view_routes_to_every_selected_storage_contract(setup):
+    from reckon.project_state import migrate_project_state
+
+    docs_dir, project = setup
+    _plan(docs_dir, "typed-plan", relative="plans/typed-plan.html")
+    _plan(
+        docs_dir,
+        "typed-research",
+        relative="research/typed-research.html",
+        resource_type="research",
+    )
+    _plan(
+        docs_dir,
+        "typed-evidence",
+        relative="evidence/typed-evidence.html",
+        resource_type="evidence",
+    )
+    index = docs_dir / "state" / project / "index.json"
+    index.parent.mkdir(parents=True)
+    index.write_text(
+        json.dumps(
+            {
+                "updated": "2026-01-01T00:00:00",
+                "project": project,
+                "doc": "index",
+                "data": {
+                    "_version": 1,
+                    "active_sprint_id": "iteration",
+                    "projects": [
+                        {
+                            "project": project,
+                            "path": "/private/checkout/docs",
+                            "owner": "test",
+                            "published": "example.invalid/proj",
+                            "plans_count": 99,
+                        }
+                    ],
+                    "sprints": [
+                        {
+                            "id": "iteration",
+                            "theme": "Iteration",
+                            "status": "active",
+                            "items": [
+                                {
+                                    "slug": "typed-plan",
+                                    "status": "active",
+                                    "impl": 0.4,
+                                }
+                            ],
+                        }
+                    ],
+                    "milestones": [
+                        {"id": "target", "name": "Target", "status": "active"}
+                    ],
+                    "blockers": [
+                        {
+                            "id": "constraint",
+                            "summary": "Constraint",
+                            "owner": "test",
+                            "next": "Resolve it",
+                            "n": 0,
+                        }
+                    ],
+                    "timeline": [
+                        {"when": "2026-01-01", "who": "test", "what": "Started"}
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    legacy_sprint = mcp_module._read_plan(
+        resource={"project": project, "type": "sprint", "id": "iteration"},
+        view="raw",
+        checkout_path=str(docs_dir.parent),
+    )
+    legacy_project = mcp_module._read_plan(
+        resource={"project": project, "type": "project", "id": "project"},
+        view="raw",
+        checkout_path=str(docs_dir.parent),
+    )
+    assert legacy_sprint["data"]["theme"] == "Iteration"
+    assert legacy_sprint["version"] == 1
+    assert legacy_project["data"]["project"] == project
+    assert (
+        "legacy aggregate index" in legacy_sprint["data"]["compatibility_warnings"][0]
+    )
+    migrate_project_state(docs_dir, project)
+    selectors = {
+        "plan": "typed-plan",
+        "research": "typed-research",
+        "evidence": "typed-evidence",
+        "sprint": "iteration",
+        "milestone": "target",
+        "blocker": "constraint",
+        "timeline": "timeline",
+        "project": "project",
+    }
+
+    schemas = {
+        resource_type: mcp_module._read_plan(
+            resource={
+                "project": project,
+                "type": resource_type,
+                "id": resource_id,
+            },
+            view="schema",
+            checkout_path=str(docs_dir.parent),
+        )["storage_schema"]
+        for resource_type, resource_id in selectors.items()
+    }
+
+    assert schemas["plan"]["title"] == "reckon PlanState"
+    assert schemas["research"]["title"] == "reckon PlanState"
+    assert schemas["evidence"]["title"] == "reckon PlanState"
+    assert schemas["sprint"]["title"] == "reckon SprintResource"
+    assert schemas["milestone"]["title"] == "reckon MilestoneResource"
+    assert schemas["blocker"]["title"] == "reckon BlockerResource"
+    assert schemas["timeline"]["title"] == "reckon TimelineResource"
+    assert schemas["project"]["title"] == "reckon ProjectResource"
 
 
 def test_archived_selector_does_not_read_live_duplicate(setup):
@@ -265,11 +428,14 @@ def test_malformed_selector_and_cursor_errors_stay_bounded(setup):
         view="history",
         cursor="x" * 100_000,
     )
+    view = mcp_module._read_plan(project, view="x" * 100_000)
 
     assert unsafe["error"] == "invalid_resource"
     assert cursor["error"] == "invalid_cursor"
+    assert view["error"] == "invalid_view"
     assert compact_size(unsafe) <= 2048
     assert compact_size(cursor) <= 2048
+    assert compact_size(view) <= 2048
 
 
 def test_unshipped_dependencies_are_visible_as_blocking():
@@ -372,6 +538,58 @@ def test_discovery_summary_is_paginated_and_small():
     assert compact_size(result) <= compact_size(raw) * 0.35
 
 
+def test_discovery_summary_includes_concise_sprint_cards():
+    raw = {
+        "project": "proj",
+        "plans": [],
+        "followups": [],
+        "questions": [],
+        "sprints": [
+            {
+                "id": "iteration",
+                "theme": "Readable responses",
+                "status": "active",
+                "items": [
+                    {"slug": "done", "status": "shipped"},
+                    {"slug": "waiting", "status": "blocked"},
+                ],
+            }
+        ],
+        "milestones": [],
+        "blockers": [],
+        "timeline": [],
+        "active_sprint_id": "iteration",
+        "resource_versions": {},
+        "summary": {"plans": 0, "artifacts": 0},
+    }
+
+    result = discovery_view(
+        "proj",
+        raw,
+        view="summary",
+        cursor=None,
+        limit=None,
+        include_prompts=False,
+    )
+
+    assert result["resources"] == [
+        {
+            "id": "iteration",
+            "type": "sprint",
+            "title": "Readable responses",
+            "status": "active",
+            "items": 2,
+            "completed": 1,
+            "blocked": 1,
+        }
+    ]
+    assert result["pagination"] == {
+        "count": 1,
+        "total": 1,
+        "next_cursor": None,
+    }
+
+
 def test_audit_progressive_views_are_small_and_legacy_is_untouched(setup):
     docs_dir, project = setup
     _plan(docs_dir, "readable")
@@ -380,6 +598,7 @@ def test_audit_progressive_views_are_small_and_legacy_is_untouched(setup):
     summary = mcp_module._audit(project, view="summary")
     detail = mcp_module._audit(project, view="detail", limit=1)
     raw = mcp_module._audit(project, view="raw")
+    schema = mcp_module._audit(project, view="schema")
 
     assert "resource" not in legacy
     assert summary["view"] == "summary"
@@ -388,6 +607,10 @@ def test_audit_progressive_views_are_small_and_legacy_is_untouched(setup):
     assert detail["pagination"]["count"] <= 1
     assert compact_size(detail) <= 16 * 1024
     assert raw["data"] == legacy
+    assert {"findings", "pagination", "violations"} <= set(
+        schema["response_schemas"]["detail"]["required"]
+    )
+    assert "history" not in schema["response_schemas"]
 
     representative = {
         "project": project,
@@ -458,3 +681,38 @@ def test_error_builder_common_contract():
         "current_version": 3,
         "hint": "Re-read and retry.",
     }
+
+
+def test_edit_success_and_conflict_name_the_affected_resource(setup):
+    docs_dir, project = setup
+    _plan(docs_dir, "readable")
+
+    success = mcp_module._edit_plan(
+        project,
+        "readable",
+        [{"op": "set", "path": "summary", "value": "Updated summary."}],
+        expected_version=3,
+    )
+    conflict = mcp_module._edit_plan(
+        project,
+        "readable",
+        [{"op": "set", "path": "summary", "value": "Stale edit."}],
+        expected_version=3,
+    )
+
+    assert success["ok"] is True
+    assert success["operation"] == "edit"
+    assert success["resource"] == {
+        "project": project,
+        "type": "plan",
+        "id": "readable",
+        "archived": False,
+        "title": "Readable Plan",
+    }
+    assert success["message"] == "Updated plan Readable Plan to version 4."
+    assert conflict["error"] == "version_conflict"
+    assert conflict["operation"] == "edit"
+    assert conflict["resource"] == success["resource"]
+    assert conflict["expected_version"] == 3
+    assert conflict["current_version"] == 4
+    assert conflict["hint"].startswith("Re-read")

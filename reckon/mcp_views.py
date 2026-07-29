@@ -27,6 +27,8 @@ MAX_PAGE_SIZE = 100
 RESPONSE_SCHEMA_VERSION = 1
 MAX_SELECTOR_LENGTH = 128
 MAX_CURSOR_LENGTH = 256
+MAX_ERROR_TEXT_LENGTH = 512
+MAX_ERROR_COLLECTION_ITEMS = 25
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -71,15 +73,85 @@ def compact_size(value: Any) -> int:
     )
 
 
+def storage_schema_for(resource_type: str) -> dict[str, Any]:
+    """Return the storage contract for one canonical resource type."""
+
+    from reckon._schema import Blocker, Milestone, Sprint, TimelineEntry
+
+    if resource_type in {"plan", "research", "evidence"}:
+        from reckon._schema import gen_json_schema
+
+        return gen_json_schema()
+
+    if resource_type in {"sprint", "milestone", "blocker"}:
+        model = {
+            "sprint": Sprint,
+            "milestone": Milestone,
+            "blocker": Blocker,
+        }[resource_type]
+        schema = model.model_json_schema()
+        schema["title"] = f"reckon {resource_type.title()}Resource"
+        schema["schemaVersion"] = RESPONSE_SCHEMA_VERSION
+        properties = schema.setdefault("properties", {})
+        properties["type"] = {"const": resource_type, "type": "string"}
+        properties["version"] = {"minimum": 0, "type": "integer"}
+        schema["required"] = sorted(
+            set(schema.get("required") or []) | {"id", "type", "version"}
+        )
+        return schema
+
+    if resource_type == "timeline":
+        return {
+            "title": "reckon TimelineResource",
+            "schemaVersion": RESPONSE_SCHEMA_VERSION,
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["id", "type", "version", "events"],
+            "properties": {
+                "id": {"const": "timeline", "type": "string"},
+                "type": {"const": "timeline", "type": "string"},
+                "version": {"minimum": 0, "type": "integer"},
+                "events": {
+                    "type": "array",
+                    "items": TimelineEntry.model_json_schema(),
+                },
+            },
+        }
+
+    if resource_type == "project":
+        return {
+            "title": "reckon ProjectResource",
+            "schemaVersion": RESPONSE_SCHEMA_VERSION,
+            "type": "object",
+            "additionalProperties": True,
+            "required": ["project", "type", "version"],
+            "properties": {
+                "project": {"type": "string"},
+                "type": {"const": "project", "type": "string"},
+                "version": {"minimum": 0, "type": "integer"},
+                "owner": {"type": "string"},
+                "published": {"type": "string"},
+            },
+        }
+
+    raise ViewRequestError(
+        "invalid_resource",
+        f"No storage schema exists for resource type {resource_type!r}.",
+    )
+
+
 def normalize_view(view: str | None) -> str:
     """Validate a view name, defaulting typed calls to ``summary``."""
 
     selected = (view or "summary").strip().lower()
     if selected not in VIEW_NAMES:
         choices = ", ".join(sorted(VIEW_NAMES))
+        displayed = repr(view)
+        if len(displayed) > 96:
+            displayed = displayed[:93] + "..."
         raise ViewRequestError(
             "invalid_view",
-            f"Unknown MCP response view {view!r}.",
+            f"Unknown MCP response view {displayed}.",
             f"Choose one of: {choices}.",
         )
     return selected
@@ -146,6 +218,24 @@ def error_response(
 ) -> dict[str, Any]:
     """Build the bounded structured error contract."""
 
+    def bounded(value: Any, depth: int = 0) -> Any:
+        if isinstance(value, str):
+            if len(value) <= MAX_ERROR_TEXT_LENGTH:
+                return value
+            return value[: MAX_ERROR_TEXT_LENGTH - 3] + "..."
+        if depth >= 4:
+            return "<omitted>"
+        if isinstance(value, dict):
+            return {
+                str(key)[:MAX_ERROR_TEXT_LENGTH]: bounded(item, depth + 1)
+                for key, item in list(value.items())[:MAX_ERROR_COLLECTION_ITEMS]
+            }
+        if isinstance(value, (list, tuple)):
+            return [
+                bounded(item, depth + 1) for item in value[:MAX_ERROR_COLLECTION_ITEMS]
+            ]
+        return value
+
     result: dict[str, Any] = {
         "ok": False,
         "error": error,
@@ -157,7 +247,7 @@ def error_response(
     result.update(extra)
     if hint:
         result["hint"] = hint
-    return result
+    return bounded(result)
 
 
 def _cursor(offset: int) -> str:
@@ -460,10 +550,24 @@ def _history_records(
     return records
 
 
-def _response_schema(selector: ResourceSelector, view: str) -> dict[str, Any]:
-    common = {
+def _response_schema(
+    selector: ResourceSelector,
+    view: str,
+    *,
+    context: str = "resource",
+) -> dict[str, Any]:
+    pagination = {
         "type": "object",
-        "required": ["resource", "view"],
+        "required": ["count", "total", "next_cursor"],
+        "properties": {
+            "count": {"type": "integer"},
+            "total": {"type": "integer"},
+            "next_cursor": {"type": ["string", "null"]},
+        },
+    }
+    common: dict[str, Any] = {
+        "type": "object",
+        "required": ["resource", "version", "view"],
         "properties": {
             "resource": {
                 "type": "object",
@@ -475,7 +579,6 @@ def _response_schema(selector: ResourceSelector, view: str) -> dict[str, Any]:
     }
     if view in {"summary", "detail"}:
         common["required"] += [
-            "version",
             "title",
             "summary",
             "state",
@@ -484,7 +587,107 @@ def _response_schema(selector: ResourceSelector, view: str) -> dict[str, Any]:
             "next",
             "warnings",
         ]
+        common["properties"].update(
+            {
+                "title": {"type": "string"},
+                "summary": {"type": "string"},
+                "state": {"type": "object"},
+                "blocking": {"type": "array"},
+                "open_decisions": {"type": "array"},
+                "next": {"type": ["object", "null"]},
+                "warnings": {"type": "array"},
+            }
+        )
+        if context == "discovery":
+            common["required"] += ["resources", "pagination"]
+            common["properties"].update(
+                {
+                    "resources": {"type": "array"},
+                    "pagination": pagination,
+                }
+            )
+            if view == "detail":
+                common["required"] += [
+                    "source_format",
+                    "resource_versions",
+                    "milestones",
+                    "followups",
+                    "questions",
+                ]
+                common["properties"].update(
+                    {
+                        "source_format": {"type": ["string", "null"]},
+                        "resource_versions": {"type": "object"},
+                        "milestones": {"type": "array"},
+                        "followups": {"type": "array"},
+                        "questions": {"type": "array"},
+                    }
+                )
+        elif context == "audit" and view == "detail":
+            common["required"] += ["findings", "pagination", "violations"]
+            common["properties"].update(
+                {
+                    "findings": {"type": "array"},
+                    "pagination": pagination,
+                    "violations": {"type": "array"},
+                }
+            )
+        elif context == "resource" and view == "detail":
+            common["required"] += [
+                "metadata",
+                "relations",
+                "followups",
+                "questions",
+            ]
+            common["properties"].update(
+                {
+                    "metadata": {"type": "object"},
+                    "relations": {"type": "object"},
+                    "followups": {"type": "array"},
+                    "questions": {"type": "array"},
+                    "items": {"type": "array"},
+                    "events": {"type": "array"},
+                }
+            )
+    elif view == "history":
+        common["required"] += ["records", "pagination"]
+        common["properties"].update(
+            {
+                "records": {"type": "array"},
+                "pagination": pagination,
+            }
+        )
+    elif view == "raw":
+        common["required"].append("data")
+        common["properties"]["data"] = {}
+    elif view == "schema":
+        common["required"] += [
+            "schema_version",
+            "response_schema",
+            "response_schemas",
+        ]
+        common["properties"].update(
+            {
+                "schema_version": {"type": "integer"},
+                "response_schema": {"type": "object"},
+                "response_schemas": {"type": "object"},
+                "storage_schema": {"type": "object"},
+                "op_vocab": {"type": "object"},
+                "dos_donts": {"type": "object"},
+            }
+        )
+        if context != "audit":
+            common["required"] += ["storage_schema", "op_vocab", "dos_donts"]
     return common
+
+
+def _response_schemas(
+    selector: ResourceSelector, *, context: str
+) -> dict[str, dict[str, Any]]:
+    views = ("summary", "detail", "raw", "schema")
+    if context != "audit":
+        views = ("summary", "detail", "history", "raw", "schema")
+    return {view: _response_schema(selector, view, context=context) for view in views}
 
 
 def resource_view(
@@ -500,6 +703,7 @@ def resource_view(
     storage_schema: dict[str, Any] | None = None,
     op_vocab: dict[str, Any] | None = None,
     dos_donts: dict[str, Any] | None = None,
+    response_context: str = "resource",
 ) -> dict[str, Any]:
     """Transform one canonical resource into the requested response view."""
 
@@ -546,7 +750,10 @@ def resource_view(
         "version": version,
         "view": "schema",
         "schema_version": RESPONSE_SCHEMA_VERSION,
-        "response_schema": _response_schema(selector, selected),
+        "response_schema": _response_schema(
+            selector, selected, context=response_context
+        ),
+        "response_schemas": _response_schemas(selector, context=response_context),
         "storage_schema": storage_schema or {},
         "op_vocab": op_vocab or {},
         "dos_donts": dos_donts or {},
@@ -586,6 +793,7 @@ def discovery_view(
             storage_schema=storage_schema,
             op_vocab=op_vocab,
             dos_donts=dos_donts,
+            response_context="discovery",
         )
     if selected == "history":
         page, pagination = paginate(
@@ -604,7 +812,7 @@ def discovery_view(
             "Summary responses never include full followup prompts.",
             "Use view='detail' with include_prompts=true.",
         )
-    plans = [
+    plan_resources = [
         {
             key: item.get(key)
             for key in ("slug", "type", "title", "status", "impl")
@@ -613,7 +821,29 @@ def discovery_view(
         for item in raw.get("plans") or []
         if isinstance(item, dict)
     ]
-    page, pagination = paginate(plans, cursor=cursor, limit=limit)
+    sprint_resources = [
+        {
+            "id": sprint.get("id"),
+            "type": "sprint",
+            "title": sprint.get("theme", ""),
+            "status": sprint.get("status", ""),
+            "items": len(sprint.get("items") or []),
+            "completed": sum(
+                item.get("status") in {"shipped", "done"}
+                for item in sprint.get("items") or []
+                if isinstance(item, dict)
+            ),
+            "blocked": sum(
+                item.get("status") == "blocked"
+                for item in sprint.get("items") or []
+                if isinstance(item, dict)
+            ),
+        }
+        for sprint in raw.get("sprints") or []
+        if isinstance(sprint, dict)
+    ]
+    resources = sprint_resources + plan_resources
+    page, pagination = paginate(resources, cursor=cursor, limit=limit)
     blockers = [
         {
             key: item.get(key)
@@ -639,6 +869,7 @@ def discovery_view(
         ),
         "state": {
             "active_sprint_id": raw.get("active_sprint_id"),
+            "source_format": raw.get("source_format", "legacy-index"),
             **(raw.get("summary") or {}),
         },
         "blocking": blockers,
@@ -653,16 +884,6 @@ def discovery_view(
     if selected == "detail":
         result["source_format"] = raw.get("source_format")
         result["resource_versions"] = raw.get("resource_versions") or {}
-        result["sprints"] = [
-            {
-                "id": sprint.get("id"),
-                "theme": sprint.get("theme", ""),
-                "status": sprint.get("status", ""),
-                "items": len(sprint.get("items") or []),
-            }
-            for sprint in raw.get("sprints") or []
-            if isinstance(sprint, dict)
-        ]
         result["milestones"] = list(raw.get("milestones") or [])
         result["followups"] = [
             _followup_record(item, include_prompts=include_prompts)
@@ -692,12 +913,14 @@ def audit_view(
             "data": raw,
         }
     if selected == "schema":
+        schemas = _response_schemas(selector, context="audit")
         return {
             "resource": selector.as_dict(),
             "version": 0,
             "view": "schema",
             "schema_version": RESPONSE_SCHEMA_VERSION,
-            "response_schema": _response_schema(selector, "schema"),
+            "response_schema": schemas["schema"],
+            "response_schemas": schemas,
         }
     findings = list(raw.get("findings") or [])
     counts = raw.get("finding_counts") or {

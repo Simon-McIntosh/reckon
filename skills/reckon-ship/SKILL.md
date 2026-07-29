@@ -168,8 +168,12 @@ Wait for the user's response before doing anything else. If the user authorizes 
 **This step is NON-NEGOTIABLE. Do not skip it. Do not begin implementation until it is complete.**
 
 ```python
-# Read ALL plan state including schema
+# Read ALL current plan state, then read the response/storage contract
 state = read_plan(
+    resource={"project": "<project>", "type": "plan", "id": "<slug>"},
+    view="raw",
+)
+contract = read_plan(
     resource={"project": "<project>", "type": "plan", "id": "<slug>"},
     view="schema",
 )

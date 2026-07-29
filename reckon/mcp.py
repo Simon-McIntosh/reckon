@@ -75,13 +75,93 @@ else:
     mcp = None  # type: ignore[assignment]
 
 
-def _conflict_response(exc: VersionConflict) -> dict[str, Any]:
+def _resource_reference(
+    project: str,
+    slug: str,
+    doc_type: str | None,
+    *,
+    title: str | None = None,
+) -> dict[str, Any]:
+    """Build the typed affected-resource identity used by write responses."""
+
+    from reckon.resources import canonical_type
+
+    resource_type = (
+        canonical_type(doc_type)
+        if doc_type
+        else ("project" if slug in {"index", "project"} else "plan")
+    )
+    resource_id = "project" if resource_type == "project" and slug == "index" else slug
     return {
+        "project": project,
+        "type": resource_type,
+        "id": resource_id,
+        "archived": False,
+        "title": title or resource_id,
+    }
+
+
+def _resource_title(data: dict[str, Any], fallback: str) -> str:
+    """Choose the human label for one write response."""
+
+    return str(
+        data.get("title")
+        or data.get("theme")
+        or data.get("name")
+        or data.get("summary")
+        or fallback
+    )
+
+
+def _conflict_response(
+    exc: VersionConflict,
+    *,
+    project: str | None = None,
+    slug: str | None = None,
+    doc_type: str | None = None,
+    operation: str = "edit",
+) -> dict[str, Any]:
+    title = _resource_title(exc.current_data, slug or "resource")
+    result: dict[str, Any] = {
         "ok": False,
         "error": "version_conflict",
+        "message": (
+            f"Could not {operation} {title}: expected version {exc.expected}, "
+            f"but the current version is {exc.current}."
+        ),
+        "operation": operation,
         "expected_version": exc.expected,
         "current_version": exc.current,
         "hint": "Re-read the plan with reckon.read_plan to get the current version, then retry.",
+    }
+    if project is not None and slug is not None:
+        result["resource"] = _resource_reference(project, slug, doc_type, title=title)
+    return result
+
+
+def _edit_success_response(
+    *,
+    project: str,
+    slug: str,
+    doc_type: str | None,
+    new_version: int,
+    data: dict[str, Any] | None = None,
+    created: bool = False,
+) -> dict[str, Any]:
+    """Translate one successful edit into human and machine-readable forms."""
+
+    operation = "create" if created else "edit"
+    title = _resource_title(data or {}, slug)
+    resource = _resource_reference(project, slug, doc_type, title=title)
+    verb = "Created" if created else "Updated"
+    return {
+        "ok": True,
+        "message": (f"{verb} {resource['type']} {title} to version {new_version}."),
+        "operation": operation,
+        "resource": resource,
+        "project": project,
+        "slug": slug,
+        "new_version": new_version,
     }
 
 
@@ -322,6 +402,61 @@ def _read_archived_resource(
     return data, int(data.get("version", 0) or 0)
 
 
+def _read_legacy_project_resource(
+    project: str,
+    resource_type: str,
+    resource_id: str,
+    checkout_path: str | None,
+) -> tuple[dict[str, Any], int]:
+    """Project one named resource from a canonical legacy aggregate index."""
+
+    legacy = _read_plan(
+        project=project,
+        slug="index",
+        checkout_path=checkout_path,
+    )
+    if legacy.get("ok") is False:
+        return {}, 0
+    aggregate = legacy.get("data") or {}
+    version = int(legacy.get("version", 0) or 0)
+    data: dict[str, Any] = {}
+    collection = {
+        "sprint": "sprints",
+        "milestone": "milestones",
+        "blocker": "blockers",
+    }.get(resource_type)
+    if collection is not None:
+        data = next(
+            (
+                dict(item)
+                for item in aggregate.get(collection) or []
+                if isinstance(item, dict) and item.get("id") == resource_id
+            ),
+            {},
+        )
+    elif resource_type == "timeline" and resource_id == "timeline":
+        data = {
+            "id": "timeline",
+            "events": list(aggregate.get("timeline") or []),
+        }
+    elif resource_type == "project" and resource_id == "project":
+        rows = aggregate.get("projects") or []
+        data = (
+            dict(rows[0])
+            if rows and isinstance(rows[0], dict)
+            else {"project": project}
+        )
+        data.setdefault("project", project)
+    if data:
+        data["type"] = resource_type
+        data["version"] = version
+        data["compatibility_warnings"] = [
+            "Projected from the legacy aggregate index; named writes require "
+            "the legacy index path until distributed activation."
+        ]
+    return data, version
+
+
 def _read_plan_view(
     *,
     project: str | None,
@@ -343,7 +478,6 @@ def _read_plan_view(
 ) -> dict[str, Any]:
     """Route opt-in progressive reads without changing the legacy call path."""
 
-    from reckon._schema import gen_json_schema
     from reckon.mcp_views import (
         ResourceSelector,
         ViewRequestError,
@@ -352,6 +486,7 @@ def _read_plan_view(
         normalize_selector,
         normalize_view,
         resource_view,
+        storage_schema_for,
     )
 
     selector: ResourceSelector | None = None
@@ -390,7 +525,7 @@ def _read_plan_view(
                 cursor=cursor,
                 limit=limit,
                 include_prompts=include_prompts,
-                storage_schema=gen_json_schema(),
+                storage_schema=storage_schema_for("project"),
                 op_vocab=_OP_VOCAB,
                 dos_donts=_DOS_DONTS,
             )
@@ -437,7 +572,7 @@ def _read_plan_view(
                 cursor=cursor,
                 limit=limit,
                 include_prompts=include_prompts,
-                storage_schema=gen_json_schema(),
+                storage_schema=storage_schema_for("project"),
                 op_vocab=_OP_VOCAB,
                 dos_donts=_DOS_DONTS,
             )
@@ -460,14 +595,29 @@ def _read_plan_view(
                 doc_type=selector.type,
             )
             if legacy.get("ok") is False:
-                return error_response(
-                    legacy.get("error", "read_error"),
-                    legacy.get("detail", "The resource could not be read."),
-                    selector=selector,
-                )
-            data = legacy.get("data") or {}
-            version = int(legacy.get("version", 0) or 0)
-            deps = list(legacy.get("deps") or [])
+                detail = str(legacy.get("detail") or "")
+                if (
+                    selector.type
+                    in {"sprint", "milestone", "blocker", "timeline", "project"}
+                    and "distributed_resource_inactive" in detail
+                ):
+                    data, version = _read_legacy_project_resource(
+                        selector.project,
+                        selector.type,
+                        selector.id,
+                        checkout_path,
+                    )
+                    deps = []
+                else:
+                    return error_response(
+                        legacy.get("error", "read_error"),
+                        detail or "The resource could not be read.",
+                        selector=selector,
+                    )
+            else:
+                data = legacy.get("data") or {}
+                version = int(legacy.get("version", 0) or 0)
+                deps = list(legacy.get("deps") or [])
 
         if not data:
             return error_response(
@@ -502,7 +652,7 @@ def _read_plan_view(
             cursor=cursor,
             limit=limit,
             include_prompts=include_prompts,
-            storage_schema=gen_json_schema(),
+            storage_schema=storage_schema_for(selector.type),
             op_vocab=_OP_VOCAB,
             dos_donts=_DOS_DONTS,
         )
@@ -1707,11 +1857,12 @@ def _edit_plan(
     worktree → duplicate" failure mode.  Always pair it with a read_plan that
     used the SAME ``checkout_path`` so ``expected_version`` matches that file.
 
-    Returns { ok: True, project, slug, new_version, path[, warnings][, created] }
-    on success — ``path`` is the ABSOLUTE file the write landed in, so a caller
-    can reconcile deterministically (e.g. ``git -C <dir> status``).  On failure:
-    { ok: False, error, ... } (op_error | schema_validation | version_conflict |
-    create errors).
+    Success includes a human ``message`` plus the typed affected ``resource``
+    and machine fields ``new_version`` / ``path``. ``path`` is the ABSOLUTE
+    file the write landed in, so a caller can reconcile deterministically
+    (e.g. ``git -C <dir> status``). Version conflicts include the requested
+    operation, resource title/identity, expected/current versions, and the
+    smallest corrective action.
     """
     is_index = slug in ("index", "project") and doc_type is None
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
@@ -1744,14 +1895,17 @@ def _edit_plan(
                 expected_version,
                 create=create,
             )
-            result: dict[str, Any] = {
-                "ok": True,
-                "project": project,
-                "slug": slug,
-                "doc_type": canonical_doc_type,
-                "new_version": new_version,
-                "path": str(resource_path(docs_dir, project, canonical_doc_type, slug)),
-            }
+            result = _edit_success_response(
+                project=project,
+                slug=slug,
+                doc_type=canonical_doc_type,
+                new_version=new_version,
+                created=create,
+            )
+            result["doc_type"] = canonical_doc_type
+            result["path"] = str(
+                resource_path(docs_dir, project, canonical_doc_type, slug)
+            )
             if warnings:
                 result["warnings"] = warnings
             if create:
@@ -1759,7 +1913,11 @@ def _edit_plan(
             return result
         except ProjectStateConflict as exc:
             return _conflict_response(
-                VersionConflict(exc.expected, exc.current, exc.current_data)
+                VersionConflict(exc.expected, exc.current, exc.current_data),
+                project=project,
+                slug=slug,
+                doc_type=canonical_doc_type,
+                operation="create" if create else "edit",
             )
         except ProjectStateError as exc:
             return {
@@ -1860,7 +2018,11 @@ def _edit_plan(
         if created_file is not None:
             created_file.unlink(missing_ok=True)
         return _conflict_response(
-            VersionConflict(expected_version, cur_version, cur_data)
+            VersionConflict(expected_version, cur_version, cur_data),
+            project=project,
+            slug=slug,
+            doc_type=selected_type,
+            operation="create" if create else "edit",
         )
 
     # ── apply ops to a working copy ──
@@ -1901,7 +2063,13 @@ def _edit_plan(
             artifact_type=selected_type,
         )
     except VersionConflict as e:
-        return _conflict_response(e)
+        return _conflict_response(
+            e,
+            project=project,
+            slug=slug,
+            doc_type=selected_type,
+            operation="create" if create else "edit",
+        )
     except LegacyIndexReadOnly as e:
         return {
             "ok": False,
@@ -1915,13 +2083,15 @@ def _edit_plan(
     except (ValueError, FileNotFoundError) as e:
         return {"ok": False, "error": "resource_selection", "detail": str(e)}
 
-    result: dict[str, Any] = {
-        "ok": True,
-        "project": project,
-        "slug": slug,
-        "new_version": new_version,
-        "path": _written_path(project, slug, root, selected_type),
-    }
+    result = _edit_success_response(
+        project=project,
+        slug=slug,
+        doc_type=selected_type,
+        new_version=new_version,
+        data=working,
+        created=create,
+    )
+    result["path"] = _written_path(project, slug, root, selected_type)
     if warnings:
         result["warnings"] = warnings
     if create:

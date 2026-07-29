@@ -440,6 +440,13 @@ cursor-paginated. `audit(project, view="summary")` returns compact counts,
 `view="detail"` returns findings, and `view="raw"` preserves the legacy audit
 payload.
 
+Before distributed activation, typed sprint/milestone/blocker/timeline/project
+reads project one named record from the canonical legacy index and carry its
+aggregate version plus a compatibility warning. Named writes remain inactive:
+write the legacy index until explicit migration publishes the distributed
+marker. After activation, reads and writes use only independently versioned
+named resources.
+
 ## Server endpoints
 
 | Method · path | Purpose |
