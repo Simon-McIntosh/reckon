@@ -3,12 +3,13 @@ name: reckon-sprint
 description: >-
   Manage sprint and roadmap state in a project's central index — propose / start
   / close / rebalance sprints, move items between sprints, and edit milestones,
-  timeline, and blockers. All state lives in docs/state/<project>/index.json,
+  timeline, and blockers. All state lives in the project's docs/state index,
   read and written via the index slug. Trigger verbs: "propose sprint / start
   sprint / close sprint / rebalance sprint / move item to sprint / plan the
   roadmap / add milestone / add blocker / /reckon-sprint". For editing a single
-  plan's text or followups use reckon-edit; for executing plan work use
-  reckon-ship; for read-only inspection use reckon-status.
+  plan's text or followups use reckon-edit; execute a plan slug or whole sprint
+  with reckon-ship; use reckon-status for read-only
+  inspection.
 allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
 ---
 
@@ -20,7 +21,8 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 - Move an item between sprints → `edit_plan` `move` op (`target="sprint_item"`).
 - Propose a sprint → discover plans, score by **dependency order first**, confirm, then write.
 
-Full detail below. Sprint state is the project **index**, not a plan — never dispatches workers (that's `reckon-ship`).
+Full detail below. Sprint state is the project **index**, not a plan. This
+skill never dispatches workers; `/reckon-ship S1` executes the sprint.
 
 ## The model — sprints live in the project index
 
@@ -97,7 +99,7 @@ edit_plan(
   project="imas-ambix", slug="index",
   ops=[{"op": "append", "target": "sprints.S5.items", "item": {
     "slug": "plasma-decoder-finetune", "why_now": "Highest ROI; gates M2",
-    "tier": "opus", "done_when": "Fine-tune run green; eval passing"
+    "done_when": "Fine-tune run green; eval passing"
   }}],
   expected_version=9
 )
@@ -133,10 +135,25 @@ edit_plan(
 3. **Score by dependency order first** — a plan whose `depends_on` are not all
    `shipped`/`done` is NOT ready; never schedule it ahead of its prerequisites.
    Then order the ready set by `roi × effort_inverse × milestone_priority`.
-4. Partition into N sprints; each item carries `why_now`, `tier`, `done_when`.
+4. Partition into N sprints; each item carries `why_now` and `done_when`.
 5. Keep **one active sprint** at a time. Future sprints start as `planned`.
-6. Use the plan's own `plan-tier` unless there is a deliberate reason to override.
+6. Treat any legacy `tier` value as a relative hint, not a model id. Runtime
+   worker selection belongs to reckon-ship's one-below policy.
 7. Print the proposal; ask to confirm before writing.
+
+## Execution handoff
+
+After a sprint is defined or started, surface the executable handle:
+
+```text
+/reckon-ship S1
+```
+
+Use `/reckon-ship <project>:S1` outside the project's canonical checkout.
+The ship skill reads the sprint plans, transitive dependencies, research and
+prior evidence; assigns ready nodes to capability-appropriate workers; uses
+detached worktrees by default; integrates results; writes evidence and state;
+and cleans up worktrees before sprint closure.
 
 ## Milestones, timeline, blockers
 

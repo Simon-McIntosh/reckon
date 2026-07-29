@@ -261,10 +261,10 @@ tracked in the `reckon-schema-and-tooling` plan, F5).
 
 ### reckon MCP tools
 
-The reckon MCP server exposes plan state R/W as structured tools. Claude Code
-auto-starts it via the MCP config (`reckon mcp` stdio transport). All agents
-working with plans MUST use these tools for state mutations — they rewrite
-the plan's semantic HTML elements directly.
+The reckon MCP server exposes plan state R/W as structured tools. Compatible
+agent clients start it through their MCP config (`reckon mcp` stdio transport).
+All agents working with plans MUST use these tools for state mutations — they
+rewrite the plan's semantic HTML elements directly.
 
 **Invocation** (if needed manually): `uv run --project ~/Code/reckon reckon mcp`
 
@@ -569,40 +569,38 @@ Sprint items reference plan slugs; their current state (impl, decisions, followu
 is always read from the plan's HTML via `GET /plan/<project>/<slug>` or
 `/_discover/<project>`.
 
-### Model selection for plan implementation
+### Model-neutral worker selection
 
-When dispatching sub-agents for plan work, pick the model from this table.
-Item metadata in `index.json` may carry a `tier` field (legacy name: `model_tier`)
-that overrides the default — if present, **use what the plan says**.
+Sprint and plan orchestration use the **one-below** policy in
+`skills/reckon-ship/references/sprint-orchestration.md`. Inspect the runtime's
+advertised workers, keep the orchestrator's model family, and delegate to the
+immediately lower capable general-purpose model by default. If no lower model
+exists, inherit the model and reduce reasoning effort by one supported level.
 
-| Tier | Use for | Avoid for |
-|---|---|---|
-| **Haiku 4.5/4.6** | Research summarisation, audit reads, formatting/typo fixes, single-file mechanical edits, file-by-file fan-out | Solver code, ambiguous scope, multi-file edits, any production write that needs judgment |
-| **Sonnet 4.6** | Well-scoped Python work, test additions, docs, single-domain edits, plan items with explicit `done_when`, single-file feature work | Fortran, C++, solver-physics, cross-cutting refactors, ambiguous scope, plan synthesis, RCA |
-| **Opus 4.7** | Multi-file refactors, Fortran/C++ edits, solver/physics work, RCA, strategic planning, plan synthesis, ambiguous scope | Trivial / mechanical work — wasted spend |
+Keep or escalate to orchestrator-level capability for solver/physics work,
+ambiguous or coupled refactors, safety/security, irreversible migrations,
+conflict resolution, and multi-worker synthesis. Downshift further only for
+bounded mechanical work or research extraction with objective verification.
+Never hard-code provider or model identifiers.
 
-**Default by item category** (used when `tier`/`model_tier` is missing):
-
-| Category match | Default tier |
-|---|---|
-| `research` · `audit` · `summarise` · `inventory` | haiku |
-| `feature` · `test-add` · `docs` · `config` · `python` · `cli` | sonnet |
-| `solver-physics` · `fortran` · `c++` · `cross-cutting-refactor` · `rca` · `plan-synthesis` · `strategy` | opus |
+Legacy `tier`/`model_tier` plan metadata is a relative advisory signal only;
+runtime complexity and current evidence determine the actual worker.
 
 ### Fleet patterns (canonical)
 
 | Situation | Pattern |
 |---|---|
-| 1 item, scoped | One inline worker (or supervisor does it). Sonnet default. |
+| 1 item, scoped | One inline worker or one isolated worktree worker |
 | 2 items, independent | Two parallel workers, one per item |
-| 3 – 8 items, independent | Sonnet fleet, one per item, non-overlapping file scopes. Coordinator audits each commit. |
-| > 8 items, fan-out read | Haiku reader fleet + Sonnet (or Opus) synthesiser. See efit 557-plan audit. |
-| Cross-cutting / strategic | Single Opus (do not parallelise — context is the constraint) |
-| Multi-file Fortran/C++ | Single Opus, or Opus fleet of ≤ 3 with very tight file scopes |
+| 3 – 8 items, independent | One-below fleet, non-overlapping worktrees and file scopes; orchestrator audits and integrates each commit |
+| > 8 items, fan-out read | Low-cost reader fan-out plus one high-capability synthesiser |
+| Cross-cutting / strategic | Single orchestrator-level owner; context is the constraint |
+| Multi-file compiled/solver work | Orchestrator-level owner, or a fleet of at most three with tight scopes |
 
 Whenever a fleet is dispatched, the **Mandatory Sub-Agent Dispatch
-Preamble** in `~/.agents/AGENTS.md` (Parallel Agent Safety section)
-is binding — embed it verbatim in every worker prompt.
+Preamble** in `~/.agents/AGENTS.md` and Reckon's worktree dispatch contract are
+binding. Where they differ, use the stricter rule and keep workers detached;
+the orchestrator alone merges and pushes the primary branch.
 
 ### What goes wrong without these skills
 
@@ -625,7 +623,6 @@ The recorded incidents that motivated this skill set:
    a Python script meant editing the script to add a decision. The
    current model: decisions live as `.r-dec` elements in the plan's
    `<section data-reckon="decisions">`, written by `reckon-edit` or the browser SPA.
-6. **Wrong model tier on a fleet.** Sonnet dispatched on Fortran
-   solver edits → silent regressions. The model-selection table
-   above is binding; check `item.tier` (or legacy `item.model_tier`) first, default by
-   category second, escalate upward when in doubt.
+6. **Worker capability too low for the task.** A routine worker was assigned
+   coupled solver edits and produced silent regressions. Use one-below only as
+   the default; retain orchestrator-level capability for high-risk work.
