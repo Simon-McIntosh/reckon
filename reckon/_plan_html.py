@@ -34,9 +34,31 @@ _SCALARS = (
     # Lifecycle visibility — set via UI status menu.
     # archived: "1" hides the plan from default inventory views (separate from status).
     # read:     "1" marks a research/doc as reviewed (de-emphasises in lists).
-    "archived", "read",
+    "archived", "read", "reviewed_at", "recorded_at", "verdict", "environment",
+    "source", "source_quality",
 )
-_LIST_SCALARS = ("depends_on", "blocks", "informs")  # comma-separated in meta
+_LIST_SCALARS = (
+    "depends_on",
+    "blocks",
+    "informs",
+    "evidence_for",
+    "verifies",
+    "supersedes",
+    "commits",
+    "artifacts",
+)  # comma-separated in meta
+
+_PLAN_ONLY_METAS = (
+    "plan-status",
+    "plan-roi",
+    "plan-effort",
+    "plan-milestone",
+    "plan-sprint",
+    "plan-tier",
+    "plan-depends-on",
+    "plan-blocks",
+    "plan-impl",
+)
 
 _DEFAULTS = {
     "status": "draft", "roi": "mid", "effort": "M", "milestone": "—",
@@ -85,6 +107,12 @@ def _inner_html(el) -> str:
     return el.decode_contents().strip()
 
 
+def _canonical_type(value: object) -> str:
+    """Return the canonical artifact type used by every read surface."""
+    raw = str(value or "plan").strip().lower()
+    return "research" if raw == "doc" else (raw or "plan")
+
+
 # ── Read ───────────────────────────────────────────────────────────────────
 
 def read_state(html_text: str) -> dict:
@@ -109,9 +137,9 @@ def read_state(html_text: str) -> dict:
             except (TypeError, ValueError):
                 pass
 
-    # Document type: plan (actionable) | research (non-actionable input).
+    # ``doc`` remains a compatibility alias on disk but reads are canonical.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
-    st["type"] = ((rt.get("content") if rt else "") or "plan").strip().lower()
+    st["type"] = _canonical_type(rt.get("content") if rt else "plan")
 
     # Owning project (<meta name="docs-project">). Captured additively so the
     # typed PlanState can carry it; write_state never re-emits this meta (it is
@@ -355,6 +383,15 @@ def _set_meta(html_text: str, name: str, content: str) -> str:
     return tag + "\n" + html_text
 
 
+def _remove_meta(html_text: str, name: str) -> str:
+    """Remove a meta tag while preserving all unrelated authored HTML."""
+    pat = re.compile(
+        rf'<meta\b(?=[^>]*\bname=["\']{re.escape(name)}["\'])[^>]*>\s*',
+        re.IGNORECASE,
+    )
+    return pat.sub("", html_text)
+
+
 def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
     """Replace <section data-reckon="ID">…</section> with `rendered`
     (removes it when `rendered` is empty); inserts before </main> otherwise."""
@@ -379,11 +416,15 @@ def write_state(html_text: str, state: dict) -> str:
     Authored prose (everything outside the data-reckon sections) is untouched.
     """
     out = html_text
+    artifact_type = _canonical_type(state.get("type", "plan"))
     if state.get("type"):
-        out = _set_meta(out, "reckon-type", state["type"])
+        out = _set_meta(out, "reckon-type", artifact_type)
+    if artifact_type != "plan":
+        for meta_name in _PLAN_ONLY_METAS:
+            out = _remove_meta(out, meta_name)
     for f in _SCALARS:
         if f in state and state[f] is not None:
-            out = _set_meta(out, f"plan-{f}", state[f])
+            out = _set_meta(out, f"plan-{f.replace('_', '-')}", state[f])
     for f in _LIST_SCALARS:
         if f in state:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", ",".join(state.get(f) or []))
@@ -508,13 +549,18 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
                 rec["version"] = int(content)
             except ValueError:
                 pass
-    rec["type"] = (metas.get("reckon-type") or "plan").strip().lower()
+    rec["type"] = _canonical_type(metas.get("reckon-type"))
     tm = _TITLE_RE.search(head)
     if tm and not rec.get("title"):
         rec["title"] = tm.group(1).strip().split("|")[0].strip()
     rec["slug"] = slug or rec.get("slug") or path.stem
     rec["title"] = rec.get("title") or rec["slug"]
     rec["informs"] = rec.get("informs") or []
+    rec["evidence_for"] = rec.get("evidence_for") or []
+    rec["verifies"] = rec.get("verifies") or []
+    rec["supersedes"] = rec.get("supersedes") or []
+    rec["commits"] = rec.get("commits") or []
+    rec["artifacts"] = rec.get("artifacts") or []
     rec["depends_on"] = rec.get("depends_on") or []
     rec["dec_open"] = count_open_decisions(text)
     rec["impl"] = float(rec.get("impl", 0) or 0)
@@ -537,6 +583,11 @@ def parse_plan(path: Path, slug: str | None = None) -> dict:
     rec["title"] = st.get("title") or rec["slug"]
     rec["type"] = st.get("type") or "plan"
     rec["informs"] = st.get("informs") or []
+    rec["evidence_for"] = st.get("evidence_for") or []
+    rec["verifies"] = st.get("verifies") or []
+    rec["supersedes"] = st.get("supersedes") or []
+    rec["commits"] = st.get("commits") or []
+    rec["artifacts"] = st.get("artifacts") or []
 
     decisions_map = st.get("decisions") or {}
     rec["decisions"] = [

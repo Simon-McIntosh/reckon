@@ -21,6 +21,10 @@ window.STATE_READY = (async function () {
   }
 
   const stateBase = `state/${PROJECT}`;
+  const canonicalType = (value) => {
+    const raw = String(value || "plan").trim().toLowerCase();
+    return raw === "doc" ? "research" : raw;
+  };
 
   // ── 1. Central index ───────────────────────────────────────────────────
   const idxBlob = await getJson(`${stateBase}/index.json`);
@@ -49,6 +53,7 @@ window.STATE_READY = (async function () {
       return {
         slug,
         title:    pl.title || slug,
+        type:     canonicalType(pl.type || pl.reckon_type),
         status:   pl.status || "pending",
         ms:       pl.milestone || "—",
         roi:      pl.roi    || "mid",
@@ -61,6 +66,17 @@ window.STATE_READY = (async function () {
         last:     pl.last_modified || "",
         summary:  pl.summary || "",
         category: pl.category || "",
+        informs:      pl.informs || [],
+        evidence_for: pl.evidence_for || [],
+        verifies:     pl.verifies || [],
+        reviewed_at:  pl.reviewed_at || "",
+        recorded_at:  pl.recorded_at || "",
+        verdict:      pl.verdict || "",
+        environment:  pl.environment || "",
+        source:       pl.source || "",
+        source_quality: pl.source_quality || "",
+        commits:      pl.commits || [],
+        artifacts:    pl.artifacts || [],
         _central: true,
       };
     });
@@ -84,8 +100,11 @@ window.STATE_READY = (async function () {
   // <script id="reckon-owned sections in (status, decisions, followups,
   // comments, questions). The plan HTML is the sole store — there is no
   // per-plan state JSON to fetch.
-  const plans = Object.fromEntries(inventory.map(inv => [inv.slug, inv]));
-  const mergedInventory = inventory;
+  const mergedInventory = inventory.map(inv => ({
+    ...inv,
+    type: canonicalType(inv.type),
+  }));
+  const plans = Object.fromEntries(mergedInventory.map(inv => [inv.slug, inv]));
 
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
   // Plans with sprint:"X" in their inventory entry appear in that sprint
@@ -95,7 +114,7 @@ window.STATE_READY = (async function () {
       (s.items || []).map(it => typeof it === "string" ? it : it.slug)
     );
     const auto = mergedInventory
-      .filter(p => p.sprint === s.id && !explicit.has(p.slug))
+      .filter(p => p.type === "plan" && p.sprint === s.id && !explicit.has(p.slug))
       .map(p => p.slug);
     return auto.length ? { ...s, items: [...(s.items || []), ...auto] } : s;
   });
@@ -117,10 +136,11 @@ window.STATE_READY = (async function () {
   // server down), liveCounts is null and we keep whatever the persisted block
   // holds as the only available fallback.
   const liveCounts = mergedInventory.length > 0 ? (() => {
-    const count = (s) => mergedInventory.filter(p => p.status === s).length;
-    const lastMods = mergedInventory.map(p => p.last || "").filter(Boolean).sort();
+    const actionable = mergedInventory.filter(p => p.type === "plan");
+    const count = (s) => actionable.filter(p => p.status === s).length;
+    const lastMods = actionable.map(p => p.last || "").filter(Boolean).sort();
     return {
-      plans_count:   mergedInventory.length,
+      plans_count:   actionable.length,
       active:        count("active"),
       blocked:       count("blocked"),
       pending:       count("pending"),

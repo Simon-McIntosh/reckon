@@ -80,7 +80,8 @@ def test_audit_all_conformant(setup):
     assert r["checked"] == 2
     assert r["conformant"] == 2
     assert r["violations"] == []
-    assert r["reindexed"] is True
+    assert r["reindexed"] is False
+    assert r["rollups_recomputed"] is True
 
 
 # ── seeded violation: invalid status enum ─────────────────────────────────

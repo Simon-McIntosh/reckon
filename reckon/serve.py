@@ -205,6 +205,8 @@ _NON_PLAN_DIRS = frozenset(
         "state",
         "assets",
         "images",
+        "sprints",
+        "milestones",
     ]
 )
 # Per-stage / archival history (e.g. <plan>-…-landed.html) lives under
@@ -351,36 +353,53 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         rel_no_ext = str(rel.with_suffix(""))
         href = rel_no_ext if rel_no_ext != slug else slug
 
-        inventory.append(
-            {
-                "slug": slug,
-                "href": href,
-                "title": rec["title"],
-                "type": rec.get("type", "plan"),
-                "informs": rec.get("informs", []),
-                "status": rec["status"],
-                "ms": rec.get("milestone", "—"),
-                "roi": rec.get("roi", "mid"),
-                "effort": rec.get("effort", "M"),
-                "sprint": rec.get("sprint") or None,
-                "summary": rec.get("summary", ""),
-                "tier": rec.get("tier", "sonnet"),
-                "owner": rec.get("owner", ""),
-                "impl": rec["impl"],
-                "dec_open": rec["dec_open"],
-                "blockers": rec["blockers"],
-                "last": rec.get("modified", ""),
-                "created": git_times.get(str(html_file.relative_to(repo_dir)))
-                or int(
-                    getattr(html_file.stat(), "st_birthtime", None)
-                    or html_file.stat().st_ctime
-                ),
-                "version": rec["version"],
-                "depends_on": rec.get("depends_on", []),
-                "blocks": rec.get("blocks", []),
-                "archived": rec.get("archived") or ("1" if in_archive else ""),
-            }
-        )
+        artifact_type = rec.get("type", "plan")
+        item = {
+            "slug": slug,
+            "href": href,
+            "title": rec["title"],
+            "type": artifact_type,
+            "summary": rec.get("summary", ""),
+            "owner": rec.get("owner", ""),
+            "last": rec.get("modified", ""),
+            "created": git_times.get(str(html_file.relative_to(repo_dir)))
+            or int(
+                getattr(html_file.stat(), "st_birthtime", None)
+                or html_file.stat().st_ctime
+            ),
+            "version": rec["version"],
+            "archived": rec.get("archived") or ("1" if in_archive else ""),
+            "read": rec.get("read") or "",
+            "reviewed_at": rec.get("reviewed_at", ""),
+            "recorded_at": rec.get("recorded_at", ""),
+            "verdict": rec.get("verdict", ""),
+            "environment": rec.get("environment", ""),
+            "source": rec.get("source", ""),
+            "source_quality": rec.get("source_quality", ""),
+            "informs": rec.get("informs", []),
+            "evidence_for": rec.get("evidence_for", []),
+            "verifies": rec.get("verifies", []),
+            "supersedes": rec.get("supersedes", []),
+            "commits": rec.get("commits", []),
+            "artifacts": rec.get("artifacts", []),
+        }
+        if artifact_type == "plan":
+            item.update(
+                {
+                    "status": rec["status"],
+                    "ms": rec.get("milestone", "—"),
+                    "roi": rec.get("roi", "mid"),
+                    "effort": rec.get("effort", "M"),
+                    "sprint": rec.get("sprint") or None,
+                    "tier": rec.get("tier", "sonnet"),
+                    "impl": rec["impl"],
+                    "dec_open": rec["dec_open"],
+                    "blockers": rec["blockers"],
+                    "depends_on": rec.get("depends_on", []),
+                    "blocks": rec.get("blocks", []),
+                }
+            )
+        inventory.append(item)
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
     # docs/sprints/<id>.html and docs/milestones/<id>.html carry sprint/milestone
@@ -933,6 +952,22 @@ class Handler(BaseHTTPRequestHandler):
         patch.pop("_version", None)
         _patch_into(state, patch)
         state.setdefault("slug", slug)
+        try:
+            from reckon._schema import PlanState
+
+            validated = PlanState.model_validate(state).validate_for_write()
+        except ValueError as exc:
+            details = [
+                line.strip(" -")
+                for line in str(exc).splitlines()
+                if line.strip() and not line.rstrip().endswith("failed:")
+            ]
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "schema_validation", "details": details},
+            )
+            return
+        state = validated.canonical_dump()
         state["modified"] = datetime.now().strftime("%Y-%m-%d")
         state["version"] = cur_version + 1
 

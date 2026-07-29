@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -349,7 +350,14 @@ def _write_state(
     _STAMP = frozenset(["version", "modified"])
     cur_parsed = _plan_html.read_state(text)
     new_parsed = _plan_html.read_state(new_text)
-    if {k: v for k, v in new_parsed.items() if k not in _STAMP} == {
+    legacy_alias = bool(
+        re.search(
+            r'<meta\b(?=[^>]*\bname=["\']reckon-type["\'])(?=[^>]*\bcontent=["\']doc["\'])[^>]*>',
+            text,
+            re.IGNORECASE,
+        )
+    )
+    if not legacy_alias and {k: v for k, v in new_parsed.items() if k not in _STAMP} == {
         k: v for k, v in cur_parsed.items() if k not in _STAMP
     }:
         return cur_version
@@ -644,10 +652,21 @@ _PLAN_SET_TOP = frozenset(
         "type",
         "archived",
         "read",
+        "reviewed_at",
+        "recorded_at",
+        "verdict",
+        "environment",
+        "source",
+        "source_quality",
         "slug",
         "depends_on",
         "blocks",
         "informs",
+        "evidence_for",
+        "verifies",
+        "supersedes",
+        "commits",
+        "artifacts",
     }
 )
 

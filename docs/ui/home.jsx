@@ -99,7 +99,12 @@ function FleetCmdKPalette({onClose, projects}) {
     return inventory.filter(p =>
       p.title?.toLowerCase().includes(n) ||
       p.slug?.toLowerCase().includes(n) ||
-      p.project?.toLowerCase().includes(n)
+      p.project?.toLowerCase().includes(n) ||
+      p.type?.toLowerCase().includes(n) ||
+      p.verdict?.toLowerCase().includes(n) ||
+      p.source?.toLowerCase().includes(n) ||
+      (p.informs || []).some(ref => ref.toLowerCase().includes(n)) ||
+      (p.evidence_for || []).some(ref => ref.toLowerCase().includes(n))
     ).slice(0, 40);
   }, [q, inventory]);
 
@@ -126,7 +131,7 @@ function FleetCmdKPalette({onClose, projects}) {
   return (
     <div className="cmdk-scrim" onMouseDown={onClose}>
       <div className="cmdk" onMouseDown={e => e.stopPropagation()}>
-        <input ref={inp} placeholder="Search plans across projects…" value={q} onChange={e => setQ(e.target.value)}/>
+        <input ref={inp} placeholder="Search plans, research and evidence…" value={q} onChange={e => setQ(e.target.value)}/>
         <div className="list">
           {filtered.map((p, i) => (
             <button key={p.project + "/" + p.slug}
@@ -138,12 +143,16 @@ function FleetCmdKPalette({onClose, projects}) {
                 {window.GLYPHS?.[p.project] || window.GLYPHS?._default}
               </span>
               <span><span className="ct">{p.title}</span> <span className="cs">/{p.slug}</span></span>
-              <span className="cmeta">{p.project} · {Math.round((p.impl || 0) * 100)}%</span>
+              <span className="cmeta">
+                {p.project} · {p.type || "plan"}
+                {(p.type || "plan") === "plan" ? ` · ${Math.round((p.impl || 0) * 100)}%` : ""}
+                {p.type === "evidence" && p.verdict ? ` · ${p.verdict}` : ""}
+              </span>
             </button>
           ))}
           {filtered.length === 0 && (
             <div style={{padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13}}>
-              {inventory.length === 0 ? "Loading plans…" : "No plans match."}
+              {inventory.length === 0 ? "Loading artifacts…" : "No artifacts match."}
             </div>
           )}
         </div>

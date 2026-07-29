@@ -209,10 +209,13 @@ _DOS_DONTS = {
         "use edit_plan with an ops list — one call may carry several ops applied in order.",
         "give every followup a non-empty §05 prompt (mandatory; empty is rejected).",
         "slug='index' targets project config (sprints/milestones/timeline/blockers).",
+        "use canonical artifact types plan, research, or evidence; doc reads as research.",
+        "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
         "off-enum status/roi/effort/tier/type are rejected at the write boundary.",
+        "research/evidence cannot carry meaningful plan-only workflow or scheduling fields.",
         "index inventory[] is synthesised live; a set on it is a durable no-op.",
         "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
     ],
@@ -220,7 +223,7 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — plan scalars + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1; sprint status active/done updates active_sprint_id.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars (including informs/evidence_for/verifies and provenance metadata) + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1 and is plan-only; sprint status active/done updates active_sprint_id.",
     "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; index sprints, sprints.<id>.items, milestones, timeline, blockers. followup needs a §05 prompt.",
     "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
@@ -247,30 +250,50 @@ def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
 def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
     milestone = item.get("milestone", item.get("ms", "—"))
     modified = item.get("modified", item.get("last", ""))
-    return {
+    artifact_type = item.get("type", "plan")
+    row = {
         "slug": item.get("slug"),
         "title": item.get("title"),
-        "status": item.get("status"),
-        "impl": item.get("impl"),
-        "ms": milestone,
-        "milestone": milestone,
-        "sprint": item.get("sprint"),
-        "roi": item.get("roi"),
-        "effort": item.get("effort"),
-        "type": item.get("type", "plan"),
-        "tier": item.get("tier", "sonnet"),
+        "type": artifact_type,
         "owner": item.get("owner", ""),
         "summary": item.get("summary", ""),
         "href": item.get("href"),
-        "dec_open": int(item.get("dec_open", 0) or 0),
-        "blockers": int(item.get("blockers", 0) or 0),
         "last": modified,
         "modified": modified,
         "version": int(item.get("version", 0) or 0),
-        "depends_on": list(item.get("depends_on") or []),
-        "blocks": list(item.get("blocks") or []),
         "informs": list(item.get("informs") or []),
+        "evidence_for": list(item.get("evidence_for") or []),
+        "verifies": list(item.get("verifies") or []),
+        "supersedes": list(item.get("supersedes") or []),
+        "commits": list(item.get("commits") or []),
+        "artifacts": list(item.get("artifacts") or []),
+        "reviewed_at": item.get("reviewed_at", ""),
+        "recorded_at": item.get("recorded_at", ""),
+        "verdict": item.get("verdict", ""),
+        "environment": item.get("environment", ""),
+        "source": item.get("source", ""),
+        "source_quality": item.get("source_quality", ""),
+        "archived": item.get("archived", ""),
+        "read": item.get("read", ""),
     }
+    if artifact_type == "plan":
+        row.update(
+            {
+                "status": item.get("status"),
+                "impl": item.get("impl"),
+                "ms": milestone,
+                "milestone": milestone,
+                "sprint": item.get("sprint"),
+                "roi": item.get("roi"),
+                "effort": item.get("effort"),
+                "tier": item.get("tier", "sonnet"),
+                "dec_open": int(item.get("dec_open", 0) or 0),
+                "blockers": int(item.get("blockers", 0) or 0),
+                "depends_on": list(item.get("depends_on") or []),
+                "blocks": list(item.get("blocks") or []),
+            }
+        )
+    return row
 
 
 def _matches_search(item: dict[str, Any], search: str | None) -> bool:
@@ -281,7 +304,17 @@ def _matches_search(item: dict[str, Any], search: str | None) -> bool:
         return True
     haystack = " ".join(
         str(item.get(field, "") or "")
-        for field in ("slug", "title", "summary", "owner")
+        for field in (
+            "slug",
+            "title",
+            "summary",
+            "owner",
+            "type",
+            "verdict",
+            "environment",
+            "source",
+            "source_quality",
+        )
     ).lower()
     return needle in haystack
 
@@ -301,7 +334,9 @@ def _filter_inventory(
     for item in inventory:
         if status and item.get("status") != status:
             continue
-        if doc_type and item.get("type") != doc_type:
+        raw_filter = doc_type.strip().lower() if isinstance(doc_type, str) else doc_type
+        canonical_filter = "research" if raw_filter == "doc" else raw_filter
+        if canonical_filter and item.get("type") != canonical_filter:
             continue
         if sprint and (item.get("sprint") or "") != sprint:
             continue
@@ -324,18 +359,26 @@ def _rollup_counts(values: list[str]) -> dict[str, int]:
 def _discovery_summary(
     plans: list[dict[str, Any]], followups: list[dict[str, Any]], questions: list[dict[str, Any]]
 ) -> dict[str, Any]:
-    sprint_values = [plan.get("sprint") or "—" for plan in plans]
-    milestone_values = [plan.get("milestone") or plan.get("ms") or "—" for plan in plans]
-    impl_values = [float(plan.get("impl", 0.0) or 0.0) for plan in plans]
+    actionable = [item for item in plans if item.get("type", "plan") == "plan"]
+    sprint_values = [plan.get("sprint") or "—" for plan in actionable]
+    milestone_values = [
+        plan.get("milestone") or plan.get("ms") or "—" for plan in actionable
+    ]
+    impl_values = [float(plan.get("impl", 0.0) or 0.0) for plan in actionable]
     return {
-        "plans": len(plans),
+        "plans": len(actionable),
+        "artifacts": len(plans),
         "sprints": len({sid for sid in sprint_values if sid != "—"}),
         "milestones": len({mid for mid in milestone_values if mid != "—"}),
         "open_followups": len(followups),
         "open_questions": len(questions),
-        "open_decisions": sum(int(plan.get("dec_open", 0) or 0) for plan in plans),
+        "open_decisions": sum(
+            int(plan.get("dec_open", 0) or 0) for plan in actionable
+        ),
         "impl_mean": round(sum(impl_values) / len(impl_values), 3) if impl_values else 0.0,
-        "by_status": _rollup_counts([str(plan.get("status") or "draft") for plan in plans]),
+        "by_status": _rollup_counts(
+            [str(plan.get("status") or "draft") for plan in actionable]
+        ),
         "by_type": _rollup_counts([str(plan.get("type") or "plan") for plan in plans]),
         "by_sprint": _rollup_counts(sprint_values),
         "by_milestone": _rollup_counts(milestone_values),
@@ -1207,7 +1250,12 @@ def _validate_working(slug: str, working: dict) -> list[str] | None:
         if slug in ("index", "project"):
             IndexData.model_validate(working)
         else:
-            PlanState.model_validate(working).validate_for_write()
+            state = PlanState.model_validate(working).validate_for_write()
+            # Persist the validated canonical shape. This is what turns the
+            # legacy ``doc`` alias into ``research`` and removes neutral
+            # plan-only defaults from research/evidence writes.
+            working.clear()
+            working.update(state.canonical_dump())
     except ValueError as e:
         # Split the multi-line validate_for_write message into discrete lines;
         # pydantic ValidationError stringifies to a useful block too.
@@ -1382,7 +1430,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     NON-RAISINGLY, collecting any messages. Recomputes sprint/milestone/projects
     rollups in the response (inventory[] stays synthesised live — not persisted).
     Returns { project, checked, conformant, violations:[{slug, errors}],
-    reindexed: True }.
+    rollups_recomputed: True, reindexed: False }.
 
     WARN/report ONLY — this NEVER mutates a plan or writes index.json. (Distinct
     from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema.)
@@ -1391,7 +1439,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     """
     from reckon import _plan_html
     from reckon.doccheck import audit_lifecycle, audit_links
-    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
+    from reckon.serve import _ARCHIVE_DIR, _NON_PLAN_DIRS, _NON_PLAN_FILES
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
@@ -1411,6 +1459,8 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     for html_file in sorted(docs_dir.rglob("*.html")):
         rel = html_file.relative_to(docs_dir)
         if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if _ARCHIVE_DIR in rel.parts[:-1]:
             continue
         if html_file.name in _NON_PLAN_FILES:
             continue
@@ -1441,6 +1491,36 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     index_data, _ = read_plan(project, "index", checkout_path)
 
     findings: list[dict[str, Any]] = []
+    for artifact in plans:
+        artifact_type = artifact.get("type", "plan")
+        if artifact_type == "research" and not artifact.get("informs"):
+            findings.append(
+                _finding(
+                    "provenance",
+                    "unlinked-research",
+                    "warn",
+                    f"{artifact['slug']}: research does not declare informs",
+                    slug=artifact.get("slug"),
+                    path=(
+                        f"{artifact['href']}.html" if artifact.get("href") else None
+                    ),
+                )
+            )
+        if artifact_type == "evidence" and not (
+            artifact.get("evidence_for") or artifact.get("verifies")
+        ):
+            findings.append(
+                _finding(
+                    "provenance",
+                    "unlinked-evidence",
+                    "warn",
+                    f"{artifact['slug']}: evidence does not declare evidence_for or verifies",
+                    slug=artifact.get("slug"),
+                    path=(
+                        f"{artifact['href']}.html" if artifact.get("href") else None
+                    ),
+                )
+            )
     try:
         for item in audit_lifecycle(project=project, docs_dir=docs_dir):
             severity = "error" if item.flag == "MISSING_IMPL" else "warn"
@@ -1489,7 +1569,8 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     rollups = {
         "sprints": discovered.get("sprints", []),
         "milestones": discovered.get("milestones", []),
-        "plans": len(plans),
+        "plans": sum(1 for item in plans if item.get("type", "plan") == "plan"),
+        "artifacts": len(plans),
         "summary": _discovery_summary(plans, followups, questions),
     }
     finding_counts = {
@@ -1507,7 +1588,8 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
         "findings": findings,
         "finding_counts": finding_counts,
         "rollups": rollups,
-        "reindexed": True,
+        "rollups_recomputed": True,
+        "reindexed": False,
     }
 
 

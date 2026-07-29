@@ -66,7 +66,7 @@ from pydantic import (
 # ── Schema version ──────────────────────────────────────────────────────────
 #: Bump on any breaking change to the plan/index shape. Embedded in the derived
 #: JSON Schema ($id + schemaVersion). Plans need NOT store this yet (additive).
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "2.0"
 
 #: Stable identifier for the published JSON Schema.
 SCHEMA_ID = f"https://reckon/schema/plan/{SCHEMA_VERSION}/plan.schema.json"
@@ -90,7 +90,7 @@ STATUS_ENUM = [
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
 TIER_ENUM = ["haiku", "sonnet", "opus"]
-TYPE_ENUM = ["plan", "research"]
+TYPE_ENUM = ["plan", "research", "evidence"]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
 
 
@@ -236,11 +236,22 @@ class PlanState(BaseModel):
     # ── Visibility flags ──
     archived: str | None = None  # "1" hides from default inventory
     read: str | None = None  # "1" marks a research/doc reviewed
+    reviewed_at: str = ""
+    recorded_at: str = ""
+    verdict: str = ""
+    environment: str = ""
+    source: str = ""
+    source_quality: str = ""
 
     # ── Link lists (comma-separated metas) ──
     depends_on: list[str] = Field(default_factory=list)
     blocks: list[str] = Field(default_factory=list)
     informs: list[str] = Field(default_factory=list)  # research-only
+    evidence_for: list[str] = Field(default_factory=list)  # evidence-only
+    verifies: list[str] = Field(default_factory=list)  # evidence-only stage refs
+    supersedes: list[str] = Field(default_factory=list)
+    commits: list[str] = Field(default_factory=list)
+    artifacts: list[str] = Field(default_factory=list)
 
     # ── Server-owned (never authored) ──
     modified: str = ""  # ISO date, server-written on each POST
@@ -297,7 +308,24 @@ class PlanState(BaseModel):
         top level (only present metas) while keeping its dense nested sections.
         Feed via ``PlanState.model_validate(read_state(html)).canonical_dump()``.
         """
-        return self.model_dump(exclude_unset=True)
+        data = self.model_dump(exclude_unset=True)
+        if self.type != "plan":
+            # Plan-only defaults may be present on legacy documents or the
+            # create template. Canonical non-plan writes remove them instead of
+            # persisting meaningless progress/scheduling metadata.
+            for field in (
+                "status",
+                "roi",
+                "effort",
+                "milestone",
+                "sprint",
+                "tier",
+                "depends_on",
+                "blocks",
+                "impl",
+            ):
+                data.pop(field, None)
+        return data
 
     # ── Strict write-boundary validation (reject path) ──
     def validate_for_write(self) -> "PlanState":
@@ -309,19 +337,49 @@ class PlanState(BaseModel):
         write boundary.
         """
         errors: list[str] = []
-        for fld in ("project", "slug", "title", "status"):
+        required = ("project", "slug", "title", "status") if self.type == "plan" else (
+            "project",
+            "slug",
+            "title",
+        )
+        for fld in required:
             if not (getattr(self, fld) or "").strip():
                 errors.append(f"{fld}: required on write (empty)")
-        if self.status and self.status not in STATUS_ENUM:
+        if self.type == "plan" and self.status and self.status not in STATUS_ENUM:
             errors.append(f"status: {self.status!r} not in {STATUS_ENUM}")
-        if self.roi and self.roi not in ROI_ENUM:
+        if self.type == "plan" and self.roi and self.roi not in ROI_ENUM:
             errors.append(f"roi: {self.roi!r} not in {ROI_ENUM}")
-        if self.effort and self.effort not in EFFORT_ENUM:
+        if self.type == "plan" and self.effort and self.effort not in EFFORT_ENUM:
             errors.append(f"effort: {self.effort!r} not in {EFFORT_ENUM}")
-        if self.tier and self.tier not in TIER_ENUM:
+        if self.type == "plan" and self.tier and self.tier not in TIER_ENUM:
             errors.append(f"tier: {self.tier!r} not in {TIER_ENUM}")
         if self.type and self.type not in TYPE_ENUM:
             errors.append(f"type: {self.type!r} not in {TYPE_ENUM}")
+        if self.type != "plan":
+            neutral = {
+                "status": ("", "draft", "reference"),
+                "roi": ("", "mid"),
+                "effort": ("", "M"),
+                "milestone": ("", "—"),
+                "sprint": ("", None),
+                "tier": ("", "sonnet"),
+                "impl": (0, 0.0, None),
+                "depends_on": ([],),
+                "blocks": ([],),
+            }
+            for field, allowed in neutral.items():
+                value = getattr(self, field)
+                if value not in allowed:
+                    errors.append(
+                        f"{field}: plan-only field cannot carry {value!r} "
+                        f"on {self.type} artifacts"
+                    )
+            for field in ("decisions", "followups", "questions"):
+                if getattr(self, field):
+                    errors.append(
+                        f"{field}: plan-only workflow cannot be non-empty "
+                        f"on {self.type} artifacts"
+                    )
         for fu in self.followups:
             if not (fu.prompt or "").strip():
                 errors.append(
