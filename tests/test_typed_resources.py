@@ -399,6 +399,37 @@ def test_mcp_typed_read_selects_duplicate_leaf(
     assert research["data"]["type"] == "research"
 
 
+def test_explicit_read_ignores_unrelated_invalid_resource_path(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    work = _artifact(docs / "plans" / "work.html", "sample", "plan", "work")
+    _artifact(
+        docs / "research" / "topic" / "study.html",
+        "sample",
+        "research",
+        "study",
+    )
+    _mount(tmp_path, monkeypatch, docs, "sample")
+
+    resource = resolve_resource(docs, "sample", "work", "plan")
+    result = mcp_module._read_plan("sample", "work", doc_type="plan")
+
+    assert resource is not None and resource.path == work
+    assert result["data"]["slug"] == "work"
+    assert result["data"]["type"] == "plan"
+
+
+def test_explicit_read_rejects_duplicate_requested_identity(tmp_path):
+    docs = tmp_path / "docs"
+    _artifact(docs / "first.html", "sample", "plan", "work")
+    _artifact(docs / "second.html", "sample", "plan", "work")
+
+    with pytest.raises(ResourceCollision, match="duplicate resource"):
+        resolve_resource(docs, "sample", "work", "plan")
+
+
 def test_audit_reports_duplicate_stable_identity(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ):
