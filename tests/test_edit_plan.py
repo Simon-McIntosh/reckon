@@ -145,6 +145,40 @@ def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):
     assert plan_path.is_file()
 
 
+def test_edit_plan_ignores_unrelated_invalid_resource_path(setup):
+    docs_dir, _, project = setup
+    work = _make_plan_html(
+        docs_dir,
+        "work",
+        {"version": 2, "summary": "before"},
+        relative="plans/work.html",
+    )
+    invalid = _make_plan_html(
+        docs_dir,
+        "study",
+        {"version": 0, "summary": "invalid path", "status": ""},
+        artifact_type="research",
+        relative="research/topic/study.html",
+    )
+    read = mcp_module._read_plan(project, "work", doc_type="plan")
+
+    result = mcp_module._edit_plan(
+        project,
+        "work",
+        [{"op": "set", "path": "summary", "value": "after"}],
+        expected_version=read["version"],
+        doc_type="plan",
+    )
+
+    assert result["ok"] is True, result
+    assert result["path"] == str(work)
+    assert (
+        _store_module.read_plan(project, "work", artifact_type="plan")[0]["summary"]
+        == "after"
+    )
+    assert invalid.is_file()
+
+
 def test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "shared", {"version": 3}, relative="plans/shared.html")
@@ -166,6 +200,24 @@ def test_edit_plan_rejects_ambiguous_untyped_duplicate_leaf(setup):
     assert result["ok"] is False
     assert result["error"] == "ambiguous_resource"
     assert "supply doc_type" in result["detail"]
+
+
+def test_edit_plan_rejects_duplicate_requested_identity(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "work", {"version": 3}, relative="first.html")
+    _make_plan_html(docs_dir, "work", {"version": 3}, relative="second.html")
+
+    result = mcp_module._edit_plan(
+        project,
+        "work",
+        [{"op": "set", "path": "summary", "value": "unsafe"}],
+        expected_version=3,
+        doc_type="plan",
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "ambiguous_resource"
+    assert "duplicate resource" in result["detail"]
 
 
 def test_edit_plan_typed_version_and_state_type_are_paired(setup):
