@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="mcp-readable-responses">
+  <meta name="plan-title" content="Readable MCP Resource Responses">
+  <meta name="plan-summary" content="Make MCP reads concise and human-oriented while preserving stable identifiers, versions, and lossless detail on demand.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="model-capability-schema,typed-artifact-layout,distributed-sprint-state">
+  <title>Readable MCP Resource Responses | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Problem</h2>
+    <p><code>read_plan</code> currently returns an envelope containing <code>project</code>, <code>slug</code>, <code>version</code>, and a nested <code>data</code> object that repeats several of those fields. A default plan read also returns resolved history, option-label maps, empty strings, and machine-oriented keys before presenting the human meaning. Index reads amplify the problem by returning every sprint and project rollup in one response.</p>
+    <p>Stable identifiers are still required for links, optimistic concurrency, and unambiguous edits. The defect is not that identifiers exist; it is that raw storage shape dominates every read and the same slug is repeated where one resource reference would suffice.</p>
+
+    <figure>
+      <img src="/reckon/figures/mcp-readable-responses/layers.svg" alt="A concise MCP summary response expands to detailed and raw representations only when requested.">
+      <figcaption>Default reads answer the common question; detail and raw state remain explicit opt-ins.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — Proposed response model</h2>
+    <p>A default read should return one structured resource reference, a human title and summary, a compact state block, active blockers or open decisions, and the next actionable followup. Resolved history, full prompts, option maps, raw semantic fields, schema, and operation vocabulary should be requested through explicit detail levels or facets.</p>
+    <p>For example, a plan response can lead with <code>resource: {project, type, id}</code>, then <code>title</code>, <code>state: {status, progress, sprint}</code>, <code>blocked_by</code>, <code>open_decisions</code>, and <code>next</code>. The concurrency token appears once. Sprint discovery returns a list of concise sprint cards; reading one sprint returns only that sprint and resolves item titles and live state.</p>
+
+    <h2 id="s3">§3 — Tool surface</h2>
+    <p>The collapsed read/edit/audit surface can remain, but <code>read_plan</code> should evolve toward a typed <code>read_resource</code> contract or accept an explicit resource reference and view. Compatibility aliases can preserve existing callers. Write operations continue to use stable IDs and expected versions; user-facing output should translate successful operations into clear sentences plus the affected resource.</p>
+    <p>Errors should report the resource title, requested operation, expected and actual versions, and the smallest corrective action. Audit should distinguish schema violations from hygiene warnings and must never return stale rollups or imply mutation when it only recomputes a view.</p>
+
+    <h2 id="s4">§4 — Done-when</h2>
+    <ol>
+      <li>Default plan and sprint reads are materially smaller and contain no duplicated identity fields.</li>
+      <li>Summary, detail, raw, schema, and history views have documented stable shapes.</li>
+      <li>Resolved history and full prompts are opt-in while open decisions and next action remain visible.</li>
+      <li>Compatibility tests cover old clients, resource aliases, concurrency conflicts, and typed directories.</li>
+      <li>Token-size fixtures and human review demonstrate clearer output for representative plan, sprint, discovery, and audit calls.</li>
+    </ol>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="read-surface" data-choice="evolve-read-plan" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">How should the read tool expose typed resources?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="evolve-read-plan">Evolve read_plan with resource and view arguments</button>
+      <button class="r-opt" data-value="add-read-resource">Add read_resource and retain read_plan as compatibility alias</button>
+      <button class="r-opt" data-value="resource-specific-tools">Add separate read_plan, read_sprint, and read_evidence tools</button>
+      </p>
+    <p class="r-dec-rat">Evolving the existing read entrypoint preserves the three-tool contract while adding typed resource references and explicit summary, detail, raw, schema, and history views.</p>
+    </div>
+<div class="r-dec" data-key="default-detail" data-choice="summary-next" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What should a default read include?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="summary-next">Summary, current blockers or decisions, and next action</button>
+      <button class="r-opt" data-value="full-current">All current unresolved state</button>
+      <button class="r-opt" data-value="raw-compatible">Current raw-compatible payload</button>
+      </p>
+    <p class="r-dec-rat">The default read should answer the common human question with identity, state, blockers or decisions, and next action; lossless storage and history remain opt-in.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mrr-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship mcp-readable-responses" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Design and implement progressive MCP responses</h4>
+    <div class="r-fu-body"><p>Measure representative payloads, lock the resource and detail contract, then ship compatibility-tested concise reads and errors.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    mcp-readable-responses (http://localhost:8765/reckon/mcp-readable-responses.html)
+Section: full plan
+Tier:    opus
+
+Context
+  Current MCP reads expose repetitive raw storage shapes and monolithic state.
+  Make the default response concise while retaining lossless opt-in views.
+
+State to read
+  reckon/mcp.py, reckon/_mcp_tools.py, reckon/_schema.py, tests/test_mcp_tools.py
+  representative read_plan and audit payload fixtures
+
+Scope locks / constraints
+  Preserve stable identity and optimistic concurrency; maintain a bounded compatibility path.
+
+Done-when
+  1. concise layered responses and compatibility aliases land with size fixtures
+  2. tests still green
+  3. followup written into plan + this followup marked resolved</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

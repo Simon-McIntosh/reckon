@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-title" content="reckon build — CI static site generation">
-<meta name="plan-summary" content="reckon build packages canonical UI assets and generates portable static sites with uv-native CI while preserving project-level sprint state; the legacy index-deprecation decision is under review.">
+<meta name="plan-summary" content="Portable builds are verified locally; automatic publishing is held back while distributed sprint state replaces the index monolith and the distribution name remains open.">
 <meta name="plan-status" content="blocked">
 <meta name="plan-roi" content="mid">
 <meta name="plan-effort" content="M">
@@ -18,9 +18,9 @@
 <meta name="plan-tier" content="sonnet">
 <meta name="plan-owner" content="">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-depends-on" content="">
+<meta name="plan-depends-on" content="distributed-sprint-state">
 <meta name="plan-impl" content="0.8333333333">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="reckon-type" content="plan">
 </head>
 <body>
@@ -243,6 +243,27 @@ wheel and the dist is renamed, the install collapses to one uv line, pinned to a
       <button class="r-opt" data-value="auto-migrate">auto-migrate</button>
       </p>
     <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="publication-policy" data-choice="validation-only-local" data-by="Simon McIntosh" data-when="2026-07-29T11:24:04+00:00">
+    <p class="r-dec-q">What delivery policy applies while reckon remains a local project?</p>
+    <p class="r-dec-ctx">Build and test automation are useful, but pushing docs or packages to a public service is premature.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="validation-only-local">Run CI validation only; do not publish</button>
+      <button class="r-opt" data-value="manual-publish">Publish only through an explicit manual action</button>
+      <button class="r-opt" data-value="automatic-publish">Publish automatically from main</button>
+      </p>
+    <p class="r-dec-rat">Reckon is currently a local project. Retain build and test validation, but hold back GitHub Pages and package publishing until explicitly revisited.</p>
+    </div>
+<div class="r-dec" data-key="distribution-name" data-choice="reckon" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What distribution name should replace the temporary reckon-plans metadata?</p>
+    <p class="r-dec-ctx">The import package and CLI remain reckon. Local direct installs may keep the distribution name reckon; future public publication needs a distinct PyPI name.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="reckon">reckon — local/direct installs only</button>
+      <button class="r-opt" data-value="reckon-kit">reckon-kit — compact public toolkit name</button>
+      <button class="r-opt" data-value="reckonflow">reckonflow — product-oriented public name</button>
+      <button class="r-opt" data-value="pyreckon">pyreckon — Python-specific public name</button>
+      </p>
+    <p class="r-dec-rat">Reckon remains local and validation-only, so the distribution may use the project name for direct installs while the public publication question remains explicitly out of scope.</p>
     </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">

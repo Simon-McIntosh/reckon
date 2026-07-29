@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="registered-repo-state-migration">
+  <meta name="plan-title" content="Registered Repository State Migration">
+  <meta name="plan-summary" content="Migrate every host-registered Reckon repository to the new typed, distributed, model-neutral state contract with per-repository rollback and evidence.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="XL">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="model-capability-schema,typed-artifact-layout,distributed-sprint-state,mcp-readable-responses">
+  <meta name="plan-blocks" content="plan-lifecycle-hygiene,agent-plan-authoring">
+  <title>Registered Repository State Migration | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Purpose and fleet boundary</h2>
+    <p>Once the model-neutral capability schema, typed artifact roots, distributed sprint state, and readable MCP resource contract are stable, every repository registered with the host Reckon server must be migrated. Leaving a mixed fleet indefinitely would force the server, skills, and agents to support contradictory state models and would make host-wide discovery unreliable.</p>
+    <p>The implementation must discover the authoritative mount registry at runtime. Project names and paths must never be embedded in Reckon source code. As of 2026-07-29, the host registry contains the following inventory snapshot:</p>
+    <table>
+      <thead><tr><th>Registered project</th><th>Mounted docs root</th></tr></thead>
+      <tbody>
+        <tr><td><code>helix</code></td><td><code>/home/ITER/mcintos/Code/helix/docs</code></td></tr>
+        <tr><td><code>imas-ambix</code></td><td><code>/home/ITER/mcintos/Code/imas-ambix/docs</code></td></tr>
+        <tr><td><code>imas-efit</code></td><td><code>/home/ITER/mcintos/Code/imas-efit/docs</code></td></tr>
+        <tr><td><code>reckon</code></td><td><code>/home/ITER/mcintos/Code/reckon/docs</code></td></tr>
+        <tr><td><code>vv</code></td><td><code>/home/ITER/mcintos/Code/vv/docs</code></td></tr>
+      </tbody>
+    </table>
+    <p>This table is evidence of present scope, not a fixed allow-list. Repositories added or removed before execution must be reflected by discovery and the migration ledger.</p>
+
+    <figure>
+      <img src="/reckon/figures/registered-repo-state-migration/fleet.svg" alt="The host mount registry feeds a preflight, per-repository migration, verification, and evidence pipeline.">
+      <figcaption>Every registered repository moves independently through the same resumable migration contract.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — Preflight and inventory</h2>
+    <p>The migration begins with a read-only inventory of the mount registry and each resolved repository root. For every project it records the mounted checkout, current branch and commit, dirty-tree state, existing artifact layout, sprint and milestone stores, plan schema versions, unresolved decisions and followups, server audit result, and whether alternate worktrees exist.</p>
+    <p>Preflight must refuse ambiguous or unsafe targets. A missing repository root, unresolved mount symlink, dirty overlap with migration paths, detached mounted checkout, duplicate project identity, or unreadable state produces a deferred row with a concrete next action. Unrelated user changes are preserved. The mounted checkout must never be switched to another branch as a migration shortcut.</p>
+
+    <h2 id="s3">§3 — Per-repository transaction</h2>
+    <p>Each repository migrates as an independent, resumable transaction. The transaction writes a before snapshot, applies the canonical typed-directory and distributed-state migration, rewrites internal references through the shared resolver, converts legacy provider tiers, and validates the new MCP response contract. It then runs document audit, schema audit, static build, targeted tests, and relationship checks before declaring that repository migrated.</p>
+    <p>State writes in alternate worktrees must pair <code>read_plan</code> and <code>edit_plan</code> with the same <code>checkout_path</code>. The coordinator owns shared sprint and migration-ledger updates. No fleet worker may stage broad paths, sweep another worker’s edits, change the mount registry, or publish externally.</p>
+
+    <h2 id="s4">§4 — Rollout waves and rollback</h2>
+    <p>Reckon itself is the canary because it owns the parser, migration code, schemas, and audit tools. Remaining repositories are ordered from least coupled to most coupled using preflight evidence rather than a hard-coded project order. A failure stops promotion to the next wave but does not roll back repositories that have already passed their independent transaction.</p>
+    <p>Rollback restores the recorded pre-migration files for one repository and re-runs its old-format audit. Destructive removal of compatibility files is deferred until every registered repository has passed and a separate compatibility-retirement decision is locked. Server and MCP processes must be restarted or reconnected when parser, renderer, or schema code changes so verification never uses stale in-memory code.</p>
+
+    <h2 id="s5">§5 — Migration ledger and evidence</h2>
+    <p>The coordinator maintains one fleet ledger with the states <code>discovered</code>, <code>preflight-passed</code>, <code>deferred</code>, <code>migrated</code>, <code>verified</code>, and <code>rolled-back</code>. Each row records the project-qualified resource, source commit, migration version, output commit or working-tree path, verification results, evidence location, and any operator action required.</p>
+    <p>Each successful repository produces typed evidence containing before/after counts, migrated paths, reference rewrites, schema and build results, and the exact migration version. A fleet-level evidence record summarizes coverage and names every deferred or failed project. No repository is silently omitted.</p>
+
+    <h2 id="s6">§6 — Done-when</h2>
+    <ol>
+      <li>Runtime discovery accounts for every current mount with no hard-coded project names in Reckon source.</li>
+      <li>Each registered repository has a recoverable before snapshot and a terminal ledger state.</li>
+      <li>Every migrated repository passes fresh-process document, schema, relationship, and static-build validation.</li>
+      <li>Typed directories, distributed sprint resources, neutral capability values, and concise MCP reads are present consistently across the verified fleet.</li>
+      <li>Per-repository and fleet-level evidence records identify commits, paths, migration version, and remaining deferrals.</li>
+      <li>Compatibility retirement remains blocked until all registered repositories are verified and the retirement decision is explicitly locked.</li>
+    </ol>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="dirty-repository-policy" data-choice="defer-and-report" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">How should the fleet migration handle a repository with overlapping uncommitted changes?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="defer-and-report">Defer it and report the exact overlapping paths</button>
+      <button class="r-opt" data-value="isolated-worktree">Prepare migration in an isolated worktree</button>
+      <button class="r-opt" data-value="stop-entire-fleet">Stop the entire fleet at the first dirty repository</button>
+      </p>
+    <p class="r-dec-rat">A repository with overlapping uncommitted migration paths is preserved and receives a terminal deferred ledger row with exact paths and a concrete next action.</p>
+    </div>
+<div class="r-dec" data-key="repository-commit-policy" data-choice="commit-and-push" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What should happen to a verified repository migration?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="prepare-only">Leave a reviewed working-tree change for the owner</button>
+      <button class="r-opt" data-value="commit-local">Commit independently in each repository but do not push</button>
+      <button class="r-opt chosen" data-value="commit-and-push">Commit and push each repository after verification</button>
+      </p>
+    <p class="r-dec-rat">Verified migrations follow repository policy: commit explicit paths and push each primary branch immediately after tests, while deferred repositories remain untouched.</p>
+    </div>
+<div class="r-dec" data-key="compatibility-retirement" data-choice="never-automatic" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">When may legacy flat layout and monolithic-index compatibility be removed?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="all-mounted-verified">After every currently registered repository is verified</button>
+      <button class="r-opt" data-value="bounded-release-window">After verification plus one compatibility release window</button>
+      <button class="r-opt chosen" data-value="never-automatic">Only through a separate explicit retirement plan</button>
+      </p>
+    <p class="r-dec-rat">Compatibility removal is destructive and cross-repository; it requires a separate explicit retirement plan after fleet verification rather than happening inside migration.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rrsm-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship registered-repo-state-migration" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Migrate and verify every registered repository</h4>
+    <div class="r-fu-body"><p>Run only after the four state-contract prerequisites ship. Discover the live registry, produce a dry-run ledger, and migrate repositories in verified waves with per-repository evidence.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    registered-repo-state-migration (http://localhost:8765/reckon/registered-repo-state-migration.html)
+Section: full plan
+Tier:    opus
+
+Context
+  The new state contracts must be applied consistently across every host-registered repository.
+  Execute a resumable fleet migration with explicit deferrals, rollback and evidence.
+
+State to read
+  host Reckon mounts registry and every resolved repository AGENTS.md
+  migration commands, schemas, resolver, audit and static-build implementations
+
+Scope locks / constraints
+  Discover mounts at runtime; never hardcode project names in Reckon source.
+  Preserve unrelated changes, never switch mounted checkouts, and do not publish externally.
+
+Done-when
+  1. every discovered repository has a terminal ledger state and recoverable snapshot
+  2. all migrated repositories pass fresh-process audits and builds
+  3. per-repository evidence and fleet summary land
+  4. followup written into plan + this followup marked resolved</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

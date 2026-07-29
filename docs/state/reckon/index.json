@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-29T12:45:09",
+  "updated": "2026-07-29T13:30:32",
   "project": "reckon",
   "doc": "index",
   "data": {
@@ -61,17 +61,55 @@
             "status": "shipped"
           },
           {
+            "slug": "model-capability-schema",
+            "why_now": "Provider model-family names are embedded in persisted state and must be replaced before orchestration hardening.",
+            "tier": "opus",
+            "done_when": "A provider-neutral capability schema, legacy migration and runtime matcher pass compatibility and risk-escalation tests.",
+            "status": "pending"
+          },
+          {
+            "slug": "typed-artifact-layout",
+            "why_now": "First-class plan, research and evidence types need matching filesystem roots and stable typed identity.",
+            "tier": "opus",
+            "done_when": "Typed directories, routing and an idempotent mixed-layout migration pass server, MCP, SPA and static-build tests.",
+            "status": "pending"
+          },
+          {
+            "slug": "distributed-sprint-state",
+            "why_now": "The required project index is a version-contention and payload monolith; split it only after typed roots exist.",
+            "tier": "opus",
+            "done_when": "Separate sprint and project-state resources replace the index with parity, rollback and concurrency evidence.",
+            "status": "pending"
+          },
+          {
             "slug": "reckon-ci-build",
-            "why_now": "Portable static deployment is the delivery path for the revised typed views.",
+            "why_now": "Portable builds are verified locally; closure waits on distributed sprint state and an explicit distribution name.",
             "tier": "sonnet",
-            "done_when": "Build tests and installable package work close; static output matches the live server.",
-            "status": "blocked"
+            "done_when": "Validation-only CI is retained, automatic publishing is removed, project-state migration lands, and the local distribution name is resolved.",
+            "status": "blocked",
+            "blocked_by": [
+              "s5-project-state-contract"
+            ]
+          },
+          {
+            "slug": "mcp-readable-responses",
+            "why_now": "Readable MCP responses should target the final typed and distributed resource model rather than reformat the monolith twice.",
+            "tier": "opus",
+            "done_when": "Layered summary/detail/raw resource responses are smaller, clearer and backwards-compatible.",
+            "status": "pending"
+          },
+          {
+            "slug": "registered-repo-state-migration",
+            "why_now": "After the new contracts stabilize, every host-registered repository must migrate or the fleet will retain contradictory state models.",
+            "tier": "opus",
+            "done_when": "Runtime discovery gives every registered repository a terminal migration-ledger state, recoverable snapshot, fresh audit/build result and typed evidence.",
+            "status": "pending"
           }
         ],
         "starts": "2026-07-29",
         "ends": "2026-08-12",
         "description": "Make agent context verifiable across Codex and Claude, complete the portable build, and separate plans, research and evidence with typed provenance.",
-        "summary": "Two items shipped: verified Codex context compatibility and typed research/evidence provenance. Portable wheel assets, uv CI and build tests also landed; sprint closure is blocked only by the project-index deprecation decision review."
+        "summary": "Context compatibility and typed provenance shipped. S5 now establishes neutral capabilities, typed roots, distributed sprint state and concise MCP responses, then migrates every host-registered repository; CI remains local validation only."
       },
       {
         "id": "S6",
@@ -103,7 +141,15 @@
       }
     ],
     "milestones": [],
-    "blockers": [],
+    "blockers": [
+      {
+        "id": "s5-project-state-contract",
+        "summary": "reckon-ci-build cannot close until the index monolith has a verified distributed replacement and its locked deprecation decision is reconciled.",
+        "origin": "reckon-ci-build",
+        "owner": "Simon McIntosh",
+        "next": "Lock distributed-sprint-state storage decisions, ship migration parity, then resolve index-json-fate."
+      }
+    ],
     "timeline": [
       {
         "when": "2026-05-26",
@@ -139,8 +185,18 @@
         "when": "2026-07-29",
         "who": "reckon-ship",
         "what": "Portable static build landed: reckon-plans wheel assets, uv-native Pages workflows and 1,222-suite pass; project-index decision queued through dissent."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "Simon McIntosh",
+        "what": "Expanded S5: separate sprint and typed artifact files, provider-neutral capability schema, concise MCP responses, and validation-only local CI."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "Simon McIntosh",
+        "what": "Added a host-wide registered-repository migration to S5, gated on the four new state contracts and requiring per-repository rollback and evidence."
       }
     ],
-    "_version": 10
+    "_version": 12
   }
 }

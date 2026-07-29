@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="model-capability-schema">
+  <meta name="plan-title" content="Model-Agnostic Capability Schema">
+  <meta name="plan-summary" content="Replace provider model-family labels with portable capability requirements and runtime matching.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="codex-agent-context-compatibility">
+  <meta name="plan-blocks" content="execution-orchestration-hardening,agent-plan-authoring">
+  <title>Model-Agnostic Capability Schema | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Problem and boundary</h2>
+    <p>Reckon currently stores <code>haiku</code>, <code>sonnet</code>, and <code>opus</code> in plan metadata, sprint items, followups, prompts, schemas, examples, and UI tags. Those names describe one provider’s product families rather than the ability a task requires. They also age poorly: a newer lower-cost model can outperform an older premium model, while high-risk work may still require orchestrator-level judgment regardless of nominal family.</p>
+    <p>This plan replaces provider names in persisted state with a model-neutral capability request. Provider and model selection remains a runtime concern. Historical values must continue to parse during migration, but newly authored state must not depend on a vendor taxonomy.</p>
+
+    <figure>
+      <img src="/reckon/figures/model-capability-schema/matching.svg" alt="A task capability request is matched against runtime-advertised workers without storing provider model names.">
+      <figcaption>Persist requirements; resolve a concrete worker only at dispatch time.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — Proposed contract</h2>
+    <p>The schema should separate a compact capability class from explicit risk and execution requirements. A likely shape is <code>capability.class</code> for broad scheduling plus optional fields such as <code>reasoning</code>, <code>context</code>, <code>tool_autonomy</code>, <code>verification</code>, and <code>risk</code>. The runtime advertises comparable worker capabilities, and the dispatcher selects the least costly worker that satisfies every hard requirement.</p>
+    <p>Relative policies such as “one below the orchestrator” remain useful defaults, but they must operate on runtime-advertised capability order rather than hard-coded model identifiers. Solver work, security changes, migrations, conflict synthesis, and other elevated-risk tasks can set explicit floors.</p>
+
+    <h2 id="s3">§3 — Migration and compatibility</h2>
+    <p>Migration covers <code>PlanState.tier</code>, followup and sprint-item tiers, HTML <code>data-tier</code>, prompt templates, schema enums, MCP operations, SPA facets, audit rules, skills, fixtures, and existing plan HTML. Legacy values must map deterministically to neutral classes on read, emit an audit warning, and be rewritten only through an explicit migration command or ordinary state edit.</p>
+    <p>The migration must distinguish capability from effort: <code>effort=L</code> describes work size, while capability describes the minimum worker ability and safeguards. It must also avoid pretending that a single ordinal captures all requirements; the selected representation must leave room for structured constraints.</p>
+
+    <h2 id="s4">§4 — Done-when</h2>
+    <ol>
+      <li>A versioned, provider-neutral capability schema is published for plans, sprint items, and followups.</li>
+      <li>Dispatch matches task requirements to runtime-advertised workers with deterministic fallback and risk escalation.</li>
+      <li>Legacy Anthropic-family values remain readable and have tested migration diagnostics.</li>
+      <li>Skills, prompts, docs, MCP schemas, UI labels, and fixtures contain no provider names as capability enums.</li>
+      <li>Round-trip, mixed-version, absent-worker, and high-risk escalation tests pass.</li>
+    </ol>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="capability-shape" data-choice="class-plus-requirements" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What should be persisted as the task’s capability requirement?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="ordinal-classes">Neutral ordinal classes only</button>
+      <button class="r-opt" data-value="requirements-vector">Structured requirements vector only</button>
+      <button class="r-opt chosen" data-value="class-plus-requirements">Compact class plus structured requirements</button>
+      </p>
+    <p class="r-dec-rat">A compact neutral class supports scheduling while structured requirements preserve risk, verification, context, autonomy, and reasoning constraints that cannot be represented by one ordinal.</p>
+    </div>
+<div class="r-dec" data-key="legacy-migration" data-choice="read-map-warn" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">How should existing haiku/sonnet/opus values migrate?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="read-map-warn">Read-time mapping plus audit warning</button>
+      <button class="r-opt" data-value="automatic-rewrite">Automatic rewrite on first read</button>
+      <button class="r-opt" data-value="hard-break">Reject legacy values</button>
+      </p>
+    <p class="r-dec-rat">Legacy provider-family values remain readable with deterministic mapping and audit diagnostics; rewriting occurs only through explicit migration or ordinary state edits.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mcs-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship model-capability-schema" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement the provider-neutral capability contract</h4>
+    <div class="r-fu-body"><p>Inventory every persisted and rendered tier field, lock the capability representation, then migrate the complete schema-to-dispatch vertical slice.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    model-capability-schema (http://localhost:8765/reckon/model-capability-schema.html)
+Section: full plan
+Tier:    opus
+
+Context
+  Provider model-family names are persisted throughout the current plan system.
+  Replace them with portable task requirements and runtime capability matching.
+
+State to read
+  reckon/_schema.py, reckon/mcp.py, reckon/_plan_html.py, docs/ui/
+  skills/reckon-create/, skills/reckon-edit/, skills/reckon-ship/
+
+Scope locks / constraints
+  Preserve legacy reads and the audit trail. Do not encode current provider or model ids.
+
+Done-when
+  1. schema, migration, dispatch and UI changes land with compatibility tests
+  2. tests still green
+  3. followup written into plan + this followup marked resolved</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

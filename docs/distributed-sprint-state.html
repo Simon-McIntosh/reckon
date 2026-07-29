@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="distributed-sprint-state">
+  <meta name="plan-title" content="Distributed Sprint and Project State">
+  <meta name="plan-summary" content="Replace the monolithic project index with independently versioned sprint, milestone, blocker, and timeline resources.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="XL">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="typed-artifact-layout">
+  <meta name="plan-blocks" content="reckon-ci-build,mcp-readable-responses">
+  <title>Distributed Sprint and Project State | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why the index is a monolith</h2>
+    <p><code>docs/state/reckon/index.json</code> currently combines the active-sprint pointer, every sprint definition and item, milestones, timeline, blockers, project rollups, and one shared version counter. It is necessary today because those fields have no other canonical store, but it creates large MCP payloads and makes unrelated edits contend on the same optimistic-concurrency version.</p>
+    <p>The replacement must decompose state before deleting the index. Separate sprint files are the central change, accompanied by explicit homes for milestones, blockers, timeline events, and minimal project configuration. Plan lifecycle state remains in plan HTML.</p>
+
+    <figure>
+      <img src="/reckon/figures/distributed-sprint-state/decomposition.svg" alt="A monolithic index split into separately versioned sprint files, milestone files, blockers, timeline, and a small project manifest.">
+      <figcaption>Decomposition reduces payload size and edit contention while preserving a discoverable project view.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — Target resource model</h2>
+    <p>Each sprint should be a semantic document under <code>docs/sprints/</code>, carrying its own status, dates, theme, ordered plan references, summary, and version. At most one sprint may have <code>status=active</code>; the active sprint can therefore be derived and audited rather than duplicated in a central pointer.</p>
+    <p>Milestones should likewise be independently addressable under <code>docs/milestones/</code>. Blockers need stable records with owner and next action. Timeline entries are append-only events and should not force a rewrite of every sprint. A small project manifest may remain for mount identity and presentation settings, but it must not aggregate mutable sprint contents or computed inventory.</p>
+
+    <h2 id="s3">§3 — MCP and concurrency</h2>
+    <p>MCP should read or edit one resource at a time: a named sprint, milestone, blocker, timeline event stream, or project manifest. Project discovery composes those resources into a view without persisting the rollup. Each file owns its own version, so adding a timeline event cannot conflict with editing sprint membership.</p>
+    <p>Sprint membership references stable plan identities. Current plan state is resolved live from plan HTML instead of duplicating status, progress, decisions, or followups into the sprint file. Human-facing reads should show titles and state; machine identifiers remain available for edits and links.</p>
+
+    <h2 id="s4">§4 — Safe migration</h2>
+    <p>A migration command must split the existing index atomically into typed resources, validate referential integrity, compare the composed result to the old view, and retain a recoverable snapshot. During a compatibility window, reads may compose old or new state, but writes must target only one format to prevent divergence.</p>
+    <p>The <code>index-json-fate</code> decision in <code>reckon-ci-build</code> should close only after this replacement is implemented and verified. Until then, deleting the index would lose S5 and S6 definitions, timeline history, and concurrency state.</p>
+
+    <h2 id="s5">§5 — Done-when</h2>
+    <ol>
+      <li>Sprints are independently stored, versioned, discoverable, and editable.</li>
+      <li>Milestones, blockers, timeline, and minimal project configuration have explicit non-monolithic stores.</li>
+      <li>Project discovery composes a clear live view without persisting rollups.</li>
+      <li>An idempotent migration proves state parity and preserves rollback evidence.</li>
+      <li>Concurrent edits to different resources do not conflict; conflicting edits to one resource still return 412.</li>
+      <li>The old index is retired only after fleet migration and audit pass.</li>
+    </ol>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="sprint-format" data-choice="semantic-html" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What format should each sprint resource use?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="semantic-html">Semantic HTML under docs/sprints/</button>
+      <button class="r-opt" data-value="json">Versioned JSON under docs/sprints/</button>
+      <button class="r-opt" data-value="toml">Versioned TOML under docs/sprints/</button>
+      </p>
+    <p class="r-dec-rat">Semantic HTML keeps sprint state inspectable, versioned, and consistent with Reckon&#x27;s HTML-first storage and existing document tooling.</p>
+    </div>
+<div class="r-dec" data-key="active-sprint-selection" data-choice="derive-unique-active" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">How should the active sprint be selected?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derive-unique-active">Derive from the unique active status</button>
+      <button class="r-opt" data-value="project-pointer">Keep a pointer in a minimal project manifest</button>
+      <button class="r-opt" data-value="active-alias">Use an active-sprint alias resource</button>
+      </p>
+    <p class="r-dec-rat">Deriving the unique active sprint removes duplicated mutable state; audit enforces that at most one sprint is active.</p>
+    </div>
+<div class="r-dec" data-key="project-manifest-scope" data-choice="identity-only" data-by="reckon-ship" data-when="2026-07-29T11:35:32+00:00">
+    <p class="r-dec-q">What mutable state, if any, may remain in the project manifest?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="identity-only">Mount identity and presentation settings only</button>
+      <button class="r-opt" data-value="identity-plus-active">Identity plus active-sprint pointer</button>
+      <button class="r-opt" data-value="no-manifest">No project manifest</button>
+      </p>
+    <p class="r-dec-rat">The project manifest retains mount identity and presentation settings only; mutable sprint contents and computed rollups live in independently versioned resources.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dss-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship distributed-sprint-state" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Split project state into independently versioned resources</h4>
+    <div class="r-fu-body"><p>Design the resource grammar, lock storage decisions, and migrate the current index only after composed-state parity is proven.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    distributed-sprint-state (http://localhost:8765/reckon/distributed-sprint-state.html)
+Section: full plan
+Tier:    opus
+
+Context
+  The project index is required today but combines unrelated mutable resources.
+  Replace it safely with separate sprint and project-state files.
+
+State to read
+  docs/state/reckon/index.json, reckon/_schema.py, reckon/mcp.py
+  reckon/_store.py, reckon/serve.py, skills/reckon-sprint/
+
+Scope locks / constraints
+  Do not delete the current index until migration parity and rollback are proven.
+
+Done-when
+  1. decomposed storage, migration and composed discovery land with concurrency tests
+  2. tests still green
+  3. followup written into plan + this followup marked resolved</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
