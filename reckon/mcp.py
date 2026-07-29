@@ -102,6 +102,10 @@ def _read_plan(
     limit: int | None = None,
     include_followups: bool = True,
     include_questions: bool = True,
+    resource: dict[str, Any] | None = None,
+    view: str | None = None,
+    cursor: str | None = None,
+    include_prompts: bool = False,
 ) -> dict[str, Any]:
     """Read plan state — the single read entrypoint (folds the read tools in).
 
@@ -115,6 +119,15 @@ def _read_plan(
           → the above PLUS "schema" (the published JSON Schema), a compact
             dos/don'ts note, and an op-vocabulary summary — the context injector
             an agent reads before calling edit_plan.
+
+      read_plan(resource={project, type, id[, archived]}[, view=...])
+          → a progressive typed response. ``summary`` is the default and keeps
+            identity, version, human state, blockers/open decisions, and the next
+            action compact. ``detail`` adds current metadata and unresolved
+            workflow, ``history`` paginates prior workflow, ``raw`` returns the
+            lossless storage state, and ``schema`` describes the response plus
+            the selected resource's storage schema. Full followup prompts require
+            ``view="detail", include_prompts=True``.
 
       read_plan(project)                 [slug omitted/None]
           → DISCOVERY: { project, plans, followups, questions, sprints,
@@ -136,6 +149,26 @@ def _read_plan(
       index/project config — including discovery mode and audit-adjacent rollups.
       Omit it (the default) to read the mounts-registered MAIN checkout.
     """
+    if resource is not None or view is not None:
+        return _read_plan_view(
+            project=project,
+            slug=slug,
+            checkout_path=checkout_path,
+            doc_type=doc_type,
+            resource=resource,
+            view=view,
+            cursor=cursor,
+            limit=limit,
+            include_prompts=include_prompts,
+            status=status,
+            sprint=sprint,
+            milestone=milestone,
+            owner=owner,
+            search=search,
+            include_followups=include_followups,
+            include_questions=include_questions,
+        )
+
     # ── projects-list mode ──
     if project is None or project == "*":
         return _list_projects()
@@ -263,6 +296,230 @@ def _read_plan(
         result["dos_donts"] = _DOS_DONTS
         result["op_vocab"] = _OP_VOCAB
     return result
+
+
+def _read_archived_resource(
+    project: str,
+    slug: str,
+    doc_type: str,
+    checkout_path: str | None,
+) -> tuple[dict[str, Any], int]:
+    """Read exactly one archived typed artifact without live-resource ambiguity."""
+
+    from reckon import _plan_html
+    from reckon.resources import canonical_type, resource_map
+
+    docs_dir = _docs_dir_for_project(project, checkout_path)
+    if docs_dir is None:
+        return {}, 0
+    key = (canonical_type(doc_type), slug, True)
+    resource = resource_map(docs_dir, project, include_archived=True).get(key)
+    if resource is None:
+        return {}, 0
+    data = _plan_html.read_state(
+        resource.path.read_text(encoding="utf-8", errors="replace")
+    )
+    return data, int(data.get("version", 0) or 0)
+
+
+def _read_plan_view(
+    *,
+    project: str | None,
+    slug: str | None,
+    checkout_path: str | None,
+    doc_type: str | None,
+    resource: dict[str, Any] | None,
+    view: str | None,
+    cursor: str | None,
+    limit: int | None,
+    include_prompts: bool,
+    status: str | None,
+    sprint: str | None,
+    milestone: str | None,
+    owner: str | None,
+    search: str | None,
+    include_followups: bool,
+    include_questions: bool,
+) -> dict[str, Any]:
+    """Route opt-in progressive reads without changing the legacy call path."""
+
+    from reckon._schema import gen_json_schema
+    from reckon.mcp_views import (
+        ResourceSelector,
+        ViewRequestError,
+        discovery_view,
+        error_response,
+        normalize_selector,
+        normalize_view,
+        resource_view,
+    )
+
+    selector: ResourceSelector | None = None
+    try:
+        selected_view = normalize_view(view)
+        if resource is not None:
+            selector = normalize_selector(resource, fallback_project=project)
+            if project not in (None, selector.project):
+                raise ViewRequestError(
+                    "invalid_resource",
+                    "project and resource.project must name the same project.",
+                )
+        elif slug is None:
+            if not project or project == "*":
+                raise ViewRequestError(
+                    "invalid_resource",
+                    "A project is required for progressive discovery views.",
+                )
+            raw = _read_plan(
+                project=project,
+                checkout_path=checkout_path,
+                status=status,
+                doc_type=doc_type,
+                sprint=sprint,
+                milestone=milestone,
+                owner=owner,
+                search=search,
+                limit=None,
+                include_followups=include_followups,
+                include_questions=include_questions,
+            )
+            return discovery_view(
+                project,
+                raw,
+                view=selected_view,
+                cursor=cursor,
+                limit=limit,
+                include_prompts=include_prompts,
+                storage_schema=gen_json_schema(),
+                op_vocab=_OP_VOCAB,
+                dos_donts=_DOS_DONTS,
+            )
+        else:
+            if not project or project == "*":
+                raise ViewRequestError(
+                    "invalid_resource",
+                    "A project is required for progressive resource views.",
+                )
+            inferred_type = doc_type or (
+                "project" if slug in {"index", "project"} else "plan"
+            )
+            selector = normalize_selector(
+                {
+                    "project": project,
+                    "type": inferred_type,
+                    "id": "project" if slug == "index" else slug,
+                    "archived": False,
+                }
+            )
+
+        if selector.archived and selector.type not in {
+            "plan",
+            "research",
+            "evidence",
+        }:
+            raise ViewRequestError(
+                "invalid_resource",
+                f"{selector.type} resources do not have archived typed identities.",
+            )
+
+        if selector.type == "project" and selected_view != "raw":
+            raw_discovery = _read_plan(
+                project=selector.project,
+                checkout_path=checkout_path,
+                limit=None,
+                include_followups=include_followups,
+                include_questions=include_questions,
+            )
+            result = discovery_view(
+                selector.project,
+                raw_discovery,
+                view=selected_view,
+                cursor=cursor,
+                limit=limit,
+                include_prompts=include_prompts,
+                storage_schema=gen_json_schema(),
+                op_vocab=_OP_VOCAB,
+                dos_donts=_DOS_DONTS,
+            )
+            result["resource"] = selector.as_dict()
+            return result
+
+        if selector.archived:
+            data, version = _read_archived_resource(
+                selector.project,
+                selector.id,
+                selector.type,
+                checkout_path,
+            )
+            deps: list[dict[str, Any]] = []
+        else:
+            legacy = _read_plan(
+                project=selector.project,
+                slug=selector.id,
+                checkout_path=checkout_path,
+                doc_type=selector.type,
+            )
+            if legacy.get("ok") is False:
+                return error_response(
+                    legacy.get("error", "read_error"),
+                    legacy.get("detail", "The resource could not be read."),
+                    selector=selector,
+                )
+            data = legacy.get("data") or {}
+            version = int(legacy.get("version", 0) or 0)
+            deps = list(legacy.get("deps") or [])
+
+        if not data:
+            return error_response(
+                "not_found",
+                (
+                    f"{selector.type} resource {selector.project}:"
+                    f"{selector.id} was not found."
+                ),
+                selector=selector,
+                hint="Check the typed identity and archived flag.",
+            )
+
+        if selector.type == "sprint" and selected_view in {"summary", "detail"}:
+            discovered = _discover_project(selector.project, checkout_path)
+            composed = next(
+                (
+                    item
+                    for item in discovered.get("sprints", [])
+                    if isinstance(item, dict) and item.get("id") == selector.id
+                ),
+                None,
+            )
+            if composed is not None:
+                data = composed
+
+        return resource_view(
+            selector,
+            version,
+            data,
+            view=selected_view,
+            deps=deps,
+            cursor=cursor,
+            limit=limit,
+            include_prompts=include_prompts,
+            storage_schema=gen_json_schema(),
+            op_vocab=_OP_VOCAB,
+            dos_donts=_DOS_DONTS,
+        )
+    except ViewRequestError as exc:
+        return error_response(
+            exc.code,
+            exc.message,
+            selector=selector,
+            hint=exc.hint,
+        )
+    except Exception as exc:  # noqa: BLE001 — tool errors must remain structured
+        return error_response(
+            "read_error",
+            str(exc),
+            selector=selector,
+            hint="Inspect the typed identity and project-state audit.",
+        )
 
 
 def _resolve_plan_ref(
@@ -1699,7 +1956,13 @@ def _written_path(
 # ── audit — plan-schema conformance audit (warn half; never mutates) ────────
 
 
-def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
+def _audit(
+    project: str,
+    checkout_path: str | None = None,
+    view: str | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
 
@@ -1712,8 +1975,26 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     WARN/report ONLY — this NEVER mutates a plan or writes index.json. (Distinct
     from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema.)
     With ``checkout_path``, the audit runs against that checkout's docs/state
-    instead of the mounts-registered main checkout.
+    instead of the mounts-registered main checkout. Pass ``view="summary"`` for
+    compact counts, ``view="detail"`` for paginated findings, or ``view="raw"``
+    for the exact legacy audit payload. Omitting ``view`` preserves the legacy
+    response unchanged.
     """
+    if view is not None:
+        from reckon.mcp_views import ViewRequestError, audit_view, error_response
+
+        raw = _audit(project, checkout_path)
+        try:
+            return audit_view(
+                project,
+                raw,
+                view=view,
+                cursor=cursor,
+                limit=limit,
+            )
+        except ViewRequestError as exc:
+            return error_response(exc.code, exc.message, hint=exc.hint)
+
     from reckon import _plan_html
     from reckon.doccheck import audit_lifecycle, audit_links
     from reckon.resources import iter_resources

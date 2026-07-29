@@ -15,9 +15,9 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 # reckon-sprint — sprint, milestone, and roadmap orchestration
 
 ## Fast path
-- Read the composed view → `read_plan(project, "index")`; use its
-  `resource_versions` before selecting a named resource.
-- Read/write one sprint → `read_plan(project, id, doc_type="sprint")` then
+- Read the composed view → `read_plan(project, view="summary")`; select a
+  named resource only when deeper state is needed.
+- Read/write one sprint → typed `read_plan(..., view="raw")` then
   `edit_plan(..., doc_type="sprint")`.
 - Move an item between sprints → read both versions, then use the source sprint's
   `move` op with `to_version`.
@@ -35,7 +35,8 @@ blockers under `docs/blockers/`, and the append-only timeline at
 slugs; live plan status and implementation fraction are composed from plan
 HTML and are never persisted in a sprint.
 
-`read_plan(project, "index")` remains a read-only composed compatibility view.
+`read_plan(project, view="summary")` is the preferred compact composed view.
+`read_plan(project, "index")` remains a read-only compatibility view.
 It returns `source_format`, `resource_versions`, and the active sprint derived
 from the unique sprint whose status is `active`. Never write the aggregate
 index after distributed activation.
@@ -66,9 +67,12 @@ rationale in `reckon-edit` SKILL.md (§ worktree).
 ## Read sprints
 
 ```python
-view = read_plan(project="imas-ambix", slug="index")
-sprint = read_plan(project="imas-ambix", slug="S5", doc_type="sprint")
-# view["data"]["active_sprint_id"], sprint["data"], sprint["version"]
+sprint_cards = read_plan(project="imas-ambix", view="summary")
+sprint = read_plan(
+    resource={"project": "imas-ambix", "type": "sprint", "id": "S5"},
+    view="raw",
+)
+# sprint_cards["state"]["active_sprint_id"], sprint["data"], sprint["version"]
 ```
 
 ## Create a sprint
@@ -131,7 +135,7 @@ edit_plan(
 
 ## Propose a sprint (manual workflow)
 
-1. Discover plans via `read_plan(project, slug=None)` (discovery mode).
+1. Discover plans via `read_plan(project, view="summary")`; page with `cursor`.
 2. Keep only **actionable live plans**: usually `status in {active, pending}`.
    Exclude research docs, archived/done plans, README/reference pages, and
    cross-repo coordination plans unless the user explicitly wants them tracked.

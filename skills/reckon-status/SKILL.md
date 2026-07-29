@@ -14,10 +14,10 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit
 # reckon-status — read-only plan inspection and quality audit
 
 ## Fast path
-- What's open / where are we → `read_plan(project)` (discovery), scan the inventory.
-- Status of one plan → `read_plan(project, slug)` → status, impl, open decisions/followups.
+- What's open / where are we → `read_plan(project, view="summary")`.
+- Status of one plan → `read_plan(resource={project,type:"plan",id:slug})`.
 - What to ship next → compute the ready-set (see §Step 5 — dependency order and ready-set).
-- Audit health → call the `audit` MCP tool, then layer the extra checks below.
+- Audit health → call `audit(project, view="summary")`, then request detail if findings exist.
 
 Full detail below.
 
@@ -43,20 +43,25 @@ to the docs-server. Fixes go through `reckon-edit`.
 
 **Discovery (whole project):**
 ```python
-# Returns inventory + followups/questions/sprints facets for all plans
-state = read_plan(project="my-project", slug=None)
+# Returns a compact, paginated inventory plus project rollups
+state = read_plan(project="my-project", view="summary")
 ```
 
 **Single plan:**
 ```python
-state = read_plan(project="my-project", slug="plan-alpha")
-# state["version"], state["data"]["status"], state["data"]["decisions"], …
+state = read_plan(
+    resource={"project": "my-project", "type": "plan", "id": "plan-alpha"}
+)
+# state["version"], state["state"]["status"], state["open_decisions"], …
 ```
 
 **Single plan + schema:**
 ```python
-state = read_plan(project="my-project", slug="plan-alpha", with_schema=True)
-# Includes the JSON Schema and dos/don'ts inline — useful for authoring audit
+state = read_plan(
+    resource={"project": "my-project", "type": "plan", "id": "plan-alpha"},
+    view="schema",
+)
+# Includes the progressive response schema and selected storage schema
 ```
 
 **HTTP fallback (server not running):**
@@ -80,7 +85,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 PROJECT="$(basename "$REPO_ROOT")"
 ```
 
-Use `read_plan(project, slug=None)` for full parsed state, or
+Use `read_plan(project, view="summary")` for compact typed discovery, or
 `curl -s "http://127.0.0.1:8765/_discover/$PROJECT"`.
 
 ### Discovery rules
@@ -103,10 +108,11 @@ Per-stage history lives under the owning type's `archive/` directory.
 
 ### Step 2 — read project config
 
-Use `read_plan(project, "index")` for the composed sprint, milestone, blocker,
-and timeline view. Inspect `source_format` and `resource_versions`; in
-distributed mode the retained on-disk `index.json` is a frozen migration
-source, not current state. Plan lifecycle state still comes from plan HTML.
+Use `read_plan(resource={project,type:"project",id:"project"})` for the compact
+project state. Request `view="detail"` only when the sprint, milestone, blocker,
+or timeline cards are needed. In distributed mode the retained on-disk
+`index.json` is a frozen migration source, not current state. Plan lifecycle
+state still comes from plan HTML.
 
 ### Step 3 — surface open decisions
 
@@ -160,9 +166,10 @@ suggested next action.
 
 ## Intent: review
 
-**Call `audit(project)` first — it is the source of truth.** The `audit` MCP tool runs the
-code-side checks non-mutatingly and returns `findings[]` (each with `category`, `code`,
-`severity`, `slug`, `path`) plus `violations[]` (schema conformance) and `finding_counts`.
+**Call `audit(project, view="summary")` first — it is the source of truth.**
+If counts are non-zero, request `view="detail"` and page with its cursor. The
+detail response returns findings (each with `category`, `code`, `severity`,
+`slug`, `path`) plus violations and finding counts.
 Render those findings into the punch-list below grouped by severity. Do NOT re-derive the
 codes it already emits by hand — they would drift from the code.
 

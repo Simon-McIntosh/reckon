@@ -27,7 +27,10 @@ Resolve the invocation before reading implementation files:
 | `/reckon-ship solver-hardening` | Plan slug |
 
 Derive the current project from the repository and `docs-project` metadata.
-Read `read_plan(project, "index")`; match sprint ids exactly. If an unqualified
+Read `read_plan(project, view="summary")`; match sprint ids exactly. Then read
+the selected sprint with
+`read_plan(resource={project,type:"sprint",id:sprint_id}, view="raw")`.
+If an unqualified
 identifier matches both a plan and a sprint, require the explicit prefix.
 
 The orchestrator runs from the canonical primary checkout. It owns `index`,

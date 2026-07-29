@@ -14,7 +14,7 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 # reckon-edit — mutations to an existing plan
 
 ## Fast path
-- Lock a decision → `read_plan(project, slug)` then `edit_plan` `lock` op.
+- Lock a decision → typed `read_plan(..., view="raw")` then `edit_plan` `lock` op.
 - Add / resolve a followup → `edit_plan` `append` / `resolve` op (prompt mandatory).
 - Fix prose / add a section → edit the resolved typed resource directly + announce the bypass.
 - Sprints / milestones / roadmap → use `reckon-sprint` (the index, not a plan).
@@ -135,7 +135,14 @@ and retry.
 
 ```python
 # 1. Read current state + version
-state = read_plan(project="imas-ambix", slug="plasma-decoder-finetune")
+state = read_plan(
+    resource={
+        "project": "imas-ambix",
+        "type": "plan",
+        "id": "plasma-decoder-finetune",
+    },
+    view="raw",
+)
 # state["version"] → e.g. 5
 
 # 2. Apply ops atomically
@@ -161,7 +168,7 @@ edit_plan(
 )
 ```
 
-**On 412:** `read_plan(project, slug)` → new `version` → retry `edit_plan`.
+**On 412:** repeat the typed `view="raw"` read → new `version` → retry `edit_plan`.
 
 ### Running inside a git worktree — pass `checkout_path`
 
@@ -180,7 +187,11 @@ your tree. Omit `checkout_path` (default) when you are in the main checkout.
 
 ```python
 root = "/repo/.claude/worktrees/agent-XYZ"
-state = read_plan(project="imas-efit", slug="index", checkout_path=root)
+state = read_plan(
+    resource={"project": "imas-efit", "type": "project", "id": "project"},
+    view="raw",
+    checkout_path=root,
+)
 edit_plan(project="imas-efit", slug="index", ops=[...],
           expected_version=state["version"], checkout_path=root)
 # → returns path=<root>/docs/state/imas-efit/index.json — git add + commit it from <root>

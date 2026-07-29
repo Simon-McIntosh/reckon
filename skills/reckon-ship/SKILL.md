@@ -99,7 +99,7 @@ describes, then write back outcomes. The HTML documents the work; the
 implement items marked "deferred", "post-v1", or behind an unmet trigger.
 
 **Write path:** use `edit_plan` to record outcomes atomically:
-1. `read_plan(project, slug)` → get `version`.
+1. `read_plan(resource={project,type:"plan",id:slug}, view="raw")` → get `version`.
 2. `edit_plan(…, ops=[set status/impl + resolve driving followup + append next followup], expected_version=…)`.
 3. On 412 conflict: re-read + retry.
 
@@ -169,7 +169,10 @@ Wait for the user's response before doing anything else. If the user authorizes 
 
 ```python
 # Read ALL plan state including schema
-state = read_plan(project="<project>", slug="<slug>", with_schema=True)
+state = read_plan(
+    resource={"project": "<project>", "type": "plan", "id": "<slug>"},
+    view="schema",
+)
 
 # Also fetch the raw HTML to read section prose
 # (the MCP payload has parsed state; you also need the full prose sections)
@@ -299,7 +302,10 @@ corrective worker; do not advance the dependency wave with incomplete work.
 
 ```python
 # After each section lands, update atomically
-state = read_plan(project="<project>", slug="<slug>")
+state = read_plan(
+    resource={"project": "<project>", "type": "plan", "id": "<slug>"},
+    view="raw",
+)
 
 edit_plan(
   project="<project>",
@@ -335,7 +341,10 @@ Note: `impl` is a settable scalar — the server does NOT compute it automatical
 Before declaring the overall plan done:
 
 ```python
-state = read_plan(project, slug)
+state = read_plan(
+    resource={"project": project, "type": "plan", "id": slug},
+    view="raw",
+)
 # Verify:
 assert state["data"]["status"] in ("shipped", "done")   # or "active" if more sections remain
 assert state["data"]["impl"] == expected_fraction         # set correctly
