@@ -11,14 +11,15 @@
   <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
-  <meta name="plan-tier" content="opus">
   <meta name="plan-owner" content="Simon McIntosh">
   <title>Reckon skill overhaul | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-06-23">
+<meta name="plan-modified" content="2026-07-29">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
 </head>
 <body>
   <main class="plan-doc">
@@ -162,7 +163,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rso-001" data-status="resolved" data-tier="opus" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §1" data-resolved-at="2026-06-23T12:49:49+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-rso-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §1" data-resolved-at="2026-06-23T12:49:49+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">§1 rename + §2 systemic fixes, then §3 structural</h4>
     <div class="r-fu-body">Execute §1 (rename reckon-ship→reckon-implement, full sweep, keep prefix) and §2 (systemic fixes) first — concrete, decision-free, high-value. Then §3 structural redesigns, honouring the sprint-extraction + dep-order-home decisions. Commit reckon repo and imas-codex separately; verify with reckon doctor.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -201,7 +202,7 @@ Done-when
   4. uv run pytest (reckon) clean if tests exist; followups written + this resolved.</pre>
     <p class="r-fu-outcome">§1 rename + §2 core systemic fixes landed. reckon: plan 49f76f3, rename 0d666aa (1092 tests pass), §2 a397bd1 (MCP allowed-tools + impl-truth + dependency gate). imas-codex: 5ff2b82d (recommends_skill migration, 9 plans). Symlinks re-pointed in ~/.claude + ~/.agents; ~/.agents/AGENTS.md routing table updated. Remaining (queued in f-rso-002): §2 fast-path recipes + §05 template dedup; §3 structural (status DAG, sync wrapper, sprint).</p>
     </article>
-<article class="r-fu" data-id="f-rso-002" data-status="resolved" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §3" data-resolved-at="2026-06-23T15:44:41+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-rso-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-06-23" data-recommends-skill="/reckon-ship reckon-skill-overhaul §3" data-resolved-at="2026-06-23T15:44:41+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Finish §2 (fast-path + §05 dedup) and §3 structural redesigns</h4>
     <div class="r-fu-body">§1 + §2-core landed. Remaining §2: add a 4-6 line fast-path recipe atop each of the five skills; de-dupe the three divergent §05 templates to one canonical copy + fix the reckon-edit example that violates its own 'don't re-list decisions' rule. §3 structural: reckon-status leads with the dependency DAG/ready-set + calls the audit MCP tool; reckon-sync shrinks to a thin wrapper over reckon sync/install-skills/doctor; sprint management per the sprint-extraction decision (LOCK it first — new reckon-sprint skill vs delimited section).</div>
     <pre class="r-fu-prompt">Project: reckon

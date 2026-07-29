@@ -15,12 +15,13 @@
 <meta name="plan-roi" content="high">
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="—">
-<meta name="plan-tier" content="opus">
 <meta name="plan-owner" content="Simon McIntosh">
-<meta name="plan-modified" content="2026-05-29">
+<meta name="plan-modified" content="2026-07-29">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
 </head>
 <body>
 <main class="plan-doc">
@@ -292,9 +293,9 @@ one). If the authoring experience hurts here, fix it here first.</li>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Write the canonical authoring prompt + in-repo exemplar plan</h4>
-    <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it&#x27;s the first thing an agent reads.</div>
+    <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it's the first thing an agent reads.</div>
     <pre class="r-fu-prompt">Project: reckon
 Plan:    agent-plan-authoring (§4–§5)
 Tier:    sonnet
@@ -305,7 +306,7 @@ Done-when
      (templates + dos/don&#x27;ts + the reasoning table from §3).
   3. This followup resolved; followup written for the CI round-trip test.</pre>
     </article>
-<article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
+<article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-ship reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
     <div class="r-fu-body">Guard against the symmetry bugs: assert render(parse(html))==html and parse(render(state))==state across decisions, followups (incl. resolved), questions, meta scalars. Seed it with the three 2026-05-27 regressions.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -317,9 +318,9 @@ Done-when
   3. Wired into the reckon test run; this followup resolved.</pre>
     <p class="r-fu-outcome">DONE via the schema work (commit cf5fb2b) — the canonical round-trip parity test landed in tests/test_schema.py (test_state_round_trip + the model_dump-shape == read_state and to_html∘from_html == write_state∘read_state byte-identity assertions). Deliberate improvement on the original done-when: the byte-equality render(parse(html))==html invariant is fragile (write_state normalises whitespace/attr-order, so it flags every hand-authored plan); replaced by the robust STATE-LEVEL invariant parse(render(state))==state PLUS byte-identity of the regenerated reckon-owned sections. Covers the 2026-05-27 symmetry regressions: choice-vs-chosen (chosen is now derived, never stored) and followup/question status←resolved_at (derived in both parser and model). Wired into the standard reckon run (uv run --with pytest pytest tests/ -q); 702 passed.</p>
     </article>
-<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-tier="sonnet" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Close the milestone-tooling gap</h4>
-    <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren&#x27;t read-only-and-empty.</div>
+    <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.</div>
     <pre class="r-fu-prompt">Project: reckon
 Plan:    agent-plan-authoring (§7)
 Tier:    sonnet

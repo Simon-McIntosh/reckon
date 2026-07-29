@@ -11,7 +11,6 @@
   <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
-  <meta name="plan-tier" content="opus">
   <meta name="plan-sprint" content="S5">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="codex-agent-context-compatibility">
@@ -20,8 +19,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-impl" content="1.0">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
 </head>
 <body>
   <main class="plan-doc">
@@ -49,7 +50,7 @@
     <p>Commits <code>b1c9a5d</code>, <code>c1c6eeb</code>, and
       <code>0b9339c</code> landed with 19 matcher regressions, 1,087 combined
       integration tests, and the 1,270-test full suite passing. See the
-      <a href="archive/model-capability-schema-s2-s4-landed.html">landed evidence</a>.</p>
+      <a href="../evidence/archive/model-capability-schema-s2-s4-landed.html">landed evidence</a>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -75,7 +76,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-mcs-001" data-status="resolved" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship model-capability-schema" data-resolved-at="2026-07-29T12:13:23+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-mcs-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship model-capability-schema" data-resolved-at="2026-07-29T12:13:23+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement the provider-neutral capability contract</h4>
     <div class="r-fu-body"><p>Inventory every persisted and rendered tier field, lock the capability representation, then migrate the complete schema-to-dispatch vertical slice.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -100,7 +101,7 @@ Done-when
   3. followup written into plan + this followup marked resolved</pre>
     <p class="r-fu-outcome">Provider-neutral capability contract landed in b1c9a5d and c1c6eeb, integrated by 0b9339c; 19 matcher regressions, 1,087 combined schema/reference tests and 1,270 full-suite tests passed.</p>
     </article>
-<article class="r-fu" data-id="f-mcs-next-eoh-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mcs-next-eoh-20260729" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Consume neutral capability requests in bounded execution</h4>
     <div class="r-fu-body"><p>The versioned capability class, structured hard requirements, deterministic runtime matcher and legacy diagnostics are shipped. The dependent execution work can now persist capability requirements without storing provider identities.</p></div>
     <pre class="r-fu-prompt">Project: reckon

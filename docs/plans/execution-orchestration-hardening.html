@@ -11,7 +11,6 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
-  <meta name="plan-tier" content="opus">
   <meta name="plan-sprint" content="S6">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="codex-agent-context-compatibility,research-evidence-provenance,model-capability-schema">
@@ -19,8 +18,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-impl" content="0.3">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
 </head>
 <body>
   <main class="plan-doc">
@@ -41,16 +42,16 @@
       one-below routing, worktree-first delegation, orchestrator-owned
       integration, and conservative cleanup landed in commit
       <code>36d5bdd</code>. The execution ledger and MCP work remain open.
-      <a href="archive/execution-orchestration-hardening-sprint-delivery-landed.html">Read the evidence record.</a>
+      <a href="../evidence/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Read the evidence record.</a>
     </aside>
     <img src="/reckon/figures/execution-orchestration-hardening/sprint-delivery-flow.svg"
       alt="Sprint plans and evidence form a DAG whose ready nodes run in isolated worktrees before orchestrator integration and cleanup.">
     <h2 id="s4">§4 — Acceptance and observability</h2>
-    <p>Tests cover interrupted/resumed execution, version conflicts, worker failure, partial landings, checkout mismatch, absent subagent support, evidence gate failure and archive migration. A structured error log records tool, operation, request projection, response size, error class, retry and resolution. The input research is <a href="reckon-plan-management-audit.html">Reckon Plan Management Audit</a>.</p>
+    <p>Tests cover interrupted/resumed execution, version conflicts, worker failure, partial landings, checkout mismatch, absent subagent support, evidence gate failure and archive migration. A structured error log records tool, operation, request projection, response size, error class, retry and resolution. The input research is <a href="../research/reckon-plan-management-audit.html">Reckon Plan Management Audit</a>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-eoh-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-01" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the portable execution ledger and bounded sprint surface</h4>
     <div class="r-fu-body"><p>Begin after the context manifest and provenance types land, then refactor the skill and MCP around capability-aware, evidence-gated execution.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -75,7 +76,7 @@ Done-when
   2. tests still green
   3. followup written + this followup marked resolved</pre>
     </article>
-<article class="r-fu" data-id="f-eoh-sprint-delivery-20260729" data-status="resolved" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship reckon:S5" data-resolved-at="2026-07-29T09:59:53+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-eoh-sprint-delivery-20260729" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship reckon:S5" data-resolved-at="2026-07-29T09:59:53+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Deliver the sprint orchestration skill slice</h4>
     <div class="r-fu-body"><p>Implement sprint target resolution, evidence-aware dependency waves, provider-neutral capability routing, worktree isolation, orchestrator integration and cleanup guards.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -96,17 +97,17 @@ Done-when
   <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
 <div class="r-research" data-id="r-eoh-01" data-type="research-document" data-source="reckon" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/reckon-plan-management-audit.html">
-    <span class="r-research-title"><a href="/reckon/reckon-plan-management-audit.html">Reckon Plan Management Audit</a></span></div>
+    <span class="r-research-title"><a href="/reckon/research/reckon-plan-management-audit">Reckon Plan Management Audit</a></span></div>
 <div class="r-research" data-id="err-eoh-uv-cache" data-type="tool-error" data-source="Codex validation run" data-added-by="codex" data-when="2026-07-29">
     <span class="r-research-title">audit-doc initially failed: uv cache at ~/.cache/uv was read-only in the Codex sandbox; retry with UV_CACHE_DIR=/tmp/reckon-uv-cache passed</span></div>
 <div class="r-research" data-id="e-eoh-sprint-delivery" data-type="evidence-record" data-source="Reckon repository commit 36d5bdd" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Sprint delivery orchestration landed: target resolution, one-below routing, worktree isolation and conservative cleanup</a></span></div>
+    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Sprint delivery orchestration landed: target resolution, one-below routing, worktree isolation and conservative cleanup</a></span></div>
 <div class="r-research" data-id="err-eoh-validator-dependency" data-type="tool-error" data-source="Codex skill validation" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Skill validator initially failed because PyYAML was absent; uv run --with pyyaml made the dependency explicit</a></span></div>
+    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Skill validator initially failed because PyYAML was absent; uv run --with pyyaml made the dependency explicit</a></span></div>
 <div class="r-research" data-id="err-eoh-validator-frontmatter" data-type="tool-error" data-source="Codex skill validation" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Skill validation rejected angle brackets in frontmatter; syntax examples were retained in the body and frontmatter rephrased</a></span></div>
+    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Skill validation rejected angle brackets in frontmatter; syntax examples were retained in the body and frontmatter rephrased</a></span></div>
 <div class="r-research" data-id="err-eoh-evidence-schema-gap" data-type="tool-error" data-source="Reckon MCP audit" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Audit classified reckon-type evidence in discovery but rejected it against the current plan/research schema; the record uses a research compatibility envelope with artifact-kind evidence until typed provenance lands</a></span></div>
+    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Audit classified reckon-type evidence in discovery but rejected it against the current plan/research schema; the record uses a research compatibility envelope with artifact-kind evidence until typed provenance lands</a></span></div>
 </section>
 </main>
 </body>

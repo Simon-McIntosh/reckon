@@ -34,6 +34,7 @@ from reckon._schema import (
     gen_json_schema,
     schema_path,
 )
+from reckon.resources import iter_resources
 
 # ── Fixtures / sample plan HTML ──────────────────────────────────────────────
 
@@ -167,9 +168,9 @@ def test_byte_identity_on_real_reckon_plans():
     """Same byte-identity on the repo's own (already-normalised) plans."""
     docs = Path(__file__).resolve().parent.parent / "docs"
     plans = [
-        p
-        for p in sorted(docs.glob("*.html"))
-        if p.name not in {"index.html", "home.html"}
+        resource.path
+        for resource in iter_resources(docs, "reckon", include_archived=True)
+        if resource.type == "plan"
     ]
     assert plans, "expected reckon plans to exist"
     for p in plans:

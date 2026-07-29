@@ -52,7 +52,7 @@
     </figure>
 
     <h2 id="s2">§2 — Preflight and inventory <span class="badge badge-shipped">tooling landed</span></h2>
-    <p><strong>Landed:</strong> runtime registry hashing, per-mount Git/worktree/dirty-path inspection, content-bearing snapshots, atomic incremental ledger writes, and exact terminal deferrals are implemented in <code>f39a4cb</code>. <a href="/reckon/archive/registered-repo-state-migration-tooling-landed">Read the tooling record</a>.</p>
+    <p><strong>Landed:</strong> runtime registry hashing, per-mount Git/worktree/dirty-path inspection, content-bearing snapshots, atomic incremental ledger writes, and exact terminal deferrals are implemented in <code>f39a4cb</code>. <a href="/reckon/plans/archive/registered-repo-state-migration-tooling-landed">Read the tooling record</a>.</p>
     <p>The migration begins with a read-only inventory of the mount registry and each resolved repository root. For every project it records the mounted checkout, current branch and commit, dirty-tree state, existing artifact layout, sprint and milestone stores, plan schema versions, unresolved decisions and followups, server audit result, and whether alternate worktrees exist.</p>
     <p>Preflight must refuse ambiguous or unsafe targets. A missing repository root, unresolved mount symlink, dirty overlap with migration paths, detached mounted checkout, duplicate project identity, or unreadable state produces a deferred row with a concrete next action. Unrelated user changes are preserved. The mounted checkout must never be switched to another branch as a migration shortcut.</p>
 
