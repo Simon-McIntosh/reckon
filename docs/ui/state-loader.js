@@ -125,17 +125,15 @@ window.STATE_READY = (async function () {
   // index.json never stores, and is always up-to-date.
   // index.json is only used for project config (sprints, milestones, timeline).
   let disc = null;
-  try {
-    const response = await fetch(`/_discover/${PROJECT}`, { cache: "no-store" });
-    if (response.ok) {
-      disc = await response.json();
-    } else if (!(projectionBlob && response.status === 404)) {
-      throw new Error(`/_discover/${PROJECT} returned HTTP ${response.status}`);
-    }
-  } catch (error) {
-    // A built static site has an explicit projection and no discovery server.
-    // A live server failure must surface instead of reviving frozen legacy data.
-    if (!projectionBlob) throw error;
+  const discoveryResponse = await fetch(
+    `/_discover/${PROJECT}`, { cache: "no-store" }
+  );
+  if (discoveryResponse.ok) {
+    disc = await discoveryResponse.json();
+  } else if (!(projectionBlob && discoveryResponse.status === 404)) {
+    throw new Error(
+      `/_discover/${PROJECT} returned HTTP ${discoveryResponse.status}`
+    );
   }
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
     inventory = disc.inventory;

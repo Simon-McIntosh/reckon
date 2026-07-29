@@ -443,17 +443,13 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     sprints: list = []
     milestones: list = []
     if state_root is not None:
-        for cand in ("project.json", "index.json"):
-            sf = state_root / project / cand
-            if not sf.is_file():
-                continue
+        sf = state_root / project / "index.json"
+        if sf.is_file():
             try:
                 env = json.loads(sf.read_text())
                 data = env.get("data", {}) if isinstance(env, dict) else {}
                 sprints = data.get("sprints", [])
                 milestones = data.get("milestones", [])
-                if sprints or milestones:
-                    break
             except (OSError, json.JSONDecodeError):
                 pass
 

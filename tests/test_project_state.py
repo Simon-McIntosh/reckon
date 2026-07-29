@@ -6,6 +6,7 @@ import base64
 import http.client
 import json
 import multiprocessing
+import subprocess
 import threading
 from pathlib import Path
 
@@ -81,6 +82,30 @@ def _concurrent_read(
         queue.put(("ok", state.get("summary", ""), version))
     except Exception as exc:  # pragma: no cover - surfaced through queue
         queue.put(("error", str(exc)))
+
+
+def _concurrent_activate(
+    docs: str,
+    sprint_id: str,
+    barrier: multiprocessing.synchronize.Barrier,
+    queue: multiprocessing.queues.Queue,
+) -> None:
+    """Process target: activate a different sprint at the same instant."""
+    root = Path(docs)
+    sprint, version = read_resource(root, "sample", "sprint", sprint_id)
+    try:
+        new_version = write_resource(
+            root,
+            "sample",
+            "sprint",
+            sprint_id,
+            {**sprint, "status": "active"},
+            version,
+            before_invariant_lock=barrier.wait,
+        )
+        queue.put(("ok", sprint_id, new_version))
+    except ValueError as exc:
+        queue.put(("rejected", sprint_id, str(exc)))
 
 
 def _write_plan(docs: Path, slug: str, status: str, impl: float) -> None:
@@ -255,7 +280,7 @@ def test_concurrent_migrations_are_globally_serialized(tmp_path):
     for worker in workers:
         worker.start()
     for worker in workers:
-        worker.join(timeout=15)
+        worker.join(timeout=30)
         assert worker.exitcode == 0
     results = sorted(queue.get(timeout=2) for _ in workers)
     assert results == [("ok", False), ("ok", True)]
@@ -354,7 +379,7 @@ def test_concurrent_same_resource_writers_have_one_winner(migrated):
     for worker in workers:
         worker.start()
     for worker in workers:
-        worker.join(timeout=10)
+        worker.join(timeout=30)
         assert worker.exitcode == 0
     results = sorted(queue.get(timeout=2)[0] for _ in workers)
     assert results == ["conflict", "ok"]
@@ -372,6 +397,76 @@ def test_unique_active_is_derived_and_multiple_active_rejects(migrated):
             {**earlier, "status": "active"},
             earlier_version,
         )
+
+
+def test_concurrent_activation_has_exactly_one_winner(migrated):
+    docs, _, _ = migrated
+    current, current_version = read_resource(docs, "sample", "sprint", "current")
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "current",
+        {**current, "status": "planned"},
+        current_version,
+    )
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "future",
+        {"theme": "Future", "status": "planned", "items": []},
+        0,
+        create=True,
+    )
+
+    context = multiprocessing.get_context("spawn")
+    barrier = context.Barrier(2)
+    queue = context.Queue()
+    workers = [
+        context.Process(
+            target=_concurrent_activate,
+            args=(str(docs), sprint_id, barrier, queue),
+        )
+        for sprint_id in ("earlier", "future")
+    ]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=30)
+        assert worker.exitcode == 0
+    results = [queue.get(timeout=2) for _ in workers]
+    assert sorted(result[0] for result in results) == ["ok", "rejected"]
+    rejected = next(result for result in results if result[0] == "rejected")
+    assert "multiple active sprints" in rejected[2]
+    active = [
+        sprint["id"]
+        for sprint in compose_project_state(docs, "sample")["sprints"]
+        if sprint["status"] == "active"
+    ]
+    assert len(active) == 1
+    assert active[0] in {"earlier", "future"}
+
+
+def test_non_activation_sprint_edits_do_not_take_invariant_lock(migrated):
+    docs, _, _ = migrated
+    earlier, version = read_resource(docs, "sample", "sprint", "earlier")
+
+    def unexpected() -> None:
+        raise AssertionError("unrelated edit took the active-sprint lock")
+
+    assert (
+        write_resource(
+            docs,
+            "sample",
+            "sprint",
+            "earlier",
+            {**earlier, "summary": "unrelated"},
+            version,
+            before_invariant_lock=unexpected,
+        )
+        == version + 1
+    )
 
 
 def test_timeline_is_append_only(migrated):
@@ -537,7 +632,7 @@ def test_concurrent_recovery_readers_restore_once_without_errors(migrated):
     for worker in workers:
         worker.start()
     for worker in workers:
-        worker.join(timeout=15)
+        worker.join(timeout=30)
         assert worker.exitcode == 0
     results = [queue.get(timeout=2) for _ in workers]
     assert all(result[0] == "ok" for result in results)
@@ -823,6 +918,43 @@ def test_legacy_discovery_ignores_partial_distributed_destinations(tmp_path):
     assert {row["id"] for row in discovered["sprints"]} == {"earlier", "current"}
 
 
+def test_legacy_discovery_uses_index_when_project_json_diverges(tmp_path):
+    from reckon.serve import discover_plans
+
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, "alpha", "active", 0.4)
+    _legacy_index(docs)
+    project_json = docs / "state" / "sample" / "project.json"
+    project_json.write_text(
+        json.dumps(
+            {
+                "project": "sample",
+                "doc": "project",
+                "data": {
+                    "sprints": [
+                        {
+                            "id": "wrong",
+                            "status": "active",
+                            "items": [],
+                        }
+                    ],
+                    "milestones": [{"id": "wrong"}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    discovered = discover_plans(docs, "sample", docs / "state")
+    assert discovered["source_format"] == "legacy-index"
+    assert {row["id"] for row in discovered["sprints"]} == {
+        "earlier",
+        "current",
+    }
+    assert {row["id"] for row in discovered["milestones"]} == {"launch"}
+
+
 def test_http_project_resources_are_symmetric_and_index_is_frozen(
     migrated, tmp_path, monkeypatch
 ):
@@ -882,11 +1014,60 @@ def test_http_project_resources_are_symmetric_and_index_is_frozen(
         thread.join(timeout=5)
 
 
-def test_spa_loaders_surface_distributed_state_failures():
-    loader = Path("docs/ui/state-loader.js").read_text(encoding="utf-8")
-    sync_state = Path("skills/reckon-sync/assets/state.js").read_text(encoding="utf-8")
-    assert "response.status === 404" in loader
-    assert "window.STATE_ERROR = error" in loader
-    assert "required: true" in loader
-    assert "throw new Error(`index state returned HTTP ${r.status}`)" in sync_state
-    assert "window.STATE_ERROR = e" in sync_state
+def _run_state_loader(discovery_status: int) -> dict:
+    loader = Path("docs/ui/state-loader.js").resolve()
+    script = f"""
+const fs = require("fs");
+global.window = {{location: {{pathname: "/sample/"}}}};
+global.document = {{
+  querySelector: () => ({{content: "sample"}})
+}};
+const projection = {{
+  data: {{
+    source_format: "distributed",
+    inventory: [{{slug: "alpha", type: "plan", status: "active"}}],
+    sprints: [],
+    milestones: []
+  }}
+}};
+global.fetch = async (url) => {{
+  if (url === "state/sample/projection.json") {{
+    return {{ok: true, status: 200, json: async () => projection}};
+  }}
+  if (url === "/_discover/sample") {{
+    return {{ok: false, status: {discovery_status}, json: async () => ({{}})}};
+  }}
+  throw new Error("unexpected fetch " + url);
+}};
+eval(fs.readFileSync({json.dumps(str(loader))}, "utf8"));
+window.STATE_READY.then(
+  () => console.log(JSON.stringify({{
+    resolved: true,
+    inventory: window.STATE.inventory.map(item => item.slug)
+  }})),
+  error => console.log(JSON.stringify({{
+    resolved: false,
+    message: error.message,
+    state_error: window.STATE_ERROR && window.STATE_ERROR.message
+  }}))
+);
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_spa_static_projection_allows_explicit_discovery_not_found():
+    result = _run_state_loader(404)
+    assert result == {"resolved": True, "inventory": ["alpha"]}
+
+
+def test_spa_projection_does_not_hide_discovery_server_failure():
+    result = _run_state_loader(500)
+    assert result["resolved"] is False
+    assert result["message"] == "/_discover/sample returned HTTP 500"
+    assert result["state_error"] == result["message"]

@@ -25,7 +25,7 @@ import os
 import re
 import shutil
 import tempfile
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -520,6 +520,7 @@ def write_resource(
     expected_version: int,
     *,
     create: bool = False,
+    before_invariant_lock: Callable[[], None] | None = None,
 ) -> int:
     """Version-check and atomically write one distributed resource."""
     mode = project_state_mode(docs_dir)
@@ -537,6 +538,7 @@ def write_resource(
             data,
             expected_version,
             create=create,
+            before_invariant_lock=before_invariant_lock,
         )
 
 
@@ -549,6 +551,7 @@ def _write_resource_unlocked(
     expected_version: int,
     *,
     create: bool = False,
+    before_invariant_lock: Callable[[], None] | None = None,
 ) -> int:
     """Write while the caller holds the corresponding resource lock."""
     path = resource_path(docs_dir, project, resource_type, resource_id)
@@ -573,46 +576,60 @@ def _write_resource_unlocked(
             "version": current_version + 1,
         },
     )
-    if resource_type == "timeline" and current:
-        previous_events = list(current.get("events", []))
-        next_events = list(payload.get("events", []))
-        if (
-            len(next_events) < len(previous_events)
-            or next_events[: len(previous_events)] != previous_events
-        ):
-            raise ValueError(
-                "timeline is append-only; existing events must remain an exact prefix"
-            )
-    _validate_runtime_references(
-        docs_dir,
-        project,
-        resource_type,
-        resource_id,
-        payload,
+    activates_sprint = (
+        resource_type == "sprint"
+        and current.get("status") != "active"
+        and payload.get("status") == "active"
     )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    if activates_sprint and before_invariant_lock:
+        before_invariant_lock()
+    lock = (
+        _resource_lock(docs_dir, project, "invariant", "active-sprint")
+        if activates_sprint
+        else nullcontext()
     )
-    os.close(fd)
-    tmp = Path(tmp_name)
-    if resource_type == "project":
-        envelope = {
-            "updated": datetime.now(UTC).isoformat(timespec="seconds"),
-            "project": project,
-            "doc": "project",
-            "data": payload,
-        }
-        tmp.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-    else:
-        tmp.write_text(
-            _render_resource(project, resource_type, resource_id, payload),
-            encoding="utf-8",
+    with lock:
+        if resource_type == "timeline" and current:
+            previous_events = list(current.get("events", []))
+            next_events = list(payload.get("events", []))
+            if (
+                len(next_events) < len(previous_events)
+                or next_events[: len(previous_events)] != previous_events
+            ):
+                raise ValueError(
+                    "timeline is append-only; existing events must remain "
+                    "an exact prefix"
+                )
+        _validate_runtime_references(
+            docs_dir,
+            project,
+            resource_type,
+            resource_id,
+            payload,
         )
-    try:
-        _durable_replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
+        if resource_type == "project":
+            envelope = {
+                "updated": datetime.now(UTC).isoformat(timespec="seconds"),
+                "project": project,
+                "doc": "project",
+                "data": payload,
+            }
+            tmp.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+        else:
+            tmp.write_text(
+                _render_resource(project, resource_type, resource_id, payload),
+                encoding="utf-8",
+            )
+        try:
+            _durable_replace(tmp, path)
+        finally:
+            tmp.unlink(missing_ok=True)
     return current_version + 1
 
 
