@@ -8,6 +8,67 @@ import click
 from reckon._store import _config_home
 
 
+def _asset_root() -> Path:
+    """Resolve the canonical frontend assets from an install or source tree."""
+    package_dir = Path(__file__).resolve().parent
+    candidates = (package_dir / "_assets", package_dir.parent / "docs")
+    required = {
+        "ui": ("shell.jsx", "state-loader.js"),
+        "_shared": ("foundation.css", "dashboard.css", "state.js"),
+    }
+    for root in candidates:
+        if all(
+            (root / directory).is_dir()
+            and all((root / directory / name).is_file() for name in names)
+            for directory, names in required.items()
+        ):
+            return root
+
+    searched = ", ".join(str(path) for path in candidates)
+    raise click.ClickException(
+        "reckon frontend assets are missing or incomplete; "
+        f"searched package and source locations: {searched}"
+    )
+
+
+def _copy_asset_directory(source: Path, destination: Path) -> int:
+    """Copy every top-level asset file, rejecting malformed destinations."""
+    if destination.exists() and not destination.is_dir():
+        raise click.ClickException(
+            f"{destination.name} exists but is not a directory: {destination}"
+        )
+    source_files = [path for path in sorted(source.iterdir()) if path.is_file()]
+    if not source_files:
+        raise click.ClickException(f"frontend asset directory is empty: {source}")
+    destination.mkdir(parents=True, exist_ok=True)
+    for source_file in source_files:
+        shutil.copy2(source_file, destination / source_file.name)
+    return len(source_files)
+
+
+def _merge_records_by_id(authored: list, discovered: list) -> list:
+    """Supplement authored project records without replacing authored fields."""
+    merged = [dict(item) for item in authored]
+    positions = {
+        item.get("id"): index
+        for index, item in enumerate(merged)
+        if isinstance(item, dict) and item.get("id")
+    }
+    for item in discovered:
+        if not isinstance(item, dict):
+            continue
+        item_id = item.get("id")
+        if item_id in positions:
+            combined = dict(item)
+            combined.update(merged[positions[item_id]])
+            merged[positions[item_id]] = combined
+        else:
+            if item_id:
+                positions[item_id] = len(merged)
+            merged.append(dict(item))
+    return merged
+
+
 @click.group()
 def main():
     """reckon — repo-agnostic agile planning system."""
@@ -192,12 +253,12 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
         raise click.ClickException(f"docs path not found: {docs_dir}")
 
     proj_name = project or docs_dir.parent.name
-    reckon_root = Path(__file__).parent.parent  # ~/Code/reckon
+    asset_root = _asset_root()
 
     click.echo(f"Syncing {proj_name} → {docs_dir}")
 
     # ── Copy shared CSS + state.js ─────────────────────────────────────────
-    shared_src = reckon_root / "docs" / "_shared"
+    shared_src = asset_root / "_shared"
     shared_dest = docs_dir / "_shared"
     shared_dest.mkdir(parents=True, exist_ok=True)
     for fname in ("foundation.css", "dashboard.css"):
@@ -390,10 +451,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: {{ python-version: "3.12" }}
-      - run: pip install reckon
-      - run: reckon build {docs_path}
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx --from "git+https://github.com/Simon-McIntosh/reckon@v0.2.0rc25" reckon build {docs_path}
       - uses: actions/upload-pages-artifact@v3
         with: {{ path: {docs_path} }}
   deploy:
@@ -431,33 +490,21 @@ def build(docs_path, project):
         raise click.ClickException(f"docs path not found: {docs_dir}")
 
     proj_name = project or docs_dir.parent.name
-    reckon_root = Path(__file__).parent.parent
+    asset_root = _asset_root()
 
     click.echo(f"Building static site: {proj_name} → {docs_dir}")
 
     # ── Copy UI assets (JSX + CSS) ─────────────────────────────────────────
-    ui_src = reckon_root / "docs" / "ui"
+    ui_src = asset_root / "ui"
     ui_dest = docs_dir / "_ui"
-    if ui_src.is_dir():
-        if ui_dest.exists() and not ui_dest.is_dir():
-            raise click.ClickException(f"_ui exists but is not a directory: {ui_dest}")
-        ui_dest.mkdir(parents=True, exist_ok=True)
-        copied = 0
-        for src_file in sorted(ui_src.iterdir()):
-            if src_file.is_file():
-                shutil.copy2(src_file, ui_dest / src_file.name)
-                copied += 1
-        click.echo(f"  copied _ui/ ({copied} files)")
+    copied_ui = _copy_asset_directory(ui_src, ui_dest)
+    click.echo(f"  copied _ui/ ({copied_ui} files)")
 
     # ── Copy shared CSS + state.js ─────────────────────────────────────────
-    shared_src = reckon_root / "docs" / "_shared"
+    shared_src = asset_root / "_shared"
     shared_dest = docs_dir / "_shared"
-    if shared_src.is_dir():
-        shared_dest.mkdir(parents=True, exist_ok=True)
-        for src_file in sorted(shared_src.iterdir()):
-            if src_file.is_file():
-                shutil.copy2(src_file, shared_dest / src_file.name)
-        click.echo("  copied _shared/")
+    copied_shared = _copy_asset_directory(shared_src, shared_dest)
+    click.echo(f"  copied _shared/ ({copied_shared} files)")
 
     # ── Generate index.html with RELATIVE paths ────────────────────────────
     index_html = docs_dir / "index.html"
@@ -488,8 +535,12 @@ def build(docs_path, project):
             pass
 
     idx_data["inventory"] = discovered["inventory"]
-    idx_data["sprints"] = discovered["sprints"]
-    idx_data["milestones"] = discovered["milestones"]
+    idx_data["sprints"] = _merge_records_by_id(
+        idx_data.get("sprints") or [], discovered["sprints"]
+    )
+    idx_data["milestones"] = _merge_records_by_id(
+        idx_data.get("milestones") or [], discovered["milestones"]
+    )
     if not idx_data.get("active_sprint_id"):
         active = next(
             (s for s in idx_data["sprints"] if s.get("status") == "active"), None
@@ -788,6 +839,9 @@ _BUILD_INDEX_TEMPLATE = """\
 <body>
   <div id="root"></div>
   <script src="_ui/state-loader.js"></script>
+  <script type="text/babel" src="_ui/glyphs.jsx"></script>
+  <script type="text/babel" src="_ui/_shared.jsx"></script>
+  <script src="_ui/prompts.js"></script>
   <script type="text/babel" src="_ui/ui.jsx"></script>
   <script type="text/babel" src="_ui/bits.jsx"></script>
   <script type="text/babel" src="_ui/decision.jsx"></script>
