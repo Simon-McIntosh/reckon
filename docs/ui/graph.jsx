@@ -13,6 +13,15 @@ function _refSlug(ref) {
   return String(ref || "").split("#", 1)[0].split(":").pop();
 }
 
+function _artifactKey(artifact) {
+  if (artifact?.nav_key) return artifact.nav_key;
+  const artifactType = artifact?.type || "plan";
+  const archivePart = artifact?.archived ? "archive:" : "";
+  return artifactType === "plan" && !archivePart
+    ? artifact.slug
+    : `${artifactType}:${archivePart}${artifact.slug}`;
+}
+
 function _criticalPath(plans) {
   plans = plans.filter(p => (p.type || "plan") === "plan");
   const bySlug = Object.fromEntries(plans.map(p => [p.slug, p]));
@@ -185,20 +194,20 @@ function CriticalPathView({ onNav }) {
 
   // Plans not in fullPrereqSet and active/blocked (other active plans)
   const otherActive = M.inventory
-    .filter(p => !fullPrereqSet.has(p.slug) && (p.status === "active" || p.status === "blocked"))
+    .filter(p => (p.type || "plan") === "plan" && !fullPrereqSet.has(p.slug) && (p.status === "active" || p.status === "blocked"))
     .sort((a, b) => (b.impl || 0) - (a.impl || 0));
 
   // Mini-map data
   const mini = React.useMemo(() => {
     const plans = M.inventory;
     const depth = {};
-    const bs = Object.fromEntries(plans.map(p => [p.slug, p]));
+    const bs = Object.fromEntries(plans.map(p => [_artifactKey(p), p]));
     const researchInputs = {};
     for (const artifact of plans) {
       if (artifact.type !== "research") continue;
       for (const ref of (artifact.informs || [])) {
         const target = _refSlug(ref);
-        (researchInputs[target] = researchInputs[target] || []).push(artifact.slug);
+        (researchInputs[target] = researchInputs[target] || []).push(_artifactKey(artifact));
       }
     }
     function d(s, seen = new Set()) {
@@ -208,16 +217,22 @@ function CriticalPathView({ onNav }) {
       const artifact = bs[s] || {};
       const provenanceDeps = artifact.type === "evidence"
         ? [...(artifact.evidence_for || []), ...(artifact.verifies || [])].map(_refSlug)
-        : (researchInputs[s] || []);
-      const dd = [...(artifact.depends_on || []), ...provenanceDeps].filter(x => bs[x]);
+        : artifact.type === "plan" ? (researchInputs[artifact.slug] || []) : [];
+      const authoredDeps = artifact.type === "plan"
+        ? (artifact.depends_on || []).map(_refSlug)
+        : [];
+      const dd = [...authoredDeps, ...provenanceDeps].filter(x => bs[x]);
       if (dd.length === 0) { depth[s] = 0; return 0; }
       depth[s] = 1 + Math.max(...dd.map(x => d(x, seen)));
       return depth[s];
     }
-    plans.forEach(p => d(p.slug));
+    plans.forEach(p => d(_artifactKey(p)));
     const maxD = Math.max(0, ...Object.values(depth));
     const byDepth = {};
-    for (const p of plans) (byDepth[depth[p.slug]] = byDepth[depth[p.slug]] || []).push(p);
+    for (const p of plans) {
+      const key = _artifactKey(p);
+      (byDepth[depth[key]] = byDepth[depth[key]] || []).push(p);
+    }
     const W = 280, H = 130;
     const colW = W / (maxD + 2);
     const pos = {};
@@ -225,28 +240,28 @@ function CriticalPathView({ onNav }) {
       const col = byDepth[i] || [];
       const rowH = (H - 20) / Math.max(1, col.length);
       col.forEach((p, j) => {
-        pos[p.slug] = { x: 14 + i * colW, y: 10 + (j + 0.5) * rowH };
+        pos[_artifactKey(p)] = { x: 14 + i * colW, y: 10 + (j + 0.5) * rowH };
       });
     }
     const edges = [];
     for (const p of plans) {
       for (const dep of (p.depends_on || [])) {
         if (!bs[dep]) continue;
-        const a = pos[dep], b = pos[p.slug];
+        const a = pos[_refSlug(dep)], b = pos[_artifactKey(p)];
         if (!a || !b) continue;
         edges.push({ a, b, crit: onPath.has(dep) && onPath.has(p.slug) });
       }
       if (p.type === "research") {
         for (const ref of (p.informs || [])) {
           const target = _refSlug(ref);
-          const a = pos[p.slug], b = pos[target];
+          const a = pos[_artifactKey(p)], b = pos[target];
           if (a && b) edges.push({ a, b, crit: false, provenance: true });
         }
       }
       if (p.type === "evidence") {
         for (const ref of [...(p.evidence_for || []), ...(p.verifies || [])]) {
           const source = _refSlug(ref);
-          const a = pos[source], b = pos[p.slug];
+          const a = pos[source], b = pos[_artifactKey(p)];
           if (a && b) edges.push({ a, b, crit: false, provenance: true });
         }
       }
@@ -395,19 +410,21 @@ function CriticalPathView({ onNav }) {
                 strokeWidth={e.crit ? 1.8 : 1}/>
             ))}
             {mini.plans.map(p => {
-              const xy = mini.pos[p.slug];
+              const navKey = _artifactKey(p);
+              const xy = mini.pos[navKey];
               if (!xy) return null;
               const c = statusColor(p.status);
-              const isCrit = onPath.has(p.slug);
-              const isEndpoint = endpointToChain[p.slug] !== undefined;
-              const isOffChainPrereq = fullPrereqSet.has(p.slug) && !onPath.has(p.slug);
+              const isPlanArtifact = (p.type || "plan") === "plan" && !p.archived;
+              const isCrit = isPlanArtifact && onPath.has(p.slug);
+              const isEndpoint = isPlanArtifact && endpointToChain[p.slug] !== undefined;
+              const isOffChainPrereq = isPlanArtifact && fullPrereqSet.has(p.slug) && !onPath.has(p.slug);
               return (
-                <g key={p.slug}
+                <g key={navKey}
                    transform={`translate(${xy.x},${xy.y})`}
                    style={{ cursor: isEndpoint ? "pointer" : "default" }}
                    onClick={() => {
                      if (isEndpoint) setPathIdx(endpointToChain[p.slug]);
-                     else onNav({ view: "plan", slug: p.slug });
+                     else onNav({ view: "plan", slug: navKey });
                    }}>
                   <title>{p.title} · {p.status}{isEndpoint ? " (endpoint — click to select)" : ""}</title>
                   {isCrit && <circle r="6" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>}
@@ -487,7 +504,7 @@ function _PlanCard({ plan, role, focal, onClick }) {
     <button
       type="button"
       className={`r-gcard r-gcard-${role} ${focal ? "focal" : ""} ${artifactType === "plan" ? plan.status : artifactType} ${isArchived ? "archived" : ""}`}
-      data-graph-slug={plan.slug}
+      data-graph-slug={_artifactKey(plan)}
       onClick={onClick}
       title={plan.title}
     >
@@ -520,22 +537,23 @@ function _buildReverseIndex(inventory) {
   const researchInputs = {};
   const evidenceOutputs = {};
   for (const p of inventory) {
+    const key = _artifactKey(p);
     for (const d of (p.depends_on || [])) {
-      (revDeps[d] = revDeps[d] || []).push(p.slug);
+      (revDeps[_refSlug(d)] = revDeps[_refSlug(d)] || []).push(key);
     }
     for (const b of (p.blocks || [])) {
-      (revBlocks[b] = revBlocks[b] || []).push(p.slug);
+      (revBlocks[_refSlug(b)] = revBlocks[_refSlug(b)] || []).push(key);
     }
     if (p.type === "research") {
       for (const ref of (p.informs || [])) {
         const target = _refSlug(ref);
-        (researchInputs[target] = researchInputs[target] || []).push(p.slug);
+        (researchInputs[target] = researchInputs[target] || []).push(key);
       }
     }
     if (p.type === "evidence") {
       for (const ref of [...(p.evidence_for || []), ...(p.verifies || [])]) {
         const source = _refSlug(ref);
-        (evidenceOutputs[source] = evidenceOutputs[source] || []).push(p.slug);
+        (evidenceOutputs[source] = evidenceOutputs[source] || []).push(key);
       }
     }
   }
@@ -545,10 +563,11 @@ function _buildReverseIndex(inventory) {
 function _effectiveNeighbours(focal, bySlug, revIdx) {
   if (!focal) return { deps: [], blocks: [] };
   const seen = new Set();
+  const focalKey = _artifactKey(focal);
   const collect = (slugs) => {
     const out = [];
     for (const s of (slugs || [])) {
-      if (!s || seen.has(s) || s === focal.slug) continue;
+      if (!s || seen.has(s) || s === focalKey) continue;
       seen.add(s);
       const p = bySlug[s];
       if (p) out.push(p);
@@ -558,36 +577,39 @@ function _effectiveNeighbours(focal, bySlug, revIdx) {
   const depsSeen = new Set();
   const blocksSeen = new Set();
   const pushUnique = (set, out, plans) => {
-    for (const p of plans) { if (!set.has(p.slug)) { set.add(p.slug); out.push(p); } }
+    for (const p of plans) {
+      const key = _artifactKey(p);
+      if (!set.has(key)) { set.add(key); out.push(p); }
+    }
   };
   const deps = [];
-  pushUnique(depsSeen, deps, ((focal.depends_on || []).map(s => bySlug[s]).filter(Boolean)));
-  pushUnique(depsSeen, deps, ((revIdx.revBlocks[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
   if (focal.type === "plan" || !focal.type) {
+    pushUnique(depsSeen, deps, ((focal.depends_on || []).map(_refSlug).map(s => bySlug[s]).filter(Boolean)));
+    pushUnique(depsSeen, deps, ((revIdx.revBlocks[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
     pushUnique(depsSeen, deps, ((revIdx.researchInputs[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
   } else if (focal.type === "evidence") {
     const refs = [...(focal.evidence_for || []), ...(focal.verifies || [])].map(_refSlug);
     pushUnique(depsSeen, deps, refs.map(s => bySlug[s]).filter(Boolean));
   }
   const blocks = [];
-  pushUnique(blocksSeen, blocks, ((focal.blocks || []).map(s => bySlug[s]).filter(Boolean)));
-  pushUnique(blocksSeen, blocks, ((revIdx.revDeps[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
   if (focal.type === "plan" || !focal.type) {
+    pushUnique(blocksSeen, blocks, ((focal.blocks || []).map(_refSlug).map(s => bySlug[s]).filter(Boolean)));
+    pushUnique(blocksSeen, blocks, ((revIdx.revDeps[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
     pushUnique(blocksSeen, blocks, ((revIdx.evidenceOutputs[focal.slug] || []).map(s => bySlug[s]).filter(Boolean)));
   } else if (focal.type === "research") {
     pushUnique(blocksSeen, blocks, (focal.informs || []).map(_refSlug).map(s => bySlug[s]).filter(Boolean));
   }
   // Guard against self-loops and dep⇄block overlap (a plan shouldn't appear in
   // both columns — when it does, prefer the explicitly-authored side).
-  const blockSlugs = new Set(blocks.map(p => p.slug));
-  const cleanDeps = deps.filter(p => !blockSlugs.has(p.slug) || (focal.depends_on || []).includes(p.slug));
+  const blockKeys = new Set(blocks.map(_artifactKey));
+  const cleanDeps = deps.filter(p => !blockKeys.has(_artifactKey(p)) || (focal.depends_on || []).map(_refSlug).includes(p.slug));
   return { deps: cleanDeps, blocks };
 }
 
 function RadialFan({ focalSlug, onNav, compact = false }) {
   const M = window.STATE;
   if (!M) return null;
-  const bySlug = React.useMemo(() => Object.fromEntries(M.inventory.map(p => [p.slug, p])), [M.inventory]);
+  const bySlug = React.useMemo(() => Object.fromEntries(M.inventory.map(p => [_artifactKey(p), p])), [M.inventory]);
   const revIdx = React.useMemo(() => _buildReverseIndex(M.inventory), [M.inventory]);
   const focal = bySlug[focalSlug];
 
@@ -642,7 +664,7 @@ function RadialFan({ focalSlug, onNav, compact = false }) {
 
   if (!focal) return <div style={{ padding: 24, color: "var(--muted)" }}>No plan selected.</div>;
 
-  const goTo = (slug) => onNav({ view: "plan", slug });
+  const goTo = (key) => onNav({ view: "plan", slug: key });
   const empty = deps.length === 0 && blocks.length === 0;
 
   return (
@@ -681,7 +703,7 @@ function RadialFan({ focalSlug, onNav, compact = false }) {
           <div className="r-fan-col-body">
             {deps.length === 0 && <div className="r-fan-col-empty">No upstream dependencies</div>}
             {deps.map(p => (
-              <_PlanCard key={p.slug} plan={p} role="dep" focal={false} onClick={() => goTo(p.slug)} />
+              <_PlanCard key={_artifactKey(p)} plan={p} role="dep" focal={false} onClick={() => goTo(_artifactKey(p))} />
             ))}
           </div>
         </div>
@@ -705,7 +727,7 @@ function RadialFan({ focalSlug, onNav, compact = false }) {
           <div className="r-fan-col-body">
             {blocks.length === 0 && <div className="r-fan-col-empty">Nothing downstream</div>}
             {blocks.map(p => (
-              <_PlanCard key={p.slug} plan={p} role="blk" focal={false} onClick={() => goTo(p.slug)} />
+              <_PlanCard key={_artifactKey(p)} plan={p} role="blk" focal={false} onClick={() => goTo(_artifactKey(p))} />
             ))}
           </div>
         </div>

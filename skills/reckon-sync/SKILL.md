@@ -50,17 +50,19 @@ repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
 
 ## What appears in the plan inventory
 
-**Any HTML file under `docs/` is discovered — no content filter is applied.** Sparse plans (bare HTML with no `plan-*` meta) appear as `status=draft` with `<title>` as the title. Existence is sufficient.
+**Discovery uses the shared typed resolver.** Canonical roots are
+`plans/`, `research/`, `evidence/`, and `sprints/`; bounded flat resources are
+read for compatibility until `reckon migrate-layout docs` is run explicitly.
 
-**Excluded dirs** (children of the project's docs dir):
-`_shared`, `ui`, `state`, `assets`, `images`, `archive`
+**Infrastructure dirs** are `_shared`, `_ui`, `ui`, `state`, `assets`,
+`images`, and `figures`.
 
 **Excluded files:**
 `index.html`, `sprint.html`, `sprints.html`, `milestones.html`, `decisions.html`, `inventory.html`, `blockers.html`, `implementation.html`, `questions.html`, `home.html`, `project.html`
 
 **Research docs** (`<meta name="reckon-type" content="research">`) appear with a "research" banner in the SPA and `type="research"` in the discovery payload. They have no decision/followup workflow. If you see plans appearing with minimal metadata, they are genuinely sparse — not filtered out.
 
-Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under `docs/archive/` so it does not clutter the live inventory.
+Per-stage history lives in the owning typed root's `archive/` directory.
 
 ## Workflow
 

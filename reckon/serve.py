@@ -48,6 +48,13 @@ from urllib.parse import unquote, urlsplit
 
 from reckon import _plan_html
 from reckon._store import _config_home
+from reckon.resources import (
+    ROOT_TYPES,
+    ResourceCollision,
+    resource_map,
+    resolve_resource,
+    resolve_route,
+)
 
 HOME = Path.home()
 
@@ -324,40 +331,35 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     git_times = _git_first_committed(repo_dir, docs_dir)
 
     inventory: list[dict] = []
-    seen_slugs: set[str] = set()
+    resources = sorted(
+        resource_map(docs_dir, project, include_archived=True).values(),
+        key=lambda item: str(item.relative_path),
+    )
 
-    for html_file in html_files:
-        rel = html_file.relative_to(docs_dir)
-        # Skip infrastructure directories
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+    for resource in resources:
+        if resource.type == "sprint":
             continue
-        if html_file.name in _NON_PLAN_FILES:
-            continue
-        in_archive = _ARCHIVE_DIR in rel.parts[:-1]
+        html_file = resource.path
 
         # Lightweight inventory: head <meta> + a regex open-decision count, no
         # full-body parse — so a project with thousands of docs stays cheap.
         # The SPA fetches a doc's full state (decisions, followups, …) from
         # GET /plan/<project>/<slug> when it opens that doc.
         rec = _plan_html.parse_meta(html_file)
-        slug = rec["slug"]
-
-        # Slugs are the navigation identity; keep them unique. On a collision
-        # the first file in sorted order wins (matches _resolve_plan_file).
-        if slug in seen_slugs:
-            continue
-        seen_slugs.add(slug)
-
-        # href is the URL path under /<project>/ used to fetch the HTML.
-        # Root-level docs: href == slug. Subdirectory docs (e.g. research/X):
-        # href includes the subdir so the fetch resolves.
-        rel_no_ext = str(rel.with_suffix(""))
-        href = rel_no_ext if rel_no_ext != slug else slug
-
-        artifact_type = rec.get("type", "plan")
+        slug = resource.slug
+        artifact_type = resource.type
         item = {
             "slug": slug,
-            "href": href,
+            "resource_id": resource.identity.key,
+            "href": str(
+                (
+                    resource.relative_path
+                    if resource.legacy
+                    else resource.canonical_relative_path
+                ).with_suffix("")
+            ),
+            "canonical_href": resource.canonical_href,
+            "legacy": resource.legacy,
             "title": rec["title"],
             "type": artifact_type,
             "summary": rec.get("summary", ""),
@@ -369,7 +371,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 or html_file.stat().st_ctime
             ),
             "version": rec["version"],
-            "archived": rec.get("archived") or ("1" if in_archive else ""),
+            "archived": rec.get("archived") or ("1" if resource.archived else ""),
             "read": rec.get("read") or "",
             "reviewed_at": rec.get("reviewed_at", ""),
             "recorded_at": rec.get("recorded_at", ""),
@@ -409,24 +411,24 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     sprints: list = []
     milestones: list = []
 
-    sprints_dir = docs_dir / "sprints"
-    if sprints_dir.is_dir():
-        for sf in sorted(sprints_dir.glob("*.html")):
-            _, meta = _read_head_meta(sf)
-            sid = meta.get("sprint-id")
-            if not sid:
-                continue
-            sprints.append(
-                {
-                    "id": sid,
-                    "theme": meta.get("sprint-theme", f"Sprint {sid}"),
-                    "description": meta.get("sprint-description", ""),
-                    "status": meta.get("sprint-status", "planned"),
-                    "starts": meta.get("sprint-starts", ""),
-                    "ends": meta.get("sprint-ends", ""),
-                    "items": [],
-                }
-            )
+    for resource in resources:
+        if resource.type != "sprint" or resource.archived:
+            continue
+        _, meta = _read_head_meta(resource.path)
+        sid = meta.get("sprint-id") or resource.slug
+        sprints.append(
+            {
+                "id": sid,
+                "resource_id": resource.identity.key,
+                "href": str(resource.canonical_relative_path.with_suffix("")),
+                "theme": meta.get("sprint-theme", f"Sprint {sid}"),
+                "description": meta.get("sprint-description", ""),
+                "status": meta.get("sprint-status", "planned"),
+                "starts": meta.get("sprint-starts", ""),
+                "ends": meta.get("sprint-ends", ""),
+                "items": [],
+            }
+        )
 
     milestones_dir = docs_dir / "milestones"
     if milestones_dir.is_dir():
@@ -551,25 +553,36 @@ def _patch_into(target: dict, patch: dict) -> dict:
     return target
 
 
-def _resolve_plan_file(root: Path, slug: str) -> Path | None:
-    """Find the HTML file for a plan slug under a project docs root."""
-    direct = root / f"{slug}.html"
-    if direct.is_file():
-        return direct
-    for cand in sorted(root.rglob("*.html")):
-        rel = cand.relative_to(root)
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
-            continue
-        if cand.name in _NON_PLAN_FILES:
-            continue
-        if cand.stem == slug:
-            return cand
-        try:
-            if _plan_html.parse_plan(cand)["slug"] == slug:
-                return cand
-        except Exception:
-            pass
-    return None
+def _project_for_root(root: Path) -> str:
+    for project, mounted in load_mounts().items():
+        if mounted.resolve() == root.resolve():
+            return project
+    return root.parent.name
+
+
+def _resolve_plan_file(
+    root: Path,
+    slug: str,
+    artifact_type: str | None = None,
+    *,
+    project: str | None = None,
+) -> Path | None:
+    """Find an HTML resource by stable typed identity."""
+    resource = resolve_resource(
+        root,
+        project or _project_for_root(root),
+        slug,
+        artifact_type,
+    )
+    if resource is None:
+        resource = resolve_resource(
+            root,
+            project or _project_for_root(root),
+            slug,
+            artifact_type,
+            include_archived=True,
+        )
+    return resource.path if resource else None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -591,6 +604,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send_json(self, status: int, obj) -> None:
         self._send(status, json.dumps(obj, indent=2).encode(), "application/json")
+
+    def _send_redirect(self, location: str) -> None:
+        self.send_response(HTTPStatus.PERMANENT_REDIRECT)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
@@ -691,17 +710,28 @@ class Handler(BaseHTTPRequestHandler):
             # GET /plan/<project>/<slug> — the plan's embedded semantic state
             # (raw, with version), for clients that need the current version
             # before a write. {} if the plan/state is absent.
-            parts = path[len("/plan/") :].strip("/").split("/", 1)
-            if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+            parts = path[len("/plan/") :].strip("/").split("/")
+            if len(parts) not in (2, 3) or not SAFE_NAME.match(parts[0]):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
                 return
-            project, slug = parts
+            project = parts[0]
+            artifact_type = ROOT_TYPES.get(parts[1]) if len(parts) == 3 else None
+            slug = parts[-1]
+            if len(parts) == 3 and artifact_type is None:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad resource type"})
+                return
             slug = slug.removesuffix(".html").removesuffix(".json")
             mts = load_mounts()
             if project not in mts:
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
-            pf = _resolve_plan_file(mts[project], slug)
+            try:
+                pf = _resolve_plan_file(
+                    mts[project], slug, artifact_type, project=project
+                )
+            except ResourceCollision as exc:
+                self._send_json(HTTPStatus.CONFLICT, {"error": str(exc)})
+                return
             rec = _plan_html.parse_plan(pf) if pf else {}
             self._send_json(HTTPStatus.OK, rec)
             return
@@ -840,7 +870,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.OK, {})
             return
 
-        target = safe_join(root, rel)
+        try:
+            resource, legacy_alias = resolve_route(root, project, rel)
+        except ResourceCollision as exc:
+            self._send(HTTPStatus.CONFLICT, str(exc).encode())
+            return
+        if resource is not None:
+            if legacy_alias:
+                self._send_redirect(resource.canonical_href)
+                return
+            target = resource.path
+        else:
+            target = safe_join(root, rel)
         if target is None:
             self._send(HTTPStatus.FORBIDDEN, b"forbidden")
             return

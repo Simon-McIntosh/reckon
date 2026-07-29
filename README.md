@@ -19,6 +19,7 @@ uv run reckon serve           # HTTP server on port 8765
 uv run reckon serve --port 8766 --mounts /path/to/mounts.json
 uv run reckon mcp             # stdio MCP transport
 uv run reckon build docs      # portable static site under docs/
+uv run reckon migrate-layout docs --check  # collision-safe migration preview
 ```
 
 Once the distribution is published, `uv tool install reckon-plans` installs
@@ -27,10 +28,11 @@ with `uv tool install "git+https://github.com/Simon-McIntosh/reckon"`.
 
 ## How it works
 
-Each project keeps its planning documents under `<repo>/docs/`. Any `.html`
-file is discovered; documents default to actionable plans, while
-`<meta name="reckon-type">` selects first-class `research` or `evidence`
-artifacts. Plan state (status, decisions, followups, etc.) lives as semantic
+Each project keeps typed resources under `<repo>/docs/plans/`,
+`docs/research/`, `docs/evidence/`, and `docs/sprints/`. Stable identity is
+project + type + slug, independent of the relative file path. Mixed flat/typed
+repositories remain readable; `reckon migrate-layout docs` moves files only
+when invoked explicitly. Plan state (status, decisions, followups, etc.) lives as semantic
 HTML inside the plan file:
 
 ```html
@@ -65,9 +67,11 @@ generation.
 | Method · path | Purpose |
 |---|---|
 | `GET /<project>/` | SPA shell |
-| `GET /<project>/<slug>.html` | Plan prose page |
+| `GET /<project>/<type-root>/<slug>` | Canonical typed prose page |
+| `GET /<project>/<slug>.html` | Flat compatibility redirect |
 | `GET /_discover/<project>` | All plans with full parsed state |
-| `GET /plan/<project>/<slug>` | Parsed plan state (incl. `version`) |
+| `GET /plan/<project>/<type-root>/<slug>` | Typed parsed state (incl. `version`) |
+| `GET /plan/<project>/<slug>` | Compatibility plan-state read |
 | `POST /plan/<project>/<slug>` | Dotted-key patch; requires `If-Match: <version>` |
 | `GET /state/<project>/index.json` | Project config (sprints, milestones) |
 

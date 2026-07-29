@@ -4,7 +4,7 @@ description: >-
   Read-only inspection of plans and sprint state — phase, status, ROI, effort,
   milestone, implementation fraction, open decisions, blockers, active sprint
   progress, and quality audit (empty followup prompts, stale timestamps, missing
-  NEXT cards). Any HTML file in docs/ is a plan; semantic HTML elements carry full
+  NEXT cards). Typed HTML resources carry stable identity and semantic state
   state. Never modifies files. Trigger verbs: "what plans are open / where are we
   on X / show plan status / what sprint are we on / summarise plans / review the
   plan / audit plan health / is the plan stale / /reckon-status [slug]".
@@ -85,13 +85,15 @@ Use `read_plan(project, slug=None)` for full parsed state, or
 
 ### Discovery rules
 
-**Any HTML file in `docs/` is a plan.** No `plan-status` opt-in required. Existence is sufficient. Sparse plans with no markup show as `status=draft` — they are NOT being filtered.
+**Discovery uses declared typed roots.** Plans, research, evidence, and sprint
+definitions live under `docs/plans/`, `docs/research/`, `docs/evidence/`, and
+`docs/sprints/`. Bounded flat compatibility resources remain readable.
 
-**Excluded dirs:** `_shared`, `ui`, `state`, `assets`, `images`, `archive`.
+**Excluded dirs:** `_shared`, `_ui`, `ui`, `state`, `assets`, `images`, `figures`.
 
 **Excluded files:** `index.html`, `sprint.html`, `sprints.html`, `milestones.html`, `decisions.html`, `inventory.html`, `blockers.html`, `implementation.html`, `questions.html`, `home.html`, `project.html`.
 
-Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under `docs/archive/` so it does not appear in the live inventory.
+Per-stage history lives under the owning type's `archive/` directory.
 
 **`reckon-type=research`** (or `doc`, normalised to `research`) plans show with a "research" banner in the SPA; they appear in the inventory with `type="research"`. They have no decision/followup workflow.
 

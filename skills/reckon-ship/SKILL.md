@@ -113,7 +113,7 @@ implement items marked "deferred", "post-v1", or behind an unmet trigger.
 6. **Scope allocation precedes dispatch.** List each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
 8. **Update the plan continuously.** After EACH section lands: collapse it in the evergreen, write a per-stage archive HTML, and call `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final write.
-9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/archive/<slug>-<section>-landed.html` and an updated §05 followup.
+9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/plans/archive/<slug>-<section>-landed.html` and an updated §05 followup.
 10. **Collapse the evergreen when a section ships.** Replace the section body with a 2-4 line landed-summary + link to per-stage HTML.
 11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
 12. **The orchestrator owns integration and shared state.** Workers commit in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
@@ -173,13 +173,13 @@ state = read_plan(project="<project>", slug="<slug>", with_schema=True)
 
 # Also fetch the raw HTML to read section prose
 # (the MCP payload has parsed state; you also need the full prose sections)
-# Use: curl http://127.0.0.1:8765/<project>/<slug>.html  OR  Read docs/<slug>.html
+# Use: curl http://127.0.0.1:8765/<project>/plans/<slug> OR read the discovery row's href
 ```
 
 Then read the COMPLETE HTML file from disk:
 ```bash
 # Read the full plan HTML — every section, every paragraph
-cat docs/<slug>.html
+cat docs/plans/<slug>.html
 ```
 
 Do not proceed until you have read and understood:
@@ -262,7 +262,7 @@ corrective worker; do not advance the dependency wave with incomplete work.
 
 **Do not wait until all sections are done.** Record outcomes immediately after each section lands.
 
-**Per-stage file** — `docs/archive/<slug>-<section>-landed.html`:
+**Per-stage file** — `docs/plans/archive/<slug>-<section>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
 - Quick-status grid (shipped vs deferred)
 - Outcomes table: item, badge, commit SHA, follow-up title
@@ -352,13 +352,13 @@ remains. Close the sprint only when all executable nodes are complete.
 
 ```bash
 # Validate HTML integrity
-uv run --project ~/Code/reckon reckon audit-doc docs/<slug>.html
+uv run --project ~/Code/reckon reckon audit-doc docs/plans/<slug>.html
 # Must report no ERRORs before committing
 ```
 
 Commit:
 ```bash
-git add docs/<slug>.html docs/archive/<slug>-<section>-landed.html
+git add docs/plans/<slug>.html docs/plans/archive/<slug>-<section>-landed.html
 git commit -m "docs: record verified implementation outcome"
 git pull --no-rebase origin <branch>
 git push origin <branch>

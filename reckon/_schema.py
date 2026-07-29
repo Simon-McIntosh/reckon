@@ -103,13 +103,51 @@ STATUS_ENUM = [
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
 TYPE_ENUM = ["plan", "research", "evidence"]
+RESOURCE_TYPE_ENUM = [*TYPE_ENUM, "sprint"]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
+_RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
     """json_schema_extra payload advertising the canonical enum for a str field
     (without making the Python field reject off-enum values on read)."""
     return {"enum": list(values)}
+
+
+class ResourceIdentity(BaseModel):
+    """Stable identity for one typed HTML resource."""
+
+    project: str
+    type: str = Field(json_schema_extra=_enum(RESOURCE_TYPE_ENUM))
+    slug: str
+    archived: bool = False
+
+    @property
+    def key(self) -> str:
+        """Project-qualified identity independent of an on-disk path."""
+        return f"{self.project}:{self.type}:{self.slug}"
+
+    def validate_for_write(self) -> "ResourceIdentity":
+        errors: list[str] = []
+        if not _is_safe_resource_segment(self.project):
+            errors.append("project: must be a single safe path segment")
+        if self.type not in RESOURCE_TYPE_ENUM:
+            errors.append(f"type: {self.type!r} not in {RESOURCE_TYPE_ENUM}")
+        if not _is_safe_resource_segment(self.slug):
+            errors.append("slug: must be a single safe path segment")
+        if errors:
+            raise ValueError(
+                "ResourceIdentity.validate_for_write failed:\n  - "
+                + "\n  - ".join(errors)
+            )
+        return self
+
+
+def _is_safe_resource_segment(value: str) -> bool:
+    """Return whether an identity is safe to interpolate into a path or URL."""
+    return bool(
+        value and value not in {".", ".."} and _RESOURCE_SEGMENT_RE.fullmatch(value)
+    )
 
 
 # ── Cross-project plan references ────────────────────────────────────────────
@@ -755,6 +793,9 @@ def gen_json_schema() -> dict:
     """Return the derived JSON Schema for :class:`PlanState`, with the reckon
     schema id + version embedded. This is THE published contract."""
     schema = PlanState.model_json_schema()
+    schema.setdefault("$defs", {})["ResourceIdentity"] = (
+        ResourceIdentity.model_json_schema()
+    )
     schema["$id"] = SCHEMA_ID
     schema["schemaVersion"] = SCHEMA_VERSION
     schema["title"] = "reckon PlanState"
