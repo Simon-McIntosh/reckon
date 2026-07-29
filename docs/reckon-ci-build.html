@@ -17,10 +17,10 @@
 <meta name="plan-sprint" content="S5">
 <meta name="plan-tier" content="sonnet">
 <meta name="plan-owner" content="">
-<meta name="plan-modified" content="2026-05-27">
+<meta name="plan-modified" content="2026-07-29">
 <meta name="plan-depends-on" content="">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="reckon-type" content="plan">
 </head>
 <body>
@@ -375,6 +375,38 @@ Done-when
   5. index-json-fate reconciled: code still writes/reads index.json, so either
      realise &quot;deprecate entirely&quot; or reopen the decision via the dissent flow.
   6. followup written into plan + this followup marked resolved.</pre>
+    </article>
+<article class="r-fu" data-id="f-ci-index-dissent-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-edit reckon-ci-build --reopen index-json-fate" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Review the project-index deprecation decision</h4>
+    <div class="r-fu-body">The locked choice `deprecate entirely` predates the current canonical format. Current evidence shows `docs/state/<project>/index.json` is the sole project-level store for sprints, milestones, timeline and blockers; deleting it would contradict the repository contract and break S5 state. Reopen the decision and choose whether to retain the project index while keeping plan inventory live-discovered.</div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    reckon-ci-build (http://localhost:8765/reckon/reckon-ci-build.html)
+Section: §3 — project-index contract
+Capability: orchestrator-level
+
+Context
+  Static build packaging and uv CI can land independently. The locked choice to deprecate index.json now conflicts with the canonical project-state format used by the active sprint.
+
+State to read
+  GET /plan/reckon/reckon-ci-build
+  docs/state/reckon/index.json
+  PLAN-FORMAT.md and AGENTS.md index.json contract
+
+Locked decisions to honour
+  index-json-fate → deprecate entirely (under review; do not overwrite silently)
+  command-name → build
+  sprint-discovery-dir → docs/sprints/
+
+Open decisions to surface (do not resolve)
+  Whether the locked index-json-fate choice should be reopened and replaced by retaining project-only state while inventory remains live-discovered.
+
+Constraints
+  Preserve the audit trail through /reckon-edit --reopen. Do not delete active sprint, milestone, timeline or blocker state.
+
+Done-when
+  1. The lead accepts or rejects reopening with rationale
+  2. Any accepted choice is recorded through the dissent workflow
+  3. this followup is resolved and the next implementation followup is written</pre>
     </article>
 </section>
 <section data-reckon="questions" id="questions" class="r-questions">
