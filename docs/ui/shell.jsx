@@ -142,16 +142,16 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
   const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) + (filters.type?.length || 0) > 0;
 
   // Sprints that have plans in inventory
-  const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.sprint === s.id));
+  const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.type === "plan" && p.sprint === s.id));
 
-  // Dynamic type counts — shows all types that appear in inventory
-  const typeCounts = {};
+  // Artifact facets are stable even when one class is currently empty.
+  const typeCounts = { plan: 0, research: 0, evidence: 0 };
   for (const p of M.inventory) {
     const t = p.type || "plan";
     typeCounts[t] = (typeCounts[t] || 0) + 1;
   }
-  const allTypes = Object.entries(typeCounts).sort((a, b) => a[0].localeCompare(b[0]));
-  const showTypeFilter = allTypes.length > 1;
+  const typeLabels = { plan: "Plans", research: "Research", evidence: "Evidence" };
+  const allTypes = ["plan", "research", "evidence"].map(key => [key, typeCounts[key] || 0]);
 
   // Archived count (independent of status — orthogonal axis).
   const archivedCount = M.inventory.filter(p => p.archived === "1" || p.archived === true || p.archived === "true").length;
@@ -159,7 +159,8 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
   // Statuses to surface in the filter. We always show active workflow ones plus
   // any status that has at least one plan (so on-hold/superseded show up when used).
   const ALWAYS = ["active", "blocked", "pending", "shipped"];
-  const allStatuses = new Set([...ALWAYS, ...M.inventory.map(p => p.status).filter(Boolean)]);
+  const actionable = M.inventory.filter(p => (p.type || "plan") === "plan");
+  const allStatuses = new Set([...ALWAYS, ...actionable.map(p => p.status).filter(Boolean)]);
   const statusOrder = ["active", "blocked", "pending", "in-progress", "on-hold", "shipped", "done", "superseded", "abandoned", "draft", "historical"];
   const statusList = [...allStatuses].sort((a, b) => (statusOrder.indexOf(a) + 99) - (statusOrder.indexOf(b) + 99));
 
@@ -174,7 +175,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
       <div className="r-filter-group">
         <div className="r-filter-h">Status</div>
         {statusList.map(s => {
-          const n = M.inventory.filter(p => p.status === s).length;
+          const n = actionable.filter(p => p.status === s).length;
           const on = (filters.status || []).includes(s);
           if (n === 0) return null;
           return (
@@ -190,10 +191,10 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
             type="button"
             className={`r-chip r-chip-archived ${showArchived ? "on" : ""}`}
             onClick={() => setShowArchived(v => !v)}
-            title={showArchived ? "Hide archived plans from the list" : "Reveal archived plans"}
+            title={showArchived ? "Hide archived artifacts" : "Reveal archived artifacts"}
           >
             <span className="r-archive-glyph" aria-hidden="true">▦</span>
-            <span>{showArchived ? "Hide archived" : "Show archived"}</span>
+            <span>Archive</span>
             <span className="n">{archivedCount}</span>
           </button>
         )}
@@ -203,7 +204,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
         <div className="r-filter-group">
           <div className="r-filter-h">Sprint</div>
           {sprintsWithPlans.map(s => {
-            const n = M.inventory.filter(p => p.sprint === s.id).length;
+            const n = actionable.filter(p => p.sprint === s.id).length;
             const on = (filters.sprint || []).includes(s.id);
             return (
               <div key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)}>
@@ -219,7 +220,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
       <div className="r-filter-group">
         <div className="r-filter-h">Milestone</div>
         {milestones.map(m => {
-          const n = M.inventory.filter(p => p.ms === m.id).length;
+          const n = actionable.filter(p => p.ms === m.id).length;
           const on = (filters.ms || []).includes(m.id);
           if (n === 0) return null;
           return (
@@ -232,20 +233,18 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
         })}
       </div>
 
-      {showTypeFilter && (
-        <div className="r-filter-group">
-          <div className="r-filter-h">Type</div>
-          {allTypes.map(([key, count]) => {
-            const on = (filters.type || []).includes(key);
-            return (
-              <div key={key} className={`r-chip r-chip-type r-chip-type-${key} ${on ? "on" : ""}`} onClick={() => toggle("type", key)}>
-                <span className="r-chip-type-label">{key}</span>
-                <span className="n">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="r-filter-group">
+        <div className="r-filter-h">Artifact</div>
+        {allTypes.map(([key, count]) => {
+          const on = (filters.type || []).includes(key);
+          return (
+            <div key={key} className={`r-chip r-chip-type r-chip-type-${key} ${on ? "on" : ""}`} onClick={() => toggle("type", key)}>
+              <span className="r-chip-type-label">{typeLabels[key]}</span>
+              <span className="n">{count}</span>
+            </div>
+          );
+        })}
+      </div>
     </aside>
   );
 }
@@ -425,13 +424,14 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
 
       {items.length === 0 ? (
         <div className="r-list-empty">
-          No plans match.
+          No artifacts match.
           {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length || filters?.type?.length) && (
             <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
           )}
         </div>
       ) : sorted.map(p => {
         const active = route.view === "plan" && route.slug === p.slug;
+        const artifactType = p.type || "plan";
         const isArchived = p.archived === "1" || p.archived === true || p.archived === "true";
         const isRead = p.read === "1" || p.read === true || p.read === "true";
         return (
@@ -440,14 +440,29 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
             className={`r-row ${active ? "active" : ""} ${isArchived ? "archived" : ""} ${isRead ? "read" : ""}`}
             onClick={() => onSelectPlan(p.slug)}
           >
-            <span className={`dot ${p.status}`}></span>
+            <span className={`dot ${artifactType === "plan" ? p.status : artifactType}`}></span>
             <div>
-              <div className="t">{p.title}{(p.type && p.type !== "plan") && <span className={`r-type-pill ${p.type}`}>{p.type}</span>}</div>
+              <div className="t">{p.title}{artifactType !== "plan" && <span className={`r-type-pill ${artifactType}`}>{artifactType}</span>}</div>
               <div className="meta">
-                <span className="ms">{p.ms}</span>
-                <span className="sp">·</span>
-                <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
-                <span className="sp">·</span>
+                {artifactType === "plan" && <>
+                  <span className="ms">{p.ms}</span>
+                  <span className="sp">·</span>
+                  <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
+                  <span className="sp">·</span>
+                </>}
+                {artifactType === "research" && <>
+                  <span>{(p.informs || []).length} informed</span>
+                  {p.source_quality && <><span className="sp">·</span><span>{p.source_quality}</span></>}
+                  {p.reviewed_at && <><span className="sp">·</span><span>reviewed {p.reviewed_at}</span></>}
+                  <span className="sp">·</span>
+                </>}
+                {artifactType === "evidence" && <>
+                  <span>{p.verdict || "unreviewed"}</span>
+                  <span className="sp">·</span>
+                  <span>{(p.evidence_for || []).length} verified</span>
+                  {p.recorded_at && <><span className="sp">·</span><span>{p.recorded_at}</span></>}
+                  <span className="sp">·</span>
+                </>}
                 {(() => {
                   const ds = fmtPlanDate(p, sortBy);
                   if (!ds) return null;
@@ -456,7 +471,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
                   return <><span className="date">{ds.slice(0, sp)}</span><span className="time">{ds.slice(sp + 1)}</span></>;
                 })()}
               </div>
-              {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
+              {artifactType === "plan" && ((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
                 <div className="sigs">
                   {(p.dec_open || 0) > 0 && <span className="sig dec">D {p.dec_open}</span>}
                   {(p.blockers || 0) > 0 && <span className="sig blk">! {p.blockers}</span>}
@@ -641,8 +656,9 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
   if (route.view === "plan") {
     const p = M.inventory.find(x => x.slug === route.slug);
     if (!p) return null;
+    const isPlan = (p.type || "plan") === "plan";
     const openDecs = p.dec_open || 0;
-    const blockedByDecisions = openDecs > 0;
+    const blockedByDecisions = isPlan && openDecs > 0;
     return (
       <div className="r-titlebar">
         <div className="row1">
@@ -661,7 +677,7 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
                 Resolve <span className="resolve-badge">{openDecs}</span>
               </button>
             )}
-            <button
+            {isPlan && <button
               className="gen-prompt"
               onClick={onOpenPrompt}
               title="Generate handoff prompt"
@@ -672,19 +688,34 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
                 <path d="M6 7h4M6 9h4M6 11h2"/>
               </svg>
               Generate prompt
-            </button>
+            </button>}
           </div>
         </div>
         <div className="row2">
-          <StatusMenu slug={route.slug} plan={p} onAfterChange={onPlanMutated} />
-          <span className="dot-sep">·</span>
-          <span className="meta-item"><span className="k">ms</span><span className="v">{p.ms}</span></span>
-          {p.sprint && <>
+          {isPlan ? <>
+            <StatusMenu slug={route.slug} plan={p} onAfterChange={onPlanMutated} />
             <span className="dot-sep">·</span>
-            <span className="meta-item"><span className="k">sprint</span><a className="v" href={`#sprint/${p.sprint}`} style={{ borderBottom: "1px dotted var(--line)" }}>{p.sprint}</a></span>
+            <span className="meta-item"><span className="k">ms</span><span className="v">{p.ms}</span></span>
+            {p.sprint && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">sprint</span><a className="v" href={`#sprint/${p.sprint}`} style={{ borderBottom: "1px dotted var(--line)" }}>{p.sprint}</a></span>
+            </>}
+            <span className="dot-sep">·</span>
+            <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round((p.impl || 0) * 100)}%</span></span>
+          </> : <>
+            <span className={`r-type-pill ${p.type}`}>{p.type}</span>
+            {p.type === "research" && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">informs</span><span className="v">{(p.informs || []).join(", ") || "unlinked"}</span></span>
+              {p.reviewed_at && <><span className="dot-sep">·</span><span className="meta-item"><span className="k">reviewed</span><span className="v">{p.reviewed_at}</span></span></>}
+            </>}
+            {p.type === "evidence" && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">verdict</span><span className="v">{p.verdict || "unreviewed"}</span></span>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">evidence for</span><span className="v">{(p.evidence_for || []).join(", ") || "unlinked"}</span></span>
+            </>}
           </>}
-          <span className="dot-sep">·</span>
-          <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round((p.impl || 0) * 100)}%</span></span>
           <span className="dot-sep">·</span>
           <span className="meta-item"><span className="k">last</span><span className="v">{p.last}</span></span>
           {p.owner && <>

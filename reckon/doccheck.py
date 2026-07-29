@@ -108,11 +108,13 @@ def _load_mounts() -> dict[str, Path]:
 
 
 def _iter_doc_files(docs_dir: Path):
-    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
+    from reckon.serve import _ARCHIVE_DIR, _NON_PLAN_DIRS, _NON_PLAN_FILES
 
     for html_file in sorted(docs_dir.rglob("*.html")):
         rel = html_file.relative_to(docs_dir)
         if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+            continue
+        if _ARCHIVE_DIR in rel.parts[:-1]:
             continue
         if html_file.name in _NON_PLAN_FILES:
             continue
@@ -180,6 +182,8 @@ def audit_lifecycle(
                         )
                     )
                 continue
+            if doc_type == "evidence":
+                continue
 
             if status == "active" and (impl or 0.0) < 1.0 and age_days > 30:
                 findings.append(
@@ -224,7 +228,7 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
         if (m.get("name") or "").lower().startswith("plan-")
     }
     for req in _REQUIRED_META:
-        if req == "plan-status" and doc_type in ("research", "doc"):
+        if req == "plan-status" and doc_type in ("research", "evidence", "doc"):
             continue
         if req not in present:
             out.append(
@@ -405,7 +409,28 @@ _INFRA_FILENAMES = frozenset(
     ]
 )
 # Meta fields that hold comma-separated plan-slug references.
-_SLUG_META_FIELDS = ("plan-depends-on", "plan-blocks", "plan-informs")
+_SLUG_META_FIELDS = (
+    "plan-depends-on",
+    "plan-blocks",
+    "plan-informs",
+    "plan-evidence-for",
+    "plan-verifies",
+    "plan-supersedes",
+)
+
+
+def _local_ref_slug(ref: str, project: str | None) -> str | None:
+    """Resolve an opaque provenance ref to a local slug for corpus checks.
+
+    Accepted forms are ``slug``, ``slug#stage``, ``project:slug`` and
+    ``project:slug#stage``. Cross-project refs are valid but cannot be checked
+    against one project's corpus, so they return ``None``.
+    """
+    base = ref.split("#", 1)[0].strip()
+    if ":" not in base:
+        return base
+    ref_project, slug = base.split(":", 1)
+    return slug if project and ref_project == project else None
 
 
 def _collect_corpus(docs_dir: Path) -> tuple[dict[str, Path], dict[Path, set[str]]]:
@@ -577,13 +602,14 @@ def audit_links(
             raw = (m.get("content") or "").strip()
             if not raw:
                 continue
-            for slug_ref in [s.strip() for s in raw.split(",") if s.strip()]:
-                if slug_ref not in slug_to_file:
+            for raw_ref in [s.strip() for s in raw.split(",") if s.strip()]:
+                slug_ref = _local_ref_slug(raw_ref, proj)
+                if slug_ref is not None and slug_ref not in slug_to_file:
                     findings.append(
                         Finding(
                             "warn",
                             "dangling-slug-ref",
-                            f'<meta name="{meta_name}"> references unknown slug "{slug_ref}"',
+                            f'<meta name="{meta_name}"> references unknown slug "{raw_ref}"',
                         )
                     )
 

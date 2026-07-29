@@ -99,10 +99,12 @@ function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
-  if (!PG) return <div className="r-page">Plan "{slug}" not found.</div>;
+  if (!PG) return <div className="r-page">Artifact "{slug}" not found.</div>;
 
   const P = PG;
   const isResearch = PG.type === "research";
+  const isEvidence = PG.type === "evidence";
+  const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
 
   const stored = planLoad(slug) || {};
   // The inventory is lightweight; full per-doc state (decisions, followups) is
@@ -197,9 +199,9 @@ function Plan({ slug, onNav }) {
       // Don't generate a work prompt for a plan that has no work: finished /
       // reference / archived plans, or anything at 100%. Dispatching a fleet
       // against a done plan is the bug this guards.
-      const NONACTIONABLE = ["shipped", "done", "archived", "superseded", "abandoned", "reference", "research", "historical"];
+      const NONACTIONABLE = ["shipped", "done", "archived", "superseded", "abandoned", "reference", "historical"];
       const impl = (fullState && fullState.impl != null) ? fullState.impl : (P.impl || 0);
-      if (NONACTIONABLE.includes((P.status || "").toLowerCase()) || impl >= 1) {
+      if ((P.type || "plan") !== "plan" || NONACTIONABLE.includes((P.status || "").toLowerCase()) || impl >= 1) {
         if (window.flashSaved) window.flashSaved(`ℹ ${slug} is ${P.status || "complete"} (${Math.round(impl * 100)}%) — no work to dispatch`);
         return;
       }
@@ -340,16 +342,41 @@ function Plan({ slug, onNav }) {
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
+              {PG.source && <span>source&nbsp;<strong>{PG.source}</strong></span>}
+              {PG.source_quality && <span>quality&nbsp;<strong>{PG.source_quality}</strong></span>}
+              {PG.reviewed_at && <span>reviewed&nbsp;{PG.reviewed_at}</span>}
               {(PG.informs || []).length > 0 && (
                 <span className="informs">informs&nbsp;
                   {PG.informs.map((s, i) => (
                     <React.Fragment key={s}>
                       {i > 0 && ", "}
-                      <a href={`#plan/${s}`}>{s}</a>
+                      <a href={`#plan/${refSlug(s)}`}>{s}</a>
                     </React.Fragment>
                   ))}
                 </span>
               )}
+            </div>
+          )}
+          {isEvidence && (
+            <div className="r-research-banner">
+              <span className="r-type-tag evidence">evidence</span>
+              {PG.verdict && <span className="verdict">verdict&nbsp;<strong>{PG.verdict}</strong></span>}
+              {(PG.evidence_for || []).length > 0 && (
+                <span className="informs">evidence for&nbsp;
+                  {PG.evidence_for.map((s, i) => (
+                    <React.Fragment key={s}>
+                      {i > 0 && ", "}
+                      <a href={`#plan/${refSlug(s)}`}>{s}</a>
+                    </React.Fragment>
+                  ))}
+                </span>
+              )}
+              {(PG.verifies || []).length > 0 && (
+                <span className="informs">verifies&nbsp;{PG.verifies.join(", ")}</span>
+              )}
+              {PG.environment && <span>environment&nbsp;<code>{PG.environment}</code></span>}
+              {(PG.commits || []).length > 0 && <span>commits&nbsp;{PG.commits.join(", ")}</span>}
+              {(PG.artifacts || []).length > 0 && <span>artifacts&nbsp;{PG.artifacts.join(", ")}</span>}
             </div>
           )}
           {!htmlReady ? (
