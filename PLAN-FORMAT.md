@@ -427,9 +427,25 @@ project resource. Timeline state is append-only.
 
 **Discovery / read:**
 - `read_plan(project, slug, doc_type=...)` — one exact typed resource + version
+- `read_plan(resource={project, type, id})` — concise typed summary by default
+- `view=detail|history|raw|schema` — progressively reveal only the needed layer
 - `read_plan(project, "index")` — composed compatibility view
 - `read_plan(project, slug, with_schema=True)` — injects schema + dos/don'ts inline
 - `read_plan(project, slug=None)` — discovery: inventory + followups/questions/sprints facets
+
+Typed write workflows should read the selected resource with `view="raw"` to
+obtain its current lossless state and version. Status and review workflows
+should begin with `summary`; `history`, discovery detail, and audit detail are
+cursor-paginated. `audit(project, view="summary")` returns compact counts,
+`view="detail"` returns findings, and `view="raw"` preserves the legacy audit
+payload.
+
+Before distributed activation, typed sprint/milestone/blocker/timeline/project
+reads project one named record from the canonical legacy index and carry its
+aggregate version plus a compatibility warning. Named writes remain inactive:
+write the legacy index until explicit migration publishes the distributed
+marker. After activation, reads and writes use only independently versioned
+named resources.
 
 ## Server endpoints
 

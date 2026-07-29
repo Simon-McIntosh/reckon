@@ -124,3 +124,29 @@ Then any MCP client can call `reckon.read_plan(project, slug)`,
 `reckon.edit_plan(...)`, and `reckon.audit(project)`. The MCP transport writes
 to the same semantic HTML elements as `reckon serve` — they are two faces of
 one backend.
+
+Typed reads are progressive. A resource selector defaults to a concise human
+summary; explicit views reveal current detail, paginated history, lossless
+storage state, or schema:
+
+```python
+read_plan(resource={"project": "sample", "type": "plan", "id": "plan-alpha"})
+read_plan(
+    resource={"project": "sample", "type": "sprint", "id": "S1"},
+    view="detail",
+)
+read_plan(
+    resource={"project": "sample", "type": "plan", "id": "plan-alpha"},
+    view="raw",
+)
+audit(project="sample", view="summary")
+```
+
+`summary` never includes full followup prompts. Use `view="detail"` with
+`include_prompts=True` when a prompt is specifically needed. `history` and
+large discovery/audit detail responses use `cursor` plus a bounded `limit`.
+Calls that omit both `resource` and `view` preserve the legacy response shape.
+Before distributed project-state activation, typed sprint/project reads are
+safe projections of the canonical legacy index and identify that source in
+their warning/state metadata. Writes continue through `slug="index"` until the
+explicit migration activates independently versioned named resources.

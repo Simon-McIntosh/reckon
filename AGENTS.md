@@ -274,9 +274,9 @@ ops fold the old writes):
 
 | Tool | Purpose |
 |------|---------|
-| `read_plan` | Read + context-inject. `read_plan(project, slug)` → one plan's parsed state + `version`. `with_schema=True` adds the published JSON Schema, a dos/don'ts note, and the op-vocabulary. `read_plan(project)` (slug omitted) → DISCOVERY (plans + followups + questions + sprints + milestones + `active_sprint_id`). `read_plan()` → all mounted projects. |
+| `read_plan` | Read + context-inject. `read_plan(resource={project,type,id})` defaults to a concise typed summary; `view=detail|history|raw|schema` reveals progressively deeper state. `read_plan(project, slug)` preserves the legacy parsed-state response. `read_plan(project)` (slug omitted) → DISCOVERY; `read_plan()` → mounted projects. |
 | `edit_plan` | The one validated write. `edit_plan(project, slug, ops, expected_version[, create])`. `ops` is an ordered list applied to a working copy, schema-validated, then written atomically. Verbs: `set` / `append` / `resolve` / `lock` / `move`; `create=True` (with `expected_version=0`) scaffolds a new plan then applies ops. Routes `slug="index"` to project config (sprints/milestones/timeline/blockers). |
-| `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). The "warn" half of reject-write-warn. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
+| `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
 
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
 for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
@@ -284,6 +284,8 @@ for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
 
 **Mandatory rule:** always call `read_plan` first to get the current `version`
 before any write — writes are rejected (412) if `version` doesn't match.
+Typed write workflows use `view="raw"` for that version read. Inspection
+workflows begin with the default summary and opt into detail only when needed.
 
 **Further detail:** `GET http://127.0.0.1:8765/plan/<project>/<slug>` for
 current parsed state, or `/_discover/<project>` for plan inventory with full state.

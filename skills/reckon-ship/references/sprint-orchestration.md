@@ -27,7 +27,14 @@ Resolve the invocation before reading implementation files:
 | `/reckon-ship solver-hardening` | Plan slug |
 
 Derive the current project from the repository and `docs-project` metadata.
-Read `read_plan(project, "index")`; match sprint ids exactly. If an unqualified
+Read `read_plan(project, view="summary")`; match sprint ids exactly. Then read
+the selected sprint with
+`read_plan(resource={project,type:"sprint",id:sprint_id}, view="raw")`.
+If the summary reports `state.source_format="legacy-index"`, that raw sprint is
+a compatibility projection: the orchestrator must version-pair sprint
+writeback through `slug="index"` until the explicit distributed-state
+migration activates named resource writes.
+If an unqualified
 identifier matches both a plan and a sprint, require the explicit prefix.
 
 The orchestrator runs from the canonical primary checkout. It owns `index`,
