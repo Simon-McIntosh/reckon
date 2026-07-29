@@ -1,0 +1,262 @@
+{
+  "updated": "2026-07-29T15:11:14",
+  "project": "reckon",
+  "doc": "index",
+  "data": {
+    "active_sprint_id": "S5",
+    "projects": [
+      {
+        "project": "reckon",
+        "path": "/home/ITER/mcintos/Code/reckon/docs",
+        "published": "github.com/Simon-McIntosh/reckon",
+        "owner": "Simon McIntosh",
+        "plans_count": 12,
+        "active": 1,
+        "blocked": 0,
+        "pending": 8,
+        "shipped": 2,
+        "draft": 1,
+        "last_modified": "2026-05-26",
+        "milestones": []
+      }
+    ],
+    "sprints": [
+      {
+        "id": "S3",
+        "theme": "reckon infra + SPA redesign",
+        "description": "Land the reckon server, MCP transport, reckon-sync, reckon-create, and the full v7 SPA redesign. Canonical source moves to the reckon repo.",
+        "summary": "Shipped 2026-05-26: reckon server (uv run reckon serve), MCP transport (uv run reckon mcp), reckon-sync, reckon-create, and the v7 SPA with 4-tab shell, Cmd-K palette, and reading/graph toggle. All reckon-* skills updated.",
+        "starts": "2026-05-20",
+        "ends": "2026-05-26",
+        "status": "shipped",
+        "items": []
+      },
+      {
+        "id": "S4",
+        "theme": "MCP power-user queries",
+        "description": "Close 7 gaps confirmed in the 2026-05-26 tool evaluation: 5 missing query tools, a list_plans discovery fallback for per-doc repos, and a note-ID collision fix. Add test coverage for the MCP tool layer.",
+        "summary": "Closed administratively 2026-07-29: the collapsed MCP query/write surface is in production; remaining field issues are re-scoped into S5/S6 with current evidence.",
+        "starts": "2026-05-26",
+        "ends": "2026-06-02",
+        "status": "done",
+        "items": []
+      },
+      {
+        "id": "S5",
+        "status": "active",
+        "theme": "Codex compatibility and typed knowledge artifacts",
+        "items": [
+          {
+            "slug": "codex-agent-context-compatibility",
+            "why_now": "Instruction and skill drift can invalidate every later execution; fix the context substrate first.",
+            "done_when": "Cross-agent entrypoints, target-path doctor and black-box fixtures prove the effective instruction/skill chain.",
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "research-evidence-provenance",
+            "why_now": "Physics migration work needs research-before and evidence-after artifacts without fake progress percentages.",
+            "done_when": "Plan/research/evidence schema, MCP, audit and SPA facets land with provenance and migration tests.",
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "model-capability-schema",
+            "why_now": "Provider model-family names are embedded in persisted state and must be replaced before orchestration hardening.",
+            "done_when": "A provider-neutral capability schema, legacy migration and runtime matcher pass compatibility and risk-escalation tests.",
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "typed-artifact-layout",
+            "why_now": "First-class plan, research and evidence types need matching filesystem roots and stable typed identity.",
+            "done_when": "Typed directories, routing and an idempotent mixed-layout migration pass server, MCP, SPA and static-build tests.",
+            "status": "shipped",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {
+                "reasoning": "deep",
+                "context": "extended",
+                "tool_autonomy": "autonomous",
+                "verification": "strict",
+                "risk": "elevated"
+              }
+            }
+          },
+          {
+            "slug": "distributed-sprint-state",
+            "why_now": "The required project index is a version-contention and payload monolith; split it only after typed roots exist.",
+            "done_when": "Separate sprint and project-state resources replace the index with parity, rollback and concurrency evidence.",
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "reckon-ci-build",
+            "why_now": "Portable builds are verified locally; closure waits on distributed sprint state and an explicit distribution name.",
+            "done_when": "Validation-only CI is retained, automatic publishing is removed, project-state migration lands, and the local distribution name is resolved.",
+            "status": "blocked",
+            "blocked_by": [
+              "s5-project-state-contract"
+            ],
+            "capability": {
+              "version": "1.0",
+              "class": "general",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "mcp-readable-responses",
+            "why_now": "Readable MCP responses should target the final typed and distributed resource model rather than reformat the monolith twice.",
+            "done_when": "Layered summary/detail/raw resource responses are smaller, clearer and backwards-compatible.",
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "registered-repo-state-migration",
+            "why_now": "After the new contracts stabilize, every host-registered repository must migrate or the fleet will retain contradictory state models.",
+            "done_when": "Runtime discovery gives every registered repository a terminal migration-ledger state, recoverable snapshot, fresh audit/build result and typed evidence.",
+            "status": "pending",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          }
+        ],
+        "starts": "2026-07-29",
+        "ends": "2026-08-12",
+        "description": "Make agent context verifiable across Codex and Claude, complete the portable build, and separate plans, research and evidence with typed provenance.",
+        "summary": "Context compatibility, typed provenance, neutral capability contracts, and typed artifact layout shipped. Distributed sprint/project state is now the critical path; CI closure and readable MCP responses follow, then the registered-repository migration."
+      },
+      {
+        "id": "S6",
+        "status": "planned",
+        "theme": "Evidence-gated execution and lifecycle",
+        "items": [
+          {
+            "slug": "execution-orchestration-hardening",
+            "why_now": "Codex needs bounded, resumable, capability-aware execution rather than a Claude-specific fleet assumption.",
+            "done_when": "Bounded sprint operations and a portable execution ledger pass interruption, conflict and worker-failure tests.",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "plan-lifecycle-hygiene",
+            "why_now": "Typed evidence enables lifecycle gates without treating research and evidence as incomplete plans.",
+            "done_when": "Lead-approved close/archive/write invariants land with audits and compatibility migration.",
+            "capability": {
+              "version": "1.0",
+              "class": "orchestrator",
+              "requirements": {}
+            }
+          },
+          {
+            "slug": "agent-plan-authoring",
+            "why_now": "Refresh authoring guidance after the type and orchestration contracts are stable.",
+            "done_when": "Canonical examples describe plan, research and evidence authoring on both agent surfaces.",
+            "capability": {
+              "version": "1.0",
+              "class": "general",
+              "requirements": {}
+            }
+          }
+        ],
+        "starts": "2026-08-13",
+        "ends": "2026-08-28",
+        "description": "Harden sprint and ship workflows after the context manifest and typed provenance substrate exist."
+      }
+    ],
+    "milestones": [],
+    "blockers": [
+      {
+        "id": "s5-project-state-contract",
+        "summary": "reckon-ci-build cannot close until the index monolith has a verified distributed replacement and its locked deprecation decision is reconciled.",
+        "origin": "reckon-ci-build",
+        "owner": "Simon McIntosh",
+        "next": "Lock distributed-sprint-state storage decisions, ship migration parity, then resolve index-json-fate."
+      }
+    ],
+    "timeline": [
+      {
+        "when": "2026-05-26",
+        "who": "claude-sonnet-4-6",
+        "what": "S4 sprint defined \u2014 8 MCP gap-closure items"
+      },
+      {
+        "when": "2026-05-26",
+        "who": "Simon McIntosh",
+        "what": "reckon state symlink created; 4 imas-ambix decisions locked"
+      },
+      {
+        "when": "2026-05-26",
+        "who": "claude-sonnet-4-6",
+        "what": "S3 shipped: reckon server, MCP, reckon-sync, reckon-create, v7 SPA"
+      },
+      {
+        "when": "2026-07-29",
+        "who": "codex",
+        "what": "S5/S6 defined from Codex agent-context, provenance and execution audit"
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Agent context compatibility shipped: canonical Codex shim, 65,536-byte budget, reusable doctor, 12 fixtures and 1,193-suite pass."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Typed knowledge provenance shipped: schema 2.0, qualified relations, four SPA facets and 1,199-suite pass."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Portable static build landed: reckon-plans wheel assets, uv-native Pages workflows and 1,222-suite pass; project-index decision queued through dissent."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "Simon McIntosh",
+        "what": "Expanded S5: separate sprint and typed artifact files, provider-neutral capability schema, concise MCP responses, and validation-only local CI."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "Simon McIntosh",
+        "what": "Added a host-wide registered-repository migration to S5, gated on the four new state contracts and requiring per-repository rollback and evidence."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Portable capability contract shipped: versioned neutral requirements, deterministic runtime matching, legacy diagnostics and 1,270-suite pass."
+      },
+      {
+        "when": "2026-07-29",
+        "who": "reckon-ship",
+        "what": "Typed artifact layout shipped: safe typed identities and routes, idempotent migration, symmetric typed MCP access, six review defects corrected, and 1,308-suite pass."
+      }
+    ],
+    "_version": 14
+  }
+}

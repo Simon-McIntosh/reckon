@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="distributed-sprint-state-storage-landed">
+  <meta name="plan-title" content="Distributed Project State — Verified Landing">
+  <meta name="plan-summary" content="Verified resource decomposition, concurrency, recovery, migration parity, and static projection.">
+  <meta name="plan-evidence-for" content="distributed-sprint-state">
+  <meta name="plan-verifies" content="distributed-sprint-state#s2,distributed-sprint-state#s3,distributed-sprint-state#s4">
+  <meta name="plan-commits" content="44c39cc,40e6cd6,a837fc7">
+  <meta name="plan-artifacts" content="docs/.reckon/project-state-migration.json,docs/sprints/S5.html,docs/state/reckon/timeline.html">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Distributed Project State — Verified Landing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Distributed project state — verified landing</h1>
+    <p class="lead">The monolithic project index was replaced as the write store by independently versioned semantic resources. Compatibility reads remain composed; aggregate writes are rejected after marker activation.</p>
+
+    <figure>
+      <img src="/reckon/figures/distributed-sprint-state/decomposition.svg" alt="Project state decomposed into independently versioned sprint, milestone, blocker, timeline, and project resources.">
+      <figcaption>The implementation follows the locked semantic-HTML, unique-active, and identity-only-manifest decisions.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Storage and composition</h2>
+      <table>
+        <thead><tr><th>Resource</th><th>Canonical store</th><th>Concurrency</th></tr></thead>
+        <tbody>
+          <tr><td>Sprint</td><td><code>docs/sprints/&lt;id&gt;.html</code></td><td>Independent version + narrow file lock</td></tr>
+          <tr><td>Milestone</td><td><code>docs/milestones/&lt;id&gt;.html</code></td><td>Independent version + narrow file lock</td></tr>
+          <tr><td>Blocker</td><td><code>docs/blockers/&lt;id&gt;.html</code></td><td>Independent version; reference count derived</td></tr>
+          <tr><td>Timeline</td><td><code>docs/state/&lt;project&gt;/timeline.html</code></td><td>Append-only events with deterministic ids</td></tr>
+          <tr><td>Project</td><td><code>docs/state/&lt;project&gt;/project.json</code></td><td>Identity and presentation only</td></tr>
+        </tbody>
+      </table>
+      <p>Sprint item lifecycle status and implementation fraction are resolved from live plan HTML. The active sprint id is derived from the unique active sprint; zero is valid and multiple active resources fail audit/composition.</p>
+    </section>
+
+    <section>
+      <h2>Migration evidence</h2>
+      <ul>
+        <li>Source index SHA-256: <code>f6aa91f66811d4b1f6ee6898ad0d081a2c41523fe029933105cc3182877e915e</code>.</li>
+        <li>Snapshot is byte-identical under <code>docs/.reckon/snapshots/project-state/</code>.</li>
+        <li>Composed durable-state parity SHA-256: <code>11edeeebb748…</code>.</li>
+        <li>Seven installed resources: four sprints, one blocker, one timeline, and one project manifest.</li>
+        <li>The completion marker is the strict read/write boundary and is published last; source mutation and installation-failure tests restore every destination and leave legacy mode canonical.</li>
+        <li>Recovery journals contain validated resource identities rather than repository-controlled paths, are durably published, and never roll back a committed move.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <p>Independent review identified format-boundary, rollback, recovery-race, durability, HTTP symmetry, parity, and reference-validation gaps in the initial landing. Commit <code>40e6cd6</code> closes those findings with regression coverage.</p>
+      <p>Final review found three narrower boundaries: markerless discovery still preferred <code>project.json</code>, simultaneous activation could race across different sprint files, and a static projection suppressed discovery failures other than 404. Commit <code>a837fc7</code> makes the legacy index exclusive, locks only transitions into active status, and behavior-tests explicit static-hosting fallback.</p>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Distributed storage/concurrency/migration tests</td><td><strong>41 included in full suite</strong></td></tr>
+          <tr><td>Targeted concurrency and legacy precedence</td><td><strong>5 passed</strong> in 8.73 s</td></tr>
+          <tr><td>Executable SPA fallback scenarios</td><td><strong>2 passed</strong> in 0.58 s</td></tr>
+          <tr><td>Storage, typed-resource, MCP, edit, and build integration</td><td><strong>146 passed</strong></td></tr>
+          <tr><td>Complete test suite</td><td><strong>1,349 passed</strong> in 29.86 s</td></tr>
+          <tr><td>Ruff</td><td><strong>clean</strong></td></tr>
+          <tr><td>Schema regeneration</td><td><strong>committed parity</strong></td></tr>
+          <tr><td>Legacy index preservation</td><td><strong>byte-identical</strong></td></tr>
+        </tbody>
+      </table>
+      <p>Concurrent same-resource writers produce exactly one winner and one version conflict. Concurrent migrations serialize globally, concurrent recovery readers restore a prepared move exactly once, and committed journals are removed without rollback. HTTP, MCP, and SPA paths reject stale legacy fallback after distributed activation.</p>
+    </section>
+  </main>
+</body>
+</html>

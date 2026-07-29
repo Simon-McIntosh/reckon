@@ -319,7 +319,19 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     signature so an unchanged docs tree returns instantly.
     """
     html_files = sorted(docs_dir.rglob("*.html"))
-    sig = (len(html_files), max((f.stat().st_mtime_ns for f in html_files), default=0))
+    state_files = [
+        path
+        for path in (
+            docs_dir / ".reckon" / "project-state-migration.json",
+            docs_dir / "state" / project / "project.json",
+        )
+        if path.is_file()
+    ]
+    signature_files = [*html_files, *state_files]
+    sig = (
+        len(signature_files),
+        max((f.stat().st_mtime_ns for f in signature_files), default=0),
+    )
     cache_key = (project, str(docs_dir.resolve()))
     cached = _DISC_CACHE.get(cache_key)
     if cached and cached[0] == sig:
@@ -337,7 +349,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     )
 
     for resource in resources:
-        if resource.type == "sprint":
+        if resource.type not in {"plan", "research", "evidence"}:
             continue
         html_file = resource.path
 
@@ -405,60 +417,39 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             )
         inventory.append(item)
 
-    # ── Sprint / milestone discovery from HTML files ──────────────────────
-    # docs/sprints/<id>.html and docs/milestones/<id>.html carry sprint/milestone
-    # meta tags — zero-wiring alternative to project.json entries.
+    # ── Distributed project state ──────────────────────────────────────────
+    from reckon.project_state import compose_project_state, project_state_mode
+
+    mode = project_state_mode(docs_dir)
+    if mode.format == "distributed":
+        composed = compose_project_state(docs_dir, project)
+        result = {
+            "inventory": inventory,
+            "sprints": composed.get("sprints", []),
+            "milestones": composed.get("milestones", []),
+            "blockers": composed.get("blockers", []),
+            "timeline": composed.get("timeline", []),
+            "active_sprint_id": composed.get("active_sprint_id"),
+            "source_format": "distributed",
+            "resource_versions": composed.get("resource_versions", {}),
+        }
+        _DISC_CACHE[cache_key] = (sig, result)
+        return result
+
+    # ── Legacy project state ───────────────────────────────────────────────
+    # Marker absence/staging means the JSON index is the only canonical store.
+    # Ignore any typed destinations left by an interrupted migration; consuming
+    # them here would expose a partially installed distributed state.
     sprints: list = []
     milestones: list = []
-
-    for resource in resources:
-        if resource.type != "sprint" or resource.archived:
-            continue
-        _, meta = _read_head_meta(resource.path)
-        sid = meta.get("sprint-id") or resource.slug
-        sprints.append(
-            {
-                "id": sid,
-                "resource_id": resource.identity.key,
-                "href": str(resource.canonical_relative_path.with_suffix("")),
-                "theme": meta.get("sprint-theme", f"Sprint {sid}"),
-                "description": meta.get("sprint-description", ""),
-                "status": meta.get("sprint-status", "planned"),
-                "starts": meta.get("sprint-starts", ""),
-                "ends": meta.get("sprint-ends", ""),
-                "items": [],
-            }
-        )
-
-    milestones_dir = docs_dir / "milestones"
-    if milestones_dir.is_dir():
-        for mf in sorted(milestones_dir.glob("*.html")):
-            _, meta = _read_head_meta(mf)
-            mid = meta.get("milestone-id")
-            if not mid:
-                continue
-            milestones.append(
-                {
-                    "id": mid,
-                    "name": meta.get("milestone-name", mid),
-                    "status": meta.get("milestone-status", "planned"),
-                    "pct": int(meta.get("milestone-pct", "0")),
-                }
-            )
-
-    # Fall back to state/project.json or index.json if no HTML sprint files found
-    if not sprints and not milestones and state_root is not None:
-        for cand in ("project.json", "index.json"):
-            sf = state_root / project / cand
-            if not sf.is_file():
-                continue
+    if state_root is not None:
+        sf = state_root / project / "index.json"
+        if sf.is_file():
             try:
                 env = json.loads(sf.read_text())
                 data = env.get("data", {}) if isinstance(env, dict) else {}
                 sprints = data.get("sprints", [])
                 milestones = data.get("milestones", [])
-                if sprints or milestones:
-                    break
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -478,7 +469,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             }
         )
 
-    result = {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+    result = {
+        "inventory": inventory,
+        "sprints": sprints,
+        "milestones": milestones,
+        "source_format": "legacy-index",
+    }
     _DISC_CACHE[cache_key] = (sig, result)
     return result
 
@@ -715,7 +711,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
                 return
             project = parts[0]
-            artifact_type = ROOT_TYPES.get(parts[1]) if len(parts) == 3 else None
+            http_roots = {
+                **ROOT_TYPES,
+                "timeline": "timeline",
+                "project": "project",
+            }
+            artifact_type = http_roots.get(parts[1]) if len(parts) == 3 else None
             slug = parts[-1]
             if len(parts) == 3 and artifact_type is None:
                 self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad resource type"})
@@ -724,6 +725,37 @@ class Handler(BaseHTTPRequestHandler):
             mts = load_mounts()
             if project not in mts:
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            from reckon.project_state import (
+                RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+                ProjectStateError,
+                read_resource,
+            )
+
+            if artifact_type in PROJECT_RESOURCE_TYPES:
+                try:
+                    data, version = read_resource(
+                        Path(mts[project]), project, artifact_type, slug
+                    )
+                except FileNotFoundError:
+                    self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown resource"})
+                    return
+                except ProjectStateError as exc:
+                    self._send_json(
+                        HTTPStatus.CONFLICT,
+                        {"error": "project_state_error", "detail": str(exc)},
+                    )
+                    return
+                self._send_json(
+                    HTTPStatus.OK,
+                    {
+                        "project": project,
+                        "slug": slug,
+                        "doc_type": artifact_type,
+                        "version": version,
+                        "data": data,
+                    },
+                )
                 return
             try:
                 pf = _resolve_plan_file(
@@ -764,18 +796,71 @@ class Handler(BaseHTTPRequestHandler):
                         pass
                 mts = load_mounts()
                 if project in mts:
+                    from reckon.project_state import (
+                        ProjectStateError,
+                        project_state_mode,
+                    )
+
+                    try:
+                        distributed = (
+                            project_state_mode(Path(mts[project])).format
+                            == "distributed"
+                        )
+                    except ProjectStateError as exc:
+                        self._send_json(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            {
+                                "error": "distributed_project_state_invalid",
+                                "detail": str(exc),
+                            },
+                        )
+                        return
                     try:
                         disc = discover_plans(mts[project], project, _STATE_ROOT)
                         data = dict(envelope.get("data") or {})
                         data["inventory"] = disc.get("inventory", [])
-                        if not data.get("sprints") and disc.get("sprints"):
+                        if disc.get("source_format") == "distributed":
+                            for field in (
+                                "sprints",
+                                "milestones",
+                                "blockers",
+                                "timeline",
+                                "active_sprint_id",
+                                "source_format",
+                                "resource_versions",
+                            ):
+                                data[field] = disc.get(field)
+                            data["_version"] = 0
+                        elif not data.get("sprints") and disc.get("sprints"):
                             data["sprints"] = disc["sprints"]
-                        if not data.get("milestones") and disc.get("milestones"):
+                        if (
+                            disc.get("source_format") != "distributed"
+                            and not data.get("milestones")
+                            and disc.get("milestones")
+                        ):
                             data["milestones"] = disc["milestones"]
                         self._send_json(HTTPStatus.OK, {**envelope, "data": data})
                         return
-                    except Exception:
-                        pass  # fall through to plain file read
+                    except ProjectStateError as exc:
+                        if distributed:
+                            self._send_json(
+                                HTTPStatus.INTERNAL_SERVER_ERROR,
+                                {
+                                    "error": "distributed_project_state_invalid",
+                                    "detail": str(exc),
+                                },
+                            )
+                            return
+                    except Exception as exc:  # noqa: BLE001
+                        if distributed:
+                            self._send_json(
+                                HTTPStatus.INTERNAL_SERVER_ERROR,
+                                {
+                                    "error": "distributed_project_state_invalid",
+                                    "detail": str(exc),
+                                },
+                            )
+                            return
                 if not state_file.is_file():
                     self._send_json(HTTPStatus.OK, {})
                     return
@@ -805,7 +890,17 @@ class Handler(BaseHTTPRequestHandler):
             if project not in disc_mounts:
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
-            result = discover_plans(disc_mounts[project], project, _STATE_ROOT)
+            try:
+                result = discover_plans(disc_mounts[project], project, _STATE_ROOT)
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {
+                        "error": "distributed_project_state_invalid",
+                        "detail": str(exc),
+                    },
+                )
+                return
             self._send_json(HTTPStatus.OK, result)
             return
 
@@ -850,20 +945,73 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             mts = load_mounts()
             if sub_project in mts:
+                from reckon.project_state import (
+                    ProjectStateError,
+                    project_state_mode,
+                )
+
+                try:
+                    distributed = (
+                        project_state_mode(Path(mts[sub_project])).format
+                        == "distributed"
+                    )
+                except ProjectStateError as exc:
+                    self._send_json(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        {
+                            "error": "distributed_project_state_invalid",
+                            "detail": str(exc),
+                        },
+                    )
+                    return
                 try:
                     disc = discover_plans(
                         Path(mts[sub_project]), sub_project, _STATE_ROOT
                     )
                     data = dict(envelope.get("data") or {})
                     data["inventory"] = disc.get("inventory", [])
-                    if not data.get("sprints") and disc.get("sprints"):
+                    if disc.get("source_format") == "distributed":
+                        for field in (
+                            "sprints",
+                            "milestones",
+                            "blockers",
+                            "timeline",
+                            "active_sprint_id",
+                            "source_format",
+                            "resource_versions",
+                        ):
+                            data[field] = disc.get(field)
+                        data["_version"] = 0
+                    elif not data.get("sprints") and disc.get("sprints"):
                         data["sprints"] = disc["sprints"]
-                    if not data.get("milestones") and disc.get("milestones"):
+                    if (
+                        disc.get("source_format") != "distributed"
+                        and not data.get("milestones")
+                        and disc.get("milestones")
+                    ):
                         data["milestones"] = disc["milestones"]
                     self._send_json(HTTPStatus.OK, {**envelope, "data": data})
                     return
-                except Exception:
-                    pass
+                except ProjectStateError as exc:
+                    if distributed:
+                        self._send_json(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            {
+                                "error": "distributed_project_state_invalid",
+                                "detail": str(exc),
+                            },
+                        )
+                        return
+                except Exception as exc:  # noqa: BLE001
+                    if distributed:
+                        self._send_json(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            {
+                                "error": "distributed_project_state_invalid",
+                                "detail": str(exc),
+                            },
+                        )
+                        return
             if sf.is_file():
                 self._send(HTTPStatus.OK, sf.read_bytes(), "application/json")
             else:
@@ -929,11 +1077,21 @@ class Handler(BaseHTTPRequestHandler):
         Optimistic concurrency: send `If-Match: <version>`; a mismatch returns
         412 with the current state so the client can rebase and retry.
         """
-        parts = path[len("/plan/") :].strip("/").split("/", 1)
-        if len(parts) != 2 or not SAFE_NAME.match(parts[0]):
+        parts = path[len("/plan/") :].strip("/").split("/")
+        if len(parts) not in (2, 3) or not SAFE_NAME.match(parts[0]):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
             return
-        project, slug = parts
+        project = parts[0]
+        http_roots = {
+            **ROOT_TYPES,
+            "timeline": "timeline",
+            "project": "project",
+        }
+        artifact_type = http_roots.get(parts[1]) if len(parts) == 3 else None
+        if len(parts) == 3 and artifact_type is None:
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad resource type"})
+            return
+        slug = parts[-1]
         slug = slug.removesuffix(".html")
         if not SAFE_NAME.match(slug):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad slug"})
@@ -942,7 +1100,19 @@ class Handler(BaseHTTPRequestHandler):
         if project not in mounts:
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
             return
-        plan_file = _resolve_plan_file(mounts[project], slug)
+        from reckon.project_state import RESOURCE_TYPES as PROJECT_RESOURCE_TYPES
+
+        if artifact_type in PROJECT_RESOURCE_TYPES:
+            self._handle_project_resource_write(
+                project,
+                slug,
+                artifact_type,
+                Path(mounts[project]),
+            )
+            return
+        plan_file = _resolve_plan_file(
+            mounts[project], slug, artifact_type, project=project
+        )
         if plan_file is None:
             self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown plan"})
             return
@@ -1042,6 +1212,99 @@ class Handler(BaseHTTPRequestHandler):
             HTTPStatus.OK, {"ok": True, "slug": slug, "version": state["version"]}
         )
 
+    def _handle_project_resource_write(
+        self,
+        project: str,
+        slug: str,
+        resource_type: str,
+        docs_dir: Path,
+    ) -> None:
+        """Version-check and patch one distributed project-state resource."""
+        from reckon.project_state import (
+            ProjectStateConflict,
+            ProjectStateError,
+            read_resource,
+            write_resource,
+        )
+
+        ok, patch = self._read_body()
+        if not ok:
+            return
+        if not isinstance(patch, dict):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "patch must be an object"}
+            )
+            return
+        try:
+            state, current_version = read_resource(
+                docs_dir, project, resource_type, slug
+            )
+        except ProjectStateError as exc:
+            self._send_json(
+                HTTPStatus.CONFLICT,
+                {"error": "project_state_error", "detail": str(exc)},
+            )
+            return
+        if_match = self.headers.get("If-Match")
+        if if_match is None:
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": current_version,
+                    "expected_version": None,
+                    "current_data": state,
+                },
+            )
+            return
+        try:
+            expected = int(if_match.strip().strip('"'))
+        except (ValueError, TypeError):
+            self._send_json(
+                HTTPStatus.BAD_REQUEST, {"error": "If-Match must be an integer"}
+            )
+            return
+        working = dict(state)
+        patch.pop("version", None)
+        patch.pop("type", None)
+        patch.pop("id", None)
+        _patch_into(working, patch)
+        try:
+            new_version = write_resource(
+                docs_dir,
+                project,
+                resource_type,
+                slug,
+                working,
+                expected,
+            )
+        except ProjectStateConflict as exc:
+            self._send_json(
+                HTTPStatus.PRECONDITION_FAILED,
+                {
+                    "error": "version_mismatch",
+                    "current_version": exc.current,
+                    "expected_version": exc.expected,
+                    "current_data": exc.current_data,
+                },
+            )
+            return
+        except (ProjectStateError, ValueError, FileNotFoundError) as exc:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "resource_validation", "detail": str(exc)},
+            )
+            return
+        self._send_json(
+            HTTPStatus.OK,
+            {
+                "ok": True,
+                "slug": slug,
+                "doc_type": resource_type,
+                "version": new_version,
+            },
+        )
+
     def do_POST(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
         if path.startswith("/plan/"):
@@ -1061,6 +1324,37 @@ class Handler(BaseHTTPRequestHandler):
         if not SAFE_NAME.match(doc_stem):
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad doc"})
             return
+        if doc_stem == "index":
+            from reckon.project_state import ProjectStateError, project_state_mode
+
+            mounts = load_mounts()
+            if project in mounts:
+                try:
+                    distributed = (
+                        project_state_mode(Path(mounts[project])).format
+                        == "distributed"
+                    )
+                except ProjectStateError as exc:
+                    self._send_json(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        {
+                            "error": "distributed_project_state_invalid",
+                            "detail": str(exc),
+                        },
+                    )
+                    return
+                if distributed:
+                    self._send_json(
+                        HTTPStatus.CONFLICT,
+                        {
+                            "error": "legacy_index_read_only",
+                            "hint": (
+                                "Edit a named sprint, milestone, blocker, "
+                                "timeline, or project resource."
+                            ),
+                        },
+                    )
+                    return
 
         length = int(self.headers.get("Content-Length", "0"))
         if length > MAX_POST_BYTES:

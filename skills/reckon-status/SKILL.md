@@ -103,7 +103,10 @@ Per-stage history lives under the owning type's `archive/` directory.
 
 ### Step 2 — read project config
 
-If `docs/state/$PROJECT/index.json` exists (or via `read_plan(project, "index")`), read it for sprint and milestone definitions. It holds project-level config only — not per-plan state.
+Use `read_plan(project, "index")` for the composed sprint, milestone, blocker,
+and timeline view. Inspect `source_format` and `resource_versions`; in
+distributed mode the retained on-disk `index.json` is a frozen migration
+source, not current state. Plan lifecycle state still comes from plan HTML.
 
 ### Step 3 — surface open decisions
 

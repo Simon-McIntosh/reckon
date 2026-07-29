@@ -140,9 +140,19 @@ def _read_plan(
     if project is None or project == "*":
         return _list_projects()
 
+    from reckon.project_state import ProjectStateError
+
     # ── discovery mode (no slug) ──
     if slug is None:
-        discovered = _discover_project(project, checkout_path)
+        try:
+            discovered = _discover_project(project, checkout_path)
+        except ProjectStateError as exc:
+            return {
+                "ok": False,
+                "error": "project_state_error",
+                "project": project,
+                "detail": str(exc),
+            }
         plans = _filter_inventory(
             [_inventory_row(item) for item in discovered.get("inventory", [])],
             status=status,
@@ -181,16 +191,32 @@ def _read_plan(
             "questions": questions if include_questions else [],
             "sprints": discovered.get("sprints", []),
             "milestones": discovered.get("milestones", []),
+            "blockers": discovered.get("blockers", []),
+            "timeline": discovered.get("timeline", []),
             "active_sprint_id": active_sprint_id,
+            "source_format": discovered.get("source_format", "legacy-index"),
+            "resource_versions": discovered.get("resource_versions", {}),
             "summary": _discovery_summary(plans, followups, questions),
         }
 
     # ── single-plan mode (original shape) ──
-    if doc_type is None:
-        data, version = read_plan(project, slug, checkout_path)
-    else:
-        data, version = read_plan(project, slug, checkout_path, artifact_type=doc_type)
-    if slug in ("index", "project"):
+    try:
+        if doc_type is None:
+            data, version = read_plan(project, slug, checkout_path)
+        else:
+            data, version = read_plan(
+                project, slug, checkout_path, artifact_type=doc_type
+            )
+    except ProjectStateError as exc:
+        return {
+            "ok": False,
+            "error": "project_state_error",
+            "project": project,
+            "slug": slug,
+            "doc_type": doc_type,
+            "detail": str(exc),
+        }
+    if slug in ("index", "project") and doc_type is None:
         from reckon.capability import map_legacy_capabilities
 
         index_warnings: list[str] = []
@@ -287,7 +313,7 @@ _DOS_DONTS = {
         "read_plan first to get the current version; pass it as expected_version.",
         "use edit_plan with an ops list — one call may carry several ops applied in order.",
         "give every followup a non-empty §05 prompt (mandatory; empty is rejected).",
-        "slug='index' targets project config (sprints/milestones/timeline/blockers).",
+        "slug='index' is a composed compatibility read; edit named project resources with doc_type.",
         "use canonical artifact types plan, research, or evidence; doc reads as research.",
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
         "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
@@ -296,19 +322,19 @@ _DOS_DONTS = {
         "never set plan-version yourself — the server owns it.",
         "off-enum status/roi/effort/type or capability requirements are rejected at the write boundary.",
         "research/evidence cannot carry meaningful plan-only workflow or scheduling fields.",
-        "index inventory[] is synthesised live; a set on it is a durable no-op.",
+        "distributed index writes are rejected with legacy_index_read_only guidance.",
         "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
     ],
 }
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars (including capability, informs/evidence_for/verifies and provenance metadata) + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1 and is plan-only; sprint status active/done updates active_sprint_id.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; index sprints, sprints.<id>.items, milestones, timeline, blockers. followup needs a §05 prompt.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars + decisions.<key>.<field>; or one top-level field on a selected sprint/milestone/blocker/project resource. impl clamps to 0..1 and is plan-only.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events. followup needs a §05 prompt.",
     "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
-    "move": "{op:'move', target:'sprint_item', slug, from, to} — index only; preserves item metadata.",
-    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → writes a template then applies ops.",
+    "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
+    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
 }
 
 
@@ -1430,11 +1456,69 @@ def _edit_plan(
     { ok: False, error, ... } (op_error | schema_validation | version_conflict |
     create errors).
     """
-    is_index = slug in ("index", "project")
+    is_index = slug in ("index", "project") and doc_type is None
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
     from reckon.resources import canonical_type, resource_map
 
     canonical_doc_type = canonical_type(doc_type) if doc_type else None
+    from reckon.project_state import (
+        RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+        LegacyIndexReadOnly,
+        ProjectStateConflict,
+        ProjectStateError,
+        apply_resource_ops,
+        resource_path,
+    )
+
+    if canonical_doc_type in PROJECT_RESOURCE_TYPES:
+        docs_dir = _docs_dir_for_project(project, root)
+        if docs_dir is None:
+            return {
+                "ok": False,
+                "error": f"no docs dir for project {project!r}",
+            }
+        try:
+            new_version, warnings = apply_resource_ops(
+                docs_dir,
+                project,
+                canonical_doc_type,
+                slug,
+                ops or [],
+                expected_version,
+                create=create,
+            )
+            result: dict[str, Any] = {
+                "ok": True,
+                "project": project,
+                "slug": slug,
+                "doc_type": canonical_doc_type,
+                "new_version": new_version,
+                "path": str(resource_path(docs_dir, project, canonical_doc_type, slug)),
+            }
+            if warnings:
+                result["warnings"] = warnings
+            if create:
+                result["created"] = True
+            return result
+        except ProjectStateConflict as exc:
+            return _conflict_response(
+                VersionConflict(exc.expected, exc.current, exc.current_data)
+            )
+        except ProjectStateError as exc:
+            return {
+                "ok": False,
+                "error": "project_state_error",
+                "project": project,
+                "slug": slug,
+                "doc_type": canonical_doc_type,
+                "detail": str(exc),
+            }
+        except (ValueError, FileNotFoundError) as exc:
+            return {
+                "ok": False,
+                "error": "resource_edit_error",
+                "detail": str(exc),
+            }
     if is_index and canonical_doc_type is not None:
         return {"ok": False, "error": "doc_type is not valid for index/project"}
     if create and canonical_doc_type not in {None, "plan"}:
@@ -1561,6 +1645,16 @@ def _edit_plan(
         )
     except VersionConflict as e:
         return _conflict_response(e)
+    except LegacyIndexReadOnly as e:
+        return {
+            "ok": False,
+            "error": "legacy_index_read_only",
+            "detail": str(e),
+            "hint": (
+                "Read the composed index for resource_versions, then edit one "
+                "named resource with doc_type."
+            ),
+        }
     except (ValueError, FileNotFoundError) as e:
         return {"ok": False, "error": "resource_selection", "detail": str(e)}
 
@@ -1643,7 +1737,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     html_files: list[Path] = []
     seen_resources: dict[tuple[str, str], Path] = {}
     for resource in iter_resources(docs_dir, project, include_archived=False):
-        if resource.type == "sprint":
+        if resource.type not in {"plan", "research", "evidence"}:
             continue
         html_file = resource.path
         resource_key = (resource.type, resource.slug)
@@ -1680,6 +1774,35 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
             lines = [ln for ln in lines if not ln.endswith("failed:")]
             violations.append({"slug": slug, "errors": lines})
 
+    findings: list[dict[str, Any]] = []
+    from reckon.project_state import audit_project_state
+
+    project_state_findings = audit_project_state(docs_dir, project)
+    if project_state_findings:
+        for item in project_state_findings:
+            findings.append(
+                _finding(
+                    "project-state",
+                    item["code"],
+                    item["severity"],
+                    item["message"],
+                )
+            )
+        return {
+            "project": project,
+            "checked": checked,
+            "conformant": max(0, checked - len(violations)),
+            "violations": violations,
+            "findings": findings,
+            "summary": {
+                "errors": sum(
+                    1 for item in findings if item.get("severity") == "error"
+                ),
+                "warnings": 0,
+            },
+            "ok": False,
+        }
+
     plans = _filter_inventory(
         [
             _inventory_row(item)
@@ -1691,7 +1814,6 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     questions = list_questions_across(project, unresolved_only=True, root=checkout_path)
     index_data, _ = read_plan(project, "index", checkout_path)
 
-    findings: list[dict[str, Any]] = []
     for resource_id, first_path, second_path in resource_collisions:
         findings.append(
             _finding(

@@ -43,7 +43,10 @@ repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
 3. **Never overwrite `docs/state/<project>/index.json`** — the CLI only seeds it
    when absent and otherwise preserves authored sprint/milestone data.
 4. **Never overwrite per-plan HTML** the user has already authored.
-5. **No per-plan state JSON.** Plan state lives as semantic HTML inside each plan's HTML file. The only JSON in `docs/state/<project>/` is `index.json` (project config) and `project.json` (sprint/milestone definitions).
+5. **No per-plan state JSON.** Plan state lives as semantic HTML. A new scaffold
+   seeds legacy project config for compatibility; `reckon
+   migrate-project-state` later creates typed sprint/milestone/blocker/timeline
+   resources, an identity-only `project.json`, and freezes `index.json`.
 6. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
 7. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
 8. **Never commit automatically.** Print a suggested commit message.
@@ -89,8 +92,8 @@ uv run --project ~/Code/reckon reckon sync "$REPO_ROOT/docs"
   on later runs **only if** the existing file is already a reckon SPA — a
   hand-authored page is left untouched;
 - drops `.nojekyll` for GitHub Pages;
-- creates `docs/state/<project>/`, seeds `project.json` and `index.json` (only
-  when absent / preserving authored sprint+milestone data), and symlinks
+- creates `docs/state/<project>/`, seeds legacy `project.json` and `index.json`
+  only when absent, preserves a distributed checkout unchanged, and symlinks
   `<config-home>/state/<project>` → it;
 - registers `<project> → docs/` in `<config-home>/mounts.json` (re-read on every
   request — no server restart needed).

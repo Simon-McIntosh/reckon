@@ -152,8 +152,14 @@ def state_path(project: str, slug: str, root: str | Path | None = None) -> Path:
 _JSON_SLUGS = frozenset(["index", "project"])
 
 
-def _is_json_slug(slug: str) -> bool:
-    return slug in _JSON_SLUGS
+def _is_json_slug(slug: str, artifact_type: str | None = None) -> bool:
+    return slug in _JSON_SLUGS and artifact_type not in {
+        "sprint",
+        "milestone",
+        "blocker",
+        "timeline",
+        "project",
+    }
 
 
 def _docs_dir_for_project(project: str, root: str | Path | None = None) -> Path | None:
@@ -437,7 +443,24 @@ def read_plan(
     Returns:
         (data, version) — returns ({}, 0) if absent/unparseable.
     """
-    if _is_json_slug(slug):
+    from reckon.project_state import (
+        RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+        compose_project_state,
+        project_state_mode,
+        read_resource,
+    )
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if artifact_type in PROJECT_RESOURCE_TYPES:
+        if docs_dir is None:
+            return {}, 0
+        return read_resource(docs_dir, project, artifact_type, slug)
+    if _is_json_slug(slug, artifact_type):
+        if slug == "index" and docs_dir is not None:
+            mode = project_state_mode(docs_dir)
+            if mode.format == "distributed":
+                data = compose_project_state(docs_dir, project)
+                return data, 0
         return _load_json_envelope(state_path(project, slug, root))
     return _read_state(project, slug, root, artifact_type)
 
@@ -462,7 +485,34 @@ def write_plan(
     Raises VersionConflict if expected_version does not match current.
     Returns the new version.
     """
-    if _is_json_slug(slug):
+    from reckon.project_state import (
+        RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+        LegacyIndexReadOnly,
+        project_state_mode,
+        write_resource,
+    )
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if artifact_type in PROJECT_RESOURCE_TYPES:
+        if docs_dir is None:
+            raise FileNotFoundError(f"No docs dir found for project {project!r}")
+        return write_resource(
+            docs_dir,
+            project,
+            artifact_type,
+            slug,
+            data,
+            expected_version,
+        )
+    if _is_json_slug(slug, artifact_type):
+        if slug == "index" and docs_dir is not None:
+            mode = project_state_mode(docs_dir)
+            if mode.format == "distributed":
+                raise LegacyIndexReadOnly(
+                    "legacy_index_read_only: aggregate index writes are disabled; "
+                    "read resource_versions and edit the named sprint, milestone, "
+                    "blocker, timeline, or project resource with doc_type"
+                )
         return _write_json_envelope(
             state_path(project, slug, root), project, slug, data, expected_version
         )

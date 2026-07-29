@@ -1,7 +1,8 @@
 // state-loader.js — runtime state fetcher for reckon plan pages.
 //
 // Builds window.STATE from three sources, in priority order:
-//   1. state/<project>/index.json  — per-project central index (if present)
+//   1. state/<project>/projection.json — derived static distributed view
+//      or state/<project>/index.json   — legacy central index
 //   2. state/<project>/<slug>.json — per-plan state files (per-doc layout)
 //   3. /_discover/<project>        — auto-discovery from HTML meta tags
 //
@@ -12,12 +13,18 @@ window.STATE_READY = (async function () {
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
                   "unknown";
 
-  async function getJson(url) {
+  async function getJson(url, { required = false } = {}) {
     try {
       const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) return null;
+      if (!r.ok) {
+        if (required) throw new Error(`${url} returned HTTP ${r.status}`);
+        return null;
+      }
       return await r.json();
-    } catch { return null; }
+    } catch (error) {
+      if (required) throw error;
+      return null;
+    }
   }
 
   const stateBase = `state/${PROJECT}`;
@@ -48,7 +55,9 @@ window.STATE_READY = (async function () {
   };
 
   // ── 1. Central index ───────────────────────────────────────────────────
-  const idxBlob = await getJson(`${stateBase}/index.json`);
+  const projectionBlob = await getJson(`${stateBase}/projection.json`);
+  const idxBlob = projectionBlob ||
+                  (await getJson(`${stateBase}/index.json`, { required: true }));
   const idx = (idxBlob && idxBlob.data) || {};
 
   let sprints    = Array.isArray(idx.sprints)
@@ -115,11 +124,26 @@ window.STATE_READY = (async function () {
   // directly, includes server-computed fields (created, dec_open) that
   // index.json never stores, and is always up-to-date.
   // index.json is only used for project config (sprints, milestones, timeline).
-  const disc = await getJson(`/_discover/${PROJECT}`);
+  let disc = null;
+  const discoveryResponse = await fetch(
+    `/_discover/${PROJECT}`, { cache: "no-store" }
+  );
+  if (discoveryResponse.ok) {
+    disc = await discoveryResponse.json();
+  } else if (!(projectionBlob && discoveryResponse.status === 404)) {
+    throw new Error(
+      `/_discover/${PROJECT} returned HTTP ${discoveryResponse.status}`
+    );
+  }
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
     inventory = disc.inventory;
-    if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
-    if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
+    if (disc.source_format === "distributed") {
+      if (Array.isArray(disc.sprints)) sprints = disc.sprints;
+      if (Array.isArray(disc.milestones)) milestones = disc.milestones;
+    } else {
+      if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
+      if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
+    }
   }
   // disc unavailable (server down) → fall through with inventory from index.json / idx.plans
 
@@ -216,11 +240,16 @@ window.STATE_READY = (async function () {
     projects,
     milestones,
     inventory:        mergedInventory,
-    active_sprint_id: idx.active_sprint_id || null,
+    active_sprint_id: disc?.active_sprint_id ?? idx.active_sprint_id ?? null,
     sprints:          augmentedSprints,
     sprint:           activeSprint,
-    blockers:         Array.isArray(idx.blockers) ? idx.blockers : [],
-    timeline:         Array.isArray(idx.timeline) ? idx.timeline : [],
+    blockers:         Array.isArray(disc?.blockers) ? disc.blockers
+                      : (Array.isArray(idx.blockers) ? idx.blockers : []),
+    timeline:         Array.isArray(disc?.timeline) ? disc.timeline
+                      : (Array.isArray(idx.timeline) ? idx.timeline : []),
     plans,
   };
-})();
+})().catch(error => {
+  window.STATE_ERROR = error;
+  throw error;
+});

@@ -1,10 +1,9 @@
 ---
 name: reckon-sprint
 description: >-
-  Manage sprint and roadmap state in a project's central index — propose / start
+  Manage independently versioned sprint and roadmap resources — propose / start
   / close / rebalance sprints, move items between sprints, and edit milestones,
-  timeline, and blockers. All state lives in the project's docs/state index,
-  read and written via the index slug. Trigger verbs: "propose sprint / start
+  timeline, and blockers. Trigger verbs: "propose sprint / start
   sprint / close sprint / rebalance sprint / move item to sprint / plan the
   roadmap / add milestone / add blocker / /reckon-sprint". For editing a single
   plan's text or followups use reckon-edit; execute a plan slug or whole sprint
@@ -16,24 +15,30 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 # reckon-sprint — sprint, milestone, and roadmap orchestration
 
 ## Fast path
-- Read sprints → `read_plan(project, "index")` → `data.sprints`, `active_sprint_id`.
-- Create / start / close a sprint → `edit_plan(project, "index", ops=[…])` (append / set).
-- Move an item between sprints → `edit_plan` `move` op (`target="sprint_item"`).
+- Read the composed view → `read_plan(project, "index")`; use its
+  `resource_versions` before selecting a named resource.
+- Read/write one sprint → `read_plan(project, id, doc_type="sprint")` then
+  `edit_plan(..., doc_type="sprint")`.
+- Move an item between sprints → read both versions, then use the source sprint's
+  `move` op with `to_version`.
 - Propose a sprint → discover plans, score by **dependency order first**, confirm, then write.
 
-Full detail below. Sprint state is the project **index**, not a plan. This
+Full detail below. Sprint state is a typed resource, not a plan. This
 skill never dispatches workers; `/reckon-ship S1` executes the sprint.
 
-## The model — sprints live in the project index
+## The model — independently versioned resources
 
-Sprint, milestone, timeline, and blocker state lives in
-`docs/state/<project>/index.json` (schema `reckon/_schema.py:IndexState`),
-**not** in any plan's HTML. You reach it through the special `index` slug:
-`read_plan(project, "index")` to read, `edit_plan(project, "index", ops=…)` to
-mutate. The index version counter is `data._version` (distinct from a plan's
-`plan-version`). Sprint items reference plan slugs; the live plan state (impl,
-decisions, followups) is always read from each plan's HTML, never duplicated
-into the index.
+Sprints live under `docs/sprints/`, milestones under `docs/milestones/`,
+blockers under `docs/blockers/`, and the append-only timeline at
+`docs/state/<project>/timeline.html`. Each resource owns its own version.
+`project.json` is identity/presentation-only. Sprint items reference plan
+slugs; live plan status and implementation fraction are composed from plan
+HTML and are never persisted in a sprint.
+
+`read_plan(project, "index")` remains a read-only composed compatibility view.
+It returns `source_format`, `resource_versions`, and the active sprint derived
+from the unique sprint whose status is `active`. Never write the aggregate
+index after distributed activation.
 
 `edit_plan` is the version-safe write path: call `read_plan` first for the
 current `version`, pass it as `expected_version`; on a 412 conflict re-read and
@@ -47,35 +52,36 @@ The MCP server resolves every project to the FIXED docs dir in `mounts.json`
 `read_plan` and `edit_plan` so the index write lands in **your** tree — the
 read's `version` must come from the same `checkout_path`. Omit it (default) in
 the main checkout. **Preferred:** let the orchestrator in the main checkout own
-index/sprint writes; worktree workers avoid index contention entirely. Full
+shared roadmap writes; worktree workers avoid resource contention entirely. Full
 rationale in `reckon-edit` SKILL.md (§ worktree).
 
-## Op reference (index slug)
+## Op reference (named resources)
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | `active_sprint_id`, `sprints.<id>.<field>`, `milestones.<id>.<field>` |
-| `append` | `target`, `item` | `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
-| `move` | `target="sprint_item"`, `slug`, `from`, `to` | Move an item between sprints |
+| `set` | `path`, `value` | Top-level sprint/milestone/blocker/project field; timeline excluded |
+| `append` | `target`, `item` | Sprint `items` or timeline `events` |
+| `move` | `target="sprint_item"`, `slug`, `to`, `to_version` | Move from selected sprint with both versions checked |
 
 ## Read sprints
 
 ```python
-state = read_plan(project="imas-ambix", slug="index")
-# state["data"]["sprints"], state["data"]["active_sprint_id"], state["version"]
+view = read_plan(project="imas-ambix", slug="index")
+sprint = read_plan(project="imas-ambix", slug="S5", doc_type="sprint")
+# view["data"]["active_sprint_id"], sprint["data"], sprint["version"]
 ```
 
 ## Create a sprint
 
 ```python
 edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "append", "target": "sprints", "item": {
-    "id": "S5", "theme": "Foundation hardening",
-    "description": "Schema, tooling, test coverage.",
-    "status": "planned", "starts": "2026-05-26", "ends": "2026-06-06", "items": []
-  }}],
-  expected_version=7
+  project="imas-ambix", slug="S5", doc_type="sprint", create=True,
+  ops=[
+    {"op": "set", "path": "theme", "value": "Foundation hardening"},
+    {"op": "set", "path": "description", "value": "Schema and tooling."},
+    {"op": "set", "path": "status", "value": "planned"}
+  ],
+  expected_version=0
 )
 ```
 
@@ -83,12 +89,9 @@ edit_plan(
 
 ```python
 edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[
-    {"op": "set", "path": "active_sprint_id", "value": "S5"},
-    {"op": "set", "path": "sprints.S5.status", "value": "active"}
-  ],
-  expected_version=8
+  project="imas-ambix", slug="S5", doc_type="sprint",
+  ops=[{"op": "set", "path": "status", "value": "active"}],
+  expected_version=1
 )
 ```
 
@@ -96,12 +99,12 @@ edit_plan(
 
 ```python
 edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "append", "target": "sprints.S5.items", "item": {
+  project="imas-ambix", slug="S5", doc_type="sprint",
+  ops=[{"op": "append", "target": "items", "item": {
     "slug": "plasma-decoder-finetune", "why_now": "Highest ROI; gates M2",
     "done_when": "Fine-tune run green; eval passing"
   }}],
-  expected_version=9
+  expected_version=2
 )
 ```
 
@@ -109,10 +112,10 @@ edit_plan(
 
 ```python
 edit_plan(
-  project="imas-ambix", slug="index",
+  project="imas-ambix", slug="S4", doc_type="sprint",
   ops=[{"op": "move", "target": "sprint_item", "slug": "plasma-decoder-finetune",
-        "from": "S4", "to": "S5"}],
-  expected_version=9
+        "to": "S5", "to_version": 3}],
+  expected_version=5
 )
 ```
 
@@ -120,9 +123,9 @@ edit_plan(
 
 ```python
 edit_plan(
-  project="imas-ambix", slug="index",
-  ops=[{"op": "set", "path": "sprints.S5.status", "value": "done"}],
-  expected_version=10
+  project="imas-ambix", slug="S5", doc_type="sprint",
+  ops=[{"op": "set", "path": "status", "value": "done"}],
+  expected_version=4
 )
 ```
 
@@ -136,7 +139,7 @@ edit_plan(
    `shipped`/`done` is NOT ready; never schedule it ahead of its prerequisites.
    Refs may be external (`project:slug`): resolve them via `read_plan`'s
    `deps` list, and record an unshipped external prerequisite as a BLOCKER in
-   the index (it cannot be scheduled inside this project's sprints).
+   a blocker resource (it cannot be scheduled inside this project's sprints).
    Then order the ready set by `roi × effort_inverse × milestone_priority`.
 4. Partition into N sprints; each item carries `why_now` and `done_when`.
 5. Keep **one active sprint** at a time. Future sprints start as `planned`.
@@ -160,11 +163,10 @@ and cleans up worktrees before sprint closure.
 
 ## Milestones, timeline, blockers
 
-All live in the same index. Append a milestone (`target="milestones"`, with
-`depends_on` other milestone ids), a timeline entry (`target="timeline"`:
-`{when, who, what}`), or a blocker (`target="blockers"`:
-`{id, summary, origin, owner, next}`) via `edit_plan` append ops. Set a
-milestone field with `{"op":"set","path":"milestones.<id>.<field>","value":…}`.
+Each is selected by `doc_type`. Create or edit milestones and blockers as named
+resources. Read `slug="timeline", doc_type="timeline"` before appending one
+`events` item (`{when, who, what}`); existing events cannot be changed. Blocker
+reference counts are derived from sprint item `blocked_by` references.
 
 ## Cross-references
 

@@ -32,7 +32,7 @@
 // `getDecisions()` — see compat shim there.
 //
 // Read API:
-//   loadIndexState()    → fetches state/<project>/index.json
+//   loadIndexState()    → projection.json when built, otherwise index.json
 //   loadState()         → fetches state/<project>/<current-doc>.json
 //   loadProjectsState() → fetches /_projects/index.json (cross-project rollup,
 //                         only available from the docs-server root)
@@ -99,9 +99,15 @@
   // --- Reads ---------------------------------------------------------
   window.loadIndexState = async function loadIndexState() {
     try {
-      const r = await fetch(stateUrl("index"), { cache: "no-store" });
-      if (!r.ok) return {};
-      const j = await r.json();
+      let r = await fetch(stateUrl("projection"), { cache: "no-store" });
+      let j = r.ok ? await r.json() : {};
+      if (!j || !j.data || Object.keys(j.data).length === 0) {
+        r = await fetch(stateUrl("index"), { cache: "no-store" });
+        if (!r.ok) {
+          throw new Error(`index state returned HTTP ${r.status}`);
+        }
+        j = await r.json();
+      }
       // Cache version from loaded data.
       const data = (j && j.data) || j || {};
       if (typeof data._version === "number") {
@@ -110,7 +116,8 @@
       return j;
     } catch (e) {
       console.warn("loadIndexState failed", e);
-      return {};
+      window.STATE_ERROR = e;
+      throw e;
     }
   };
 
