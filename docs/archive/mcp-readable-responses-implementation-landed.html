@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="mcp-readable-responses-implementation-landed">
+  <meta name="plan-title" content="Readable MCP Resource Responses — Implementation Record">
+  <meta name="plan-summary" content="Progressive typed MCP views landed with exact legacy compatibility, bounded pagination, and measured payload reductions.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-impl" content="1.0">
+  <meta name="plan-archived" content="1">
+  <meta name="plan-evidence-for" content="mcp-readable-responses">
+  <meta name="plan-modified" content="2026-07-29">
+  <title>Readable MCP Resource Responses — Implementation Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Readable MCP resource responses — implementation record</h1>
+    <p class="lead">Typed reads now lead with concise human state and reveal detail, history, raw storage, or schema only when explicitly requested. Existing callers retain their exact response shape.</p>
+
+    <figure>
+      <img src="/reckon/figures/mcp-readable-responses/layers.svg" alt="A concise MCP summary response expands to detailed and raw representations only when requested.">
+      <figcaption>The implemented layers preserve one stable resource identity and concurrency token while progressively revealing more data.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Problem and locked contract</h2>
+      <p>The legacy <code>read_plan</code> envelope repeats identity fields and exposes resolved history, option maps, empty storage fields, and full prompts even when a caller only needs current status. Project discovery and audit responses compound that cost by returning every record in one payload.</p>
+      <p>The existing three-tool surface remains intact. A new <code>resource</code> selector carries <code>project</code>, <code>type</code>, <code>id</code>, and optional archive identity. Typed calls default to <code>summary</code>; <code>detail</code>, <code>history</code>, <code>raw</code>, and <code>schema</code> are explicit. Calls omitting both <code>resource</code> and <code>view</code> retain the exact legacy result.</p>
+    </section>
+
+    <section>
+      <h2>Implementation</h2>
+      <table>
+        <thead><tr><th>Layer</th><th>Purpose</th><th>Payload discipline</th></tr></thead>
+        <tbody>
+          <tr><td><code>summary</code></td><td>Human title, compact state, blockers, open decisions, and next action</td><td>No resolved workflow or full prompts</td></tr>
+          <tr><td><code>detail</code></td><td>Current metadata, relationships, unresolved workflow, and composed sprint items</td><td>Prompts remain opt-in</td></tr>
+          <tr><td><code>history</code></td><td>Resolved decisions, followups, questions, or timeline events</td><td>Deterministic bounded cursor pages</td></tr>
+          <tr><td><code>raw</code></td><td>Lossless state for version-safe writes and compatibility diagnosis</td><td>Explicit opt-in</td></tr>
+          <tr><td><code>schema</code></td><td>Stable response shape, storage schema, operation vocabulary, and authoring guidance</td><td>Explicit opt-in</td></tr>
+        </tbody>
+      </table>
+      <p><code>reckon/mcp_views.py</code> owns view validation, typed identity, pagination, human summaries, and common structured errors. <code>reckon/mcp.py</code> routes opt-in progressive reads without changing the legacy branch. The audit tool exposes summary, paginated detail, schema, and raw views through optional arguments.</p>
+      <p>Typed identity and cursor inputs are length-bounded and validated before filesystem resolution or decoding. Pending, blocked, and missing prerequisites appear in the summary's blocking list; shipped and done prerequisites do not.</p>
+    </section>
+
+    <section>
+      <h2>Compatibility and agent guidance</h2>
+      <p>The FastMCP-generated schema advertises every new argument as optional. Tests assert the old plan and audit shapes exactly, typed/archive selection, prompt opt-in, cursor behavior, resource errors, live sprint composition, and representative response budgets.</p>
+      <p>The bundled status skill now begins with summary views. Edit, sprint-write, and ship workflows request <code>raw</code> explicitly before versioned writes. The public README, format reference, tool descriptions, and repository guidance document the same contract.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Representative call</th><th>Legacy bytes</th><th>Summary bytes</th><th>Reduction</th></tr></thead>
+        <tbody>
+          <tr><td>Plan</td><td>4,113</td><td>564</td><td><strong>86.3%</strong></td></tr>
+          <tr><td>Sprint</td><td>3,668</td><td>576</td><td><strong>84.3%</strong></td></tr>
+          <tr><td>Project discovery</td><td>56,460</td><td>4,747</td><td><strong>91.6%</strong></td></tr>
+          <tr><td>Audit</td><td>18,057</td><td>481</td><td><strong>97.3%</strong></td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li>Complete suite: <strong>1,369 passed</strong> in 28.26 seconds.</li>
+        <li>Ruff lint and format checks: <strong>clean</strong>.</li>
+        <li>Implementation commit: <code>8cc940f</code>.</li>
+        <li>Detailed evidence: <a href="/reckon/evidence/archive/mcp-readable-responses-landed">verified landing record</a>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

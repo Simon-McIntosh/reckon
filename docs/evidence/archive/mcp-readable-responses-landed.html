@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="mcp-readable-responses-landed">
+  <meta name="plan-title" content="Readable MCP Resource Responses — Verified Landing">
+  <meta name="plan-summary" content="Typed summary views reduce representative MCP payloads by 84.3–97.3% while raw legacy responses remain lossless and unchanged.">
+  <meta name="plan-evidence-for" content="mcp-readable-responses">
+  <meta name="plan-verifies" content="mcp-readable-responses#s2,mcp-readable-responses#s3,mcp-readable-responses#s4">
+  <meta name="plan-commits" content="8cc940f">
+  <meta name="plan-artifacts" content="reckon/mcp_views.py,tests/test_mcp_views.py">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Readable MCP Resource Responses — Verified Landing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Readable MCP resource responses — verified landing</h1>
+    <p class="lead">The progressive response contract passed compatibility, typed-resource, pagination, input-boundary, payload-size, and full-suite verification.</p>
+
+    <figure>
+      <img src="/reckon/figures/mcp-readable-responses/layers.svg" alt="Summary, detail, history, raw, and schema layers for an MCP resource response.">
+      <figcaption>Current human state is the default; lossless storage and historical workflow are requested deliberately.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Measured payloads</h2>
+      <table>
+        <thead><tr><th>Resource</th><th>Legacy compact JSON</th><th>Summary compact JSON</th><th>Reduction</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Plan</td><td>4,113 bytes</td><td>564 bytes</td><td>86.3%</td><td>Pass</td></tr>
+          <tr><td>Sprint</td><td>3,668 bytes</td><td>576 bytes</td><td>84.3%</td><td>Pass</td></tr>
+          <tr><td>Discovery</td><td>56,460 bytes</td><td>4,747 bytes</td><td>91.6%</td><td>Pass</td></tr>
+          <tr><td>Audit</td><td>18,057 bytes</td><td>481 bytes</td><td>97.3%</td><td>Pass</td></tr>
+        </tbody>
+      </table>
+      <p>Measurements use deterministic UTF-8 compact JSON with sorted keys against the final post-landing Reckon checkout. Summary fixtures also enforce absolute byte ceilings and proportional reductions for populated synthetic resources.</p>
+    </section>
+
+    <section>
+      <h2>Contract verification</h2>
+      <ul>
+        <li>Legacy <code>read_plan(project, slug)</code> and <code>audit(project)</code> responses remain unchanged when progressive arguments are omitted.</li>
+        <li>Typed plan, archived plan, sprint, project discovery, and audit selectors return one stable resource identity and one version token.</li>
+        <li>Full prompts are absent from summaries and require an explicit detail/history opt-in.</li>
+        <li>History, discovery, and audit detail pages use deterministic opaque cursors with a default limit of 25 and maximum limit of 100.</li>
+        <li>Unsafe or oversized selectors and cursors return bounded structured errors before filesystem or decoder work.</li>
+        <li>FastMCP introspection confirms the new tool arguments are optional, preserving existing client schemas.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Test evidence</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Focused progressive-view tests</td><td>All passing</td></tr>
+          <tr><td>Malformed selector/cursor and prerequisite-blocking regressions</td><td>2 passed</td></tr>
+          <tr><td>Complete repository suite</td><td><strong>1,369 passed</strong> in 28.26 s</td></tr>
+          <tr><td>Ruff lint</td><td>Clean</td></tr>
+          <tr><td>Ruff format</td><td>Clean</td></tr>
+          <tr><td>Implementation commit</td><td><code>8cc940f</code></td></tr>
+        </tbody>
+      </table>
+      <p>No compatibility failures, schema drift, typed-directory regressions, or concurrency-test regressions were observed.</p>
+    </section>
+  </main>
+</body>
+</html>
