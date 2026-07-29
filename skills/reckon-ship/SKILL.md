@@ -127,6 +127,14 @@ same-project prerequisites become nodes in the execution DAG automatically.
 Stop for cross-project, unavailable, abandoned, or authority-expanding
 prerequisites.
 
+`depends_on` entries may be EXTERNAL — `project:slug[#stage]` refs into
+another mounted project (bare slugs stay local). `read_plan(project, slug)`
+returns a computed `deps` list resolving every ref (`scope`, `found`,
+`status`, `impl`); gate on that instead of assuming a bare slug is local. An
+unshipped external prerequisite is a hard stop like any other, but its work
+belongs to the OTHER project's checkout — never implement it in this one;
+surface it as `/reckon-ship <project>:<slug>`.
+
 For a plan-mode stop, ask for explicit user authorization:
 
 ```

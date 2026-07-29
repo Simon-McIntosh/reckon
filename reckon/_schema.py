@@ -52,6 +52,7 @@ fields runs **only** at the explicit write boundary, via
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -98,6 +99,90 @@ def _enum(values: list[str]) -> dict[str, Any]:
     """json_schema_extra payload advertising the canonical enum for a str field
     (without making the Python field reject off-enum values on read)."""
     return {"enum": list(values)}
+
+
+# ── Cross-project plan references ────────────────────────────────────────────
+#
+# Every link-list field (depends_on, blocks, informs, evidence_for, verifies,
+# supersedes) holds PLAN REFS with one grammar:
+#
+#     ref     :=  [ project ":" ] slug [ "#" stage ]
+#     project :=  a key in mounts.json          (e.g. "nova", "norma")
+#     slug    :=  a plan slug in that project   (e.g. "nova-spine-refactor")
+#     stage   :=  a section / stage anchor      (e.g. "s2", "parser")
+#
+# A BARE slug is a LOCAL reference — resolved inside the owning project, as it
+# always has been. A "project:"-QUALIFIED ref is an EXTERNAL reference into
+# another mounted project. The distinction is scope, not shape: both travel in
+# the same comma-separated <meta> lists, and a qualified ref whose project
+# equals the owning project reads as local. Resolution of external refs (does
+# the target exist, what is its status/impl) is the server's job — the MCP
+# read_plan single-plan response resolves depends_on into a ``deps`` list, and
+# the audit reports dangling or unmounted external refs. Files stay portable:
+# nothing in the HTML depends on another checkout being present.
+
+_REF_SEGMENT = r"[A-Za-z0-9][A-Za-z0-9._-]*"
+_PROJECT_SEGMENT = r"[A-Za-z0-9][A-Za-z0-9_-]*"
+_PLAN_REF_RE = re.compile(
+    rf"^(?:(?P<project>{_PROJECT_SEGMENT}):)?"
+    rf"(?P<slug>{_REF_SEGMENT})"
+    rf"(?:#(?P<stage>{_REF_SEGMENT}))?$"
+)
+
+#: The link-list fields whose entries are plan refs (local or external).
+LINK_LIST_FIELDS = (
+    "depends_on",
+    "blocks",
+    "informs",
+    "evidence_for",
+    "verifies",
+    "supersedes",
+)
+
+
+class PlanRef:
+    """A parsed plan reference. ``project is None`` ⇒ local (same-project)."""
+
+    __slots__ = ("project", "slug", "stage")
+
+    def __init__(self, project: str | None, slug: str, stage: str | None) -> None:
+        self.project = project
+        self.slug = slug
+        self.stage = stage
+
+    def is_external(self, owning_project: str = "") -> bool:
+        """True when the ref points outside ``owning_project``. A qualifier
+        naming the owning project itself reads as local."""
+        return self.project is not None and self.project != owning_project
+
+    def __repr__(self) -> str:  # pragma: no cover — debugging aid
+        return f"PlanRef(project={self.project!r}, slug={self.slug!r}, stage={self.stage!r})"
+
+
+def parse_plan_ref(ref: str) -> PlanRef | None:
+    """Parse ``[project:]slug[#stage]`` — returns ``None`` on a malformed ref
+    (empty segments, more than one ``:``, illegal characters)."""
+    if not isinstance(ref, str):
+        return None
+    m = _PLAN_REF_RE.match(ref.strip())
+    if m is None:
+        return None
+    return PlanRef(m.group("project"), m.group("slug"), m.group("stage"))
+
+
+def split_refs(
+    refs: list[str], owning_project: str = ""
+) -> tuple[list[str], list[str]]:
+    """Partition a link list into ``(local, external)`` refs, dropping
+    malformed entries from both halves (the write boundary rejects those)."""
+    local: list[str] = []
+    external: list[str] = []
+    for ref in refs or []:
+        parsed = parse_plan_ref(ref)
+        if parsed is None:
+            continue
+        (external if parsed.is_external(owning_project) else local).append(ref)
+    return local, external
 
 
 # ── Plan section models ──────────────────────────────────────────────────────
@@ -244,8 +329,23 @@ class PlanState(BaseModel):
     source_quality: str = ""
 
     # ── Link lists (comma-separated metas) ──
-    depends_on: list[str] = Field(default_factory=list)
-    blocks: list[str] = Field(default_factory=list)
+    # Entries are plan refs: a bare "slug" is LOCAL (same project); a
+    # "project:slug" qualifier is EXTERNAL (another mounted project); an
+    # optional "#stage" suffix names a section/stage. See parse_plan_ref.
+    depends_on: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Plan refs this plan depends on. Bare 'slug' = same-project; "
+            "'project:slug' = external (cross-project); optional '#stage'."
+        ),
+    )
+    blocks: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Plan refs this plan blocks. Same grammar as depends_on: bare "
+            "'slug' = same-project; 'project:slug' = external; optional '#stage'."
+        ),
+    )
     informs: list[str] = Field(default_factory=list)  # research-only
     evidence_for: list[str] = Field(default_factory=list)  # evidence-only
     verifies: list[str] = Field(default_factory=list)  # evidence-only stage refs
@@ -282,6 +382,16 @@ class PlanState(BaseModel):
                 return "research"
             return s or "plan"
         return v
+
+    # ── Dependency scope views (derived, never stored) ──
+    def local_depends_on(self) -> list[str]:
+        """The depends_on refs that resolve inside this plan's own project."""
+        return split_refs(self.depends_on, self.project)[0]
+
+    def external_depends_on(self) -> list[str]:
+        """The depends_on refs qualified into another project
+        (``project:slug[#stage]``)."""
+        return split_refs(self.depends_on, self.project)[1]
 
     # ── Read-only SPA views (derived, never stored) ──
     def decisions_list(self) -> list[dict]:
@@ -337,10 +447,14 @@ class PlanState(BaseModel):
         write boundary.
         """
         errors: list[str] = []
-        required = ("project", "slug", "title", "status") if self.type == "plan" else (
-            "project",
-            "slug",
-            "title",
+        required = (
+            ("project", "slug", "title", "status")
+            if self.type == "plan"
+            else (
+                "project",
+                "slug",
+                "title",
+            )
         )
         for fld in required:
             if not (getattr(self, fld) or "").strip():
@@ -379,6 +493,13 @@ class PlanState(BaseModel):
                     errors.append(
                         f"{field}: plan-only workflow cannot be non-empty "
                         f"on {self.type} artifacts"
+                    )
+        for field in LINK_LIST_FIELDS:
+            for ref in getattr(self, field, None) or []:
+                if parse_plan_ref(ref) is None:
+                    errors.append(
+                        f"{field}: malformed plan ref {ref!r} — expected "
+                        f"[project:]slug[#stage]"
                     )
         for fu in self.followups:
             if not (fu.prompt or "").strip():

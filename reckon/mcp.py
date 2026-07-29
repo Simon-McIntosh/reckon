@@ -193,6 +193,11 @@ def _read_plan(
         "version": version,
         "data": data,
     }
+    deps = data.get("depends_on") if isinstance(data, dict) else None
+    if deps:
+        result["deps"] = [
+            _resolve_plan_ref(ref, project, checkout_path) for ref in deps
+        ]
     if with_schema:
         from reckon._schema import gen_json_schema
 
@@ -200,6 +205,48 @@ def _read_plan(
         result["dos_donts"] = _DOS_DONTS
         result["op_vocab"] = _OP_VOCAB
     return result
+
+
+def _resolve_plan_ref(
+    ref: str, owning_project: str, checkout_path: str | None = None
+) -> dict[str, Any]:
+    """Resolve one link-list ref (``[project:]slug[#stage]``) to live status.
+
+    LOCAL refs resolve inside the owning project, honouring ``checkout_path``.
+    EXTERNAL refs always resolve through mounts.json — a worktree of one repo
+    has no counterpart checkout of another project, so the registered MAIN
+    checkout is the only sensible target. A ref that does not resolve keeps
+    ``found: False`` (the audit reports it; the reader decides severity).
+    """
+    from reckon._schema import parse_plan_ref
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None:
+        return {"ref": ref, "scope": "invalid", "found": False}
+    external = parsed.is_external(owning_project)
+    target_project = parsed.project if external else owning_project
+    row: dict[str, Any] = {
+        "ref": ref,
+        "scope": "external" if external else "local",
+        "project": target_project,
+        "slug": parsed.slug,
+        "found": False,
+    }
+    if parsed.stage:
+        row["stage"] = parsed.stage
+    try:
+        data, _dep_version = read_plan(
+            target_project, parsed.slug, None if external else checkout_path
+        )
+    except Exception:  # noqa: BLE001 — resolution must degrade, not raise
+        return row
+    if not data:
+        return row
+    row["found"] = True
+    row["status"] = data.get("status", "")
+    row["impl"] = data.get("impl", 0)
+    row["title"] = data.get("title", "")
+    return row
 
 
 #: Compact dos/don'ts surfaced by read_plan(..., with_schema=True).
@@ -211,6 +258,7 @@ _DOS_DONTS = {
         "slug='index' targets project config (sprints/milestones/timeline/blockers).",
         "use canonical artifact types plan, research, or evidence; doc reads as research.",
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
+        "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
@@ -340,7 +388,10 @@ def _filter_inventory(
             continue
         if sprint and (item.get("sprint") or "") != sprint:
             continue
-        if milestone and (item.get("milestone", item.get("ms", "—")) or "—") != milestone:
+        if (
+            milestone
+            and (item.get("milestone", item.get("ms", "—")) or "—") != milestone
+        ):
             continue
         if owner and (item.get("owner") or "") != owner:
             continue
@@ -357,7 +408,9 @@ def _rollup_counts(values: list[str]) -> dict[str, int]:
 
 
 def _discovery_summary(
-    plans: list[dict[str, Any]], followups: list[dict[str, Any]], questions: list[dict[str, Any]]
+    plans: list[dict[str, Any]],
+    followups: list[dict[str, Any]],
+    questions: list[dict[str, Any]],
 ) -> dict[str, Any]:
     actionable = [item for item in plans if item.get("type", "plan") == "plan"]
     sprint_values = [plan.get("sprint") or "—" for plan in actionable]
@@ -372,10 +425,10 @@ def _discovery_summary(
         "milestones": len({mid for mid in milestone_values if mid != "—"}),
         "open_followups": len(followups),
         "open_questions": len(questions),
-        "open_decisions": sum(
-            int(plan.get("dec_open", 0) or 0) for plan in actionable
-        ),
-        "impl_mean": round(sum(impl_values) / len(impl_values), 3) if impl_values else 0.0,
+        "open_decisions": sum(int(plan.get("dec_open", 0) or 0) for plan in actionable),
+        "impl_mean": round(sum(impl_values) / len(impl_values), 3)
+        if impl_values
+        else 0.0,
         "by_status": _rollup_counts(
             [str(plan.get("status") or "draft") for plan in actionable]
         ),
@@ -418,7 +471,9 @@ def _sprint_item_slug(item: Any) -> str:
     return ""
 
 
-def _audit_sprint_findings(index_data: dict[str, Any], plans: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _audit_sprint_findings(
+    index_data: dict[str, Any], plans: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     sprints = list(index_data.get("sprints", []) or [])
     sprint_map = {
@@ -459,7 +514,10 @@ def _audit_sprint_findings(index_data: dict[str, Any], plans: list[dict[str, Any
                 "active-sprint-mismatch",
                 "warn",
                 "active_sprint_id does not match the sprint marked active",
-                extra={"active_sprint_id": active_sprint_id, "active_status_ids": active_ids},
+                extra={
+                    "active_sprint_id": active_sprint_id,
+                    "active_status_ids": active_ids,
+                },
             )
         )
 
@@ -1483,7 +1541,10 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
             violations.append({"slug": slug, "errors": lines})
 
     plans = _filter_inventory(
-        [_inventory_row(item) for item in _discover_project(project, checkout_path).get("inventory", [])]
+        [
+            _inventory_row(item)
+            for item in _discover_project(project, checkout_path).get("inventory", [])
+        ]
     )
     plan_lookup = {plan["slug"]: plan for plan in plans if plan.get("slug")}
     followups = list_followups_across(project, unresolved_only=True, root=checkout_path)
@@ -1501,9 +1562,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
                     "warn",
                     f"{artifact['slug']}: research does not declare informs",
                     slug=artifact.get("slug"),
-                    path=(
-                        f"{artifact['href']}.html" if artifact.get("href") else None
-                    ),
+                    path=(f"{artifact['href']}.html" if artifact.get("href") else None),
                 )
             )
         if artifact_type == "evidence" and not (
@@ -1516,9 +1575,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
                     "warn",
                     f"{artifact['slug']}: evidence does not declare evidence_for or verifies",
                     slug=artifact.get("slug"),
-                    path=(
-                        f"{artifact['href']}.html" if artifact.get("href") else None
-                    ),
+                    path=(f"{artifact['href']}.html" if artifact.get("href") else None),
                 )
             )
     try:
@@ -1533,7 +1590,8 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
                     slug=item.slug,
                     path=(
                         f"{plan_lookup[item.slug]['href']}.html"
-                        if item.slug in plan_lookup and plan_lookup[item.slug].get("href")
+                        if item.slug in plan_lookup
+                        and plan_lookup[item.slug].get("href")
                         else None
                     ),
                     extra={
@@ -1563,6 +1621,38 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
                 )
     except Exception:  # noqa: BLE001 — audit should degrade, not fail
         pass
+    # External (cross-project) refs: doccheck's per-file pass is corpus-local
+    # by design, so qualified refs are resolved here, where mounts are known.
+    from reckon._schema import parse_plan_ref
+
+    for artifact in plans:
+        for field in ("depends_on", "blocks"):
+            for ref in artifact.get(field) or []:
+                parsed = parse_plan_ref(ref)
+                if parsed is None or not parsed.is_external(project):
+                    continue
+                resolved = _resolve_plan_ref(ref, project)
+                if resolved.get("found"):
+                    continue
+                mounted = _docs_dir_for_project(parsed.project) is not None
+                findings.append(
+                    _finding(
+                        "references",
+                        "dangling-external-ref"
+                        if mounted
+                        else "unmounted-external-project",
+                        "warn",
+                        (
+                            f"{artifact['slug']}: {field} external ref {ref!r} "
+                            + (
+                                "does not resolve in its mounted project"
+                                if mounted
+                                else "names a project absent from mounts.json"
+                            )
+                        ),
+                        slug=artifact.get("slug"),
+                    )
+                )
     findings.extend(_audit_sprint_findings(index_data, plans))
 
     discovered = _discover_project(project, checkout_path)

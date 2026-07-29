@@ -134,6 +134,9 @@ edit_plan(
    cross-repo coordination plans unless the user explicitly wants them tracked.
 3. **Score by dependency order first** — a plan whose `depends_on` are not all
    `shipped`/`done` is NOT ready; never schedule it ahead of its prerequisites.
+   Refs may be external (`project:slug`): resolve them via `read_plan`'s
+   `deps` list, and record an unshipped external prerequisite as a BLOCKER in
+   the index (it cannot be scheduled inside this project's sprints).
    Then order the ready set by `roi × effort_inverse × milestone_priority`.
 4. Partition into N sprints; each item carries `why_now` and `done_when`.
 5. Keep **one active sprint** at a time. Future sprints start as `planned`.

@@ -77,8 +77,8 @@ may write `doc` for clarity; the parser handles it.
 | `plan-sprint` | author | e.g. `S4` | |
 | `plan-tier` | author | `haiku` / `sonnet` / `opus` | model-tier hint for dispatch |
 | `plan-owner` | author | free text | |
-| `plan-depends-on` | author | comma-separated slugs | dependency DAG |
-| `plan-blocks` | author | comma-separated slugs | reverse-dependency |
+| `plan-depends-on` | author | comma-separated plan refs | dependency DAG; local **and** external |
+| `plan-blocks` | author | comma-separated plan refs | reverse-dependency; local **and** external |
 | `plan-informs` | author | comma-separated slugs | research docs only |
 | `plan-archived` | author | `1` | hides plan from default inventory; use when retiring a plan without deleting it |
 | `plan-read` | author | `1` | marks a research/doc as reviewed; no effect on plans |
@@ -92,6 +92,45 @@ may write `doc` for clarity; the parser handles it.
 
 Off-enum values on existing plans are preserved on read (lenient); they are
 rejected at the write boundary.
+
+## Plan refs — local vs external (cross-project) dependencies
+
+Every link-list meta (`plan-depends-on`, `plan-blocks`, `plan-informs`,
+`plan-evidence-for`, `plan-verifies`, `plan-supersedes`) holds **plan refs**
+with one grammar:
+
+```
+ref     :=  [ project ":" ] slug [ "#" stage ]
+project :=  a key in mounts.json           (e.g. nova, norma, imas-ambix)
+slug    :=  a plan slug in that project
+stage   :=  an optional section/stage anchor
+```
+
+- A **bare slug is a local ref** — resolved inside the owning project, exactly
+  as before. Nothing changes for existing plans.
+- A **`project:`-qualified ref is an external ref** into another mounted
+  project (`nova:nova-spine-refactor`). A qualifier naming the owning project
+  itself reads as local.
+- Malformed refs (empty segments, two colons, spaces) are **rejected at the
+  write boundary** (`validate_for_write`).
+
+Resolution is the server's job, so plan files stay portable:
+
+- `read_plan(project, slug)` (MCP) returns a computed **`deps`** list beside
+  `data` — one row per `depends_on` entry:
+  `{ref, scope: local|external, project, slug, found, status, impl, title}`.
+  Local refs honour `checkout_path`; external refs always resolve through the
+  mounts-registered MAIN checkout of the other project.
+- The MCP **audit** reports external refs that do not resolve:
+  `dangling-external-ref` (project mounted, slug missing) and
+  `unmounted-external-project` (project absent from mounts.json) — both
+  `warn`, since another machine may legitimately not mount every project.
+- `doccheck` stays corpus-local by design: it validates local refs against the
+  project corpus and passes qualified refs through to the server-side audit.
+
+Dependency gating (reckon-ship) treats an unshipped external prerequisite
+exactly like an unshipped local one — the `deps` rows carry the status either
+way; only the resolution path differs.
 
 ## File anatomy (plan)
 
