@@ -304,6 +304,29 @@ proves composed parity, rechecks the source, installs resources, and publishes
 `docs/.reckon/project-state-migration.json` last. Marker absence/staging means
 legacy mode; a complete distributed marker forbids fallback.
 
+### Registered repository migration ledger
+
+`reckon migrate-fleet` resolves the active mount registry at runtime and treats
+each repository as an independent transaction. The registry path and content
+hash are fixed for the run. Every mount receives a content-bearing snapshot and
+one ledger row; no project name is compiled into Reckon.
+
+Only projects supplied with `--apply-project` may change. Other repositories,
+and repositories with migration-path dirt, detached checkouts, active alternate
+worktrees, upstream lag, invalid resource identity, or missing project state,
+receive a terminal `deferred` row with exact evidence and a required action.
+Selected repositories are copied to a staging tree, then capability state,
+typed layout, and distributed project state are migrated in that order.
+Document, schema, relationship, progressive-read, and isolated static-build
+verification must pass before the staged tree is installed.
+
+The ledger is written atomically after every transition and a completed run is
+idempotent. Its terminal states are `verified`, `deferred`, and `rolled-back`.
+A verified row initially records exact working-tree paths; `reckon
+migration-record` attaches the repository commit and pushed ref. The rollback
+command restores only the ledger's exact changed paths from the matching
+snapshot, so unrelated files are outside its deletion boundary.
+
 ## Legacy compatibility view — `index.json`
 
 `read_plan(project, "index")` and `GET /state/<project>/index.json` return a

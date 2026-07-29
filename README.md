@@ -98,6 +98,39 @@ uv run reckon migrate-project-state docs --project <project>
 The migration snapshots the source, proves composed parity, installs typed
 resources, then publishes the distributed-format marker last.
 
+For a host-wide reviewed migration, snapshot the complete active mount registry
+and select only the repositories whose write scope is authorised:
+
+```bash
+uv run reckon migrate-fleet \
+  --run-id 20260729T180000Z \
+  --apply-project reckon
+```
+
+The command discovers the effective `mounts.json` at runtime, records its hash,
+creates a content-bearing before snapshot for every registered repository, and
+writes an incremental machine ledger below the Reckon config home. Unselected,
+dirty, detached, conflicting, or otherwise unsafe repositories receive an
+explicit terminal `deferred` row; they are never silently omitted. A selected
+repository is migrated in a temporary copy, where capability conversion, typed
+layout, distributed state, document/schema/relationship audits, concise MCP
+reads, and a static build must all pass before exact files are installed.
+
+Repository commits remain a coordinator responsibility. After committing and
+pushing a verified row, attach the durable evidence with:
+
+```bash
+uv run reckon migration-record <ledger.json> <project> <commit> origin/main
+```
+
+Rollback is exact-path only and requires both the content-bearing snapshot and
+the migration ledger's changed-path list:
+
+```bash
+uv run reckon migration-rollback <snapshot.zip> <docs-path> \
+  --path plans/example.html --path example.html
+```
+
 To generate a GitHub Pages workflow in a consumer repository:
 
 ```bash

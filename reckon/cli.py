@@ -647,6 +647,99 @@ def migrate_layout(docs_path, project, check):
         click.echo(f"manifest: {docs_dir / '.reckon/typed-resource-manifest.json'}")
 
 
+@main.command(name="migrate-fleet")
+@click.option(
+    "--mounts",
+    "mounts_path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Authoritative mounts registry (defaults to Reckon config resolution).",
+)
+@click.option(
+    "--output-dir",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Run ledger/snapshot directory (defaults below Reckon config home).",
+)
+@click.option(
+    "--run-id",
+    default=None,
+    help="Stable safe identifier for an idempotent run.",
+)
+@click.option(
+    "--apply-project",
+    "apply_projects",
+    multiple=True,
+    help="Project explicitly selected for mutation; repeat for a reviewed wave.",
+)
+def migrate_fleet(mounts_path, output_dir, run_id, apply_projects):
+    """Snapshot the active registry and migrate an explicitly selected wave."""
+    from reckon.fleet_migration import FleetMigrationError, run_fleet_migration
+
+    try:
+        ledger = run_fleet_migration(
+            mounts_path=mounts_path,
+            output_dir=output_dir,
+            run_id=run_id,
+            apply_projects=apply_projects,
+        )
+    except FleetMigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+    rows = ledger["repositories"]
+    for row in rows:
+        detail = row.get("error") or row.get("required_action") or ""
+        click.echo(f"{row['project']}: {row['state']} {detail}".rstrip())
+    click.echo(f"ledger: {ledger['ledger_path']}")
+    click.echo(
+        f"terminal: {sum(row['state'] in {'deferred', 'verified', 'rolled-back'} for row in rows)}/{len(rows)}"
+    )
+
+
+@main.command(name="migration-record")
+@click.argument("ledger_path", type=click.Path(path_type=Path))
+@click.argument("project")
+@click.argument("commit")
+@click.argument("push_ref")
+def migration_record(ledger_path, project, commit, push_ref):
+    """Attach commit and push evidence to a verified fleet-ledger row."""
+    from reckon.fleet_migration import (
+        FleetMigrationError,
+        record_repository_commit,
+    )
+
+    try:
+        row = record_repository_commit(
+            ledger_path,
+            project,
+            commit,
+            push_ref,
+        )
+    except FleetMigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"recorded {row['project']}: {row['output_commit']} → {row['push_ref']}")
+
+
+@main.command(name="migration-rollback")
+@click.argument("snapshot", type=click.Path(path_type=Path))
+@click.argument("docs_path", type=click.Path(path_type=Path))
+@click.option(
+    "--path",
+    "changed_paths",
+    multiple=True,
+    required=True,
+    help="Exact migration path to restore/remove; repeat as needed.",
+)
+def migration_rollback(snapshot, docs_path, changed_paths):
+    """Restore exact recorded paths from one content-bearing snapshot."""
+    from reckon.fleet_migration import FleetMigrationError, rollback_repository
+
+    try:
+        result = rollback_repository(snapshot, docs_path, changed_paths)
+    except FleetMigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"restored {len(result['restored'])} path(s)")
+
+
 @main.command()
 def doctor():
     """Verify reckon installation health.
