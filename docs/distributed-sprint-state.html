@@ -8,10 +8,9 @@
   <meta name="plan-slug" content="distributed-sprint-state">
   <meta name="plan-title" content="Distributed Sprint and Project State">
   <meta name="plan-summary" content="Replace the monolithic project index with independently versioned sprint, milestone, blocker, and timeline resources.">
-  <meta name="plan-status" content="pending">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="XL">
-  <meta name="plan-tier" content="opus">
   <meta name="plan-sprint" content="S5">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="typed-artifact-layout">
@@ -20,7 +19,15 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
+<meta name="plan-capability-reasoning" content="deep">
+<meta name="plan-capability-context" content="extended">
+<meta name="plan-capability-tool-autonomy" content="autonomous">
+<meta name="plan-capability-verification" content="strict">
+<meta name="plan-capability-risk" content="elevated">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -33,17 +40,20 @@
       <figcaption>Decomposition reduces payload size and edit contention while preserving a discoverable project view.</figcaption>
     </figure>
 
-    <h2 id="s2">§2 — Target resource model</h2>
-    <p>Each sprint should be a semantic document under <code>docs/sprints/</code>, carrying its own status, dates, theme, ordered plan references, summary, and version. At most one sprint may have <code>status=active</code>; the active sprint can therefore be derived and audited rather than duplicated in a central pointer.</p>
-    <p>Milestones should likewise be independently addressable under <code>docs/milestones/</code>. Blockers need stable records with owner and next action. Timeline entries are append-only events and should not force a rewrite of every sprint. A small project manifest may remain for mount identity and presentation settings, but it must not aggregate mutable sprint contents or computed inventory.</p>
+    <section id="s2" class="section-landed">
+      <h2><span class="badge badge-shipped">✓ landed 2026-07-29</span> §2 — Target resource model</h2>
+      <p class="landed-summary">Added independently versioned sprint, milestone, blocker, timeline, and identity-only project resources. This checkout migrated to seven resources while retaining the source index byte-for-byte. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Full verified record</a> (<code>44c39cc</code>).</p>
+    </section>
 
-    <h2 id="s3">§3 — MCP and concurrency</h2>
-    <p>MCP should read or edit one resource at a time: a named sprint, milestone, blocker, timeline event stream, or project manifest. Project discovery composes those resources into a view without persisting the rollup. Each file owns its own version, so adding a timeline event cannot conflict with editing sprint membership.</p>
-    <p>Sprint membership references stable plan identities. Current plan state is resolved live from plan HTML instead of duplicating status, progress, decisions, or followups into the sprint file. Human-facing reads should show titles and state; machine identifiers remain available for edits and links.</p>
+    <section id="s3" class="section-landed">
+      <h2><span class="badge badge-shipped">✓ landed 2026-07-29</span> §3 — MCP and concurrency</h2>
+      <p class="landed-summary">Kept the three-tool MCP surface while adding symmetric typed reads/writes, composed compatibility reads, one-winner resource locks, and durable two-sprint recovery journals. Fifteen focused concurrency/migration tests and the 1,323-test suite pass. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Evidence</a>.</p>
+    </section>
 
-    <h2 id="s4">§4 — Safe migration</h2>
-    <p>A migration command must split the existing index atomically into typed resources, validate referential integrity, compare the composed result to the old view, and retain a recoverable snapshot. During a compatibility window, reads may compose old or new state, but writes must target only one format to prevent divergence.</p>
-    <p>The <code>index-json-fate</code> decision in <code>reckon-ci-build</code> should close only after this replacement is implemented and verified. Until then, deleting the index would lose S5 and S6 definitions, timeline history, and concurrency state.</p>
+    <section id="s4" class="section-landed">
+      <h2><span class="badge badge-shipped">✓ landed 2026-07-29</span> §4 — Safe migration</h2>
+      <p class="landed-summary">Implemented snapshot → stage → validate → parity → source recheck → install → marker-last activation. Source and snapshot SHA-256 are <code>f6aa91f66811…</code>; parity SHA-256 is <code>11edeeebb748…</code>. Static builds write a derived projection and sync preserves the frozen index. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Migration record</a>.</p>
+    </section>
 
     <h2 id="s5">§5 — Done-when</h2>
     <ol>
@@ -88,7 +98,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-dss-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship distributed-sprint-state" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dss-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship distributed-sprint-state" data-resolved-at="2026-07-29T13:35:48+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Split project state into independently versioned resources</h4>
     <div class="r-fu-body"><p>Design the resource grammar, lock storage decisions, and migrate the current index only after composed-state parity is proven.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -111,6 +121,7 @@ Done-when
   1. decomposed storage, migration and composed discovery land with concurrency tests
   2. tests still green
   3. followup written into plan + this followup marked resolved</pre>
+    <p class="r-fu-outcome">Distributed storage landed in 44c39cc: seven canary resources, byte-identical source/snapshot f6aa91f66811…, parity 11edeeebb748…, 15 focused and 1,323 full-suite tests passed. done — no followup here; downstream closure is already tracked by reckon-ci-build and mcp-readable-responses.</p>
     </article>
 </section>
   </main>
