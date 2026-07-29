@@ -13,6 +13,111 @@ def main():
     """reckon — repo-agnostic agile planning system."""
 
 
+@main.group(name="agent-context")
+def agent_context():
+    """Inspect the effective agent instructions and skill metadata."""
+
+
+@agent_context.command(name="doctor")
+@click.option(
+    "--target",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="File or directory the agent will work on.",
+)
+@click.option(
+    "--agent",
+    type=click.Choice(["codex", "claude"], case_sensitive=False),
+    default="codex",
+    show_default=True,
+)
+@click.option(
+    "--user-home",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Override the user home used for policy and skill discovery.",
+)
+@click.option(
+    "--agent-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Override the agent configuration root.",
+)
+@click.option(
+    "--budget",
+    type=click.IntRange(min=0),
+    default=None,
+    help="Override the project instruction byte budget.",
+)
+@click.option(
+    "--activate-skill",
+    "activated_skills",
+    multiple=True,
+    help="Record a skill body as explicitly activated.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    help="Emit the complete JSON manifest.",
+)
+def agent_context_doctor(
+    target, agent, user_home, agent_root, budget, activated_skills, as_json
+):
+    """Verify the instruction chain and context budget for TARGET."""
+    from reckon.agent_context import ContextRequest, build_context_manifest
+
+    request = ContextRequest(
+        target=target,
+        user_home=user_home or Path.home(),
+        agent=agent,
+        agent_root=agent_root,
+        project_doc_max_bytes=budget,
+        activated_skills=activated_skills,
+    )
+    try:
+        manifest = build_context_manifest(request)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if as_json:
+        click.echo(json.dumps(manifest, indent=2, sort_keys=True))
+    else:
+        status = "PASS" if manifest["ok"] else "FAIL"
+        click.echo(f"agent context: {status} ({manifest['agent']})")
+        click.echo(f"  target:    {manifest['target']}")
+        click.echo(f"  canonical: {manifest['canonical_policy']['path']}")
+        entrypoint = manifest["entrypoint"]
+        click.echo(
+            f"  entrypoint: {entrypoint['path']} [{entrypoint['relationship']}]"
+        )
+        chain = manifest["instructions"]["project_chain"]
+        click.echo(f"  project instructions: {len(chain)}")
+        for item in chain:
+            click.echo(
+                f"    {item['bytes']:>7} B  {item['sha256'][:12]}  {item['path']}"
+            )
+        budget_data = manifest["budget"]
+        click.echo(
+            "  budget: "
+            f"{budget_data['project_bytes']}/{budget_data['limit_bytes']} B "
+            f"({budget_data['remaining_bytes']} B remaining)"
+        )
+        skills = manifest["skills"]
+        click.echo(
+            f"  skills: {len(skills['discovered'])} metadata, "
+            f"{len(skills['activated_bodies'])} activated bodies"
+        )
+        for finding in manifest["findings"]:
+            click.echo(
+                f"  {finding['severity'].upper()}: "
+                f"{finding['code']} — {finding['path']}"
+            )
+
+    if not manifest["ok"]:
+        raise click.exceptions.Exit(1)
+
+
 @main.command()
 @click.option("--port", default=8765, show_default=True, help="Port to listen on.")
 @click.option(
