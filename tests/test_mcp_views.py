@@ -50,6 +50,7 @@ def _plan(
     relative: str | None = None,
     summary: str = "A readable plan.",
     resource_type: str = "plan",
+    project: str = "proj",
 ) -> Path:
     from reckon._plan_html import write_state
 
@@ -108,7 +109,8 @@ def _plan(
         raise ValueError(f"unsupported fixture resource type {resource_type!r}")
     bare = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-        '<meta name="docs-project" content="proj"><title>Readable</title></head>'
+        f'<meta name="docs-project" content="{project}">'
+        "<title>Readable</title></head>"
         '<body><main class="plan-doc"></main></body></html>'
     )
     path = docs_dir / (relative or f"{slug}.html")
@@ -148,6 +150,7 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     }
     assert result["view"] == "summary"
     assert result["state"]["status"] == "active"
+    assert result["state"]["effective_status"] == "active"
     assert result["state"]["progress"] == 0.4
     assert result["open_decisions"] == [
         {
@@ -159,7 +162,203 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert result["next"]["id"] == "next"
     assert "prompt" not in result["next"]
     assert compact_size(result) <= 2048
-    assert compact_size(result) <= compact_size(raw) / 2
+    assert compact_size(result) <= compact_size(raw) * 0.55
+
+
+def test_dependency_blocking_is_derived_and_clears_when_dependency_ships(setup):
+    docs_dir, project = setup
+    dependency = _plan(docs_dir, "dependency")
+    _plan(docs_dir, "dependent")
+
+    from reckon._plan_html import read_state, write_state
+
+    dependent = docs_dir / "dependent.html"
+    dependent_state = read_state(dependent.read_text(encoding="utf-8"))
+    dependent.write_text(
+        write_state(
+            dependent.read_text(encoding="utf-8"),
+            {**dependent_state, "status": "active", "depends_on": ["dependency"]},
+        ),
+        encoding="utf-8",
+    )
+
+    blocked = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "dependent"}
+    )
+    assert blocked["state"]["status"] == "active"
+    assert blocked["state"]["effective_status"] == "blocked"
+    assert blocked["blocking"] == [
+        {
+            "ref": "dependency",
+            "found": True,
+            "status": "active",
+        }
+    ]
+
+    dependency_state = read_state(dependency.read_text(encoding="utf-8"))
+    dependency.write_text(
+        write_state(
+            dependency.read_text(encoding="utf-8"),
+            {**dependency_state, "status": "shipped", "impl": 1.0},
+        ),
+        encoding="utf-8",
+    )
+    ready = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "dependent"}
+    )
+    assert ready["state"]["status"] == "active"
+    assert ready["state"]["effective_status"] == "active"
+    assert ready["blocking"] == []
+
+
+def test_external_dependency_blocking_clears_without_local_file_changes(
+    setup,
+    tmp_path,
+):
+    docs_dir, project = setup
+    other_docs = tmp_path / "other-docs"
+    other_docs.mkdir()
+    dependency = _plan(
+        other_docs,
+        "foundation",
+        project="other",
+    )
+    _plan(docs_dir, "dependent")
+    mounts_path = mcp_module._mounts_path()
+    mounts_path.write_text(
+        json.dumps(
+            {
+                project: str(docs_dir),
+                "other": str(other_docs),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from reckon._plan_html import read_state, write_state
+
+    dependent = docs_dir / "dependent.html"
+    dependent_state = read_state(dependent.read_text(encoding="utf-8"))
+    dependent.write_text(
+        write_state(
+            dependent.read_text(encoding="utf-8"),
+            {
+                **dependent_state,
+                "status": "active",
+                "depends_on": ["other:foundation"],
+            },
+        ),
+        encoding="utf-8",
+    )
+
+    blocked = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "dependent"}
+    )
+    assert blocked["state"]["effective_status"] == "blocked"
+
+    dependency_state = read_state(dependency.read_text(encoding="utf-8"))
+    dependency.write_text(
+        write_state(
+            dependency.read_text(encoding="utf-8"),
+            {**dependency_state, "status": "shipped", "impl": 1.0},
+        ),
+        encoding="utf-8",
+    )
+    ready = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "dependent"}
+    )
+    assert ready["state"]["effective_status"] == "active"
+    assert ready["blocking"] == []
+
+
+def test_legacy_sprint_rollup_uses_hydrated_effective_status(setup):
+    docs_dir, project = setup
+    _plan(docs_dir, "dependency")
+    _plan(docs_dir, "dependent")
+
+    from reckon._plan_html import read_state, write_state
+
+    dependent = docs_dir / "dependent.html"
+    state = read_state(dependent.read_text(encoding="utf-8"))
+    dependent.write_text(
+        write_state(
+            dependent.read_text(encoding="utf-8"),
+            {**state, "status": "pending", "depends_on": ["dependency"]},
+        ),
+        encoding="utf-8",
+    )
+    state_dir = docs_dir.parent / "state" / project
+    state_dir.mkdir(parents=True)
+    (state_dir / "index.json").write_text(
+        json.dumps(
+            {
+                "project": project,
+                "data": {
+                    "_version": 1,
+                    "sprints": [
+                        {
+                            "id": "iteration",
+                            "status": "active",
+                            "items": [{"slug": "dependent"}],
+                        }
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "sprint", "id": "iteration"},
+        view="detail",
+    )
+    assert result["state"]["blocked"] == 1
+    assert result["items"][0]["status"] == "pending"
+    assert result["items"][0]["effective_status"] == "blocked"
+
+
+def test_explicit_sprint_blocker_keeps_plan_effectively_blocked(setup):
+    docs_dir, project = setup
+    _plan(docs_dir, "waiting")
+    state_dir = docs_dir.parent / "state" / project
+    state_dir.mkdir(parents=True)
+    (state_dir / "index.json").write_text(
+        json.dumps(
+            {
+                "project": project,
+                "data": {
+                    "_version": 1,
+                    "sprints": [
+                        {
+                            "id": "iteration",
+                            "status": "active",
+                            "items": [
+                                {
+                                    "slug": "waiting",
+                                    "blocked_by": ["external-access"],
+                                }
+                            ],
+                        }
+                    ],
+                    "blockers": [
+                        {
+                            "id": "external-access",
+                            "summary": "Await access.",
+                        }
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "waiting"}
+    )
+
+    assert result["state"]["status"] == "active"
+    assert result["state"]["effective_status"] == "blocked"
+    assert result["blocking"] == ["external-access"]
 
 
 def test_detail_prompts_are_explicitly_opt_in(setup):

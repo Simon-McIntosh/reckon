@@ -48,6 +48,7 @@ from urllib.parse import unquote, urlsplit
 
 from reckon import _plan_html
 from reckon._store import _config_home
+from reckon.lifecycle import effective_status, unresolved_dependencies
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
@@ -324,6 +325,11 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         for path in (
             docs_dir / ".reckon" / "project-state-migration.json",
             docs_dir / "state" / project / "project.json",
+            (
+                state_root / project / "index.json"
+                if state_root is not None
+                else docs_dir / "state" / project / "index.json"
+            ),
         )
         if path.is_file()
     ]
@@ -334,7 +340,11 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     )
     cache_key = (project, str(docs_dir.resolve()))
     cached = _DISC_CACHE.get(cache_key)
-    if cached and cached[0] == sig:
+    if (
+        cached
+        and cached[0] == sig
+        and not _has_external_dependencies(cached[1].get("inventory", []), project)
+    ):
         return cached[1]
 
     # Batch git first-commit lookup — gives true creation time for tracked files.
@@ -423,9 +433,14 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     mode = project_state_mode(docs_dir)
     if mode.format == "distributed":
         composed = compose_project_state(docs_dir, project)
+        inventory, sprints = _derive_lifecycle(
+            project,
+            inventory,
+            composed.get("sprints", []),
+        )
         result = {
             "inventory": inventory,
-            "sprints": composed.get("sprints", []),
+            "sprints": sprints,
             "milestones": composed.get("milestones", []),
             "blockers": composed.get("blockers", []),
             "timeline": composed.get("timeline", []),
@@ -442,6 +457,9 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     # them here would expose a partially installed distributed state.
     sprints: list = []
     milestones: list = []
+    blockers: list = []
+    timeline: list = []
+    active_sprint_id = None
     if state_root is not None:
         sf = state_root / project / "index.json"
         if sf.is_file():
@@ -450,6 +468,9 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 data = env.get("data", {}) if isinstance(env, dict) else {}
                 sprints = data.get("sprints", [])
                 milestones = data.get("milestones", [])
+                blockers = data.get("blockers", [])
+                timeline = data.get("timeline", [])
+                active_sprint_id = data.get("active_sprint_id")
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -469,14 +490,147 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             }
         )
 
+    inventory, sprints = _derive_lifecycle(project, inventory, sprints)
     result = {
         "inventory": inventory,
         "sprints": sprints,
         "milestones": milestones,
+        "blockers": blockers,
+        "timeline": timeline,
+        "active_sprint_id": active_sprint_id,
         "source_format": "legacy-index",
     }
     _DISC_CACHE[cache_key] = (sig, result)
     return result
+
+
+def _has_external_dependencies(inventory: list[dict], project: str) -> bool:
+    """Return whether cached discovery depends on another mounted project."""
+
+    from reckon._schema import parse_plan_ref
+
+    return any(
+        parsed.is_external(project)
+        for item in inventory
+        for ref in item.get("depends_on", [])
+        if (parsed := parse_plan_ref(ref)) is not None
+    )
+
+
+def _derive_lifecycle(
+    project: str,
+    inventory: list[dict],
+    sprints: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """Attach derived blockers/effective status and hydrate sprint items."""
+
+    from copy import deepcopy
+
+    from reckon._schema import parse_plan_ref
+
+    plans = deepcopy(inventory)
+    plan_by_slug = {
+        str(plan.get("slug")): plan
+        for plan in plans
+        if plan.get("type", "plan") == "plan" and plan.get("slug")
+    }
+    explicit_by_slug: dict[str, list[str]] = {}
+    for sprint in sprints:
+        for raw in sprint.get("items", []):
+            if not isinstance(raw, dict):
+                continue
+            slug = str(raw.get("slug") or "")
+            if not slug:
+                continue
+            explicit_by_slug.setdefault(slug, []).extend(
+                str(blocker_id) for blocker_id in raw.get("blocked_by", [])
+            )
+
+    external_cache: dict[tuple[str, str], dict] = {}
+
+    def resolve(ref: str) -> dict:
+        parsed = parse_plan_ref(ref)
+        if parsed is None:
+            return {"ref": ref, "scope": "invalid", "found": False}
+        external = parsed.is_external(project)
+        target_project = parsed.project if external else project
+        row = {
+            "ref": ref,
+            "scope": "external" if external else "local",
+            "project": target_project,
+            "slug": parsed.slug,
+            "found": False,
+        }
+        if parsed.stage:
+            row["stage"] = parsed.stage
+        if external:
+            key = (target_project, parsed.slug)
+            target = external_cache.get(key)
+            if target is None:
+                target = _mounted_plan_record(target_project, parsed.slug)
+                external_cache[key] = target
+        else:
+            target = plan_by_slug.get(parsed.slug, {})
+        if not target:
+            return row
+        return {
+            **row,
+            "found": True,
+            "status": target.get("status", ""),
+            "impl": target.get("impl", 0),
+            "title": target.get("title", ""),
+        }
+
+    for plan in plan_by_slug.values():
+        dependencies = [resolve(ref) for ref in plan.get("depends_on", [])]
+        blocking = unresolved_dependencies(dependencies)
+        blocking.extend(
+            {"kind": "explicit", "id": blocker_id}
+            for blocker_id in dict.fromkeys(
+                explicit_by_slug.get(str(plan.get("slug")), [])
+            )
+        )
+        workflow_status = str(plan.get("status") or "draft")
+        plan["workflow_status"] = workflow_status
+        plan["effective_status"] = effective_status(workflow_status, blocking)
+        plan["blocking"] = blocking
+        plan["blockers"] = len(blocking)
+
+    hydrated_sprints = deepcopy(sprints)
+    for sprint in hydrated_sprints:
+        items = []
+        for raw in sprint.get("items", []):
+            item = {"slug": raw} if isinstance(raw, str) else dict(raw)
+            plan = plan_by_slug.get(str(item.get("slug") or ""))
+            if plan:
+                for key in (
+                    "title",
+                    "status",
+                    "effective_status",
+                    "impl",
+                    "blocking",
+                ):
+                    if key in plan:
+                        item[key] = plan[key]
+            items.append(item)
+        sprint["items"] = items
+    return plans, hydrated_sprints
+
+
+def _mounted_plan_record(project: str, slug: str) -> dict:
+    """Read one external plan's lightweight record from its registered mount."""
+
+    docs_dir = load_mounts().get(project)
+    if docs_dir is None:
+        return {}
+    for resource in resource_map(
+        docs_dir,
+        project,
+        include_archived=False,
+    ).values():
+        if resource.type == "plan" and resource.slug == slug:
+            return _plan_html.parse_meta(resource.path)
+    return {}
 
 
 def _render_spa_html(project: str) -> str:

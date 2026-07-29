@@ -154,13 +154,22 @@ window.STATE_READY = (async function () {
   // per-plan state JSON to fetch.
   const isArchivedArtifact = (inv) =>
     inv.archived === true || inv.archived === "1" || inv.archived === "true";
-  const mergedInventory = inventory.map(inv => ({
-    ...mapLegacyCapability(inv),
-    type: canonicalType(inv.type),
-    nav_key: canonicalType(inv.type) === "plan" && !isArchivedArtifact(inv)
-      ? inv.slug
-      : `${canonicalType(inv.type)}:${isArchivedArtifact(inv) ? "archive:" : ""}${inv.slug}`,
-  }));
+  const mergedInventory = inventory.map(inv => {
+    const workflowStatus = inv.workflow_status || inv.status || "draft";
+    const effectiveStatus = inv.effective_status || workflowStatus;
+    return {
+      ...mapLegacyCapability(inv),
+      workflow_status: workflowStatus,
+      effective_status: effectiveStatus,
+      // Compatibility alias for existing views; authored state remains
+      // available as workflow_status.
+      status: effectiveStatus,
+      type: canonicalType(inv.type),
+      nav_key: canonicalType(inv.type) === "plan" && !isArchivedArtifact(inv)
+        ? inv.slug
+        : `${canonicalType(inv.type)}:${isArchivedArtifact(inv) ? "archive:" : ""}${inv.slug}`,
+    };
+  });
   const plans = Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]));
 
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────

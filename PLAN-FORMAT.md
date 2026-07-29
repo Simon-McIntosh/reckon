@@ -110,6 +110,16 @@ may write `doc` for clarity; the parser handles it.
 Off-enum values on existing plans are preserved on read (lenient); they are
 rejected at the write boundary.
 
+`plan-status` is the persisted **workflow status**. Dependency gating is
+derived: read/discovery responses expose `effective_status="blocked"` while an
+open plan has an unresolved `plan-depends-on` reference or an explicit sprint
+item `blocked_by` reference. When those blockers clear, `effective_status`
+automatically returns to the persisted workflow status without rewriting the
+plan HTML. Do not persist `blocked` merely because a dependency is unfinished;
+reserve it for explicitly authored blockers, and keep those blocker references
+current. The audit reports `orphaned-blocked-status` when a persisted blocked
+plan has neither kind of blocker.
+
 ## Plan refs — local vs external (cross-project) dependencies
 
 Every link-list meta (`plan-depends-on`, `plan-blocks`, `plan-informs`,

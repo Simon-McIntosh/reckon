@@ -207,6 +207,28 @@ def test_audit_returns_machine_readable_findings(setup):
     assert r["rollups"]["summary"]["plans"] == 1
 
 
+def test_audit_reports_blocked_status_without_a_live_blocker(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "waiting",
+        {
+            "slug": "waiting",
+            "title": "Waiting",
+            "status": "blocked",
+            "version": 0,
+        },
+    )
+
+    result = mcp_module._audit(project)
+
+    finding = next(
+        item for item in result["findings"] if item["code"] == "orphaned-blocked-status"
+    )
+    assert finding["category"] == "lifecycle"
+    assert finding["slug"] == "waiting"
+
+
 # ── unknown project ───────────────────────────────────────────────────────
 
 
@@ -221,7 +243,13 @@ def test_audit_checkout_path_uses_worktree(setup, tmp_path):
     _make_plan_html(
         docs_dir,
         "alpha",
-        {"slug": "alpha", "title": "Alpha", "status": "active", "impl": 0.5, "version": 0},
+        {
+            "slug": "alpha",
+            "title": "Alpha",
+            "status": "active",
+            "impl": 0.5,
+            "version": 0,
+        },
     )
     worktree = tmp_path / "worktree"
     (worktree / "docs").mkdir(parents=True)
@@ -229,7 +257,13 @@ def test_audit_checkout_path_uses_worktree(setup, tmp_path):
     _make_plan_html(
         worktree / "docs",
         "alpha",
-        {"slug": "alpha", "title": "Alpha", "status": "shipped", "impl": 0.0, "version": 0},
+        {
+            "slug": "alpha",
+            "title": "Alpha",
+            "status": "shipped",
+            "impl": 0.0,
+            "version": 0,
+        },
     )
 
     main_r = mcp_module._audit(project)

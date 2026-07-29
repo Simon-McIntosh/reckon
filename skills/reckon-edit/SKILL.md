@@ -211,6 +211,13 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
 
+**Dependency blocking is derived.** Keep a plan's persisted `status` at its
+underlying workflow state (`pending`, `active`, or `in-progress`) when
+`depends_on` is the only reason it cannot run. Reckon exposes
+`effective_status=blocked` until every dependency ships, then automatically
+returns to the persisted status. Set `status=blocked` only for an explicit
+human/external blocker and record that blocker through sprint state.
+
 ## Intent: prose edit
 
 | Edit intent | Action | Output |

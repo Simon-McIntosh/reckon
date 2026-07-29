@@ -642,6 +642,28 @@ def _read_plan_view(
             )
             if composed is not None:
                 data = composed
+        elif selector.type == "plan" and selected_view in {"summary", "detail"}:
+            discovered = _discover_project(selector.project, checkout_path)
+            inventory_plan = next(
+                (
+                    item
+                    for item in discovered.get("inventory", [])
+                    if isinstance(item, dict)
+                    and item.get("type", "plan") == "plan"
+                    and item.get("slug") == selector.id
+                ),
+                None,
+            )
+            if inventory_plan is not None:
+                explicit_blockers = [
+                    item.get("id")
+                    for item in inventory_plan.get("blocking", [])
+                    if isinstance(item, dict)
+                    and item.get("kind") == "explicit"
+                    and item.get("id")
+                ]
+                if explicit_blockers:
+                    data = {**data, "blocked_by": explicit_blockers}
 
         return resource_view(
             selector,
@@ -796,6 +818,14 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
         row.update(
             {
                 "status": item.get("status"),
+                "workflow_status": item.get(
+                    "workflow_status",
+                    item.get("status"),
+                ),
+                "effective_status": item.get(
+                    "effective_status",
+                    item.get("status"),
+                ),
                 "impl": item.get("impl"),
                 "ms": milestone,
                 "milestone": milestone,
@@ -806,6 +836,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "tier": item.get("tier"),
                 "dec_open": int(item.get("dec_open", 0) or 0),
                 "blockers": int(item.get("blockers", 0) or 0),
+                "blocking": list(item.get("blocking") or []),
                 "depends_on": list(item.get("depends_on") or []),
                 "blocks": list(item.get("blocks") or []),
             }
@@ -899,7 +930,10 @@ def _discovery_summary(
         if impl_values
         else 0.0,
         "by_status": _rollup_counts(
-            [str(plan.get("status") or "draft") for plan in actionable]
+            [
+                str(plan.get("effective_status") or plan.get("status") or "draft")
+                for plan in actionable
+            ]
         ),
         "by_type": _rollup_counts([str(plan.get("type") or "plan") for plan in plans]),
         "by_sprint": _rollup_counts(sprint_values),
@@ -2312,6 +2346,24 @@ def _audit(
             )
     for artifact in plans:
         artifact_type = artifact.get("type", "plan")
+        if (
+            artifact_type == "plan"
+            and artifact.get("workflow_status", artifact.get("status")) == "blocked"
+            and not artifact.get("blocking")
+        ):
+            findings.append(
+                _finding(
+                    "lifecycle",
+                    "orphaned-blocked-status",
+                    "warn",
+                    (
+                        f"{artifact['slug']}: persisted blocked status has no "
+                        "unresolved dependency or explicit blocker reference"
+                    ),
+                    slug=artifact.get("slug"),
+                    path=(f"{artifact['href']}.html" if artifact.get("href") else None),
+                )
+            )
         if artifact_type == "research" and not artifact.get("informs"):
             findings.append(
                 _finding(

@@ -8,6 +8,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from reckon.lifecycle import effective_status, unresolved_dependencies
+
 VIEW_NAMES = frozenset({"summary", "detail", "history", "raw", "schema"})
 RESOURCE_TYPES = frozenset(
     {
@@ -370,25 +372,21 @@ def _relations(data: dict[str, Any]) -> dict[str, list[Any]]:
 def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
     explicit = data.get("blocked_by")
     result = list(explicit) if isinstance(explicit, list) else []
-    for dep in deps:
-        if not isinstance(dep, dict):
-            continue
-        if not dep.get("found") or dep.get("status") not in {"shipped", "done"}:
-            result.append(
-                {
-                    "ref": dep.get("ref", ""),
-                    "found": bool(dep.get("found")),
-                    "status": dep.get("status", ""),
-                }
-            )
+    result.extend(unresolved_dependencies(deps))
     return result
 
 
-def _state(selector: ResourceSelector, data: dict[str, Any]) -> dict[str, Any]:
+def _state(
+    selector: ResourceSelector,
+    data: dict[str, Any],
+    blocking: list[Any],
+) -> dict[str, Any]:
     resource_type = selector.type
     if resource_type == "plan":
+        workflow_status = str(data.get("status") or "draft")
         return {
-            "status": data.get("status", "draft"),
+            "status": workflow_status,
+            "effective_status": effective_status(workflow_status, blocking),
             "progress": float(data.get("impl", 0.0) or 0.0),
             "sprint": data.get("sprint") or None,
             "milestone": data.get("milestone") or None,
@@ -409,7 +407,10 @@ def _state(selector: ResourceSelector, data: dict[str, Any]) -> dict[str, Any]:
         }
     if resource_type == "sprint":
         items = [item for item in data.get("items") or [] if isinstance(item, dict)]
-        statuses = [str(item.get("status") or "pending") for item in items]
+        statuses = [
+            str(item.get("effective_status") or item.get("status") or "pending")
+            for item in items
+        ]
         return {
             "status": data.get("status", "planned"),
             "starts": data.get("starts", ""),
@@ -458,6 +459,7 @@ def _summary(
             "Summary responses never include full followup prompts.",
             "Use view='detail' with include_prompts=true.",
         )
+    blocking = _blocking(data, deps)
     return {
         "resource": selector.as_dict(),
         "version": version,
@@ -467,8 +469,8 @@ def _summary(
         or data.get("name")
         or selector.id,
         "summary": data.get("summary") or data.get("description") or "",
-        "state": _state(selector, data),
-        "blocking": _blocking(data, deps),
+        "state": _state(selector, data, blocking),
+        "blocking": blocking,
         "open_decisions": _open_decisions(data),
         "next": _next_action(data, include_prompts=False),
         "warnings": list(data.get("compatibility_warnings") or []),
@@ -514,7 +516,14 @@ def _detail(
         result["items"] = [
             {
                 key: item.get(key)
-                for key in ("slug", "title", "status", "impl", "capability")
+                for key in (
+                    "slug",
+                    "title",
+                    "status",
+                    "effective_status",
+                    "impl",
+                    "capability",
+                )
                 if item.get(key) is not None
             }
             for item in data.get("items") or []
@@ -815,7 +824,14 @@ def discovery_view(
     plan_resources = [
         {
             key: item.get(key)
-            for key in ("slug", "type", "title", "status", "impl")
+            for key in (
+                "slug",
+                "type",
+                "title",
+                "status",
+                "effective_status",
+                "impl",
+            )
             if item.get(key) not in (None, "")
         }
         for item in raw.get("plans") or []
@@ -829,12 +845,13 @@ def discovery_view(
             "status": sprint.get("status", ""),
             "items": len(sprint.get("items") or []),
             "completed": sum(
-                item.get("status") in {"shipped", "done"}
+                (item.get("effective_status") or item.get("status"))
+                in {"shipped", "done"}
                 for item in sprint.get("items") or []
                 if isinstance(item, dict)
             ),
             "blocked": sum(
-                item.get("status") == "blocked"
+                (item.get("effective_status") or item.get("status")) == "blocked"
                 for item in sprint.get("items") or []
                 if isinstance(item, dict)
             ),

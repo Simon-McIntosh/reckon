@@ -1099,7 +1099,7 @@ def test_read_plan_discovery_filters_and_summary(setup):
     assert r["questions"] == []
     assert r["summary"]["plans"] == 1
     assert r["summary"]["open_followups"] == 1
-    assert r["summary"]["by_status"] == {"active": 1}
+    assert r["summary"]["by_status"] == {"blocked": 1}
     assert r["summary"]["by_sprint"] == {"S1": 1}
     assert r["summary"]["by_milestone"] == {"M1": 1}
 
