@@ -416,6 +416,47 @@ def test_audit_reports_duplicate_stable_identity(
     )
 
 
+def test_audit_reports_invalid_resource_path_without_hiding_valid_plans(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _artifact(docs / "plans" / "work.html", "sample", "plan", "work")
+    _artifact(
+        docs / "research" / "topic" / "study.html",
+        "sample",
+        "research",
+        "study",
+    )
+    _mount(tmp_path, monkeypatch, docs, "sample")
+
+    result = mcp_module._audit("sample")
+
+    assert result["checked"] == 1
+    assert any(
+        finding["code"] == "invalid-resource-path"
+        and finding["path"] == "research/topic/study.html"
+        for finding in result["findings"]
+    )
+    assert discover_plans(docs, "sample", None)["inventory"][0]["slug"] == "work"
+
+
+def test_audit_tolerates_duplicate_legacy_archives(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _artifact(docs / "plans" / "work.html", "sample", "plan", "work")
+    _artifact(docs / "archive" / "work-outcome-a.html", "sample", "plan", "work")
+    _artifact(docs / "archive" / "work-outcome-b.html", "sample", "plan", "work")
+    _mount(tmp_path, monkeypatch, docs, "sample")
+
+    result = mcp_module._audit("sample")
+
+    assert result["checked"] == 1
+    assert result["rollups_recomputed"] is True
+
+
 def test_live_server_typed_routes_and_legacy_redirect(
     tmp_path, monkeypatch: pytest.MonkeyPatch
 ):

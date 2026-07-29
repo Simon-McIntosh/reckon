@@ -2201,7 +2201,7 @@ def _audit(
 
     from reckon import _plan_html
     from reckon.doccheck import audit_lifecycle, audit_links
-    from reckon.resources import iter_resources
+    from reckon.resources import ResourceCollision, identify_resource
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
@@ -2219,9 +2219,17 @@ def _audit(
     violations: list[dict[str, Any]] = []
     compatibility_records: list[tuple[str, str, str]] = []
     resource_collisions: list[tuple[str, str, str]] = []
+    invalid_resources: list[tuple[str, str]] = []
     html_files: list[Path] = []
     seen_resources: dict[tuple[str, str], Path] = {}
-    for resource in iter_resources(docs_dir, project, include_archived=False):
+    for html_path in sorted(docs_dir.rglob("*.html")):
+        try:
+            resource = identify_resource(docs_dir, html_path, project)
+        except ResourceCollision as exc:
+            invalid_resources.append((str(html_path.relative_to(docs_dir)), str(exc)))
+            continue
+        if resource is None or resource.archived:
+            continue
         if resource.type not in {"plan", "research", "evidence"}:
             continue
         html_file = resource.path
@@ -2307,6 +2315,16 @@ def _audit(
                 "error",
                 f"{resource_id} resolves to both {first_path} and {second_path}",
                 path=second_path,
+            )
+        )
+    for path, message in invalid_resources:
+        findings.append(
+            _finding(
+                "resources",
+                "invalid-resource-path",
+                "error",
+                message,
+                path=path,
             )
         )
     for slug, path, warning in compatibility_records:

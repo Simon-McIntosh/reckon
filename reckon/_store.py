@@ -648,7 +648,12 @@ def list_followups_across(
         return []
 
     results: list[dict] = []
-    for resource in resource_map(docs_dir, project, include_archived=False).values():
+    for resource in resource_map(
+        docs_dir,
+        project,
+        include_archived=False,
+        ignore_invalid=True,
+    ).values():
         if resource.type != "plan":
             continue
         html_file = resource.path
@@ -683,7 +688,12 @@ def list_questions_across(
         return []
 
     results: list[dict] = []
-    for resource in resource_map(docs_dir, project, include_archived=False).values():
+    for resource in resource_map(
+        docs_dir,
+        project,
+        include_archived=False,
+        ignore_invalid=True,
+    ).values():
         if resource.type != "plan":
             continue
         html_file = resource.path

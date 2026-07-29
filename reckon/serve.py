@@ -354,7 +354,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
 
     inventory: list[dict] = []
     resources = sorted(
-        resource_map(docs_dir, project, include_archived=True).values(),
+        resource_map(
+            docs_dir,
+            project,
+            include_archived=True,
+            ignore_invalid=True,
+        ).values(),
         key=lambda item: str(item.relative_path),
     )
 
@@ -627,6 +632,7 @@ def _mounted_plan_record(project: str, slug: str) -> dict:
         docs_dir,
         project,
         include_archived=False,
+        ignore_invalid=True,
     ).values():
         if resource.type == "plan" and resource.slug == slug:
             return _plan_html.parse_meta(resource.path)

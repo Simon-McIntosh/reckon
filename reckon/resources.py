@@ -349,11 +349,17 @@ def iter_resources(
     *,
     include_archived: bool = True,
     include_legacy: bool = True,
+    ignore_invalid: bool = False,
 ) -> list[Resource]:
     """Discover resources in typed roots and bounded flat compatibility paths."""
     resources: list[Resource] = []
     for path in sorted(docs_dir.rglob("*.html")):
-        resource = identify_resource(docs_dir, path, project)
+        try:
+            resource = identify_resource(docs_dir, path, project)
+        except ResourceCollision:
+            if not ignore_invalid:
+                raise
+            continue
         if resource is None:
             continue
         if resource.archived and not include_archived:
@@ -370,6 +376,7 @@ def resource_map(
     *,
     include_archived: bool = True,
     include_legacy: bool = True,
+    ignore_invalid: bool = False,
 ) -> dict[tuple[str, str, bool], Resource]:
     """Return resources keyed by type, slug, and archive state."""
     indexed: dict[tuple[str, str, bool], Resource] = {}
@@ -378,12 +385,15 @@ def resource_map(
         project,
         include_archived=include_archived,
         include_legacy=include_legacy,
+        ignore_invalid=ignore_invalid,
     ):
         key = (resource.type, resource.slug, resource.archived)
         existing = indexed.get(key)
         if existing is not None:
             preferred = _preferred_resource(existing, resource)
             if preferred is None:
+                if ignore_invalid:
+                    continue
                 raise ResourceCollision(
                     f"duplicate resource {resource.identity.key}: "
                     f"{existing.relative_path}, {resource.relative_path}"

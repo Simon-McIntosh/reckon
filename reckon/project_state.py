@@ -448,7 +448,12 @@ def _live_plan_slugs(docs_dir: Path, project: str) -> set[str]:
 
     return {
         resource.slug
-        for resource in resource_map(docs_dir, project, include_archived=False).values()
+        for resource in resource_map(
+            docs_dir,
+            project,
+            include_archived=False,
+            ignore_invalid=True,
+        ).values()
         if resource.type == "plan"
     }
 
@@ -778,7 +783,12 @@ def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any
     from reckon.resources import resource_map
 
     result: dict[str, dict[str, Any]] = {}
-    for resource in resource_map(docs_dir, project, include_archived=False).values():
+    for resource in resource_map(
+        docs_dir,
+        project,
+        include_archived=False,
+        ignore_invalid=True,
+    ).values():
         if resource.type != "plan":
             continue
         result[resource.slug] = _plan_html.read_state(
