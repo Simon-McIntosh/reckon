@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="model-capability-schema">
   <meta name="plan-title" content="Model-Agnostic Capability Schema">
   <meta name="plan-summary" content="Replace provider model-family labels with portable capability requirements and runtime matching.">
-  <meta name="plan-status" content="pending">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-tier" content="opus">
@@ -20,7 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -33,22 +34,22 @@
       <figcaption>Persist requirements; resolve a concrete worker only at dispatch time.</figcaption>
     </figure>
 
-    <h2 id="s2">§2 — Proposed contract</h2>
-    <p>The schema should separate a compact capability class from explicit risk and execution requirements. A likely shape is <code>capability.class</code> for broad scheduling plus optional fields such as <code>reasoning</code>, <code>context</code>, <code>tool_autonomy</code>, <code>verification</code>, and <code>risk</code>. The runtime advertises comparable worker capabilities, and the dispatcher selects the least costly worker that satisfies every hard requirement.</p>
-    <p>Relative policies such as “one below the orchestrator” remain useful defaults, but they must operate on runtime-advertised capability order rather than hard-coded model identifiers. Solver work, security changes, migrations, conflict synthesis, and other elevated-risk tasks can set explicit floors.</p>
+    <h2 id="s2">§2 — Contract <span class="badge done">✓ landed 2026-07-29</span></h2>
+    <p>A versioned neutral class plus structured reasoning, context, autonomy,
+      verification, and risk floors now travels through plans, sprint items,
+      followups, semantic HTML, MCP operations, JSON Schema, and the SPA.</p>
 
-    <h2 id="s3">§3 — Migration and compatibility</h2>
-    <p>Migration covers <code>PlanState.tier</code>, followup and sprint-item tiers, HTML <code>data-tier</code>, prompt templates, schema enums, MCP operations, SPA facets, audit rules, skills, fixtures, and existing plan HTML. Legacy values must map deterministically to neutral classes on read, emit an audit warning, and be rewritten only through an explicit migration command or ordinary state edit.</p>
-    <p>The migration must distinguish capability from effort: <code>effort=L</code> describes work size, while capability describes the minimum worker ability and safeguards. It must also avoid pretending that a single ordinal captures all requirements; the selected representation must leave room for structured constraints.</p>
+    <h2 id="s3">§3 — Matching and compatibility <span class="badge done">✓ landed 2026-07-29</span></h2>
+    <p>Runtime-advertised workers are matched deterministically, including
+      one-below selection, cross-family fallback, and explicit escalation.
+      Historical tier values map on read with audit warnings and are never
+      rewritten implicitly.</p>
 
-    <h2 id="s4">§4 — Done-when</h2>
-    <ol>
-      <li>A versioned, provider-neutral capability schema is published for plans, sprint items, and followups.</li>
-      <li>Dispatch matches task requirements to runtime-advertised workers with deterministic fallback and risk escalation.</li>
-      <li>Legacy Anthropic-family values remain readable and have tested migration diagnostics.</li>
-      <li>Skills, prompts, docs, MCP schemas, UI labels, and fixtures contain no provider names as capability enums.</li>
-      <li>Round-trip, mixed-version, absent-worker, and high-risk escalation tests pass.</li>
-    </ol>
+    <h2 id="s4">§4 — Verification <span class="badge done">✓ landed 2026-07-29</span></h2>
+    <p>Commits <code>b1c9a5d</code>, <code>c1c6eeb</code>, and
+      <code>0b9339c</code> landed with 19 matcher regressions, 1,087 combined
+      integration tests, and the 1,270-test full suite passing. See the
+      <a href="archive/model-capability-schema-s2-s4-landed.html">landed evidence</a>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -74,7 +75,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-mcs-001" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship model-capability-schema" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mcs-001" data-status="resolved" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship model-capability-schema" data-resolved-at="2026-07-29T12:13:23+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement the provider-neutral capability contract</h4>
     <div class="r-fu-body"><p>Inventory every persisted and rendered tier field, lock the capability representation, then migrate the complete schema-to-dispatch vertical slice.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -97,6 +98,41 @@ Done-when
   1. schema, migration, dispatch and UI changes land with compatibility tests
   2. tests still green
   3. followup written into plan + this followup marked resolved</pre>
+    <p class="r-fu-outcome">Provider-neutral capability contract landed in b1c9a5d and c1c6eeb, integrated by 0b9339c; 19 matcher regressions, 1,087 combined schema/reference tests and 1,270 full-suite tests passed.</p>
+    </article>
+<article class="r-fu" data-id="f-mcs-next-eoh-20260729" data-status="open" data-tier="opus" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Consume neutral capability requests in bounded execution</h4>
+    <div class="r-fu-body"><p>The versioned capability class, structured hard requirements, deterministic runtime matcher and legacy diagnostics are shipped. The dependent execution work can now persist capability requirements without storing provider identities.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    execution-orchestration-hardening (http://localhost:8765/reckon/execution-orchestration-hardening.html)
+Section: capability-aware dispatch and ledger
+Capability: orchestrator
+Requirements: deep reasoning, strict verification, elevated migration risk
+
+Context
+  The provider-neutral schema and runtime matcher shipped with deterministic same-family preference, cross-family fallback, one-below selection, and explicit escalation signals. Integrate this contract into bounded execution after the remaining distributed state work lands.
+
+State to read
+  GET /plan/reckon/model-capability-schema
+  GET /plan/reckon/execution-orchestration-hardening
+  docs/archive/model-capability-schema-s2-s4-landed.html
+
+Locked decisions to honour
+  capability-shape → class-plus-requirements
+  legacy-migration → read-map-warn
+
+Open decisions to surface (do not resolve)
+  none
+
+Constraints
+  Persist capability requests only; resolve concrete provider/model identities at dispatch. Keep effort separate and retain elevated-risk escalation.
+
+Done-when
+  1. bounded execution reads capability requests and runtime advertisements
+  2. ledger records fallback and escalation evidence without provider policy
+  3. interruption and worker-failure fixtures retain capability context
+  4. tests stay green
+  5. followup written into the plan and this followup marked resolved</pre>
     </article>
 </section>
   </main>

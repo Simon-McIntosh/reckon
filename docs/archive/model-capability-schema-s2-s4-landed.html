@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="model-capability-schema-s2-s4-landed">
+  <meta name="plan-title" content="Portable capability contract — landed evidence">
+  <meta name="plan-summary" content="Verification record for provider-neutral capability persistence, runtime matching, compatibility diagnostics, and complete schema-to-UI propagation.">
+  <meta name="plan-read" content="1">
+  <meta name="evidence-for" content="model-capability-schema">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-07-29">
+  <meta name="evidence-commit" content="0b9339c">
+  <meta name="plan-modified" content="2026-07-29">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Python 3.14.2; React 18; Linux">
+  <meta name="plan-evidence-for" content="reckon:model-capability-schema">
+  <meta name="plan-verifies" content="reckon:model-capability-schema#s2,reckon:model-capability-schema#s3,reckon:model-capability-schema#s4">
+  <meta name="plan-commits" content="b1c9a5d,c1c6eeb,0b9339c">
+  <meta name="plan-artifacts" content="reckon/capability.py,reckon/_schema.py,reckon/_plan_html.py,reckon/mcp.py,docs/_shared/plan.schema.json,docs/ui/components.jsx,tests/test_capability.py">
+  <meta name="plan-version" content="1">
+  <title>Portable capability contract — landed evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p><a href="../model-capability-schema.html">Source plan</a></p>
+      <h1>Portable capability contract — landed evidence</h1>
+      <p>The complete contract now persists task requirements independently of
+        provider identity and resolves concrete workers from runtime
+        advertisements.</p>
+    </header>
+
+    <figure>
+      <img src="/reckon/figures/model-capability-schema/matching.svg"
+        alt="Task capability requirements flow into a deterministic matcher that selects from runtime-advertised workers.">
+      <figcaption>Portable requirements remain in project state; model identity exists only at dispatch time.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Delivered</h2>
+      <ul>
+        <li>A versioned capability request with a neutral class and explicit
+          reasoning, context, autonomy, verification, and risk floors.</li>
+        <li>Deterministic same-family and cross-family matching, one-below
+          selection, and explicit escalation when no worker satisfies every
+          hard requirement.</li>
+        <li>Read-time compatibility mapping for historical tier values with
+          audit diagnostics and no automatic rewrite.</li>
+        <li>Round-trip support across semantic HTML, MCP operations, published
+          JSON Schema, sprint items, followups, SPA labels, and skill prompts.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Matcher regressions</td><td>pass</td><td>19 focused tests cover exact matches, fallback ordering, absent workers, legacy input, and elevated-risk escalation.</td></tr>
+          <tr><td>Combined integration</td><td>pass</td><td>1,087 schema, reference, HTML, MCP, UI, and capability tests passed.</td></tr>
+          <tr><td>Full suite</td><td>pass</td><td>1,270 tests passed in 23.41 seconds.</td></tr>
+          <tr><td>Provider neutrality</td><td>pass</td><td>Current enums and defaults contain capability terms only; provider-family values remain compatibility inputs with warnings.</td></tr>
+          <tr><td>Git delivery</td><td>pass</td><td>Implementation commits <code>b1c9a5d</code> and <code>c1c6eeb</code> were integrated and pushed in <code>0b9339c</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Integration note</h2>
+      <p>An overlapping schema edit for qualified cross-project references
+        reached the primary branch during integration. The merge retained the
+        capability contract as authoritative while preserving the orthogonal
+        reference grammar; the combined result passed the focused and full
+        suites above.</p>
+    </section>
+  </main>
+</body>
+</html>
