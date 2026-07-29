@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Verified resource decomposition, concurrency, recovery, migration parity, and static projection.">
   <meta name="plan-evidence-for" content="distributed-sprint-state">
   <meta name="plan-verifies" content="distributed-sprint-state#s2,distributed-sprint-state#s3,distributed-sprint-state#s4">
-  <meta name="plan-commits" content="44c39cc">
+  <meta name="plan-commits" content="44c39cc,40e6cd6">
   <meta name="plan-artifacts" content="docs/.reckon/project-state-migration.json,docs/sprints/S5.html,docs/state/reckon/timeline.html">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-recorded-at" content="2026-07-29">
@@ -51,23 +51,26 @@
         <li>Snapshot is byte-identical under <code>docs/.reckon/snapshots/project-state/</code>.</li>
         <li>Composed durable-state parity SHA-256: <code>11edeeebb748…</code>.</li>
         <li>Seven installed resources: four sprints, one blocker, one timeline, and one project manifest.</li>
-        <li>The completion marker was published last; source mutation and installation-failure tests leave legacy mode canonical.</li>
+        <li>The completion marker is the strict read/write boundary and is published last; source mutation and installation-failure tests restore every destination and leave legacy mode canonical.</li>
+        <li>Recovery journals contain validated resource identities rather than repository-controlled paths, are durably published, and never roll back a committed move.</li>
       </ul>
     </section>
 
     <section>
       <h2>Verification</h2>
+      <p>Independent review identified format-boundary, rollback, recovery-race, durability, HTTP symmetry, parity, and reference-validation gaps in the initial landing. Commit <code>40e6cd6</code> closes those findings with regression coverage.</p>
       <table>
         <thead><tr><th>Gate</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>Distributed storage/concurrency/migration tests</td><td><strong>15 passed</strong></td></tr>
-          <tr><td>Complete test suite</td><td><strong>1,323 passed</strong> in 25.76 s</td></tr>
+          <tr><td>Distributed storage/concurrency/migration tests</td><td><strong>37 passed</strong></td></tr>
+          <tr><td>Storage, typed-resource, MCP, edit, and build integration</td><td><strong>146 passed</strong></td></tr>
+          <tr><td>Complete test suite</td><td><strong>1,345 passed</strong> in 27.18 s</td></tr>
           <tr><td>Ruff</td><td><strong>clean</strong></td></tr>
           <tr><td>Schema regeneration</td><td><strong>committed parity</strong></td></tr>
           <tr><td>Legacy index preservation</td><td><strong>byte-identical</strong></td></tr>
         </tbody>
       </table>
-      <p>Concurrent same-resource writers produce exactly one winner and one version conflict. An injected interruption after the first half of a cross-sprint move leaves a durable journal; the next read restores both files before returning.</p>
+      <p>Concurrent same-resource writers produce exactly one winner and one version conflict. Concurrent migrations serialize globally, concurrent recovery readers restore a prepared move exactly once, and committed journals are removed without rollback. HTTP, MCP, and SPA paths reject stale legacy fallback after distributed activation.</p>
     </section>
   </main>
 </body>
