@@ -1900,7 +1900,8 @@ def _edit_plan(
     """
     is_index = slug in ("index", "project") and doc_type is None
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
-    from reckon.resources import canonical_type, resource_map
+    from reckon._schema import TYPE_ENUM
+    from reckon.resources import ResourceCollision, canonical_type, resolve_resource
 
     canonical_doc_type = canonical_type(doc_type) if doc_type else None
     from reckon.project_state import (
@@ -1979,13 +1980,28 @@ def _edit_plan(
     docs_dir = _docs_dir_for_project(project, root)
     selected_type = canonical_doc_type
     if not is_index and not create and docs_dir is not None:
-        slug_matches = [
-            resource
-            for resource in resource_map(
-                docs_dir, project, include_archived=False
-            ).values()
-            if resource.slug == slug
-        ]
+        slug_matches = []
+        candidate_types = [selected_type] if selected_type is not None else TYPE_ENUM
+        for candidate_type in candidate_types:
+            try:
+                resource = resolve_resource(
+                    docs_dir,
+                    project,
+                    slug,
+                    candidate_type,
+                    include_archived=False,
+                )
+            except ResourceCollision as exc:
+                detail = str(exc)
+                if selected_type is None:
+                    detail += "; supply doc_type matching the preceding read_plan call"
+                return {
+                    "ok": False,
+                    "error": "ambiguous_resource",
+                    "detail": detail,
+                }
+            if resource is not None:
+                slug_matches.append(resource)
         if selected_type is None and len(slug_matches) > 1:
             kinds = ", ".join(sorted(resource.type for resource in slug_matches))
             return {

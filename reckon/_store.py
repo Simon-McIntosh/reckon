@@ -315,7 +315,8 @@ def _write_state(
     """
     from reckon import _plan_html
 
-    from reckon.resources import canonical_type, resource_map
+    from reckon._schema import TYPE_ENUM
+    from reckon.resources import canonical_type, resolve_resource
 
     docs_dir = _docs_dir_for_project(project, root)
     selected_type = canonical_type(artifact_type) if artifact_type else None
@@ -323,23 +324,23 @@ def _write_state(
         html_file = None
         selected_resource_type = selected_type
     else:
-        matches = [
-            resource
-            for resource in resource_map(
-                docs_dir, project, include_archived=False
-            ).values()
-            if resource.slug == slug
-            and (selected_type is None or resource.type == selected_type)
-        ]
+        matches = []
+        candidate_types = [selected_type] if selected_type is not None else TYPE_ENUM
+        for candidate_type in candidate_types:
+            resource = resolve_resource(
+                docs_dir,
+                project,
+                slug,
+                candidate_type,
+                include_archived=False,
+            )
+            if resource is not None:
+                matches.append(resource)
         if selected_type is None and len(matches) > 1:
             kinds = ", ".join(sorted(resource.type for resource in matches))
             raise ValueError(
                 f"resource slug {slug!r} is ambiguous across types: {kinds}; "
                 "supply artifact_type"
-            )
-        if len(matches) > 1:
-            raise ValueError(
-                f"resource slug {slug!r} has duplicate {selected_type!r} artifacts"
             )
         selected = matches[0] if matches else None
         html_file = selected.path if selected else None
