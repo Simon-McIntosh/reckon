@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="registered-repo-state-migration-tooling-landed">
+  <meta name="plan-title" content="Registered Repository Migration — Transaction Tooling">
+  <meta name="plan-summary" content="Runtime discovery, snapshots, staged verification, rollback and resumable fleet ledger tooling landed.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-impl" content="1.0">
+  <meta name="plan-archived" content="1">
+  <meta name="plan-evidence-for" content="registered-repo-state-migration">
+  <meta name="plan-modified" content="2026-07-29">
+  <title>Registered Repository Migration — Transaction Tooling | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Registered repository migration — transaction tooling</h1>
+    <p class="lead">The fleet migration now has a tested, resumable transaction boundary. No registered mount is omitted and no repository changes unless it is explicitly selected.</p>
+
+    <figure>
+      <img src="/reckon/figures/registered-repo-state-migration/fleet.svg" alt="The mount registry feeds snapshot, preflight, staged migration, verification, installation, and ledger evidence.">
+      <figcaption>The registry hash and one content-bearing snapshot anchor every repository row before mutation.</figcaption>
+    </figure>
+
+    <section>
+      <h2>Delivered contract</h2>
+      <ul>
+        <li>Runtime discovery resolves the effective mount registry and fixes its path and SHA-256 for the run.</li>
+        <li>Every mounted repository receives a ZIP snapshot containing complete HTML/JSON recovery content plus a full file inventory.</li>
+        <li>Preflight records branch, commit, upstream divergence, dirty paths, alternate worktrees, typed-layout collisions, and project-state mode.</li>
+        <li>Only explicitly selected projects migrate; every other project receives an actionable terminal deferred row.</li>
+        <li>Capability conversion, typed resource moves, and distributed project state execute in an isolated staging tree.</li>
+        <li>Document, schema, relationship, progressive-read, and isolated static-build gates run before exact-path installation.</li>
+        <li>Installation rechecks source hashes and automatically restores the snapshot on a process-level failure.</li>
+        <li>Ledger transitions are atomic, completed runs are idempotent, and commit/push evidence can be attached after repository integration.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Focused migration transaction tests</td><td><strong>5 passed</strong></td></tr>
+          <tr><td>Affected storage, project-state and MCP tests</td><td><strong>93 passed</strong></td></tr>
+          <tr><td>Complete repository suite</td><td><strong>1,378 passed</strong> in 34.65 seconds</td></tr>
+          <tr><td>Ruff lint and format</td><td><strong>clean</strong></td></tr>
+          <tr><td>Implementation commit</td><td><code>f39a4cb</code></td></tr>
+        </tbody>
+      </table>
+      <p>Injected installation failure restored the original Git worktree exactly. The next gate is the real Reckon canary, followed by explicitly authorised repository waves.</p>
+    </section>
+  </main>
+</body>
+</html>

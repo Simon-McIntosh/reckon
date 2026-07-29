@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="registered-repo-migration-tooling">
+  <meta name="plan-title" content="Registered Repository Migration Tooling Evidence">
+  <meta name="plan-summary" content="Transactional fleet migration tooling passed rollback, registry, compatibility and full-suite verification.">
+  <meta name="plan-evidence-for" content="registered-repo-state-migration">
+  <meta name="plan-verifies" content="registered-repo-state-migration#s2,registered-repo-state-migration#s3,registered-repo-state-migration#s5">
+  <meta name="plan-commits" content="f39a4cb">
+  <meta name="plan-artifacts" content="reckon/fleet_migration.py,tests/test_fleet_migration.py">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Registered Repository Migration Tooling Evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Registered repository migration tooling evidence</h1>
+    <p class="lead">The transaction runner passed its focused and integration gates before the live canary.</p>
+
+    <section>
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Requirement</th><th>Proof</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Runtime fleet boundary</td><td>Registry names and paths are loaded from the effective mounts file; tests use arbitrary project identities.</td><td>Pass</td></tr>
+          <tr><td>Recoverable snapshots</td><td>Every discovered mount receives a content-bearing ZIP and SHA-256 before preflight promotion.</td><td>Pass</td></tr>
+          <tr><td>Preserve user changes</td><td>Dirty migration paths defer with exact names; unrelated source dirt remains outside the install set.</td><td>Pass</td></tr>
+          <tr><td>Transaction safety</td><td>Migration stages outside the checkout, verifies fully, rechecks source hashes, and installs exact paths.</td><td>Pass</td></tr>
+          <tr><td>Rollback</td><td>An injected second-write failure restored the original Git worktree with no residual tracked or untracked files.</td><td>Pass</td></tr>
+          <tr><td>Resumability</td><td>Ledger transitions are atomic; a completed run returns idempotently without rewriting migrated resources.</td><td>Pass</td></tr>
+          <tr><td>Regression scope</td><td>93 affected tests and all 1,378 repository tests passed; Ruff was clean.</td><td>Pass</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
