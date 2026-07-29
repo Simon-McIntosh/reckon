@@ -68,6 +68,22 @@ def test_matcher_is_deterministic_for_equal_workers():
     assert match_worker(request, list(reversed(workers))).worker["id"] == "alpha"
 
 
+def test_matcher_uses_suitable_cross_family_worker_when_preferred_family_cannot():
+    orchestrator = _worker("lead", "orchestrator", family="preferred")
+    workers = [
+        _worker("preferred-routine", "routine", family="preferred"),
+        _worker("cross-family-general", "general", family="available"),
+    ]
+    result = match_worker(
+        capability_request("general"),
+        workers,
+        orchestrator=orchestrator,
+    )
+    assert result.worker["id"] == "cross-family-general"
+    assert not result.escalation_required
+    assert result.fallback is None
+
+
 def test_one_below_prefers_immediately_lower_capability():
     orchestrator = _worker("lead", "orchestrator")
     workers = [
@@ -132,6 +148,25 @@ def test_unsatisfied_request_uses_strongest_worker_with_escalation_signal():
         workers,
     )
     assert result.worker["id"] == "general-worker"
+    assert result.escalation_required
+    assert result.fallback == "strongest-advertised-worker"
+
+
+def test_unsatisfied_request_uses_lowest_cost_then_stable_id_in_strongest_class():
+    workers = [
+        _worker("routine-worker", "routine", cost=0),
+        _worker("expensive", "orchestrator", cost=9),
+        _worker("zeta", "orchestrator", cost=1),
+        _worker("alpha", "orchestrator", cost=1),
+    ]
+    result = match_worker(
+        capability_request(
+            "orchestrator",
+            requirements={"verification": "strict"},
+        ),
+        workers,
+    )
+    assert result.worker["id"] == "alpha"
     assert result.escalation_required
     assert result.fallback == "strongest-advertised-worker"
 

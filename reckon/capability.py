@@ -183,15 +183,21 @@ def _worker_key(worker: Mapping[str, Any]) -> tuple[int, float, str]:
 
 def _eligible_workers(
     workers: Iterable[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    return [worker for worker in workers if worker.get("general_purpose", True)]
+
+
+def _same_family_workers(
+    workers: Iterable[Mapping[str, Any]],
     orchestrator: Mapping[str, Any] | None,
 ) -> list[Mapping[str, Any]]:
-    pool = [worker for worker in workers if worker.get("general_purpose", True)]
     if orchestrator is None or not orchestrator.get("family"):
-        return pool
-    same_family = [
-        worker for worker in pool if worker.get("family") == orchestrator.get("family")
+        return []
+    return [
+        worker
+        for worker in workers
+        if worker.get("family") == orchestrator.get("family")
     ]
-    return same_family or pool
 
 
 def match_worker(
@@ -223,7 +229,7 @@ def match_worker(
             request_rank = _rank(effective["class"], CAPABILITY_CLASSES)
             effective["class"] = CAPABILITY_CLASSES[max(one_below_rank, request_rank)]
 
-    pool = _eligible_workers(workers, orchestrator)
+    pool = _eligible_workers(workers)
     if not pool:
         return MatchResult(
             worker=None,
@@ -233,10 +239,16 @@ def match_worker(
             escalation_required=True,
         )
 
+    preferred_pool = _same_family_workers(pool, orchestrator)
     satisfying = sorted(
-        (worker for worker in pool if worker_satisfies(effective, worker)),
+        (worker for worker in preferred_pool if worker_satisfies(effective, worker)),
         key=_worker_key,
     )
+    if not satisfying:
+        satisfying = sorted(
+            (worker for worker in pool if worker_satisfies(effective, worker)),
+            key=_worker_key,
+        )
     if satisfying:
         chosen = satisfying[0]
         reasoning_adjustment = None
@@ -253,7 +265,12 @@ def match_worker(
             reasoning_adjustment=reasoning_adjustment,
         )
 
-    safest = sorted(pool, key=_worker_key)[-1]
+    strongest_rank = max(_worker_key(worker)[0] for worker in pool)
+    strongest = [worker for worker in pool if _worker_key(worker)[0] == strongest_rank]
+    safest = min(
+        strongest,
+        key=lambda worker: (_worker_key(worker)[1], _worker_key(worker)[2]),
+    )
     return MatchResult(
         worker=safest,
         requested=effective,
