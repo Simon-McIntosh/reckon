@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="execution-orchestration-hardening-sprint-delivery-landed">
+  <meta name="plan-title" content="Sprint delivery orchestration — landed evidence">
+  <meta name="plan-summary" content="Verification record for sprint target resolution, capability routing, worktree isolation, integration and cleanup.">
+  <meta name="plan-read" content="1">
+  <meta name="evidence-for" content="execution-orchestration-hardening">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-07-29">
+  <meta name="evidence-commit" content="36d5bdd">
+  <title>Sprint delivery orchestration — landed evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p><a href="../execution-orchestration-hardening.html">Source plan</a></p>
+      <h1>Sprint delivery orchestration — landed evidence</h1>
+      <p>This record is evidence for one independently authorised slice of the
+        source plan. It does not claim that the execution ledger, MCP sprint
+        validation surface, or full resumability work has landed.</p>
+    </header>
+
+    <img src="/reckon/figures/execution-orchestration-hardening/sprint-delivery-flow.svg"
+      alt="Sprint plans and evidence form a DAG whose ready nodes run in isolated worktrees before orchestrator integration and cleanup.">
+
+    <section>
+      <h2>Delivered</h2>
+      <ul>
+        <li><code>/reckon-ship S1</code>, project-qualified sprint handles, and
+          explicit plan/sprint disambiguation.</li>
+        <li>Transitive plan and section dependency expansion, topological
+          execution waves, and research-before/evidence-after gates.</li>
+        <li>A provider-neutral one-below capability policy with
+          orchestrator-level retention for physics, safety, coupled changes,
+          conflicts, and synthesis.</li>
+        <li>Detached worktree-first delegation, orchestrator-owned integration,
+          and conservative cleanup that refuses dirty or unmerged worktrees.</li>
+        <li>A clear handoff: <code>reckon-sprint</code> manages sprint state;
+          <code>reckon-ship</code> executes it.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Implementation</td><td>pass</td><td>Commit <code>36d5bdd</code>; 777 insertions and 174 deletions across seven files.</td></tr>
+          <tr><td>Skill contracts</td><td>pass</td><td>Both skill packages passed <code>quick_validate.py</code>.</td></tr>
+          <tr><td>Focused tests</td><td>pass</td><td>6 tests passed, including real temporary repositories for dirty and unreachable cleanup refusal.</td></tr>
+          <tr><td>Full suite</td><td>pass</td><td>1,181 tests passed in 26.97 seconds.</td></tr>
+          <tr><td>Git delivery</td><td>pass</td><td>Commit pushed to <code>origin/main</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Errors and resolutions</h2>
+      <table>
+        <thead><tr><th>Error</th><th>Resolution</th><th>Improvement signal</th></tr></thead>
+        <tbody>
+          <tr><td>The standalone skill validator lacked PyYAML.</td><td>Ran it through <code>uv run --with pyyaml</code>.</td><td>Bundle validator dependencies or provide a project-native validation command.</td></tr>
+          <tr><td>Angle brackets in skill frontmatter were rejected.</td><td>Rephrased frontmatter while retaining syntax examples in the skill body.</td><td>Validator diagnostics should point to the exact offending field and character.</td></tr>
+          <tr><td>Two initial contract assertions were brittle to prose wrapping.</td><td>Normalised whitespace and asserted semantic phrases.</td><td>Prefer parsed skill-contract tests over raw formatting-sensitive matches.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Remaining source-plan work</h2>
+      <p>The portable execution ledger, bounded MCP proposal/validate/close
+        operations, mounted-checkout digests, resumable event persistence,
+        broader interruption/failure coverage, and provenance prerequisites
+        remain open. The source plan therefore remains active and partial.</p>
+    </section>
+  </main>
+</body>
+</html>
