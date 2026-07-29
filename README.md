@@ -8,13 +8,22 @@ Repo-agnostic agile planning system. Three surfaces share one repo and one venv:
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
+The Python distribution is named `reckon-plans`; the import package and
+console command remain `reckon`.
+
 ## Quick start
 
 ```bash
+uv sync
 uv run reckon serve           # HTTP server on port 8765
 uv run reckon serve --port 8766 --mounts /path/to/mounts.json
 uv run reckon mcp             # stdio MCP transport
+uv run reckon build docs      # portable static site under docs/
 ```
+
+Once the distribution is published, `uv tool install reckon-plans` installs
+the same `reckon` command. A repository checkout can be installed directly
+with `uv tool install "git+https://github.com/Simon-McIntosh/reckon"`.
 
 ## How it works
 
@@ -64,12 +73,28 @@ generation.
 
 The `docs/` directory is the canonical template. Use `/reckon-sync` (or
 `reckon sync <docs-path>`) to copy `docs/_shared/` CSS into a consumer
-project's `docs/` and register it in mounts. JSX components are served live
+project’s `docs/` and register it in mounts. JSX components are served live
 at `/_ui/<file>` by the reckon server — no per-project copies needed.
+
+For a static deployment, run `reckon build <docs-path>`. The command copies
+the UI and shared assets shipped inside the `reckon-plans` wheel, writes a
+relative-path SPA index and `.nojekyll`, and bakes discovered plan inventory
+into the project index while retaining authored sprint, milestone, timeline,
+and blocker state.
+
+To generate a GitHub Pages workflow in a consumer repository:
+
+```bash
+uv run reckon sync docs --generate-ci
+```
+
+The generated workflow installs uv and invokes the `reckon` command from a
+pinned git tag with `uvx --from`. Reckon’s own workflow uses its checked-out
+source and lockfile with `uv run --frozen reckon build docs`.
 
 ## MCP integration
 
-After `uv pip install -e .`, register in `~/.claude/mcp.json`:
+After `uv sync`, register in `~/.claude/mcp.json`:
 
 ```json
 {

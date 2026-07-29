@@ -3,7 +3,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "reckon"
+name = "reckon-plans"
 dynamic = ["version"]
 description = "Repo-agnostic agile planning system — reckon server, MCP transport, and frontend templates"
 readme = "README.md"
@@ -22,6 +22,9 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
 [project.scripts]
 reckon = "reckon.cli:main"
 
@@ -30,3 +33,7 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["reckon"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"docs/ui" = "reckon/_assets/ui"
+"docs/_shared" = "reckon/_assets/_shared"
