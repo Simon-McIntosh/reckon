@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="research-evidence-provenance">
+  <meta name="plan-title" content="Research and Evidence Provenance">
+  <meta name="plan-summary" content="Separate plans, research and evidence in Reckon; only plans carry progress, while typed provenance links show research feeding and evidence verifying work.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-blocks" content="execution-orchestration-hardening,plan-lifecycle-hygiene">
+  <title>Research and Evidence Provenance | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Product contract</h2>
+    <p>Reckon will expose three live artifact classes. A <strong>plan</strong> authorizes and tracks work and is the only class with status-to-completion and an implementation percentage. <strong>Research</strong> precedes or informs work and records sources, methods, assumptions and recommendations. <strong>Evidence</strong> follows work and records what was built, how it was verified, quantitative results, provenance and negative outcomes.</p>
+    <figure>
+      <img src="/reckon/figures/research-evidence-provenance/provenance-flow.svg" alt="Research artifacts point into a plan; the plan produces implementation; evidence artifacts point back to the source plan and verify its stages.">
+      <figcaption>The default lifecycle is research → plan → implementation → evidence. Progress belongs only to the plan.</figcaption>
+    </figure>
+    <h2 id="s2">§2 — Schema and relationships</h2>
+    <ul>
+      <li>Add first-class <code>research</code> and <code>evidence</code> types; retain <code>doc</code> only as a migration alias with an explicit target type.</li>
+      <li>Add qualified relations: <code>informs</code> from research to plans and <code>evidence_for</code>/<code>verifies</code> from evidence to project-qualified plan or stage keys.</li>
+      <li>Reject or ignore <code>plan-impl</code>, sprint, ROI and effort on non-plan artifacts; expose lifecycle-neutral fields such as reviewed-at, recorded-at, verdict and supersedes.</li>
+      <li>Keep archive as location/lifecycle, not a competing live document type.</li>
+    </ul>
+    <h2 id="s3">§3 — Server and UI</h2>
+    <p>Split the SPA into Plans, Research, Evidence and Archive facets. The Plans view retains roadmap, sprint, dependency and percent-complete UI. Research cards show source quality, freshness and plans informed. Evidence cards show verdict, stage, environment, commits, artifacts and plans verified. The graph renders arrows into plans for research and arrows out of plans for evidence. Search remains global but returns typed, bounded result sets.</p>
+    <h2 id="s4">§4 — Migration and gates</h2>
+    <p>Inventory existing <code>doc</code>, <code>research</code>, archive and landed-stage pages; classify without inventing progress; backfill source-plan links; and keep compatibility reads during migration. Acceptance requires schema round trips, MCP filters, archive exclusion, static and live SPA parity, and an audit that reports unlinked research/evidence without treating them as incomplete plans.</p>
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="artifact-separation" data-choice="three-first-class-types" data-by="Simon McIntosh" data-when="2026-07-29">
+    <p class="r-dec-q">How should actionable work and its knowledge artifacts be displayed?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="three-first-class-types">Separate Plans, Research and Evidence</button>
+      <button class="r-opt" data-value="single-inventory">One undifferentiated inventory</button>
+      </p>
+    <p class="r-dec-rat">Research feeds work and evidence follows it. Only actionable plans have a meaningful percentage complete.</p>
+    </div>
+</section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rep-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship research-evidence-provenance" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement typed provenance from schema through SPA</h4>
+    <div class="r-fu-body"><p>Start from migration fixtures and add the schema, parser/writer, MCP filters, typed views and provenance graph as one tested vertical slice.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    research-evidence-provenance (http://localhost:8765/reckon/research-evidence-provenance.html)
+Section: full plan
+Tier:    opus
+
+Context
+  Research and evidence are currently conflated with plan-like documents.
+  The lead has locked separate artifact types and plan-only progress.
+
+State to read
+  reckon-plan-management-audit.html, reckon/_schema.py, parser/writer code
+  docs/ui/, docs/_shared/plan.schema.json, archive and research fixtures
+
+Scope locks / constraints
+  Preserve HTML-first storage and compatibility reads. Use qualified source-plan links.
+  Produce research-before and evidence-after documents.
+
+Done-when
+  1. Schema, MCP, audit and SPA typed-provenance slice lands with migration tests
+  2. tests still green
+  3. followup written + this followup marked resolved</pre>
+    </article>
+</section>
+  <section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-rep-01" data-type="research-document" data-source="reckon" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/reckon-plan-management-audit.html">
+    <span class="r-research-title"><a href="/reckon/reckon-plan-management-audit.html">Reckon Plan Management Audit</a></span></div>
+</section>
+</main>
+</body>
+</html>

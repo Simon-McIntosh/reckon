@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="reckon-plan-management-audit">
+  <meta name="plan-title" content="Reckon Plan Management Audit">
+  <meta name="plan-summary" content="Field audit of Reckon discovery, sprint, research, archive and execution behavior while inspecting Ambix and Nova.">
+  <meta name="plan-informs" content="research-evidence-provenance,execution-orchestration-hardening">
+  <meta name="plan-read" content="1">
+  <title>Reckon Plan Management Audit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What worked</h2>
+    <p>Codex discovered the Reckon skills and could read and write plan and index state through the three-tool MCP surface. Optimistic versions, the special <code>index</code> slug, sprint append/set/move operations and checkout-path routing make sprint management usable from Codex CLI.</p>
+    <h2 id="s2">§2 — Errors and friction observed</h2>
+    <ol>
+      <li>Large project discovery payloads include full followup and sprint material and can be truncated before the requested plan inventory is usable.</li>
+      <li>Archive discovery and audit disagree with the documented exclusion contract; archived Nova pages are audited as live and fail the live type enum.</li>
+      <li>Filtered searches may return full sprint payloads even when no plans match.</li>
+      <li>Research/doc prose is absent from parsed reads, forcing a second filesystem or HTTP read.</li>
+      <li>Mounted-checkout and branch identity is easy to miss in multi-worktree projects.</li>
+      <li>The audit response says <code>reindexed: true</code> even though the tool promises no mutation.</li>
+      <li>Cross-project dependencies and migration portfolios require manual synthesis.</li>
+      <li>Plan-level dependencies are too coarse for stage-by-stage launch ordering.</li>
+      <li>Research is normalized into one generic type; evidence has no type or <code>evidence_for</code> relation.</li>
+      <li><code>reckon-ship</code> assumes a mandatory parallel-agent surface and does not define a single-agent Codex fallback.</li>
+    </ol>
+    <h2 id="s3">§3 — Product implications</h2>
+    <p>Default discovery should be bounded and facet-aware; archives should be explicit; responses should expose checkout and branch identity; portfolio relationships need qualified project/slug keys; and the document model needs separate plan, research and evidence types. Only plans should expose implementation fractions.</p>
+  </main>
+</body>
+</html>

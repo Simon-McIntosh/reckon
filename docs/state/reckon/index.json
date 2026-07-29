@@ -1,9 +1,9 @@
 {
-  "updated": "2026-05-26T15:31:59",
+  "updated": "2026-07-29T11:18:02",
   "project": "reckon",
   "doc": "index",
   "data": {
-    "active_sprint_id": "S4",
+    "active_sprint_id": "S5",
     "projects": [
       {
         "project": "reckon",
@@ -35,11 +35,67 @@
         "id": "S4",
         "theme": "MCP power-user queries",
         "description": "Close 7 gaps confirmed in the 2026-05-26 tool evaluation: 5 missing query tools, a list_plans discovery fallback for per-doc repos, and a note-ID collision fix. Add test coverage for the MCP tool layer.",
-        "summary": "7 serial read_plan calls to find 7 followups \u2014 that was the productivity tax today. S4 eliminates it: list_followups and list_questions give cross-plan views in one call. list_projects unlocks fresh sessions. resolve_question and add_research give structured write paths for the two remaining unstructured operations. The discovery fallback makes MCP work for per-doc repos without a central index.json. The note-ID fix closes a silent corruption bug. tests/test_mcp_tools.py covers the tool layer (zero coverage today).",
+        "summary": "Closed administratively 2026-07-29: the collapsed MCP query/write surface is in production; remaining field issues are re-scoped into S5/S6 with current evidence.",
         "starts": "2026-05-26",
         "ends": "2026-06-02",
-        "status": "active",
+        "status": "done",
         "items": []
+      },
+      {
+        "id": "S5",
+        "status": "active",
+        "theme": "Codex compatibility and typed knowledge artifacts",
+        "items": [
+          {
+            "slug": "codex-agent-context-compatibility",
+            "why_now": "Instruction and skill drift can invalidate every later execution; fix the context substrate first.",
+            "tier": "opus",
+            "done_when": "Cross-agent entrypoints, target-path doctor and black-box fixtures prove the effective instruction/skill chain."
+          },
+          {
+            "slug": "research-evidence-provenance",
+            "why_now": "Physics migration work needs research-before and evidence-after artifacts without fake progress percentages.",
+            "tier": "opus",
+            "done_when": "Plan/research/evidence schema, MCP, audit and SPA facets land with provenance and migration tests."
+          },
+          {
+            "slug": "reckon-ci-build",
+            "why_now": "Portable static deployment is the delivery path for the revised typed views.",
+            "tier": "sonnet",
+            "done_when": "Build tests and installable package work close; static output matches the live server."
+          }
+        ],
+        "starts": "2026-07-29",
+        "ends": "2026-08-12",
+        "description": "Make agent context verifiable across Codex and Claude, complete the portable build, and separate plans, research and evidence with typed provenance."
+      },
+      {
+        "id": "S6",
+        "status": "planned",
+        "theme": "Evidence-gated execution and lifecycle",
+        "items": [
+          {
+            "slug": "execution-orchestration-hardening",
+            "why_now": "Codex needs bounded, resumable, capability-aware execution rather than a Claude-specific fleet assumption.",
+            "tier": "opus",
+            "done_when": "Bounded sprint operations and a portable execution ledger pass interruption, conflict and worker-failure tests."
+          },
+          {
+            "slug": "plan-lifecycle-hygiene",
+            "why_now": "Typed evidence enables lifecycle gates without treating research and evidence as incomplete plans.",
+            "tier": "opus",
+            "done_when": "Lead-approved close/archive/write invariants land with audits and compatibility migration."
+          },
+          {
+            "slug": "agent-plan-authoring",
+            "why_now": "Refresh authoring guidance after the type and orchestration contracts are stable.",
+            "tier": "sonnet",
+            "done_when": "Canonical examples describe plan, research and evidence authoring on both agent surfaces."
+          }
+        ],
+        "starts": "2026-08-13",
+        "ends": "2026-08-28",
+        "description": "Harden sprint and ship workflows after the context manifest and typed provenance substrate exist."
       }
     ],
     "milestones": [],
@@ -59,8 +115,13 @@
         "when": "2026-05-26",
         "who": "claude-sonnet-4-6",
         "what": "S3 shipped: reckon server, MCP, reckon-sync, reckon-create, v7 SPA"
+      },
+      {
+        "when": "2026-07-29",
+        "who": "codex",
+        "what": "S5/S6 defined from Codex agent-context, provenance and execution audit"
       }
     ],
-    "_version": 6
+    "_version": 7
   }
 }

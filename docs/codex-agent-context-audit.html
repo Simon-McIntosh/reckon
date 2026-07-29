@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="codex-agent-context-audit">
+  <meta name="plan-title" content="Codex Agent Context Audit">
+  <meta name="plan-summary" content="Observed Codex and Claude instruction/skill discovery behavior across user and project scopes, with compatibility risks and acceptance tests.">
+  <meta name="plan-informs" content="codex-agent-context-compatibility">
+  <meta name="plan-read" content="1">
+  <title>Codex Agent Context Audit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Scope and sources</h2>
+    <p>This audit compares the current Codex instruction and skill-loading contract with the workstation conventions built for Claude Code. Sources were the official Codex manual, the user-global agent file, repository and nested agent files in Ambix and Nova, the installed user skill directories, and live Codex skill discovery in this session.</p>
+    <h2 id="s2">§2 — Findings</h2>
+    <table>
+      <thead><tr><th>Surface</th><th>Observed contract</th><th>Gap</th></tr></thead>
+      <tbody>
+        <tr><td>User instructions</td><td>Codex looks for <code>~/.codex/AGENTS.md</code>.</td><td>The canonical workstation file is <code>~/.agents/AGENTS.md</code>; the Codex entrypoint is absent.</td></tr>
+        <tr><td>Project instructions</td><td>Codex builds one root-to-launch-directory chain.</td><td>Nested files below the launch directory are not dynamically added when later editing those paths.</td></tr>
+        <tr><td>Context budget</td><td>Project instruction bytes are capped by configuration.</td><td>Ambix root plus nested guidance exceeds the default 32 KiB budget.</td></tr>
+        <tr><td>Skills</td><td>Metadata is discovered from user and repository <code>.agents/skills</code>; bodies load when triggered.</td><td>Useful Claude-only skills are not visible, and two HPC copies are stale against current H200 policy.</td></tr>
+        <tr><td>Nova</td><td>Main and develop checkouts carry different root instructions.</td><td>Stale branch guidance includes git actions prohibited by the current global policy.</td></tr>
+      </tbody>
+    </table>
+    <h2 id="s3">§3 — Required evidence</h2>
+    <p>The implementation must include black-box Codex launches from repository root and nested directories, captured instruction-chain manifests, byte-limit tests, skill metadata/body activation tests, and negative fixtures proving stale or out-of-scope files are not silently treated as loaded. Evidence must record Codex version and configuration.</p>
+  </main>
+</body>
+</html>

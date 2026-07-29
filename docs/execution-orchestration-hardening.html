@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="execution-orchestration-hardening">
+  <meta name="plan-title" content="Execution and Orchestration Hardening">
+  <meta name="plan-summary" content="Make sprint planning and plan execution bounded, resumable, evidence-gated and portable across Codex and Claude agent surfaces.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S6">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="codex-agent-context-compatibility,research-evidence-provenance">
+  <title>Execution and Orchestration Hardening | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="2">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Outcome</h2>
+    <p>Codex CLI and Claude Code can propose, start, execute, resume and close dependency-ordered work from the same plan and sprint state. Execution records the exact instruction context, checkout, model/agent surface, commands, commits, tests, artifacts and evidence documents. Failures are durable events, not lost chat context.</p>
+    <h2 id="s2">§2 — MCP and sprint improvements</h2>
+    <ul>
+      <li>Add bounded discovery projections and cursors; make archive inclusion explicit and remove unrelated sprint payloads from empty filtered results.</li>
+      <li>Return mounted checkout, branch and content digest on reads and writes; support project-qualified dependency keys and stage-level edges.</li>
+      <li>Add first-class sprint proposal/validate/close operations or a dry-run mode that checks one-active-sprint, dependency readiness, duplicate membership, capacity and evidence gates before mutation.</li>
+      <li>Rename the audit response field so a read-only operation cannot imply that it persisted a reindex.</li>
+    </ul>
+    <h2 id="s3">§3 — <code>reckon-ship</code> redesign</h2>
+    <p>The current skill is strong on full-plan intent, prerequisite checks, exclusive scopes, continuous state writeback, archive records and worker verification. It is too absolute in treating a parallel fleet as mandatory, assumes agent APIs that are not universal, mixes execution policy with git recipes, and treats an approved plan as blanket authorization for destructive actions. Refactor it around a capability preflight, dependency DAG, resumable execution ledger, evidence gates and portable worker adapters. Parallelism becomes recommended when safe and available, with a defined single-agent Codex fallback.</p>
+    <h2 id="s4">§4 — Acceptance and observability</h2>
+    <p>Tests cover interrupted/resumed execution, version conflicts, worker failure, partial landings, checkout mismatch, absent subagent support, evidence gate failure and archive migration. A structured error log records tool, operation, request projection, response size, error class, retry and resolution. The input research is <a href="reckon-plan-management-audit.html">Reckon Plan Management Audit</a>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-eoh-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the portable execution ledger and bounded sprint surface</h4>
+    <div class="r-fu-body"><p>Begin after the context manifest and provenance types land, then refactor the skill and MCP around capability-aware, evidence-gated execution.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    execution-orchestration-hardening (http://localhost:8765/reckon/execution-orchestration-hardening.html)
+Section: full plan
+Tier:    opus
+
+Context
+  The current sprint surface is usable but indirect; reckon-ship is rigorous but
+  tied to one agent/fleet model and lacks a resumable evidence ledger.
+
+State to read
+  reckon-plan-management-audit.html, skills/reckon-sprint/, skills/reckon-ship/
+  MCP read/edit/audit implementations and tests
+
+Scope locks / constraints
+  Preserve optimistic concurrency and HTML-first state.
+  Never weaken global safety approval boundaries.
+
+Done-when
+  1. Bounded sprint operations and portable resumable execution land with failure tests
+  2. tests still green
+  3. followup written + this followup marked resolved</pre>
+    </article>
+</section>
+  <section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-eoh-01" data-type="research-document" data-source="reckon" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/reckon-plan-management-audit.html">
+    <span class="r-research-title"><a href="/reckon/reckon-plan-management-audit.html">Reckon Plan Management Audit</a></span></div>
+<div class="r-research" data-id="err-eoh-uv-cache" data-type="tool-error" data-source="Codex validation run" data-added-by="codex" data-when="2026-07-29">
+    <span class="r-research-title">audit-doc initially failed: uv cache at ~/.cache/uv was read-only in the Codex sandbox; retry with UV_CACHE_DIR=/tmp/reckon-uv-cache passed</span></div>
+</section>
+</main>
+</body>
+</html>

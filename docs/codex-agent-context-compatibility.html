@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="codex-agent-context-compatibility">
+  <meta name="plan-title" content="Codex Agent Context Compatibility">
+  <meta name="plan-summary" content="Make user, repository and nested agent instructions and validated skills reliably visible to Codex and Claude, with a verifiable context manifest.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
+  <meta name="plan-tier" content="opus">
+  <meta name="plan-sprint" content="S5">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-blocks" content="execution-orchestration-hardening">
+  <title>Codex Agent Context Compatibility | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-07-29">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Outcome</h2>
+    <p>A fresh Codex or Claude session must automatically receive the applicable user-global and project-scoped rules, and must be able to prove what it loaded. “Read by default” means instruction files are in the initial effective chain and skill metadata is discoverable; full skill bodies remain trigger-loaded so context stays bounded.</p>
+    <figure>
+      <img src="/reckon/figures/codex-agent-context-compatibility/context-chain.svg" alt="Canonical user instructions feed agent-specific entrypoints, then project and target-path instructions, with a context manifest proving the loaded chain.">
+      <figcaption>One canonical policy source feeds compatible entrypoints; a target-path preflight adds the applicable project chain and records evidence.</figcaption>
+    </figure>
+    <h2 id="s2">§2 — Implementation</h2>
+    <ol>
+      <li>Create <code>~/.codex/AGENTS.md</code> as a managed link or generated shim to the canonical <code>~/.agents/AGENTS.md</code>.</li>
+      <li>Raise <code>project_doc_max_bytes</code> to a measured safe value and add a budget report so truncation is visible.</li>
+      <li>Add an <code>agent-context doctor</code> that reports canonical path, agent-specific entrypoint, root-to-target instruction chain, byte count, digest, skill metadata roots, and which skill bodies were activated.</li>
+      <li>Require target-path preflight before dispatch so nested <code>AGENTS.md</code> files are included even when the orchestrator launched at repository root.</li>
+      <li>Reconcile Nova main/develop instructions and remove stale git recipes; validate Claude-only HPC skills before mirroring them into <code>~/.agents/skills</code>.</li>
+    </ol>
+    <h2 id="s3">§3 — Acceptance and evidence</h2>
+    <p>The research input is <a href="codex-agent-context-audit.html">Codex Agent Context Audit</a>. Landed evidence must cover black-box launches from user home, repo root and nested physics/GPU directories; instruction digests and byte counts; skill discovery and trigger activation; and negative cases for stale, missing and conflicting files.</p>
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="canonical-source" data-choice="agents-home-canonical" data-by="Simon McIntosh" data-when="2026-07-29">
+    <p class="r-dec-q">What is the canonical user policy source?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="agents-home-canonical">~/.agents/AGENTS.md with agent-specific shims</button>
+      <button class="r-opt" data-value="duplicate-files">Independent copies</button>
+      </p>
+    <p class="r-dec-rat">One canonical source prevents Claude and Codex policy drift while preserving each agent&#x27;s discovery convention.</p>
+    </div>
+</section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cacc-01" data-status="open" data-tier="opus" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship codex-agent-context-compatibility" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement the compatibility shim and context doctor</h4>
+    <div class="r-fu-body"><p>Build the cross-agent compatibility layer and prove it with black-box launch fixtures before changing any project instructions.</p></div>
+    <pre class="r-fu-prompt">Project: reckon
+Plan:    codex-agent-context-compatibility (http://localhost:8765/reckon/codex-agent-context-compatibility.html)
+Section: full plan
+Tier:    opus
+
+Context
+  Codex and Claude use different user entrypoints and nested-loading behavior.
+  The workstation needs one canonical policy and a verifiable effective chain.
+
+State to read
+  codex-agent-context-audit.html, ~/.agents/AGENTS.md
+  current Codex configuration and Ambix/Nova AGENTS.md files
+
+Scope locks / constraints
+  Preserve one canonical policy source. Do not mirror stale HPC skills.
+  Produce research-before and evidence-after documents with source links.
+
+Done-when
+  1. Compatibility shim, doctor and black-box fixtures land
+  2. tests still green
+  3. followup written + this followup marked resolved</pre>
+    </article>
+</section>
+  <section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-cacc-01" data-type="research-document" data-source="reckon" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/codex-agent-context-audit.html">
+    <span class="r-research-title"><a href="/reckon/codex-agent-context-audit.html">Codex Agent Context Audit</a></span></div>
+</section>
+</main>
+</body>
+</html>
