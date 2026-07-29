@@ -194,11 +194,7 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
             slug = _sprint_slug(path)
         else:
             _, meta = _read_head(path)
-            slug = (
-                meta.get(f"{location_type}-id")
-                or meta.get("reckon-id")
-                or path.stem
-            )
+            slug = meta.get(f"{location_type}-id") or meta.get("reckon-id") or path.stem
     else:
         meta = _plan_html.parse_meta(path)
         artifact_type = canonical_type(meta.get("type"))
