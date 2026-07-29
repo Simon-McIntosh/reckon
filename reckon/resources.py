@@ -26,6 +26,8 @@ TYPE_ROOTS = {
     "research": "research",
     "evidence": "evidence",
     "sprint": "sprints",
+    "milestone": "milestones",
+    "blocker": "blockers",
 }
 ROOT_TYPES = {root: artifact_type for artifact_type, root in TYPE_ROOTS.items()}
 INFRA_DIRS = frozenset(
@@ -38,7 +40,6 @@ INFRA_DIRS = frozenset(
         "images",
         "figures",
         ".reckon",
-        "milestones",
     }
 )
 NON_RESOURCE_FILES = frozenset(
@@ -187,9 +188,17 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
         return None
 
     location_type, archived, legacy = _path_context(relative)
-    if location_type == "sprint":
-        artifact_type = "sprint"
-        slug = _sprint_slug(path)
+    if location_type in {"sprint", "milestone", "blocker"}:
+        artifact_type = location_type
+        if location_type == "sprint":
+            slug = _sprint_slug(path)
+        else:
+            _, meta = _read_head(path)
+            slug = (
+                meta.get(f"{location_type}-id")
+                or meta.get("reckon-id")
+                or path.stem
+            )
     else:
         meta = _plan_html.parse_meta(path)
         artifact_type = canonical_type(meta.get("type"))

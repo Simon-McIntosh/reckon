@@ -103,7 +103,14 @@ STATUS_ENUM = [
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
 TYPE_ENUM = ["plan", "research", "evidence"]
-RESOURCE_TYPE_ENUM = [*TYPE_ENUM, "sprint"]
+RESOURCE_TYPE_ENUM = [
+    *TYPE_ENUM,
+    "sprint",
+    "milestone",
+    "blocker",
+    "timeline",
+    "project",
+]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
 _RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -716,6 +723,7 @@ class Milestone(_TolerantIndexModel):
 
 
 class TimelineEntry(_TolerantIndexModel):
+    id: str = ""
     when: str = ""
     who: str = ""
     what: str = ""

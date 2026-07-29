@@ -210,17 +210,19 @@ After each integrated node, the orchestrator:
 2. Resolves the driving followup with commit, tests, and quantitative outcome.
 3. Advances plan implementation fraction monotonically.
 4. Collapses fully landed sections in the evergreen plan.
-5. Updates the sprint item's status by rewriting the sprint's `items` list
-   through `edit_plan` using the current index version.
+5. Re-reads the sprint resource and verifies its composed item status reflects
+   the plan writeback. Item lifecycle status and implementation fraction are
+   derived from plan HTML and must never be persisted in the sprint.
 6. Appends the next followup, or records `done — no followup`.
 
 After all executable nodes:
 
-- re-read every member plan and the index;
+- re-read every member plan and the composed index view;
 - ensure no ready or in-progress node is omitted;
 - record blocked/deferred nodes explicitly;
-- write a sprint summary with plan and evidence links;
-- set the sprint to done only when all non-deferred nodes are complete.
+- write a sprint summary with plan and evidence links by editing the named
+  sprint with its current resource version;
+- set that sprint resource to done only when all non-deferred nodes are complete.
 
 ## 8. Cleanup and recovery
 

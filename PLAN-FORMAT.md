@@ -27,8 +27,10 @@ comments — plus a few `<meta name="plan-*">` scalars. There is no embedded
 data blob and no per-plan state sidecar. The reckon server reads these elements
 for discovery and rewrites them in place on a live edit.
 
-A project keeps one `docs/state/<project>/index.json` for project-level config
-only — sprints, milestones, `active_sprint_id`, timeline, blockers.
+A project stores workflow state in independently versioned sprint, milestone,
+blocker, and timeline resources. `docs/state/<project>/project.json` contains
+identity/presentation settings only. A migrated `index.json` is retained
+byte-for-byte as a compatibility snapshot and is never written again.
 
 ## Typed resource layout and identity
 
@@ -275,10 +277,40 @@ literal `data-status` attribute is kept for backward compat but the parser
 overrides it if `resolved_at` is present. Never duplicate: just set
 `data-resolved-at` and `data-resolved-by` to resolve.
 
-## Index state — `index.json`
+## Distributed project state
 
-`docs/state/<project>/index.json` holds project-level config only. Schema
-(`reckon/_schema.py:IndexState`):
+Canonical resources are:
+
+- `docs/sprints/<id>.html` — versioned sprint definition and ordered item
+  metadata. Item lifecycle status and implementation fraction are resolved
+  live from plan HTML.
+- `docs/milestones/<id>.html` — one independently versioned milestone.
+- `docs/blockers/<id>.html` — one blocker; reference count is derived from
+  sprint item `blocked_by` references.
+- `docs/state/<project>/timeline.html` — one append-only, versioned event
+  stream with deterministic event ids.
+- `docs/state/<project>/project.json` — identity and presentation only; no
+  active-sprint pointer, collections, rollups, or host checkout path.
+
+The active sprint id is derived from the unique sprint whose status is
+`active`. Zero active sprints is valid; more than one is an audit error.
+Each resource owns its optimistic-concurrency version, so unrelated writes do
+not contend.
+
+`reckon migrate-project-state docs --project <project>` is the only activation
+path. It preserves a byte-identical snapshot below
+`docs/.reckon/snapshots/project-state/`, stages and validates all resources,
+proves composed parity, rechecks the source, installs resources, and publishes
+`docs/.reckon/project-state-migration.json` last. Marker absence/staging means
+legacy mode; a complete distributed marker forbids fallback.
+
+## Legacy compatibility view — `index.json`
+
+`read_plan(project, "index")` and `GET /state/<project>/index.json` return a
+composed compatibility shape with `source_format` and `resource_versions`.
+After distributed activation, aggregate writes fail with
+`legacy_index_read_only`; callers edit a named resource with `doc_type`.
+The retained source file has the historical schema below:
 
 ```json
 {
@@ -337,7 +369,8 @@ overrides it if `resolved_at` is present. Never duplicate: just set
 ```
 
 Key notes:
-- `_version` (aliased from `version_` in the Python model) is the optimistic-concurrency counter for `index.json` — distinct from per-plan `plan-version`.
+- `_version` was the legacy optimistic-concurrency counter. Distributed
+  resources have independent `version` values.
 - `inventory[]` is **synthesised live** by `discover_plans` on every `GET /_discover/<project>` call. It is **never persisted** to `index.json` (`exclude=True` in `IndexData`). Sprint items reference plan slugs; current plan state (impl, decisions, followups) is always read from the plan's HTML.
 
 ## Lenient read / strict write
@@ -357,9 +390,10 @@ explicit write boundary, via `PlanState.validate_for_write()` (wired into
 
 ## `edit_plan` write contract
 
-`edit_plan(project, slug, ops, expected_version, create=False)` is the single
-safe write path. `slug="index"` targets `index.json`; any other slug targets a
-plan HTML. Ops are applied in order, schema-validated, then atomically
+`edit_plan(project, slug, ops, expected_version, create=False, doc_type=None)`
+is the single safe write path. `doc_type` selects plan/research/evidence or a
+named sprint/milestone/blocker/timeline/project resource. Ops are applied in
+order, schema-validated, then atomically
 version-checked and written. **Optimistic concurrency:** call `read_plan`
 first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 
@@ -371,27 +405,29 @@ first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 | `append` | `{"op":"append","target":"<section>","item":{…}}` | adding to a list section |
 | `resolve` | `{"op":"resolve","target":"followups\|questions","id":"…","by":"…","outcome"\|"resolution":"…"}` | resolving a followup or question |
 | `lock` | `{"op":"lock","key":"<dec-key>","choice":"…","rationale":"…","by":"…"}` | locking a decision |
-| `move` | `{"op":"move","target":"sprint_item","slug":"…","from":"S1","to":"S2"}` | moving a sprint item (index only) |
+| `move` | `{"op":"move","target":"sprint_item","slug":"…","to":"S2","to_version":4}` | moving an item from the selected sprint with both versions checked |
 
 **`set` path values** (plan):
 `status` · `impl` · `roi` · `effort` · `milestone` · `sprint` · `capability` · `owner`
 · `summary` · `title` · `type` · `archived` · `read` · `depends_on` · `blocks`
 · `informs`
 
-**`set` path values** (index, `slug="index"`):
-`active_sprint_id` · `sprints.<id>.<field>` · `milestones.<id>.<field>`
+**`set` path values** (distributed resource):
+top-level mutable fields on the selected sprint, milestone, blocker, or
+project resource. Timeline state is append-only.
 
 **`append` target values** (plan):
 `followups` · `research` · `questions` · `comments` · `decisions` (with `key`)
 
-**`append` target values** (index):
-`sprints` · `sprints.<id>.items` · `milestones` · `timeline` · `blockers`
+**`append` target values** (distributed resource):
+`items` on a sprint; `events` on the timeline.
 
 **Create a new plan:**
 `edit_plan(project, slug, ops=[…], expected_version=0, create=True)`
 
 **Discovery / read:**
-- `read_plan(project, slug)` — parsed state + version for one plan or index
+- `read_plan(project, slug, doc_type=...)` — one exact typed resource + version
+- `read_plan(project, "index")` — composed compatibility view
 - `read_plan(project, slug, with_schema=True)` — injects schema + dos/don'ts inline
 - `read_plan(project, slug=None)` — discovery: inventory + followups/questions/sprints facets
 
@@ -403,7 +439,7 @@ first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 | `GET /<project>/<type-root>/<slug>` | canonical typed doc route |
 | `GET /<project>/<slug>.html` | bounded flat compatibility redirect |
 | `GET /_discover/<project>` | inventory (each entry carries `type` + parsed state) + sprints + milestones |
-| `GET /state/<project>/index.json` | project config + live-merged inventory |
+| `GET /state/<project>/index.json` | composed read-only compatibility view |
 | `GET /plan/<project>/<type-root>/<slug>` | typed parsed state (incl. `version`) |
 | `GET /plan/<project>/<slug>` | compatibility read; an actionable plan wins an untyped collision |
 | `GET /_shared/plan.schema.json` | the published JSON Schema (derived from `_schema.py:PlanState`) |

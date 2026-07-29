@@ -1,7 +1,8 @@
 // state-loader.js — runtime state fetcher for reckon plan pages.
 //
 // Builds window.STATE from three sources, in priority order:
-//   1. state/<project>/index.json  — per-project central index (if present)
+//   1. state/<project>/projection.json — derived static distributed view
+//      or state/<project>/index.json   — legacy central index
 //   2. state/<project>/<slug>.json — per-plan state files (per-doc layout)
 //   3. /_discover/<project>        — auto-discovery from HTML meta tags
 //
@@ -48,7 +49,8 @@ window.STATE_READY = (async function () {
   };
 
   // ── 1. Central index ───────────────────────────────────────────────────
-  const idxBlob = await getJson(`${stateBase}/index.json`);
+  const idxBlob = (await getJson(`${stateBase}/projection.json`)) ||
+                  (await getJson(`${stateBase}/index.json`));
   const idx = (idxBlob && idxBlob.data) || {};
 
   let sprints    = Array.isArray(idx.sprints)
@@ -118,8 +120,13 @@ window.STATE_READY = (async function () {
   const disc = await getJson(`/_discover/${PROJECT}`);
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
     inventory = disc.inventory;
-    if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
-    if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
+    if (disc.source_format === "distributed") {
+      if (Array.isArray(disc.sprints)) sprints = disc.sprints;
+      if (Array.isArray(disc.milestones)) milestones = disc.milestones;
+    } else {
+      if (!sprints.length    && Array.isArray(disc.sprints))    sprints    = disc.sprints;
+      if (!milestones.length && Array.isArray(disc.milestones)) milestones = disc.milestones;
+    }
   }
   // disc unavailable (server down) → fall through with inventory from index.json / idx.plans
 
@@ -216,11 +223,13 @@ window.STATE_READY = (async function () {
     projects,
     milestones,
     inventory:        mergedInventory,
-    active_sprint_id: idx.active_sprint_id || null,
+    active_sprint_id: disc?.active_sprint_id ?? idx.active_sprint_id ?? null,
     sprints:          augmentedSprints,
     sprint:           activeSprint,
-    blockers:         Array.isArray(idx.blockers) ? idx.blockers : [],
-    timeline:         Array.isArray(idx.timeline) ? idx.timeline : [],
+    blockers:         Array.isArray(disc?.blockers) ? disc.blockers
+                      : (Array.isArray(idx.blockers) ? idx.blockers : []),
+    timeline:         Array.isArray(disc?.timeline) ? disc.timeline
+                      : (Array.isArray(idx.timeline) ? idx.timeline : []),
     plans,
   };
 })();

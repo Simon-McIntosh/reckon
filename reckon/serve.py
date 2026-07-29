@@ -319,7 +319,19 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     signature so an unchanged docs tree returns instantly.
     """
     html_files = sorted(docs_dir.rglob("*.html"))
-    sig = (len(html_files), max((f.stat().st_mtime_ns for f in html_files), default=0))
+    state_files = [
+        path
+        for path in (
+            docs_dir / ".reckon" / "project-state-migration.json",
+            docs_dir / "state" / project / "project.json",
+        )
+        if path.is_file()
+    ]
+    signature_files = [*html_files, *state_files]
+    sig = (
+        len(signature_files),
+        max((f.stat().st_mtime_ns for f in signature_files), default=0),
+    )
     cache_key = (project, str(docs_dir.resolve()))
     cached = _DISC_CACHE.get(cache_key)
     if cached and cached[0] == sig:
@@ -337,7 +349,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     )
 
     for resource in resources:
-        if resource.type == "sprint":
+        if resource.type not in {"plan", "research", "evidence"}:
             continue
         html_file = resource.path
 
@@ -404,6 +416,25 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 }
             )
         inventory.append(item)
+
+    # ── Distributed project state ──────────────────────────────────────────
+    from reckon.project_state import compose_project_state, project_state_mode
+
+    mode = project_state_mode(docs_dir)
+    if mode.format == "distributed":
+        composed = compose_project_state(docs_dir, project)
+        result = {
+            "inventory": inventory,
+            "sprints": composed.get("sprints", []),
+            "milestones": composed.get("milestones", []),
+            "blockers": composed.get("blockers", []),
+            "timeline": composed.get("timeline", []),
+            "active_sprint_id": composed.get("active_sprint_id"),
+            "source_format": "distributed",
+            "resource_versions": composed.get("resource_versions", {}),
+        }
+        _DISC_CACHE[cache_key] = (sig, result)
+        return result
 
     # ── Sprint / milestone discovery from HTML files ──────────────────────
     # docs/sprints/<id>.html and docs/milestones/<id>.html carry sprint/milestone
@@ -478,7 +509,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             }
         )
 
-    result = {"inventory": inventory, "sprints": sprints, "milestones": milestones}
+    result = {
+        "inventory": inventory,
+        "sprints": sprints,
+        "milestones": milestones,
+        "source_format": "legacy-index",
+    }
     _DISC_CACHE[cache_key] = (sig, result)
     return result
 
@@ -768,9 +804,25 @@ class Handler(BaseHTTPRequestHandler):
                         disc = discover_plans(mts[project], project, _STATE_ROOT)
                         data = dict(envelope.get("data") or {})
                         data["inventory"] = disc.get("inventory", [])
-                        if not data.get("sprints") and disc.get("sprints"):
+                        if disc.get("source_format") == "distributed":
+                            for field in (
+                                "sprints",
+                                "milestones",
+                                "blockers",
+                                "timeline",
+                                "active_sprint_id",
+                                "source_format",
+                                "resource_versions",
+                            ):
+                                data[field] = disc.get(field)
+                            data["_version"] = 0
+                        elif not data.get("sprints") and disc.get("sprints"):
                             data["sprints"] = disc["sprints"]
-                        if not data.get("milestones") and disc.get("milestones"):
+                        if (
+                            disc.get("source_format") != "distributed"
+                            and not data.get("milestones")
+                            and disc.get("milestones")
+                        ):
                             data["milestones"] = disc["milestones"]
                         self._send_json(HTTPStatus.OK, {**envelope, "data": data})
                         return
@@ -856,9 +908,25 @@ class Handler(BaseHTTPRequestHandler):
                     )
                     data = dict(envelope.get("data") or {})
                     data["inventory"] = disc.get("inventory", [])
-                    if not data.get("sprints") and disc.get("sprints"):
+                    if disc.get("source_format") == "distributed":
+                        for field in (
+                            "sprints",
+                            "milestones",
+                            "blockers",
+                            "timeline",
+                            "active_sprint_id",
+                            "source_format",
+                            "resource_versions",
+                        ):
+                            data[field] = disc.get(field)
+                        data["_version"] = 0
+                    elif not data.get("sprints") and disc.get("sprints"):
                         data["sprints"] = disc["sprints"]
-                    if not data.get("milestones") and disc.get("milestones"):
+                    if (
+                        disc.get("source_format") != "distributed"
+                        and not data.get("milestones")
+                        and disc.get("milestones")
+                    ):
                         data["milestones"] = disc["milestones"]
                     self._send_json(HTTPStatus.OK, {**envelope, "data": data})
                     return

@@ -45,8 +45,10 @@ HTML inside the plan file:
 
 The server parses each plan's `<meta name="plan-*">` scalars and
 `data-reckon` section elements at request time — there are no per-plan
-state JSON sidecars. `docs/state/<project>/index.json` holds project-level
-config only (sprints, milestones, `active_sprint_id`).
+state JSON sidecars. Project workflow state is independently versioned under
+`docs/sprints/`, `docs/milestones/`, `docs/blockers/`, and
+`docs/state/<project>/timeline.html`; `project.json` is identity/presentation
+only. A retained `index.json` is a frozen compatibility snapshot.
 
 Mounts are configured in `~/docs-server/mounts.json`:
 
@@ -73,7 +75,7 @@ generation.
 | `GET /plan/<project>/<type-root>/<slug>` | Typed parsed state (incl. `version`) |
 | `GET /plan/<project>/<slug>` | Compatibility plan-state read |
 | `POST /plan/<project>/<slug>` | Dotted-key patch; requires `If-Match: <version>` |
-| `GET /state/<project>/index.json` | Project config (sprints, milestones) |
+| `GET /state/<project>/index.json` | Composed compatibility view (read-only after migration) |
 
 ## Frontend
 
@@ -84,9 +86,17 @@ at `/_ui/<file>` by the reckon server — no per-project copies needed.
 
 For a static deployment, run `reckon build <docs-path>`. The command copies
 the UI and shared assets shipped inside the `reckon-plans` wheel, writes a
-relative-path SPA index and `.nojekyll`, and bakes discovered plan inventory
-into the project index while retaining authored sprint, milestone, timeline,
-and blocker state.
+relative-path SPA index and `.nojekyll`, and writes a derived
+`projection.json`. It never rewrites the frozen migration-source index.
+
+Split a legacy project index explicitly with:
+
+```bash
+uv run reckon migrate-project-state docs --project <project>
+```
+
+The migration snapshots the source, proves composed parity, installs typed
+resources, then publishes the distributed-format marker last.
 
 To generate a GitHub Pages workflow in a consumer repository:
 

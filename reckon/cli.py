@@ -349,51 +349,57 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
         proj_json.write_text(json.dumps(seed, indent=2) + "\n")
         click.echo(f"  seeded state/{proj_name}/project.json")
 
-    # ── Seed index.json with sprint/milestone structure (no inventory) ────────
+    # ── Seed legacy index state (distributed projects remain immutable) ───────
     # Inventory is discovered live by the server on every request — writing it
     # here would create stale data that the MCP tools read instead of the live view.
-    from reckon.serve import discover_plans
-
-    discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
-
     index_json = state_dir / "index.json"
-    idx_data: dict = {}
-    if index_json.is_file():
-        try:
-            env = json.loads(index_json.read_text())
-            idx_data = env.get("data", {})
-        except json.JSONDecodeError:
-            pass
+    from reckon.project_state import project_state_mode
 
-    # Seed sprints/milestones from project.json discovery if not in index yet
-    if not idx_data.get("sprints") and discovered.get("sprints"):
-        idx_data["sprints"] = discovered["sprints"]
-    if not idx_data.get("milestones") and discovered.get("milestones"):
-        idx_data["milestones"] = discovered["milestones"]
-    if not idx_data.get("active_sprint_id"):
-        active = next(
-            (s for s in (idx_data.get("sprints") or []) if s.get("status") == "active"),
-            None,
+    if project_state_mode(docs_dir).format == "distributed":
+        click.echo("  preserved frozen index.json (distributed project state)")
+    else:
+        from reckon.serve import discover_plans
+
+        discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
+        idx_data: dict = {}
+        if index_json.is_file():
+            try:
+                env = json.loads(index_json.read_text())
+                idx_data = env.get("data", {})
+            except json.JSONDecodeError:
+                pass
+
+        if not idx_data.get("sprints") and discovered.get("sprints"):
+            idx_data["sprints"] = discovered["sprints"]
+        if not idx_data.get("milestones") and discovered.get("milestones"):
+            idx_data["milestones"] = discovered["milestones"]
+        if not idx_data.get("active_sprint_id"):
+            active = next(
+                (
+                    s
+                    for s in (idx_data.get("sprints") or [])
+                    if s.get("status") == "active"
+                ),
+                None,
+            )
+            if active:
+                idx_data["active_sprint_id"] = active["id"]
+
+        idx_data.pop("inventory", None)
+        idx_data["_version"] = (idx_data.get("_version") or 0) + 1
+        envelope = {
+            "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
+            "project": proj_name,
+            "doc": "index",
+            "data": idx_data,
+        }
+        index_json.write_text(json.dumps(envelope, indent=2) + "\n")
+        n_sprints = len(idx_data.get("sprints") or [])
+        n_miles = len(idx_data.get("milestones") or [])
+        click.echo(
+            f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) "
+            "— inventory discovered live"
         )
-        if active:
-            idx_data["active_sprint_id"] = active["id"]
-
-    # Purge any stale inventory — server discovers it live; MCP tools must too.
-    idx_data.pop("inventory", None)
-
-    idx_data["_version"] = (idx_data.get("_version") or 0) + 1
-    envelope = {
-        "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
-        "project": proj_name,
-        "doc": "index",
-        "data": idx_data,
-    }
-    index_json.write_text(json.dumps(envelope, indent=2) + "\n")
-    n_sprints = len(idx_data.get("sprints") or [])
-    n_miles = len(idx_data.get("milestones") or [])
-    click.echo(
-        f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) — inventory discovered live"
-    )
 
     # ── Register in mounts.json ────────────────────────────────────────────
     mounts_path = (mounts_file or _config_home() / "mounts.json").expanduser()
@@ -524,8 +530,13 @@ def build(docs_path, project):
     discovered = discover_plans(docs_dir, proj_name, docs_dir / "state")
 
     index_json = state_dir / "index.json"
+    from reckon.project_state import compose_project_state, project_state_mode
+
+    distributed = project_state_mode(docs_dir).format == "distributed"
     idx_data: dict = {}
-    if index_json.is_file():
+    if distributed:
+        idx_data = compose_project_state(docs_dir, proj_name)
+    elif index_json.is_file():
         try:
             env = json.loads(index_json.read_text())
             idx_data = dict(env.get("data", {}))
@@ -545,24 +556,53 @@ def build(docs_path, project):
         )
         if active:
             idx_data["active_sprint_id"] = active["id"]
-    idx_data["_version"] = (idx_data.get("_version") or 0) + 1
+    if not distributed:
+        idx_data["_version"] = (idx_data.get("_version") or 0) + 1
 
     envelope = {
         "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
         "project": proj_name,
-        "doc": "index",
+        "doc": "projection" if distributed else "index",
         "data": idx_data,
     }
-    index_json.write_text(json.dumps(envelope, indent=2) + "\n")
+    output_state = state_dir / ("projection.json" if distributed else "index.json")
+    output_state.write_text(json.dumps(envelope, indent=2) + "\n")
     n_plans = len(idx_data["inventory"])
     n_sprints = len(idx_data["sprints"])
     click.echo(
-        f"  wrote state/{proj_name}/index.json ({n_plans} plans, {n_sprints} sprints)"
+        f"  wrote state/{proj_name}/{output_state.name} "
+        f"({n_plans} plans, {n_sprints} sprints)"
     )
 
     click.echo(
         f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site."
     )
+
+
+@main.command(name="migrate-project-state")
+@click.argument("docs_path", type=click.Path(path_type=Path))
+@click.option(
+    "--project", default=None, help="Project key (defaults to docs parent dir name)."
+)
+def migrate_project_state_command(docs_path, project):
+    """Split a legacy project index into independently versioned resources."""
+    from reckon.project_state import ProjectStateError, migrate_project_state
+
+    docs_dir = docs_path.expanduser().resolve()
+    if not docs_dir.is_dir():
+        raise click.ClickException(f"docs path not found: {docs_dir}")
+    proj_name = project or docs_dir.parent.name
+    try:
+        result = migrate_project_state(docs_dir, proj_name)
+    except ProjectStateError as exc:
+        raise click.ClickException(str(exc)) from exc
+    verb = "migrated" if result.get("changed") else "verified"
+    click.echo(
+        f"{verb} project state: {len(result.get('resources', []))} resources; "
+        f"source {result.get('source_sha256', '')[:12]}; "
+        f"parity {result.get('parity_sha256', '')[:12]}"
+    )
+    click.echo(f"marker: {docs_dir / '.reckon/project-state-migration.json'}")
 
 
 @main.command(name="migrate-layout")
