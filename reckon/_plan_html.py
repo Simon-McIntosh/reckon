@@ -4,8 +4,8 @@
 A plan page carries its data as ordinary HTML the reader can see and the
 reckon server reads and writes directly. There is NO embedded JSON blob.
 
-  - Scalars (status, impl, version, roi, effort, milestone, sprint, tier,
-    summary, owner, modified, slug, depends_on) live in <meta name="plan-*">.
+  - Scalars and the versioned capability request live in
+    ``<meta name="plan-*">`` elements.
   - Decisions are <div class="r-dec" data-key=…> elements inside
     <section data-reckon="decisions">, with visible <button class="r-opt"
     data-value=…> options, a data-choice attribute (the locked answer, an
@@ -26,6 +26,11 @@ import re
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+
+from reckon.capability import (
+    CAPABILITY_SCHEMA_VERSION,
+    from_legacy_tier,
+)
 
 # ── Scalar fields carried in <meta name="plan-*"> ──────────────────────────
 _SCALARS = (
@@ -55,6 +60,13 @@ _PLAN_ONLY_METAS = (
     "plan-milestone",
     "plan-sprint",
     "plan-tier",
+    "plan-capability-version",
+    "plan-capability-class",
+    "plan-capability-reasoning",
+    "plan-capability-context",
+    "plan-capability-tool-autonomy",
+    "plan-capability-verification",
+    "plan-capability-risk",
     "plan-depends-on",
     "plan-blocks",
     "plan-impl",
@@ -62,13 +74,21 @@ _PLAN_ONLY_METAS = (
 
 _DEFAULTS = {
     "status": "draft", "roi": "mid", "effort": "M", "milestone": "—",
-    "sprint": None, "tier": "sonnet", "summary": "", "modified": "",
+    "sprint": None, "summary": "", "modified": "",
     "owner": "", "impl": 0.0, "version": 0,
 }
 
 # reckon-owned section ids — regenerated on write, stripped by the SPA before
 # rendering the authored prose (it renders interactive widgets instead).
 SECTION_IDS = ("decisions", "followups", "questions", "research", "comments")
+
+_CAPABILITY_REQUIREMENTS = (
+    "reasoning",
+    "context",
+    "tool_autonomy",
+    "verification",
+    "risk",
+)
 
 
 def _esc(s) -> str:
@@ -113,16 +133,54 @@ def _canonical_type(value: object) -> str:
     return "research" if raw == "doc" else (raw or "plan")
 
 
+def _capability_from_values(
+    values: dict[str, str],
+    *,
+    prefix: str,
+) -> dict | None:
+    capability_class = values.get(f"{prefix}class", "")
+    if not capability_class:
+        return None
+    requirements = {
+        key: values[f"{prefix}{key.replace('_', '-')}"]
+        for key in _CAPABILITY_REQUIREMENTS
+        if values.get(f"{prefix}{key.replace('_', '-')}")
+    }
+    return {
+        "version": values.get(f"{prefix}version") or CAPABILITY_SCHEMA_VERSION,
+        "class": capability_class,
+        "requirements": requirements,
+    }
+
+
+def _capability_attributes(capability: dict | None) -> str:
+    if not capability:
+        return ""
+    requirements = capability.get("requirements") or {}
+    attrs = [
+        f' data-capability-version="{_esc(capability.get("version") or CAPABILITY_SCHEMA_VERSION)}"',
+        f' data-capability-class="{_esc(capability.get("class"))}"',
+    ]
+    attrs.extend(
+        f' data-capability-{key.replace("_", "-")}="{_esc(requirements[key])}"'
+        for key in _CAPABILITY_REQUIREMENTS
+        if requirements.get(key)
+    )
+    return "".join(attrs)
+
+
 # ── Read ───────────────────────────────────────────────────────────────────
 
 def read_state(html_text: str) -> dict:
     """Parse a plan's semantic HTML into the canonical state dict."""
     soup = BeautifulSoup(html_text or "", "html.parser")
     st: dict = {}
+    meta_values: dict[str, str] = {}
 
     # Scalars from <meta name="plan-*">
     for m in soup.find_all("meta"):
         name = (m.get("name") or "").lower()
+        meta_values[name] = m.get("content", "")
         if not name.startswith("plan-"):
             continue
         field = name[len("plan-"):].replace("-", "_")
@@ -136,6 +194,19 @@ def read_state(html_text: str) -> dict:
                 st[field] = float(content) if field == "impl" else int(content)
             except (TypeError, ValueError):
                 pass
+
+    warnings: list[str] = []
+    capability = _capability_from_values(
+        meta_values,
+        prefix="plan-capability-",
+    )
+    if capability:
+        st["capability"] = capability
+    elif st.get("tier"):
+        mapped, diagnostic = from_legacy_tier(st["tier"])
+        if mapped:
+            st["capability"] = mapped
+            warnings.append(f"plan: {diagnostic}")
 
     # ``doc`` remains a compatibility alias on disk but reads are canonical.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
@@ -180,10 +251,14 @@ def read_state(html_text: str) -> dict:
         # an older resolve_followup (which set resolved_at but not status) still
         # reads as resolved. Mirrors the questions parser.
         _resolved_at = fu.get("data-resolved-at")
+        attributes = {str(key): str(value) for key, value in fu.attrs.items()}
+        followup_capability = _capability_from_values(
+            attributes,
+            prefix="data-capability-",
+        )
         f = {
             "id": fu.get("data-id", ""),
             "status": "resolved" if _resolved_at else fu.get("data-status", "open"),
-            "tier": fu.get("data-tier", ""),
             "written_by": fu.get("data-written-by", ""),
             "written_at": fu.get("data-written-at", ""),
             "recommends_skill": fu.get("data-recommends-skill", ""),
@@ -193,6 +268,18 @@ def read_state(html_text: str) -> dict:
             # rendered as preformatted text — never as HTML).
             "prompt": (fu.select_one(".r-fu-prompt").get_text() if fu.select_one(".r-fu-prompt") else ""),
         }
+        legacy_tier = fu.get("data-tier", "")
+        if legacy_tier:
+            f["tier"] = legacy_tier
+        if followup_capability:
+            f["capability"] = followup_capability
+        elif legacy_tier:
+            mapped, diagnostic = from_legacy_tier(legacy_tier)
+            if mapped:
+                f["capability"] = mapped
+                warnings.append(
+                    f"followup {f['id'] or '<no-id>'}: {diagnostic}"
+                )
         if fu.get("data-resolved-at"):
             f["resolved_at"] = fu.get("data-resolved-at")
         if fu.get("data-resolved-by"):
@@ -244,6 +331,8 @@ def read_state(html_text: str) -> dict:
             "body": _inner_html(c.select_one(".r-comment-body")) or _txt(c),
         })
     st["comments"] = comments
+    if warnings:
+        st["compatibility_warnings"] = warnings
     return st
 
 
@@ -288,9 +377,13 @@ def _render_followups(followups: list) -> str:
         # with a resolved_at is resolved regardless of a stale literal status —
         # resolve_followup sets resolved_at/by/outcome but not the status field.
         status = "resolved" if f.get("resolved_at") else (f.get("status") or "open")
+        legacy_tier = (
+            f' data-tier="{_esc(f.get("tier"))}"' if f.get("tier") else ""
+        )
         arts.append(
             f'<article class="r-fu" data-id="{_esc(f.get("id"))}" data-status="{_esc(status)}"'
-            f' data-tier="{_esc(f.get("tier"))}" data-written-by="{_esc(f.get("written_by"))}"'
+            f'{legacy_tier}{_capability_attributes(f.get("capability"))}'
+            f' data-written-by="{_esc(f.get("written_by"))}"'
             f' data-written-at="{_esc(f.get("written_at"))}" data-recommends-skill="{_esc(f.get("recommends_skill"))}"'
             f' data-resolved-at="{_esc(f.get("resolved_at") or "")}" data-resolved-by="{_esc(f.get("resolved_by") or "")}">\n    '
             f'<h4 class="r-fu-title">{_esc(f.get("title"))}</h4>\n    '
@@ -428,6 +521,27 @@ def write_state(html_text: str, state: dict) -> str:
     for f in _LIST_SCALARS:
         if f in state:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", ",".join(state.get(f) or []))
+    if "capability" in state and state.get("capability"):
+        capability = state["capability"]
+        requirements = capability.get("requirements") or {}
+        out = _set_meta(
+            out,
+            "plan-capability-version",
+            capability.get("version") or CAPABILITY_SCHEMA_VERSION,
+        )
+        out = _set_meta(
+            out,
+            "plan-capability-class",
+            capability.get("class") or "",
+        )
+        for key in _CAPABILITY_REQUIREMENTS:
+            meta_name = f"plan-capability-{key.replace('_', '-')}"
+            if requirements.get(key):
+                out = _set_meta(out, meta_name, requirements[key])
+            else:
+                out = _remove_meta(out, meta_name)
+        if "tier" not in state:
+            out = _remove_meta(out, "plan-tier")
     if "impl" in state:
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
@@ -442,8 +556,8 @@ def write_state(html_text: str, state: dict) -> str:
 #
 # These WRAP read_state/write_state — they do not replace them. read_state and
 # write_state keep their dict signatures and current output; existing callers
-# (serve.py, _store.py) stay untouched. The typed layer is opt-in: edit_plan /
-# doctor (wired by F3) call from_html / validate_for_write at the write boundary.
+# (serve.py, _store.py) stay untouched. Explicit write-boundary callers use
+# from_html / validate_for_write.
 
 def from_html(html_text: str) -> "PlanState":  # noqa: F821  (forward ref)
     """Parse HTML into a typed :class:`reckon._schema.PlanState` — LENIENT.
@@ -474,9 +588,9 @@ def to_html(html_text: str, state: "PlanState") -> str:  # noqa: F821
 # ── Lightweight inventory record (scales to thousands of docs) ──────────────
 
 # A decision is OPEN until it has a choice OR a recorded rationale — mirrors the
-# SPA decision widget's isTaken predicate (docs/ui/decision.jsx). Counting a
-# rationale-only (deferred) decision as open showed "Resolve N" over a green
-# decision (bug 2026-06-04). The block regex captures each whole .r-dec element
+# SPA decision widget's isTaken predicate (docs/ui/decision.jsx). A
+# rationale-only decision is taken, so the inventory must not report it as
+# open. The block regex captures each whole .r-dec element
 # (decisions contain only <p> children, so the first </div> closes it) so the
 # fast inventory path can inspect both data-choice and the .r-dec-rat text.
 _DEC_BLOCK_RE = re.compile(r'<div\b[^>]*\bclass="r-dec".*?</div>', re.IGNORECASE | re.DOTALL)
@@ -549,6 +663,17 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
                 rec["version"] = int(content)
             except ValueError:
                 pass
+    capability = _capability_from_values(
+        metas,
+        prefix="plan-capability-",
+    )
+    if capability:
+        rec["capability"] = capability
+    elif rec.get("tier"):
+        mapped, diagnostic = from_legacy_tier(rec["tier"])
+        if mapped:
+            rec["capability"] = mapped
+            rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
     rec["type"] = _canonical_type(metas.get("reckon-type"))
     tm = _TITLE_RE.search(head)
     if tm and not rec.get("title"):

@@ -147,13 +147,13 @@ edit_plan(
     {"op": "append", "target": "followups", "item": {
       "id": "f-pdf-002",
       "status": "open",
-      "tier": "sonnet",
+      "capability": {"version": "1.0", "class": "general", "requirements": {}},
       "written_by": "smc",
       "written_at": "2026-05-29",
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
       "recommends_skill": "/reckon-ship plasma-decoder-finetune §2",
-      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nTier: sonnet\n\nContext\n  Data prep is now unblocked. (Honour the locked / surface the open decisions shown live above — do not re-list them.)\n\nState to read  (code/files, not the plan URL — the builder injects it)\n  src/ and the data sources the curation pipeline reads\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
+      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nCapability: general\nRequirements: standard verification\n\nContext\n  Data prep is now unblocked. (Honour the locked / surface the open decisions shown live above — do not re-list them.)\n\nState to read  (code/files, not the plan URL — the builder injects it)\n  src/ and the data sources the curation pipeline reads\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
     }}
   ],
   expected_version=5
@@ -193,7 +193,7 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `tier`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
@@ -261,7 +261,7 @@ Minimum followup item shape:
   "title":            "<imperative short title>",
   "body":             "<2–3 sentences of context>",
   "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
-  "tier":             "haiku | sonnet | opus",
+  "capability":       {"version": "1.0", "class": "routine | general | orchestrator", "requirements": {}},
   "prompt":           "<§05 template body — mandatory, non-empty>"
 }
 ```
@@ -325,7 +325,8 @@ non-decision constraints, done-when.
 Project: <project-name>
 Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
 Section: <§ if applicable>
-Tier:    <haiku | sonnet | opus>
+Capability: <routine | general | orchestrator>
+Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
 
 Context
   2–3 sentences on why this is queued now.

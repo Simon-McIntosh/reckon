@@ -219,19 +219,22 @@ edit_plan(
     {"op": "set", "path": "status", "value": "draft"},
     {"op": "set", "path": "roi", "value": "high"},
     {"op": "set", "path": "effort", "value": "L"},
-    {"op": "set", "path": "tier", "value": "opus"},
+    {"op": "set", "path": "capability", "value": {
+      "version": "1.0", "class": "orchestrator",
+      "requirements": {"reasoning": "deep", "verification": "strict"}
+    }},
     {"op": "set", "path": "summary", "value": "Fine-tune the plasma decoder on curated IMAS shots"},
     {"op": "set", "path": "milestone", "value": "M2"},
     {"op": "append", "target": "followups", "item": {
       "id": "f-pdf-001",
       "status": "open",
-      "tier": "sonnet",
+      "capability": {"version": "1.0", "class": "general", "requirements": {}},
       "written_by": "reckon-create",
       "written_at": "2026-05-29",
       "title": "Implement plasma decoder fine-tune §1 — data prep",
       "body": "Initial authoring complete. Next: run data curation pipeline and validate.",
       "recommends_skill": "/reckon-ship plasma-decoder-finetune §1",
-      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §1\nTier: sonnet\n\nContext\n  Plan authored; data prep is the first shippable section.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  (none yet)\n\nDone-when\n  1. Data pipeline script committed\n  2. Tests green\n  3. Followup written + this one resolved"
+      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §1\nCapability: general\nRequirements: standard verification\n\nContext\n  Plan authored; data prep is the first shippable section.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  (none yet)\n\nDone-when\n  1. Data pipeline script committed\n  2. Tests green\n  3. Followup written + this one resolved"
     }}
   ],
   expected_version=0,
@@ -257,7 +260,10 @@ edit_plan(
   <meta name="plan-status"    content="draft">
   <meta name="plan-roi"       content="high">
   <meta name="plan-effort"    content="L">
-  <meta name="plan-tier"      content="opus">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
   <meta name="plan-milestone" content="M2">
   <meta name="plan-sprint"    content="S4">
   <meta name="plan-owner"     content="Simon McIntosh">
@@ -338,7 +344,7 @@ and link to the plans they inform.
 <body><p>See state §2 for details</p></body>
 ```
 
-Missing: `reckon-type`, `plan-title`, `plan-roi`, `plan-tier`, `plan-summary`,
+Missing: `reckon-type`, `plan-title`, `plan-roi`, `plan-capability-class`, `plan-summary`,
 `plan-status`, CSS links, full prose body, decisions and followups sections.
 
 ## Machine-readable fields — what each tag is for
@@ -352,7 +358,7 @@ Only author fields that a view downstream consumes:
 | `plan-status` | Lifecycle filter; kanban columns; "what's open" queries |
 | `plan-roi` / `plan-effort` | Sprint ordering, capacity planning (ROI × effort) |
 | `plan-milestone` / `plan-sprint` | Milestone rollup, sprint membership |
-| `plan-tier` | Model-tier hint for dispatch (haiku/sonnet/opus) |
+| `plan-capability-*` | Versioned capability class and structured dispatch requirements |
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
 | `plan-read` | `1` marks a research/doc reviewed |
@@ -372,7 +378,13 @@ Only author fields that a view downstream consumes:
 | `plan-title` | (empty) | Title Case |
 | `plan-roi` | `mid` | `high` / `mid` / `low` |
 | `plan-effort` | `M` | `S` / `M` / `L` / `XL` |
-| `plan-tier` | `sonnet` | `haiku` / `sonnet` / `opus` |
+| `plan-capability-version` | `1.0` | Capability contract version |
+| `plan-capability-class` | `general` | `routine` / `general` / `orchestrator` |
+| `plan-capability-reasoning` | (empty) | `standard` / `deep` |
+| `plan-capability-context` | (empty) | `standard` / `extended` |
+| `plan-capability-tool-autonomy` | (empty) | `guided` / `autonomous` |
+| `plan-capability-verification` | (empty) | `standard` / `strict` |
+| `plan-capability-risk` | (empty) | `low` / `moderate` / `elevated` / `critical` |
 | `plan-summary` | (empty) | One-line synopsis |
 | `plan-milestone` | (empty) | e.g. `M2` |
 | `plan-sprint` | (empty) | e.g. `S4` |
@@ -406,7 +418,8 @@ narrative, the specific files to read, non-decision constraints, and done-when.
 Project: <project-name>
 Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
 Section: <§ if applicable>
-Tier:    <haiku | sonnet | opus>
+Capability: <routine | general | orchestrator>
+Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
 
 Context
   2–3 sentences on why this is queued now and what landed before it.
@@ -435,7 +448,7 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 **Decision (free-form, no options):** same but omit `<p class="r-dec-opts">`; `data-choice` holds the typed answer when locked. The locked state is derived from `data-choice` being non-empty — no separate flag.
 
-**Followup:** `<article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet" data-written-by="…" data-written-at="…">` with `<h4 class="r-fu-title">`, `<div class="r-fu-body">`, and `<pre class="r-fu-prompt">` (mandatory). Resolved by setting `data-resolved-at` + `data-resolved-by`; `status=resolved` is derived from `resolved_at`, not stored separately.
+**Followup:** `<article class="r-fu" data-id="f1" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="…" data-written-at="…">` with optional structured `data-capability-*` requirements, `<h4 class="r-fu-title">`, `<div class="r-fu-body">`, and `<pre class="r-fu-prompt">` (mandatory). Resolved by setting `data-resolved-at` + `data-resolved-by`; `status=resolved` is derived from `resolved_at`, not stored separately.
 
 **Research item:** `<div class="r-research" data-id="r1" data-type="paper" data-url="https://…">` with `<span class="r-research-title">`.
 

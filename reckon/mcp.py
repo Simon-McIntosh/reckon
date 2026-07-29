@@ -187,6 +187,35 @@ def _read_plan(
 
     # ── single-plan mode (original shape) ──
     data, version = read_plan(project, slug, checkout_path)
+    if slug in ("index", "project"):
+        from reckon.capability import map_legacy_capabilities
+
+        index_warnings: list[str] = []
+        normalised_sprints: list[Any] = []
+        for sprint_record in data.get("sprints", []):
+            if not isinstance(sprint_record, dict):
+                normalised_sprints.append(sprint_record)
+                continue
+            sprint_copy = dict(sprint_record)
+            normalised_items: list[Any] = []
+            for item in sprint_record.get("items", []):
+                if not isinstance(item, dict):
+                    normalised_items.append(item)
+                    continue
+                mapped, warnings = map_legacy_capabilities(
+                    item,
+                    context=(
+                        f"sprint {sprint_record.get('id') or '<no-id>'} "
+                        f"item {item.get('slug') or '<no-slug>'}"
+                    ),
+                )
+                normalised_items.append(mapped)
+                index_warnings.extend(warnings)
+            sprint_copy["items"] = normalised_items
+            normalised_sprints.append(sprint_copy)
+        data = {**data, "sprints": normalised_sprints}
+        if index_warnings:
+            data["compatibility_warnings"] = index_warnings
     result: dict[str, Any] = {
         "project": project,
         "slug": slug,
@@ -214,7 +243,7 @@ _DOS_DONTS = {
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
-        "off-enum status/roi/effort/tier/type are rejected at the write boundary.",
+        "off-enum status/roi/effort/type or capability requirements are rejected at the write boundary.",
         "research/evidence cannot carry meaningful plan-only workflow or scheduling fields.",
         "index inventory[] is synthesised live; a set on it is a durable no-op.",
         "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
@@ -223,7 +252,7 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars (including informs/evidence_for/verifies and provenance metadata) + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1 and is plan-only; sprint status active/done updates active_sprint_id.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars (including capability, informs/evidence_for/verifies and provenance metadata) + decisions.<key>.<field>; index active_sprint_id, sprints.<id>.<field>, milestones.<id>.<field>. impl clamps to 0..1 and is plan-only; sprint status active/done updates active_sprint_id.",
     "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; index sprints, sprints.<id>.items, milestones, timeline, blockers. followup needs a §05 prompt.",
     "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
@@ -286,7 +315,8 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "sprint": item.get("sprint"),
                 "roi": item.get("roi"),
                 "effort": item.get("effort"),
-                "tier": item.get("tier", "sonnet"),
+                "capability": item.get("capability"),
+                "tier": item.get("tier"),
                 "dec_open": int(item.get("dec_open", 0) or 0),
                 "blockers": int(item.get("blockers", 0) or 0),
                 "depends_on": list(item.get("depends_on") or []),
@@ -890,7 +920,7 @@ def _add_sprint_item(
     """Append an item to sprint.items[] in index.json.
 
     item is a slug string or an object with:
-      { slug (required), why_now, tier, done_when, status }
+      { slug (required), why_now, capability, done_when, status }
     Duplicate slugs within the same sprint are rejected.
     """
     cur_data, cur_version = read_plan(project, "index")
@@ -1020,7 +1050,7 @@ def _move_sprint_item(
 ) -> dict[str, Any]:
     """Move a plan item from one sprint to another in index.json.
 
-    Preserves any item metadata (why_now, tier, done_when, etc.).
+    Preserves any item metadata (why_now, capability, done_when, etc.).
     """
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
@@ -1245,17 +1275,43 @@ def _validate_working(slug: str, working: dict) -> list[str] | None:
     failure, or None when valid. Constructs the model FROM the dict (never
     mutates a model and dumps it — see reckon/_schema.py header)."""
     from reckon._schema import IndexData, PlanState
+    from reckon.capability import (
+        from_legacy_tier,
+        validate_capability,
+    )
 
     try:
         if slug in ("index", "project"):
             IndexData.model_validate(working)
+            for sprint_record in working.get("sprints", []):
+                if not isinstance(sprint_record, dict):
+                    continue
+                for item in sprint_record.get("items", []):
+                    if not isinstance(item, dict):
+                        continue
+                    if not item.get("capability") and item.get("tier"):
+                        mapped, _ = from_legacy_tier(item["tier"])
+                        if mapped:
+                            item["capability"] = mapped
+                    errors = validate_capability(item.get("capability"))
+                    if errors:
+                        raise ValueError("\n".join(errors))
+                    if item.get("capability"):
+                        item.pop("tier", None)
         else:
             state = PlanState.model_validate(working).validate_for_write()
             # Persist the validated canonical shape. This is what turns the
             # legacy ``doc`` alias into ``research`` and removes neutral
             # plan-only defaults from research/evidence writes.
+            canonical = state.canonical_dump()
+            canonical.pop("compatibility_warnings", None)
+            if canonical.get("capability"):
+                canonical.pop("tier", None)
+            for followup in canonical.get("followups", []):
+                if isinstance(followup, dict) and followup.get("capability"):
+                    followup.pop("tier", None)
             working.clear()
-            working.update(state.canonical_dump())
+            working.update(canonical)
     except ValueError as e:
         # Split the multi-line validate_for_write message into discrete lines;
         # pydantic ValidationError stringifies to a useful block too.
@@ -1455,6 +1511,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
 
     checked = 0
     violations: list[dict[str, Any]] = []
+    compatibility_records: list[tuple[str, str, str]] = []
     html_files: list[Path] = []
     for html_file in sorted(docs_dir.rglob("*.html")):
         rel = html_file.relative_to(docs_dir)
@@ -1473,6 +1530,10 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
             checked += 1
             continue
         slug = state.slug or html_file.stem
+        for warning in state.compatibility_warnings:
+            compatibility_records.append(
+                (slug, str(html_file.relative_to(docs_dir)), warning)
+            )
         checked += 1
         try:
             state.validate_for_write()
@@ -1491,6 +1552,39 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     index_data, _ = read_plan(project, "index", checkout_path)
 
     findings: list[dict[str, Any]] = []
+    for slug, path, warning in compatibility_records:
+        findings.append(
+            _finding(
+                "compatibility",
+                "legacy-capability-tier",
+                "warn",
+                warning,
+                slug=slug,
+                path=path,
+            )
+        )
+    for sprint_record in index_data.get("sprints", []):
+        if not isinstance(sprint_record, dict):
+            continue
+        for item in sprint_record.get("items", []):
+            if not isinstance(item, dict) or not item.get("tier") or item.get(
+                "capability"
+            ):
+                continue
+            findings.append(
+                _finding(
+                    "compatibility",
+                    "legacy-capability-tier",
+                    "warn",
+                    (
+                        f"sprint {sprint_record.get('id') or '<no-id>'} item "
+                        f"{item.get('slug') or '<no-slug>'}: legacy tier maps "
+                        "on read; persist capability explicitly to migrate"
+                    ),
+                    slug=item.get("slug"),
+                    path="state/index.json",
+                )
+            )
     for artifact in plans:
         artifact_type = artifact.get("type", "plan")
         if artifact_type == "research" and not artifact.get("informs"):

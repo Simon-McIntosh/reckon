@@ -195,7 +195,7 @@ Output format:
 
 ### Low priority (N)
 - plan-alpha: modified 45d ago, status still active — confirm or ship
-- plan-beta: item tier=haiku but plan tier=sonnet
+- plan-beta: legacy tier remains in sprint or plan state — migrate explicitly
 ```
 
 When reviewing a project after a migration wave, add three short passes:
@@ -212,10 +212,10 @@ When reviewing a project after a migration wave, add three short passes:
 ## Plan Status — <project> (<date>)
 
 ### Active plans (N)
-| Slug       | Status | Sprint | ROI  | Effort | Tier   | Progress |
-|------------|--------|--------|------|--------|--------|---------|
-| plan-alpha | active | S2     | high | M      | sonnet | 40%     |
-| plan-beta  | active | S1     | med  | S      | haiku  | 10%     |
+| Slug       | Status | Sprint | ROI  | Effort | Capability | Progress |
+|------------|--------|--------|------|--------|------------|----------|
+| plan-alpha | active | S2     | high | M      | general    | 40%     |
+| plan-beta  | active | S1     | med  | S      | routine    | 10%     |
 
 ### Open decisions (N total)
 - plan-alpha: [transport] "How should transport work?" options: stdio, http

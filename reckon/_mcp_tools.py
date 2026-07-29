@@ -38,7 +38,7 @@ class AppendCommentArgs(BaseModel):
     slug: str
     section_id: str = Field(..., description="Section id the comment belongs to")
     body: str = Field(..., description="Comment text (markdown ok)")
-    author: str = Field(..., description="Author identifier, e.g. 'agent/sonnet' or 'Simon McIntosh'")
+    author: str = Field(..., description="Human or agent author identifier")
     quote: str | None = Field(None, description="Optional quoted passage from the plan body")
     expected_version: int
 
@@ -60,7 +60,7 @@ class AppendFollowupArgs(BaseModel):
         ...,
         description=(
             "Full followup record. Must include: id, written_by, written_at, title, body, prompt. "
-            "Optional: recommends_skill, touches, blocked_by, tier, est_turn."
+            "Optional: recommends_skill, touches, blocked_by, capability, est_turn."
         ),
     )
     expected_version: int

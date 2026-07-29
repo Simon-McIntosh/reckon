@@ -702,6 +702,10 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
             </>}
             <span className="dot-sep">·</span>
             <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round((p.impl || 0) * 100)}%</span></span>
+            {p.capability?.class && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">capability</span><span className="v">{p.capability.class}</span></span>
+            </>}
           </> : <>
             <span className={`r-type-pill ${p.type}`}>{p.type}</span>
             {p.type === "research" && <>
