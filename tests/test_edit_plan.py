@@ -646,7 +646,8 @@ def test_create_new_plan(setup):
     )
     assert r["ok"] is True
     assert r.get("created") is True
-    assert (docs_dir / "brand-new.html").exists()
+    assert (docs_dir / "plans" / "brand-new.html").exists()
+    assert r["path"] == str((docs_dir / "plans" / "brand-new.html").resolve())
     data, _ = _store_module.read_plan(project, "brand-new")
     assert data["title"] == "Brand New"
     assert data["status"] == "active"
@@ -761,7 +762,7 @@ def test_create_missing_required_rejected_and_no_orphan(setup):
     assert r["error"] == "schema_validation"
     assert any("slug" in d for d in r["details"])
     # No orphan stub: the failed create wrote nothing durable.
-    assert not (docs_dir / "new-plan.html").exists()
+    assert not (docs_dir / "plans" / "new-plan.html").exists()
     data, ver = _store_module.read_plan(project, "new-plan")
     assert data == {}
     assert ver == 0
@@ -774,7 +775,7 @@ def test_create_missing_required_rejected_and_no_orphan(setup):
         create=True,
     )
     assert r2["ok"] is True
-    assert (docs_dir / "new-plan.html").exists()
+    assert (docs_dir / "plans" / "new-plan.html").exists()
 
 
 def test_create_op_error_no_orphan(setup):
@@ -789,7 +790,7 @@ def test_create_op_error_no_orphan(setup):
     )
     assert r["ok"] is False
     assert r["error"] == "op_error"
-    assert not (docs_dir / "new-plan.html").exists()
+    assert not (docs_dir / "plans" / "new-plan.html").exists()
 
 
 # ── version conflict ──────────────────────────────────────────────────────
@@ -1085,7 +1086,7 @@ def test_edit_plan_checkout_path_writes_index_to_worktree(setup, worktree):
     assert r["ok"] is True
     assert r["path"] == str((wt_state / "index.json").resolve())
 
-    # Sprint S6 is in the WORKTREE index.
+    # The appended sprint is isolated to the worktree index.
     wt_data, _ = _store_module.read_plan(project, "index", str(worktree))
     assert any(s["id"] == "S6" for s in wt_data["sprints"])
 
@@ -1133,12 +1134,24 @@ def test_read_plan_discovery_checkout_path_reads_worktree_inventory(setup, workt
     _make_plan_html(
         docs_dir,
         "plan-a",
-        {"slug": "plan-a", "title": "Plan A", "status": "draft", "impl": 0.1, "version": 0},
+        {
+            "slug": "plan-a",
+            "title": "Plan A",
+            "status": "draft",
+            "impl": 0.1,
+            "version": 0,
+        },
     )
     _make_plan_html(
         worktree / "docs",
         "plan-a",
-        {"slug": "plan-a", "title": "Plan A", "status": "active", "impl": 0.9, "version": 3},
+        {
+            "slug": "plan-a",
+            "title": "Plan A",
+            "status": "active",
+            "impl": 0.9,
+            "version": 3,
+        },
     )
 
     r_main = mcp_module._read_plan(project)
@@ -1170,7 +1183,7 @@ def test_edit_plan_create_in_worktree(setup, worktree):
     assert r["ok"] is True
     assert r.get("created") is True
     # Created in the WORKTREE, not the main docs dir.
-    assert (worktree / "docs" / "brand-new.html").exists()
+    assert (worktree / "docs" / "plans" / "brand-new.html").exists()
     assert not (docs_dir / "brand-new.html").exists()
 
 

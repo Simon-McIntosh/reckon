@@ -107,18 +107,12 @@ def _load_mounts() -> dict[str, Path]:
     return mounts
 
 
-def _iter_doc_files(docs_dir: Path):
-    from reckon.serve import _ARCHIVE_DIR, _NON_PLAN_DIRS, _NON_PLAN_FILES
+def _iter_doc_files(docs_dir: Path, project: str):
+    from reckon.resources import resource_map
 
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        rel = html_file.relative_to(docs_dir)
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
-            continue
-        if _ARCHIVE_DIR in rel.parts[:-1]:
-            continue
-        if html_file.name in _NON_PLAN_FILES:
-            continue
-        yield html_file
+    for resource in resource_map(docs_dir, project, include_archived=False).values():
+        if resource.type != "sprint":
+            yield resource.path
 
 
 def _read_lifecycle_state(path: Path) -> dict[str, Any]:
@@ -160,7 +154,7 @@ def audit_lifecycle(
     for project_name, docs_dir in mounts.items():
         if not docs_dir.is_dir():
             continue
-        for html_file in _iter_doc_files(docs_dir):
+        for html_file in _iter_doc_files(docs_dir, project_name):
             state = _read_lifecycle_state(html_file)
             modified_ts = os.path.getmtime(html_file)
             age_days = max(0, int((current_ts - modified_ts) // 86400))
@@ -389,7 +383,15 @@ def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
 # Skipped: http(s):// · // · mailto: · data: · /_shared/ · /_ui/ · bare
 # non-slug hrefs (like index.html which is the SPA shell).
 
-_SKIP_HREF_PREFIXES = ("http:", "https:", "//", "mailto:", "data:", "/_shared/", "/_ui/")
+_SKIP_HREF_PREFIXES = (
+    "http:",
+    "https:",
+    "//",
+    "mailto:",
+    "data:",
+    "/_shared/",
+    "/_ui/",
+)
 # Infrastructure filenames the SPA generates (not real plan slugs).
 _INFRA_FILENAMES = frozenset(
     [
@@ -507,7 +509,7 @@ def _resolve_href(
     if file_part.startswith("/") and project:
         prefix = f"/{project}/"
         if file_part.startswith(prefix):
-            file_part = file_part[len(prefix):]
+            file_part = file_part[len(prefix) :]
         elif file_part.startswith("/"):
             # /<other-project>/... — can't validate cross-project from here.
             return None, None
@@ -619,7 +621,9 @@ def audit_links(
     return results
 
 
-def run(paths: list[str], *, project: str | None = None, check_links: bool = False) -> int:
+def run(
+    paths: list[str], *, project: str | None = None, check_links: bool = False
+) -> int:
     """Audit each path; print findings; return process exit code (0 = no errors)."""
     path_objs = [Path(raw).expanduser() for raw in paths]
 

@@ -149,9 +149,7 @@ def agent_context_doctor(
         click.echo(f"  target:    {manifest['target']}")
         click.echo(f"  canonical: {manifest['canonical_policy']['path']}")
         entrypoint = manifest["entrypoint"]
-        click.echo(
-            f"  entrypoint: {entrypoint['path']} [{entrypoint['relationship']}]"
-        )
+        click.echo(f"  entrypoint: {entrypoint['path']} [{entrypoint['relationship']}]")
         chain = manifest["instructions"]["project_chain"]
         click.echo(f"  project instructions: {len(chain)}")
         for item in chain:
@@ -565,6 +563,48 @@ def build(docs_path, project):
     click.echo(
         f"\nBuild complete. Deploy the {docs_dir.name}/ directory as a static site."
     )
+
+
+@main.command(name="migrate-layout")
+@click.argument("docs_path", type=click.Path(path_type=Path))
+@click.option(
+    "--project", default=None, help="Project key (defaults to docs parent dir name)."
+)
+@click.option(
+    "--check",
+    is_flag=True,
+    default=False,
+    help="Preflight and print the deterministic move set without changing files.",
+)
+def migrate_layout(docs_path, project, check):
+    """Explicitly migrate flat HTML resources into canonical typed roots."""
+    from reckon.resources import (
+        ResourceCollision,
+        build_migration_manifest,
+        migrate_typed_layout,
+        migration_paths,
+    )
+
+    docs_dir = docs_path.expanduser().resolve()
+    if not docs_dir.is_dir():
+        raise click.ClickException(f"docs path not found: {docs_dir}")
+    proj_name = project or docs_dir.parent.name
+    try:
+        manifest = (
+            build_migration_manifest(docs_dir, proj_name)
+            if check
+            else migrate_typed_layout(docs_dir, proj_name)
+        )
+    except ResourceCollision as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    moves = list(migration_paths(manifest))
+    for source, destination in moves:
+        click.echo(f"  {source} -> {destination}")
+    verb = "would move" if check else "moved"
+    click.echo(f"{verb} {len(moves)} resource(s)")
+    if not check:
+        click.echo(f"manifest: {docs_dir / '.reckon/typed-resource-manifest.json'}")
 
 
 @main.command()

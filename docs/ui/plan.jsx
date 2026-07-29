@@ -166,7 +166,9 @@ function Plan({ slug, onNav }) {
     setDecs([]);
     const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
     if (!project) return;
-    fetch(`/plan/${project}/${encodeURIComponent(slug)}`, { cache: "no-store" })
+    const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[PG.type || "plan"];
+    const statePath = `${stateRoot}/${PG.slug}`;
+    fetch(`/plan/${project}/${statePath}`, { cache: "no-store" })
       .then(r => r.ok ? r.json() : null)
       .then(rec => {
         if (!rec) return;
@@ -497,8 +499,7 @@ function Plan({ slug, onNav }) {
 }
 
 // ─── Locked decisions display (object-map format, no def array) ──────────
-// Used for plans like reckon-mcp-gaps where decisions are recorded as a locked
-// map keyed by decision ID but there is no decisions_def[] to drive a form.
+// Renders locked decision maps even when no form definition array is present.
 
 function LockedDecisionsBlock({ lockedMap }) {
   const entries = Object.entries(lockedMap);

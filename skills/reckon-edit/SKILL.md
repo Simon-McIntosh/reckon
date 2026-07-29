@@ -16,7 +16,7 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 ## Fast path
 - Lock a decision → `read_plan(project, slug)` then `edit_plan` `lock` op.
 - Add / resolve a followup → `edit_plan` `append` / `resolve` op (prompt mandatory).
-- Fix prose / add a section → edit `docs/<slug>.html` directly + announce the bypass.
+- Fix prose / add a section → edit the resolved typed resource directly + announce the bypass.
 - Sprints / milestones / roadmap → use `reckon-sprint` (the index, not a plan).
 
 Full detail below.
@@ -47,7 +47,8 @@ separate state file; edit the HTML and the plan's state changes.
 **Two write paths:**
 
 1. **Direct HTML edit** (primary for prose, evergreen additions, new sections):
-   Use the Write/Edit tool on `docs/<slug>.html`. Announce "editing HTML directly"
+   Resolve the inventory row's `href`, then use Write/Edit on that typed path.
+   Announce "editing HTML directly"
    in your reply. This is fine when you are the sole writer.
 
 2. **`edit_plan` MCP call** (preferred for structured state: decisions, followups,
@@ -61,7 +62,7 @@ Silent bypasses hide drift.
 
 ## Hard rules
 
-1. **HTML is the source of truth.** Never edit `docs/archive/` files — they are frozen.
+1. **HTML is the source of truth.** Never edit a type-local `archive/` file — it is frozen.
 2. **Decide evergreen-edit vs phase-transition before touching the page.**
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
@@ -116,8 +117,8 @@ body/outcome, author **HTML, never markdown**:
   blocks, or is informed by another live doc, update `plan-depends-on`,
   `plan-blocks`, and/or `plan-informs` in the same edit. Use slug lists, not
   file paths.
-- **Run `reckon audit-doc docs/<slug>.html` before ending your turn** (or
-  `python -m reckon.doccheck docs/<slug>.html`). It flags relative image `src`
+- **Run `reckon audit-doc docs/plans/<slug>.html` before ending your turn** (or
+  `python -m reckon.doccheck docs/plans/<slug>.html`). It flags relative image `src`
   and literal `**markdown**` in a rendered body as **ERRORs** (non-zero exit),
   plus wrong-project image `src`, `<head><style>` reliance, and markdown
   list/heading markers as WARNs. **Clear all ERRORs before relying on the
@@ -203,22 +204,22 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 
 | Edit intent | Action | Output |
 |---|---|---|
-| Typo, clarification, new subsection | **Evergreen** (direct HTML edit) | Edit `docs/<slug>.html` in place |
+| Typo, clarification, new subsection | **Evergreen** (direct HTML edit) | Edit `docs/plans/<slug>.html` in place |
 | Followup, note, question | **`edit_plan` append op** | Structured write via ops |
 | Decision with rationale | **`edit_plan` lock op** | Lock the `.r-dec` element |
-| Section fully landed | **Phase transition** | Write `docs/archive/<slug>-<n>-landed.html`; collapse section in evergreen |
-| Decision locked irreversibly | **Phase transition** | Write `docs/archive/<slug>-<key>-locked.html` |
+| Section fully landed | **Phase transition** | Write `docs/plans/archive/<slug>-<n>-landed.html`; collapse section in evergreen |
+| Decision locked irreversibly | **Phase transition** | Write `docs/plans/archive/<slug>-<key>-locked.html` |
 | Plan fully implemented | **Phase transition + archive** | See §archive below |
 
 **Evergreen steps:**
-1. Read `docs/<slug>.html`.
+1. Read `docs/plans/<slug>.html` (or the mixed-layout path returned by discovery).
 2. Make the smallest edit; add new `<h3>` blocks rather than modifying existing paragraphs.
 3. The server stamps `modified` automatically on every successful `edit_plan` write — do not set it manually.
 4. Suggest commit: `docs(<slug>): <short summary>`. Do not commit unless asked.
 
 **Phase transition steps:**
 1. Determine suffix: `landed`, `locked`, `final`, or section-specific (`02-landed`).
-2. Create `docs/archive/<slug>-<suffix>.html` — frozen snapshot with link back to evergreen.
+2. Create `docs/plans/archive/<slug>-<suffix>.html` — frozen snapshot with link back to evergreen.
 3. Append a short `<h3>` block in the evergreen pointing at the archive file.
 4. Update status via `edit_plan` set op.
 
@@ -233,7 +234,7 @@ Free-form decision: no `<button>` elements; `data-choice` holds the typed answer
 **Lock a decision:**
 1. `read_plan(project, slug)` → get `version`.
 2. `edit_plan(…, ops=[{"op":"lock","key":"…","choice":"…","rationale":"…","by":"…"}], expected_version=…)`.
-3. If irreversible, write archival `docs/archive/<slug>-<key>-locked.html`.
+3. If irreversible, write archival `docs/plans/archive/<slug>-<key>-locked.html`.
 
 **Interactive walkthrough:**
 1. Collect open decisions (where `choice == ""`); present each `r-dec-q` + options.
@@ -244,7 +245,7 @@ Free-form decision: no `<button>` elements; `data-choice` holds the typed answer
 1. Write a followup with `recommends_skill: "/reckon-edit <slug> --reopen <key>"`.
 2. Body: locked choice, what evidence changed, what you propose.
 3. Never silently re-lock. The locked decision is a contract.
-4. On `--reopen`: snapshot into `docs/archive/<slug>-<key>-locked.html`; send an
+4. On `--reopen`: snapshot into `docs/plans/archive/<slug>-<key>-locked.html`; send an
    `edit_plan` `lock` op clearing `decisions.<key>.choice` to re-open it.
 
 ## Intent: followups / notes / research / comments
@@ -354,13 +355,13 @@ not a plan, and never dispatches workers. Use `reckon-sprint` for all of it.
 
 ## Intent: archive
 
-1. Write `docs/archive/<slug>-final.html` — frozen snapshot.
-2. Edit `docs/<slug>.html` — add landed-summary card, update prose to past-tense.
+1. Write `docs/plans/archive/<slug>-final.html` — frozen snapshot.
+2. Edit `docs/plans/<slug>.html` — add landed-summary card, update prose to past-tense.
 3. `edit_plan(project, slug, ops=[{"op":"set","path":"status","value":"archived"}], expected_version=…)`.
 
 **Migration routing rule:** if you are converting old markdown, move active or
-pending work into live `docs/`, but route completed/historical material into
-`docs/archive/`. Keep research inputs live only while they still inform current
+pending work into its live typed root, but route completed/historical material into
+`docs/research/archive/`. Keep research inputs live only while they still inform current
 plans; otherwise archive them too.
 
 ## Cross-references

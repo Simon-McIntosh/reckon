@@ -44,7 +44,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
   const goPlans = () => {
     const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
-    if (target) onNav({ view: "plan", slug: target.slug });
+    if (target) onNav({ view: "plan", slug: target.nav_key || target.slug });
   };
   const goSprints = () => {
     const id = M?.active_sprint_id || M?.sprint?.id || M?.sprints?.[0]?.id;
@@ -430,15 +430,16 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
           )}
         </div>
       ) : sorted.map(p => {
-        const active = route.view === "plan" && route.slug === p.slug;
+        const navKey = p.nav_key || p.slug;
+        const active = route.view === "plan" && route.slug === navKey;
         const artifactType = p.type || "plan";
         const isArchived = p.archived === "1" || p.archived === true || p.archived === "true";
         const isRead = p.read === "1" || p.read === true || p.read === "true";
         return (
           <div
-            key={p.slug}
+            key={navKey}
             className={`r-row ${active ? "active" : ""} ${isArchived ? "archived" : ""} ${isRead ? "read" : ""}`}
-            onClick={() => onSelectPlan(p.slug)}
+            onClick={() => onSelectPlan(navKey)}
           >
             <span className={`dot ${artifactType === "plan" ? p.status : artifactType}`}></span>
             <div>
@@ -654,7 +655,7 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
     return null;
   }
   if (route.view === "plan") {
-    const p = M.inventory.find(x => x.slug === route.slug);
+    const p = M.inventory.find(x => (x.nav_key || x.slug) === route.slug);
     if (!p) return null;
     const isPlan = (p.type || "plan") === "plan";
     const openDecs = p.dec_open || 0;
@@ -1064,7 +1065,7 @@ function CmdKPalette({ items, onClose, onPick }) {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(filtered.length - 1, i + 1)); }
       if (e.key === "ArrowUp")   { e.preventDefault(); setIdx(i => Math.max(0, i - 1)); }
-      if (e.key === "Enter" && filtered[idx]) onPick(filtered[idx].slug);
+      if (e.key === "Enter" && filtered[idx]) onPick(filtered[idx].nav_key || filtered[idx].slug);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -1075,7 +1076,7 @@ function CmdKPalette({ items, onClose, onPick }) {
         <input ref={inputRef} placeholder="Search plans by title, slug, milestone…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="list">
           {filtered.map((p, i) => (
-            <button key={p.slug} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p.slug)}>
+            <button key={p.nav_key || p.slug} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p.nav_key || p.slug)}>
               <span className={`dot ${p.status}`}></span>
               <span><strong>{p.title}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.slug}</span></span>
               <span className="meta">{p.ms || "—"} · {Math.round((p.impl || 0) * 100)}%</span>

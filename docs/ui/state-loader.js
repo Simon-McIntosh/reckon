@@ -131,8 +131,11 @@ window.STATE_READY = (async function () {
   const mergedInventory = inventory.map(inv => ({
     ...mapLegacyCapability(inv),
     type: canonicalType(inv.type),
+    nav_key: canonicalType(inv.type) === "plan"
+      ? inv.slug
+      : `${canonicalType(inv.type)}:${inv.slug}`,
   }));
-  const plans = Object.fromEntries(mergedInventory.map(inv => [inv.slug, inv]));
+  const plans = Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]));
 
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
   // Plans with sprint:"X" in their inventory entry appear in that sprint

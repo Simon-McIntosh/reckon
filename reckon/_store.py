@@ -182,7 +182,10 @@ def _docs_dir_for_project(project: str, root: str | Path | None = None) -> Path 
 
 
 def _resolve_html_file(
-    project: str, slug: str, root: str | Path | None = None
+    project: str,
+    slug: str,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
 ) -> Path | None:
     """Locate the HTML file for a plan slug, using mounts.json + _resolve_plan_file.
 
@@ -194,9 +197,10 @@ def _resolve_html_file(
         return None
     # Import lazily to avoid circular issues at module load time; serve.py has
     # no import side-effects and this call is cheap.
-    from reckon.serve import _resolve_plan_file
+    from reckon.resources import resolve_resource
 
-    return _resolve_plan_file(docs_dir, slug)
+    resource = resolve_resource(docs_dir, project, slug, artifact_type)
+    return resource.path if resource else None
 
 
 # ── JSON-backed helpers (index / project slugs) ────────────────────────────
@@ -262,7 +266,10 @@ def _write_json_envelope(
 
 
 def _read_state(
-    project: str, slug: str, root: str | Path | None = None
+    project: str,
+    slug: str,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
 ) -> tuple[dict, int]:
     """Read the semantic HTML state for a plan slug.
 
@@ -275,7 +282,7 @@ def _read_state(
     """
     from reckon import _plan_html
 
-    html_file = _resolve_html_file(project, slug, root)
+    html_file = _resolve_html_file(project, slug, root, artifact_type)
     if html_file is None or not html_file.is_file():
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
@@ -313,7 +320,8 @@ def _write_state(
                 f"No docs dir found for project {project!r} — "
                 "check mounts.json or RECKON_MOUNTS_PATH"
             )
-        html_file = docs_dir / f"{slug}.html"
+        html_file = docs_dir / "plans" / f"{slug}.html"
+        html_file.parent.mkdir(parents=True, exist_ok=True)
         if not html_file.exists():
             # Stub HTML with minimal structure for the state to be injected.
             html_file.write_text(
@@ -372,7 +380,10 @@ def _write_state(
 
 
 def read_plan(
-    project: str, slug: str, root: str | Path | None = None
+    project: str,
+    slug: str,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
 ) -> tuple[dict, int]:
     """Read the data blob and version for a plan (or JSON config doc).
 
@@ -388,7 +399,7 @@ def read_plan(
     """
     if _is_json_slug(slug):
         return _load_json_envelope(state_path(project, slug, root))
-    return _read_state(project, slug, root)
+    return _read_state(project, slug, root, artifact_type)
 
 
 def write_plan(
@@ -539,19 +550,17 @@ def list_followups_across(
     files/dirs per PLAN-FORMAT.md.
     """
     from reckon import _plan_html
-    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
+    from reckon.resources import resource_map
 
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return []
 
     results: list[dict] = []
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        rel = html_file.relative_to(docs_dir)
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+    for resource in resource_map(docs_dir, project, include_archived=False).values():
+        if resource.type != "plan":
             continue
-        if html_file.name in _NON_PLAN_FILES:
-            continue
+        html_file = resource.path
         try:
             rec = _plan_html.parse_plan(html_file)
         except Exception:
@@ -576,19 +585,17 @@ def list_questions_across(
     Adds plan_slug and plan_title to each entry.
     """
     from reckon import _plan_html
-    from reckon.serve import _NON_PLAN_DIRS, _NON_PLAN_FILES
+    from reckon.resources import resource_map
 
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return []
 
     results: list[dict] = []
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        rel = html_file.relative_to(docs_dir)
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+    for resource in resource_map(docs_dir, project, include_archived=False).values():
+        if resource.type != "plan":
             continue
-        if html_file.name in _NON_PLAN_FILES:
-            continue
+        html_file = resource.path
         try:
             rec = _plan_html.parse_plan(html_file)
         except Exception:

@@ -30,22 +30,27 @@ for discovery and rewrites them in place on a live edit.
 A project keeps one `docs/state/<project>/index.json` for project-level config
 only — sprints, milestones, `active_sprint_id`, timeline, blockers.
 
-## Any HTML file is a doc
+## Typed resource layout and identity
 
-Existence is sufficient: any `*.html` under a project's docs dir — except the
-infrastructure files/dirs below — is surfaced. Markup only enriches it; a bare
-page surfaces with `status=draft` and its `<title>` as the title.
+Canonical resources live under declared roots:
 
-- Excluded dirs: `_shared`, `ui`, `state`, `assets`, `images`, `archive`.
-- Excluded files: `index.html`, `sprints.html`, `milestones.html`,
-  `decisions.html`, `inventory.html`, `blockers.html`, `questions.html`,
-  `home.html`, `project.html`.
-- Per-stage history (`<plan>-shipped.html`, `*-locked.html`, …) lives under
-  `archive/`.
+| Type | Live root | Completed records |
+|---|---|---|
+| plan | `docs/plans/` | `docs/plans/archive/` |
+| research | `docs/research/` | `docs/research/archive/` |
+| evidence | `docs/evidence/` | `docs/evidence/archive/` |
+| sprint definition | `docs/sprints/` | `docs/sprints/archive/` |
 
-## Two document types
+Stable identity is `(project, type, slug)`, rendered as
+`project:type:slug`; it never depends on a relative path. Infrastructure stays
+under `_shared`, `_ui`/`ui`, `state`, `assets`, `images`, and `figures`.
+The resolver also reads bounded flat and shared-archive paths so mixed
+repositories remain usable. `reckon migrate-layout docs` performs the explicit,
+idempotent migration; reads never move files.
 
-`<meta name="reckon-type" content="plan|research">` (default `plan`).
+## Artifact types
+
+`<meta name="reckon-type" content="plan|research|evidence">` (default `plan`).
 
 - **plan** — an actionable unit with decisions, followups, status, impl.
 - **research** — a non-actionable *input*: a reference/finding/analysis that
@@ -54,6 +59,10 @@ page surfaces with `status=draft` and its `<title>` as the title.
   followup workflow. Plans reference research via `plan-depends-on`, so the
   link is traversable both ways (a plan shows its research inputs; a research
   doc shows the plans it informs).
+- **evidence** — a non-actionable verification record linked through
+  `plan-evidence-for` and optional `plan-verifies` section anchors.
+- **sprint** — an HTML sprint definition identified by `sprint-id`; actionable
+  item state remains in the project index.
 
 **Normalisation note:** authoring `reckon-type=doc` is accepted for RCAs,
 explainers, and other non-plan docs. The schema normalises `doc`→`research` on
@@ -66,7 +75,7 @@ may write `doc` for clarity; the parser handles it.
 | Meta name | Author or server | Values | Notes |
 |---|---|---|---|
 | `docs-project` | author | basename of repo root | required-on-write |
-| `reckon-type` | author | `plan` / `research` (author may write `doc` → normalised to `research`) | |
+| `reckon-type` | author | `plan` / `research` / `evidence` (author may write `doc` → normalised to `research`) | |
 | `plan-slug` | author | kebab-case | optional; default = filename stem |
 | `plan-title` | author | Title Case | required-on-write |
 | `plan-summary` | author | one-line synopsis | |
@@ -391,10 +400,12 @@ first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 | Method · path | Purpose |
 |---|---|
 | `GET /<project>` and `/<project>/` | the SPA shell |
-| `GET /<project>/<slug>.html` | the doc page (SPA fetches this for prose) |
+| `GET /<project>/<type-root>/<slug>` | canonical typed doc route |
+| `GET /<project>/<slug>.html` | bounded flat compatibility redirect |
 | `GET /_discover/<project>` | inventory (each entry carries `type` + parsed state) + sprints + milestones |
 | `GET /state/<project>/index.json` | project config + live-merged inventory |
-| `GET /plan/<project>/<slug>` | the parsed doc state (incl. `version`) — use as offline read |
+| `GET /plan/<project>/<type-root>/<slug>` | typed parsed state (incl. `version`) |
+| `GET /plan/<project>/<slug>` | compatibility read; an actionable plan wins an untyped collision |
 | `GET /_shared/plan.schema.json` | the published JSON Schema (derived from `_schema.py:PlanState`) |
 | `POST /plan/<project>/<slug>` | merge a flat dotted patch into the state and rewrite the HTML elements. `If-Match: <version>`; 412 returns `{current_version, current_data}` — prefer `edit_plan` MCP tool over raw POST |
 

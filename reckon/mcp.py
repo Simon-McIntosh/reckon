@@ -186,7 +186,10 @@ def _read_plan(
         }
 
     # ── single-plan mode (original shape) ──
-    data, version = read_plan(project, slug, checkout_path)
+    if doc_type is None:
+        data, version = read_plan(project, slug, checkout_path)
+    else:
+        data, version = read_plan(project, slug, checkout_path, artifact_type=doc_type)
     if slug in ("index", "project"):
         from reckon.capability import map_legacy_capabilities
 
@@ -330,11 +333,14 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
     artifact_type = item.get("type", "plan")
     row = {
         "slug": item.get("slug"),
+        "resource_id": item.get("resource_id"),
         "title": item.get("title"),
         "type": artifact_type,
         "owner": item.get("owner", ""),
         "summary": item.get("summary", ""),
         "href": item.get("href"),
+        "canonical_href": item.get("canonical_href"),
+        "legacy": bool(item.get("legacy", False)),
         "last": modified,
         "modified": modified,
         "version": int(item.get("version", 0) or 0),
@@ -1439,17 +1445,21 @@ def _edit_plan(
                 "ok": False,
                 "error": f"no docs dir for project {project!r} — {hint}",
             }
-        html_file = docs_dir / f"{slug}.html"
+        html_file = docs_dir / "plans" / f"{slug}.html"
         # Reject if a plan already exists at this slug (direct or via resolution).
         from reckon.serve import _resolve_plan_file
 
-        if html_file.exists() or _resolve_plan_file(docs_dir, slug) is not None:
+        if (
+            html_file.exists()
+            or _resolve_plan_file(docs_dir, slug, "plan", project=project) is not None
+        ):
             return {
                 "ok": False,
                 "error": f"plan {slug!r} already exists — drop create=True to edit it",
             }
         if expected_version != 0:
             return {"ok": False, "error": "create requires expected_version=0"}
+        html_file.parent.mkdir(parents=True, exist_ok=True)
         html_file.write_text(new_plan_html(project, slug), encoding="utf-8")
         created_file = html_file  # cleaned up below if the create then fails
     else:
@@ -1462,7 +1472,10 @@ def _edit_plan(
         from reckon.serve import _resolve_plan_file
 
         docs_dir = _docs_dir_for_project(project, root)
-        if docs_dir is None or _resolve_plan_file(docs_dir, slug) is None:
+        if (
+            docs_dir is None
+            or _resolve_plan_file(docs_dir, slug, "plan", project=project) is None
+        ):
             return {
                 "ok": False,
                 "error": f"plan {slug!r} not found — pass create=True to create it",
@@ -1553,7 +1566,7 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     """
     from reckon import _plan_html
     from reckon.doccheck import audit_lifecycle, audit_links
-    from reckon.serve import _ARCHIVE_DIR, _NON_PLAN_DIRS, _NON_PLAN_FILES
+    from reckon.resources import iter_resources
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
@@ -1570,15 +1583,25 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     checked = 0
     violations: list[dict[str, Any]] = []
     compatibility_records: list[tuple[str, str, str]] = []
+    resource_collisions: list[tuple[str, str, str]] = []
     html_files: list[Path] = []
-    for html_file in sorted(docs_dir.rglob("*.html")):
-        rel = html_file.relative_to(docs_dir)
-        if any(part in _NON_PLAN_DIRS for part in rel.parts[:-1]):
+    seen_resources: dict[tuple[str, str], Path] = {}
+    for resource in iter_resources(docs_dir, project, include_archived=False):
+        if resource.type == "sprint":
             continue
-        if _ARCHIVE_DIR in rel.parts[:-1]:
-            continue
-        if html_file.name in _NON_PLAN_FILES:
-            continue
+        html_file = resource.path
+        resource_key = (resource.type, resource.slug)
+        existing_path = seen_resources.get(resource_key)
+        if existing_path is not None:
+            resource_collisions.append(
+                (
+                    resource.identity.key,
+                    str(existing_path.relative_to(docs_dir)),
+                    str(html_file.relative_to(docs_dir)),
+                )
+            )
+        else:
+            seen_resources[resource_key] = html_file
         html_files.append(html_file)
         try:
             text = html_file.read_text(encoding="utf-8", errors="replace")
@@ -1613,6 +1636,16 @@ def _audit(project: str, checkout_path: str | None = None) -> dict[str, Any]:
     index_data, _ = read_plan(project, "index", checkout_path)
 
     findings: list[dict[str, Any]] = []
+    for resource_id, first_path, second_path in resource_collisions:
+        findings.append(
+            _finding(
+                "resources",
+                "duplicate-resource-identity",
+                "error",
+                f"{resource_id} resolves to both {first_path} and {second_path}",
+                path=second_path,
+            )
+        )
     for slug, path, warning in compatibility_records:
         findings.append(
             _finding(

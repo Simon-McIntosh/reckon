@@ -2,7 +2,7 @@
 name: reckon-create
 description: >-
   Scaffold a brand-new plan HTML page or non-plan doc in an already-synced repo.
-  Creates docs/<slug>.html as self-contained semantic HTML with plan-data in
+  Creates a typed HTML resource under docs/plans/ or docs/research/ with plan-data in
   meta tags and data-reckon sections. Requires reckon-sync to have been run first.
   Trigger verbs:
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
@@ -14,8 +14,8 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 # reckon-create — scaffold a new HTML plan or doc
 
 ## Fast path
-- New plan → write `docs/<slug>.html` from the skeleton below (author HTML directly).
-- New non-plan doc (RCA / explainer) → same skeleton with `reckon-type=doc`.
+- New plan → write `docs/plans/<slug>.html` from the skeleton below.
+- New non-plan doc (RCA / explainer) → write `docs/research/<slug>.html`.
 - Seed the first followup → `edit_plan` `append` op (or hand to reckon-edit).
 - Missing `docs/_shared/`? → run `/reckon-sync` first.
 
@@ -67,9 +67,9 @@ characterisations, and reference analyses that inform — but do not describe �
 
 ## Routing + relationship metadata
 
-- **Live actionable work** → `docs/<slug>.html` with `reckon-type=plan`.
-- **Live reference / analysis** that feeds work → `docs/<slug>.html` with `reckon-type=research` (or `doc`) plus `plan-informs`.
-- **Completed or historical material** → `docs/archive/`; do not crowd the live inventory with migrated history.
+- **Live actionable work** → `docs/plans/<slug>.html` with `reckon-type=plan`.
+- **Live reference / analysis** that feeds work → `docs/research/<slug>.html` with `reckon-type=research` (or `doc`) plus `plan-informs`.
+- **Completed or historical material** → the owning type's `archive/` directory.
 
 **Relationship fields use slugs only** — never file paths or `.html` / `.md` suffixes:
 
@@ -151,9 +151,9 @@ processor**. Author accordingly:
 **Run `reckon audit-doc` before you rely on the doc.** After authoring, validate:
 
 ```bash
-reckon audit-doc docs/<slug>.html              # uses <meta name=docs-project>
-reckon audit-doc docs/<slug>.html --project imas-ambix
-python -m reckon.doccheck docs/<slug>.html     # equivalent module form
+reckon audit-doc docs/plans/<slug>.html
+reckon audit-doc docs/research/<slug>.html --project imas-ambix
+python -m reckon.doccheck docs/plans/<slug>.html
 ```
 
 If the current repo environment cannot import `reckon`, run the module form
@@ -190,14 +190,14 @@ STATE_DIR="$DOCS_DIR/state/$PROJECT"
 
 Before writing the file:
 
-1. Decide whether it belongs in **live `docs/`** or **`docs/archive/`**.
+1. Decide its type and whether it belongs in that type's live or `archive/` directory.
 2. Decide whether it is a **plan** or **research/doc**.
 3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` with **slugs** for
    the relationships that are already explicit in the source material.
 
 ### Step 3 — Write the HTML
 
-Use the Write tool to create `docs/<slug>.html` from the template below.
+Use the Write tool to create the canonical typed path from the template below.
 Then, optionally, use `edit_plan(create=True)` to register initial state
 via the version-safe MCP path (required if other agents may be writing
 concurrently to the same project's index).
@@ -457,7 +457,7 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 ### Step 5 — Confirm
 
 Report:
-- Created file: `docs/<slug>.html`
+- Created file: `docs/plans/<slug>.html` or `docs/research/<slug>.html`
 - Live URL: `http://localhost:8765/<project>/<slug>.html`
 - Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
 

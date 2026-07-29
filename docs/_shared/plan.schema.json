@@ -429,6 +429,41 @@
       },
       "title": "ResearchItem",
       "type": "object"
+    },
+    "ResourceIdentity": {
+      "description": "Stable identity for one typed HTML resource.",
+      "properties": {
+        "project": {
+          "title": "Project",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "plan",
+            "research",
+            "evidence",
+            "sprint"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "slug": {
+          "title": "Slug",
+          "type": "string"
+        },
+        "archived": {
+          "default": false,
+          "title": "Archived",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project",
+        "type",
+        "slug"
+      ],
+      "title": "ResourceIdentity",
+      "type": "object"
     }
   },
   "description": "Typed contract for a single plan's state.\n\n``extra='ignore'`` on read so unknown attrs/metas drop cleanly. The\ncanonical dump (:meth:`canonical_dump`) reproduces the read_state dict\nshape byte-for-byte through write_state.",
