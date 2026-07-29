@@ -128,6 +128,197 @@ def test_typed_discovery_rejects_arbitrary_nested_paths(tmp_path):
     assert nested.is_file()
 
 
+def test_migration_flattens_nested_typed_resources_and_rewrites_links(tmp_path):
+    docs = tmp_path / "docs"
+    first = _artifact(
+        docs / "research" / "topic" / "first.html",
+        "sample",
+        "research",
+        "first",
+        body='<a href="second.html#result">second</a>',
+    )
+    second = _artifact(
+        docs / "research" / "topic" / "second.html",
+        "sample",
+        "research",
+        "second",
+        body='<a href="first.html">first</a>',
+    )
+
+    with pytest.raises(ResourceCollision, match="typed resource path"):
+        iter_resources(docs, "sample")
+
+    manifest = build_migration_manifest(docs, "sample")
+    assert [(item["from"], item["to"]) for item in manifest["moves"]] == [
+        ("research/topic/first.html", "research/first.html"),
+        ("research/topic/second.html", "research/second.html"),
+    ]
+
+    migrated = migrate_typed_layout(docs, "sample")
+
+    assert migrated["moves"] == manifest["moves"]
+    assert not first.exists()
+    assert not second.exists()
+    assert (docs / "research" / "first.html").read_text().count(
+        'href="second.html#result"'
+    ) == 1
+    assert (docs / "research" / "second.html").read_text().count(
+        'href="first.html"'
+    ) == 1
+    assert {resource.identity.key for resource in iter_resources(docs, "sample")} == {
+        "sample:research:first",
+        "sample:research:second",
+    }
+
+
+def test_migration_renames_nested_reserved_resource_identity(tmp_path):
+    docs = tmp_path / "docs"
+    nested = _artifact(
+        docs / "research" / "disagreements" / "index.html",
+        "sample",
+        "research",
+        "index",
+    )
+
+    manifest = build_migration_manifest(docs, "sample")
+    assert manifest["moves"] == [
+        {
+            "archived": False,
+            "from": "research/disagreements/index.html",
+            "resource": "sample:research:disagreements-index",
+            "sha256": manifest["moves"][0]["sha256"],
+            "slug": "disagreements-index",
+            "to": "research/disagreements-index.html",
+            "type": "research",
+        }
+    ]
+
+    migrate_typed_layout(docs, "sample")
+
+    destination = docs / "research" / "disagreements-index.html"
+    assert not nested.exists()
+    assert _plan_html.parse_meta(destination).get("slug") == "disagreements-index"
+    resource = resolve_resource(
+        docs,
+        "sample",
+        "disagreements-index",
+        "research",
+    )
+    assert resource.path == destination
+
+
+def test_nested_migration_rejects_destination_collision(tmp_path):
+    docs = tmp_path / "docs"
+    first = _artifact(
+        docs / "research" / "first" / "shared.html",
+        "sample",
+        "research",
+        "shared",
+    )
+    second = _artifact(
+        docs / "research" / "second" / "shared.html",
+        "sample",
+        "research",
+        "shared",
+    )
+
+    with pytest.raises(ResourceCollision, match="destination collision"):
+        build_migration_manifest(docs, "sample")
+
+    assert first.is_file()
+    assert second.is_file()
+    assert not (docs / ".reckon").exists()
+
+
+def test_migration_uses_unique_filenames_for_archived_slug_collisions(tmp_path):
+    docs = tmp_path / "docs"
+    first = _artifact(
+        docs / "archive" / "delivery-analysis-landed.html",
+        "sample",
+        "plan",
+        "delivery",
+    )
+    second = _artifact(
+        docs / "archive" / "delivery-verification-landed.html",
+        "sample",
+        "plan",
+        "delivery",
+    )
+
+    manifest = build_migration_manifest(docs, "sample")
+    assert [(item["slug"], item["to"]) for item in manifest["moves"]] == [
+        (
+            "delivery-analysis-landed",
+            "plans/archive/delivery-analysis-landed.html",
+        ),
+        (
+            "delivery-verification-landed",
+            "plans/archive/delivery-verification-landed.html",
+        ),
+    ]
+
+    migrate_typed_layout(docs, "sample")
+
+    assert not first.exists()
+    assert not second.exists()
+    migrated = iter_resources(docs, "sample")
+    assert {item.slug for item in migrated} == {
+        "delivery-analysis-landed",
+        "delivery-verification-landed",
+    }
+    assert all(item.archived for item in migrated)
+    assert {_plan_html.parse_meta(item.path).get("slug") for item in migrated} == {
+        "delivery-analysis-landed",
+        "delivery-verification-landed",
+    }
+
+
+def test_migration_infers_type_for_nested_untyped_document(tmp_path):
+    docs = tmp_path / "docs"
+    source = docs / "research" / "topic" / "study.html"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        "<!doctype html><html><head><title>Study</title></head>"
+        "<body><main><h1>Study</h1></main></body></html>"
+    )
+
+    manifest = build_migration_manifest(docs, "sample")
+    assert [(item["type"], item["to"]) for item in manifest["moves"]] == [
+        ("research", "research/study.html")
+    ]
+
+    migrate_typed_layout(docs, "sample")
+
+    assert not source.exists()
+    destination = docs / "research" / "study.html"
+    assert destination.is_file()
+    assert _plan_html.parse_meta(destination).get("type") == "research"
+
+
+def test_migration_repairs_canonical_typed_document_without_type_meta(tmp_path):
+    docs = tmp_path / "docs"
+    source = docs / "research" / "study.html"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        "<!doctype html><html><head><title>Study</title></head>"
+        "<body><main><h1>Study</h1></main></body></html>"
+    )
+
+    with pytest.raises(ResourceCollision, match="location type"):
+        iter_resources(docs, "sample")
+
+    manifest = build_migration_manifest(docs, "sample")
+    assert [(item["from"], item["to"]) for item in manifest["moves"]] == [
+        ("research/study.html", "research/study.html")
+    ]
+
+    migrate_typed_layout(docs, "sample")
+
+    assert source.is_file()
+    assert _plan_html.parse_meta(source).get("type") == "research"
+    assert iter_resources(docs, "sample")[0].identity.key == "sample:research:study"
+
+
 @pytest.mark.parametrize("route", ["plans/..", "plans/nested/work", "plans//work"])
 def test_typed_route_rejects_unsafe_or_nested_identity(tmp_path, route):
     docs = tmp_path / "docs"

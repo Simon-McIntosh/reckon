@@ -13,7 +13,7 @@ import os
 import re
 import shutil
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 from urllib.parse import urlsplit, urlunsplit
@@ -62,6 +62,18 @@ NON_RESOURCE_FILES = frozenset(
 MANIFEST_PATH = PurePosixPath(".reckon/typed-resource-manifest.json")
 _LINK_ATTR_RE = re.compile(
     r"""(?P<prefix>\b(?:href|src)\s*=\s*)(?P<quote>["'])(?P<url>.*?)(?P=quote)""",
+    re.IGNORECASE,
+)
+_PLAN_SLUG_META_RE = re.compile(
+    r"""<meta\b(?P<attrs>[^>]*\bname=["']plan-slug["'][^>]*)>""",
+    re.IGNORECASE,
+)
+_RECKON_TYPE_META_RE = re.compile(
+    r"""<meta\b(?P<attrs>[^>]*\bname=["']reckon-type["'][^>]*)>""",
+    re.IGNORECASE,
+)
+_CONTENT_ATTR_RE = re.compile(
+    r"""\bcontent=(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
     re.IGNORECASE,
 )
 
@@ -221,6 +233,114 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
         canonical_href=canonical_href(project, artifact_type, slug, archived=archived),
         legacy=legacy,
     )
+
+
+def _typed_migration_resource(
+    docs_dir: Path, path: Path, project: str
+) -> Resource | None:
+    """Classify a noncanonical or under-specified typed migration input."""
+    try:
+        relative = PurePosixPath(path.relative_to(docs_dir).as_posix())
+    except ValueError:
+        return None
+    parts = relative.parts
+    location_type = ROOT_TYPES.get(parts[0]) if parts else None
+    if location_type not in {"plan", "research", "evidence"}:
+        return None
+    archived = len(parts) > 2 and parts[1] == "archive"
+    meta = _plan_html.parse_meta(path)
+    _, head_meta = _read_head(path)
+    explicit_type = head_meta.get("reckon-type")
+    artifact_type = canonical_type(explicit_type) if explicit_type else location_type
+    canonical_shape = len(parts) == 2 or (len(parts) == 3 and parts[1] == "archive")
+    if (
+        canonical_shape
+        and path.name not in NON_RESOURCE_FILES
+        and explicit_type
+        and artifact_type == location_type
+    ):
+        return None
+    slug = meta.get("slug") or path.stem
+    if f"{slug}.html" in NON_RESOURCE_FILES:
+        directory_parts = parts[2:-1] if archived else parts[1:-1]
+        if not directory_parts:
+            directory_parts = (parts[0],)
+        slug = "-".join([*directory_parts, path.stem])
+    identity = ResourceIdentity(
+        project=project,
+        type=artifact_type,
+        slug=slug,
+        archived=archived,
+    ).validate_for_write()
+    canonical = canonical_relative_path(
+        artifact_type,
+        identity.slug,
+        archived=identity.archived,
+    )
+    return Resource(
+        identity=identity,
+        path=path,
+        relative_path=relative,
+        canonical_relative_path=canonical,
+        canonical_href=canonical_href(
+            project,
+            artifact_type,
+            identity.slug,
+            archived=identity.archived,
+        ),
+        legacy=True,
+    )
+
+
+def _with_migration_slug(resource: Resource, slug: str) -> Resource:
+    """Return a migration resource with a deterministic replacement identity."""
+    identity = ResourceIdentity(
+        project=resource.identity.project,
+        type=resource.identity.type,
+        slug=slug,
+        archived=resource.identity.archived,
+    ).validate_for_write()
+    canonical = canonical_relative_path(
+        identity.type,
+        identity.slug,
+        archived=identity.archived,
+    )
+    return replace(
+        resource,
+        identity=identity,
+        canonical_relative_path=canonical,
+        canonical_href=canonical_href(
+            identity.project,
+            identity.type,
+            identity.slug,
+            archived=identity.archived,
+        ),
+    )
+
+
+def _disambiguate_archived_candidates(resources: list[Resource]) -> list[Resource]:
+    """Use unique record filenames when archives share a live resource slug."""
+    by_destination: dict[PurePosixPath, list[Resource]] = {}
+    for resource in resources:
+        by_destination.setdefault(resource.canonical_relative_path, []).append(resource)
+
+    resolved: list[Resource] = []
+    for destination in sorted(by_destination, key=str):
+        candidates = by_destination[destination]
+        if len(candidates) == 1 or not all(item.archived for item in candidates):
+            resolved.extend(candidates)
+            continue
+        replacements = [
+            _with_migration_slug(item, item.path.stem) for item in candidates
+        ]
+        replacement_destinations = {
+            item.canonical_relative_path for item in replacements
+        }
+        if len(replacement_destinations) != len(replacements):
+            resolved.extend(candidates)
+            continue
+        resolved.extend(replacements)
+    return resolved
 
 
 def iter_resources(
@@ -483,11 +603,50 @@ def _load_prior_manifest(docs_dir: Path, project: str) -> dict:
 
 
 def _migration_candidates(docs_dir: Path, project: str) -> list[Resource]:
-    return [
-        resource
-        for resource in iter_resources(docs_dir, project, include_archived=True)
-        if resource.legacy
-    ]
+    resources: list[Resource] = []
+    for path in sorted(docs_dir.rglob("*.html")):
+        typed = _typed_migration_resource(docs_dir, path, project)
+        if typed is not None:
+            resources.append(typed)
+            continue
+        resource = identify_resource(docs_dir, path, project)
+        if resource is not None and resource.legacy:
+            resources.append(resource)
+    return _disambiguate_archived_candidates(resources)
+
+
+def _rewrite_meta(
+    content: str,
+    pattern: re.Pattern[str],
+    name: str,
+    value: str,
+) -> str:
+    """Rewrite or insert one semantic identity meta tag."""
+
+    def replace_tag(match: re.Match[str]) -> str:
+        attrs = match.group("attrs")
+        if _CONTENT_ATTR_RE.search(attrs):
+            attrs = _CONTENT_ATTR_RE.sub(
+                lambda item: (
+                    f"content={item.group('quote')}{value}{item.group('quote')}"
+                ),
+                attrs,
+                count=1,
+            )
+        else:
+            attrs = f'{attrs} content="{value}"'
+        return f"<meta{attrs}>"
+
+    if pattern.search(content):
+        return pattern.sub(replace_tag, content, count=1)
+    closing = re.search(r"</head\s*>", content, re.IGNORECASE)
+    if closing is None:
+        raise ResourceCollision(f"resource has no </head> for {name} migration")
+    return (
+        content[: closing.start()]
+        + f'<meta name="{name}" content="{value}">\n'
+        + content[closing.start() :]
+    )
 
 
 def _rewrite_url(
@@ -657,6 +816,7 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
     moves = {
         PurePosixPath(item["from"]): PurePosixPath(item["to"]) for item in active_items
     }
+    active_by_source = {PurePosixPath(item["from"]): item for item in active_items}
     rewrite_moves = {
         PurePosixPath(item["from"]): PurePosixPath(item["to"])
         for item in manifest["moves"]
@@ -675,14 +835,34 @@ def migrate_typed_layout(docs_dir: Path, project: str) -> dict:
         _contained_path(docs_dir, destination, label="migration document destination")
         content = path.read_bytes()
         originals[relative] = content
-        rewritten = _rewrite_links(
+        rewritten_text = _rewrite_links(
             content.decode("utf-8"),
             project=project,
             original_document=relative,
             migrated_document=destination,
             moves=rewrite_moves,
             known_paths=known_paths,
-        ).encode("utf-8")
+        )
+        active = active_by_source.get(relative)
+        if active is not None:
+            current_slug = _plan_html.parse_meta(path).get("slug") or path.stem
+            if current_slug != active["slug"]:
+                rewritten_text = _rewrite_meta(
+                    rewritten_text,
+                    _PLAN_SLUG_META_RE,
+                    "plan-slug",
+                    str(active["slug"]),
+                )
+            _, head_meta = _read_head(path)
+            explicit_type = head_meta.get("reckon-type")
+            if not explicit_type or canonical_type(explicit_type) != active["type"]:
+                rewritten_text = _rewrite_meta(
+                    rewritten_text,
+                    _RECKON_TYPE_META_RE,
+                    "reckon-type",
+                    str(active["type"]),
+                )
+        rewritten = rewritten_text.encode("utf-8")
         if relative in moves or rewritten != content:
             transformed[destination] = rewritten
 
