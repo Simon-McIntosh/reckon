@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="reckon-ci-build-closure">
+  <meta name="plan-title" content="Portable static delivery — closure evidence">
+  <meta name="plan-summary" content="Package identity, validation-only CI, distributed state, and decision audit chains are consistent and shipped.">
+  <meta name="plan-evidence-for" content="reckon-ci-build">
+  <meta name="plan-verifies" content="reckon-ci-build#s2,reckon-ci-build#s3,reckon-ci-build#s4,reckon-ci-build#s5,reckon-ci-build#s6">
+  <meta name="plan-commits" content="e827e56,948b2c5,44c39cc,40e6cd6,a837fc7,d4a8ef1">
+  <meta name="plan-artifacts" content="pyproject.toml,.github/workflows/reckon-pages.yml,tests/test_build.py,docs/sprints/S5.html,docs/state/reckon/timeline.html">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Portable static delivery — closure evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Portable static delivery — closure evidence</h1>
+    <p class="plan-summary">The installed distribution, static-build assets,
+      validation-only repository workflow, and distributed project-state contract
+      now agree. Both disputed decisions retain their full audit chain.</p>
+  </header>
+
+  <section id="delivery">
+    <h2>Delivery contract</h2>
+    <table>
+      <thead>
+        <tr><th>Surface</th><th>Verified result</th><th>Authority</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Distribution</td>
+          <td><span class="badge badge-shipped">pass</span>
+            <code>reckon-plans</code>; import and console command remain
+            <code>reckon</code></td>
+          <td><code>pyproject.toml</code>, README, wheel metadata</td>
+        </tr>
+        <tr>
+          <td>Installed assets</td>
+          <td><span class="badge badge-shipped">pass</span>
+            16 UI and 4 shared assets; relative static routes and
+            <code>.nojekyll</code></td>
+          <td><code>e827e56</code>, <code>tests/test_build.py</code></td>
+        </tr>
+        <tr>
+          <td>Repository CI</td>
+          <td><span class="badge badge-shipped">pass</span>
+            validation-only uv workflow; no upload, deployment, or publication
+            permission</td>
+          <td><code>.github/workflows/reckon-pages.yml</code></td>
+        </tr>
+        <tr>
+          <td>Project state</td>
+          <td><span class="badge badge-shipped">pass</span>
+            independently versioned resources are canonical; aggregate writes
+            fail closed</td>
+          <td><code>44c39cc</code>, <code>40e6cd6</code>,
+            <code>a837fc7</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="decisions">
+    <h2>Decision reconciliation</h2>
+    <p>The <code>distribution-name</code> lock was archived before reopening.
+      Changed artifact evidence selected <code>reckon-plans</code>; the dissent
+      followup records the proposal, acceptance, and final rationale.</p>
+    <p>The request to reopen <code>index-json-fate</code> was rejected after
+      distributed state shipped. The original <code>deprecate entirely</code>
+      choice is now implemented for the canonical write store. The byte-identical
+      legacy index remains frozen only for compatibility and rollback until the
+      registered-repository migration completes.</p>
+  </section>
+
+  <section id="verification">
+    <h2>Verification record</h2>
+    <table>
+      <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Portable-build focused tests</td><td><strong>11 passed</strong></td></tr>
+        <tr><td>Portable-build integration suite</td><td><strong>1,222 passed</strong> in 22.98 s</td></tr>
+        <tr><td>Distributed storage integration</td><td><strong>146 passed</strong></td></tr>
+        <tr><td>Complete distributed-state suite</td><td><strong>1,349 passed</strong> in 29.86 s</td></tr>
+        <tr><td>Changed plan and archive document checks</td><td><strong>0 errors</strong></td></tr>
+        <tr><td>Current checkout schema audit</td><td><strong>17 of 17 plans conformant</strong></td></tr>
+        <tr><td>Lifecycle audit</td><td><strong>no findings</strong></td></tr>
+        <tr><td>Distributed resource validation</td><td><strong>pass</strong>;
+          sprint, blocker, and timeline writes advanced their independent versions</td></tr>
+      </tbody>
+    </table>
+    <p>The generic <code>audit-doc</code> command is a plan/document authoring
+      check and therefore reports missing plan metadata when pointed at sprint,
+      blocker, or timeline resource HTML. Those files were instead validated by
+      their typed write boundary and the project-state audit; no resource
+      invariant violation remains.</p>
+  </section>
+
+  <section id="provenance">
+    <h2>Preserved records</h2>
+    <ul>
+      <li><a href="/reckon/archive/reckon-ci-build-s2-s6-landed.html">Portable build landing record</a></li>
+      <li><a href="/reckon/archive/reckon-ci-build-distribution-name-locked.html">Superseded distribution-name lock</a></li>
+      <li><a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Distributed-state verification</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
