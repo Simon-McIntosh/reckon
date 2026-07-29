@@ -7,12 +7,13 @@ delegates plan work.
 
 1. Target resolution
 2. Execution graph and knowledge inputs
-3. Worker capability and skill routing
-4. Worktree-first delegation
-5. Worker dispatch contract
-6. Orchestrator integration
-7. Plan, evidence, and sprint writeback
-8. Cleanup and recovery
+3. Coordinator-only contract and context budget
+4. Worker capability and skill routing
+5. Worktree-first delegation
+6. Worker dispatch contract
+7. Orchestrator integration
+8. Plan, evidence, and sprint writeback
+9. Cleanup and recovery
 
 ## 1. Target resolution
 
@@ -74,7 +75,69 @@ schedule a research-only node before implementation. After integration, author
 or update evidence that links to the source plan and records commits, tests,
 environment, artifacts, quantitative results, and negative findings.
 
-## 3. Worker capability and skill routing
+## 3. Coordinator-only contract and context budget
+
+Full sprint mode is strict coordination, not an implementation role.
+
+The coordinator may only:
+
+- resolve and read plan, sprint, research, evidence, repository, and worker
+  state needed to scope or review the work;
+- build, update, and checkpoint the execution DAG and exclusive file scopes;
+- create worktrees and dispatch, wait for, or message workers;
+- audit worker manifests, commits, scoped diffs, test evidence, and artifacts;
+- integrate or merge verified commits, push the primary branch, and resolve
+  mechanical merge conflicts that require no product-code invention;
+- write Reckon plan, evidence, followup, and sprint state;
+- clean worktrees and report outcomes or blockers.
+
+The coordinator must not inspect implementation details beyond what scoping or
+review requires, edit product/source/test files, run tests, run paid domain
+pipelines, run any operational pipeline, or repair worker code. Represent
+every implementation, investigation, test execution, operational pipeline run,
+and corrective repair as a worker node. Delegate even one ready node whenever
+a worker slot is available. Cross-cutting work changes the worker capability
+and scope; it never makes the sprint coordinator the implementation owner.
+
+On worker failure, add and dispatch a corrective node with the failed
+manifest, scoped diff, and missing done-when evidence. Do not reconstruct the
+implementation in coordinator context. If no capable worker or slot exists,
+prefer pausing the node and continuing independent ready work. Inline fallback
+is allowed only after reporting all of the following before implementation:
+
+- why no worker capability or slot exists;
+- why pausing would prevent useful progress;
+- the exact node and write scope;
+- the estimated context cost and the coordinator context remaining after it;
+- the checkpoint from which a fresh coordinator can resume.
+
+Maintain a compact coordinator checkpoint after DAG creation and after every
+wave: node statuses and edges, scope ownership, worker/worktree ids, commit
+SHAs, integration state, plan versions, and next ready nodes. Reserve
+coordinator context for integration, state writeback, cleanup, and reporting;
+when that reserve is threatened, delegate missing analysis or pause instead of
+reading deeper implementation detail.
+
+Workers return a compact manifest:
+
+```text
+node: <stable node id>
+status: complete | blocked | failed
+commits: <sha list>
+changed_paths: <explicit list>
+tests: <concise command/result summary>
+test_logs: <paths on disk>
+artifacts: <paths/urls plus headline metrics>
+evidence_inputs: <facts needed for Reckon writeback>
+blockers: <none or exact unmet condition>
+```
+
+Keep large logs and artifacts on disk. Read manifests, `git show --stat`, and
+summary diffs first; request only missing evidence from the worker. Never pull
+a full log or artifact into coordinator context when a bounded excerpt or
+on-disk path is enough.
+
+## 4. Worker capability and skill routing
 
 Use the versioned capability request from plan/followup/sprint state and resolve
 it with `reckon.capability.match_worker`. The persisted object has a neutral
@@ -91,9 +154,10 @@ Use a model-family-neutral **one-below** policy:
    general-purpose model in the same family.
 4. If no lower model is available, inherit the orchestrator model and reduce
    reasoning effort by one supported level.
-5. Keep or escalate to orchestrator-level capability for high ambiguity,
-   solver/physics correctness, coupled multi-file refactors, security/safety,
-   irreversible migrations, conflict resolution, and synthesis across workers.
+5. Keep or escalate the worker to orchestrator-level capability for high
+   ambiguity, solver/physics correctness, coupled multi-file refactors,
+   security/safety, irreversible migrations, conflict resolution, and
+   synthesis across workers.
 6. Downshift further only for bounded mechanical edits, inventory reads, or
    research extraction with objective verification.
 7. Never cross model families unless the user requests it or the runtime offers
@@ -116,14 +180,16 @@ the worker to read the skill plus all applicable target-path instructions
 before editing. Include chosen capability rationale and selected skills in the
 execution manifest.
 
-If no worker is advertised, continue inline and record the
-`inline-no-advertised-worker` fallback. If none satisfies every hard floor,
-selecting the strongest advertised worker is only a diagnostic fallback:
-`escalation_required` remains true, so the dispatcher must not silently weaken
-the task contract. Elevated or critical risk raises the floor to orchestrator
-class with strict verification.
+If no worker is advertised, pause the node and record
+`no-advertised-worker`; use the coordinator inline exception only under the
+reported, pre-budgeted protocol in section 3. If none satisfies every hard
+floor, selecting the strongest advertised worker is only a diagnostic
+fallback: `escalation_required` remains true, so the dispatcher must not
+silently weaken the task contract. Elevated or critical risk raises the worker
+floor to orchestrator-class capability with strict verification; it does not
+turn the sprint coordinator into the implementation owner.
 
-## 4. Worktree-first delegation
+## 5. Worktree-first delegation
 
 Create one detached worktree per delegated node:
 
@@ -148,10 +214,11 @@ Workers:
 - return final commit SHA, `git show --stat`, tests, artifacts, and evidence
   inputs.
 
-The orchestrator may execute a node inline when delegation is unavailable or
-when the task is inherently cross-cutting. Record the reason.
+The sprint coordinator does not execute a node inline merely because it is
+single-item, cross-cutting, or has no immediately advertised worker. Follow
+the pause-first, reported, context-budgeted exception in section 3.
 
-## 5. Worker dispatch contract
+## 6. Worker dispatch contract
 
 Embed this contract in every delegated prompt:
 
@@ -166,7 +233,8 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
 4. Do not edit Reckon plan/index state. Return outcome data to the orchestrator.
 5. Do not touch concurrent workers' paths. Request scope changes.
 6. Commit locally; do not merge or push the primary branch.
-7. Return commit SHA, git show --stat, tests, artifacts, and evidence inputs.
+7. Return the compact manifest from section 3 with commit SHA, git show --stat,
+   concise test results and on-disk log paths, artifacts, and evidence inputs.
 8. Do not add AI attribution or plan/sprint identifiers to commit messages.
 9. Stop and report unexpected dirty files, missing authority, or unsafe scope.
 
@@ -189,27 +257,31 @@ Also include:
 - capability/effort rationale;
 - measurable done-when criteria.
 
-## 6. Orchestrator integration
+## 7. Orchestrator integration
 
 Integrate one completed wave at a time:
 
 1. Verify the worker worktree is clean.
 2. Inspect the commit and exact changed paths.
-3. Run targeted tests in the worktree.
+3. Dispatch a verification worker to run targeted tests in the worktree, then
+   audit its compact manifest and on-disk logs.
 4. Commit any orchestrator-owned plan state before starting merges.
 5. Merge worker commits sequentially into the primary branch with normal merge
    commits when they do not fast-forward.
-6. Resolve conflicts in the primary checkout. Preserve both independent
-   intents; never discard one worker wholesale to make a conflict disappear.
-7. Run integration tests after each merge and the broader gate after the wave.
+6. Resolve only mechanical merge conflicts in the primary checkout. If
+   resolution requires product/source/test edits or implementation judgment,
+   dispatch a corrective integration worker. Preserve both independent intents;
+   never discard one worker wholesale to make a conflict disappear.
+7. Dispatch test workers for integration tests after each merge and the
+   broader gate after the wave; audit their manifests.
 8. Push the primary branch after each coherent integrated wave.
 
 If a worker edited out-of-scope paths, do not merge it blindly. Ask the worker
-to split/rework the commit or repair it in a new worktree. If conflict
-resolution requires a new material decision, pause that dependency branch and
-continue only independent ready nodes.
+to split/rework the commit or dispatch a corrective worker in a new worktree.
+If conflict resolution requires a new material decision, pause that dependency
+branch and continue only independent ready nodes.
 
-## 7. Plan, evidence, and sprint writeback
+## 8. Plan, evidence, and sprint writeback
 
 After each integrated node, the orchestrator:
 
@@ -231,7 +303,7 @@ After all executable nodes:
   sprint with its current resource version;
 - set that sprint resource to done only when all non-deferred nodes are complete.
 
-## 8. Cleanup and recovery
+## 9. Cleanup and recovery
 
 After each worker commit is integrated, and always before ending the session:
 
@@ -252,5 +324,5 @@ path and commit. After successful cleanup, run `git worktree list` and confirm
 no session path remains.
 
 If the orchestrator is interrupted, a new session can inspect the execution
-manifest, `git worktree list`, worker HEADs, plan versions, and sprint state;
+checkpoint, `git worktree list`, worker HEADs, plan versions, and sprint state;
 integrate or recover each worktree before resuming the DAG.
