@@ -103,7 +103,9 @@
       let j = r.ok ? await r.json() : {};
       if (!j || !j.data || Object.keys(j.data).length === 0) {
         r = await fetch(stateUrl("index"), { cache: "no-store" });
-        if (!r.ok) return {};
+        if (!r.ok) {
+          throw new Error(`index state returned HTTP ${r.status}`);
+        }
         j = await r.json();
       }
       // Cache version from loaded data.
@@ -114,7 +116,8 @@
       return j;
     } catch (e) {
       console.warn("loadIndexState failed", e);
-      return {};
+      window.STATE_ERROR = e;
+      throw e;
     }
   };
 

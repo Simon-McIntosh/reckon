@@ -140,9 +140,19 @@ def _read_plan(
     if project is None or project == "*":
         return _list_projects()
 
+    from reckon.project_state import ProjectStateError
+
     # ── discovery mode (no slug) ──
     if slug is None:
-        discovered = _discover_project(project, checkout_path)
+        try:
+            discovered = _discover_project(project, checkout_path)
+        except ProjectStateError as exc:
+            return {
+                "ok": False,
+                "error": "project_state_error",
+                "project": project,
+                "detail": str(exc),
+            }
         plans = _filter_inventory(
             [_inventory_row(item) for item in discovered.get("inventory", [])],
             status=status,
@@ -190,10 +200,22 @@ def _read_plan(
         }
 
     # ── single-plan mode (original shape) ──
-    if doc_type is None:
-        data, version = read_plan(project, slug, checkout_path)
-    else:
-        data, version = read_plan(project, slug, checkout_path, artifact_type=doc_type)
+    try:
+        if doc_type is None:
+            data, version = read_plan(project, slug, checkout_path)
+        else:
+            data, version = read_plan(
+                project, slug, checkout_path, artifact_type=doc_type
+            )
+    except ProjectStateError as exc:
+        return {
+            "ok": False,
+            "error": "project_state_error",
+            "project": project,
+            "slug": slug,
+            "doc_type": doc_type,
+            "detail": str(exc),
+        }
     if slug in ("index", "project") and doc_type is None:
         from reckon.capability import map_legacy_capabilities
 
@@ -1443,6 +1465,7 @@ def _edit_plan(
         RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
         LegacyIndexReadOnly,
         ProjectStateConflict,
+        ProjectStateError,
         apply_resource_ops,
         resource_path,
     )
@@ -1470,9 +1493,7 @@ def _edit_plan(
                 "slug": slug,
                 "doc_type": canonical_doc_type,
                 "new_version": new_version,
-                "path": str(
-                    resource_path(docs_dir, project, canonical_doc_type, slug)
-                ),
+                "path": str(resource_path(docs_dir, project, canonical_doc_type, slug)),
             }
             if warnings:
                 result["warnings"] = warnings
@@ -1483,6 +1504,15 @@ def _edit_plan(
             return _conflict_response(
                 VersionConflict(exc.expected, exc.current, exc.current_data)
             )
+        except ProjectStateError as exc:
+            return {
+                "ok": False,
+                "error": "project_state_error",
+                "project": project,
+                "slug": slug,
+                "doc_type": canonical_doc_type,
+                "detail": str(exc),
+            }
         except (ValueError, FileNotFoundError) as exc:
             return {
                 "ok": False,

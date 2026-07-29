@@ -16,29 +16,55 @@ and missing or malformed resources are errors.  There are no dual writes.
 
 from __future__ import annotations
 
-import hashlib
-import html
 import base64
 import fcntl
+import hashlib
+import html
 import json
 import os
 import re
 import shutil
 import tempfile
-from copy import deepcopy
 from contextlib import ExitStack, contextmanager
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from reckon._schema import Blocker, Milestone, Sprint, TimelineEntry
+from reckon._schema import (
+    SPRINT_STATUS_ENUM,
+    Blocker,
+    Milestone,
+    Sprint,
+    TimelineEntry,
+)
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 SNAPSHOT_ROOT = Path(".reckon/snapshots/project-state")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset({"sprint", "milestone", "blocker", "timeline", "project"})
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
+PROJECT_DERIVED_FIELDS = frozenset(
+    {
+        "active_sprint_id",
+        "sprints",
+        "milestones",
+        "blockers",
+        "timeline",
+        "inventory",
+        "projects",
+        "plans_count",
+        "active",
+        "blocked",
+        "pending",
+        "shipped",
+        "path",
+        "type",
+        "id",
+        "version",
+    }
+)
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _META_RE = re.compile(
     r"""<meta\b(?=[^>]*\bname=["'](?P<name>[^"']+)["'])(?=[^>]*\bcontent=["'](?P<content>[^"']*)["'])[^>]*>""",
@@ -66,6 +92,37 @@ class ProjectStateConflict(ProjectStateError):
         self.current = current
         self.current_data = current_data
         super().__init__(f"version conflict: expected {expected}, got {current}")
+
+
+def _fsync_file(path: Path) -> None:
+    """Flush a completed file before it becomes authoritative."""
+    with path.open("rb") as handle:
+        os.fsync(handle.fileno())
+
+
+def _fsync_directory(path: Path) -> None:
+    """Flush directory metadata after a create, replace, or unlink."""
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _durable_replace(source: Path, destination: Path) -> None:
+    """Replace one file and durably publish its directory entry."""
+    _fsync_file(source)
+    os.replace(source, destination)
+    _fsync_directory(destination.parent)
+
+
+def _durable_unlink(path: Path) -> None:
+    """Remove one file and durably publish the removal."""
+    if not path.exists():
+        return
+    parent = path.parent
+    path.unlink()
+    _fsync_directory(parent)
 
 
 @dataclass(frozen=True)
@@ -114,10 +171,11 @@ def resource_path(
 
 
 @contextmanager
-def _resource_lock(
-    docs_dir: Path, project: str, resource_type: str, resource_id: str
-):
+def _resource_lock(docs_dir: Path, project: str, resource_type: str, resource_id: str):
     """Serialise one resource's version check and atomic replacement."""
+    _safe_segment(project, "lock project")
+    _safe_segment(resource_type, "lock resource type")
+    _safe_segment(resource_id, "lock resource id")
     lock_name = f"{project}-{resource_type}-{resource_id}.lock"
     lock_path = docs_dir / ".reckon" / "locks" / lock_name
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -130,9 +188,7 @@ def _resource_lock(
 
 
 @contextmanager
-def _resource_locks(
-    docs_dir: Path, project: str, identities: list[tuple[str, str]]
-):
+def _resource_locks(docs_dir: Path, project: str, identities: list[tuple[str, str]]):
     """Acquire several resource locks in deterministic order."""
     with ExitStack() as stack:
         for resource_type, resource_id in sorted(set(identities)):
@@ -187,10 +243,7 @@ def _render_resource(
     state["type"] = resource_type
     version = int(state.get("version", 0) or 0)
     title = (
-        state.get("theme")
-        or state.get("name")
-        or state.get("summary")
-        or resource_id
+        state.get("theme") or state.get("name") or state.get("summary") or resource_id
     )
     rows: list[str] = []
     if resource_type == "sprint":
@@ -221,8 +274,8 @@ def _render_resource(
         state, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).replace("</", "<\\/")
     return (
-        "<!doctype html>\n<html lang=\"en\">\n<head>\n"
-        "  <meta charset=\"utf-8\">\n"
+        '<!doctype html>\n<html lang="en">\n<head>\n'
+        '  <meta charset="utf-8">\n'
         f'  <meta name="docs-project" content="{html.escape(project, quote=True)}">\n'
         f'  <meta name="reckon-type" content="{resource_type}">\n'
         f'  <meta name="reckon-id" content="{html.escape(resource_id, quote=True)}">\n'
@@ -267,7 +320,9 @@ def _read_project_json(path: Path, project: str) -> dict[str, Any]:
     try:
         envelope = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise ProjectStateError(f"distributed project resource is malformed: {path}") from exc
+        raise ProjectStateError(
+            f"distributed project resource is malformed: {path}"
+        ) from exc
     if not isinstance(envelope, dict) or envelope.get("project") != project:
         raise ProjectStateError(f"distributed project identity mismatch: {path}")
     data = envelope.get("data")
@@ -280,10 +335,13 @@ def read_resource(
     docs_dir: Path, project: str, resource_type: str, resource_id: str
 ) -> tuple[dict[str, Any], int]:
     """Read one distributed resource and its optimistic-concurrency version."""
+    mode = project_state_mode(docs_dir)
+    if mode.format != "distributed":
+        raise ProjectStateError(
+            "distributed_resource_inactive: project-state marker is not complete"
+        )
     recover_project_state_transactions(docs_dir, project)
-    return _read_resource_unchecked(
-        docs_dir, project, resource_type, resource_id
-    )
+    return _read_resource_unchecked(docs_dir, project, resource_type, resource_id)
 
 
 def _read_resource_unchecked(
@@ -309,14 +367,43 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         )
         cleaned["id"] = data.get("id", sprint.id)
         cleaned["version"] = int(data.get("version", 0) or 0)
+        _safe_segment(str(cleaned.get("id", "")), "sprint id")
+        if cleaned.get("status", "planned") not in SPRINT_STATUS_ENUM:
+            raise ValueError(f"sprint status must be one of {SPRINT_STATUS_ENUM}")
+        seen_slugs: set[str] = set()
         for item in cleaned.get("items", []):
+            slug = str(item.get("slug", ""))
+            _safe_segment(slug, "sprint item slug")
+            if slug in seen_slugs:
+                raise ValueError(f"duplicate sprint item slug {slug!r}")
+            seen_slugs.add(slug)
             for field in LIFECYCLE_ITEM_FIELDS:
-                item.pop(field, None)
+                if field in item:
+                    raise ValueError(f"sprint item {slug!r} must not persist {field}")
+            blockers = item.get("blocked_by", [])
+            if not isinstance(blockers, list):
+                raise ValueError(f"sprint item {slug!r} blocked_by must be a list")
+            if len(blockers) != len(set(blockers)):
+                raise ValueError(
+                    f"sprint item {slug!r} has duplicate blocker references"
+                )
+            for blocker_id in blockers:
+                _safe_segment(str(blocker_id), "blocked_by id")
+            milestone_id = item.get("milestone")
+            if milestone_id:
+                _safe_segment(str(milestone_id), "sprint item milestone")
     elif resource_type == "milestone":
         cleaned = Milestone.model_validate(cleaned).model_dump(
             exclude_none=True, exclude_unset=True
         )
         cleaned["version"] = int(data.get("version", 0) or 0)
+        dependencies = cleaned.get("depends_on") or []
+        if not isinstance(dependencies, list):
+            raise ValueError("milestone depends_on must be a list")
+        if len(dependencies) != len(set(dependencies)):
+            raise ValueError("milestone dependencies must be unique")
+        for dependency in dependencies:
+            _safe_segment(str(dependency), "milestone dependency")
     elif resource_type == "blocker":
         cleaned = Blocker.model_validate(cleaned).model_dump(
             exclude_none=True, exclude_unset=True
@@ -335,6 +422,7 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
             ident = str(item.get("id", ""))
             if not ident or ident in ids:
                 raise ValueError("timeline event ids must be non-empty and unique")
+            _safe_segment(ident, "timeline event id")
             ids.add(ident)
             validated.append(item)
         cleaned = {
@@ -344,22 +432,7 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
             "events": validated,
         }
     elif resource_type == "project":
-        forbidden = {
-            "active_sprint_id",
-            "sprints",
-            "milestones",
-            "blockers",
-            "timeline",
-            "inventory",
-            "projects",
-            "plans_count",
-            "active",
-            "blocked",
-            "pending",
-            "shipped",
-            "path",
-        }
-        bad = forbidden & set(cleaned)
+        bad = PROJECT_DERIVED_FIELDS & set(cleaned) - {"type", "id", "version"}
         if bad:
             raise ValueError(
                 "project manifest is identity/presentation-only; forbidden keys: "
@@ -368,6 +441,74 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         cleaned["version"] = int(data.get("version", 0) or 0)
     cleaned["type"] = resource_type
     return cleaned
+
+
+def _live_plan_slugs(docs_dir: Path, project: str) -> set[str]:
+    from reckon.resources import resource_map
+
+    return {
+        resource.slug
+        for resource in resource_map(docs_dir, project, include_archived=False).values()
+        if resource.type == "plan"
+    }
+
+
+def _distributed_ids(docs_dir: Path, root_name: str) -> set[str]:
+    root = docs_dir / root_name
+    return {path.stem for path in root.glob("*.html")} if root.is_dir() else set()
+
+
+def _validate_runtime_references(
+    docs_dir: Path,
+    project: str,
+    resource_type: str,
+    resource_id: str,
+    data: dict[str, Any],
+) -> None:
+    """Validate references against the complete installed distributed corpus."""
+    if resource_type == "sprint":
+        plan_slugs = _live_plan_slugs(docs_dir, project)
+        blocker_ids = _distributed_ids(docs_dir, "blockers")
+        milestone_ids = _distributed_ids(docs_dir, "milestones")
+        for item in data.get("items", []):
+            slug = str(item["slug"])
+            if slug not in plan_slugs:
+                raise ValueError(
+                    f"sprint item {slug!r} does not resolve to a live plan"
+                )
+            missing = set(item.get("blocked_by", [])) - blocker_ids
+            if missing:
+                raise ValueError(
+                    f"sprint item {slug!r} references missing blockers: "
+                    + ", ".join(sorted(missing))
+                )
+            milestone_id = item.get("milestone")
+            if milestone_id and milestone_id not in milestone_ids:
+                raise ValueError(
+                    f"sprint item {slug!r} references missing milestone "
+                    f"{milestone_id!r}"
+                )
+        if data.get("status") == "active":
+            active_others = []
+            for sprint_id in _distributed_ids(docs_dir, "sprints") - {resource_id}:
+                sprint, _ = _read_resource_unchecked(
+                    docs_dir, project, "sprint", sprint_id
+                )
+                if sprint.get("status") == "active":
+                    active_others.append(sprint_id)
+            if active_others:
+                raise ValueError(
+                    "activating this sprint would create multiple active sprints: "
+                    + ", ".join(sorted(active_others))
+                )
+    elif resource_type == "milestone":
+        milestone_ids = _distributed_ids(docs_dir, "milestones") | {resource_id}
+        missing = set(data.get("depends_on") or []) - milestone_ids
+        if missing:
+            raise ValueError(
+                f"milestone {resource_id!r} references missing milestones: "
+                + ", ".join(sorted(missing))
+            )
 
 
 def write_resource(
@@ -381,6 +522,12 @@ def write_resource(
     create: bool = False,
 ) -> int:
     """Version-check and atomically write one distributed resource."""
+    mode = project_state_mode(docs_dir)
+    if mode.format != "distributed":
+        raise ProjectStateError(
+            "distributed_resource_inactive: explicit migration must complete "
+            "before distributed writes"
+        )
     with _resource_lock(docs_dir, project, resource_type, resource_id):
         return _write_resource_unlocked(
             docs_dir,
@@ -414,9 +561,7 @@ def _write_resource_unlocked(
     else:
         current, current_version = {}, 0
         if not create:
-            raise FileNotFoundError(
-                f"{resource_type} {resource_id!r} does not exist"
-            )
+            raise FileNotFoundError(f"{resource_type} {resource_id!r} does not exist")
     if expected_version != current_version:
         raise ProjectStateConflict(expected_version, current_version, current)
     payload = _validate_resource(
@@ -427,6 +572,23 @@ def _write_resource_unlocked(
             "type": resource_type,
             "version": current_version + 1,
         },
+    )
+    if resource_type == "timeline" and current:
+        previous_events = list(current.get("events", []))
+        next_events = list(payload.get("events", []))
+        if (
+            len(next_events) < len(previous_events)
+            or next_events[: len(previous_events)] != previous_events
+        ):
+            raise ValueError(
+                "timeline is append-only; existing events must remain an exact prefix"
+            )
+    _validate_runtime_references(
+        docs_dir,
+        project,
+        resource_type,
+        resource_id,
+        payload,
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(
@@ -448,7 +610,7 @@ def _write_resource_unlocked(
             encoding="utf-8",
         )
     try:
-        tmp.replace(path)
+        _durable_replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
     return current_version + 1
@@ -476,13 +638,17 @@ def _event_id(event: dict[str, Any], position: int) -> str:
 
 def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
     project_rows = legacy.get("projects") or []
-    row = dict(project_rows[0]) if project_rows and isinstance(project_rows[0], dict) else {}
-    return {
-        "project": project,
-        "owner": row.get("owner", ""),
-        "published": row.get("published", ""),
-        "version": 0,
+    row = (
+        dict(project_rows[0])
+        if project_rows and isinstance(project_rows[0], dict)
+        else {}
+    )
+    retained = {
+        key: deepcopy(value)
+        for key, value in row.items()
+        if key not in PROJECT_DERIVED_FIELDS
     }
+    return {**retained, "project": project, "version": 0}
 
 
 def _migration_payloads(
@@ -527,14 +693,75 @@ def _migration_payloads(
     return payloads
 
 
+def _validate_migration_payloads(
+    docs_dir: Path,
+    project: str,
+    legacy: dict[str, Any],
+    payloads: dict[tuple[str, str], dict[str, Any]],
+) -> None:
+    """Validate the complete split corpus before writing any destination."""
+    validated = {
+        key: _validate_resource(key[0], value) for key, value in payloads.items()
+    }
+    sprints = [
+        data
+        for (resource_type, _), data in validated.items()
+        if resource_type == "sprint"
+    ]
+    derived_active = _derive_active_sprint(sprints)
+    legacy_active = legacy.get("active_sprint_id") or None
+    if legacy_active != derived_active:
+        raise ProjectStateError(
+            "legacy active_sprint_id does not match the unique active sprint: "
+            f"{legacy_active!r} != {derived_active!r}"
+        )
+    plan_slugs = _live_plan_slugs(docs_dir, project)
+    blocker_ids = {
+        resource_id
+        for resource_type, resource_id in validated
+        if resource_type == "blocker"
+    }
+    milestone_ids = {
+        resource_id
+        for resource_type, resource_id in validated
+        if resource_type == "milestone"
+    }
+    for sprint in sprints:
+        for item in sprint.get("items", []):
+            slug = str(item["slug"])
+            if slug not in plan_slugs:
+                raise ProjectStateError(
+                    f"sprint item {slug!r} does not resolve to a live plan"
+                )
+            missing = set(item.get("blocked_by", [])) - blocker_ids
+            if missing:
+                raise ProjectStateError(
+                    f"sprint item {slug!r} references missing blockers: "
+                    + ", ".join(sorted(missing))
+                )
+            milestone_id = item.get("milestone")
+            if milestone_id and milestone_id not in milestone_ids:
+                raise ProjectStateError(
+                    f"sprint item {slug!r} references missing milestone "
+                    f"{milestone_id!r}"
+                )
+    for (resource_type, resource_id), milestone in validated.items():
+        if resource_type != "milestone":
+            continue
+        missing = set(milestone.get("depends_on") or []) - milestone_ids
+        if missing:
+            raise ProjectStateError(
+                f"milestone {resource_id!r} references missing milestones: "
+                + ", ".join(sorted(missing))
+            )
+
+
 def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any]]:
     from reckon import _plan_html
     from reckon.resources import resource_map
 
     result: dict[str, dict[str, Any]] = {}
-    for resource in resource_map(
-        docs_dir, project, include_archived=False
-    ).values():
+    for resource in resource_map(docs_dir, project, include_archived=False).values():
         if resource.type != "plan":
             continue
         result[resource.slug] = _plan_html.read_state(
@@ -547,8 +774,7 @@ def _derive_active_sprint(sprints: list[dict[str, Any]]) -> str | None:
     active = [str(item.get("id")) for item in sprints if item.get("status") == "active"]
     if len(active) > 1:
         raise ProjectStateError(
-            "multiple active sprints violate derive-unique-active: "
-            + ", ".join(active)
+            "multiple active sprints violate derive-unique-active: " + ", ".join(active)
         )
     return active[0] if active else None
 
@@ -611,7 +837,9 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         resource_id = str(row.get("id", ""))
         key_tuple = (resource_type, resource_id)
         if key_tuple in seen_keys:
-            raise ProjectStateError(f"duplicate distributed resource identity: {key_tuple}")
+            raise ProjectStateError(
+                f"duplicate distributed resource identity: {key_tuple}"
+            )
         seen_keys.add(key_tuple)
         resource_keys.append(key_tuple)
     for resource_type, root_name in (
@@ -677,9 +905,13 @@ def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
     return []
 
 
-def _parity_projection(data: dict[str, Any]) -> dict[str, Any]:
+def _parity_projection(
+    data: dict[str, Any], project: str | None = None
+) -> dict[str, Any]:
     """Normalise old/new views to durable, non-derived project state."""
     result = {
+        "active_sprint_id": data.get("active_sprint_id") or None,
+        "project": {},
         "sprints": [],
         "milestones": [],
         "blockers": [],
@@ -713,10 +945,25 @@ def _parity_projection(data: dict[str, Any]) -> dict[str, Any]:
         record = deepcopy(row)
         record.pop("id", None)
         result["timeline"].append(record)
-    for key in result:
-        result[key] = sorted(
-            result[key], key=lambda item: _canonical_json(item)
-        )
+    project_rows = data.get("projects") or []
+    project_row = (
+        project_rows[0]
+        if project_rows and isinstance(project_rows[0], dict)
+        else data
+        if data.get("type") == "project"
+        else {}
+    )
+    result["project"] = {
+        key: deepcopy(value)
+        for key, value in project_row.items()
+        if key not in PROJECT_DERIVED_FIELDS
+    }
+    for key in ("project", "owner", "published"):
+        result["project"].setdefault(key, "")
+    if project and not result["project"]["project"]:
+        result["project"]["project"] = project
+    for key in ("sprints", "milestones", "blockers"):
+        result[key] = sorted(result[key], key=lambda item: _canonical_json(item))
     return result
 
 
@@ -751,6 +998,7 @@ def migrate_project_state(
     project: str,
     *,
     before_install: Callable[[], None] | None = None,
+    before_marker: Callable[[], None] | None = None,
     install_hook: Callable[[int, Path, Path], None] | None = None,
 ) -> dict[str, Any]:
     """Explicitly split the legacy index and publish the format marker last.
@@ -760,6 +1008,26 @@ def migrate_project_state(
     absent, therefore legacy mode remains canonical.
     """
     docs_dir = docs_dir.resolve()
+    _safe_segment(project, "project")
+    with _resource_lock(docs_dir, project, "migration", "project-state"):
+        return _migrate_project_state_locked(
+            docs_dir,
+            project,
+            before_install=before_install,
+            before_marker=before_marker,
+            install_hook=install_hook,
+        )
+
+
+def _migrate_project_state_locked(
+    docs_dir: Path,
+    project: str,
+    *,
+    before_install: Callable[[], None] | None = None,
+    before_marker: Callable[[], None] | None = None,
+    install_hook: Callable[[int, Path, Path], None] | None = None,
+) -> dict[str, Any]:
+    """Migration body protected by the project-wide migration lock."""
     _safe_segment(project, "project")
     legacy, source_bytes = _load_legacy_index(docs_dir, project)
     if not source_bytes:
@@ -783,9 +1051,13 @@ def migrate_project_state(
     snapshot.parent.mkdir(parents=True, exist_ok=True)
     if snapshot.exists() and snapshot.read_bytes() != source_bytes:
         raise ProjectStateError(f"snapshot collision: {snapshot}")
-    snapshot.write_bytes(source_bytes)
+    if not snapshot.exists():
+        snapshot.write_bytes(source_bytes)
+        _fsync_file(snapshot)
+        _fsync_directory(snapshot.parent)
 
     payloads = _migration_payloads(project, deepcopy(legacy))
+    _validate_migration_payloads(docs_dir, project, legacy, payloads)
     stage_root = Path(
         tempfile.mkdtemp(prefix="project-state-", dir=docs_dir / ".reckon")
     )
@@ -796,7 +1068,7 @@ def migrate_project_state(
             staged_path = _write_staged_resource(
                 staging_docs, project, resource_type, resource_id, payload
             )
-            read_resource(staging_docs, project, resource_type, resource_id)
+            _read_resource_unchecked(staging_docs, project, resource_type, resource_id)
             staged.append((resource_type, resource_id, staged_path))
 
         # Compose a temporary distributed view and prove durable parity.
@@ -805,7 +1077,9 @@ def migrate_project_state(
                 "type": resource_type,
                 "id": resource_id,
                 "sha256": _sha256_path(path),
-                "version": int(payloads[(resource_type, resource_id)].get("version", 0)),
+                "version": int(
+                    payloads[(resource_type, resource_id)].get("version", 0)
+                ),
             }
             for resource_type, resource_id, path in staged
         ]
@@ -819,8 +1093,10 @@ def migrate_project_state(
         temp_marker_path.parent.mkdir(parents=True, exist_ok=True)
         temp_marker_path.write_text(json.dumps(temp_marker), encoding="utf-8")
         composed = compose_project_state(staging_docs, project)
-        old_parity = _sha256_bytes(_canonical_json(_parity_projection(legacy)))
-        new_parity = _sha256_bytes(_canonical_json(_parity_projection(composed)))
+        old_parity = _sha256_bytes(_canonical_json(_parity_projection(legacy, project)))
+        new_parity = _sha256_bytes(
+            _canonical_json(_parity_projection(composed, project))
+        )
         if old_parity != new_parity:
             raise ProjectStateError("composed distributed state failed parity check")
 
@@ -829,46 +1105,124 @@ def migrate_project_state(
         if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
             raise ProjectStateError("legacy index changed while migration was staged")
 
-        installed: list[tuple[str, str, Path]] = []
-        for position, (resource_type, resource_id, source) in enumerate(staged):
+        destination_snapshot_root = snapshot.parent / "destinations"
+        destination_records: list[dict[str, Any]] = []
+        for resource_type, resource_id, _ in staged:
             destination = resource_path(docs_dir, project, resource_type, resource_id)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            if install_hook:
-                install_hook(position, source, destination)
-            os.replace(source, destination)
-            installed.append((resource_type, resource_id, destination))
-
-        rows = [
-            {
+            relative = destination.relative_to(docs_dir)
+            record: dict[str, Any] = {
                 "type": resource_type,
                 "id": resource_id,
-                "path": str(path.relative_to(docs_dir)),
-                "sha256": _sha256_path(path),
-                "version": read_resource(
-                    docs_dir, project, resource_type, resource_id
-                )[1],
+                "path": str(relative),
+                "existed": destination.exists(),
             }
-            for resource_type, resource_id, path in installed
-        ]
-        marker = {
-            "format": "distributed",
-            "status": "complete",
-            "project": project,
-            "source": str(legacy_index_path(docs_dir, project).relative_to(docs_dir)),
-            "source_sha256": source_sha,
-            "source_version": int(legacy.get("_version", 0) or 0),
-            "snapshot": str(snapshot.relative_to(docs_dir)),
-            "snapshot_sha256": _sha256_path(snapshot),
-            "parity_sha256": old_parity,
-            "resources": rows,
-            "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        }
-        target = marker_path(docs_dir)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        marker_tmp = target.with_suffix(".json.tmp")
-        marker_tmp.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
-        marker_tmp.replace(target)
-        return {"ok": True, "changed": True, **marker}
+            if destination.exists():
+                backup = destination_snapshot_root / relative
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                backup.write_bytes(destination.read_bytes())
+                _fsync_file(backup)
+                _fsync_directory(backup.parent)
+                record["snapshot"] = str(backup.relative_to(docs_dir))
+                record["sha256"] = _sha256_path(backup)
+            destination_records.append(record)
+        destination_manifest = snapshot.parent / "destinations.json"
+        destination_manifest.write_text(
+            json.dumps(destination_records, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        _fsync_file(destination_manifest)
+        _fsync_directory(destination_manifest.parent)
+
+        installed: list[tuple[str, str, Path]] = []
+        try:
+            for position, (resource_type, resource_id, source) in enumerate(staged):
+                destination = resource_path(
+                    docs_dir, project, resource_type, resource_id
+                )
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                if install_hook:
+                    install_hook(position, source, destination)
+                _durable_replace(source, destination)
+                installed.append((resource_type, resource_id, destination))
+
+            rows = [
+                {
+                    "type": resource_type,
+                    "id": resource_id,
+                    "path": str(path.relative_to(docs_dir)),
+                    "sha256": _sha256_path(path),
+                    "version": _read_resource_unchecked(
+                        docs_dir, project, resource_type, resource_id
+                    )[1],
+                }
+                for resource_type, resource_id, path in installed
+            ]
+            marker = {
+                "format": "distributed",
+                "status": "complete",
+                "project": project,
+                "source": str(
+                    legacy_index_path(docs_dir, project).relative_to(docs_dir)
+                ),
+                "source_sha256": source_sha,
+                "source_version": int(legacy.get("_version", 0) or 0),
+                "snapshot": str(snapshot.relative_to(docs_dir)),
+                "snapshot_sha256": _sha256_path(snapshot),
+                "destination_snapshot_manifest": str(
+                    destination_manifest.relative_to(docs_dir)
+                ),
+                "parity_sha256": old_parity,
+                "resources": rows,
+                "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+            target = marker_path(docs_dir)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if before_marker:
+                before_marker()
+            if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
+                raise ProjectStateError(
+                    "legacy index changed before migration marker publication"
+                )
+            fd, marker_tmp_name = tempfile.mkstemp(
+                prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
+            )
+            os.close(fd)
+            marker_tmp = Path(marker_tmp_name)
+            try:
+                marker_tmp.write_text(
+                    json.dumps(marker, indent=2) + "\n", encoding="utf-8"
+                )
+                # Recheck immediately before the marker is the canonical switch.
+                if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
+                    raise ProjectStateError(
+                        "legacy index changed during marker publication"
+                    )
+                _durable_replace(marker_tmp, target)
+            finally:
+                marker_tmp.unlink(missing_ok=True)
+            return {"ok": True, "changed": True, **marker}
+        except BaseException:
+            _durable_unlink(marker_path(docs_dir))
+            records_by_path = {record["path"]: record for record in destination_records}
+            for _, _, destination in reversed(installed):
+                record = records_by_path[str(destination.relative_to(docs_dir))]
+                if record["existed"]:
+                    backup = docs_dir / record["snapshot"]
+                    fd, restore_name = tempfile.mkstemp(
+                        prefix=f".{destination.name}.",
+                        suffix=".rollback",
+                        dir=destination.parent,
+                    )
+                    os.close(fd)
+                    restore = Path(restore_name)
+                    try:
+                        restore.write_bytes(backup.read_bytes())
+                        _durable_replace(restore, destination)
+                    finally:
+                        restore.unlink(missing_ok=True)
+                else:
+                    _durable_unlink(destination)
+            raise
     finally:
         shutil.rmtree(stage_root, ignore_errors=True)
 
@@ -918,8 +1272,8 @@ def _move_journal_path(
 def _publish_move_journal(
     path: Path,
     project: str,
-    source_path: Path,
-    target_path: Path,
+    source_id: str,
+    target_id: str,
     source_bytes: bytes,
     target_bytes: bytes,
 ) -> None:
@@ -928,8 +1282,8 @@ def _publish_move_journal(
         "kind": "sprint-item-move",
         "status": "prepared",
         "project": project,
-        "source": str(source_path),
-        "target": str(target_path),
+        "source_id": source_id,
+        "target_id": target_id,
         "source_before": base64.b64encode(source_bytes).decode("ascii"),
         "target_before": base64.b64encode(target_bytes).decode("ascii"),
         "written_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -941,7 +1295,23 @@ def _publish_move_journal(
     tmp = Path(tmp_name)
     try:
         tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        tmp.replace(path)
+        _durable_replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def _mark_move_journal_committed(path: Path) -> None:
+    """Durably publish commit completion before removing recovery evidence."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["status"] = "committed"
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        _durable_replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
 
@@ -952,46 +1322,78 @@ def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Pat
     root = docs_dir / ".reckon" / "transactions"
     if not root.is_dir():
         return recovered
-    for journal in sorted(root.glob("sprint-move-*.json")):
-        try:
-            payload = json.loads(journal.read_text(encoding="utf-8"))
-            if (
-                payload.get("kind") != "sprint-item-move"
-                or payload.get("status") != "prepared"
-                or payload.get("project") != project
-            ):
-                raise ProjectStateError(f"malformed transaction journal: {journal}")
-            source_path = Path(payload["source"])
-            target_path = Path(payload["target"])
-            source_bytes = base64.b64decode(payload["source_before"])
-            target_bytes = base64.b64decode(payload["target_before"])
-        except (KeyError, ValueError, json.JSONDecodeError) as exc:
-            raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
-        with _resource_locks(
-            docs_dir,
-            project,
-            [
-                ("sprint", source_path.stem),
-                ("sprint", target_path.stem),
-            ],
-        ):
-            for path, content in (
-                (source_path, source_bytes),
-                (target_path, target_bytes),
-            ):
-                path.parent.mkdir(parents=True, exist_ok=True)
-                fd, tmp_name = tempfile.mkstemp(
-                    prefix=f".{path.name}.", suffix=".recover", dir=path.parent
+    with _resource_lock(docs_dir, project, "transactions", "recovery"):
+        for journal in sorted(root.glob("sprint-move-*.json")):
+            first_bytes = journal.read_bytes()
+            try:
+                payload = json.loads(first_bytes)
+                if (
+                    payload.get("kind") != "sprint-item-move"
+                    or payload.get("project") != project
+                ):
+                    raise ProjectStateError(f"malformed transaction journal: {journal}")
+                source_id = _safe_segment(
+                    str(payload["source_id"]), "journal source id"
                 )
-                os.close(fd)
-                tmp = Path(tmp_name)
+                target_id = _safe_segment(
+                    str(payload["target_id"]), "journal target id"
+                )
+            except (KeyError, ValueError, json.JSONDecodeError) as exc:
+                raise ProjectStateError(
+                    f"malformed transaction journal: {journal}"
+                ) from exc
+            with _resource_locks(
+                docs_dir,
+                project,
+                [("sprint", source_id), ("sprint", target_id)],
+            ):
+                if not journal.exists():
+                    continue
+                locked_bytes = journal.read_bytes()
+                if locked_bytes != first_bytes:
+                    # Another operation changed the journal before resource
+                    # locks were held. Re-evaluate it on the next recovery pass.
+                    continue
+                payload = json.loads(locked_bytes)
+                status = payload.get("status")
+                if status == "committed":
+                    _durable_unlink(journal)
+                    recovered.append(journal)
+                    continue
+                if status != "prepared":
+                    raise ProjectStateError(f"malformed transaction journal: {journal}")
                 try:
-                    tmp.write_bytes(content)
-                    tmp.replace(path)
-                finally:
-                    tmp.unlink(missing_ok=True)
-            journal.unlink()
-            recovered.append(journal)
+                    source_bytes = base64.b64decode(
+                        payload["source_before"], validate=True
+                    )
+                    target_bytes = base64.b64decode(
+                        payload["target_before"], validate=True
+                    )
+                except (KeyError, ValueError) as exc:
+                    raise ProjectStateError(
+                        f"malformed transaction journal: {journal}"
+                    ) from exc
+                source_path = resource_path(docs_dir, project, "sprint", source_id)
+                target_path = resource_path(docs_dir, project, "sprint", target_id)
+                for path, content in (
+                    (source_path, source_bytes),
+                    (target_path, target_bytes),
+                ):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    fd, tmp_name = tempfile.mkstemp(
+                        prefix=f".{path.name}.",
+                        suffix=".recover",
+                        dir=path.parent,
+                    )
+                    os.close(fd)
+                    tmp = Path(tmp_name)
+                    try:
+                        tmp.write_bytes(content)
+                        _durable_replace(tmp, path)
+                    finally:
+                        tmp.unlink(missing_ok=True)
+                _durable_unlink(journal)
+                recovered.append(journal)
     return recovered
 
 
@@ -1009,9 +1411,7 @@ def move_sprint_item(
     """Move one item with two-version validation and compensating recovery."""
     source_path = resource_path(docs_dir, project, "sprint", from_sprint)
     target_path = resource_path(docs_dir, project, "sprint", to_sprint)
-    journal = _move_journal_path(
-        docs_dir, project, from_sprint, to_sprint, slug
-    )
+    journal = _move_journal_path(docs_dir, project, from_sprint, to_sprint, slug)
     with _resource_locks(
         docs_dir,
         project,
@@ -1051,8 +1451,8 @@ def move_sprint_item(
         _publish_move_journal(
             journal,
             project,
-            source_path,
-            target_path,
+            from_sprint,
+            to_sprint,
             source_bytes,
             target_bytes,
         )
@@ -1087,12 +1487,13 @@ def move_sprint_item(
                 tmp = Path(tmp_name)
                 try:
                     tmp.write_bytes(content)
-                    tmp.replace(path)
+                    _durable_replace(tmp, path)
                 finally:
                     tmp.unlink(missing_ok=True)
-            journal.unlink(missing_ok=True)
+            _durable_unlink(journal)
             raise
-        journal.unlink(missing_ok=True)
+        _mark_move_journal_committed(journal)
+        _durable_unlink(journal)
         return {"from_version": new_from, "to_version": new_to}
 
 
@@ -1110,9 +1511,7 @@ def apply_resource_ops(
     if create:
         working: dict[str, Any] = {"id": resource_id, "type": resource_type}
     else:
-        working, current = read_resource(
-            docs_dir, project, resource_type, resource_id
-        )
+        working, current = read_resource(docs_dir, project, resource_type, resource_id)
         if current != expected_version:
             raise ProjectStateConflict(expected_version, current, working)
     warnings: list[str] = []

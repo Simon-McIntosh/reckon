@@ -96,9 +96,7 @@ def _seed_project_index(docs_dir: Path, project: str) -> Path:
 
 
 def _invoke_build(docs_dir: Path, project: str = "fixture"):
-    return CliRunner().invoke(
-        cli.main, ["build", str(docs_dir), "--project", project]
-    )
+    return CliRunner().invoke(cli.main, ["build", str(docs_dir), "--project", project])
 
 
 @pytest.fixture()
@@ -117,14 +115,10 @@ def built_source_site(tmp_path):
 def test_build_copies_every_canonical_asset(built_source_site):
     docs_dir, _, _ = built_source_site
     expected_ui = {path.name for path in (REPO_ROOT / "docs" / "ui").iterdir()}
-    expected_shared = {
-        path.name for path in (REPO_ROOT / "docs" / "_shared").iterdir()
-    }
+    expected_shared = {path.name for path in (REPO_ROOT / "docs" / "_shared").iterdir()}
 
     assert {path.name for path in (docs_dir / "_ui").iterdir()} == expected_ui
-    assert {
-        path.name for path in (docs_dir / "_shared").iterdir()
-    } == expected_shared
+    assert {path.name for path in (docs_dir / "_shared").iterdir()} == expected_shared
     assert (docs_dir / "_shared" / "state.js").read_bytes() == (
         REPO_ROOT / "docs" / "_shared" / "state.js"
     ).read_bytes()
@@ -155,7 +149,9 @@ def test_build_bakes_discovery_and_preserves_authored_project_state(
 
     assert "alpha" in {item["slug"] for item in data["inventory"]}
     assert {item["id"] for item in data["sprints"]} == {"S7", "S8"}
-    assert {item["id"] for item in data["milestones"]} == {"M7", "M8"}
+    # Markerless typed project-state destinations are migration staging, not
+    # canonical state. The authored legacy index remains the only source.
+    assert {item["id"] for item in data["milestones"]} == {"M7"}
     assert data["sprints"][0]["items"] == [{"slug": "kept-item"}]
     assert data["milestones"][0]["evidence"] == ["kept-evidence"]
     assert data["timeline"] == [{"date": "2026-07-01", "label": "Keep this"}]

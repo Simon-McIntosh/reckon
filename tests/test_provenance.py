@@ -244,7 +244,7 @@ def test_audit_warns_for_unlinked_artifacts_and_excludes_archive(mounted):
     assert all(item["slug"] != "old-stage" for item in result["violations"])
 
 
-def test_definition_pages_are_not_artifacts_but_still_define_rollups(tmp_path):
+def test_unactivated_definition_pages_are_not_artifacts_or_rollups(tmp_path):
     docs = tmp_path / "docs"
     (docs / "sprints").mkdir(parents=True)
     (docs / "milestones").mkdir()
@@ -264,8 +264,8 @@ def test_definition_pages_are_not_artifacts_but_still_define_rollups(tmp_path):
 
     discovered = discover_plans(docs, "proj", None)
     assert [item["slug"] for item in discovered["inventory"]] == ["alpha"]
-    assert [item["id"] for item in discovered["sprints"]] == ["S1"]
-    assert [item["id"] for item in discovered["milestones"]] == ["M1"]
+    assert discovered["sprints"] == []
+    assert discovered["milestones"] == []
 
 
 def test_link_audit_understands_qualified_and_stage_refs(tmp_path):

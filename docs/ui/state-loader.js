@@ -13,12 +13,18 @@ window.STATE_READY = (async function () {
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
                   "unknown";
 
-  async function getJson(url) {
+  async function getJson(url, { required = false } = {}) {
     try {
       const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) return null;
+      if (!r.ok) {
+        if (required) throw new Error(`${url} returned HTTP ${r.status}`);
+        return null;
+      }
       return await r.json();
-    } catch { return null; }
+    } catch (error) {
+      if (required) throw error;
+      return null;
+    }
   }
 
   const stateBase = `state/${PROJECT}`;
@@ -49,8 +55,9 @@ window.STATE_READY = (async function () {
   };
 
   // ── 1. Central index ───────────────────────────────────────────────────
-  const idxBlob = (await getJson(`${stateBase}/projection.json`)) ||
-                  (await getJson(`${stateBase}/index.json`));
+  const projectionBlob = await getJson(`${stateBase}/projection.json`);
+  const idxBlob = projectionBlob ||
+                  (await getJson(`${stateBase}/index.json`, { required: true }));
   const idx = (idxBlob && idxBlob.data) || {};
 
   let sprints    = Array.isArray(idx.sprints)
@@ -117,7 +124,19 @@ window.STATE_READY = (async function () {
   // directly, includes server-computed fields (created, dec_open) that
   // index.json never stores, and is always up-to-date.
   // index.json is only used for project config (sprints, milestones, timeline).
-  const disc = await getJson(`/_discover/${PROJECT}`);
+  let disc = null;
+  try {
+    const response = await fetch(`/_discover/${PROJECT}`, { cache: "no-store" });
+    if (response.ok) {
+      disc = await response.json();
+    } else if (!(projectionBlob && response.status === 404)) {
+      throw new Error(`/_discover/${PROJECT} returned HTTP ${response.status}`);
+    }
+  } catch (error) {
+    // A built static site has an explicit projection and no discovery server.
+    // A live server failure must surface instead of reviving frozen legacy data.
+    if (!projectionBlob) throw error;
+  }
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
     inventory = disc.inventory;
     if (disc.source_format === "distributed") {
@@ -232,4 +251,7 @@ window.STATE_READY = (async function () {
                       : (Array.isArray(idx.timeline) ? idx.timeline : []),
     plans,
   };
-})();
+})().catch(error => {
+  window.STATE_ERROR = error;
+  throw error;
+});

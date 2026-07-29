@@ -151,7 +151,7 @@ def test_migration_rejects_destination_symlink_escape(tmp_path):
     assert (docs / "work.html").is_file()
 
 
-def test_discovery_keeps_typed_duplicates_and_excludes_sprint_from_inventory(tmp_path):
+def test_legacy_discovery_ignores_unactivated_project_state_resources(tmp_path):
     docs = tmp_path / "docs"
     _artifact(docs / "plans" / "shared.html", "sample", "plan", "shared")
     _artifact(docs / "research" / "shared.html", "sample", "research", "shared")
@@ -173,7 +173,7 @@ def test_discovery_keeps_typed_duplicates_and_excludes_sprint_from_inventory(tmp
         "sample:plan:shared",
         "sample:research:shared",
     }
-    assert discovered["sprints"][0]["resource_id"] == "sample:sprint:iteration"
+    assert discovered["sprints"] == []
 
 
 def test_mixed_layout_routes_typed_and_flat_resources(tmp_path):
