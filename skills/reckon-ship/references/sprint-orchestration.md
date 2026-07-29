@@ -69,6 +69,11 @@ environment, artifacts, quantitative results, and negative findings.
 
 ## 3. Worker capability and skill routing
 
+Use the versioned capability request from plan/followup/sprint state and resolve
+it with `reckon.capability.match_worker`. The persisted object has a neutral
+`class` plus optional hard floors for reasoning, context, tool autonomy,
+verification, and risk. Concrete worker identity and cost stay runtime-only.
+
 Use a model-family-neutral **one-below** policy:
 
 1. Inspect the runtime's advertised worker models/capabilities. Do not encode
@@ -87,9 +92,9 @@ Use a model-family-neutral **one-below** policy:
 7. Never cross model families unless the user requests it or the runtime offers
    no suitable same-family worker.
 
-Treat legacy plan `tier` values as relative hints, not literal model ids. The
-orchestrator's judgment wins when current task complexity or evidence differs
-from the stored hint.
+Legacy plan `tier` values map deterministically on read and emit an audit
+diagnostic. Never copy them into a new dispatch record; persist the mapped
+capability request when the plan is next edited.
 
 Score every task on:
 
@@ -103,6 +108,13 @@ Select the worker's skill from task semantics and `recommends_skill`. Require
 the worker to read the skill plus all applicable target-path instructions
 before editing. Include chosen capability rationale and selected skills in the
 execution manifest.
+
+If no worker is advertised, continue inline and record the
+`inline-no-advertised-worker` fallback. If none satisfies every hard floor,
+selecting the strongest advertised worker is only a diagnostic fallback:
+`escalation_required` remains true, so the dispatcher must not silently weaken
+the task contract. Elevated or critical risk raises the floor to orchestrator
+class with strict verification.
 
 ## 4. Worktree-first delegation
 

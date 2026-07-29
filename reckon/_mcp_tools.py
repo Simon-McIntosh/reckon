@@ -11,8 +11,13 @@ from pydantic import BaseModel, Field
 
 
 class ReadPlanArgs(BaseModel):
-    project: str = Field(..., description="Project name (key in mounts.json, e.g. 'imas-ambix')")
-    slug: str = Field(..., description="Plan slug (HTML filename stem, e.g. 'tokenizers'); use 'index' for project config")
+    project: str = Field(
+        ..., description="Project name (key in mounts.json, e.g. 'imas-ambix')"
+    )
+    slug: str = Field(
+        ...,
+        description="Plan slug (HTML filename stem, e.g. 'tokenizers'); use 'index' for project config",
+    )
 
 
 class ListPlansArgs(BaseModel):
@@ -38,8 +43,10 @@ class AppendCommentArgs(BaseModel):
     slug: str
     section_id: str = Field(..., description="Section id the comment belongs to")
     body: str = Field(..., description="Comment text (markdown ok)")
-    author: str = Field(..., description="Author identifier, e.g. 'agent/sonnet' or 'Simon McIntosh'")
-    quote: str | None = Field(None, description="Optional quoted passage from the plan body")
+    author: str = Field(..., description="Human or agent author identifier")
+    quote: str | None = Field(
+        None, description="Optional quoted passage from the plan body"
+    )
     expected_version: int
 
 
@@ -60,7 +67,7 @@ class AppendFollowupArgs(BaseModel):
         ...,
         description=(
             "Full followup record. Must include: id, written_by, written_at, title, body, prompt. "
-            "Optional: recommends_skill, touches, blocked_by, tier, est_turn."
+            "Optional: recommends_skill, touches, blocked_by, capability, est_turn."
         ),
     )
     expected_version: int
@@ -69,8 +76,12 @@ class AppendFollowupArgs(BaseModel):
 class ResolveFollowupArgs(BaseModel):
     project: str
     slug: str
-    followup_id: str = Field(..., description="The 'id' field of the followup to resolve")
-    outcome: str = Field(..., description="Short description of what was done / decided")
+    followup_id: str = Field(
+        ..., description="The 'id' field of the followup to resolve"
+    )
+    outcome: str = Field(
+        ..., description="Short description of what was done / decided"
+    )
     by: str = Field(..., description="Who resolved the followup")
     expected_version: int
 
@@ -119,4 +130,6 @@ class VersionConflictResult(BaseModel):
     error: str = "version_conflict"
     expected_version: int
     current_version: int
-    hint: str = "Re-read the plan with reckon.read_plan to get the current version, then retry."
+    hint: str = (
+        "Re-read the plan with reckon.read_plan to get the current version, then retry."
+    )

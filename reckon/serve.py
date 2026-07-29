@@ -93,6 +93,7 @@ def _content_equal(patched: dict, reparsed: dict, *, cur_state: dict) -> bool:
     the only differences between cur_state and reparsed would be version/modified,
     so we can safely skip the disk write and return the current version.
     """
+
     def _strip(d: dict) -> dict:
         return {k: v for k, v in d.items() if k not in _STAMP_FIELDS}
 
@@ -391,7 +392,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "roi": rec.get("roi", "mid"),
                     "effort": rec.get("effort", "M"),
                     "sprint": rec.get("sprint") or None,
-                    "tier": rec.get("tier", "sonnet"),
+                    "capability": rec.get("capability"),
+                    "tier": rec.get("tier"),
                     "impl": rec["impl"],
                     "dec_open": rec["dec_open"],
                     "blockers": rec["blockers"],
@@ -984,7 +986,9 @@ class Handler(BaseHTTPRequestHandler):
         # equivalent HTML (different entity encoding, whitespace) but a state-dict
         # comparison correctly reflects semantic content equality.
         new_state_parsed = _plan_html.read_state(new_text)
-        if _content_equal(state, new_state_parsed, cur_state=_plan_html.read_state(text)):
+        if _content_equal(
+            state, new_state_parsed, cur_state=_plan_html.read_state(text)
+        ):
             self._send_json(
                 HTTPStatus.OK, {"ok": True, "slug": slug, "version": cur_version}
             )

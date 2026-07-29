@@ -401,7 +401,9 @@ Embed in every worker prompt, substituting angle-bracket fields:
 Project: <project-name>
 Plan:    <slug> (<url>)
 Section: <§N — section title>
-Capability: <one-below default | orchestrator-level | routine>
+Capability: <routine | general | orchestrator>
+Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
+Dispatch policy: <one-below default | least-sufficient | orchestrator-retained>
 
 Context
   <2–3 sentences: what this section does and why it is being shipped now>

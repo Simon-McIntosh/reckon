@@ -357,9 +357,9 @@ def _write_state(
             re.IGNORECASE,
         )
     )
-    if not legacy_alias and {k: v for k, v in new_parsed.items() if k not in _STAMP} == {
-        k: v for k, v in cur_parsed.items() if k not in _STAMP
-    }:
+    if not legacy_alias and {
+        k: v for k, v in new_parsed.items() if k not in _STAMP
+    } == {k: v for k, v in cur_parsed.items() if k not in _STAMP}:
         return cur_version
 
     tmp = html_file.with_suffix(".html.tmp")
@@ -645,7 +645,7 @@ _PLAN_SET_TOP = frozenset(
         "effort",
         "milestone",
         "sprint",
-        "tier",
+        "capability",
         "owner",
         "summary",
         "title",
@@ -779,6 +779,11 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
             raise OpError(f"impl must be a number, got {value!r}") from None
         working["impl"] = max(0.0, min(1.0, f))  # clamp 0..1 (was reject)
         return
+    if head == "capability":
+        working["capability"] = value
+        if working.pop("tier", None):
+            warnings.append("legacy tier removed because capability was set explicitly")
+        return
     working[head] = value
 
 
@@ -854,6 +859,14 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             slug = _item_slug(item)
             if not slug:
                 raise OpError("sprint item must have a slug")
+            if (
+                isinstance(item, dict)
+                and item.get("tier")
+                and not item.get("capability")
+            ):
+                raise OpError(
+                    "new sprint items must use capability instead of legacy tier"
+                )
             items = list(el.get("items", []))
             if slug in {_item_slug(x) for x in items}:
                 raise OpError(f"{slug!r} already in sprint {sprint_id}")
@@ -880,6 +893,8 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append followups requires an item object")
         required = {"id", "written_by", "written_at", "title", "body", "prompt"}
         fu = dict(item)
+        if fu.get("tier") and not fu.get("capability"):
+            raise OpError("new followups must use capability instead of legacy tier")
         if not fu.get("id"):
             fu["id"] = _gen_id("f")
         missing = [k for k in sorted(required) if not str(fu.get(k, "")).strip()]

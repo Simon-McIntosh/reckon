@@ -10,8 +10,7 @@ Covers:
   - the committed plan.schema.json == gen_json_schema()
   - cross-project conformance scan (skip-if-mount-absent; xfail-catalogue)
 
-This file owns the canonical round-trip test referenced by the
-agent-plan-authoring plan's open followup ``f-apa-roundtrip``:
+This file owns the canonical round-trip test:
 ``tests/test_schema.py::test_state_round_trip``.
 """
 
@@ -24,12 +23,12 @@ from pathlib import Path
 import pytest
 
 from reckon._plan_html import from_html, read_state, to_html, write_state
+from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
 from reckon._schema import (
     EFFORT_ENUM,
     PlanState,
     ROI_ENUM,
     STATUS_ENUM,
-    TIER_ENUM,
     IndexData,
     IndexState,
     gen_json_schema,
@@ -180,7 +179,7 @@ def test_byte_identity_on_real_reckon_plans():
         )
 
 
-# ── 3. State-level round-trip (the f-apa-roundtrip canonical test) ──────────
+# ── 3. State-level round-trip ───────────────────────────────────────────────
 
 
 def test_state_round_trip():
@@ -188,7 +187,7 @@ def test_state_round_trip():
     resolved + open followups, locked + open + free-form decisions, section-
     keyed comments, questions, and all scalars incl. server-owned ones.
 
-    Canonical round-trip referenced by agent-plan-authoring f-apa-roundtrip.
+    This is the canonical state round-trip contract.
     """
     state = read_state(FULL_PLAN)
     # sanity: the fixture exercises every section
@@ -199,11 +198,12 @@ def test_state_round_trip():
     assert state["impl"] == 0.5 and state["version"] == 3  # server-owned scalars
 
     rendered = write_state(FULL_PLAN, state)
-    assert read_state(rendered) == state
+    expected = {k: v for k, v in state.items() if k != "compatibility_warnings"}
+    assert read_state(rendered) == expected
 
     # And the typed wrappers must agree: read_state(to_html(html, ps)) == state
     ps = from_html(FULL_PLAN)
-    assert read_state(to_html(FULL_PLAN, ps)) == state
+    assert read_state(to_html(FULL_PLAN, ps)) == expected
 
 
 def test_round_trip_idempotent_second_pass():
@@ -363,7 +363,14 @@ def test_gen_json_schema_has_version_and_enums():
     assert props["status"]["enum"] == STATUS_ENUM
     assert props["roi"]["enum"] == ROI_ENUM
     assert props["effort"]["enum"] == EFFORT_ENUM
-    assert props["tier"]["enum"] == TIER_ENUM
+    capability = props["capability"]["anyOf"][0]
+    capability_ref = capability["$ref"].split("/")[-1]
+    capability_schema = s["$defs"][capability_ref]
+    assert capability_schema["properties"]["class"]["enum"] == list(CAPABILITY_CLASSES)
+    assert capability_schema["properties"]["version"]["const"] == (
+        CAPABILITY_SCHEMA_VERSION
+    )
+    assert props["tier"]["deprecated"] is True
 
 
 def test_committed_schema_matches_generated():
@@ -460,8 +467,7 @@ _INFRA_STEMS = {
 
 
 def _mounts_path() -> Path | None:
-    """Resolve mounts.json the way _store.py does: env override → legacy
-    ~/docs-server/mounts.json → ~/.config/reckon/mounts.json (F6 rename)."""
+    """Resolve mounts.json using the environment override and supported homes."""
     env = os.environ.get("RECKON_MOUNTS_PATH")
     if env:
         p = Path(env).expanduser()
@@ -516,7 +522,6 @@ _PLAN_FILES = _all_plan_files()
 )
 def test_cross_project_conformance(project, html_file):
     """Every existing plan across all mounts must parse via from_html without
-    raising. A failure here catalogues an F5 migration (xfail it with a reason
-    once cause is known — do not delete the case)."""
+    raising. Keep a failing case visible with an explicit migration reason."""
     text = html_file.read_text(encoding="utf-8", errors="replace")
     from_html(text)  # must not raise

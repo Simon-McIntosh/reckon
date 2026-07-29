@@ -35,8 +35,8 @@ The only dump configuration that reproduces both shapes is::
 ``exclude_unset`` honours the ``fields_set`` that ``model_validate`` populates
 from the input dict at *every* nesting level — so a missing top-level scalar
 stays absent, while a present-but-default-valued section (``decisions={}``) is
-still emitted. Plain ``model_dump()`` would inject every default (effort=M,
-tier=sonnet, …) and balloon ``<head>``; ``exclude_defaults`` would drop
+still emitted. Plain ``model_dump()`` would inject every default and balloon
+``<head>``; ``exclude_defaults`` would drop
 ``decisions={}`` and leave stale sections. Use :meth:`PlanState.canonical_dump`.
 
 Lenient read vs strict write (locked decision: reject-write-warn-doctor)
@@ -47,7 +47,7 @@ are typed as ``str`` (not ``Literal``) precisely so an off-enum value from an
 old plan does not raise; the canonical enums travel into the JSON Schema via
 ``json_schema_extra``. Validation of enum membership and required-on-write
 fields runs **only** at the explicit write boundary, via
-:meth:`PlanState.validate_for_write` (wired into edit_plan/doctor by F3).
+:meth:`PlanState.validate_for_write` at the explicit write boundary.
 """
 
 from __future__ import annotations
@@ -64,10 +64,22 @@ from pydantic import (
     model_validator,
 )
 
+from reckon.capability import (
+    AUTONOMY_LEVELS,
+    CAPABILITY_CLASSES,
+    CAPABILITY_SCHEMA_VERSION,
+    CONTEXT_LEVELS,
+    REASONING_LEVELS,
+    RISK_LEVELS,
+    VERIFICATION_LEVELS,
+    from_legacy_tier,
+    validate_capability,
+)
+
 # ── Schema version ──────────────────────────────────────────────────────────
 #: Bump on any breaking change to the plan/index shape. Embedded in the derived
 #: JSON Schema ($id + schemaVersion). Plans need NOT store this yet (additive).
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "3.0"
 
 #: Stable identifier for the published JSON Schema.
 SCHEMA_ID = f"https://reckon/schema/plan/{SCHEMA_VERSION}/plan.schema.json"
@@ -90,12 +102,11 @@ STATUS_ENUM = [
 ]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
-TIER_ENUM = ["haiku", "sonnet", "opus"]
 TYPE_ENUM = ["plan", "research", "evidence"]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
 
 
-def _enum(values: list[str]) -> dict[str, Any]:
+def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
     """json_schema_extra payload advertising the canonical enum for a str field
     (without making the Python field reject off-enum values on read)."""
     return {"enum": list(values)}
@@ -185,6 +196,11 @@ def split_refs(
     return local, external
 
 
+def _optional_enum(values: tuple[str, ...]) -> dict[str, Any]:
+    """Advertise an optional string enum without contradicting its null arm."""
+    return _enum((*values, None))
+
+
 # ── Plan section models ──────────────────────────────────────────────────────
 
 
@@ -208,6 +224,51 @@ class Decision(BaseModel):
     by: str = ""
 
 
+class CapabilityRequirements(BaseModel):
+    """Structured hard floors that complement the broad capability class."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reasoning: str | None = Field(
+        None,
+        json_schema_extra=_optional_enum(REASONING_LEVELS),
+    )
+    context: str | None = Field(
+        None,
+        json_schema_extra=_optional_enum(CONTEXT_LEVELS),
+    )
+    tool_autonomy: str | None = Field(
+        None,
+        json_schema_extra=_optional_enum(AUTONOMY_LEVELS),
+    )
+    verification: str | None = Field(
+        None,
+        json_schema_extra=_optional_enum(VERIFICATION_LEVELS),
+    )
+    risk: str | None = Field(
+        None,
+        json_schema_extra=_optional_enum(RISK_LEVELS),
+    )
+
+
+class CapabilityRequest(BaseModel):
+    """Versioned, provider-neutral capability request persisted with work."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    version: str = Field(
+        CAPABILITY_SCHEMA_VERSION,
+        json_schema_extra={"const": CAPABILITY_SCHEMA_VERSION},
+    )
+    capability_class: str = Field(
+        "general",
+        alias="class",
+        serialization_alias="class",
+        json_schema_extra=_enum(CAPABILITY_CLASSES),
+    )
+    requirements: CapabilityRequirements = Field(default_factory=CapabilityRequirements)
+
+
 class Followup(BaseModel):
     """A followup (``.r-fu`` element). ``status`` mirrors read_state's value;
     write_state re-derives ``data-status`` from ``resolved_at`` on render.
@@ -221,7 +282,12 @@ class Followup(BaseModel):
 
     id: str = ""
     status: str = "open"
-    tier: str = ""
+    capability: CapabilityRequest | None = None
+    tier: str = Field(
+        "",
+        description="Deprecated compatibility input; use capability",
+        json_schema_extra={"deprecated": True},
+    )
     written_by: str = ""
     written_at: str = ""
     recommends_skill: str = ""
@@ -315,7 +381,12 @@ class PlanState(BaseModel):
     effort: str = Field("M", json_schema_extra=_enum(EFFORT_ENUM))
     milestone: str = "—"
     sprint: str | None = None
-    tier: str = Field("sonnet", json_schema_extra=_enum(TIER_ENUM))
+    capability: CapabilityRequest | None = None
+    tier: str = Field(
+        "",
+        description="Deprecated compatibility input; use capability",
+        json_schema_extra={"deprecated": True},
+    )
     owner: str = ""
 
     # ── Visibility flags ──
@@ -357,6 +428,10 @@ class PlanState(BaseModel):
     modified: str = ""  # ISO date, server-written on each POST
     impl: float = 0.0  # progress fraction, server-written
     version: int = 0  # optimistic-concurrency counter, server-owned
+    compatibility_warnings: list[str] = Field(
+        default_factory=list,
+        json_schema_extra={"readOnly": True},
+    )
 
     # ── Body sections ──
     decisions: dict[str, Decision] = Field(default_factory=dict)
@@ -418,7 +493,7 @@ class PlanState(BaseModel):
         top level (only present metas) while keeping its dense nested sections.
         Feed via ``PlanState.model_validate(read_state(html)).canonical_dump()``.
         """
-        data = self.model_dump(exclude_unset=True)
+        data = self.model_dump(exclude_unset=True, by_alias=True)
         if self.type != "plan":
             # Plan-only defaults may be present on legacy documents or the
             # create template. Canonical non-plan writes remove them instead of
@@ -429,6 +504,7 @@ class PlanState(BaseModel):
                 "effort",
                 "milestone",
                 "sprint",
+                "capability",
                 "tier",
                 "depends_on",
                 "blocks",
@@ -443,8 +519,7 @@ class PlanState(BaseModel):
         followup prompts. Raises :class:`ValueError` listing every violation.
 
         This is the *reject* half of reject-write-warn-doctor. ``from_html`` is
-        lenient; callers (edit_plan / doctor, wired by F3) invoke this at the
-        write boundary.
+        lenient; callers invoke this at the write boundary.
         """
         errors: list[str] = []
         required = (
@@ -465,8 +540,10 @@ class PlanState(BaseModel):
             errors.append(f"roi: {self.roi!r} not in {ROI_ENUM}")
         if self.type == "plan" and self.effort and self.effort not in EFFORT_ENUM:
             errors.append(f"effort: {self.effort!r} not in {EFFORT_ENUM}")
-        if self.type == "plan" and self.tier and self.tier not in TIER_ENUM:
-            errors.append(f"tier: {self.tier!r} not in {TIER_ENUM}")
+        if self.type == "plan" and self.capability:
+            errors.extend(
+                validate_capability(self.capability.model_dump(by_alias=True))
+            )
         if self.type and self.type not in TYPE_ENUM:
             errors.append(f"type: {self.type!r} not in {TYPE_ENUM}")
         if self.type != "plan":
@@ -476,7 +553,7 @@ class PlanState(BaseModel):
                 "effort": ("", "M"),
                 "milestone": ("", "—"),
                 "sprint": ("", None),
-                "tier": ("", "sonnet"),
+                "capability": (None,),
                 "impl": (0, 0.0, None),
                 "depends_on": ([],),
                 "blocks": ([],),
@@ -486,6 +563,13 @@ class PlanState(BaseModel):
                 if value not in allowed:
                     errors.append(
                         f"{field}: plan-only field cannot carry {value!r} "
+                        f"on {self.type} artifacts"
+                    )
+            if self.tier:
+                mapped, _ = from_legacy_tier(self.tier)
+                if not mapped or mapped["class"] != "general":
+                    errors.append(
+                        f"tier: plan-only field cannot carry {self.tier!r} "
                         f"on {self.type} artifacts"
                     )
             for field in ("decisions", "followups", "questions"):
@@ -506,6 +590,13 @@ class PlanState(BaseModel):
                 errors.append(
                     f"followup {fu.id or '<no-id>'}: §05 prompt is mandatory (empty)"
                 )
+            if fu.capability:
+                errors.extend(
+                    f"followup {fu.id or '<no-id>'}: {error}"
+                    for error in validate_capability(
+                        fu.capability.model_dump(by_alias=True)
+                    )
+                )
         if errors:
             raise ValueError(
                 "PlanState.validate_for_write failed:\n  - " + "\n  - ".join(errors)
@@ -518,7 +609,7 @@ class PlanState(BaseModel):
 
 class _TolerantIndexModel(BaseModel):
     """Base for index.json models. ``extra='allow'`` keeps unknown fields
-    (e.g. ``milestone.description``, projects-rollup extras) so F3/F5 never
+    (e.g. ``milestone.description``, projects-rollup extras) so writes never
     silently lose data. Real index.json files carry stray ``null`` scalars
     (ambix ``sprint.summary``); the before-validator coerces ``None`` to the
     declared default for plain ``str`` fields so validation never hard-fails.
@@ -552,6 +643,7 @@ class SprintItem(_TolerantIndexModel):
     why_now: str | None = None
     done_when: str | None = None
     status: str | None = None
+    capability: CapabilityRequest | None = None
     tier: str | None = None
     blocked_by: list[str] = Field(default_factory=list)
 
@@ -634,7 +726,7 @@ class IndexData(_TolerantIndexModel):
     def model_dump(self, **kwargs: Any) -> dict:
         # Default by_alias=True so the persisted key is "_version" (not the
         # python field name "version_"). _version is the only aliased field, so
-        # this is safe and saves F3 from a silent index-counter-zeroing trap.
+        # this prevents a silent index-counter-zeroing trap.
         kwargs.setdefault("by_alias", True)
         return super().model_dump(**kwargs)
 

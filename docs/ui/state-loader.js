@@ -25,12 +25,40 @@ window.STATE_READY = (async function () {
     const raw = String(value || "plan").trim().toLowerCase();
     return raw === "doc" ? "research" : raw;
   };
+  const mapLegacyCapability = (record) => {
+    if (!record || typeof record !== "object" || record.capability || !record.tier) {
+      return record;
+    }
+    const classes = {
+      haiku: "routine",
+      sonnet: "general",
+      opus: "orchestrator",
+    };
+    const capabilityClass = classes[String(record.tier).toLowerCase()];
+    if (!capabilityClass) return record;
+    return {
+      ...record,
+      capability: {
+        version: "1.0",
+        class: capabilityClass,
+        requirements: {},
+      },
+      compatibility_warning: "legacy tier mapped on read",
+    };
+  };
 
   // ── 1. Central index ───────────────────────────────────────────────────
   const idxBlob = await getJson(`${stateBase}/index.json`);
   const idx = (idxBlob && idxBlob.data) || {};
 
-  let sprints    = Array.isArray(idx.sprints)    ? idx.sprints    : [];
+  let sprints    = Array.isArray(idx.sprints)
+    ? idx.sprints.map(sprint => ({
+        ...sprint,
+        items: (sprint.items || []).map(item =>
+          typeof item === "object" ? mapLegacyCapability(item) : item
+        ),
+      }))
+    : [];
   let milestones = Array.isArray(idx.milestones) ? idx.milestones : [];
   let inventory  = Array.isArray(idx.inventory)  ? idx.inventory  : [];
 
@@ -101,7 +129,7 @@ window.STATE_READY = (async function () {
   // comments, questions). The plan HTML is the sole store — there is no
   // per-plan state JSON to fetch.
   const mergedInventory = inventory.map(inv => ({
-    ...inv,
+    ...mapLegacyCapability(inv),
     type: canonicalType(inv.type),
   }));
   const plans = Object.fromEntries(mergedInventory.map(inv => [inv.slug, inv]));

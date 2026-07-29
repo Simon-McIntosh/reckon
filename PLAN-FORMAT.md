@@ -75,7 +75,13 @@ may write `doc` for clarity; the parser handles it.
 | `plan-effort` | author | `S` / `M` / `L` / `XL` | |
 | `plan-milestone` | author | e.g. `M2` | |
 | `plan-sprint` | author | e.g. `S4` | |
-| `plan-tier` | author | `haiku` / `sonnet` / `opus` | model-tier hint for dispatch |
+| `plan-capability-version` | author | `1.0` | persisted capability contract version |
+| `plan-capability-class` | author | `routine` / `general` / `orchestrator` | broad dispatch floor |
+| `plan-capability-reasoning` | author | `standard` / `deep` | optional hard floor |
+| `plan-capability-context` | author | `standard` / `extended` | optional hard floor |
+| `plan-capability-tool-autonomy` | author | `guided` / `autonomous` | optional hard floor |
+| `plan-capability-verification` | author | `standard` / `strict` | optional hard floor |
+| `plan-capability-risk` | author | `low` / `moderate` / `elevated` / `critical` | optional hard floor |
 | `plan-owner` | author | free text | |
 | `plan-depends-on` | author | comma-separated plan refs | dependency DAG; local **and** external |
 | `plan-blocks` | author | comma-separated plan refs | reverse-dependency; local **and** external |
@@ -149,7 +155,9 @@ way; only the resolution path differs.
   <meta name="plan-effort" content="M">
   <meta name="plan-milestone" content="PS">
   <meta name="plan-sprint" content="S4">
-  <meta name="plan-tier" content="sonnet">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
   <meta name="plan-summary" content="one-line synopsis">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="slug-a,research-x">
@@ -180,7 +188,9 @@ way; only the resolution path differs.
     </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <article class="r-fu" data-id="f1" data-status="open" data-tier="sonnet"
+      <article class="r-fu" data-id="f1" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-capability-verification="strict"
                data-written-by="smc" data-written-at="2026-05-27"
                data-recommends-skill="/reckon-ship slug"
                data-resolved-at="" data-resolved-by="">
@@ -287,7 +297,11 @@ overrides it if `resolved_at` is present. Never duplicate: just set
             "why_now": "…",
             "done_when": "…",
             "status": "pending",
-            "tier": "sonnet",
+            "capability": {
+              "version": "1.0",
+              "class": "general",
+              "requirements": {"verification": "strict"}
+            },
             "blocked_by": []
           }
         ],
@@ -326,6 +340,9 @@ explicit write boundary, via `PlanState.validate_for_write()` (wired into
 `edit_plan` by the store layer). This means:
 
 - Reading any old plan will succeed.
+- Legacy `plan-tier`, `data-tier`, and sprint-item `tier` values map
+  deterministically on read and emit a compatibility audit warning. They remain
+  unchanged until an explicit capability migration or normal capability edit.
 - Writing a plan with `status="foo"` or empty `project` field is rejected.
 - A followup without a non-empty `prompt` is rejected at write time.
 
@@ -348,7 +365,7 @@ first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 | `move` | `{"op":"move","target":"sprint_item","slug":"…","from":"S1","to":"S2"}` | moving a sprint item (index only) |
 
 **`set` path values** (plan):
-`status` · `impl` · `roi` · `effort` · `milestone` · `sprint` · `tier` · `owner`
+`status` · `impl` · `roi` · `effort` · `milestone` · `sprint` · `capability` · `owner`
 · `summary` · `title` · `type` · `archived` · `read` · `depends_on` · `blocks`
 · `informs`
 

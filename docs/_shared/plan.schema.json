@@ -1,5 +1,127 @@
 {
   "$defs": {
+    "CapabilityRequest": {
+      "additionalProperties": false,
+      "description": "Versioned, provider-neutral capability request persisted with work.",
+      "properties": {
+        "version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "class": {
+          "default": "general",
+          "enum": [
+            "routine",
+            "general",
+            "orchestrator"
+          ],
+          "title": "Class",
+          "type": "string"
+        },
+        "requirements": {
+          "$ref": "#/$defs/CapabilityRequirements"
+        }
+      },
+      "title": "CapabilityRequest",
+      "type": "object"
+    },
+    "CapabilityRequirements": {
+      "additionalProperties": false,
+      "description": "Structured hard floors that complement the broad capability class.",
+      "properties": {
+        "reasoning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "standard",
+            "deep",
+            null
+          ],
+          "title": "Reasoning"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "standard",
+            "extended",
+            null
+          ],
+          "title": "Context"
+        },
+        "tool_autonomy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "guided",
+            "autonomous",
+            null
+          ],
+          "title": "Tool Autonomy"
+        },
+        "verification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "standard",
+            "strict",
+            null
+          ],
+          "title": "Verification"
+        },
+        "risk": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "enum": [
+            "low",
+            "moderate",
+            "elevated",
+            "critical",
+            null
+          ],
+          "title": "Risk"
+        }
+      },
+      "title": "CapabilityRequirements",
+      "type": "object"
+    },
     "Comment": {
       "description": "A comment (``.r-comment`` element). Anchored to a section via the dict\nkey (default ``_top``) \u2014 the anchor is the mapping key, not a field here.",
       "properties": {
@@ -103,8 +225,21 @@
           "title": "Status",
           "type": "string"
         },
+        "capability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "tier": {
           "default": "",
+          "deprecated": true,
+          "description": "Deprecated compatibility input; use capability",
           "title": "Tier",
           "type": "string"
         },
@@ -386,13 +521,21 @@
       "default": null,
       "title": "Sprint"
     },
-    "tier": {
-      "default": "sonnet",
-      "enum": [
-        "haiku",
-        "sonnet",
-        "opus"
+    "capability": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CapabilityRequest"
+        },
+        {
+          "type": "null"
+        }
       ],
+      "default": null
+    },
+    "tier": {
+      "default": "",
+      "deprecated": true,
+      "description": "Deprecated compatibility input; use capability",
       "title": "Tier",
       "type": "string"
     },
@@ -528,6 +671,14 @@
       "title": "Version",
       "type": "integer"
     },
+    "compatibility_warnings": {
+      "items": {
+        "type": "string"
+      },
+      "readOnly": true,
+      "title": "Compatibility Warnings",
+      "type": "array"
+    },
     "decisions": {
       "additionalProperties": {
         "$ref": "#/$defs/Decision"
@@ -569,6 +720,6 @@
   },
   "title": "reckon PlanState",
   "type": "object",
-  "$id": "https://reckon/schema/plan/2.0/plan.schema.json",
-  "schemaVersion": "2.0"
+  "$id": "https://reckon/schema/plan/3.0/plan.schema.json",
+  "schemaVersion": "3.0"
 }

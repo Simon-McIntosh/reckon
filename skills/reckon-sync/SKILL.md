@@ -318,7 +318,9 @@ EOF
 <meta name="plan-summary"  content="One-line synopsis">
 <meta name="plan-roi"      content="high">         <!-- high|mid|low -->
 <meta name="plan-effort"   content="M">            <!-- S|M|L|XL -->
-<meta name="plan-tier"     content="sonnet">       <!-- haiku|sonnet|opus -->
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="general"> <!-- routine|general|orchestrator -->
+<meta name="plan-capability-verification" content="standard">
 <meta name="plan-milestone" content="M1">
 <meta name="plan-sprint"   content="S1">
 <meta name="plan-depends-on" content="slug-a,research-x">

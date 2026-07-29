@@ -16,11 +16,11 @@
 //   {
 //     _version:  <integer>,   // set by serve.py; incremented on every write
 //     status:    "active" | "pending" | "blocked" | "shipped" | "draft",
-//     tier:      "haiku" | "sonnet" | "opus",
+//     capability: { version, class, requirements },
 //     decisions: { <key>: { choice, rationale, when, by } },
 //     notes:     [{ id, who, bot, when, body, quote? }],
 //     followups: [{ id, written_by, written_at, title, body,
-//                   recommends_skill, touches, blocked_by?, tier?,
+//                   recommends_skill, touches, blocked_by?, capability?,
 //                   est_turn, prompt,
 //                   resolved_at?, resolved_by?, outcome? }],
 //     research:  [{ id, type, title, source, added_by, when, url }],
@@ -41,7 +41,7 @@
 //   saveState(data)     → POST with versioning; falls back to localStorage on
 //                         network error or persistent conflict.
 //   lockDecision / appendNote / appendFollowup / appendResearch /
-//   appendQuestion / resolveFollowup / setStatus / setTier  — all call the
+//   appendQuestion / resolveFollowup / setStatus / setCapability — all call the
 //   internal postState(patch) helper which manages GET-version → POST flow.
 //
 // Version / 412 contract (mirrors serve.py):
@@ -320,7 +320,7 @@
   window.getQuestions = (blob) => ((blob && blob.data) || blob || {}).questions || [];
   window.getTests     = (blob) => ((blob && blob.data) || blob || {}).tests     || [];
   window.getStatus    = (blob) => ((blob && blob.data) || blob || {}).status    || null;
-  window.getTier      = (blob) => ((blob && blob.data) || blob || {}).tier      || null;
+  window.getCapability = (blob) => ((blob && blob.data) || blob || {}).capability || null;
 
   // Build a merged data object from the localStorage overlay, then POST it.
   // In editable mode, postState handles server write + local cache.
@@ -390,7 +390,7 @@
 
   // Top-level scalar setters.
   window.setStatus = (s) => mergeAndSave({ status: s });
-  window.setTier   = (t) => mergeAndSave({ tier:   t });
+  window.setCapability = (capability) => mergeAndSave({ capability });
 
   // --- Mode banner --------------------------------------------------
   document.addEventListener("DOMContentLoaded", function () {
