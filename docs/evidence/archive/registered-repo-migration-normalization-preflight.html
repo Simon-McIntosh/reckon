@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="registered-repo-migration-normalization-preflight">
+  <meta name="plan-title" content="Registered Repository Migration — Legacy Layout Normalization">
+  <meta name="plan-summary" content="Legacy nested resources, reserved identities, missing type metadata, and archived identity collisions now pass deterministic migration preflight.">
+  <meta name="plan-evidence-for" content="registered-repo-state-migration">
+  <meta name="plan-verifies" content="registered-repo-state-migration#s2,registered-repo-state-migration#s3,registered-repo-state-migration#s5">
+  <meta name="plan-commits" content="997ff6748e5e3b58dffc28b25aa9e1f072b9572b">
+  <meta name="plan-artifacts" content="~/.config/reckon/migrations/normalization-preflight-20260729/ledger.json,~/.config/reckon/migrations/normalization-canary-20260729/ledger.json">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-07-29">
+  <meta name="plan-source-quality" content="verified">
+  <title>Registered Repository Migration — Legacy Layout Normalization | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Legacy layout normalization preflight</h1>
+    <p class="lead">Commit <code>997ff67</code> made explicit layout migration repair noncanonical nested resources without weakening strict runtime discovery. The full Reckon suite passed <strong>1,384 tests</strong>.</p>
+
+    <section>
+      <h2>Normalization contract</h2>
+      <table>
+        <thead><tr><th>Legacy condition</th><th>Deterministic action</th><th>Safety boundary</th></tr></thead>
+        <tbody>
+          <tr><td>Nested typed resource</td><td>Flatten to its type root and rewrite sibling links.</td><td>Destination collisions stop before mutation.</td></tr>
+          <tr><td>Reserved <code>index.html</code> identity</td><td>Prefix the containing topic to produce a safe stable slug.</td><td>The semantic slug is rewritten with the move.</td></tr>
+          <tr><td>Typed resource without <code>reckon-type</code></td><td>Infer the owning typed root and stamp the missing semantic type.</td><td>Normal discovery remains strict until explicit migration runs.</td></tr>
+          <tr><td>Archived records sharing a live-plan slug</td><td>Use each unique record filename as its archived identity.</td><td>Non-unique filenames retain a hard collision.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Registered-repository previews</h2>
+      <ul>
+        <li><code>imas-codex</code>: <strong>144</strong> deterministic moves now preflight successfully; the only remaining blocker is three active alternate worktrees.</li>
+        <li><code>imas-efit</code>: <strong>484</strong> deterministic moves and in-place metadata repairs now preflight successfully; its migration is gated only by explicit external-repository write authority.</li>
+        <li>The fresh 12-project fleet ledger reports <strong>7 preflight-clean repositories</strong>: <code>hanney</code>, <code>helix</code>, <code>imas-efit</code>, <code>norma</code>, <code>reckon</code>, <code>tessera</code>, and <code>vv</code>.</li>
+      </ul>
+      <p>The preflight ledger SHA-256 is <code>59e691d5a0fd7b87282071ad7d96a306765f70cf9c05836b497f9d54e27c714a</code>. No external repository was modified.</p>
+    </section>
+
+    <section>
+      <h2>Canary re-verification</h2>
+      <p>The authorized Reckon canary was re-run from commit <code>997ff67</code>. It required no further working-tree changes and remained fully verified: 17 schema resources checked with zero violations, zero document or audit errors, 36 progressive resources readable, zero legacy capability records, and a successful static projection containing 32 plans and 4 sprints.</p>
+      <p>The canary ledger SHA-256 is <code>e4cd70c7abcd5cfdba02eb5582a6b55b2601f91e6943af60a87e29cd5fb4d5fa</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

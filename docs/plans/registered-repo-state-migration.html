@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
@@ -28,6 +28,8 @@
 <meta name="plan-capability-verification" content="strict">
 <meta name="plan-capability-risk" content="elevated">
 <meta name="plan-impl" content="0.6">
+<meta name="plan-commits" content="f39a4cbcc8a380dcce9d3d78593ee45d41ebc61c,157f1c8fed6ad4850ab827d2fa75520b0e347140,997ff6748e5e3b58dffc28b25aa9e1f072b9572b">
+<meta name="plan-artifacts" content="evidence:registered-repo-migration-canary,evidence:registered-repo-migration-fleet-ledger,evidence:registered-repo-migration-normalization-preflight,~/.config/reckon/migrations/normalization-preflight-20260729/ledger.json,~/.config/reckon/migrations/normalization-canary-20260729/ledger.json">
 </head>
 <body>
   <main class="plan-doc">
@@ -53,11 +55,12 @@
 
     <h2 id="s2">§2 — Preflight and inventory <span class="badge badge-shipped">tooling landed</span></h2>
     <p><strong>Landed:</strong> runtime registry hashing, per-mount Git/worktree/dirty-path inspection, content-bearing snapshots, atomic incremental ledger writes, and exact terminal deferrals are implemented in <code>f39a4cb</code>. <a href="/reckon/plans/archive/registered-repo-state-migration-tooling-landed">Read the tooling record</a>.</p>
+    <p><strong>Legacy normalization landed:</strong> commit <code>997ff67</code> adds collision-safe flattening for nested typed resources, reserved identity repair, missing semantic-type stamping, and unique archive-record identities. Fresh previews now accept 144 <code>imas-codex</code> moves and 484 <code>imas-efit</code> moves or repairs; the full suite passed 1,384 tests. <a href="/reckon/evidence/archive/registered-repo-migration-normalization-preflight">Read the normalization evidence</a>.</p>
     <p>The migration begins with a read-only inventory of the mount registry and each resolved repository root. For every project it records the mounted checkout, current branch and commit, dirty-tree state, existing artifact layout, sprint and milestone stores, plan schema versions, unresolved decisions and followups, server audit result, and whether alternate worktrees exist.</p>
     <p>Preflight must refuse ambiguous or unsafe targets. A missing repository root, unresolved mount symlink, dirty overlap with migration paths, detached mounted checkout, duplicate project identity, or unreadable state produces a deferred row with a concrete next action. Unrelated user changes are preserved. The mounted checkout must never be switched to another branch as a migration shortcut.</p>
 
-    <h2 id="s3">§3 — Per-repository transaction <span class="badge badge-active">canary next</span></h2>
-    <p><strong>Transaction engine landed:</strong> selected repositories migrate in an isolated staging copy and must pass capability, typed-layout, distributed-state, document, schema, relationship, progressive-read, and static-build gates before exact-path installation. Injected installation failure restores the snapshot byte-for-byte; the live <code>reckon</code> canary is next.</p>
+    <h2 id="s3">§3 — Per-repository transaction <span class="badge badge-active">external waves next</span></h2>
+    <p><strong>Transaction engine and normalization canary verified:</strong> selected repositories migrate in an isolated staging copy and must pass capability, typed-layout, distributed-state, document, schema, relationship, progressive-read, and static-build gates before exact-path installation. Injected installation failure restores the snapshot byte-for-byte. The re-run Reckon canary passed with zero further working-tree changes, 17/17 schema resources conformant, zero document or audit errors, and 36 progressive resources readable.</p>
     <p>Each repository migrates as an independent, resumable transaction. The transaction writes a before snapshot, applies the canonical typed-directory and distributed-state migration, rewrites internal references through the shared resolver, converts legacy provider tiers, and validates the new MCP response contract. It then runs document audit, schema audit, static build, targeted tests, and relationship checks before declaring that repository migrated.</p>
     <p>State writes in alternate worktrees must pair <code>read_plan</code> and <code>edit_plan</code> with the same <code>checkout_path</code>. The coordinator owns shared sprint and migration-ledger updates. No fleet worker may stage broad paths, sweep another worker’s edits, change the mount registry, or publish externally.</p>
 
@@ -68,6 +71,7 @@
 
     <h2 id="s5">§5 — Migration ledger and evidence <span class="badge badge-active">12/12 terminal</span></h2>
     <p>The registry snapshot contains 12 projects and every row now has a content-bearing snapshot plus a terminal state: one verified, five deferred only for explicit external write authority, and six deferred for exact preflight blockers. <a href="/reckon/evidence/archive/registered-repo-migration-fleet-ledger">Read the fleet ledger evidence</a>.</p>
+    <p>A fresh post-normalization ledger keeps all 12 rows terminal and raises the preflight-clean set to seven repositories. <code>imas-efit</code> is now clean; <code>imas-codex</code> is blocked only by its three active worktrees. No external repository was modified, and the clean wave remains gated by explicit cross-repository write authority.</p>
     <p>The coordinator maintains one fleet ledger with the states <code>discovered</code>, <code>preflight-passed</code>, <code>deferred</code>, <code>migrated</code>, <code>verified</code>, and <code>rolled-back</code>. Each row records the project-qualified resource, source commit, migration version, output commit or working-tree path, verification results, evidence location, and any operator action required.</p>
     <p>Each successful repository produces typed evidence containing before/after counts, migrated paths, reference rewrites, schema and build results, and the exact migration version. A fleet-level evidence record summarizes coverage and names every deferred or failed project. No repository is silently omitted.</p>
 
@@ -120,7 +124,8 @@
     <pre class="r-fu-prompt">Project: reckon
 Plan:    registered-repo-state-migration (http://localhost:8765/reckon/registered-repo-state-migration.html)
 Section: full plan
-Tier:    opus
+Capability: orchestrator
+Requirements: deep reasoning, extended context, autonomous tools, strict verification, elevated risk
 
 Context
   The new state contracts must be applied consistently across every host-registered repository.
