@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Verified resource decomposition, concurrency, recovery, migration parity, and static projection.">
   <meta name="plan-evidence-for" content="distributed-sprint-state">
   <meta name="plan-verifies" content="distributed-sprint-state#s2,distributed-sprint-state#s3,distributed-sprint-state#s4">
-  <meta name="plan-commits" content="44c39cc,40e6cd6">
+  <meta name="plan-commits" content="44c39cc,40e6cd6,a837fc7">
   <meta name="plan-artifacts" content="docs/.reckon/project-state-migration.json,docs/sprints/S5.html,docs/state/reckon/timeline.html">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-recorded-at" content="2026-07-29">
@@ -59,12 +59,15 @@
     <section>
       <h2>Verification</h2>
       <p>Independent review identified format-boundary, rollback, recovery-race, durability, HTTP symmetry, parity, and reference-validation gaps in the initial landing. Commit <code>40e6cd6</code> closes those findings with regression coverage.</p>
+      <p>Final review found three narrower boundaries: markerless discovery still preferred <code>project.json</code>, simultaneous activation could race across different sprint files, and a static projection suppressed discovery failures other than 404. Commit <code>a837fc7</code> makes the legacy index exclusive, locks only transitions into active status, and behavior-tests explicit static-hosting fallback.</p>
       <table>
         <thead><tr><th>Gate</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>Distributed storage/concurrency/migration tests</td><td><strong>37 passed</strong></td></tr>
+          <tr><td>Distributed storage/concurrency/migration tests</td><td><strong>41 included in full suite</strong></td></tr>
+          <tr><td>Targeted concurrency and legacy precedence</td><td><strong>5 passed</strong> in 8.73 s</td></tr>
+          <tr><td>Executable SPA fallback scenarios</td><td><strong>2 passed</strong> in 0.58 s</td></tr>
           <tr><td>Storage, typed-resource, MCP, edit, and build integration</td><td><strong>146 passed</strong></td></tr>
-          <tr><td>Complete test suite</td><td><strong>1,345 passed</strong> in 27.18 s</td></tr>
+          <tr><td>Complete test suite</td><td><strong>1,349 passed</strong> in 29.86 s</td></tr>
           <tr><td>Ruff</td><td><strong>clean</strong></td></tr>
           <tr><td>Schema regeneration</td><td><strong>committed parity</strong></td></tr>
           <tr><td>Legacy index preservation</td><td><strong>byte-identical</strong></td></tr>

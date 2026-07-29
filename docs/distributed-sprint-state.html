@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
@@ -42,12 +42,12 @@
 
     <section id="s2" class="section-landed">
       <h2><span class="badge badge-shipped">✓ landed 2026-07-29</span> §2 — Target resource model</h2>
-      <p class="landed-summary">Added independently versioned sprint, milestone, blocker, timeline, and identity-only project resources. This checkout migrated to seven resources while retaining the source index byte-for-byte; strict marker gating and rollback hardening landed in <code>40e6cd6</code>. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Full verified record</a>.</p>
+      <p class="landed-summary">Added independently versioned sprint, milestone, blocker, timeline, and identity-only project resources. This checkout migrated to seven resources while retaining the source index byte-for-byte; strict marker gating and rollback hardening landed in <code>40e6cd6</code>, followed by legacy-precedence and activation-race closure in <code>a837fc7</code>. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Full verified record</a>.</p>
     </section>
 
     <section id="s3" class="section-landed">
       <h2><span class="badge badge-shipped">✓ landed 2026-07-29</span> §3 — MCP and concurrency</h2>
-      <p class="landed-summary">Kept the three-tool MCP surface while adding symmetric typed reads/writes, composed compatibility reads, one-winner resource locks, and durable contained recovery journals. Independent review corrections in <code>40e6cd6</code> pass 37 focused, 146 integration, and 1,345 full-suite tests. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Evidence</a>.</p>
+      <p class="landed-summary">Kept the three-tool MCP surface while adding symmetric typed reads/writes, composed compatibility reads, single-winner activation, and durable contained recovery journals. Forty-one project-state regressions are included in the 1,349-test passing full suite; targeted multiprocessing and executable SPA scenarios also pass. <a href="/reckon/evidence/archive/distributed-sprint-state-storage-landed">Evidence</a>.</p>
     </section>
 
     <section id="s4" class="section-landed">
@@ -98,7 +98,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-dss-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship distributed-sprint-state" data-resolved-at="2026-07-29T14:02:44+00:00" data-resolved-by="reckon-ship">
+<article class="r-fu" data-id="f-dss-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship distributed-sprint-state" data-resolved-at="2026-07-29T14:34:15+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Split project state into independently versioned resources</h4>
     <div class="r-fu-body"><p>Design the resource grammar, lock storage decisions, and migrate the current index only after composed-state parity is proven.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -121,7 +121,7 @@ Done-when
   1. decomposed storage, migration and composed discovery land with concurrency tests
   2. tests still green
   3. followup written into plan + this followup marked resolved</pre>
-    <p class="r-fu-outcome">Distributed storage landed in 44c39cc and independent review corrections landed in 40e6cd6: seven canary resources, byte-identical source/snapshot f6aa91f66811…, parity 11edeeebb748…, 37 focused, 146 integration, and 1,345 full-suite tests passed. Marker-gated reads/writes, fail-closed HTTP/MCP/SPA behavior, migration rollback, durable contained journals, strict references, and append-only history are verified. done — no followup here; downstream closure is already tracked by reckon-ci-build and mcp-readable-responses.</p>
+    <p class="r-fu-outcome">Distributed storage landed in 44c39cc, independent review corrections landed in 40e6cd6, and final race/precedence corrections landed in a837fc7. Seven canary resources retain byte-identical source/snapshot f6aa91f66811… and parity 11edeeebb748…. The 41 project-state regressions are included in a 1,349-test passing full suite; targeted multiprocessing and executable SPA scenarios also pass. Marker-gated reads/writes, strict legacy index precedence, single-winner activation, fail-closed HTTP/MCP/SPA behavior, migration rollback, durable contained journals, strict references, and append-only history are verified. done — no followup here; downstream closure is already tracked by reckon-ci-build and mcp-readable-responses.</p>
     </article>
 </section>
   </main>
