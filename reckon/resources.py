@@ -420,17 +420,32 @@ def resolve_resource(
 ) -> Resource | None:
     """Resolve by typed identity; untyped compatibility reads require uniqueness."""
     requested_type = canonical_type(artifact_type) if artifact_type else None
-    matches = [
-        resource
-        for resource in resource_map(
-            docs_dir,
-            project,
-            include_archived=include_archived,
-        ).values()
-        if resource.slug == slug
-        and (requested_type is None or resource.type == requested_type)
-        and (include_archived or not resource.archived)
-    ]
+    matches_by_key: dict[tuple[str, str, bool], Resource] = {}
+    for resource in iter_resources(
+        docs_dir,
+        project,
+        include_archived=include_archived,
+        ignore_invalid=True,
+    ):
+        if resource.slug != slug:
+            continue
+        if requested_type is not None and resource.type != requested_type:
+            continue
+        if resource.archived and not include_archived:
+            continue
+        key = (resource.type, resource.slug, resource.archived)
+        existing = matches_by_key.get(key)
+        if existing is None:
+            matches_by_key[key] = resource
+            continue
+        preferred = _preferred_resource(existing, resource)
+        if preferred is None:
+            raise ResourceCollision(
+                f"duplicate resource {resource.identity.key}: "
+                f"{existing.relative_path}, {resource.relative_path}"
+            )
+        matches_by_key[key] = preferred
+    matches = list(matches_by_key.values())
     if not matches:
         return None
     if requested_type is None:
