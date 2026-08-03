@@ -859,6 +859,20 @@ def test_fastmcp_signature_keeps_new_arguments_optional():
     assert not {"resource", "view", "cursor", "include_prompts"} & required
 
 
+def test_fastmcp_edit_signature_discriminates_state_and_text_payloads():
+    tool = next(
+        item
+        for item in mcp_module.mcp._tool_manager.list_tools()
+        if item.name == "_edit_plan"
+    )
+    required = set(tool.parameters.get("required") or [])
+    properties = tool.parameters["properties"]
+
+    assert {"project", "slug", "expected_version"} <= required
+    assert not {"mode", "ops", "old_html", "new_html"} & required
+    assert properties["mode"]["enum"] == ["state", "text"]
+
+
 def test_error_builder_common_contract():
     selector = ResourceSelector("proj", "plan", "x")
     result = error_response(

@@ -30,7 +30,7 @@ import json
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 # ── SDK import ─────────────────────────────────────────────────────────────
 try:
@@ -68,7 +68,7 @@ if _HAS_MCP and FastMCP is not None:
         instructions=(
             "Read and write reckon plan state. "
             "Always call reckon.read_plan first to get the current version "
-            "before edit_plan or edit_plan_text — writes are rejected if "
+            "before edit_plan — writes are rejected if "
             "expected_version doesn't match the current plan version. Use "
             "roadmap before execution or relationship/sprint changes."
         ),
@@ -750,7 +750,7 @@ _DOS_DONTS = {
         "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
         "use depends_on only for executable prerequisites; research, evidence, and specifications use informs.",
         "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, and wiring findings.",
-        "use edit_plan_text for one exact version-safe authored HTML replacement; structured state remains in edit_plan.",
+        "use edit_plan mode='text' for one exact version-safe authored HTML replacement; use mode='state' for structured ops.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
@@ -1861,19 +1861,22 @@ def _validate_working(slug: str, working: dict) -> list[str] | None:
 def _edit_plan(
     project: str,
     slug: str,
-    ops: list[dict[str, Any]],
+    ops: list[dict[str, Any]] | None,
     expected_version: int,
     create: bool = False,
     checkout_path: str | None = None,
     doc_type: str | None = None,
+    mode: Literal["state", "text"] = "state",
+    old_html: str | None = None,
+    new_html: str | None = None,
 ) -> dict[str, Any]:
-    """Apply an ordered list of ops to one plan (or the project index), then
-    schema-validate and write atomically with an optimistic-concurrency check.
+    """Edit structured state or authored prose with version protection.
 
-    This is the single collapsed write tool. ``ops`` are applied IN ORDER to a
-    working copy of the current state dict; the result is schema-validated; only
-    then is it persisted (version-checked). On a bad op or a validation failure
-    NOTHING is written and field-level errors are returned.
+    ``mode='state'`` applies ``ops`` IN ORDER to a working copy, validates the
+    resulting schema, and writes atomically. ``mode='text'`` replaces the one
+    exact ``old_html`` occurrence with ``new_html`` and refuses any structured
+    state change. Text mode accepts ``ops=None`` or an empty list and does not
+    support ``create``. Both modes reject stale ``expected_version`` values.
 
     Routing: slug="index" → project config (sprints/milestones/timeline/blockers,
     version = data._version); any other slug → typed HTML selected by
@@ -1904,6 +1907,59 @@ def _edit_plan(
     operation, resource title/identity, expected/current versions, and the
     smallest corrective action.
     """
+    if mode not in {"state", "text"}:
+        return {
+            "ok": False,
+            "error": "invalid_edit_mode",
+            "detail": "mode must be 'state' or 'text'",
+        }
+    if mode == "text":
+        if create:
+            return {
+                "ok": False,
+                "error": "invalid_edit_request",
+                "detail": "text mode does not support create=True",
+            }
+        if ops:
+            return {
+                "ok": False,
+                "error": "invalid_edit_request",
+                "detail": "text mode does not accept structured ops",
+            }
+        if old_html is None or not old_html:
+            return {
+                "ok": False,
+                "error": "invalid_edit_request",
+                "detail": "text mode requires non-empty old_html",
+            }
+        if new_html is None:
+            return {
+                "ok": False,
+                "error": "invalid_edit_request",
+                "detail": "text mode requires new_html",
+            }
+        return _edit_plan_prose(
+            project,
+            slug,
+            old_html,
+            new_html,
+            expected_version,
+            checkout_path,
+            doc_type,
+        )
+    if old_html is not None or new_html is not None:
+        return {
+            "ok": False,
+            "error": "invalid_edit_request",
+            "detail": "state mode does not accept old_html or new_html",
+        }
+    if ops is None:
+        return {
+            "ok": False,
+            "error": "invalid_edit_request",
+            "detail": "state mode requires an ops list",
+        }
+
     is_index = slug in ("index", "project") and doc_type is None
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
     from reckon._schema import TYPE_ENUM
@@ -2155,7 +2211,7 @@ def _edit_plan(
     return result
 
 
-def _edit_plan_text(
+def _edit_plan_prose(
     project: str,
     slug: str,
     old_html: str,
@@ -2208,6 +2264,41 @@ def _edit_plan_text(
             "slug": slug,
             "detail": str(exc),
         }
+
+
+def _edit_plan_tool(
+    project: str,
+    slug: str,
+    expected_version: int,
+    mode: Literal["state", "text"] = "state",
+    ops: list[dict[str, Any]] | None = None,
+    old_html: str | None = None,
+    new_html: str | None = None,
+    create: bool = False,
+    checkout_path: str | None = None,
+    doc_type: str | None = None,
+) -> dict[str, Any]:
+    """Edit one Reckon resource through a version-safe state or text mode.
+
+    Use ``mode='state'`` with ``ops`` for validated structured changes. Use
+    ``mode='text'`` with ``old_html`` and ``new_html`` for one exact authored
+    HTML replacement. Read the same resource first and pass its version as
+    ``expected_version``; worktree callers must reuse the same
+    ``checkout_path`` on both calls.
+    """
+
+    return _edit_plan(
+        project=project,
+        slug=slug,
+        ops=ops,
+        expected_version=expected_version,
+        create=create,
+        checkout_path=checkout_path,
+        doc_type=doc_type,
+        mode=mode,
+        old_html=old_html,
+        new_html=new_html,
+    )
 
 
 def _roadmap(
@@ -2720,8 +2811,7 @@ def _audit(
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + edit_plan_text + roadmap
-# + audit. The granular
+# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit. The granular
 # _funcs below remain for tests/internal use but are intentionally NOT
 # registered (collapsed per the schema-and-tooling plan); full removal is a
 # later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
@@ -2731,8 +2821,7 @@ def _audit(
 
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
-    edit_plan_tool = mcp.tool()(_edit_plan)
-    edit_plan_text_tool = mcp.tool()(_edit_plan_text)
+    edit_plan_tool = mcp.tool(name="_edit_plan")(_edit_plan_tool)
     roadmap_tool = mcp.tool()(_roadmap)
     audit_tool = mcp.tool()(_audit)
 

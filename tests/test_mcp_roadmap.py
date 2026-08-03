@@ -77,10 +77,11 @@ def test_mcp_roadmap_scans_mounted_project(mounted_project) -> None:
     assert result["critical_path"]["plans"] == ["foundation", "consumer"]
 
 
-def test_fastmcp_registers_roadmap_and_text_edit_tools() -> None:
+def test_fastmcp_registers_one_edit_tool_and_roadmap() -> None:
     names = {item.name for item in mcp_module.mcp._tool_manager.list_tools()}
 
-    assert {"_roadmap", "_edit_plan_text"} <= names
+    assert {"_roadmap", "_edit_plan"} <= names
+    assert "_edit_plan_text" not in names
 
 
 def test_mcp_roadmap_portfolio_rolls_up_mounted_projects(mounted_project) -> None:
@@ -96,19 +97,20 @@ def test_mcp_roadmap_portfolio_rolls_up_mounted_projects(mounted_project) -> Non
     assert result["portfolio"]["deferred"] == 0
 
 
-def test_edit_plan_text_replaces_exact_prose_and_advances_version(
+def test_edit_plan_in_text_mode_replaces_exact_prose_and_advances_version(
     mounted_project,
 ) -> None:
     project, docs = mounted_project
     path = _write_plan(docs, "editable", body='<p id="intro">Old prose.</p>')
 
-    result = mcp_module._edit_plan_text(
+    result = mcp_module._edit_plan_tool(
         project,
         "editable",
-        '<p id="intro">Old prose.</p>',
-        '<p id="intro">Revised prose with <strong>evidence</strong>.</p>',
         expected_version=0,
         doc_type="plan",
+        mode="text",
+        old_html='<p id="intro">Old prose.</p>',
+        new_html='<p id="intro">Revised prose with <strong>evidence</strong>.</p>',
     )
 
     assert result["ok"] is True
@@ -119,17 +121,20 @@ def test_edit_plan_text_replaces_exact_prose_and_advances_version(
     assert 'name="plan-version" content="1"' in text
 
 
-def test_edit_plan_text_rejects_structured_state_changes(mounted_project) -> None:
+def test_edit_plan_in_text_mode_rejects_structured_state_changes(
+    mounted_project,
+) -> None:
     project, docs = mounted_project
     _write_plan(docs, "editable")
 
-    result = mcp_module._edit_plan_text(
+    result = mcp_module._edit_plan_tool(
         project,
         "editable",
-        'name="plan-status" content="active"',
-        'name="plan-status" content="shipped"',
         expected_version=0,
         doc_type="plan",
+        mode="text",
+        old_html='name="plan-status" content="active"',
+        new_html='name="plan-status" content="shipped"',
     )
 
     assert result["ok"] is False
@@ -137,18 +142,46 @@ def test_edit_plan_text_rejects_structured_state_changes(mounted_project) -> Non
     assert "structured plan state" in result["detail"]
 
 
-def test_edit_plan_text_requires_one_exact_match(mounted_project) -> None:
+def test_edit_plan_in_text_mode_requires_one_exact_match(mounted_project) -> None:
     project, docs = mounted_project
     _write_plan(docs, "editable", body="<p>same</p><p>same</p>")
 
-    result = mcp_module._edit_plan_text(
+    result = mcp_module._edit_plan_tool(
         project,
         "editable",
-        "<p>same</p>",
-        "<p>changed</p>",
         expected_version=0,
         doc_type="plan",
+        mode="text",
+        old_html="<p>same</p>",
+        new_html="<p>changed</p>",
     )
 
     assert result["ok"] is False
     assert "found 2 occurrences" in result["detail"]
+
+
+def test_edit_plan_modes_reject_mixed_payloads(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(docs, "editable", body="<p>prose</p>")
+
+    text_with_ops = mcp_module._edit_plan_tool(
+        project,
+        "editable",
+        expected_version=0,
+        mode="text",
+        ops=[{"op": "set", "path": "summary", "value": "mixed"}],
+        old_html="<p>prose</p>",
+        new_html="<p>changed</p>",
+    )
+    state_with_text = mcp_module._edit_plan_tool(
+        project,
+        "editable",
+        expected_version=0,
+        mode="state",
+        ops=[],
+        old_html="<p>prose</p>",
+        new_html="<p>changed</p>",
+    )
+
+    assert text_with_ops["error"] == "invalid_edit_request"
+    assert state_with_text["error"] == "invalid_edit_request"

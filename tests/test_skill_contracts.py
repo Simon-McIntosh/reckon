@@ -89,6 +89,6 @@ def test_create_and_edit_skills_guard_repository_allocation() -> None:
 def test_edit_skill_uses_version_safe_prose_tool() -> None:
     edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text()
 
-    assert "edit_plan_text" in edit
+    assert 'mode="text"' in edit
     assert "old_html must occur exactly once" not in edit
     assert "requires exactly one match" in edit

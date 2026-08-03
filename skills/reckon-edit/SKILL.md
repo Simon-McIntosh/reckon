@@ -8,7 +8,7 @@ description: >-
   archive / retire the plan / invoke reckon-edit with a slug". For new plans use
   reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
   executing work use reckon-ship; for read-only inspection use reckon-status.
-allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___edit_plan_text mcp__reckon___roadmap mcp__reckon___audit
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
 
 # reckon-edit — mutations to an existing plan
@@ -16,7 +16,7 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 ## Fast path
 - Lock a decision → typed `read_plan(..., view="raw")` then `edit_plan` `lock` op.
 - Add / resolve a followup → `edit_plan` `append` / `resolve` op (prompt mandatory).
-- Fix prose / add a section → raw read then `edit_plan_text` with one exact old/new fragment.
+- Fix prose / add a section → raw read then `edit_plan` in text mode with one exact old/new fragment.
 - Repair dependencies → classify hard prerequisites vs `informs`/`blocks`, edit, then run `roadmap`.
 - Relocate a misplaced plan → follow the cross-project relocation transaction below.
 - Sprints / milestones / roadmap → use `reckon-sprint` (the index, not a plan).
@@ -48,8 +48,8 @@ separate state file; edit the HTML and the plan's state changes.
 
 **Three write paths:**
 
-1. **`edit_plan_text` MCP call** (primary for prose, evergreen additions, new
-   sections): replace one exact authored HTML fragment with optimistic
+1. **`edit_plan` with `mode="text"`** (primary for prose, evergreen additions,
+   new sections): replace one exact authored HTML fragment with optimistic
    concurrency. It rejects metadata or `data-reckon` mutations.
 
 2. **`edit_plan` MCP call** (required for structured state: decisions, followups,
@@ -186,7 +186,7 @@ edit_plan(
 
 **On 412:** repeat the typed `view="raw"` read → new `version` → retry `edit_plan`.
 
-## Prose write pattern — `edit_plan_text`
+## Prose write pattern — `edit_plan` text mode
 
 Use a lossless raw read for the current version, then provide an exact fragment
 that occurs once:
@@ -196,13 +196,15 @@ state = read_plan(
     resource={"project": "my-project", "type": "plan", "id": "my-plan"},
     view="raw",
 )
-edit_plan_text(
+edit_plan(
     project="my-project",
     slug="my-plan",
+    ops=None,
     old_html="<p>Exact current prose.</p>",
     new_html="<p>Revised prose with <strong>evidence</strong>.</p>",
     expected_version=state["version"],
     doc_type="plan",
+    mode="text",
 )
 ```
 

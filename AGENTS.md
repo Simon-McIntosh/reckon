@@ -245,7 +245,7 @@ multiplexer; the canonical one on this workstation is a **zellij session
 named `reckon`** (not tmux — the old `tmux -s docs-server` guidance was
 stale). Config + state live under reckon's config home (currently
 `~/docs-server/` — a legacy name; the rename to `~/.config/reckon/` is
-tracked in the `reckon-schema-and-tooling` plan, F5).
+tracked in the `reckon-schema-and-tooling` plan).
 
 - Start (detached, survives logout): launch inside the `reckon` zellij
   session — `uv run --project ~/Code/reckon reckon serve`
@@ -253,7 +253,8 @@ tracked in the `reckon-schema-and-tooling` plan, F5).
 - Stop: `kill <pid>` (the pid from the line above)
 - Restart: stop then start. **Server/parse/render code changes are NOT hot** —
   a running `reckon serve` (and every `reckon mcp` stdio server) holds the old
-  code in memory until restarted/reconnected. Coordinate restarts (F5).
+  code in memory until restarted/reconnected. Coordinate restarts with active
+  users of the server and MCP connections.
 - Mounts: `<config-home>/mounts.json` — re-read on every request, no restart needed
 - Plan state (GET): `curl http://127.0.0.1:8765/plan/<project>/<slug>` (parsed semantic elements + `version`)
 - Plan patch (POST): `curl -X POST -H 'If-Match: <version>' -d '{"status":"shipped"}' http://127.0.0.1:8765/plan/<project>/<slug>`
@@ -269,15 +270,14 @@ rewrite the plan's semantic HTML elements directly.
 
 **Invocation** (if needed manually): `uv run --project ~/Code/reckon reckon mcp`
 
-**The surface is five tools.** Granular structured reads/writes remain
-collapsed into `read_plan` and `edit_plan`; prose editing and graph analysis
-are separate because they have different safety and response contracts:
+**The surface is four tools.** Granular reads and both write modes remain
+collapsed into `read_plan` and `edit_plan`; graph analysis and conformance
+auditing keep their distinct read-only contracts:
 
 | Tool | Purpose |
 |------|---------|
 | `read_plan` | Read + context-inject. `read_plan(resource={project,type,id})` defaults to a concise typed summary; `view=detail|history|raw|schema` reveals progressively deeper state. `read_plan(project, slug)` preserves the legacy parsed-state response. `read_plan(project)` (slug omitted) → DISCOVERY; `read_plan()` → mounted projects. |
-| `edit_plan` | The one validated write. `edit_plan(project, slug, ops, expected_version[, create])`. `ops` is an ordered list applied to a working copy, schema-validated, then written atomically. Verbs: `set` / `append` / `resolve` / `lock` / `move`; `create=True` (with `expected_version=0`) scaffolds a new plan then applies ops. Routes `slug="index"` to project config (sprints/milestones/timeline/blockers). |
-| `edit_plan_text` | Version-safe exact replacement for authored prose, tables, figures, and section bodies. Requires one unique `old_html` match and refuses any structured state change. |
+| `edit_plan` | The one validated write, selected by `mode`. `mode="state"` applies an ordered `ops` list to a working copy, schema-validates it, then writes atomically; verbs are `set` / `append` / `resolve` / `lock` / `move`, and `create=True` scaffolds a plan. `mode="text"` performs one version-safe exact `old_html` → `new_html` replacement for prose, tables, figures, or section bodies and refuses structured state changes. |
 | `roadmap` | Read-only DAG scan: all pending work, distinct ready/blocked/deferred sets, lifecycle and stored implementation percentages, sprint order, weighted critical/open paths, and wiring findings. `project="*"` returns a portfolio. |
 | `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
 
@@ -286,7 +286,7 @@ for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
 + create rules alongside the schema).
 
 **Mandatory rule:** always call `read_plan` first to get the current `version`
-before `edit_plan` or `edit_plan_text` — writes are rejected (412) if
+before `edit_plan` — writes are rejected (412) if
 `version` doesn't match.
 Typed write workflows use `view="raw"` for that version read. Inspection
 workflows begin with the default summary and opt into detail only when needed.

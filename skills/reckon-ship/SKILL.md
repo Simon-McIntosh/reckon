@@ -10,7 +10,7 @@ description: >-
   and clean up worktrees. Trigger verbs: "implement / execute / ship / land /
   deliver the sprint / run the sprint / /reckon-ship". For editing plan text use
   reckon-edit; for defining or rebalancing sprint state use reckon-sprint.
-allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___edit_plan_text mcp__reckon___roadmap mcp__reckon___audit
+allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
 
 # reckon-ship — execute a complete plan or sprint and record outcomes

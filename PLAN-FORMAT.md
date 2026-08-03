@@ -471,12 +471,13 @@ project resource. Timeline state is append-only.
 
 ## Authored prose write contract
 
-`edit_plan_text(project, slug, old_html, new_html, expected_version,
-checkout_path=None, doc_type=None)` is the version-safe path for prose, tables,
-figures, and section bodies. `old_html` must be non-empty and occur exactly
-once. The tool advances `plan-version`, returns the absolute written path, and
-rejects any replacement that changes parsed metadata or a `data-reckon`
-section. Structured state continues through `edit_plan`.
+`edit_plan(project, slug, ops=None, old_html=..., new_html=...,
+expected_version=..., mode="text", checkout_path=None, doc_type=None)` is the
+version-safe path for prose, tables, figures, and section bodies. `old_html`
+must be non-empty and occur exactly once. Text mode advances `plan-version`,
+returns the absolute written path, and rejects any replacement that changes
+parsed metadata or a `data-reckon` section. Structured state uses the same tool
+with `mode="state"` and an `ops` list.
 
 ## Roadmap read contract
 

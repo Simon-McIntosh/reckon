@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -34,19 +34,12 @@ class ReadPlanArgs(BaseModel):
 class EditPlanArgs(BaseModel):
     project: str
     slug: str
-    ops: list[dict[str, Any]]
+    ops: list[dict[str, Any]] | None = None
     expected_version: int = Field(..., ge=0)
+    mode: Literal["state", "text"] = "state"
+    old_html: str | None = Field(None, description="Exact fragment to replace")
+    new_html: str | None = Field(None, description="Replacement authored HTML")
     create: bool = False
-    checkout_path: str | None = None
-    doc_type: str | None = None
-
-
-class EditPlanTextArgs(BaseModel):
-    project: str
-    slug: str
-    old_html: str = Field(..., min_length=1, description="Exact fragment to replace")
-    new_html: str = Field(..., description="Replacement authored HTML")
-    expected_version: int = Field(..., ge=0)
     checkout_path: str | None = None
     doc_type: str | None = None
 
