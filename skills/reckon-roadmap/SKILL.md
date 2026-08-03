@@ -49,7 +49,7 @@ The tool returns:
 | Field | Meaning |
 |---|---|
 | `completion` | Plan count, completed count, pending count, lifecycle %, stored implementation % |
-| `sprints` | Sprint sequence with item resolution, ready/blocked counts, and both percentages |
+| `sprints` | Sprint sequence with item resolution, ready/blocked/deferred counts, and both percentages |
 | `pending_work` | Every open plan in scope, including prerequisites and exact blockers |
 | `ready_now` | Runnable workflow plans whose hard prerequisites and explicit blockers are clear |
 | `immediate_roadmap` | Ready work ordered by critical-path membership, sprint order, ROI, unlocks, and remaining effort |
@@ -59,10 +59,10 @@ The tool returns:
 | `wiring_findings` | Invalid, dangling, non-executable, inactive, contradictory, cyclic, sprint-order, and membership faults |
 | `allocation` | Optional project responsibility/routing policy and the ownership preflight reminder |
 
-`blocked` includes draft work that is not activated, explicit blockers,
-unresolved hard dependencies, cycles, and persisted blocked state. Read each
+`blocked` contains only explicit, dependency-derived, persisted, or cycle
+blockers. `deferred` contains valid non-runnable work such as drafts. Read each
 row's `depends_on` and `explicit_blockers`; do not flatten those causes into one
-generic label.
+generic label or treat deferred work as blocked.
 
 ## Wiring diagnosis
 
@@ -131,4 +131,3 @@ qualified and remain blockers until their owning project completes them.
 - Sprint membership, ordering, milestone, or blocker repair → `reckon-sprint`.
 - Execute ready plans or a sprint → `reckon-ship`.
 - Schema/lifecycle audit after graph repair → `reckon-status --review`.
-

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="execution-orchestration-hardening-roadmap-analysis-landed">
+  <meta name="plan-title" content="Roadmap and wiring analysis — landed evidence">
+  <meta name="plan-summary" content="Verification record for dependency-aware roadmaps, repository allocation policy, guarded prose editing, and coordinated skill repairs.">
+  <meta name="plan-read" content="1">
+  <meta name="evidence-for" content="execution-orchestration-hardening">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-08-03">
+  <meta name="evidence-commit" content="47d8327">
+  <meta name="plan-modified" content="2026-08-03">
+  <meta name="plan-recorded-at" content="2026-08-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Python 3.12; Linux; FastMCP">
+  <meta name="plan-evidence-for" content="reckon:execution-orchestration-hardening">
+  <meta name="plan-verifies" content="reckon:execution-orchestration-hardening#roadmap-analysis">
+  <meta name="plan-commits" content="47d8327">
+  <meta name="plan-artifacts" content="reckon/roadmap.py,reckon/mcp.py,reckon/cli.py,reckon/_store.py,skills/reckon-roadmap/SKILL.md">
+  <meta name="plan-version" content="1">
+  <title>Roadmap and wiring analysis — landed evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p><a href="../../plans/execution-orchestration-hardening.html">Source plan</a></p>
+      <h1>Roadmap and wiring analysis — landed evidence</h1>
+      <p>This independently verified slice makes pending work and repository
+        ownership machine-readable. It does not claim that the durable,
+        resumable execution ledger has landed.</p>
+    </header>
+
+    <img src="/reckon/figures/execution-orchestration-hardening/roadmap-analysis-flow.svg"
+      alt="Plan, sprint, and repository allocation state enter the roadmap analyzer, which returns ready work, blockers, critical paths, completion, and wiring repairs.">
+
+    <section>
+      <h2>Delivered</h2>
+      <ul>
+        <li>A pure dependency analyzer and matching <code>reckon roadmap</code>
+          CLI/MCP surfaces for one project, one sprint, or the registered
+          portfolio.</li>
+        <li>Lifecycle and implementation completion, ready work, derived and
+          explicit blockers, open paths, a weighted critical path, cycle
+          detection, and ordered sprint rollups.</li>
+        <li>Wiring diagnostics for invalid relation types, dangling or inactive
+          prerequisites, sprint-order inversions, duplicate membership, plan
+          and sprint disagreement, and repository allocation policy.</li>
+        <li>Project allocation declarations with <code>owns</code>,
+          <code>excludes</code>, and cross-project <code>routes</code>.</li>
+        <li>A guarded <code>edit_plan_text</code> MCP operation that replaces
+          exactly one prose fragment while refusing semantic state changes.</li>
+        <li>A dedicated roadmap skill plus coordinated ownership, relation,
+          editing, and post-write verification rules across all existing
+          Reckon skills.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Implementation</td><td>pass</td><td>Commit <code>47d8327</code> published on <code>origin/main</code>.</td></tr>
+          <tr><td>Full suite</td><td>pass</td><td>1,416 tests passed in 45.05 seconds after the true-blocker/deferred distinction and typed-resource document audit were added.</td></tr>
+          <tr><td>Lint and skill contracts</td><td>pass</td><td>Ruff passed; all seven skill packages passed the canonical validator.</td></tr>
+          <tr><td>Distribution</td><td>pass</td><td>Source and wheel builds passed; the wheel contains the roadmap skill and its agent metadata.</td></tr>
+          <tr><td>Portfolio exercise</td><td>pass</td><td>12 registered projects and 413 plans scanned without a project error; 135 wiring findings were returned for explicit triage.</td></tr>
+          <tr><td>Local consistency</td><td>pass</td><td>17 of 17 Reckon resources conform; zero audit findings and zero true blockers after historical membership and prerequisite repair. One draft is reported separately as deferred.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Remaining source-plan work</h2>
+      <p>The roadmap is read-only by design. Durable execution events,
+        interruption/resume semantics, capability-aware worker adapters,
+        proposal/close dry runs, mounted-checkout content digests, and broader
+        failure injection remain in the source plan.</p>
+    </section>
+  </main>
+</body>
+</html>

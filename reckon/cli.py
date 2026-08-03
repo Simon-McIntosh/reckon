@@ -930,7 +930,8 @@ def _print_roadmap_report(report: dict) -> None:
         f"{project}: {completion.get('lifecycle_completion_pct', 0):.1f}% lifecycle, "
         f"{completion.get('implementation_pct', 0):.1f}% implementation; "
         f"{len(report.get('ready_now', []))} ready, "
-        f"{len(report.get('blocked', []))} blocked"
+        f"{len(report.get('blocked', []))} blocked, "
+        f"{len(report.get('deferred', []))} deferred"
     )
     critical = report.get("critical_path", {}).get("plans", [])
     if critical:
@@ -984,7 +985,9 @@ def roadmap(project, sprint, checkout_path, max_paths, json_output):
         click.echo(
             f"portfolio: {portfolio.get('lifecycle_completion_pct', 0):.1f}% lifecycle, "
             f"{portfolio.get('implementation_pct', 0):.1f}% implementation; "
-            f"{portfolio.get('ready', 0)} ready, {portfolio.get('blocked', 0)} blocked"
+            f"{portfolio.get('ready', 0)} ready, "
+            f"{portfolio.get('blocked', 0)} blocked, "
+            f"{portfolio.get('deferred', 0)} deferred"
         )
         for report in result.get("projects", []):
             if report.get("ok", True):

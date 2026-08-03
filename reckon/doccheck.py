@@ -14,7 +14,7 @@ Contract enforced (see AGENTS.md "agents author HTML directly"):
     relative ``src="figures/..."`` 404s under the no-trailing-slash plan URL.
   - ``<head><style>`` is dropped by the SPA — doc-local CSS never applies.
   - ``<pre>`` lines over ~120 chars wrap (informational — handled by CSS now).
-  - Required ``<meta name="plan-*">`` tags must be present.
+  - Required plan or typed-resource metadata must be present.
   - Stub prose ("See state §…", empty reckon sections) is flagged.
   - Internal links (<a href> and plan-* meta slug references) must resolve to
     an existing doc file or in-page anchor id.
@@ -47,8 +47,12 @@ from bs4 import BeautifulSoup
 from reckon import _plan_html
 from reckon._store import _mounts_path
 
-# Required scalar meta tags for a plan doc (research/doc types relax `status`).
+# Required scalar meta tags for plan-family documents. Research, evidence, and
+# general documents relax ``status``. Distributed project-state resources use
+# their native reckon identity/version metadata instead.
 _REQUIRED_META = ("plan-slug", "plan-status")
+_TYPED_RESOURCE_META = ("reckon-id", "reckon-version")
+_TYPED_RESOURCE_TYPES = {"sprint", "milestone", "blocker", "timeline"}
 # Body-bearing classes the SPA renders as HTML (markdown there renders verbatim).
 _BODY_CLASSES = (
     "r-comment-body",
@@ -220,10 +224,15 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     present = {
         (m.get("name") or "").lower()
         for m in soup.find_all("meta")
-        if (m.get("name") or "").lower().startswith("plan-")
+        if m.get("name")
     }
-    for req in _REQUIRED_META:
-        if req == "plan-status" and doc_type in ("research", "evidence", "doc"):
+    required = (
+        _TYPED_RESOURCE_META
+        if doc_type in _TYPED_RESOURCE_TYPES
+        else _REQUIRED_META
+    )
+    for req in required:
+        if req == "plan-status" and doc_type in {"research", "evidence", "doc"}:
             continue
         if req not in present:
             out.append(

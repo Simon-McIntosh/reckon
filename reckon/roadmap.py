@@ -414,6 +414,7 @@ def build_roadmap(
     pending: list[dict[str, Any]] = []
     ready: list[dict[str, Any]] = []
     blocked: list[dict[str, Any]] = []
+    deferred: list[dict[str, Any]] = []
     for slug, plan in plans.items():
         status = _status(plan)
         if status in TERMINAL_STATUSES:
@@ -434,6 +435,10 @@ def build_roadmap(
             and not explicit_blockers
             and slug not in cycle_members
         )
+        is_blocked = bool(
+            dependency_blockers or explicit_blockers or slug in cycle_members
+        )
+        readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
         row = {
             "slug": slug,
             "title": plan.get("title") or slug,
@@ -448,9 +453,15 @@ def build_roadmap(
             "explicit_blockers": explicit_blockers,
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
+            "readiness": readiness,
         }
         pending.append(row)
-        (ready if is_ready else blocked).append(row)
+        if is_ready:
+            ready.append(row)
+        elif is_blocked:
+            blocked.append(row)
+        else:
+            deferred.append(row)
 
     def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
         if node in visiting or node in cycle_members:
@@ -498,6 +509,7 @@ def build_roadmap(
     ready.sort(key=priority)
     pending.sort(key=lambda row: (not row["ready"], *priority(row)))
     blocked.sort(key=priority)
+    deferred.sort(key=priority)
     immediate = [
         {
             "order": position,
@@ -539,6 +551,7 @@ def build_roadmap(
                 else (100.0 if sprint_status in COMPLETED_STATUSES else 0.0),
                 "ready": sum(row.get("sprint") == sprint_name for row in ready),
                 "blocked": sum(row.get("sprint") == sprint_name for row in blocked),
+                "deferred": sum(row.get("sprint") == sprint_name for row in deferred),
             }
         )
 
@@ -576,6 +589,7 @@ def build_roadmap(
         "pending_work": pending,
         "ready_now": ready,
         "blocked": blocked,
+        "deferred": deferred,
         "immediate_roadmap": immediate,
         "critical_path": critical,
         "open_paths": open_paths,

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="410" viewBox="0 0 1180 410" role="img" aria-labelledby="title desc">
+  <title id="title">Dependency-aware roadmap analysis</title>
+  <desc id="desc">Plan, sprint, and repository allocation inputs feed a graph analyzer. The analyzer reports immediate work, completion, blockers, critical paths, and wiring repairs.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#52647a"/>
+    </marker>
+    <style>
+      .box { rx: 12; stroke-width: 2; }
+      .input { fill: #eef5ff; stroke: #3d6fa8; }
+      .engine { fill: #f6f0ff; stroke: #7753a6; }
+      .output { fill: #ecf8f0; stroke: #3c8158; }
+      .repair { fill: #fff5e6; stroke: #a86d24; }
+      .edge { fill: none; stroke: #52647a; stroke-width: 2.5; marker-end: url(#arrow); }
+      .label { fill: #172333; font: 600 18px system-ui, sans-serif; text-anchor: middle; }
+      .detail { fill: #34465b; font: 14px system-ui, sans-serif; text-anchor: middle; }
+      .caption { fill: #172333; font: 700 22px system-ui, sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+  <text class="caption" x="590" y="34">One graph view drives scheduling and catches repository wiring drift</text>
+
+  <rect class="box input" x="36" y="78" width="250" height="72"/>
+  <text class="label" x="161" y="108">Plan state</text>
+  <text class="detail" x="161" y="133">dependencies · status · effort</text>
+  <rect class="box input" x="36" y="170" width="250" height="72"/>
+  <text class="label" x="161" y="200">Sprint state</text>
+  <text class="detail" x="161" y="225">order · membership · active scope</text>
+  <rect class="box input" x="36" y="262" width="250" height="72"/>
+  <text class="label" x="161" y="292">Allocation policy</text>
+  <text class="detail" x="161" y="317">owns · excludes · routes</text>
+
+  <path class="edge" d="M286 114 C350 114, 350 174, 416 174"/>
+  <path class="edge" d="M286 206 L416 206"/>
+  <path class="edge" d="M286 298 C350 298, 350 238, 416 238"/>
+  <rect class="box engine" x="416" y="132" width="300" height="150"/>
+  <text class="label" x="566" y="171">Roadmap analyzer</text>
+  <text class="detail" x="566" y="202">validate edges and ownership</text>
+  <text class="detail" x="566" y="226">derive readiness and progress</text>
+  <text class="detail" x="566" y="250">rank weighted dependency paths</text>
+
+  <path class="edge" d="M716 174 L816 126"/>
+  <path class="edge" d="M716 207 L816 207"/>
+  <path class="edge" d="M716 240 L816 288"/>
+  <rect class="box output" x="816" y="76" width="328" height="98"/>
+  <text class="label" x="980" y="108">Immediate roadmap</text>
+  <text class="detail" x="980" y="134">ready now · open paths · critical path</text>
+  <text class="detail" x="980" y="154">lifecycle % · implementation %</text>
+  <rect class="box output" x="816" y="188" width="328" height="72"/>
+  <text class="label" x="980" y="218">True blockers</text>
+  <text class="detail" x="980" y="243">dependency-derived and explicit</text>
+  <rect class="box repair" x="816" y="276" width="328" height="98"/>
+  <text class="label" x="980" y="308">Wiring repairs</text>
+  <text class="detail" x="980" y="334">wrong relation · wrong sprint · wrong repo</text>
+  <text class="detail" x="980" y="354">cycles · dangling edges · duplicates</text>
+</svg>

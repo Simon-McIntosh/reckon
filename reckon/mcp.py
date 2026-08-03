@@ -2218,7 +2218,8 @@ def _roadmap(
 ) -> dict[str, Any]:
     """Scan plan dependencies and return executable work plus graph health.
 
-    The response contains every pending plan in scope, ready and blocked sets,
+    The response contains every pending plan in scope, ready, blocked, and
+    deferred sets,
     lifecycle and implementation percentages, ordered sprint rollups, the
     weighted critical path, alternative open paths, and wiring findings.
     ``project='*'`` returns the same report for every mounted project plus a
@@ -2277,6 +2278,7 @@ def _roadmap(
                 else 0.0,
                 "ready": sum(len(report.get("ready_now", [])) for report in valid),
                 "blocked": sum(len(report.get("blocked", [])) for report in valid),
+                "deferred": sum(len(report.get("deferred", [])) for report in valid),
                 "wiring_findings": sum(
                     len(report.get("wiring_findings", [])) for report in valid
                 ),

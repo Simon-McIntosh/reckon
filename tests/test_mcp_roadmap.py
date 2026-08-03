@@ -92,6 +92,8 @@ def test_mcp_roadmap_portfolio_rolls_up_mounted_projects(mounted_project) -> Non
     assert result["portfolio"]["projects"] == 1
     assert result["portfolio"]["plans"] == 1
     assert result["portfolio"]["ready"] == 1
+    assert result["portfolio"]["blocked"] == 0
+    assert result["portfolio"]["deferred"] == 0
 
 
 def test_edit_plan_text_replaces_exact_prose_and_advances_version(

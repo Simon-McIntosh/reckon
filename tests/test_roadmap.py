@@ -146,3 +146,17 @@ def test_terminal_plan_wiring_does_not_pollute_immediate_roadmap() -> None:
     assert result["wiring_findings"] == []
     assert result["sprints"][0]["lifecycle_completion_pct"] == 100.0
     assert result["sprints"][0]["implementation_pct"] == 100.0
+
+
+def test_non_runnable_draft_is_deferred_without_becoming_a_blocker() -> None:
+    result = build_roadmap(
+        "sample",
+        [_plan("future", status="draft", sprint="later")],
+        [{"id": "later", "status": "planned", "items": ["future"]}],
+    )
+
+    assert result["ready_now"] == []
+    assert result["blocked"] == []
+    assert [item["slug"] for item in result["deferred"]] == ["future"]
+    assert result["deferred"][0]["readiness"] == "deferred"
+    assert result["sprints"][0]["deferred"] == 1

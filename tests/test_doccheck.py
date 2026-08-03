@@ -35,6 +35,30 @@ def test_audit_html_missing_meta():
     assert "meta-missing" in codes
 
 
+def test_audit_html_accepts_distributed_sprint_metadata():
+    html = (
+        '<!doctype html><html><head><meta charset="utf-8">'
+        '<meta name="reckon-type" content="sprint">'
+        '<meta name="reckon-id" content="current">'
+        '<meta name="reckon-version" content="2">'
+        "<title>current</title></head><body></body></html>"
+    )
+
+    assert audit_html(html) == []
+
+
+def test_audit_html_requires_distributed_resource_identity():
+    html = (
+        '<!doctype html><html><head><meta charset="utf-8">'
+        '<meta name="reckon-type" content="milestone">'
+        "<title>launch</title></head><body></body></html>"
+    )
+
+    messages = [finding.message for finding in audit_html(html)]
+    assert 'missing required <meta name="reckon-id">' in messages
+    assert 'missing required <meta name="reckon-version">' in messages
+
+
 def test_audit_html_md_bold_in_body():
     findings = audit_html(_bare('<div class="r-fu-body">**bold** text</div>'))
     codes = [f.code for f in findings]

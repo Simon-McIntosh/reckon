@@ -17,9 +17,9 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="6">
-<meta name="plan-impl" content="0.3">
+<meta name="plan-modified" content="2026-08-03">
+<meta name="plan-version" content="7">
+<meta name="plan-impl" content="0.55">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 </head>
@@ -46,6 +46,17 @@
     </aside>
     <img src="/reckon/figures/execution-orchestration-hardening/sprint-delivery-flow.svg"
       alt="Sprint plans and evidence form a DAG whose ready nodes run in isolated worktrees before orchestrator integration and cleanup.">
+    <aside class="callout">
+      <strong>Roadmap and wiring analysis landed — 2026-08-03.</strong>
+      Commit <code>47d8327</code> added a dependency-aware roadmap to the CLI
+      and MCP, repository allocation policy, guarded prose editing, a dedicated
+      roadmap skill, and coordinated repairs across the existing skill set.
+      The full 1,416-test suite passed and the local audit is now clean.
+      The durable execution ledger remains open.
+      <a href="../evidence/archive/execution-orchestration-hardening-roadmap-analysis-landed.html">Read the evidence record.</a>
+    </aside>
+    <img src="/reckon/figures/execution-orchestration-hardening/roadmap-analysis-flow.svg"
+      alt="Plan, sprint, and repository allocation state enter the roadmap analyzer, which returns ready work, blockers, critical paths, completion, and wiring repairs.">
     <h2 id="s4">§4 — Acceptance and observability</h2>
     <p>Tests cover interrupted/resumed execution, version conflicts, worker failure, partial landings, checkout mismatch, absent subagent support, evidence gate failure and archive migration. A structured error log records tool, operation, request projection, response size, error class, retry and resolution. The input research is <a href="../research/reckon-plan-management-audit.html">Reckon Plan Management Audit</a>.</p>
 
@@ -97,17 +108,19 @@ Done-when
   <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
 <div class="r-research" data-id="r-eoh-01" data-type="research-document" data-source="reckon" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/reckon-plan-management-audit.html">
-    <span class="r-research-title"><a href="/reckon/research/reckon-plan-management-audit">Reckon Plan Management Audit</a></span></div>
+    <span class="r-research-title"><a href="/reckon/reckon-plan-management-audit.html">Reckon Plan Management Audit</a></span></div>
 <div class="r-research" data-id="err-eoh-uv-cache" data-type="tool-error" data-source="Codex validation run" data-added-by="codex" data-when="2026-07-29">
     <span class="r-research-title">audit-doc initially failed: uv cache at ~/.cache/uv was read-only in the Codex sandbox; retry with UV_CACHE_DIR=/tmp/reckon-uv-cache passed</span></div>
 <div class="r-research" data-id="e-eoh-sprint-delivery" data-type="evidence-record" data-source="Reckon repository commit 36d5bdd" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Sprint delivery orchestration landed: target resolution, one-below routing, worktree isolation and conservative cleanup</a></span></div>
+    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Sprint delivery orchestration landed: target resolution, one-below routing, worktree isolation and conservative cleanup</a></span></div>
 <div class="r-research" data-id="err-eoh-validator-dependency" data-type="tool-error" data-source="Codex skill validation" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Skill validator initially failed because PyYAML was absent; uv run --with pyyaml made the dependency explicit</a></span></div>
+    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Skill validator initially failed because PyYAML was absent; uv run --with pyyaml made the dependency explicit</a></span></div>
 <div class="r-research" data-id="err-eoh-validator-frontmatter" data-type="tool-error" data-source="Codex skill validation" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Skill validation rejected angle brackets in frontmatter; syntax examples were retained in the body and frontmatter rephrased</a></span></div>
+    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Skill validation rejected angle brackets in frontmatter; syntax examples were retained in the body and frontmatter rephrased</a></span></div>
 <div class="r-research" data-id="err-eoh-evidence-schema-gap" data-type="tool-error" data-source="Reckon MCP audit" data-added-by="codex" data-when="2026-07-29" data-url="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">
-    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed">Audit classified reckon-type evidence in discovery but rejected it against the current plan/research schema; the record uses a research compatibility envelope with artifact-kind evidence until typed provenance lands</a></span></div>
+    <span class="r-research-title"><a href="/reckon/archive/execution-orchestration-hardening-sprint-delivery-landed.html">Audit classified reckon-type evidence in discovery but rejected it against the current plan/research schema; the record uses a research compatibility envelope with artifact-kind evidence until typed provenance lands</a></span></div>
+<div class="r-research" data-id="e-eoh-roadmap-analysis" data-type="evidence-record" data-source="Reckon repository commit 47d8327" data-added-by="maintainer" data-when="2026-08-03" data-url="/reckon/evidence/archive/execution-orchestration-hardening-roadmap-analysis-landed">
+    <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-roadmap-analysis-landed">Roadmap and wiring analysis landed: project allocation, critical paths, guarded prose edits, and coordinated skill repairs</a></span></div>
 </section>
 </main>
 </body>

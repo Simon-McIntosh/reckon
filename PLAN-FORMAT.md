@@ -481,7 +481,7 @@ section. Structured state continues through `edit_plan`.
 ## Roadmap read contract
 
 `roadmap(project, checkout_path=None, sprint=None, max_paths=5)` returns every
-pending plan in scope, ready and blocked sets, ordered sprint rollups,
+pending plan in scope, distinct ready, blocked, and deferred sets, ordered sprint rollups,
 lifecycle and stored implementation percentages, a remaining-effort-weighted
 critical path, alternative open paths, exact cycles, allocation guidance, and
 machine-readable wiring findings. A sprint scan includes its transitive local

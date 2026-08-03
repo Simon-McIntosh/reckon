@@ -136,7 +136,8 @@ graph traversal in prose or shell code. Report:
 
 - lifecycle completion and stored implementation completion;
 - `ready_now` in `immediate_roadmap` order;
-- exact causes from `blocked` (`depends_on`, explicit blocker, draft, or cycle);
+- exact causes from `blocked` (`depends_on`, explicit blocker, persisted state,
+  or cycle), with non-runnable drafts reported from `deferred`;
 - weighted `critical_path` and bounded `open_paths`;
 - error/warn `wiring_findings`, separated from true external blockers.
 
