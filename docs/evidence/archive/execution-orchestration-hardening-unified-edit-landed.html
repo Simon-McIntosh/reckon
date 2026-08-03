@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="execution-orchestration-hardening-unified-edit-landed">
+  <meta name="plan-title" content="Unified plan editing — landed evidence">
+  <meta name="plan-summary" content="Verification record for the single mode-discriminated edit_plan MCP interface and matching skill contracts.">
+  <meta name="plan-read" content="1">
+  <meta name="evidence-for" content="execution-orchestration-hardening">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-08-03">
+  <meta name="evidence-commit" content="5ce9f32">
+  <meta name="plan-modified" content="2026-08-03">
+  <meta name="plan-recorded-at" content="2026-08-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Python 3.12; Linux; FastMCP">
+  <meta name="plan-evidence-for" content="reckon:execution-orchestration-hardening">
+  <meta name="plan-verifies" content="reckon:execution-orchestration-hardening#unified-edit-interface">
+  <meta name="plan-commits" content="5ce9f32">
+  <meta name="plan-artifacts" content="reckon/mcp.py,reckon/_mcp_tools.py,skills/reckon-edit/SKILL.md,skills/reckon-ship/SKILL.md">
+  <meta name="plan-version" content="0">
+  <title>Unified plan editing — landed evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p><a href="../../plans/execution-orchestration-hardening.html">Source plan</a></p>
+      <h1>Unified plan editing — landed evidence</h1>
+      <p>The public MCP surface now has one version-safe write tool with
+        explicit state and text modes. The implementation retains separate
+        internal safety paths so structured validation and guarded prose
+        replacement keep their distinct invariants.</p>
+    </header>
+
+    <section>
+      <h2>Delivered contract</h2>
+      <table>
+        <thead><tr><th>Mode</th><th>Payload</th><th>Guard</th></tr></thead>
+        <tbody>
+          <tr><td><code>state</code></td><td>Ordered <code>ops</code></td><td>Schema validation, atomic write, optimistic concurrency.</td></tr>
+          <tr><td><code>text</code></td><td>Exact <code>old_html</code> and <code>new_html</code></td><td>One-match replacement; parsed metadata and semantic state must remain unchanged.</td></tr>
+        </tbody>
+      </table>
+      <p>Mixed payloads, missing mode-specific inputs, and text-mode creation
+        are rejected before a write. The generated schema requires
+        <code>project</code>, <code>slug</code>, and
+        <code>expected_version</code>; mode-specific fields remain optional.</p>
+    </section>
+
+    <section>
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Gate</th><th>Result</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Public registration</td><td>pass</td><td>Four tools are registered: read, edit, roadmap, and audit; the separate prose-edit tool is absent.</td></tr>
+          <tr><td>Focused contracts</td><td>pass</td><td>89 tests passed in 2.70 seconds, including state/text dispatch, exact replacement, structured-state refusal, mixed-payload refusal, and generated-schema checks.</td></tr>
+          <tr><td>Full suite</td><td>pass</td><td>1,419 tests passed in 35.85 seconds.</td></tr>
+          <tr><td>Static checks</td><td>pass</td><td>Ruff and both affected skill-package validators passed.</td></tr>
+          <tr><td>Distribution</td><td>pass</td><td>Source and wheel builds passed; canonical skill installation updated two files and the repeat run was a zero-change no-op.</td></tr>
+          <tr><td>Publication</td><td>pass</td><td>Commit <code>5ce9f32</code> is published on <code>origin/main</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Coordinator contract review</h2>
+      <p>The full-sprint ship skill already defines a strict coordinator-only
+        role. The coordinator reads and checkpoints state, scopes and
+        dispatches workers, audits their commits and evidence, integrates and
+        pushes verified work, writes Reckon state, and cleans worktrees. It
+        does not implement, investigate beyond scoping or review, execute
+        tests or pipelines, or repair worker code. The worker policy is
+        model-family-neutral and capability-based; no concrete coordinator
+        model is hardcoded.</p>
+    </section>
+
+    <section>
+      <h2>Remaining source-plan work</h2>
+      <p>This interface simplification does not close the source plan's open
+        execution-ledger followup. Durable event recording, interruption and
+        resume semantics, and the bounded execution surface remain open.</p>
+    </section>
+  </main>
+</body>
+</html>
