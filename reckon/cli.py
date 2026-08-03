@@ -1072,6 +1072,8 @@ def install_skills():
                 if not src_file.is_file():
                     continue
                 rel = src_file.relative_to(skill_dir)
+                if "__pycache__" in rel.parts or src_file.suffix in {".pyc", ".pyo"}:
+                    continue
                 dst_file = dst_dir / rel
                 dst_file.parent.mkdir(parents=True, exist_ok=True)
                 src_bytes = src_file.read_bytes()

@@ -118,3 +118,27 @@ class TestDoctor:
         )
         assert result.exit_code != 0
         assert "not found" in result.output
+
+
+def test_install_skills_excludes_python_bytecode(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    skill = source / "reckon-example"
+    cache = skill / "scripts" / "__pycache__"
+    cache.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: reckon-example\ndescription: Example.\n---\n")
+    (skill / "scripts" / "run.py").write_text("print('ok')\n")
+    (cache / "run.cpython-314.pyc").write_bytes(b"compiled")
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("pathlib.Path.home", lambda: home)
+
+    result = CliRunner().invoke(main, ["install-skills"])
+
+    assert result.exit_code == 0
+    for runtime in (".claude", ".codex", ".agents"):
+        installed = home / runtime / "skills" / "reckon-example"
+        assert (installed / "SKILL.md").is_file()
+        assert (installed / "scripts" / "run.py").is_file()
+        assert not (installed / "scripts" / "__pycache__").exists()
