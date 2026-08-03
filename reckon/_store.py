@@ -13,7 +13,7 @@ Two slugs are special and remain JSON-backed:
   - "project" — legacy project config (kept for back-compat)
 
 All other slugs are PLAN slugs.  For plan slugs:
-  - read_plan reads the semantic HTML state directly from the plan's .html file
+  - read_plan reads semantic state directly from the plan HTML file
   - write_plan rewrites the semantic HTML state atomically
   - version field is "version" (not "_version") inside the state
 
@@ -518,6 +518,89 @@ def write_plan(
             state_path(project, slug, root), project, slug, data, expected_version
         )
     return _write_state(project, slug, data, expected_version, root, artifact_type)
+
+
+def replace_plan_text(
+    project: str,
+    slug: str,
+    old_html: str,
+    new_html: str,
+    expected_version: int,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
+) -> tuple[int, Path]:
+    """Replace one exact authored HTML fragment and advance the plan version.
+
+    Structured metadata and ``data-reckon`` sections are deliberately outside
+    this operation.  Their parsed state must remain identical, so callers use
+    :func:`write_plan` or the MCP ``edit_plan`` tool for those fields.
+    """
+
+    from reckon import _plan_html
+    from reckon._schema import TYPE_ENUM
+    from reckon.resources import canonical_type, resolve_resource
+
+    if not old_html:
+        raise ValueError("old_html must be non-empty")
+    if old_html == new_html:
+        raise ValueError("old_html and new_html are identical")
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        raise FileNotFoundError(f"No docs dir found for project {project!r}")
+    selected_type = canonical_type(artifact_type) if artifact_type else None
+    matches = []
+    for candidate_type in [selected_type] if selected_type else TYPE_ENUM:
+        resource = resolve_resource(
+            docs_dir,
+            project,
+            slug,
+            candidate_type,
+            include_archived=False,
+        )
+        if resource is not None:
+            matches.append(resource)
+    if not matches:
+        raise FileNotFoundError(f"resource {slug!r} does not exist")
+    if len(matches) > 1:
+        kinds = ", ".join(sorted(resource.type for resource in matches))
+        raise ValueError(
+            f"resource slug {slug!r} is ambiguous across types: {kinds}; "
+            "supply artifact_type"
+        )
+    resource = matches[0]
+    html_file = resource.path
+    text = html_file.read_text(encoding="utf-8", errors="strict")
+    current_state = _plan_html.read_state(text)
+    current_version = int(current_state.get("version", 0) or 0)
+    if expected_version != current_version:
+        raise VersionConflict(expected_version, current_version, current_state)
+
+    occurrences = text.count(old_html)
+    if occurrences != 1:
+        raise ValueError(
+            "old_html must match exactly once; "
+            f"found {occurrences} occurrences in {html_file}"
+        )
+    replaced = text.replace(old_html, new_html, 1)
+    replaced_state = _plan_html.read_state(replaced)
+    stamps = frozenset({"version", "modified"})
+    before = {key: value for key, value in current_state.items() if key not in stamps}
+    after = {key: value for key, value in replaced_state.items() if key not in stamps}
+    if before != after:
+        raise ValueError(
+            "text replacement changes structured plan state; use edit_plan for "
+            "metadata, decisions, followups, questions, research, or comments"
+        )
+
+    stamped_state = dict(current_state)
+    stamped_state["modified"] = date.today().isoformat()
+    stamped_state["version"] = current_version + 1
+    rendered = _plan_html.write_state(replaced, stamped_state)
+    tmp = html_file.with_suffix(".html.tmp")
+    tmp.write_text(rendered, encoding="utf-8")
+    tmp.replace(html_file)
+    return current_version + 1, html_file
 
 
 def patch_plan(

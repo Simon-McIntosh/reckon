@@ -14,7 +14,7 @@ allowed-tools: Read Write Edit Bash(*) Grep
 ## Fast path
 
 - First-time setup / refresh CSS → `uv run --project ~/Code/reckon reckon sync <repo>/docs`
-- Link the skills → run **Step S** below (the skill owns this; see why it isn't `install-skills`)
+- Link the skills → run **Step S** below for Claude, Codex, and shared agent runtimes.
 - Verify → `uv run --project ~/Code/reckon reckon doctor`
 
 `reckon sync` does the CSS copy, the SPA `index.html`, `.nojekyll`, the
@@ -49,7 +49,8 @@ repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
    resources, an identity-only `project.json`, and freezes `index.json`.
 6. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
 7. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
-8. **Never commit automatically.** Print a suggested commit message.
+8. **Follow the target repository's commit policy.** Same-session commit/push
+   requirements apply to synced infrastructure and plan state.
 
 ## What appears in the plan inventory
 
@@ -111,13 +112,12 @@ skill edit in `~/Code/reckon` is live immediately) into **both** runtime dirs,
 so we do it here:
 
 - `~/.claude/skills/` — Claude Code
-- `~/.agents/skills/` — other agent runtimes
+- `~/.codex/skills/` — Codex
+- `~/.agents/skills/` — shared agent runtimes
 
 Enumerate skills by the **presence of a `SKILL.md`** in each subdirectory, not
-by a name prefix — a future rename that drops the `reckon-` prefix must not
-silently skip a skill. The family currently has six skills (`reckon-create`,
-`reckon-edit`, `reckon-ship`, `reckon-status`, `reckon-sync`,
-`reckon-sprint`), but never hardcode that list; discover it.
+by a name prefix or a fixed count — additions such as `reckon-roadmap` must be
+linked automatically and a future rename must not silently skip a skill.
 
 ```bash
 RECKON_SKILLS="$HOME/Code/reckon/skills"
@@ -175,6 +175,7 @@ link_skills() {
 }
 
 echo "~/.claude/skills:"; link_skills "$HOME/.claude/skills"
+echo "~/.codex/skills:"; link_skills "$HOME/.codex/skills"
 echo "~/.agents/skills:"; link_skills "$HOME/.agents/skills"
 ```
 
@@ -190,7 +191,8 @@ mounted dir existing, and the MCP config registers the `reckon` server.
 Confirm to user:
 
 > **reckon-sync complete — docs/ synced via `reckon sync`, skills linked into
-> `~/.claude/skills` + `~/.agents/skills`, verified with `reckon doctor`.**
+> `~/.claude/skills` + `~/.codex/skills` + `~/.agents/skills`, verified with
+> `reckon doctor`.**
 > Run `/reckon-create <slug>` to add a plan.
 
 Suggested commit: `docs(plans): sync plan infrastructure from reckon canonical`
@@ -328,11 +330,13 @@ EOF
 <meta name="plan-capability-verification" content="standard">
 <meta name="plan-milestone" content="M1">
 <meta name="plan-sprint"   content="S1">
-<meta name="plan-depends-on" content="slug-a,research-x">
+<meta name="plan-depends-on" content="upstream-plan">
 
-<!-- server-written — do NOT author these -->
+<!-- authored lifecycle state -->
 <meta name="plan-status"   content="draft">
+<!-- advanced by reckon-ship -->
 <meta name="plan-impl"     content="0.0">
+<!-- server-written — do NOT author these -->
 <meta name="plan-version"  content="1">
 <meta name="plan-modified" content="2026-05-28">
 ```

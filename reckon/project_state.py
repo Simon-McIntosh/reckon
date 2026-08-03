@@ -438,6 +438,27 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
                 "project manifest is identity/presentation-only; forbidden keys: "
                 + ", ".join(sorted(bad))
             )
+        scope = cleaned.get("scope")
+        if scope is not None:
+            if not isinstance(scope, dict):
+                raise ValueError("project scope must be an object")
+            for field in ("owns", "excludes"):
+                values = scope.get(field, [])
+                if not isinstance(values, list) or any(
+                    not isinstance(value, str) or not value.strip() for value in values
+                ):
+                    raise ValueError(f"project scope {field} must be a string list")
+            routes = scope.get("routes", [])
+            if not isinstance(routes, list):
+                raise ValueError("project scope routes must be a list")
+            for route in routes:
+                if not isinstance(route, dict):
+                    raise ValueError("project scope route must be an object")
+                work = route.get("work")
+                destination = route.get("project")
+                if not isinstance(work, str) or not work.strip():
+                    raise ValueError("project scope route work must be non-empty")
+                _safe_segment(str(destination or ""), "project scope route project")
         cleaned["version"] = int(data.get("version", 0) or 0)
     cleaned["type"] = resource_type
     return cleaned

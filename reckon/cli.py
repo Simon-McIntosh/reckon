@@ -31,6 +31,20 @@ def _asset_root() -> Path:
     )
 
 
+def _skills_source() -> Path:
+    """Resolve canonical skills from a source checkout or installed wheel."""
+
+    package_dir = Path(__file__).resolve().parent
+    candidates = (package_dir.parent / "skills", package_dir / "_skills")
+    for candidate in candidates:
+        if candidate.is_dir() and any(
+            (path / "SKILL.md").is_file() for path in candidate.iterdir()
+        ):
+            return candidate
+    searched = ", ".join(str(path) for path in candidates)
+    raise click.ClickException(f"reckon skills are missing; searched: {searched}")
+
+
 def _copy_asset_directory(source: Path, destination: Path) -> int:
     """Copy every top-level asset file, rejecting malformed destinations."""
     if destination.exists() and not destination.is_dir():
@@ -771,21 +785,18 @@ def doctor():
     import sys
 
     ok = True
-    SKILLS = [
-        "reckon-create",
-        "reckon-edit",
-        "reckon-ship",
-        "reckon-sprint",
-        "reckon-status",
-        "reckon-sync",
-    ]
+    skills = sorted(
+        path.name
+        for path in _skills_source().iterdir()
+        if path.is_dir() and (path / "SKILL.md").is_file()
+    )
     skills_dir = Path.home() / ".claude" / "skills"
 
     click.echo("reckon doctor\n")
 
     # ── Skills check ────────────────────────────────────────────────────────
     click.echo("Skills")
-    for skill in SKILLS:
+    for skill in skills:
         skill_path = skills_dir / skill / "SKILL.md"
         if skill_path.is_file():
             click.echo(f"  ✓  {skill}")
@@ -912,6 +923,81 @@ def audit(project):
         sys.exit(1)
 
 
+def _print_roadmap_report(report: dict) -> None:
+    project = report.get("project", "")
+    completion = report.get("completion", {})
+    click.echo(
+        f"{project}: {completion.get('lifecycle_completion_pct', 0):.1f}% lifecycle, "
+        f"{completion.get('implementation_pct', 0):.1f}% implementation; "
+        f"{len(report.get('ready_now', []))} ready, "
+        f"{len(report.get('blocked', []))} blocked"
+    )
+    critical = report.get("critical_path", {}).get("plans", [])
+    if critical:
+        click.echo("  critical: " + " -> ".join(critical))
+    for item in report.get("immediate_roadmap", []):
+        click.echo(f"  {item.get('order')}. {item.get('slug')} — {item.get('reason')}")
+    for finding in report.get("wiring_findings", []):
+        if finding.get("severity") in {"error", "warn"}:
+            click.echo(
+                f"  {str(finding.get('severity')).upper()} "
+                f"{finding.get('code')}: {finding.get('message')}"
+            )
+
+
+@main.command()
+@click.option(
+    "--project",
+    default="*",
+    show_default=True,
+    help="Mounted project key, or * for the portfolio.",
+)
+@click.option(
+    "--sprint", default=None, help="Limit to one sprint and its prerequisites."
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repository root for a worktree-specific single-project scan.",
+)
+@click.option("--max-paths", default=5, show_default=True, type=click.IntRange(1, 50))
+@click.option("--json-output", is_flag=True, help="Emit the lossless JSON report.")
+def roadmap(project, sprint, checkout_path, max_paths, json_output):
+    """Show pending work, blockers, sprint progress, and critical paths."""
+
+    from reckon.mcp import _roadmap
+
+    result = _roadmap(
+        project,
+        str(checkout_path.resolve()) if checkout_path else None,
+        sprint,
+        max_paths,
+    )
+    if not result.get("ok", True):
+        raise click.ClickException(str(result.get("detail") or result.get("error")))
+    if json_output:
+        click.echo(json.dumps(result, indent=2))
+        return
+    if project == "*":
+        portfolio = result.get("portfolio", {})
+        click.echo(
+            f"portfolio: {portfolio.get('lifecycle_completion_pct', 0):.1f}% lifecycle, "
+            f"{portfolio.get('implementation_pct', 0):.1f}% implementation; "
+            f"{portfolio.get('ready', 0)} ready, {portfolio.get('blocked', 0)} blocked"
+        )
+        for report in result.get("projects", []):
+            if report.get("ok", True):
+                _print_roadmap_report(report)
+            else:
+                click.echo(
+                    f"{report.get('project')}: ERROR "
+                    f"{report.get('detail') or report.get('error')}"
+                )
+        return
+    _print_roadmap_report(result)
+
+
 @main.command(name="audit-doc")
 @click.argument("paths", nargs=-1, required=True, type=click.Path(path_type=Path))
 @click.option(
@@ -957,44 +1043,43 @@ def audit_doc(paths, project, check_links):
 
 @main.command(name="install-skills")
 def install_skills():
-    """Install reckon skills into ~/.claude/skills/ idempotently.
+    """Install reckon skills into supported runtime skill directories.
 
-    Copies each subdirectory of reckon/skills/ into ~/.claude/skills/,
+    Copies each canonical skill into Claude, Codex, and shared agent dirs,
     preserving existing files that are identical and overwriting stale ones.
     Reports: skipped (unchanged) vs updated (changed or new).
     """
-    reckon_root = Path(__file__).parent.parent
-    skills_src = reckon_root / "skills"
-    skills_dst = Path.home() / ".claude" / "skills"
-
-    if not skills_src.is_dir():
-        raise click.ClickException(
-            f"skills source directory not found: {skills_src}\n"
-            "This reckon install has no skills/ directory."
-        )
-
-    skills_dst.mkdir(parents=True, exist_ok=True)
+    skills_src = _skills_source()
+    destinations = [
+        Path.home() / ".claude" / "skills",
+        Path.home() / ".codex" / "skills",
+        Path.home() / ".agents" / "skills",
+    ]
     skipped = 0
     updated = 0
 
-    for skill_dir in sorted(skills_src.iterdir()):
-        if not skill_dir.is_dir():
-            continue
-        dst_dir = skills_dst / skill_dir.name
-        dst_dir.mkdir(parents=True, exist_ok=True)
-        for src_file in sorted(skill_dir.rglob("*")):
-            if not src_file.is_file():
+    for skills_dst in destinations:
+        skills_dst.mkdir(parents=True, exist_ok=True)
+        for skill_dir in sorted(skills_src.iterdir()):
+            if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").is_file():
                 continue
-            rel = src_file.relative_to(skill_dir)
-            dst_file = dst_dir / rel
-            dst_file.parent.mkdir(parents=True, exist_ok=True)
-            src_bytes = src_file.read_bytes()
-            if dst_file.exists() and dst_file.read_bytes() == src_bytes:
-                skipped += 1
-            else:
-                dst_file.write_bytes(src_bytes)
-                updated += 1
-                click.echo(f"  updated  {skill_dir.name}/{rel}")
+            dst_dir = skills_dst / skill_dir.name
+            dst_dir.mkdir(parents=True, exist_ok=True)
+            for src_file in sorted(skill_dir.rglob("*")):
+                if not src_file.is_file():
+                    continue
+                rel = src_file.relative_to(skill_dir)
+                dst_file = dst_dir / rel
+                dst_file.parent.mkdir(parents=True, exist_ok=True)
+                src_bytes = src_file.read_bytes()
+                if dst_file.exists() and dst_file.read_bytes() == src_bytes:
+                    skipped += 1
+                else:
+                    dst_file.write_bytes(src_bytes)
+                    updated += 1
+                    click.echo(
+                        f"  updated  {skills_dst.parent.name}/{skill_dir.name}/{rel}"
+                    )
 
     click.echo(
         f"\nDone. {updated} file{'s' if updated != 1 else ''} updated, {skipped} unchanged."

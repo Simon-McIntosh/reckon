@@ -57,3 +57,38 @@ def test_skills_use_progressive_reads_by_intent() -> None:
     assert "resource={" in status
     assert "resource={" in edit
     assert "resource={" in ship
+
+
+def test_roadmap_skill_owns_dependency_analysis() -> None:
+    skill_root = ROOT / "skills"
+    roadmap = normalized((skill_root / "reckon-roadmap" / "SKILL.md").read_text())
+    status = normalized((skill_root / "reckon-status" / "SKILL.md").read_text())
+    sprint = normalized((skill_root / "reckon-sprint" / "SKILL.md").read_text())
+    ship = normalized((skill_root / "reckon-ship" / "SKILL.md").read_text())
+
+    assert 'roadmap(project="*")' in roadmap
+    assert "Lifecycle completion" in roadmap
+    assert "stored implementation" in roadmap
+    assert "non-executable-hard-dependency" in roadmap
+    assert "Do not reproduce its graph traversal" in status
+    assert "Call `roadmap(project)` before and after" in sprint
+    assert "canonical plan-level graph" in ship
+
+
+def test_create_and_edit_skills_guard_repository_allocation() -> None:
+    skill_root = ROOT / "skills"
+    create = (skill_root / "reckon-create" / "SKILL.md").read_text()
+    edit = normalized((skill_root / "reckon-edit" / "SKILL.md").read_text())
+
+    assert "Repository ownership precedes path selection" in create
+    assert "link actionable work to a sprint in the same session" in create
+    assert "cross-project relocation" in edit
+    assert "Never leave two canonical live plans" in edit
+
+
+def test_edit_skill_uses_version_safe_prose_tool() -> None:
+    edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text()
+
+    assert "edit_plan_text" in edit
+    assert "old_html must occur exactly once" not in edit
+    assert "requires exactly one match" in edit

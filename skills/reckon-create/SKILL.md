@@ -6,17 +6,19 @@ description: >-
   meta tags and data-reckon sections. Requires reckon-sync to have been run first.
   Trigger verbs:
   "create a plan / new plan / draft a plan / start a plan / write a dashboard /
-  create an explainer / author a doc / /reckon-create <slug>". For editing an
+  create an explainer / author a doc / invoke reckon-create with a slug". For editing an
   existing plan use reckon-edit; for executing plan work use reckon-ship.
-allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap
 ---
 
 # reckon-create — scaffold a new HTML plan or doc
 
 ## Fast path
+- Resolve repository ownership before selecting a checkout or project key.
 - New plan → write `docs/plans/<slug>.html` from the skeleton below.
 - New non-plan doc (RCA / explainer) → write `docs/research/<slug>.html`.
-- Seed the first followup → `edit_plan` `append` op (or hand to reckon-edit).
+- Seed the first followup and link actionable work to a sprint in the same session.
+- Run `roadmap(project)` after creation; clear allocation, relationship, and sprint wiring faults.
 - Missing `docs/_shared/`? → run `/reckon-sync` first.
 
 Full detail below.
@@ -81,6 +83,13 @@ Set only the relationships that are clear from the source. If you are migrating
 an old markdown doc, fix internal links to the final `.html` targets in the
 same pass.
 
+**Repository ownership precedes path selection.** A repository name or nearby
+plan is not an ownership rule. Read the proposed repository's root and nearest
+`AGENTS.md`, the project resource's `scope` policy when present, and neighboring
+mounted projects with overlapping responsibilities. State why the target owns
+the work before creating the file. If another repository owns the executable
+mechanism, create it there and use a qualified relationship from the consumer.
+
 ## Hard rules
 
 1. **HTML is the source of truth.** Never create a markdown plan file.
@@ -88,7 +97,9 @@ same pass.
 3. **Do NOT copy CSS or JS into the project.** If `docs/_shared/` is missing, stop.
 4. **Plan data lives as semantic HTML.** `<meta name="plan-*">` scalars in the head and `data-reckon` section elements inside `<main class="plan-doc">`. No sidecar JSON files.
 5. **Every plan ships with a followup placeholder** — a `<section data-reckon="followups">` block.
-6. **Do not commit automatically.** Report what was created and suggest a commit message.
+6. **Follow the target repository's commit policy.** If it requires same-session
+   commit and push, do so with explicit paths after validation; never leave live
+   plan state uncommitted.
 7. **Write full prose in HTML.** `<p>See state §2 for details</p>` is a hard failure.
 8. **Illustrate with graphics (user mandate 2026-06-03).** Plans and research
    docs MUST embed figures/diagrams wherever a graphic improves understanding
@@ -172,13 +183,28 @@ exits non-zero only on ERRORs. **Clear all ERRORs before ending your turn.**
 
 ```bash
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-PROJECT="$(basename "$REPO_ROOT")"
 DOCS_DIR="$REPO_ROOT/docs"
-STATE_DIR="$DOCS_DIR/state/$PROJECT"
 ```
 
+- Resolve `PROJECT` by matching `$DOCS_DIR` against registered mounts or an
+  existing `docs-project` identity. Use the repository basename only for an
+  unsynced first-time proposal, and confirm it through `reckon-sync`.
+- After resolving it, set `STATE_DIR="$DOCS_DIR/state/$PROJECT"`.
 - If `$DOCS_DIR/_shared/` does not exist → **stop**: "Run `/reckon-sync` first."
 - If `$STATE_DIR/` does not exist → **stop**: "Run `/reckon-sync` first."
+
+### Step 1.5 — Allocation and graph preflight
+
+1. Call `roadmap(project=PROJECT)` and read `allocation.scope`.
+2. Read repository instructions and any explicit architecture boundary docs.
+3. Search existing plan and research titles/summaries before creating a new
+   resource; edit the existing owner when the work is already represented.
+4. Classify each relation:
+   - hard prerequisite → `depends_on`;
+   - reference/research input → `informs`;
+   - downstream plan unlocked here → `blocks`.
+5. Choose the destination sprint now. If the work is intentionally backlog,
+   record that explicitly instead of silently leaving it unscheduled.
 
 ### Step 2 — Resolve slug and title
 
@@ -205,10 +231,11 @@ concurrently to the same project's index).
 **Authoring the file directly is the primary path.** The MCP tool is an
 optional version-safety wrapper, not a gate.
 
-### Step 4 — (Optional) Register initial state via edit_plan
+### Step 4 — Register initial state and sprint membership
 
-Only needed if other agents are concurrently active on the same project, or if
-you need the plan to appear immediately in the server's version-tracked state:
+Use `edit_plan(create=True)` when concurrent writers exist or when creating the
+resource through MCP. Add the plan to its named sprint through `reckon-sprint`
+in the same session; plan `sprint` metadata and sprint membership must agree.
 
 ```python
 # Minimal create call — expected_version=0 for a new plan, create=True
@@ -372,7 +399,7 @@ Only author fields that a view downstream consumes:
 
 | Meta tag | Default | Values |
 |---|---|---|
-| `docs-project` | — | basename of repo root |
+| `docs-project` | — | registered project key for the owning repository |
 | `reckon-type` | `plan` | `plan` / `research` / `doc` (→ normalised to `research`) |
 | `plan-slug` | filename stem | kebab-case override |
 | `plan-title` | (empty) | Title Case |
@@ -459,7 +486,10 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 Report:
 - Created file: `docs/plans/<slug>.html` or `docs/research/<slug>.html`
 - Live URL: `http://localhost:8765/<project>/<slug>.html`
-- Suggested commit: `docs(plans): scaffold <slug>.html (<title>)`
+- Owning repository and the responsibility boundary that selected it
+- Sprint membership, or the explicit backlog reason
+- `roadmap` verification: no new error-level wiring findings
+- Commit/push state required by the target repository
 
 ## Cross-references
 
@@ -467,5 +497,6 @@ Report:
 - `reckon-edit/SKILL.md` — modify an existing plan.
 - `reckon-ship/SKILL.md` — execute the work a plan describes.
 - `reckon-status/SKILL.md` — read-only inspection.
+- `reckon-roadmap/SKILL.md` — allocation preflight, graph validation, and ready work.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (all element shapes, schema contract, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema (machine-checkable contract).

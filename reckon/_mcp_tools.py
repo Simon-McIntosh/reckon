@@ -1,4 +1,4 @@
-"""Pydantic type definitions for all reckon MCP tool arguments and responses."""
+"""Published argument and common response models for Reckon's MCP surface."""
 
 from __future__ import annotations
 
@@ -7,115 +7,63 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# ── Request models ─────────────────────────────────────────────────────────
-
-
 class ReadPlanArgs(BaseModel):
-    project: str = Field(
-        ..., description="Project name (key in mounts.json, e.g. 'imas-ambix')"
+    project: str | None = Field(None, description="Project key, or * for mounts")
+    slug: str | None = Field(None, description="Resource slug or compatibility index")
+    resource: dict[str, Any] | None = Field(
+        None, description="Typed selector with project, type, id, and optional archived"
     )
-    slug: str = Field(
-        ...,
-        description="Plan slug (HTML filename stem, e.g. 'tokenizers'); use 'index' for project config",
+    view: str | None = Field(
+        None, description="summary, detail, history, raw, or schema"
     )
+    with_schema: bool = False
+    checkout_path: str | None = None
+    status: str | None = None
+    doc_type: str | None = None
+    sprint: str | None = None
+    milestone: str | None = None
+    owner: str | None = None
+    search: str | None = None
+    limit: int | None = Field(None, ge=1)
+    cursor: str | None = None
+    include_followups: bool = True
+    include_questions: bool = True
+    include_prompts: bool = False
 
 
-class ListPlansArgs(BaseModel):
-    project: str = Field(..., description="Project name")
-    status: str | None = Field(
-        None,
-        description="Optional status filter: active | pending | blocked | shipped | draft",
-    )
-
-
-class PatchPlanArgs(BaseModel):
-    project: str = Field(..., description="Project name")
-    slug: str = Field(..., description="Plan slug")
-    patch: dict[str, Any] = Field(..., description="JSON merge-patch to apply to data")
-    expected_version: int = Field(
-        ...,
-        description="Current data._version — write is rejected with VersionConflict if it doesn't match",
-    )
-
-
-class AppendCommentArgs(BaseModel):
+class EditPlanArgs(BaseModel):
     project: str
     slug: str
-    section_id: str = Field(..., description="Section id the comment belongs to")
-    body: str = Field(..., description="Comment text (markdown ok)")
-    author: str = Field(..., description="Human or agent author identifier")
-    quote: str | None = Field(
-        None, description="Optional quoted passage from the plan body"
-    )
-    expected_version: int
+    ops: list[dict[str, Any]]
+    expected_version: int = Field(..., ge=0)
+    create: bool = False
+    checkout_path: str | None = None
+    doc_type: str | None = None
 
 
-class LockDecisionArgs(BaseModel):
+class EditPlanTextArgs(BaseModel):
     project: str
     slug: str
-    key: str = Field(..., description="Decision key, e.g. 'transport'")
-    choice: str = Field(..., description="The chosen option")
-    rationale: str = Field(..., description="Why this choice was made")
-    by: str = Field(..., description="Who locked the decision")
-    expected_version: int
+    old_html: str = Field(..., min_length=1, description="Exact fragment to replace")
+    new_html: str = Field(..., description="Replacement authored HTML")
+    expected_version: int = Field(..., ge=0)
+    checkout_path: str | None = None
+    doc_type: str | None = None
 
 
-class AppendFollowupArgs(BaseModel):
+class RoadmapArgs(BaseModel):
+    project: str = Field(..., description="Project key, or * for all mounts")
+    checkout_path: str | None = None
+    sprint: str | None = None
+    max_paths: int = Field(5, ge=1, le=50)
+
+
+class AuditArgs(BaseModel):
     project: str
-    slug: str
-    followup: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Full followup record. Must include: id, written_by, written_at, title, body, prompt. "
-            "Optional: recommends_skill, touches, blocked_by, capability, est_turn."
-        ),
-    )
-    expected_version: int
-
-
-class ResolveFollowupArgs(BaseModel):
-    project: str
-    slug: str
-    followup_id: str = Field(
-        ..., description="The 'id' field of the followup to resolve"
-    )
-    outcome: str = Field(
-        ..., description="Short description of what was done / decided"
-    )
-    by: str = Field(..., description="Who resolved the followup")
-    expected_version: int
-
-
-class SetStatusArgs(BaseModel):
-    project: str
-    slug: str
-    status: str = Field(
-        ...,
-        description="New status: active | pending | blocked | shipped | draft | archived",
-    )
-    expected_version: int
-
-
-class SetImplArgs(BaseModel):
-    project: str
-    slug: str
-    impl: float = Field(..., ge=0.0, le=1.0, description="Implementation fraction 0..1")
-    expected_version: int
-
-
-# ── Response models ────────────────────────────────────────────────────────
-
-
-class ReadPlanResult(BaseModel):
-    project: str
-    slug: str
-    version: int
-    data: dict[str, Any]
-
-
-class ListPlansResult(BaseModel):
-    project: str
-    plans: list[dict[str, Any]]
+    checkout_path: str | None = None
+    view: str | None = None
+    cursor: str | None = None
+    limit: int | None = Field(None, ge=1)
 
 
 class WriteResult(BaseModel):
@@ -123,6 +71,7 @@ class WriteResult(BaseModel):
     project: str
     slug: str
     new_version: int
+    path: str | None = None
 
 
 class VersionConflictResult(BaseModel):
@@ -131,5 +80,6 @@ class VersionConflictResult(BaseModel):
     expected_version: int
     current_version: int
     hint: str = (
-        "Re-read the plan with reckon.read_plan to get the current version, then retry."
+        "Re-read the resource with reckon.read_plan using the same checkout_path, "
+        "then retry."
     )

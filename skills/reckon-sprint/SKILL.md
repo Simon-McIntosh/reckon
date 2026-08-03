@@ -9,19 +9,18 @@ description: >-
   plan's text or followups use reckon-edit; execute a plan slug or whole sprint
   with reckon-ship; use reckon-status for read-only
   inspection.
-allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
 
 # reckon-sprint — sprint, milestone, and roadmap orchestration
 
 ## Fast path
-- Read the composed view → `read_plan(project, view="summary")`; select a
-  named resource only when deeper state is needed.
+- Read execution state → `roadmap(project)`; use `read_plan` for named resource detail.
 - Read/write one sprint → typed `read_plan(..., view="raw")` then
   `edit_plan(..., doc_type="sprint")`.
 - Move an item between sprints → read both versions, then use the source sprint's
   `move` op with `to_version`.
-- Propose a sprint → discover plans, score by **dependency order first**, confirm, then write.
+- Propose a sprint → use `roadmap` ready/open paths, validate ownership and wiring, then write.
 
 Full detail below. Sprint state is a typed resource, not a plan. This
 skill never dispatches workers; `/reckon-ship S1` executes the sprint.
@@ -51,6 +50,10 @@ activates distributed resources.
 `edit_plan` is the version-safe write path: call `read_plan` first for the
 current `version`, pass it as `expected_version`; on a 412 conflict re-read and
 retry.
+
+Call `roadmap(project)` before and after every membership, order, blocker, or
+status mutation. Before the write it is the execution source of truth; after
+the write it verifies that plan metadata and sprint resources still agree.
 
 ### Running inside a git worktree — pass `checkout_path`
 
@@ -142,21 +145,28 @@ edit_plan(
 
 ## Propose a sprint (manual workflow)
 
-1. Discover plans via `read_plan(project, view="summary")`; page with `cursor`.
-2. Keep only **actionable live plans**: usually `status in {active, pending}`.
+1. Call `roadmap(project)`; do not reconstruct dependency order from discovery.
+2. Read `allocation.scope` and repository instructions before assigning work
+   whose owner is ambiguous. Cross-project consumer work stays qualified; do
+   not copy the provider plan into this repository.
+3. Keep only **actionable live plans**: usually `status in {active, pending}`.
    Exclude research docs, archived/done plans, README/reference pages, and
    cross-repo coordination plans unless the user explicitly wants them tracked.
-3. **Score by dependency order first** — a plan whose `depends_on` are not all
-   `shipped`/`done` is NOT ready; never schedule it ahead of its prerequisites.
-   Refs may be external (`project:slug`): resolve them via `read_plan`'s
-   `deps` list, and record an unshipped external prerequisite as a BLOCKER in
-   a blocker resource (it cannot be scheduled inside this project's sprints).
-   Then order the ready set by `roi × effort_inverse × milestone_priority`.
-4. Partition into N sprints; each item carries `why_now` and `done_when`.
-5. Keep **one active sprint** at a time. Future sprints start as `planned`.
-6. Treat any legacy `tier` value as a relative hint, not a model id. Runtime
+4. Fix error-level `wiring_findings` before scheduling. A research/evidence
+   input in `depends_on` becomes `informs`; a cycle or sprint-order inversion
+   is never accepted as a roadmap.
+5. Order the `critical_path` prerequisite-first, then alternative `open_paths`.
+   Within each ready wave use the analyzer's immediate order.
+6. Partition into sprints; each item carries `why_now` and `done_when`. Every
+   actionable plan must either belong to exactly one sprint with matching
+   `plan-sprint`, or carry an explicit backlog decision.
+7. Keep **one active sprint** at a time. Future sprints start as `planned`.
+8. Treat any legacy `tier` value as a relative hint, not a model id. Runtime
    worker selection belongs to reckon-ship's one-below policy.
-7. Print the proposal; ask to confirm before writing.
+9. If the user requested a roadmap change, write it without a redundant
+   checkpoint unless a material ownership or priority choice remains open.
+10. Re-run `roadmap` and `audit`; clear new graph or membership errors and
+    report both completion percentages.
 
 ## Execution handoff
 
@@ -179,10 +189,49 @@ resources. Read `slug="timeline", doc_type="timeline"` before appending one
 `events` item (`{when, who, what}`); existing events cannot be changed. Blocker
 reference counts are derived from sprint item `blocked_by` references.
 
+## Project allocation scope
+
+Repository responsibility and routing guidance lives on the independently
+versioned `project` resource under `scope`:
+
+```python
+project_state = read_plan(
+    resource={"project": "my-project", "type": "project", "id": "project"},
+    view="raw",
+)
+edit_plan(
+    project="my-project",
+    slug="project",
+    doc_type="project",
+    expected_version=project_state["version"],
+    ops=[{"op": "set", "path": "scope", "value": {
+        "owns": ["runtime responsibilities"],
+        "excludes": ["work owned by another repository"],
+        "routes": [{"work": "vocabulary", "project": "language"}],
+    }}],
+)
+```
+
+Keep entries concise and mechanism-based. `routes[].project` must be a safe
+project key. Scope guides allocation preflight but never overrides repository
+instructions or user write authorization.
+
+## Close and rebalance gates
+
+- Do not close a sprint while `roadmap(project, sprint=<id>)` returns ready or
+  in-progress work. Execute it or record a genuine external/human blocker.
+- A derived prerequisite is not duplicated as an explicit blocker. Keep the
+  plan's workflow state and let `effective_status` project dependency blocking.
+- When moving a plan, update both sprint resources and the plan's `sprint`
+  scalar in the same session, then verify no membership finding remains.
+- Rebalancing must not move a prerequisite behind its successor. Treat a
+  `sprint-order-inversion` as a failed rebalance.
+
 ## Cross-references
 
 - `reckon-edit` — edit a single plan's prose, decisions, followups (+ the full `edit_plan` op reference and worktree `checkout_path` detail).
 - `reckon-ship` — execute the work a plan describes.
-- `reckon-status` — read-only inspection; ready-set / dependency-order view.
+- `reckon-status` — read-only plan and audit inspection.
+- `reckon-roadmap` — executable order, progress, blockers, and wiring health.
 - `reckon-create` — scaffold a new plan.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (index schema, endpoints).

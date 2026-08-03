@@ -224,6 +224,48 @@ def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
     assert "plans_count" not in manifest
 
 
+def test_project_scope_routes_are_validated_and_composed(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+    scope = {
+        "owns": ["runtime orchestration"],
+        "excludes": ["language vocabulary"],
+        "routes": [{"work": "vocabulary", "project": "language"}],
+    }
+
+    write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "scope": scope},
+        version,
+    )
+
+    assert compose_project_state(docs, "sample")["projects"][0]["scope"] == scope
+
+
+def test_project_scope_rejects_malformed_routes(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    with pytest.raises(ValueError, match="route project"):
+        write_resource(
+            docs,
+            "sample",
+            "project",
+            "project",
+            {
+                **project,
+                "scope": {
+                    "owns": [],
+                    "routes": [{"work": "vocabulary", "project": "../other"}],
+                },
+            },
+            version,
+        )
+
+
 def test_migration_rerun_verifies_and_changed_source_rejects(migrated):
     docs, index, _ = migrated
     rerun = migrate_project_state(docs, "sample")

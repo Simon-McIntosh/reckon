@@ -45,19 +45,29 @@ plan followups, evidence links, merges, pushes, and sprint closure.
 
 Before dispatch:
 
-1. Read the full sprint object and preserve item order as a priority hint.
-2. Read every member plan with `with_schema=True` and its complete HTML.
-3. Expand each plan's `depends_on` recursively.
+1. Call `roadmap(project, sprint=sprint_id)`. Treat its pending set,
+   prerequisite-first paths, sprint sequence, and wiring findings as the
+   canonical plan-level graph.
+2. Stop graph construction for error-level wiring findings. Repair invalid,
+   dangling, non-executable, inactive, contradictory, cyclic, sprint-order, or
+   membership faults through the owning plan/sprint skill; then rescan.
+3. Read the full sprint object and preserve item order as a priority hint after
+   the dependency order returned by `roadmap`.
+4. Read every member plan with `with_schema=True` and its complete HTML.
+5. Expand only hard `depends_on` edges already validated by the analyzer.
    - Shipped/done prerequisites are evidence inputs.
    - Actionable same-project prerequisites become execution nodes.
    - Cross-project, missing, abandoned, or authority-expanding prerequisites
      are blockers unless already satisfied.
-4. Build section-level nodes where plan prose or followups expose independent
+   - Research, specifications, and evidence are `informs` inputs, never
+     executable prerequisites.
+6. Build section-level nodes where plan prose or followups expose independent
    deliverables. Otherwise use one node per plan.
-5. Add dependency edges from plan metadata, section sequencing, shared files,
+7. Add dependency edges from section sequencing, shared files,
    decisions, and explicit triggers.
-6. Topologically sort into ready waves. A cycle is a blocker; report the exact
-   cycle instead of breaking it heuristically.
+8. Topologically sort the enriched section/file graph into ready waves. A new
+   cycle is a blocker; report the exact cycle instead of breaking it
+   heuristically.
 
 Read the knowledge envelope for every node:
 
@@ -296,8 +306,11 @@ After each integrated node, the orchestrator:
 
 After all executable nodes:
 
+- re-run `roadmap(project, sprint=sprint_id)` and record lifecycle plus stored
+  implementation completion;
 - re-read every member plan and the composed index view;
 - ensure no ready or in-progress node is omitted;
+- require no error-level wiring findings;
 - record blocked/deferred nodes explicitly;
 - write a sprint summary with plan and evidence links by editing the named
   sprint with its current resource version;

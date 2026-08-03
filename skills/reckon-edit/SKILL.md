@@ -5,10 +5,10 @@ description: >-
   followup creation (§05 template), and plan archiving. Decides between evergreen
   edit vs new stage file for phase transitions. Trigger verbs: "update / amend /
   record / add to / revise / lock decision / resolve decisions / queue followup /
-  archive / retire the plan / /reckon-edit <slug>". For new plans use
+  archive / retire the plan / invoke reckon-edit with a slug". For new plans use
   reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
   executing work use reckon-ship; for read-only inspection use reckon-status.
-allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan
+allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___edit_plan_text mcp__reckon___roadmap mcp__reckon___audit
 ---
 
 # reckon-edit — mutations to an existing plan
@@ -16,7 +16,9 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 ## Fast path
 - Lock a decision → typed `read_plan(..., view="raw")` then `edit_plan` `lock` op.
 - Add / resolve a followup → `edit_plan` `append` / `resolve` op (prompt mandatory).
-- Fix prose / add a section → edit the resolved typed resource directly + announce the bypass.
+- Fix prose / add a section → raw read then `edit_plan_text` with one exact old/new fragment.
+- Repair dependencies → classify hard prerequisites vs `informs`/`blocks`, edit, then run `roadmap`.
+- Relocate a misplaced plan → follow the cross-project relocation transaction below.
 - Sprints / milestones / roadmap → use `reckon-sprint` (the index, not a plan).
 
 Full detail below.
@@ -44,17 +46,20 @@ If the intent is sprint / milestone / roadmap state → hand off to `reckon-spri
 `<section data-reckon="…">` elements are baked into that same file. There is no
 separate state file; edit the HTML and the plan's state changes.
 
-**Two write paths:**
+**Three write paths:**
 
-1. **Direct HTML edit** (primary for prose, evergreen additions, new sections):
-   Resolve the inventory row's `href`, then use Write/Edit on that typed path.
-   Announce "editing HTML directly"
-   in your reply. This is fine when you are the sole writer.
+1. **`edit_plan_text` MCP call** (primary for prose, evergreen additions, new
+   sections): replace one exact authored HTML fragment with optimistic
+   concurrency. It rejects metadata or `data-reckon` mutations.
 
-2. **`edit_plan` MCP call** (preferred for structured state: decisions, followups,
+2. **`edit_plan` MCP call** (required for structured state: decisions, followups,
    sprint ops, status changes — especially when another agent or human may be
    editing concurrently): reads current `version`, applies ops atomically,
    rejects on version mismatch (412 → re-read and retry).
+
+3. **Direct HTML edit** (fallback only when MCP cannot express the change or is
+   unavailable): resolve the inventory row's typed path and announce the exact
+   bypass reason. Never use it for structured state.
 
 **Bypass-with-announcement rule:** any agent that edits plan HTML directly rather
 than via `edit_plan` MUST announce "bypassing edit_plan because X" in their reply.
@@ -70,6 +75,13 @@ Silent bypasses hide drift.
 5. **Every followup MUST carry a non-empty `<pre class="r-fu-prompt">` block.** A followup
    without a prompt is rejected at write time. See §05 template below.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.
+7. **Relationships have distinct semantics.** `depends_on` is executable and
+   blocks closure; research/evidence inputs use `informs`; downstream work uses
+   `blocks`. Never put a reference document in `depends_on` merely because it
+   was read first.
+8. **Repository allocation is part of plan integrity.** Before relocating or
+   materially changing scope, read both repositories' instructions and project
+   scope policies. Preserve one canonical live owner.
 
 ```html
 <!-- ❌ WRONG — stub body -->
@@ -117,6 +129,10 @@ body/outcome, author **HTML, never markdown**:
   blocks, or is informed by another live doc, update `plan-depends-on`,
   `plan-blocks`, and/or `plan-informs` in the same edit. Use slug lists, not
   file paths.
+- **Run `roadmap(project)` after every relationship, sprint, status, or
+  relocation edit.** Clear cycles, missing/non-executable prerequisites,
+  sprint-order inversions, and plan/sprint membership disagreement before
+  finishing.
 - **Run `reckon audit-doc docs/plans/<slug>.html` before ending your turn** (or
   `python -m reckon.doccheck docs/plans/<slug>.html`). It flags relative image `src`
   and literal `**markdown**` in a rendered body as **ERRORs** (non-zero exit),
@@ -169,6 +185,31 @@ edit_plan(
 ```
 
 **On 412:** repeat the typed `view="raw"` read → new `version` → retry `edit_plan`.
+
+## Prose write pattern — `edit_plan_text`
+
+Use a lossless raw read for the current version, then provide an exact fragment
+that occurs once:
+
+```python
+state = read_plan(
+    resource={"project": "my-project", "type": "plan", "id": "my-plan"},
+    view="raw",
+)
+edit_plan_text(
+    project="my-project",
+    slug="my-plan",
+    old_html="<p>Exact current prose.</p>",
+    new_html="<p>Revised prose with <strong>evidence</strong>.</p>",
+    expected_version=state["version"],
+    doc_type="plan",
+)
+```
+
+The tool requires exactly one match, advances `plan-version`, returns the
+written path, and refuses changes to metadata, decisions, followups, questions,
+research, or comments. On a version conflict, repeat the raw read and rebase the
+small fragment against current prose.
 
 ### Running inside a git worktree — pass `checkout_path`
 
@@ -233,7 +274,8 @@ human/external blocker and record that blocker through sprint state.
 1. Read `docs/plans/<slug>.html` (or the mixed-layout path returned by discovery).
 2. Make the smallest edit; add new `<h3>` blocks rather than modifying existing paragraphs.
 3. The server stamps `modified` automatically on every successful `edit_plan` write — do not set it manually.
-4. Suggest commit: `docs(<slug>): <short summary>`. Do not commit unless asked.
+4. Follow the target repository's commit policy; same-session plan commits and
+   pushes are mandatory where repository instructions require them.
 
 **Phase transition steps:**
 1. Determine suffix: `landed`, `locked`, `final`, or section-specific (`02-landed`).
@@ -371,6 +413,32 @@ skill — propose / start / close / rebalance sprints, move items between
 sprints, and edit milestones / timeline / blockers. It is the project *index*,
 not a plan, and never dispatches workers. Use `reckon-sprint` for all of it.
 
+## Intent: cross-project relocation
+
+Use this transaction when the content is valid but the repository owner is
+wrong:
+
+1. Read the source plan raw state and complete HTML, both project resources,
+   both root/nearest `AGENTS.md` files, and `roadmap` for source and destination.
+2. State the ownership boundary and confirm the destination repository owns the
+   executable mechanism. Do not infer ownership from naming similarity.
+3. Preflight a unique destination slug and canonical typed path. Preserve
+   history, decisions, followups, figures, and archive links; rewrite
+   `docs-project`, project-absolute asset paths, and qualified cross-project
+   relationships.
+4. Remove source sprint membership and add destination sprint membership in the
+   same session. Update `plan-sprint` to match. Backlog placement must be
+   explicit.
+5. Rewrite inbound relationships: local refs that cross the new boundary become
+   `project:slug`; reference-only edges become `informs`, not hard prerequisites.
+6. Remove the source live copy only after the destination validates. Never
+   leave two canonical live plans.
+7. Run `audit` and `roadmap` in both projects. Require no new error-level
+   findings, no cycle, and no sprint-order inversion.
+8. Commit and push each affected repository under its own authorization and
+   repository policy. If one repository is not authorized, stop before the
+   first mutation and return the complete relocation manifest.
+
 ## Intent: archive
 
 1. Write `docs/plans/archive/<slug>-final.html` — frozen snapshot.
@@ -388,6 +456,7 @@ plans; otherwise archive them too.
 - `reckon-sprint` — sprint / milestone / roadmap state (the project index).
 - `reckon-ship` — execute the work a plan describes.
 - `reckon-status` — read-only inspection.
+- `reckon-roadmap` — dependency, sprint-order, blocker, and allocation validation.
 - `reckon-sync` — register a project mount and seed shared assets.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema.

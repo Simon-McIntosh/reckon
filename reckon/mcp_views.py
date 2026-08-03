@@ -133,6 +133,27 @@ def storage_schema_for(resource_type: str) -> dict[str, Any]:
                 "version": {"minimum": 0, "type": "integer"},
                 "owner": {"type": "string"},
                 "published": {"type": "string"},
+                "scope": {
+                    "type": "object",
+                    "properties": {
+                        "owns": {"type": "array", "items": {"type": "string"}},
+                        "excludes": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "routes": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["work", "project"],
+                                "properties": {
+                                    "work": {"type": "string"},
+                                    "project": {"type": "string"},
+                                },
+                            },
+                        },
+                    },
+                },
             },
         }
 

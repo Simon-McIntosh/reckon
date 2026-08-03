@@ -4,11 +4,11 @@ description: >-
   Read-only inspection of plans and sprint state — phase, status, ROI, effort,
   milestone, implementation fraction, open decisions, blockers, active sprint
   progress, and quality audit (empty followup prompts, stale timestamps, missing
-  NEXT cards). Typed HTML resources carry stable identity and semantic state
-  state. Never modifies files. Trigger verbs: "what plans are open / where are we
+  NEXT cards). Typed HTML resources carry stable identity and semantic state.
+  Never modifies files. Trigger verbs: "what plans are open / where are we
   on X / show plan status / what sprint are we on / summarise plans / review the
   plan / audit plan health / is the plan stale / /reckon-status [slug]".
-allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit
+allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit mcp__reckon___roadmap
 ---
 
 # reckon-status — read-only plan inspection and quality audit
@@ -16,7 +16,7 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit
 ## Fast path
 - What's open / where are we → `read_plan(project, view="summary")`.
 - Status of one plan → `read_plan(resource={project,type:"plan",id:slug})`.
-- What to ship next → compute the ready-set (see §Step 5 — dependency order and ready-set).
+- What to ship next / true blockers / critical path → use `reckon-roadmap` and the `roadmap` tool.
 - Audit health → call `audit(project, view="summary")`, then request detail if findings exist.
 
 Full detail below.
@@ -129,38 +129,28 @@ with `data-resolved-at` set is resolved regardless of `data-status`.
 
 Format: `plan-slug / <id>: "<title>" (written <age>)`
 
-### Step 5 — dependency order and ready-set
+### Step 5 — read executable order
 
-Compute what is actually shippable **before** suggesting anything — never recommend a
-plan ahead of its prerequisites.
+Invoke `roadmap(project)` or hand off to `reckon-roadmap`. Do not reproduce its
+graph traversal in prose or shell code. Report:
 
-1. **Read `depends_on` for every plan** from the `read_plan(project)` discovery payload
-   (`plan-depends-on`, comma-separated slugs). Resolve each slug against the live
-   inventory.
-2. **Ready-set** = `active`/`pending`/`in-progress` plans whose `depends_on` all resolve
-   to a plan with `status` in `{shipped, done}` (or have no deps). These are what to ship
-   next. A plan with **no** deps is ready by default.
-3. **Blocked-by-prerequisite** = a successor with at least one `depends_on` that is not yet
-   `shipped`/`done`. List the unshipped prerequisite slug(s) alongside it.
-4. **Order**: process prerequisites before successors — DFS through `depends_on`, deepest
-   first (the same topological order the Graph tab's fleet prompt uses). The longest chain
-   ending at an `active`/`blocked` plan is the critical path.
+- lifecycle completion and stored implementation completion;
+- `ready_now` in `immediate_roadmap` order;
+- exact causes from `blocked` (`depends_on`, explicit blocker, draft, or cycle);
+- weighted `critical_path` and bounded `open_paths`;
+- error/warn `wiring_findings`, separated from true external blockers.
 
-**Integrity checks** (both break the ready-set computation — surface as audit findings, see Intent: review):
-- **Dangling `depends_on`** — a slug that resolves to no live plan. It is silently dropped
-  from the DAG, so a plan can look ready when its real prerequisite is missing/renamed.
-- **Cyclic `depends_on`** — `A → B → A`. The cycle is never `shipped`, so neither member
-  can ever enter the ready-set; report the cycle members.
+The shared analyzer detects invalid/dangling/non-executable hard dependencies,
+inactive prerequisites, contradictory relations, cycles, sprint-order
+inversions, membership disagreement, and orphaned blocked state. Research and
+evidence belong in `informs`; they are not executable prerequisites.
 
 ### Step 6 — suggest one next action
 
-Scan the report; offer the single most actionable next step. Do not execute it.
+Scan the report; offer the first entry from `immediate_roadmap`. Do not execute it.
 
-**Gate on prerequisites.** If the highest-ROI candidate is **blocked-by-prerequisite**,
-do NOT recommend it — recommend its earliest unshipped prerequisite instead, and **name
-it**. (e.g. `plan-beta` is highest ROI but depends on `plan-alpha` (active) → suggest
-`/reckon-ship plan-alpha`, not `plan-beta`.) Only a plan in the ready-set may be the
-suggested next action.
+Only a plan returned in `ready_now` may be the suggested next action. If it is
+empty, report the smallest true blocker or highest-severity wiring repair.
 
 ---
 
@@ -182,16 +172,14 @@ codes it already emits by hand — they would drift from the code.
   `sprint-item-missing-plan`, `sprint-item-duplicate`, `plan-sprint-missing`,
   `plan-sprint-missing-item`, `plan-sprint-mismatch`
 
-**Then add only the heuristic checks `audit` does NOT do** (these need prose-reading or the
-dependency-DAG analysis from Step 5):
+**Then add only the heuristic checks `audit` and `roadmap` do NOT do** (these
+need prose-reading):
 
 | Extra check | Condition |
 |-------|-----------|
 | **Missing NEXT card** | `plan-status=active` plan has no open `<article class="r-fu" data-status="open">` |
 | **Sparse relationship metadata** | plan prose clearly references another live plan/research doc but `plan-depends-on` / `plan-blocks` / `plan-informs` is empty |
 | **Stale markdown link** | internal `<a href=\"...md\">` still points at a markdown source after migration (beyond what `audit_links` flags) |
-| **Dangling `depends_on`** | a `plan-depends-on` slug resolves to no live plan (Step 5) — breaks the ready-set |
-| **Cyclic `depends_on`** | a `depends_on` cycle (`A → B → A`, Step 5) — members can never enter the ready-set |
 
 Output format:
 
@@ -212,8 +200,7 @@ Output format:
 
 When reviewing a project after a migration wave, add three short passes:
 1. **Inventory** — live plan vs research vs archive counts
-2. **Relationship audit** — explicit `depends_on` / `blocks` / `informs`; run the
-   dangling/cyclic `depends_on` checks from Step 5
+2. **Relationship audit** — use `roadmap.wiring_findings`; do not reimplement it
 3. **Sprint fit** — only actionable live plans belong in sprint items
 
 ---
@@ -248,5 +235,6 @@ For ≤ 2 plans, skip the table; give one paragraph per plan.
 - `reckon-edit/SKILL.md` — all mutations (prose, decisions, sprints, archive) via `edit_plan`.
 - `reckon-create/SKILL.md` — create new plans.
 - `reckon-ship/SKILL.md` — execute plan work.
+- `reckon-roadmap/SKILL.md` — pending work, true blockers, sprint order, and critical paths.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML, schema contract, discovery, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema.

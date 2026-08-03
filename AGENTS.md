@@ -66,6 +66,7 @@ writeback, content parity, fleet safety).
 | Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-ship` | `/reckon-ship <slug> [section]` |
 | Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
+| Pending work, true blockers, critical/open paths, and DAG wiring | `reckon-roadmap` | `/reckon-roadmap` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
 | Non-plan docs (RCAs, incident reports, tickets, reviews, explainers, dashboards) | `reckon-create` (with `reckon-type=doc`) | `/reckon-create <slug>` |
 
@@ -268,14 +269,16 @@ rewrite the plan's semantic HTML elements directly.
 
 **Invocation** (if needed manually): `uv run --project ~/Code/reckon reckon mcp`
 
-**The surface is three tools** (the granular mutators/reads are collapsed into
-these — `read_plan` discovery + `with_schema` fold the old reads; `edit_plan`
-ops fold the old writes):
+**The surface is five tools.** Granular structured reads/writes remain
+collapsed into `read_plan` and `edit_plan`; prose editing and graph analysis
+are separate because they have different safety and response contracts:
 
 | Tool | Purpose |
 |------|---------|
 | `read_plan` | Read + context-inject. `read_plan(resource={project,type,id})` defaults to a concise typed summary; `view=detail|history|raw|schema` reveals progressively deeper state. `read_plan(project, slug)` preserves the legacy parsed-state response. `read_plan(project)` (slug omitted) → DISCOVERY; `read_plan()` → mounted projects. |
 | `edit_plan` | The one validated write. `edit_plan(project, slug, ops, expected_version[, create])`. `ops` is an ordered list applied to a working copy, schema-validated, then written atomically. Verbs: `set` / `append` / `resolve` / `lock` / `move`; `create=True` (with `expected_version=0`) scaffolds a new plan then applies ops. Routes `slug="index"` to project config (sprints/milestones/timeline/blockers). |
+| `edit_plan_text` | Version-safe exact replacement for authored prose, tables, figures, and section bodies. Requires one unique `old_html` match and refuses any structured state change. |
+| `roadmap` | Read-only DAG scan: all pending work, ready/blocked sets, lifecycle and stored implementation percentages, sprint order, weighted critical/open paths, and wiring findings. `project="*"` returns a portfolio. |
 | `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
 
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
@@ -283,7 +286,8 @@ for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
 + create rules alongside the schema).
 
 **Mandatory rule:** always call `read_plan` first to get the current `version`
-before any write — writes are rejected (412) if `version` doesn't match.
+before `edit_plan` or `edit_plan_text` — writes are rejected (412) if
+`version` doesn't match.
 Typed write workflows use `view="raw"` for that version read. Inspection
 workflows begin with the default summary and opt into detail only when needed.
 
@@ -324,10 +328,10 @@ Rules when using `checkout_path`:
   `read_plan` that used the **same** `checkout_path`, or the write 412s.
 - `edit_plan` now returns **`path`** — the absolute file it wrote — so you
   can reconcile deterministically (`git -C "$(dirname <path>)" status`).
-- **Discovery is not redirected.** `read_plan(project)` with the slug
-  omitted (cross-plan inventory/followups/sprints) always scans the
-  registered mounts. To read a worktree plan, name its slug explicitly with
-  `checkout_path`.
+- **Discovery and roadmap are redirected.** `read_plan(project)` with the slug
+  omitted and `roadmap(project)` both scan `<checkout_path>/docs` when the
+  absolute repository root is supplied. Cross-project dependencies still
+  resolve through their registered mounts.
 
 **Recommended workflow for orchestrators with worktree fleets:** prefer that
 the **orchestrator** (running in the main checkout) perform `index`/sprint/
@@ -335,6 +339,42 @@ followup state mutations, while worktree workers author their plan **HTML**
 in their own tree and `read_plan(..., checkout_path=…)` for state. When a
 worktree worker must mutate state itself, it passes `checkout_path=<its repo
 root>` and commits the resulting `path` from its own tree.
+
+#### Repository ownership and relationship wiring
+
+Plan placement is an architecture decision, not a filename decision. Before
+creating or relocating a plan, read the target and nearest-path `AGENTS.md`,
+the project resource's optional `scope` policy, and neighboring mounted
+projects with overlapping responsibilities. State what the destination owns,
+what it consumes, and what routes elsewhere. Never keep one live plan in two
+repositories.
+
+Projects may publish allocation guidance in their project resource:
+
+```json
+{
+  "scope": {
+    "owns": ["executable responsibilities of this repository"],
+    "excludes": ["similar work owned elsewhere"],
+    "routes": [{"work": "description", "project": "destination"}]
+  }
+}
+```
+
+Relationship semantics are binding:
+
+- `depends_on` is a hard executable prerequisite: the plan cannot close until
+  the target plan completes.
+- `informs` is a research, specification, evidence, or reference input. It does
+  not block execution.
+- `blocks` names downstream work unlocked by this plan.
+- sprint item `blocked_by` names explicit human/external blockers; do not
+  duplicate derived prerequisites there.
+
+Run `roadmap` after any relationship, sprint, status, creation, or relocation
+write. Error-level wiring findings must be repaired before execution. Every
+actionable new plan belongs to exactly one sprint with matching `plan-sprint`,
+or carries an explicit backlog decision.
 
 ### Forwarding the port (from a laptop)
 

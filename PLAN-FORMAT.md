@@ -58,9 +58,9 @@ idempotent migration; reads never move files.
 - **research** — a non-actionable *input*: a reference/finding/analysis that
   one or more plans build on. It carries prose + `<meta name="plan-informs"
   content="slug-a,slug-b">` listing the plans it feeds. It has no decision /
-  followup workflow. Plans reference research via `plan-depends-on`, so the
-  link is traversable both ways (a plan shows its research inputs; a research
-  doc shows the plans it informs).
+  followup workflow. Plans discover research through reverse `informs` links
+  and embedded research items. Never place a research/evidence artifact in
+  `plan-depends-on`; that field is reserved for executable plan prerequisites.
 - **evidence** — a non-actionable verification record linked through
   `plan-evidence-for` and optional `plan-verifies` section anchors.
 - **sprint** — an HTML sprint definition identified by `sprint-id`; actionable
@@ -76,7 +76,7 @@ may write `doc` for clarity; the parser handles it.
 
 | Meta name | Author or server | Values | Notes |
 |---|---|---|---|
-| `docs-project` | author | basename of repo root | required-on-write |
+| `docs-project` | author | registered project key for the owning repository | required-on-write; resolve from mounts/project identity, not basename guessing |
 | `reckon-type` | author | `plan` / `research` / `evidence` (author may write `doc` → normalised to `research`) | |
 | `plan-slug` | author | kebab-case | optional; default = filename stem |
 | `plan-title` | author | Title Case | required-on-write |
@@ -159,6 +159,17 @@ Dependency gating (reckon-ship) treats an unshipped external prerequisite
 exactly like an unshipped local one — the `deps` rows carry the status either
 way; only the resolution path differs.
 
+Relationship semantics are distinct:
+
+- `depends_on`: hard executable prerequisite; target must be a plan that can
+  complete.
+- `informs`: research/specification/reference input; does not block execution.
+- `blocks`: downstream plan unlocked by this artifact.
+
+The `roadmap` MCP tool and `reckon roadmap` CLI report invalid, dangling,
+non-executable, inactive, contradictory, cyclic, sprint-order, and membership
+wiring faults before execution.
+
 ## File anatomy (plan)
 
 ```html
@@ -181,7 +192,7 @@ way; only the resolution path differs.
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-summary" content="one-line synopsis">
   <meta name="plan-owner" content="Simon McIntosh">
-  <meta name="plan-depends-on" content="slug-a,research-x">
+  <meta name="plan-depends-on" content="upstream-plan">
   <!-- plan-version / plan-modified are server-owned — NEVER author. plan-impl is set by reckon-ship per landing (shipped/total). -->
   <title>Human Title | <project></title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -424,7 +435,7 @@ explicit write boundary, via `PlanState.validate_for_write()` (wired into
 ## `edit_plan` write contract
 
 `edit_plan(project, slug, ops, expected_version, create=False, doc_type=None)`
-is the single safe write path. `doc_type` selects plan/research/evidence or a
+is the structured-state write path. `doc_type` selects plan/research/evidence or a
 named sprint/milestone/blocker/timeline/project resource. Ops are applied in
 order, schema-validated, then atomically
 version-checked and written. **Optimistic concurrency:** call `read_plan`
@@ -458,6 +469,24 @@ project resource. Timeline state is append-only.
 **Create a new plan:**
 `edit_plan(project, slug, ops=[…], expected_version=0, create=True)`
 
+## Authored prose write contract
+
+`edit_plan_text(project, slug, old_html, new_html, expected_version,
+checkout_path=None, doc_type=None)` is the version-safe path for prose, tables,
+figures, and section bodies. `old_html` must be non-empty and occur exactly
+once. The tool advances `plan-version`, returns the absolute written path, and
+rejects any replacement that changes parsed metadata or a `data-reckon`
+section. Structured state continues through `edit_plan`.
+
+## Roadmap read contract
+
+`roadmap(project, checkout_path=None, sprint=None, max_paths=5)` returns every
+pending plan in scope, ready and blocked sets, ordered sprint rollups,
+lifecycle and stored implementation percentages, a remaining-effort-weighted
+critical path, alternative open paths, exact cycles, allocation guidance, and
+machine-readable wiring findings. A sprint scan includes its transitive local
+prerequisites. `project="*"` returns per-project reports plus portfolio totals.
+
 **Discovery / read:**
 - `read_plan(project, slug, doc_type=...)` — one exact typed resource + version
 - `read_plan(resource={project, type, id})` — concise typed summary by default
@@ -471,7 +500,8 @@ obtain its current lossless state and version. Status and review workflows
 should begin with `summary`; `history`, discovery detail, and audit detail are
 cursor-paginated. `audit(project, view="summary")` returns compact counts,
 `view="detail"` returns findings, and `view="raw"` preserves the legacy audit
-payload.
+payload. Audit includes roadmap wiring diagnostics so graph defects do not
+depend on a separate manual traversal.
 
 Before distributed activation, typed sprint/milestone/blocker/timeline/project
 reads project one named record from the canonical legacy index and carry its

@@ -54,6 +54,7 @@ from reckon._store import (
     new_plan_html,
     patch_plan,
     read_plan,
+    replace_plan_text,
     resolve_in_list,
     set_nested,
     write_plan,
@@ -67,8 +68,9 @@ if _HAS_MCP and FastMCP is not None:
         instructions=(
             "Read and write reckon plan state. "
             "Always call reckon.read_plan first to get the current version "
-            "before any write tool — writes are rejected if expected_version "
-            "doesn't match the plan's current version."
+            "before edit_plan or edit_plan_text — writes are rejected if "
+            "expected_version doesn't match the current plan version. Use "
+            "roadmap before execution or relationship/sprint changes."
         ),
     )
 else:
@@ -746,6 +748,9 @@ _DOS_DONTS = {
         "use canonical artifact types plan, research, or evidence; doc reads as research.",
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
         "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
+        "use depends_on only for executable prerequisites; research, evidence, and specifications use informs.",
+        "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, and wiring findings.",
+        "use edit_plan_text for one exact version-safe authored HTML replacement; structured state remains in edit_plan.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
@@ -753,6 +758,7 @@ _DOS_DONTS = {
         "research/evidence cannot carry meaningful plan-only workflow or scheduling fields.",
         "distributed index writes are rejected with legacy_index_read_only guidance.",
         "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
+        "never execute through an error-level roadmap wiring finding; repair and rescan first.",
     ],
 }
 
@@ -1130,7 +1136,7 @@ def _patch_plan(
     patch: dict[str, Any],
     expected_version: int,
 ) -> dict[str, Any]:
-    """Apply a JSON merge-patch to the plan's data blob.
+    """Apply a JSON merge-patch to the plan data blob.
 
     Only top-level keys are merged. For nested fields (decisions, followups),
     use the dedicated tools (reckon.lock_decision, reckon.append_followup, etc.).
@@ -2149,6 +2155,164 @@ def _edit_plan(
     return result
 
 
+def _edit_plan_text(
+    project: str,
+    slug: str,
+    old_html: str,
+    new_html: str,
+    expected_version: int,
+    checkout_path: str | None = None,
+    doc_type: str | None = None,
+) -> dict[str, Any]:
+    """Replace one exact authored HTML fragment with version protection.
+
+    Use this for plan prose, tables, figures, and section bodies.  The old
+    fragment must occur exactly once.  The operation refuses any change to
+    plan metadata or ``data-reckon`` state; use ``edit_plan`` for structured
+    fields.  Pair the version and ``checkout_path`` with the preceding raw
+    ``read_plan`` call.
+    """
+
+    try:
+        new_version, path = replace_plan_text(
+            project,
+            slug,
+            old_html,
+            new_html,
+            expected_version,
+            checkout_path,
+            doc_type,
+        )
+        result = _edit_success_response(
+            project=project,
+            slug=slug,
+            doc_type=doc_type,
+            new_version=new_version,
+        )
+        result["operation"] = "edit_text"
+        result["path"] = str(path)
+        return result
+    except VersionConflict as exc:
+        return _conflict_response(
+            exc,
+            project=project,
+            slug=slug,
+            doc_type=doc_type,
+            operation="edit text in",
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        return {
+            "ok": False,
+            "error": "text_edit_error",
+            "project": project,
+            "slug": slug,
+            "detail": str(exc),
+        }
+
+
+def _roadmap(
+    project: str,
+    checkout_path: str | None = None,
+    sprint: str | None = None,
+    max_paths: int = 5,
+) -> dict[str, Any]:
+    """Scan plan dependencies and return executable work plus graph health.
+
+    The response contains every pending plan in scope, ready and blocked sets,
+    lifecycle and implementation percentages, ordered sprint rollups, the
+    weighted critical path, alternative open paths, and wiring findings.
+    ``project='*'`` returns the same report for every mounted project plus a
+    portfolio rollup.  ``checkout_path`` is accepted for a single project and
+    follows the same worktree-routing contract as ``read_plan``.
+    """
+
+    from reckon.roadmap import build_roadmap
+
+    if max_paths < 1 or max_paths > 50:
+        return {
+            "ok": False,
+            "error": "invalid_max_paths",
+            "detail": "max_paths must be between 1 and 50",
+        }
+    if project == "*":
+        if checkout_path is not None:
+            return {
+                "ok": False,
+                "error": "portfolio_checkout_path_unsupported",
+                "detail": "select one project when using checkout_path",
+            }
+        listed = _list_projects()
+        reports = [
+            _roadmap(
+                str(item["name"]),
+                sprint=sprint,
+                max_paths=max_paths,
+            )
+            for item in listed.get("projects", [])
+            if isinstance(item, dict) and item.get("name")
+        ]
+        valid = [report for report in reports if report.get("ok", True)]
+        plan_count = sum(
+            report.get("completion", {}).get("plans", 0) for report in valid
+        )
+        completed = sum(
+            report.get("completion", {}).get("completed", 0) for report in valid
+        )
+        implementation_points = sum(
+            report.get("completion", {}).get("implementation_pct", 0.0)
+            * report.get("completion", {}).get("plans", 0)
+            for report in valid
+        )
+        return {
+            "project": "*",
+            "portfolio": {
+                "projects": len(valid),
+                "plans": plan_count,
+                "completed": completed,
+                "lifecycle_completion_pct": round(100 * completed / plan_count, 1)
+                if plan_count
+                else 0.0,
+                "implementation_pct": round(implementation_points / plan_count, 1)
+                if plan_count
+                else 0.0,
+                "ready": sum(len(report.get("ready_now", [])) for report in valid),
+                "blocked": sum(len(report.get("blocked", [])) for report in valid),
+                "wiring_findings": sum(
+                    len(report.get("wiring_findings", [])) for report in valid
+                ),
+            },
+            "projects": reports,
+        }
+
+    try:
+        discovered = _discover_project(project, checkout_path)
+        index_data, _version = read_plan(project, "index", checkout_path)
+        project_rows = index_data.get("projects") or []
+        project_manifest = (
+            project_rows[0]
+            if project_rows and isinstance(project_rows[0], dict)
+            else {}
+        )
+        return build_roadmap(
+            project,
+            [_inventory_row(item) for item in discovered.get("inventory", [])],
+            list(discovered.get("sprints", [])),
+            active_sprint_id=(
+                discovered.get("active_sprint_id") or index_data.get("active_sprint_id")
+            ),
+            sprint_id=sprint,
+            max_paths=max_paths,
+            project_manifest=project_manifest,
+        )
+    except Exception as exc:  # noqa: BLE001 — MCP errors stay structured
+        return {
+            "ok": False,
+            "error": "roadmap_error",
+            "project": project,
+            "detail": str(exc),
+        }
+
+
 def _written_path(
     project: str,
     slug: str,
@@ -2498,8 +2662,33 @@ def _audit(
                     )
                 )
     findings.extend(_audit_sprint_findings(index_data, plans))
+    from reckon.roadmap import build_roadmap
 
     discovered = _discover_project(project, checkout_path)
+    project_rows = index_data.get("projects") or []
+    roadmap = build_roadmap(
+        project,
+        plans,
+        list(discovered.get("sprints", [])),
+        active_sprint_id=(
+            discovered.get("active_sprint_id") or index_data.get("active_sprint_id")
+        ),
+        project_manifest=(
+            project_rows[0]
+            if project_rows and isinstance(project_rows[0], dict)
+            else {}
+        ),
+    )
+    existing_findings = {
+        (item.get("code"), item.get("slug"), item.get("message")) for item in findings
+    }
+    findings.extend(
+        item
+        for item in roadmap["wiring_findings"]
+        if (item.get("code"), item.get("slug"), item.get("message"))
+        not in existing_findings
+    )
+
     rollups = {
         "sprints": discovered.get("sprints", []),
         "milestones": discovered.get("milestones", []),
@@ -2529,7 +2718,8 @@ def _audit(
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + audit. The granular
+# Agent-facing MCP surface = read_plan + edit_plan + edit_plan_text + roadmap
+# + audit. The granular
 # _funcs below remain for tests/internal use but are intentionally NOT
 # registered (collapsed per the schema-and-tooling plan); full removal is a
 # later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
@@ -2540,6 +2730,8 @@ def _audit(
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
     edit_plan_tool = mcp.tool()(_edit_plan)
+    edit_plan_text_tool = mcp.tool()(_edit_plan_text)
+    roadmap_tool = mcp.tool()(_roadmap)
     audit_tool = mcp.tool()(_audit)
 
 

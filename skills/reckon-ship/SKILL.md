@@ -10,7 +10,7 @@ description: >-
   and clean up worktrees. Trigger verbs: "implement / execute / ship / land /
   deliver the sprint / run the sprint / /reckon-ship". For editing plan text use
   reckon-edit; for defining or rebalancing sprint state use reckon-sprint.
-allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan
+allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___edit_plan_text mcp__reckon___roadmap mcp__reckon___audit
 ---
 
 # reckon-ship — execute a complete plan or sprint and record outcomes
@@ -38,6 +38,11 @@ In sprint mode, read `references/sprint-orchestration.md` completely before
 dispatch. The sprint invocation authorises the listed plans and their actionable
 same-project prerequisites; it does not broaden authority to unrelated projects,
 external systems, destructive actions, or new outward-facing effects.
+
+Use `roadmap(project, sprint=<id>)` as the canonical plan-level graph. Do not
+rebuild plan dependency order from repeated discovery calls. Add section-level
+and file-conflict edges only after the tool returns no error-level wiring
+findings.
 
 ### Sprint mode is coordinator-only
 
@@ -82,8 +87,8 @@ settles implementation choices only inside the already-authorised scope.
 
 ```text
 resolve target
-├─ plan → read full plan → classify sections → execute dependency order
-└─ sprint → read index + all plans/research/evidence → build DAG → coordinate waves
+├─ plan → roadmap + full plan → classify sections → execute dependency order
+└─ sprint → roadmap + all plans/research/evidence → enrich DAG → coordinate waves
      ↓
 select worker capability (one-below by default) + applicable skill
 → create detached worktree per delegated task
@@ -136,6 +141,9 @@ structured state (decisions, followups). Do not implement items marked
 11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
 12. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
 13. **Cleanup is mandatory and conservative.** Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch. Never force-remove unmerged or dirty worktrees.
+14. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
+    inactive, contradictory, cyclic, sprint-order, or membership findings are
+    wiring repairs, not scientific blockers and not override prompts.
 
 ## §Prerequisite blocking — STOP and ask for authorization
 
@@ -152,6 +160,14 @@ returns a computed `deps` list resolving every ref (`scope`, `found`,
 unshipped external prerequisite is a hard stop like any other, but its work
 belongs to the OTHER project's checkout — never implement it in this one;
 surface it as `/reckon-ship <project>:<slug>`.
+
+Before applying this stop, inspect `roadmap.wiring_findings`. A research or
+evidence artifact in `depends_on` is not an unmet executable prerequisite; move
+that edge to `informs`. A superseded umbrella, dangling slug, cycle, or
+sprint-order inversion is also a plan-state defect. Repair it through
+`reckon-edit` when authorized, re-run `roadmap`, and only then classify the
+remaining unresolved rows as true prerequisites. Never ask the user to
+override a relationship that Reckon identifies as malformed.
 
 For a plan-mode stop, ask for explicit user authorization:
 
@@ -175,7 +191,7 @@ Wait for the user's response before doing anything else. If the user authorizes 
 ### 0. Resolve plan vs sprint
 
 1. Derive the current project from the repository/mount context.
-2. Read `index` and match the argument against exact sprint ids.
+2. Call `roadmap(project)` and match the argument against exact sprint ids.
 3. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as sprint
    mode. Treat `plan:<slug>` or every other slug as plan mode.
 4. If sprint mode, read `references/sprint-orchestration.md` completely and
@@ -184,6 +200,10 @@ Wait for the user's response before doing anything else. If the user authorizes 
 ### 1. Plan pre-flight — read the FULL plan
 
 **This step is NON-NEGOTIABLE. Do not skip it. Do not begin implementation until it is complete.**
+
+Call `roadmap(project)` first. Require the target to be in `ready_now`, or
+follow its earliest local prerequisite from the returned critical/open path.
+Resolve every error-level wiring finding before implementation.
 
 ```python
 # Read ALL current plan state, then read the response/storage contract
@@ -390,6 +410,10 @@ all integrated worker commits are reachable from the primary branch, the
 sprint summary links its plan/evidence outcomes, and no session worktree
 remains. Close the sprint only when all executable nodes are complete.
 
+Re-run `roadmap(project, sprint=<id>)` at closure. Record both lifecycle and
+stored implementation completion; require an empty ready set and no error-level
+wiring findings before setting the sprint done.
+
 ```bash
 # Validate HTML integrity
 uv run --project ~/Code/reckon reckon audit-doc docs/plans/<slug>.html
@@ -495,5 +519,6 @@ after integration.
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
 - `reckon-create/SKILL.md` — first-time plan scaffolding and §05 template.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.
+- `reckon-roadmap/SKILL.md` — canonical pending-work graph, critical paths, and wiring diagnostics.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, schema contract, endpoints).
 - `docs/_shared/plan.schema.json` — published JSON Schema.

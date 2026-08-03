@@ -450,6 +450,7 @@ def test_storage_schema_matches_selected_resource_type():
     assert {"id", "type", "version"} <= set(sprint["required"])
     assert project["title"] == "reckon ProjectResource"
     assert project["properties"]["type"]["const"] == "project"
+    assert project["properties"]["scope"]["properties"]["routes"]["type"] == "array"
     assert timeline["properties"]["events"]["items"]["title"] == "TimelineEntry"
 
 
