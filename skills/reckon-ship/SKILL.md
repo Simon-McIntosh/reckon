@@ -136,7 +136,7 @@ structured state (decisions, followups). Do not implement items marked
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
 8. **Update the plan continuously.** After EACH section lands: collapse it in the evergreen, write a per-stage archive HTML, and call `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final write.
-9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/plans/archive/<slug>-<section>-landed.html` and an updated §05 followup.
+9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/plans/archive/<slug>-<section>-landed.html` carrying `plan-evidence-for=<slug>` (the plan -> evidence back-link) and an updated §05 followup.
 10. **Collapse the evergreen when a section ships.** Replace the section body with a 2-4 line landed-summary + link to per-stage HTML.
 11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
 12. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
@@ -285,8 +285,10 @@ Choose workers with the one-below policy in
 `references/sprint-orchestration.md`. Build each prompt from the §05 template
 and the portable dispatch contract.
 
-Use background mode when the runtime supports it. Launch each ready wave
-together, then wait for all results before integration.
+Use background mode when the runtime supports it. Default to at most TWO
+concurrent background workers unless the user or dispatch prompt sets another
+cap; size each ready wave to the cap, launch the wave together, then wait for
+all results before integration.
 
 ### 5. Verify every worker — MANDATORY
 
@@ -318,6 +320,12 @@ advance the dependency wave with incomplete work.
 
 **Per-stage file** — `docs/plans/archive/<slug>-<section>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
+- **`<meta name="plan-evidence-for" content="<slug>">` is MANDATORY** — the
+  plan -> generated-evidence back-link. Without it the graph records how
+  research informs plans but never which evidence a plan produced, and result
+  provenance silently vanishes. Add `plan-verifies` (`slug#section`) when the
+  record verifies a specific section, and `plan-informs` ONLY for plans the
+  record additionally feeds.
 - Quick-status grid (shipped vs deferred)
 - Outcomes table: item, badge, commit SHA, follow-up title
 - "What's next" card pointing at the new followup

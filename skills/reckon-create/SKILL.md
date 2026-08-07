@@ -64,6 +64,10 @@ on read, so `doc` never appears in parsed state — only `plan` or `research`.
 Research docs carry `plan-informs` listing the plans they feed, and appear with
 a "research" banner in the SPA. Use them for literature surveys, data
 characterisations, and reference analyses that inform — but do not describe — work.
+A third type, **evidence** (`reckon-type=evidence`, `docs/evidence/`), is the
+outcome-record flavour: it carries `plan-evidence-for` naming the plan(s) whose
+execution it documents. Landed records authored under `docs/research/` for
+historical reasons still MUST carry `plan-evidence-for`.
 
 **When ambiguous, default to plan.**
 
@@ -78,6 +82,17 @@ characterisations, and reference analyses that inform — but do not describe �
 - `plan-depends-on` = prerequisites this doc cannot close without
 - `plan-blocks` = downstream live plans this plan unblocks
 - `plan-informs` = research/reference inputs that feed a plan
+- `plan-evidence-for` = the plan(s) whose EXECUTION this record documents — the
+  plan → generated-evidence back-link. Every landed/outcome/verification record
+  MUST carry it; without it the graph shows research→plan (`informs`) but never
+  plan→evidence, and the provenance of results silently vanishes.
+- `plan-verifies` = optional `slug#section` anchors this evidence verifies
+
+**`informs` vs `evidence-for` — direction of the arrow.** `informs` points
+FORWARD (this doc feeds work not yet done); `evidence-for` points BACK (this
+doc records work a plan already did). A landed record carrying only
+`plan-informs` is mis-wired: its primary relationship is `plan-evidence-for`,
+with `informs` added only when the same record also feeds new plans.
 
 Set only the relationships that are clear from the source. If you are migrating
 an old markdown doc, fix internal links to the final `.html` targets in the
@@ -218,7 +233,7 @@ Before writing the file:
 
 1. Decide its type and whether it belongs in that type's live or `archive/` directory.
 2. Decide whether it is a **plan** or **research/doc**.
-3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` with **slugs** for
+3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` / `plan-evidence-for` with **slugs** for
    the relationships that are already explicit in the source material.
 
 ### Step 3 — Write the HTML
@@ -417,6 +432,8 @@ Only author fields that a view downstream consumes:
 | `plan-sprint` | (empty) | e.g. `S4` |
 | `plan-depends-on` | (empty) | Comma-separated slugs |
 | `plan-informs` | (empty) | Comma-separated slugs (research type only) |
+| `plan-evidence-for` | (empty) | Comma-separated slugs — the plan(s) this record is execution evidence FOR (mandatory on landed/outcome records) |
+| `plan-verifies` | (empty) | Optional `slug#section` anchors this evidence verifies |
 | `plan-archived` | (empty) | `1` to hide from inventory |
 | `plan-read` | (empty) | `1` to mark reviewed |
 

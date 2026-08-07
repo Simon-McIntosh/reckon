@@ -154,6 +154,11 @@ it with `reckon.capability.match_worker`. The persisted object has a neutral
 `class` plus optional hard floors for reasoning, context, tool autonomy,
 verification, and risk. Concrete worker identity and cost stay runtime-only.
 
+**Concurrency default: two background workers.** Unless the user or the
+dispatch prompt specifies otherwise, hold at most two concurrent background
+workers; size every ready wave to that cap and queue the remainder. A larger
+fleet is opt-in per session, never assumed.
+
 Use a model-family-neutral **one-below** policy:
 
 1. Inspect the runtime's advertised worker models/capabilities. Do not encode

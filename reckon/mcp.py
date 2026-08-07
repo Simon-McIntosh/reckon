@@ -749,6 +749,7 @@ _DOS_DONTS = {
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
         "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
         "use depends_on only for executable prerequisites; research, evidence, and specifications use informs.",
+        "landed/outcome records carry evidence_for naming the plan(s) whose execution they record — the plan-to-generated-evidence back-link; informs is reserved for INPUTS that feed future work.",
         "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, and wiring findings.",
         "use edit_plan mode='text' for one exact version-safe authored HTML replacement; use mode='state' for structured ops.",
     ],

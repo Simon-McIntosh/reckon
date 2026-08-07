@@ -241,6 +241,24 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 )
             )
 
+    # Landed/evidence records must carry the plan -> evidence back-link;
+    # without it the graph shows research->plan (informs) but never which
+    # evidence a plan produced.
+    slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
+    slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()
+    evidence_meta = soup.find("meta", attrs={"name": "plan-evidence-for"})
+    evidence_for = ((evidence_meta.get("content") if evidence_meta else "") or "").strip()
+    if (doc_type == "evidence" or slug.endswith("-landed")) and not evidence_for:
+        out.append(
+            Finding(
+                "warn",
+                "evidence-for-missing",
+                "landed/evidence record without plan-evidence-for — the "
+                "plan → generated-evidence link is missing; name the plan(s) "
+                "whose execution this record documents",
+            )
+        )
+
     # Project for image-path checks — meta, then fallback arg.
     dp = soup.find("meta", attrs={"name": "docs-project"})
     proj = ((dp.get("content") if dp else "") or project or "").strip()
