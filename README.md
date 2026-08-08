@@ -4,7 +4,7 @@ Repo-agnostic agile planning system. Three surfaces share one repo and one venv:
 
 | Surface | CLI | What it does |
 |---|---|---|
-| **reckon server** | `reckon serve` | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
+| **reckon server** | `reckon serve` (`reckon service` to run it as a daemon) | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
@@ -21,6 +21,28 @@ uv run reckon mcp             # stdio MCP transport
 uv run reckon build docs      # portable static site under docs/
 uv run reckon migrate-layout docs --check  # collision-safe migration preview
 ```
+
+## Running the server as a service
+
+`reckon serve` in a terminal dies with the terminal and never comes back on
+its own. For a persistent deployment, install it as a systemd **user** service:
+
+```bash
+uv run reckon service install   # write the unit, enable lingering, start it
+uv run reckon service restart   # the command to run after changing reckon code
+uv run reckon service status    # unit state, lingering, effective ExecStart
+uv run reckon service logs -f   # follow the server's output
+```
+
+`install` is idempotent, and restarts the service when the rewritten unit
+differs from the running one. The unit sets `Restart=on-failure`, so a crashed
+server returns within five seconds, and enabling lingering keeps it alive after
+you log out — without it, systemd stops the per-user manager and every unit it
+owns at the end of your last login session.
+
+Output is appended to `<config-home>/logs/server.log` rather than the journal,
+because reading a *user* journal requires a privileged group membership that a
+plain account on a managed host does not have. The file is not rotated.
 
 Once the distribution is published, `uv tool install reckon-plans` installs
 the same `reckon` command. A repository checkout can be installed directly

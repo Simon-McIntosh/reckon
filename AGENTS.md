@@ -240,21 +240,42 @@ live plan state. Repo-specific branch policy belongs in that repo's own
 ### Server operations
 
 The HTTP server is `reckon serve` (the `reckon` Python package) — **one**
-process listening on `127.0.0.1:8765`. Run it inside a persistent terminal
-multiplexer; the canonical one on this workstation is a **zellij session
-named `reckon`** (not tmux — the old `tmux -s docs-server` guidance was
-stale). Config + state live under reckon's config home (currently
+process listening on `127.0.0.1:8765`. It runs as a **systemd user service**
+managed by `reckon service`, not by hand and not inside a terminal
+multiplexer. Config + state live under reckon's config home (currently
 `~/docs-server/` — a legacy name; the rename to `~/.config/reckon/` is
 tracked in the `reckon-schema-and-tooling` plan).
 
-- Start (detached, survives logout): launch inside the `reckon` zellij
-  session — `uv run --project ~/Code/reckon reckon serve`
-- Find it: `ss -ltnp | grep :8765` → the listening `reckon` pid
-- Stop: `kill <pid>` (the pid from the line above)
-- Restart: stop then start. **Server/parse/render code changes are NOT hot** —
-  a running `reckon serve` (and every `reckon mcp` stdio server) holds the old
-  code in memory until restarted/reconnected. Coordinate restarts with active
-  users of the server and MCP connections.
+| Intent | Command |
+|---|---|
+| Deploy / redeploy the unit | `reckon service install` |
+| **Restart after changing reckon code** | `reckon service restart` |
+| Start / stop | `reckon service start` · `reckon service stop` |
+| Unit state, linger, ExecStart | `reckon service status` |
+| Server output (`-f` to follow) | `reckon service logs` |
+| Remove the unit | `reckon service uninstall` |
+
+- `install` writes `~/.config/systemd/user/reckon.service`, enables lingering,
+  and enables + starts the unit. It is idempotent, and restarts the service
+  when the rewritten unit differs from the running one.
+- **Lingering is mandatory, not cosmetic.** Without
+  `loginctl enable-linger`, systemd tears down the per-user manager — and the
+  server with it — when the last login session ends. `reckon service install`
+  enables it; `reckon service status` reports it.
+- **`Restart=on-failure` covers crashes.** A server that dies comes back within
+  `RestartSec=5`. Do not treat "the server is gone" as a normal state to fix by
+  hand — check `reckon service status` and the log first.
+- **Logs go to a file, not the journal**: `<config-home>/logs/server.log`.
+  Reading a *user* journal needs membership of `systemd-journal`/`adm`/`wheel`,
+  which a plain account on a managed host does not have, so the unit sets
+  `StandardOutput=append:`. The file is not rotated — truncate it if it grows.
+- Find the process: `ss -ltnp | grep :8765` → the listening `reckon` pid.
+  Never `kill` it to restart — systemd will respawn it under you; use
+  `reckon service restart`.
+- **Server/parse/render code changes are NOT hot** — a running server (and every
+  `reckon mcp` stdio server) holds the old code in memory until
+  restarted/reconnected. Coordinate restarts with active users of the server and
+  MCP connections.
 - Mounts: `<config-home>/mounts.json` — re-read on every request, no restart needed
 - Plan state (GET): `curl http://127.0.0.1:8765/plan/<project>/<slug>` (parsed semantic elements + `version`)
 - Plan patch (POST): `curl -X POST -H 'If-Match: <version>' -d '{"status":"shipped"}' http://127.0.0.1:8765/plan/<project>/<slug>`

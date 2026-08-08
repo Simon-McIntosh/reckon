@@ -220,6 +220,178 @@ def mcp():
     mcp_main()
 
 
+@main.group(name="service")
+def service():
+    """Run the reckon server as a systemd user service."""
+
+
+def _service_module():
+    """Import the service helpers, surfacing failures as CLI errors."""
+    from reckon import service as service_module
+
+    return service_module
+
+
+def _service_call(action, *args, **kwargs):
+    """Invoke a service helper, translating its errors into click errors."""
+    module = _service_module()
+    try:
+        return action(module, *args, **kwargs)
+    except module.ServiceError as error:
+        raise click.ClickException(str(error)) from error
+
+
+@service.command(name="install")
+@click.option("--port", default=8765, show_default=True, help="Port to listen on.")
+@click.option("--host", default=None, help="Bind address (default: 127.0.0.1).")
+@click.option(
+    "--mounts",
+    "mounts_file",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Path to mounts.json.",
+)
+@click.option(
+    "--linger/--no-linger",
+    default=True,
+    show_default=True,
+    help="Keep the service running after logout.",
+)
+@click.option(
+    "--start/--no-start",
+    default=True,
+    show_default=True,
+    help="Enable and start the unit once written.",
+)
+def service_install(port, host, mounts_file, linger, start):
+    """Write the unit file and bring the server up under systemd."""
+
+    def action(module):
+        if not module.user_manager_running():
+            raise module.ServiceError(
+                "the per-user systemd manager is not running on this host"
+            )
+        if linger and not module.linger_enabled():
+            module.enable_linger()
+            click.echo("  enabled lingering (units survive logout)")
+        was_active = (
+            module.systemctl("is-active", module.UNIT_NAME, check=False).returncode == 0
+        )
+        path, changed = module.write_unit(port=port, host=host, mounts_file=mounts_file)
+        click.echo(f"  {'wrote' if changed else 'unchanged'} {path}")
+        module.systemctl("daemon-reload")
+        if start:
+            module.systemctl("enable", "--now", module.UNIT_NAME)
+            click.echo(f"  enabled and started {module.UNIT_NAME}")
+            # 'enable --now' leaves an already-running service on its old
+            # definition, so a rewritten unit needs an explicit restart.
+            if changed and was_active:
+                module.systemctl("restart", module.UNIT_NAME)
+                click.echo("  restarted onto the rewritten unit")
+        if not linger and not module.linger_enabled():
+            click.echo("  warning: lingering is off — the service stops at logout")
+
+    _service_call(action)
+
+
+@service.command(name="restart")
+def service_restart():
+    """Restart the server — the command to run after changing reckon code."""
+
+    def action(module):
+        module.require_installed()
+        module.systemctl("restart", module.UNIT_NAME)
+        click.echo(f"restarted {module.UNIT_NAME}")
+
+    _service_call(action)
+
+
+@service.command(name="start")
+def service_start():
+    """Start the server."""
+
+    def action(module):
+        module.require_installed()
+        module.systemctl("start", module.UNIT_NAME)
+        click.echo(f"started {module.UNIT_NAME}")
+
+    _service_call(action)
+
+
+@service.command(name="stop")
+def service_stop():
+    """Stop the server."""
+
+    def action(module):
+        module.require_installed()
+        module.systemctl("stop", module.UNIT_NAME)
+        click.echo(f"stopped {module.UNIT_NAME}")
+
+    _service_call(action)
+
+
+@service.command(name="status")
+def service_status():
+    """Show unit state, lingering, and the configured ExecStart."""
+
+    def action(module):
+        if not module.installed():
+            click.echo(f"{module.UNIT_NAME}: not installed")
+            click.echo("  run 'reckon service install' to deploy it")
+            raise click.exceptions.Exit(1)
+        active = module.systemctl("is-active", module.UNIT_NAME, check=False)
+        enabled = module.systemctl("is-enabled", module.UNIT_NAME, check=False)
+        click.echo(f"{module.UNIT_NAME}: {(active.stdout or '').strip() or 'unknown'}")
+        click.echo(f"  enabled: {(enabled.stdout or '').strip() or 'unknown'}")
+        click.echo(f"  linger:  {'yes' if module.linger_enabled() else 'no'}")
+        click.echo(f"  unit:    {module.unit_path()}")
+        for line in module.unit_path().read_text().splitlines():
+            if line.startswith("ExecStart="):
+                click.echo(f"  command: {line.removeprefix('ExecStart=')}")
+
+    _service_call(action)
+
+
+@service.command(name="logs")
+@click.option(
+    "-n",
+    "--lines",
+    default=50,
+    show_default=True,
+    help="Number of log lines to show.",
+)
+@click.option("-f", "--follow", is_flag=True, help="Stream new log lines.")
+def service_logs(lines, follow):
+    """Show the server's output."""
+    import subprocess
+
+    log_file = _service_module().log_path()
+    if not log_file.is_file():
+        click.echo(f"no log file yet: {log_file}")
+        return
+    argv = ["tail", "-n", str(lines)]
+    if follow:
+        argv.append("-f")
+    argv.append(str(log_file))
+    raise SystemExit(subprocess.run(argv, check=False).returncode)
+
+
+@service.command(name="uninstall")
+def service_uninstall():
+    """Stop the server and remove its unit file."""
+
+    def action(module):
+        if not module.installed():
+            click.echo(f"{module.UNIT_NAME}: not installed")
+            return
+        module.systemctl("disable", "--now", module.UNIT_NAME, check=False)
+        module.unit_path().unlink()
+        module.systemctl("daemon-reload")
+        click.echo(f"removed {module.UNIT_NAME}")
+
+    _service_call(action)
+
+
 @main.command()
 @click.argument("docs_path", type=click.Path(path_type=Path))
 @click.option(
