@@ -168,6 +168,20 @@ def test_archived_plan_is_excluded_from_live_roadmap() -> None:
     assert result["wiring_findings"] == []
 
 
+def test_closed_sprint_history_does_not_duplicate_live_membership() -> None:
+    result = build_roadmap(
+        "sample",
+        [_plan("continued", sprint="current")],
+        [
+            {"id": "closed", "status": "done", "items": ["continued"]},
+            {"id": "current", "status": "active", "items": ["continued"]},
+        ],
+    )
+
+    assert result["wiring_findings"] == []
+    assert result["pending_work"][0]["sprint"] == "current"
+
+
 def test_non_runnable_draft_is_deferred_without_becoming_a_blocker() -> None:
     result = build_roadmap(
         "sample",

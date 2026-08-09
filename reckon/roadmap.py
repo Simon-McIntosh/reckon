@@ -110,11 +110,14 @@ def _sprint_membership(
 ) -> tuple[dict[str, list[str]], dict[str, int]]:
     membership: dict[str, list[str]] = defaultdict(list)
     order: dict[str, int] = {}
+    closed_statuses = {"done", "shipped", "archived"}
     for position, sprint in enumerate(sprints):
         sprint_id = str(sprint.get("id") or "")
         if not sprint_id:
             continue
         order[sprint_id] = position
+        if str(sprint.get("status") or "").lower() in closed_statuses:
+            continue
         for item in sprint.get("items") or []:
             slug = _item_slug(item)
             if slug:
