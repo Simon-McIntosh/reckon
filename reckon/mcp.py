@@ -877,6 +877,7 @@ def _matches_search(item: dict[str, Any], search: str | None) -> bool:
 def _filter_inventory(
     inventory: list[dict[str, Any]],
     *,
+    include_archived: bool = False,
     status: str | None = None,
     doc_type: str | None = None,
     sprint: str | None = None,
@@ -887,6 +888,8 @@ def _filter_inventory(
 ) -> list[dict[str, Any]]:
     filtered = []
     for item in inventory:
+        if item.get("archived") and not include_archived:
+            continue
         if status and item.get("status") != status:
             continue
         raw_filter = doc_type.strip().lower() if isinstance(doc_type, str) else doc_type

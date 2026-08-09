@@ -229,6 +229,29 @@ def test_audit_reports_blocked_status_without_a_live_blocker(setup):
     assert finding["slug"] == "waiting"
 
 
+def test_audit_excludes_archived_resources_from_live_findings(setup):
+    docs_dir, _, project = setup
+    archive_dir = docs_dir / "archive"
+    archive_dir.mkdir()
+    _make_plan_html(
+        archive_dir,
+        "historical-survey",
+        {
+            "slug": "historical-survey",
+            "title": "Historical Survey",
+            "type": "research",
+            "version": 0,
+        },
+    )
+
+    result = mcp_module._audit(project)
+
+    assert result["checked"] == 0
+    assert not any(
+        item.get("slug") == "historical-survey" for item in result["findings"]
+    )
+
+
 # ── unknown project ───────────────────────────────────────────────────────
 
 

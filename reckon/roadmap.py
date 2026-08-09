@@ -165,7 +165,11 @@ def build_roadmap(
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
     all_plans: dict[str, dict[str, Any]] = {}
     for raw in inventory:
-        if not isinstance(raw, dict) or not raw.get("slug"):
+        if (
+            not isinstance(raw, dict)
+            or not raw.get("slug")
+            or raw.get("archived")
+        ):
             continue
         item = dict(raw)
         item.setdefault("project", project)

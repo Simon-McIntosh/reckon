@@ -148,6 +148,26 @@ def test_terminal_plan_wiring_does_not_pollute_immediate_roadmap() -> None:
     assert result["sprints"][0]["implementation_pct"] == 100.0
 
 
+def test_archived_plan_is_excluded_from_live_roadmap() -> None:
+    historical = _plan(
+        "historical", status="active", depends_on=["missing"], sprint="closed"
+    )
+    historical["archived"] = True
+
+    result = build_roadmap(
+        "sample",
+        [historical, _plan("current", sprint="active")],
+        [
+            {"id": "closed", "status": "done", "items": []},
+            {"id": "active", "status": "active", "items": ["current"]},
+        ],
+    )
+
+    assert result["scope"]["plans"] == 1
+    assert [item["slug"] for item in result["ready_now"]] == ["current"]
+    assert result["wiring_findings"] == []
+
+
 def test_non_runnable_draft_is_deferred_without_becoming_a_blocker() -> None:
     result = build_roadmap(
         "sample",
