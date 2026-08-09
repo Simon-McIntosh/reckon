@@ -295,16 +295,30 @@ all results before integration.
 Do not proceed to the next dependency wave until every worker in the current
 wave has been verified.
 
+**Give every worker a manifest path in its prompt and read the file, not the
+message.** A background worker can finish its work and still end its turn
+without delivering a report — the runtime signals it idle and the node looks
+failed when it is not. Requiring the manifest on disk removes the failure mode;
+see "Durable delivery" in `references/sprint-orchestration.md`.
+
 For each completed agent:
-1. Use the runtime's result/wait tool to retrieve the complete report
-2. Check the agent's report for success/failure
+1. Read the worker's manifest file. Use the runtime's result/wait tool as a
+   convenience — never wait on it as the sole channel
+2. Check the manifest for success/failure
 3. Run `git show --stat <sha>` — confirm ONLY assigned paths appear
 4. In plan mode, run the relevant tests; in sprint mode, dispatch a test worker
    and audit its compact result manifest
 5. Confirm the worker returned commit, test, artifact, and evidence inputs.
    The orchestrator writes plan/index state after integration.
 
-If an agent FAILS or produces incomplete work:
+An agent that signals idle WITHOUT a report has probably not failed. Before
+redispatching: check the manifest path, then any test logs or artifacts its
+prompt required, then ask it to write the deliverable to the named path and
+reply with the path only. Redispatch is the last step, not the first — a
+duplicate run of a node that already succeeded burns a worker slot and, with
+write scope, risks a conflicting second commit.
+
+If an agent genuinely FAILS or produces incomplete work:
 - In plan mode, repair inline or dispatch a corrective agent
 - In sprint mode, dispatch a corrective worker; pause the node if no capable
   worker or slot exists

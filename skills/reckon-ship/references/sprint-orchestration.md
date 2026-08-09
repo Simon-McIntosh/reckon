@@ -147,6 +147,51 @@ summary diffs first; request only missing evidence from the worker. Never pull
 a full log or artifact into coordinator context when a bounded excerpt or
 on-disk path is enough.
 
+### Durable delivery — the manifest goes to a file, not only to a message
+
+**A worker's return message is not a reliable channel.** A background worker can
+finish its work and then end its turn without delivering a final report: the
+runtime signals the agent idle, the orchestrator sees no manifest, and the node
+looks failed when it is not. Re-asking often produces another bare idle signal,
+and redispatching repeats work that already succeeded.
+
+So do not depend on the message channel. **Every dispatched worker writes its
+manifest to a file the orchestrator names in the dispatch prompt, then replies
+with that path plus a short summary.** Assign one path per node:
+
+```text
+<scratchpad>/<node-id>-manifest.md
+```
+
+The orchestrator reads the file; the reply is a convenience, not the delivery.
+This costs the worker one write and removes the failure mode entirely.
+
+Detect and recover in this order, and do not redispatch first:
+
+1. **Worker signals idle with no manifest** — check whether the manifest file
+   exists. It very often does.
+2. **No manifest file** — check for the other on-disk evidence the prompt
+   required (test logs, artifacts, benchmark output). Their presence proves the
+   work ran and shows how far it got.
+3. **Evidence exists but no report** — message the worker and tell it to write
+   the deliverable to the named path and reply with the path only. This recovers
+   reports the message channel will not carry, including long ones.
+4. **No evidence at all after a bounded wait** — only now treat the node as
+   failed and dispatch a corrective worker.
+
+Never redispatch on an idle signal alone. Confirm from disk first: a duplicate
+run of a node that already succeeded burns a worker slot, and for a node with
+write scope it risks a conflicting second commit.
+
+Prompt-side rules that make this work:
+
+- Name the manifest path explicitly. For a read-only node, state that it is the
+  **only** file the worker may write.
+- Tell the worker its final message is the return value, and that a long
+  deliverable belongs in the file with the reply reduced to the path.
+- Require every long-running command to redirect to a named on-disk log, so
+  step 2 always has something to find.
+
 ## 4. Worker capability and skill routing
 
 Use the versioned capability request from plan/followup/sprint state and resolve
@@ -250,8 +295,17 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
 6. Commit locally; do not merge or push the primary branch.
 7. Return the compact manifest from section 3 with commit SHA, git show --stat,
    concise test results and on-disk log paths, artifacts, and evidence inputs.
-8. Do not add AI attribution or plan/sprint identifiers to commit messages.
-9. Stop and report unexpected dirty files, missing authority, or unsafe scope.
+8. WRITE that manifest to the MANIFEST PATH below, then reply with the path and
+   a short summary. Your final message is the return value, but the file is the
+   delivery: do not end your turn with the manifest only in a message. If the
+   deliverable is long, it belongs in the file and the reply is just the path.
+   Redirect every long-running command to a named on-disk log so progress is
+   recoverable even if your report is not.
+9. Do not add AI attribution or plan/sprint identifiers to commit messages.
+10. Stop and report unexpected dirty files, missing authority, or unsafe scope.
+
+MANIFEST PATH (write this file before finishing):
+  <scratchpad>/<node-id>-manifest.md
 
 ASSIGNED WORKTREE:
   <absolute path>
