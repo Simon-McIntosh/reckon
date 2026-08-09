@@ -950,7 +950,7 @@ def doctor():
     - Skills installed at ~/.claude/skills/reckon-*/
     - mounts.json reachable (default: ~/docs-server/mounts.json)
     - Every mounted project directory exists
-    - MCP config present at ~/.claude/claude_desktop_config.json or ~/.config/claude/claude_desktop_config.json
+    - Reckon MCP registration present in Claude Desktop or Codex config
 
     Prints a green checkmark on pass or a named fix suggestion on fail.
     """
@@ -1002,34 +1002,46 @@ def doctor():
 
     # ── MCP config check ─────────────────────────────────────────────────────
     click.echo("\nMCP config")
-    mcp_candidates = [
+    claude_candidates = [
         Path.home() / ".claude" / "claude_desktop_config.json",
         Path.home() / ".config" / "claude" / "claude_desktop_config.json",
     ]
-    mcp_found = None
-    for candidate in mcp_candidates:
-        if candidate.is_file():
-            mcp_found = candidate
-            break
-    if mcp_found is None:
+    codex_candidate = Path.home() / ".codex" / "config.toml"
+    mcp_registration = None
+    config_errors: list[str] = []
+    for candidate in claude_candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            cfg = json.loads(candidate.read_text())
+            if "reckon" in cfg.get("mcpServers", {}):
+                mcp_registration = candidate
+                break
+        except (json.JSONDecodeError, OSError) as e:
+            config_errors.append(f"{candidate.name} unreadable: {e}")
+
+    if mcp_registration is None and codex_candidate.is_file():
+        try:
+            import tomllib
+
+            cfg = tomllib.loads(codex_candidate.read_text())
+            if "reckon" in cfg.get("mcp_servers", {}):
+                mcp_registration = codex_candidate
+        except (OSError, tomllib.TOMLDecodeError) as e:
+            config_errors.append(f"{codex_candidate.name} unreadable: {e}")
+
+    if mcp_registration is not None:
         click.echo(
-            "  ✗  claude_desktop_config.json not found — MCP server may not be registered"
+            f"  ✓  MCP server 'reckon' registered in {mcp_registration.name}"
         )
+    else:
+        click.echo(
+            "  ✗  MCP server 'reckon' is not registered in Claude Desktop or Codex"
+        )
+        for error in config_errors:
+            click.echo(f"       {error}")
         click.echo("       see: https://docs.reckon.dev/mcp")
         ok = False
-    else:
-        try:
-            cfg = json.loads(mcp_found.read_text())
-            servers = cfg.get("mcpServers", {})
-            if "reckon" in servers:
-                click.echo(f"  ✓  MCP server 'reckon' registered in {mcp_found.name}")
-            else:
-                click.echo(f"  ✗  MCP server 'reckon' not in {mcp_found.name}")
-                click.echo("       add it with:  reckon mcp --install")
-                ok = False
-        except (json.JSONDecodeError, OSError) as e:
-            click.echo(f"  ✗  {mcp_found.name} unreadable: {e}")
-            ok = False
 
     # ── Summary ──────────────────────────────────────────────────────────────
     click.echo("")

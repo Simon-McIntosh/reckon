@@ -19,6 +19,7 @@ class TestDoctor:
         mounts_ok=True,
         has_mcp=True,
         mcp_has_reckon=True,
+        has_codex_mcp=False,
     ):
         """Build a temporary environment for doctor to inspect."""
         home = tmp_path / "home"
@@ -58,6 +59,13 @@ class TestDoctor:
                 }
             (mcp_dir / "claude_desktop_config.json").write_text(json.dumps(cfg))
 
+        if has_codex_mcp:
+            codex_dir = home / ".codex"
+            codex_dir.mkdir(parents=True, exist_ok=True)
+            (codex_dir / "config.toml").write_text(
+                '[mcp_servers.reckon]\ncommand = "reckon"\n'
+            )
+
         return home
 
     def _run_doctor(self, tmp_path, **kwargs):
@@ -94,6 +102,18 @@ class TestDoctor:
         )
         assert result.exit_code != 0
         assert "install-skills" in result.output
+
+    def test_codex_mcp_registration(self, tmp_path):
+        result = self._run_doctor(
+            tmp_path,
+            has_skills=True,
+            has_mounts=True,
+            mounts_ok=True,
+            has_mcp=False,
+            has_codex_mcp=True,
+        )
+        assert result.exit_code == 0
+        assert "registered in config.toml" in result.output
 
     def test_missing_mount_dir(self, tmp_path):
         result = self._run_doctor(
