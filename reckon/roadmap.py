@@ -140,6 +140,8 @@ def _scope_slugs(
     pending = list(selected)
     while pending:
         slug = pending.pop()
+        if _status(plans[slug]) in TERMINAL_STATUSES:
+            continue
         for ref in plans[slug].get("depends_on") or []:
             parsed = parse_plan_ref(ref)
             if (
