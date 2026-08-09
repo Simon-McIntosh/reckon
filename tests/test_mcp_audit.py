@@ -207,6 +207,60 @@ def test_audit_returns_machine_readable_findings(setup):
     assert r["rollups"]["summary"]["plans"] == 1
 
 
+def test_audit_ignores_closed_sprint_history_for_live_membership(setup):
+    docs_dir, state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "completed",
+        {
+            "slug": "completed",
+            "title": "Completed",
+            "status": "shipped",
+            "impl": 1.0,
+            "sprint": "earlier",
+            "version": 0,
+        },
+    )
+    proj_dir = state_root / project
+    proj_dir.mkdir(parents=True, exist_ok=True)
+    (proj_dir / "index.json").write_text(
+        json.dumps(
+            {
+                "updated": "2026-01-01T00:00:00",
+                "project": project,
+                "doc": "index",
+                "data": {
+                    "_version": 0,
+                    "sprints": [
+                        {
+                            "id": "earlier",
+                            "status": "done",
+                            "items": ["retired-resource"],
+                        },
+                        {
+                            "id": "later",
+                            "status": "done",
+                            "items": ["retired-resource"],
+                        },
+                    ],
+                },
+            },
+            indent=2,
+        )
+    )
+
+    result = mcp_module._audit(project)
+    sprint_codes = {
+        item["code"]
+        for item in result["findings"]
+        if item["category"] == "sprint"
+    }
+
+    assert "sprint-item-missing-plan" not in sprint_codes
+    assert "sprint-item-duplicate" not in sprint_codes
+    assert "plan-sprint-missing-item" not in sprint_codes
+
+
 def test_audit_reports_blocked_status_without_a_live_blocker(setup):
     docs_dir, _, project = setup
     _make_plan_html(

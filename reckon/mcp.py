@@ -1035,13 +1035,23 @@ def _audit_sprint_findings(
         )
 
     plan_map = {plan["slug"]: plan for plan in plans if plan.get("slug")}
+    closed_sprint_statuses = {"done", "shipped", "archived"}
+    terminal_plan_statuses = {
+        "shipped",
+        "done",
+        "archived",
+        "superseded",
+        "abandoned",
+        "historical",
+    }
     assigned: dict[str, str] = {}
     for sprint_id, sprint in sprint_map.items():
+        sprint_is_actionable = sprint.get("status") not in closed_sprint_statuses
         for item in sprint.get("items", []) or []:
             slug = _sprint_item_slug(item)
             if not slug:
                 continue
-            if slug not in plan_map:
+            if sprint_is_actionable and slug not in plan_map:
                 findings.append(
                     _finding(
                         "sprint",
@@ -1052,22 +1062,25 @@ def _audit_sprint_findings(
                         extra={"sprint_id": sprint_id},
                     )
                 )
-            prev = assigned.get(slug)
-            if prev and prev != sprint_id:
-                findings.append(
-                    _finding(
-                        "sprint",
-                        "sprint-item-duplicate",
-                        "warn",
-                        f"{slug!r} appears in multiple sprints ({prev}, {sprint_id})",
-                        slug=slug,
-                        extra={"sprints": [prev, sprint_id]},
+            if sprint_is_actionable:
+                prev = assigned.get(slug)
+                if prev and prev != sprint_id:
+                    findings.append(
+                        _finding(
+                            "sprint",
+                            "sprint-item-duplicate",
+                            "warn",
+                            f"{slug!r} appears in multiple sprints ({prev}, {sprint_id})",
+                            slug=slug,
+                            extra={"sprints": [prev, sprint_id]},
+                        )
                     )
-                )
-            else:
-                assigned[slug] = sprint_id
+                else:
+                    assigned[slug] = sprint_id
 
     for slug, plan in plan_map.items():
+        if str(plan.get("status") or "").lower() in terminal_plan_statuses:
+            continue
         plan_sprint = plan.get("sprint")
         if not plan_sprint:
             continue
