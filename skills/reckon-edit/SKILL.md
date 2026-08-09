@@ -1,9 +1,9 @@
 ---
 name: reckon-edit
 description: >-
-  Edit an existing plan — prose edits, per-stage files, decision locking,
-  followup creation (§05 template), and plan archiving. Decides between evergreen
-  edit vs new stage file for phase transitions. Trigger verbs: "update / amend /
+  Edit an existing plan — prose edits, cumulative evidence updates, decision
+  locking, followup creation (§05 template), and plan archiving. Decides between evergreen
+  edit, cumulative execution evidence, and frozen snapshots. Trigger verbs: "update / amend /
   record / add to / revise / lock decision / resolve decisions / queue followup /
   archive / retire the plan / invoke reckon-edit with a slug". For new plans use
   reckon-create; for sprint / milestone / roadmap state use reckon-sprint; for
@@ -67,7 +67,10 @@ Silent bypasses hide drift.
 
 ## Hard rules
 
-1. **HTML is the source of truth.** Never edit a type-local `archive/` file — it is frozen.
+1. **HTML is the source of truth.** Frozen plan/research snapshots in a
+   type-local `archive/` are immutable. A plan's cumulative execution record at
+   `docs/evidence/archive/<slug>-landed.html` remains appendable until that plan
+   closes; keep one coherent record rather than spawning section fragments.
 2. **Decide evergreen-edit vs phase-transition before touching the page.**
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
@@ -113,7 +116,11 @@ body/outcome, author **HTML, never markdown**:
   (hard-rule 8): Tufte / high data-ink, legible-first. When you add or revise a
   figure, light fills + dark text + thin borders + one semantic accent; **never
   gray/muted text on a dark or saturated fill** (banned — unreadable). If a
-  figure already in the plan violates this, fix it as part of your edit.
+  figure already in the plan violates this, fix it as part of your edit. Apply
+  the erase test: remove outer frames, background panels, card grids, repeated
+  boxes/pills, duplicate titles, and any legend or decoration whose removal
+  loses no information. If a compact table is clearer, use the table and omit
+  the graphic.
 - `<head><style>` is **dropped** by the SPA — never style via a head block; use
   `/_shared/*.css` or sparing inline `style=`.
 
@@ -268,7 +275,7 @@ human/external blocker and record that blocker through sprint state.
 | Typo, clarification, new subsection | **Evergreen** (direct HTML edit) | Edit `docs/plans/<slug>.html` in place |
 | Followup, note, question | **`edit_plan` append op** | Structured write via ops |
 | Decision with rationale | **`edit_plan` lock op** | Lock the `.r-dec` element |
-| Section fully landed | **Phase transition** | Write `docs/plans/archive/<slug>-<n>-landed.html`; collapse section in evergreen |
+| Section fully landed | **Execution evidence update** | Append an anchored section to `docs/evidence/archive/<slug>-landed.html`; collapse section in evergreen |
 | Decision locked irreversibly | **Phase transition** | Write `docs/plans/archive/<slug>-<key>-locked.html` |
 | Plan fully implemented | **Phase transition + archive** | See §archive below |
 
@@ -279,11 +286,20 @@ human/external blocker and record that blocker through sprint state.
 4. Follow the target repository's commit policy; same-session plan commits and
    pushes are mandatory where repository instructions require them.
 
-**Phase transition steps:**
-1. Determine suffix: `landed`, `locked`, `final`, or section-specific (`02-landed`).
-2. Create `docs/plans/archive/<slug>-<suffix>.html` — frozen snapshot with link back to evergreen.
-3. Append a short `<h3>` block in the evergreen pointing at the archive file.
-4. Update status via `edit_plan` set op.
+**Execution-evidence steps:**
+1. Reuse or create `docs/evidence/archive/<slug>-landed.html` with
+   `reckon-type=evidence` and `plan-evidence-for=<slug>`.
+2. Add one anchored section carrying the quantitative result, commits, tests,
+   artifacts, and negative findings. Merge closely coupled sections into one
+   narrative; do not create a new file for a single paragraph, table, commit,
+   or test wave.
+3. Collapse the evergreen section and link directly to the cumulative record's
+   anchor.
+4. Update implementation/status through `edit_plan`.
+
+Use `docs/plans/archive/` only for a frozen plan snapshot or an irreversible
+decision-state snapshot. Those resources remain `reckon-type=plan`; execution
+outcomes never go there merely because a section landed.
 
 ## Intent: decisions
 
@@ -446,6 +462,10 @@ wrong:
 1. Write `docs/plans/archive/<slug>-final.html` — frozen snapshot.
 2. Edit `docs/plans/<slug>.html` — add landed-summary card, update prose to past-tense.
 3. `edit_plan(project, slug, ops=[{"op":"set","path":"status","value":"archived"}], expected_version=…)`.
+
+Before freezing, consolidate the plan's execution outcomes into the single
+`docs/evidence/archive/<slug>-landed.html` record. Do not preserve a litter of
+section-sized evidence pages.
 
 **Migration routing rule:** if you are converting old markdown, move active or
 pending work into its live typed root, but route completed/historical material into

@@ -124,6 +124,12 @@ mechanism, create it there and use a qualified relationship from the consumer.
    `src="/<project>/figures/..."`. A geometry/topology claim without a figure
    is under-communicated; multi-pane grids for per-machine content.
 
+   **A graphic is not a quota.** Draw one only when it makes a relationship,
+   comparison, geometry, or sequence materially clearer than a short table or
+   prose. Do not turn a list of verdicts into a wall of cards merely to satisfy
+   the illustration mandate. If aligned text or a compact table communicates
+   the result with less ink, use that instead.
+
    **Figure style — Tufte, high data-ink, legible (user mandate 2026-06-04).**
    A figure that cannot be read is worse than no figure. Every figure (inline
    SVG or saved asset) MUST satisfy:
@@ -137,6 +143,11 @@ mechanism, create it there and use a qualified relationship from the consumer.
      backgrounds, thin 1px rules/borders, and dark text. No gradients, drop
      shadows, 3-D, glows, or heavy filled blocks used decoratively. Ink should
      encode information, not decoration.
+   - **Default to an unframed figure.** No outer container, background panel,
+     card grid, per-row box, status pill, badge, or repeated separator unless it
+     encodes a real grouping or threshold. Prefer aligned labels, a shared axis,
+     whitespace, and at most a few hairline rules. Do not repeat a title already
+     supplied by the section heading or caption.
    - **Colour is semantic and sparing.** One accent hue per logical role
      (e.g. one colour for "arm A", one for "verdict"), carried as a thin
      border / header rule / small swatch — not a full saturated background
@@ -148,6 +159,10 @@ mechanism, create it there and use a qualified relationship from the consumer.
    - **Honest and minimal.** Right-size the canvas (`viewBox` for scaling), no
      duplicated chrome, no unexplained jargon. If a flow has N stages, show N
      boxes and N-1 arrows — nothing else competing for attention.
+   - **Run the erase test.** For every border, fill, icon, legend, annotation,
+     heading, and repeated label, ask whether removing it loses information. If
+     not, remove it. A clean figure is the smallest set of marks that carries the
+     evidence; decorative organization is unnecessary ink.
    - **Self-check before finishing:** "Could the lead read every label at a
      glance, and would it survive a black-and-white printout?" If not, fix it.
 
@@ -235,6 +250,12 @@ Before writing the file:
 2. Decide whether it is a **plan** or **research/doc**.
 3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` / `plan-evidence-for` with **slugs** for
    the relationships that are already explicit in the source material.
+
+For execution outcomes, prefer one cumulative evidence resource at
+`docs/evidence/archive/<plan-slug>-landed.html`, with stable section anchors.
+Update it as the plan lands. Create another evidence file only when the result
+is a materially independent artifact that is useful on its own; never create a
+one-paragraph or one-table file merely because one plan section changed.
 
 ### Step 3 — Write the HTML
 

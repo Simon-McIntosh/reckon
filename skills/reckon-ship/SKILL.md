@@ -135,9 +135,20 @@ structured state (decisions, followups). Do not implement items marked
 5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. In sprint mode, test execution is a worker node.
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
-8. **Update the plan continuously.** After EACH section lands: collapse it in the evergreen, write a per-stage archive HTML, and call `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final write.
-9. **Per-stage HTML and a followup are required after every landing.** Even single-item work gets a `docs/plans/archive/<slug>-<section>-landed.html` carrying `plan-evidence-for=<slug>` (the plan -> evidence back-link) and an updated §05 followup.
-10. **Collapse the evergreen when a section ships.** Replace the section body with a 2-4 line landed-summary + link to per-stage HTML.
+8. **Update the plan continuously.** After EACH section lands: collapse it in
+   the evergreen, update the plan's cumulative evidence HTML, and call
+   `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final
+   write.
+9. **One cumulative evidence record and a followup are required.** Default to
+   `docs/evidence/archive/<slug>-landed.html`, carrying
+   `reckon-type=evidence` and `plan-evidence-for=<slug>`, with one stable anchor
+   per material result. Update that record after each landing. Do not create a
+   file per section, commit, test wave, or one-line outcome. Create another
+   evidence resource only when it is a materially independent artifact useful
+   on its own.
+10. **Collapse the evergreen when a section ships.** Replace the section body
+    with a 2-4 line landed-summary + link to the matching anchor in the
+    cumulative evidence HTML.
 11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
 12. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
 13. **Cleanup is mandatory and conservative.** Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch. Never force-remove unmerged or dirty worktrees.
@@ -332,18 +343,26 @@ advance the dependency wave with incomplete work.
 
 **Do not wait until all sections are done.** Record outcomes immediately after each section lands.
 
-**Per-stage file** — `docs/plans/archive/<slug>-<section>-landed.html`:
+**Cumulative evidence file** — `docs/evidence/archive/<slug>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
+- Uses `reckon-type=evidence`; execution evidence never masquerades as a plan
+  and never lives under `docs/plans/archive/`
 - **`<meta name="plan-evidence-for" content="<slug>">` is MANDATORY** — the
   plan -> generated-evidence back-link. Without it the graph records how
   research informs plans but never which evidence a plan produced, and result
   provenance silently vanishes. Add `plan-verifies` (`slug#section`) when the
   record verifies a specific section, and `plan-informs` ONLY for plans the
   record additionally feeds.
-- Quick-status grid (shipped vs deferred)
-- Outcomes table: item, badge, commit SHA, follow-up title
-- "What's next" card pointing at the new followup
+- Stable anchored sections for material outcomes; combine coupled sections
+  from the same implementation/test wave rather than restating them
+- Compact outcomes table only when it is denser than prose; no status-card
+  chrome or one-line documents
 - **Figures where they communicate (mandate 2026-06-03)**: embed result graphics under `docs/figures/<topic>/` with project-absolute `src`. Worker prompts for doc-producing tasks MUST carry the graphics requirement.
+- **Minimal ink is binding.** Follow `reckon-create` hard-rule 8. A graphic must
+  communicate more clearly than a short table. Remove outer frames,
+  backgrounds, card grids, repeated boxes/pills, decorative colour, duplicate
+  headings, and legends that direct labels can replace. Apply the erase test:
+  any mark whose removal loses no information must go.
 
 ### 6b. Collapse-on-landing — MANDATORY
 
@@ -358,7 +377,7 @@ advance the dependency wave with incomplete work.
   <p class="landed-summary">
     Built <code>src/data_prep.py</code>; pipeline smoke-test green.
     Encoded 11,237 shots in 3h12m; eval MAE 0.04 — passing.
-    Full record: <a href="archive/<slug>-s2-landed.html">§2 landed</a>
+    Full record: <a href="/<project>/evidence/archive/<slug>-landed#s2">§2 landed</a>
     (commit <code>abc1234</code>).
   </p>
 </section>
@@ -368,7 +387,8 @@ advance the dependency wave with incomplete work.
 - 2-4 lines max: what was built (past tense), the **quantitative result** (numbers, verdict), artifact paths, link + SHAs
 - A summary that omits the result is incomplete — "landed §2" is not a summary
 - Section header gets `✓ landed YYYY-MM-DD` badge (`.badge-shipped`)
-- Original prose moves to per-stage HTML — gone from evergreen
+- Original prose is retained under the matching anchor in the cumulative
+  evidence HTML — gone from evergreen
 - **Author as HTML, never markdown**
 
 ### 7. Update plan state — after EACH section
@@ -447,7 +467,7 @@ validation worker node and audit the returned result.
 
 Commit:
 ```bash
-git add docs/plans/<slug>.html docs/plans/archive/<slug>-<section>-landed.html
+git add docs/plans/<slug>.html docs/evidence/archive/<slug>-landed.html
 git commit -m "docs: record verified implementation outcome"
 git pull --no-rebase origin <branch>
 git push origin <branch>

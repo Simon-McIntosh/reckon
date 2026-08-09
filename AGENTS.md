@@ -56,7 +56,7 @@ mutations via MCP once it reconnects (or note the deferral).
 
 Plans have a specific skill set. Do not edit `docs/*.html`
 without invoking the matching skill first; the skills bake in rules
-that ad-hoc edits routinely violate (per-stage archival, state
+that ad-hoc edits routinely violate (cumulative evidence, state
 writeback, content parity, fleet safety).
 
 | Intent | Skill | Slash command |
@@ -170,8 +170,10 @@ questions are resolved.
    safe to wire into CI or a weekly hygiene job.
 3. **Archive waves** — **policy active; automation pending**.
    Run a quarterly archive pass that sets `plan-archived=1` on done or
-   superseded docs older than 90 days. Per-stage records continue to live under
-   `docs/archive/`; the default dashboard should stay focused on live docs.
+   superseded docs older than 90 days. Execution outcomes accumulate in one
+   coherent `docs/evidence/archive/<slug>-landed.html` record per plan by
+   default. Do not create section-sized evidence files unless the artifact is
+   independently useful; the default dashboard should stay focused on live docs.
 4. **Plan-creation diet** — **pending lead design review**.
    Do not tighten `reckon-create` pre-flight behaviour until the lead decides how
    hard to bias new work toward existing plans.
@@ -205,15 +207,18 @@ per-plan state. `reckon-sync` symlinks `~/docs-server/state/<project>`
 to `<repo>/docs/state/<project>` so the server can write this file
 back to the repo.
 
-**Any HTML file is a plan.** Existence is sufficient — a page surfaces
-as `status=draft` if it has no plan markup. No `plan-status` meta
-opt-in required.
+**Typed HTML roots are semantic.** Plans live under `docs/plans/`, research
+under `docs/research/`, and execution evidence under `docs/evidence/`.
+`reckon-type` must match the owning root; moving evidence into a plan path or
+relabeling it as a plan corrupts the resource graph.
 
-**Per-stage archival under `docs/archive/`.** When work transitions
-phases, write a **new** HTML file under `docs/archive/`
-(`<plan>-<phase>.html`, e.g. `tokenizer-eval-locked.html`) — do not
-overwrite the evergreen page. The archived file becomes the audit trail.
-Per-stage files in `archive/` are excluded from the live inventory.
+**Typed archival and cumulative evidence.** Frozen plan snapshots live under
+`docs/plans/archive/`; frozen research lives under `docs/research/archive/`;
+execution outcomes live under `docs/evidence/archive/`. Update one cumulative
+`<plan>-landed.html` evidence record as the plan proceeds, using stable anchors
+for material sections. A phase transition does not justify another file by
+itself: split only a standalone artifact that remains useful when read alone.
+Archive resources are excluded from the live inventory.
 
 **HTML is the source of truth.** Do not author markdown plans under
 `plans/<slug>.md` and run a generator. Auto-regeneration overwrites
@@ -573,26 +578,31 @@ all assume this vocabulary.
 | **ROI** | `high` / `mid` / `low`. Drives sprint ordering. |
 | **Effort** | `S` / `M` / `L` / `XL` t-shirt sizing. |
 
-### Phase suffixes on per-stage HTML
+### Typed archives and cumulative evidence
 
-Per-stage archival files live under `docs/archive/` so they are excluded from
-the live plan inventory.
+Archive paths retain their type. A plan normally produces one cumulative
+execution record, updated as sections land.
 
 | File | Location | Use when |
 |---|---|---|
-| `<plan>.html` | `docs/` | Evergreen — most-recent design view (always present) |
-| `<plan>-draft.html` | `docs/archive/` | Initial exploration before any item moves to `active` |
-| `<plan>-<section>-landed.html` | `docs/archive/` | A section's work has landed; outcomes captured |
-| `<plan>-<decision>-locked.html` | `docs/archive/` | A decision is locked irreversibly |
-| `<plan>-shipped.html` / `-final.html` | `docs/archive/` | Plan fully implemented |
-| `<plan>-postmortem.html` | `docs/archive/` | Retrospective after shipping |
+| `<plan>.html` | `docs/plans/` | Evergreen — most-recent design view (always present) |
+| `<plan>-landed.html` | `docs/evidence/archive/` | Cumulative commits, tests, artifacts, metrics, and negative findings, with stable section anchors |
+| `<plan>-<decision>-locked.html` | `docs/plans/archive/` | Frozen irreversible decision snapshot |
+| `<plan>-final.html` | `docs/plans/archive/` | Frozen plan snapshot at closure |
+| `<topic>.html` | `docs/research/archive/` | Frozen research/reference input |
+
+Do not create a landed file per section, commit, or test wave. Split a second
+evidence resource only when it is a materially independent artifact that is
+useful when read alone.
 
 ### Repo layout — one canonical format
 
 Every repo uses the same layout:
 
-- `docs/<slug>.html` — plan pages (any HTML file = a plan)
-- `docs/archive/<slug>-<suffix>.html` — per-stage archival (excluded from inventory)
+- `docs/plans/<slug>.html` — evergreen plan pages
+- `docs/research/<slug>.html` — live research/reference pages
+- `docs/evidence/archive/<slug>-landed.html` — cumulative execution evidence
+- `docs/<type>/archive/` — frozen resources that retain their declared type
 - `docs/state/<project>/index.json` — project config only (sprints, milestones, `active_sprint_id`)
 - `docs/_shared/` — CSS files copied from canonical reckon source
 - `docs/index.html` — SPA entry point (managed by `reckon-sync`)
@@ -672,9 +682,10 @@ The recorded incidents that motivated this skill set:
 1. **Skill not loaded.** "Implement the X.html plan" → edited markdown
    and re-ran a generator instead of editing HTML directly. The
    reckon-* skills' descriptions are tuned so this no longer slips by.
-2. **Per-stage rule missed.** Landed work appended to the evergreen
-   instead of producing an archival `<plan>-<phase>.html` under
-   `docs/archive/`. `reckon-edit` and `reckon-ship` enforce this.
+2. **Evidence fragmented.** Each landed section produced a tiny standalone
+   page, obscuring the plan's coherent result and adding decorative document
+   chrome. `reckon-edit` and `reckon-ship` now require one cumulative evidence
+   record by default and a new file only for a standalone artifact.
 3. **Plan HTML not updated.** Decisions discussed in chat never reached
    the plan's semantic elements. `reckon-edit` requires the MCP call
    or `POST /plan/<project>/<slug>`.

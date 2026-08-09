@@ -74,7 +74,8 @@ Read the knowledge envelope for every node:
 - standalone research docs whose `plan-informs` includes the plan;
 - research items embedded in the plan;
 - URLs/files named in the plan's research section;
-- prior landed records under `docs/archive/`;
+- prior landed records under the owning typed root, normally
+  `docs/evidence/archive/` for execution outcomes;
 - evidence artifacts linked from the plan or sprint;
 - resolved followup outcomes and locked decisions;
 - applicable user, repository, and target-path `AGENTS.md` plus triggered skills.
@@ -354,7 +355,11 @@ branch and continue only independent ready nodes.
 
 After each integrated node, the orchestrator:
 
-1. Writes the stage evidence/landed record and links it to its source plan.
+1. Updates the plan's cumulative evidence record at
+   `docs/evidence/archive/<slug>-landed.html` and links the landed section to a
+   stable anchor. Do not create per-node or per-section fragments; split a new
+   evidence resource only for a materially independent artifact that stands on
+   its own.
 2. Resolves the driving followup with commit, tests, and quantitative outcome.
 3. Advances plan implementation fraction monotonically.
 4. Collapses fully landed sections in the evergreen plan.
