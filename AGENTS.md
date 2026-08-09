@@ -222,7 +222,7 @@ Archive resources are excluded from the live inventory.
 
 **HTML is the source of truth.** Do not author markdown plans under
 `plans/<slug>.md` and run a generator. Auto-regeneration overwrites
-per-stage history and is the anti-pattern that motivated these skills.
+typed archive history and is the anti-pattern that motivated these skills.
 Any existing `plans/` markdown is read-only history — archive it under
 `plans/archive/` when migrating an old project.
 
