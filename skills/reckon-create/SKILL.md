@@ -116,19 +116,31 @@ mechanism, create it there and use a qualified relationship from the consumer.
    commit and push, do so with explicit paths after validation; never leave live
    plan state uncommitted.
 7. **Write full prose in HTML.** `<p>See state §2 for details</p>` is a hard failure.
-8. **Illustrate with graphics (user mandate 2026-06-03).** Plans and research
-   docs MUST embed figures/diagrams wherever a graphic improves understanding
-   or communication with the lead — geometry, topology, per-machine
+8. **Illustrate only when graphics add understanding (user mandate 2026-06-03).**
+   Plans and research docs embed figures/diagrams when a graphic improves
+   understanding or communication with the lead — geometry, topology, per-machine
    comparisons, pipelines, before/after evidence. Save under
    `docs/figures/<topic>/`, embed with project-absolute
    `src="/<project>/figures/..."`. A geometry/topology claim without a figure
    is under-communicated; multi-pane grids for per-machine content.
 
-   **A graphic is not a quota.** Draw one only when it makes a relationship,
+   **A graphic is not a quota. There is no minimum image count.** Draw one only
+   when it makes a relationship,
    comparison, geometry, or sequence materially clearer than a short table or
    prose. Do not turn a list of verdicts into a wall of cards merely to satisfy
    the illustration mandate. If aligned text or a compact table communicates
    the result with less ink, use that instead.
+
+   **Representation gate — never imagify a table.** If the content is naturally
+   rows and columns of labels, values, verdicts, or short explanations, author a
+   semantic HTML `<table>` with real selectable text. Do not reproduce aligned
+   tabular text as SVG, PNG, canvas, or a diagram: that reduces readability,
+   accessibility, search, copy/paste, responsive reflow, and print quality while
+   adding no understanding. A visual whose meaningful marks are mostly text in
+   columns fails this gate even if it is clean and low-ink. Delete it and keep
+   the HTML table. Images are reserved for spatial relationships, geometry,
+   topology, continuous plots, trajectories, or sequences a table cannot express
+   as clearly.
 
    **Figure style — Tufte, high data-ink, legible (user mandate 2026-06-04).**
    A figure that cannot be read is worse than no figure. Every figure (inline

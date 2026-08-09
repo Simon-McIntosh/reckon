@@ -357,12 +357,21 @@ advance the dependency wave with incomplete work.
   from the same implementation/test wave rather than restating them
 - Compact outcomes table only when it is denser than prose; no status-card
   chrome or one-line documents
-- **Figures where they communicate (mandate 2026-06-03)**: embed result graphics under `docs/figures/<topic>/` with project-absolute `src`. Worker prompts for doc-producing tasks MUST carry the graphics requirement.
+- **Figures only where they add understanding (mandate 2026-06-03)**: embed
+  result graphics under `docs/figures/<topic>/` with project-absolute `src` when
+  spatial, plotted, geometric, topological, or sequential relationships are
+  clearer visually. There is no image quota. Worker prompts for doc-producing
+  tasks MUST carry this representation-selection rule, not a demand to produce
+  an image.
 - **Minimal ink is binding.** Follow `reckon-create` hard-rule 8. A graphic must
   communicate more clearly than a short table. Remove outer frames,
   backgrounds, card grids, repeated boxes/pills, decorative colour, duplicate
   headings, and legends that direct labels can replace. Apply the erase test:
   any mark whose removal loses no information must go.
+- **Never imagify a table.** Rows/columns of labels, values, verdicts, and short
+  explanations belong in a semantic HTML `<table>`, never SVG/PNG/canvas.
+  Predominantly tabular-text images fail review even when visually minimal:
+  remove the image and keep the selectable, searchable, responsive HTML.
 
 ### 6b. Collapse-on-landing — MANDATORY
 

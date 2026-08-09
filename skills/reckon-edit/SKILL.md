@@ -120,7 +120,11 @@ body/outcome, author **HTML, never markdown**:
   the erase test: remove outer frames, background panels, card grids, repeated
   boxes/pills, duplicate titles, and any legend or decoration whose removal
   loses no information. If a compact table is clearer, use the table and omit
-  the graphic.
+  the graphic. Never convert rows and columns of textual labels, values,
+  verdicts, or explanations into an image; use a semantic HTML `<table>` so the
+  text remains readable, selectable, searchable, accessible, and responsive. If
+  an existing SVG/PNG is predominantly tabular text with no spatial or plotted
+  relationship, remove it and retain the HTML table instead.
 - `<head><style>` is **dropped** by the SPA — never style via a head block; use
   `/_shared/*.css` or sparing inline `style=`.
 
