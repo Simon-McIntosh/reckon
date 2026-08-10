@@ -1,8 +1,8 @@
-"""Portable task-capability requests and deterministic runtime matching.
+"""Portable task-capability requests and explicit runtime validation.
 
 Persisted plans describe the ability and safeguards a task needs. Concrete
-worker identities remain runtime data and are selected only when work is
-dispatched.
+worker identities remain runtime data, are chosen by the current prompt or
+coordinator, and are validated only when work is dispatched.
 """
 
 from __future__ import annotations
@@ -160,25 +160,13 @@ def worker_satisfies(
 
 @dataclass(frozen=True)
 class MatchResult:
-    """A runtime selection with explicit fallback and escalation signals."""
+    """Validation of one explicitly selected runtime worker."""
 
     worker: Mapping[str, Any] | None
     requested: Mapping[str, Any]
-    policy: str
+    policy: str = "explicit"
     fallback: str | None = None
     escalation_required: bool = False
-    reasoning_adjustment: str | None = None
-
-
-def _worker_key(worker: Mapping[str, Any]) -> tuple[int, float, str]:
-    offered = worker.get("capability") or {}
-    rank = _rank(str(offered.get("class") or ""), CAPABILITY_CLASSES)
-    cost = worker.get("cost", float("inf"))
-    try:
-        cost_number = float(cost)
-    except (TypeError, ValueError):
-        cost_number = float("inf")
-    return rank, cost_number, str(worker.get("id") or "")
 
 
 def _eligible_workers(
@@ -187,94 +175,34 @@ def _eligible_workers(
     return [worker for worker in workers if worker.get("general_purpose", True)]
 
 
-def _same_family_workers(
-    workers: Iterable[Mapping[str, Any]],
-    orchestrator: Mapping[str, Any] | None,
-) -> list[Mapping[str, Any]]:
-    if orchestrator is None or not orchestrator.get("family"):
-        return []
-    return [
-        worker
-        for worker in workers
-        if worker.get("family") == orchestrator.get("family")
-    ]
-
-
 def match_worker(
     request: Mapping[str, Any],
     workers: Iterable[Mapping[str, Any]],
     *,
-    orchestrator: Mapping[str, Any] | None = None,
-    policy: str = "least-sufficient",
+    selected_worker_id: str,
 ) -> MatchResult:
-    """Select a worker deterministically from runtime-advertised capabilities.
-
-    ``one-below`` raises the requested class to the class immediately below the
-    orchestrator. Elevated risk always retains the orchestrator class. When no
-    advertised worker satisfies the request, the safest available worker is
-    returned with ``escalation_required=True`` instead of silently weakening
-    the contract.
-    """
+    """Validate the exact runtime worker chosen by the prompt or coordinator."""
     effective = _effective_request(request)
-    if policy not in {"least-sufficient", "one-below"}:
-        raise ValueError(f"unknown capability policy {policy!r}")
-
-    if policy == "one-below" and orchestrator is not None:
-        orchestrator_capability = orchestrator.get("capability") or {}
-        orchestrator_rank = _rank(
-            str(orchestrator_capability.get("class") or ""), CAPABILITY_CLASSES
-        )
-        if orchestrator_rank >= 0:
-            one_below_rank = max(0, orchestrator_rank - 1)
-            request_rank = _rank(effective["class"], CAPABILITY_CLASSES)
-            effective["class"] = CAPABILITY_CLASSES[max(one_below_rank, request_rank)]
-
     pool = _eligible_workers(workers)
-    if not pool:
+    selected = next(
+        (worker for worker in pool if worker.get("id") == selected_worker_id),
+        None,
+    )
+    if selected is None:
         return MatchResult(
             worker=None,
             requested=effective,
-            policy=policy,
-            fallback="inline-no-advertised-worker",
+            fallback="selected-worker-unavailable",
             escalation_required=True,
         )
-
-    preferred_pool = _same_family_workers(pool, orchestrator)
-    satisfying = sorted(
-        (worker for worker in preferred_pool if worker_satisfies(effective, worker)),
-        key=_worker_key,
-    )
-    if not satisfying:
-        satisfying = sorted(
-            (worker for worker in pool if worker_satisfies(effective, worker)),
-            key=_worker_key,
-        )
-    if satisfying:
-        chosen = satisfying[0]
-        reasoning_adjustment = None
-        if (
-            policy == "one-below"
-            and orchestrator is not None
-            and chosen.get("id") == orchestrator.get("id")
-        ):
-            reasoning_adjustment = "decrease-one-supported-level"
+    if worker_satisfies(effective, selected):
         return MatchResult(
-            worker=chosen,
+            worker=selected,
             requested=effective,
-            policy=policy,
-            reasoning_adjustment=reasoning_adjustment,
         )
-
-    strongest_rank = max(_worker_key(worker)[0] for worker in pool)
-    strongest = [worker for worker in pool if _worker_key(worker)[0] == strongest_rank]
-    safest = min(
-        strongest,
-        key=lambda worker: (_worker_key(worker)[1], _worker_key(worker)[2]),
-    )
     return MatchResult(
-        worker=safest,
+        worker=selected,
         requested=effective,
-        policy=policy,
-        fallback="strongest-advertised-worker",
+        fallback="selected-worker-insufficient",
         escalation_required=True,
     )

@@ -119,8 +119,8 @@ Concretely:
      element in the HTML. Direct HTML edits are permitted ONLY if you
      announce the bypass reason in your reply.
 
-3. **Coordinator dispatch contract.** When dispatching a Sonnet (or
-   any) worker to implement plan work, the dispatch prompt MUST:
+3. **Coordinator dispatch contract.** When dispatching any worker to
+   implement plan work, the dispatch prompt MUST:
    - Include the **§05 prompt template** with locked decisions, open
      decisions to surface, and a Done-when list
    - **Require the worker to append a followup** to the plan's followups
@@ -642,22 +642,18 @@ Sprint items reference plan slugs; their current state (impl, decisions, followu
 is always read from the plan's HTML via `GET /plan/<project>/<slug>` or
 `/_discover/<project>`.
 
-### Model-neutral worker selection
+### Runtime worker routing
 
-Sprint and plan orchestration use the **one-below** policy in
-`skills/reckon-ship/references/sprint-orchestration.md`. Inspect the runtime's
-advertised workers, keep the orchestrator's model family, and delegate to the
-immediately lower capable general-purpose model by default. If no lower model
-exists, inherit the model and reduce reasoning effort by one supported level.
+Sprint and plan documents record task requirements, risk, autonomy, and
+verification floors. They do not select workers. The current user prompt and
+coordinator choose the concrete runtime model, reasoning effort, and
+concurrency for each dispatched node and state those choices explicitly in the
+worker prompt. Do not derive a relative model tier from the coordinator or
+embed a provider/model preference in Reckon skills or plan state.
 
-Keep or escalate to orchestrator-level capability for solver/physics work,
-ambiguous or coupled refactors, safety/security, irreversible migrations,
-conflict resolution, and multi-worker synthesis. Downshift further only for
-bounded mechanical work or research extraction with objective verification.
-Never hard-code provider or model identifiers.
-
-Legacy `tier`/`model_tier` plan metadata is a relative advisory signal only;
-runtime complexity and current evidence determine the actual worker.
+Legacy `tier`/`model_tier` metadata is compatibility input only. It must not
+control runtime routing and should migrate to neutral capability requirements
+when the containing resource is next edited.
 
 ### Fleet patterns (canonical)
 
@@ -665,7 +661,7 @@ runtime complexity and current evidence determine the actual worker.
 |---|---|
 | 1 item, scoped | One inline worker or one isolated worktree worker |
 | 2 items, independent | Two parallel workers, one per item |
-| 3 – 8 items, independent | One-below fleet, non-overlapping worktrees and file scopes; orchestrator audits and integrates each commit |
+| 3 – 8 items, independent | Coordinator-routed fleet, non-overlapping worktrees and file scopes; orchestrator audits and integrates each commit |
 | > 8 items, fan-out read | Low-cost reader fan-out plus one high-capability synthesiser |
 | Cross-cutting / strategic | Single orchestrator-level owner; context is the constraint |
 | Multi-file compiled/solver work | Orchestrator-level owner, or a fleet of at most three with tight scopes |
@@ -697,6 +693,7 @@ The recorded incidents that motivated this skill set:
    a Python script meant editing the script to add a decision. The
    current model: decisions live as `.r-dec` elements in the plan's
    `<section data-reckon="decisions">`, written by `reckon-edit` or the browser SPA.
-6. **Worker capability too low for the task.** A routine worker was assigned
-   coupled solver edits and produced silent regressions. Use one-below only as
-   the default; retain orchestrator-level capability for high-risk work.
+6. **Worker routing did not match the task.** The coordinator assigned a
+   worker without enough reasoning or verification capacity for coupled solver
+   edits. Select and state the runtime model and effort from the actual task
+   requirements; do not rely on a fixed relative hierarchy.

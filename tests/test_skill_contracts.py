@@ -16,16 +16,18 @@ def test_ship_skill_supports_plan_and_sprint_targets() -> None:
     assert "sprint:<id>" in ship
 
 
-def test_ship_routing_is_model_neutral_and_worktree_first() -> None:
+def test_ship_routing_is_prompt_owned_and_worktree_first() -> None:
     ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text().lower()
     reference = normalized(
         (ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md")
         .read_text()
         .lower()
     )
-    assert "one-below" in ship
+    assert "one-below" not in ship
     assert "isolated worktrees by default" in ship
-    assert "do not encode provider or model names" in reference
+    assert "runtime routing is prompt-owned" in reference
+    assert "state the concrete model and effort" in reference
+    assert "one-below" not in reference
     assert "haiku" not in ship
     assert "sonnet" not in ship
     assert "opus" not in ship

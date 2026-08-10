@@ -90,7 +90,7 @@ resolve target
 ├─ plan → roadmap + full plan → classify sections → execute dependency order
 └─ sprint → roadmap + all plans/research/evidence → enrich DAG → coordinate waves
      ↓
-select worker capability (one-below by default) + applicable skill
+read task requirements + apply explicit runtime routing + applicable skill
 → create detached worktree per delegated task
 → dispatch independent ready nodes in parallel
 → audit worker manifests/commits/tests → orchestrator merges
@@ -292,14 +292,16 @@ coordinator the implementation owner.
 | > 8 | Reader fan-out followed by one synthesis/integration owner |
 | Cross-cutting / strategic | One highest-capability owner; do not fragment context |
 
-Choose workers with the one-below policy in
-`references/sprint-orchestration.md`. Build each prompt from the §05 template
-and the portable dispatch contract.
+Apply the model, effort, and concurrency routing stated by the current user
+prompt. If it is not specified, the coordinator chooses it explicitly for each
+node from the available runtime workers and records the choice in the dispatch
+prompt. Reckon does not infer a relative tier from the coordinator model. Build
+each prompt from the §05 template and the portable dispatch contract.
 
-Use background mode when the runtime supports it. Default to at most TWO
-concurrent background workers unless the user or dispatch prompt sets another
-cap; size each ready wave to the cap, launch the wave together, then wait for
-all results before integration.
+Use background mode when the runtime supports it. The current user prompt or
+coordinator sets an explicit concurrency cap before dispatch from the available
+slots, dependency wave, and file-scope conflicts. Size each ready wave to that
+cap, launch the wave together, then wait for all results before integration.
 
 ### 5. Verify every worker — MANDATORY
 
@@ -521,8 +523,6 @@ Plan:    <slug> (<url>)
 Section: <§N — section title>
 Capability: <routine | general | orchestrator>
 Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
-Dispatch policy: <one-below default | least-sufficient | orchestrator-retained>
-
 Context
   <2–3 sentences: what this section does and why it is being shipped now>
 
@@ -548,12 +548,12 @@ Done-when
   3. commit SHA, test output, artifacts, and evidence inputs returned to orchestrator
 ```
 
-## Delegation, model routing, integration, and cleanup
+## Delegation, runtime routing, integration, and cleanup
 
 For any delegated plan work, and always for sprint mode, read
 `references/sprint-orchestration.md` completely. It owns:
 
-- model-family-neutral one-below worker selection;
+- prompt-owned runtime model, effort, and concurrency routing;
 - skill and reasoning-effort selection;
 - detached worktree creation and worker prompt rules;
 - orchestrator-owned merge/conflict handling;

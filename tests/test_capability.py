@@ -54,22 +54,30 @@ def test_legacy_capability_mapping_is_deterministic():
 
 def test_matcher_reports_absent_workers_without_weakening_request():
     request = capability_request("general")
-    result = match_worker(request, [])
+    result = match_worker(request, [], selected_worker_id="requested")
     assert result.worker is None
     assert result.escalation_required
-    assert result.fallback == "inline-no-advertised-worker"
+    assert result.fallback == "selected-worker-unavailable"
     assert result.requested == request
 
 
-def test_matcher_is_deterministic_for_equal_workers():
+def test_matcher_validates_the_explicit_worker_independent_of_advertised_order():
     request = capability_request("routine")
     workers = [_worker("zeta", "general"), _worker("alpha", "general")]
-    assert match_worker(request, workers).worker["id"] == "alpha"
-    assert match_worker(request, list(reversed(workers))).worker["id"] == "alpha"
+    assert (
+        match_worker(request, workers, selected_worker_id="zeta").worker["id"] == "zeta"
+    )
+    assert (
+        match_worker(
+            request,
+            list(reversed(workers)),
+            selected_worker_id="zeta",
+        ).worker["id"]
+        == "zeta"
+    )
 
 
-def test_matcher_uses_suitable_cross_family_worker_when_preferred_family_cannot():
-    orchestrator = _worker("lead", "orchestrator", family="preferred")
+def test_matcher_does_not_infer_a_worker_from_family():
     workers = [
         _worker("preferred-routine", "routine", family="preferred"),
         _worker("cross-family-general", "general", family="available"),
@@ -77,40 +85,23 @@ def test_matcher_uses_suitable_cross_family_worker_when_preferred_family_cannot(
     result = match_worker(
         capability_request("general"),
         workers,
-        orchestrator=orchestrator,
+        selected_worker_id="cross-family-general",
     )
     assert result.worker["id"] == "cross-family-general"
     assert not result.escalation_required
     assert result.fallback is None
 
 
-def test_one_below_prefers_immediately_lower_capability():
-    orchestrator = _worker("lead", "orchestrator")
-    workers = [
-        orchestrator,
-        _worker("routine-worker", "routine"),
-        _worker("general-worker", "general"),
-    ]
+def test_matcher_does_not_substitute_an_unrequested_worker():
+    workers = [_worker("available", "orchestrator")]
     result = match_worker(
-        capability_request("routine"),
+        capability_request("general"),
         workers,
-        orchestrator=orchestrator,
-        policy="one-below",
+        selected_worker_id="missing",
     )
-    assert result.worker["id"] == "general-worker"
-    assert result.requested["class"] == "general"
-
-
-def test_one_below_inherits_orchestrator_when_no_lower_worker_exists():
-    orchestrator = _worker("lead", "orchestrator")
-    result = match_worker(
-        capability_request("routine"),
-        [orchestrator],
-        orchestrator=orchestrator,
-        policy="one-below",
-    )
-    assert result.worker["id"] == "lead"
-    assert result.reasoning_adjustment == "decrease-one-supported-level"
+    assert result.worker is None
+    assert result.escalation_required
+    assert result.fallback == "selected-worker-unavailable"
 
 
 def test_elevated_risk_retains_orchestrator_and_strict_verification():
@@ -130,15 +121,14 @@ def test_elevated_risk_retains_orchestrator_and_strict_verification():
     result = match_worker(
         capability_request("routine", requirements={"risk": "elevated"}),
         workers,
-        orchestrator=orchestrator,
-        policy="one-below",
+        selected_worker_id="lead",
     )
     assert result.worker["id"] == "lead"
     assert result.requested["class"] == "orchestrator"
     assert result.requested["requirements"]["verification"] == "strict"
 
 
-def test_unsatisfied_request_uses_strongest_worker_with_escalation_signal():
+def test_insufficient_explicit_worker_requires_rerouting():
     workers = [
         _worker("routine-worker", "routine"),
         _worker("general-worker", "general"),
@@ -146,16 +136,22 @@ def test_unsatisfied_request_uses_strongest_worker_with_escalation_signal():
     result = match_worker(
         capability_request("orchestrator", requirements={"verification": "strict"}),
         workers,
+        selected_worker_id="general-worker",
     )
     assert result.worker["id"] == "general-worker"
     assert result.escalation_required
-    assert result.fallback == "strongest-advertised-worker"
+    assert result.fallback == "selected-worker-insufficient"
 
 
-def test_unsatisfied_request_uses_lowest_cost_then_stable_id_in_strongest_class():
+def test_explicit_selection_ignores_cost_and_stable_id_tiebreakers():
     workers = [
         _worker("routine-worker", "routine", cost=0),
-        _worker("expensive", "orchestrator", cost=9),
+        _worker(
+            "expensive",
+            "orchestrator",
+            cost=9,
+            requirements={"verification": "strict"},
+        ),
         _worker("zeta", "orchestrator", cost=1),
         _worker("alpha", "orchestrator", cost=1),
     ]
@@ -165,10 +161,11 @@ def test_unsatisfied_request_uses_lowest_cost_then_stable_id_in_strongest_class(
             requirements={"verification": "strict"},
         ),
         workers,
+        selected_worker_id="expensive",
     )
-    assert result.worker["id"] == "alpha"
-    assert result.escalation_required
-    assert result.fallback == "strongest-advertised-worker"
+    assert result.worker["id"] == "expensive"
+    assert not result.escalation_required
+    assert result.fallback is None
 
 
 def test_capability_applies_to_plan_followup_and_sprint_item_schema():

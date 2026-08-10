@@ -161,8 +161,8 @@ edit_plan(
    actionable plan must either belong to exactly one sprint with matching
    `plan-sprint`, or carry an explicit backlog decision.
 7. Keep **one active sprint** at a time. Future sprints start as `planned`.
-8. Treat any legacy `tier` value as a relative hint, not a model id. Runtime
-   worker selection belongs to reckon-ship's one-below policy.
+8. Treat any legacy `tier` value as compatibility input only, never as runtime
+   model guidance. The current user prompt and coordinator own worker routing.
 9. If the user requested a roadmap change, write it without a redundant
    checkpoint unless a material ownership or priority choice remains open.
 10. Re-run `roadmap` and `audit`; clear new graph or membership errors and

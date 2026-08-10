@@ -8,7 +8,7 @@ delegates plan work.
 1. Target resolution
 2. Execution graph and knowledge inputs
 3. Coordinator-only contract and context budget
-4. Worker capability and skill routing
+4. Worker requirements and runtime routing
 5. Worktree-first delegation
 6. Worker dispatch contract
 7. Orchestrator integration
@@ -107,7 +107,7 @@ review requires, edit product/source/test files, run tests, run paid domain
 pipelines, run any operational pipeline, or repair worker code. Represent
 every implementation, investigation, test execution, operational pipeline run,
 and corrective repair as a worker node. Delegate even one ready node whenever
-a worker slot is available. Cross-cutting work changes the worker capability
+a worker slot is available. Cross-cutting work changes the task requirements
 and scope; it never makes the sprint coordinator the implementation owner.
 
 On worker failure, add and dispatch a corrective node with the failed
@@ -193,40 +193,35 @@ Prompt-side rules that make this work:
 - Require every long-running command to redirect to a named on-disk log, so
   step 2 always has something to find.
 
-## 4. Worker capability and skill routing
+## 4. Worker requirements and runtime routing
 
-Use the versioned capability request from plan/followup/sprint state and resolve
-it with `reckon.capability.match_worker`. The persisted object has a neutral
-`class` plus optional hard floors for reasoning, context, tool autonomy,
-verification, and risk. Concrete worker identity and cost stay runtime-only.
+Read the versioned capability request from plan/followup/sprint state as task
+requirements only. Its neutral `class` and optional floors for reasoning,
+context, tool autonomy, verification, and risk describe what the node needs;
+they do not select a model.
 
-**Concurrency default: two background workers.** Unless the user or the
-dispatch prompt specifies otherwise, hold at most two concurrent background
-workers; size every ready wave to that cap and queue the remainder. A larger
-fleet is opt-in per session, never assumed.
+Set an explicit concurrency cap in the current prompt or coordinator checkpoint
+before dispatch. Derive it from available slots, dependency independence, file
+scope conflicts, and operational limits; Reckon defines no fixed default.
 
-Use a model-family-neutral **one-below** policy:
+Runtime routing is prompt-owned:
 
-1. Inspect the runtime's advertised worker models/capabilities. Do not encode
-   provider or model names in the skill, plan, or dispatch logic.
-2. Identify the orchestrator's capability position within its current model
-   family.
-3. Default each implementation worker to the immediately lower capable
-   general-purpose model in the same family.
-4. If no lower model is available, inherit the orchestrator model and reduce
-   reasoning effort by one supported level.
-5. Keep or escalate the worker to orchestrator-level capability for high
-   ambiguity, solver/physics correctness, coupled multi-file refactors,
-   security/safety, irreversible migrations, conflict resolution, and
-   synthesis across workers.
-6. Downshift further only for bounded mechanical edits, inventory reads, or
-   research extraction with objective verification.
-7. Never cross model families unless the user requests it or the runtime offers
-   no suitable same-family worker.
+1. Honour any model, reasoning-effort, or concurrency choice in the current
+   user prompt.
+2. Otherwise, the coordinator inspects the advertised workers and chooses a
+   concrete model and effort for each node from its requirements, ambiguity,
+   coupling, risk, and verification needs.
+3. State the concrete model and effort in every worker dispatch. Do not infer
+   them from the coordinator model or a relative hierarchy.
+4. Keep provider names and concrete model identifiers out of plans, schemas,
+   skills, source code, and persisted capability requests.
+5. Re-evaluate routing when a task's scope changes; do not reuse a stale model
+   choice merely because an earlier node used it.
 
-Legacy plan `tier` values map deterministically on read and emit an audit
-diagnostic. Never copy them into a new dispatch record; persist the mapped
-capability request when the plan is next edited.
+Legacy plan `tier` values map on read for compatibility and emit an audit
+diagnostic. They provide no runtime routing authority. Never copy them into a
+new dispatch record; persist neutral task requirements when the plan is next
+edited.
 
 Score every task on:
 
@@ -238,17 +233,17 @@ Score every task on:
 
 Select the worker's skill from task semantics and `recommends_skill`. Require
 the worker to read the skill plus all applicable target-path instructions
-before editing. Include chosen capability rationale and selected skills in the
+before editing. Include task-requirement rationale, the explicit runtime model
+and effort, their prompt/coordinator source, and selected skills in the
 execution manifest.
 
 If no worker is advertised, pause the node and record
 `no-advertised-worker`; use the coordinator inline exception only under the
-reported, pre-budgeted protocol in section 3. If none satisfies every hard
-floor, selecting the strongest advertised worker is only a diagnostic
-fallback: `escalation_required` remains true, so the dispatcher must not
-silently weaken the task contract. Elevated or critical risk raises the worker
-floor to orchestrator-class capability with strict verification; it does not
-turn the sprint coordinator into the implementation owner.
+reported, pre-budgeted protocol in section 3. If the explicitly selected
+worker cannot satisfy the task requirements, pause and surface the routing
+mismatch rather than silently weakening the contract. Elevated or critical
+risk raises the task's verification requirements; it does not turn the sprint
+coordinator into the implementation owner.
 
 ## 5. Worktree-first delegation
 
@@ -324,7 +319,7 @@ Also include:
 - research/evidence inputs already read;
 - locked and open decisions;
 - selected skill(s);
-- capability/effort rationale;
+- task-requirement rationale and explicit runtime model/effort routing;
 - measurable done-when criteria.
 
 ## 7. Orchestrator integration
