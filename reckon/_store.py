@@ -1092,6 +1092,16 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         missing = [k for k in sorted(required) if not str(fu.get(k, "")).strip()]
         if missing:
             raise OpError(f"followup missing required fields: {missing}")
+        prompt = str(fu["prompt"])
+        if (
+            prompt != prompt.strip()
+            or len(prompt.splitlines()) != 1
+            or not prompt.startswith("/reckon-ship ")
+        ):
+            raise OpError(
+                "followup prompt must be one /reckon-ship invocation line; "
+                "store guidance in the plan"
+            )
         working.setdefault("followups", []).append(fu)
         return
     if target == "research":

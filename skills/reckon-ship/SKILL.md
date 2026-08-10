@@ -109,7 +109,7 @@ Full detail below.
 - `/reckon-ship <project>:S1` — executes a sprint in an explicit project
 - Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
 
-**Dual-role:** invoked by human or orchestrator AND generates §05 dispatch prompts for workers.
+**Dual-role:** invoked by human or orchestrator AND records one-line §05 session handoffs.
 
 If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → `reckon-create` first.
 
@@ -295,8 +295,9 @@ coordinator the implementation owner.
 Apply the model, effort, and concurrency routing stated by the current user
 prompt. If it is not specified, the coordinator chooses it explicitly for each
 node from the available runtime workers and records the choice in the dispatch
-prompt. Reckon does not infer a relative tier from the coordinator model. Build
-each prompt from the §05 template and the portable dispatch contract.
+prompt. Reckon does not infer a relative tier from the coordinator model.
+Worker prompts reference the live plan and carry only the portable runtime
+safety contract; §05 followups remain one-line session invocations.
 
 Use background mode when the runtime supports it. The current user prompt or
 coordinator sets an explicit concurrency cap before dispatch from the available
@@ -426,7 +427,7 @@ edit_plan(
       "title": "<next section imperative>",
       "body": "<2–3 sentences: what landed, what comes next>",
       "recommends_skill": "/reckon-ship <slug> §<N+1>",
-      "prompt": "<§05 template body — mandatory, non-empty>"
+      "prompt": "/reckon-ship <slug> [§N]"
     }}
   ],
   expected_version=state["version"]
@@ -496,57 +497,34 @@ fenced, paste-ready prompt so switching to a fresh session is seamless:
 **Next up** — paste into a fresh session:
 
 ```
-/reckon-ship <slug> §<N>   (<rung/step label> — <one-line what it does>)
-/reckon-ship <project>:<sprint-id>   (resume the remaining sprint DAG)
+/reckon-ship <slug> §<N>
+/reckon-ship <project>:<sprint-id>
 ```
 ````
 
 Rules:
 - One fenced prompt per advised follow-on; if several follow-ons are advised
   for one session, stack them in ONE fence in execution order.
-- The fenced line is exactly the slash invocation the next session needs —
-  the skill reads the full §05 prompt from the plan itself, so the fence
-  stays SHORT (slash command + parenthetical label), never a pasted wall.
+- The fenced line is exactly the slash invocation the next session needs. The
+  plan owns all guidance, so never append a parenthetical brief or pasted wall.
 - Mention the followup id at most once, in passing (e.g. "tracked as
   f-tps-03"), and always AFTER the plan/section name — the id is for plan
   audits, the name is for humans.
 
-## §05 dispatch prompt template
+## §05 session handoff
 
-> **Canonical §05 template: `reckon-edit` SKILL.md.** Keep this copy in sync.
+> **Canonical §05 contract: `reckon-edit` SKILL.md.** Keep this copy in sync.
 
-Embed in every worker prompt, substituting angle-bracket fields:
+Every stored followup prompt and user-facing handoff is one line:
 
 ```
-Project: <project-name>
-Plan:    <slug> (<url>)
-Section: <§N — section title>
-Capability: <routine | general | orchestrator>
-Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
-Context
-  <2–3 sentences: what this section does and why it is being shipped now>
-
-State to read
-  GET /plan/<project>/<slug>   (parsed state — decisions, followups, status, version)
-
-Locked decisions to honour
-  <key> → <choice>
-
-Open decisions to surface (do not resolve)
-  <key>, <key>
-
-Constraints
-  File scope (EXCLUSIVE — stage ONLY these paths):
-    <path 1>
-    <path 2>
-  Base ref: <primary branch>
-  Worktree: <absolute detached-worktree path>
-
-Done-when
-  1. <measurable artefact: commit, file, test result>
-  2. tests still green
-  3. commit SHA, test output, artifacts, and evidence inputs returned to orchestrator
+/reckon-ship <slug> [§N]
 ```
+
+The live plan owns all semantic guidance. Internal worker dispatches reference
+that plan and add only the runtime safety fields required by
+`references/sprint-orchestration.md`; they do not copy the plan into the
+handoff.
 
 ## Delegation, runtime routing, integration, and cleanup
 
@@ -568,7 +546,7 @@ after integration.
 ## Cross-references
 
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
-- `reckon-create/SKILL.md` — first-time plan scaffolding and §05 template.
+- `reckon-create/SKILL.md` — first-time plan scaffolding and §05 invocation.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.
 - `reckon-roadmap/SKILL.md` — canonical pending-work graph, critical paths, and wiring diagnostics.
 - `~/Code/reckon/PLAN-FORMAT.md` — canonical format (semantic HTML elements, schema contract, endpoints).

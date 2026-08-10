@@ -309,7 +309,7 @@ edit_plan(
       "title": "Implement plasma decoder fine-tune §1 — data prep",
       "body": "Initial authoring complete. Next: run data curation pipeline and validate.",
       "recommends_skill": "/reckon-ship plasma-decoder-finetune §1",
-      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §1\nCapability: general\nRequirements: standard verification\n\nContext\n  Plan authored; data prep is the first shippable section.\n\nState to read\n  GET /plan/imas-ambix/plasma-decoder-finetune\n\nLocked decisions to honour\n  (none yet)\n\nDone-when\n  1. Data pipeline script committed\n  2. Tests green\n  3. Followup written + this one resolved"
+      "prompt": "/reckon-ship plasma-decoder-finetune §1"
     }}
   ],
   expected_version=0,
@@ -477,45 +477,19 @@ server-computed.)
 `plan-status` is authored on lifecycle transitions (draft → active → shipped).
 Set it to `draft` on initial scaffolding; update it as the plan progresses.
 
-## §05 followup template
+## §05 followup invocation
 
-> **Canonical §05 template: `reckon-edit` SKILL.md.** Keep this copy in sync; the rule “don't re-list decisions” applies (the prompt builder injects them live).
+> **Canonical §05 contract: `reckon-edit` SKILL.md.** Keep this copy in sync.
 
-Every followup's `<pre class="r-fu-prompt">` MUST be built from this template.
-A followup without a non-empty prompt is rejected at write time.
-
-**Do NOT re-list decisions or plan state in the prompt.** The generate-prompt
-builder injects the live plan URL and the CURRENT Locked/Open decisions directly
-above this brief — copying them into the prompt duplicates the builder and, worse,
-goes **stale** the moment a decision is locked (the frozen copy then contradicts
-the live list above). The brief carries only what the builder can't: the task
-narrative, the specific files to read, non-decision constraints, and done-when.
+Every followup's `<pre class="r-fu-prompt">` contains exactly one line:
 
 ```
-Project: <project-name>
-Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
-Section: <§ if applicable>
-Capability: <routine | general | orchestrator>
-Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
-
-Context
-  2–3 sentences on why this is queued now and what landed before it.
-  (Honour the Locked decisions and surface the Open decisions shown live above
-   this brief — do not re-list them.)
-
-State to read  (CODE / FILES / DATA — not the plan itself; the builder already
-                injects the live plan-state URL above)
-  <specific source files, dirs, datasets, prior artefacts the worker must read>
-
-Scope locks / constraints  (non-decision)
-  <pre-registered scope that must not be re-litigated; licence, format,
-   environment, compute/SLURM rules, blockers cleared>
-
-Done-when
-  1. <measurable artefact: commit, file, test result>
-  2. tests still green
-  3. followup written into plan + this followup marked resolved
+/reckon-ship <slug> [§N]
 ```
+
+The plan owns all semantic guidance. Do not duplicate context, decisions,
+inputs, constraints, done-when criteria, model, effort, or concurrency in the
+stored handoff.
 
 ## Semantic element shapes
 

@@ -422,7 +422,7 @@ def test_append_followup(setup):
         "written_at": "2026-01-01",
         "title": "next",
         "body": "do it",
-        "prompt": "Project: proj\nDone-when: x",
+        "prompt": "/reckon-ship plan-a §2",
     }
     r = mcp_module._edit_plan(
         project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
@@ -448,6 +448,33 @@ def test_append_followup_empty_prompt_rejected(setup):
     )
     assert r["ok"] is False
     assert r["error"] == "op_error"
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Project: proj\nDone-when: x",
+        "do this",
+        " /reckon-ship plan-a §2",
+    ],
+)
+def test_append_followup_requires_one_line_ship_invocation(setup, prompt):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
+    fu = {
+        "id": "f1",
+        "written_by": "smc",
+        "written_at": "2026-01-01",
+        "title": "next",
+        "body": "do it",
+        "prompt": prompt,
+    }
+    r = mcp_module._edit_plan(
+        project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
+    )
+    assert r["ok"] is False
+    assert r["error"] == "op_error"
+    assert "one /reckon-ship invocation line" in r["detail"]
     # nothing written
     data, ver = _store_module.read_plan(project, "plan-a")
     assert data["followups"] == []
@@ -462,7 +489,7 @@ def test_append_followup_autogen_id(setup):
         "written_at": "2026-01-01",
         "title": "next",
         "body": "do it",
-        "prompt": "Done-when: x",
+        "prompt": "/reckon-ship plan-a §2",
     }
     r = mcp_module._edit_plan(
         project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0

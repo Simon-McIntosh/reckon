@@ -2,7 +2,7 @@
 name: reckon-edit
 description: >-
   Edit an existing plan — prose edits, cumulative evidence updates, decision
-  locking, followup creation (§05 template), and plan archiving. Decides between evergreen
+  locking, followup creation (§05 invocation), and plan archiving. Decides between evergreen
   edit, cumulative execution evidence, and frozen snapshots. Trigger verbs: "update / amend /
   record / add to / revise / lock decision / resolve decisions / queue followup /
   archive / retire the plan / invoke reckon-edit with a slug". For new plans use
@@ -76,7 +76,7 @@ Silent bypasses hide drift.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
    and impl go into `<meta name="plan-*">` scalars and `data-reckon` section elements.
 5. **Every followup MUST carry a non-empty `<pre class="r-fu-prompt">` block.** A followup
-   without a prompt is rejected at write time. See §05 template below.
+   without a prompt is rejected at write time. See §05 invocation below.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.
 7. **Relationships have distinct semantics.** `depends_on` is executable and
    blocks closure; research/evidence inputs use `informs`; downstream work uses
@@ -188,7 +188,7 @@ edit_plan(
       "title": "Implement §2 — data prep pipeline",
       "body": "Base model locked. Next: implement the curation pipeline that feeds it.",
       "recommends_skill": "/reckon-ship plasma-decoder-finetune §2",
-      "prompt": "Project: imas-ambix\nPlan: plasma-decoder-finetune\nSection: §2\nCapability: general\nRequirements: standard verification\n\nContext\n  Data prep is now unblocked. (Honour the locked / surface the open decisions shown live above — do not re-list them.)\n\nState to read  (code/files, not the plan URL — the builder injects it)\n  src/ and the data sources the curation pipeline reads\n\nDone-when\n  1. src/data_prep.py committed + pipeline smoke-test green\n  2. tests still green\n  3. followup written + this followup resolved"
+      "prompt": "/reckon-ship plasma-decoder-finetune §2"
     }}
   ],
   expected_version=5
@@ -345,7 +345,7 @@ Minimum followup item shape:
   "body":             "<2–3 sentences of context>",
   "recommends_skill": "/reckon-ship <slug> [section] | /reckon-edit <slug> | null",
   "capability":       {"version": "1.0", "class": "routine | general | orchestrator", "requirements": {}},
-  "prompt":           "<§05 template body — mandatory, non-empty>"
+  "prompt":           "/reckon-ship <slug> [§N]"
 }
 ```
 
@@ -367,13 +367,13 @@ paste-ready invocation so a fresh session starts seamlessly:
 **Next up** — paste into a fresh session:
 
 ```
-/reckon-ship <slug> §<N>   (<rung label> — <one-line what it does>)
+/reckon-ship <slug> §<N>
 ```
 ````
 
 Several follow-ons advised for one session → stack them in ONE fence in
-execution order. The fence stays short (the skill reads the full §05 prompt
-from the plan); the id appears at most once, in passing, after the name.
+execution order. Each line is only the invocation; the plan owns all guidance.
+The id appears at most once, in passing, after the name.
 
 **Research items:** `edit_plan` append op to `target="research"`. No prompt required.
 
@@ -393,39 +393,18 @@ anchor (`data-section`). When reading a plan, check `<section data-reckon="comme
 human feedback. Comments are agent-readable; respond to them in the next followup or
 prose edit. Agents may also append comments via `edit_plan` append op to `target="comments"`.
 
-## §05 followup template
+## §05 followup invocation
 
-Every followup `prompt` MUST be built from this template. It is the dispatch
-prompt for the next agent. A non-empty prompt is enforced at write time.
-
-**Do NOT re-list decisions or plan state.** The generate-prompt builder injects
-the live plan URL and the current Locked/Open decisions directly above this
-brief; copying them here duplicates the builder and goes stale once a decision
-is locked. Carry only what the builder can't: narrative, specific files,
-non-decision constraints, done-when.
+Every followup `prompt` is exactly one line:
 
 ```
-Project: <project-name>
-Plan:    <slug> (http://localhost:8765/<project>/<slug>.html)
-Section: <§ if applicable>
-Capability: <routine | general | orchestrator>
-Requirements: <reasoning/context/autonomy/verification/risk floors, or none>
-
-Context
-  2–3 sentences on why this is queued now.
-  (Honour the Locked / surface the Open decisions shown live above — don't re-list.)
-
-State to read  (CODE / FILES / DATA — the builder already injects the plan URL)
-  <specific source files, dirs, datasets, prior artefacts to read>
-
-Scope locks / constraints  (non-decision)
-  <pre-registered scope not to re-litigate; licence, format, environment, SLURM>
-
-Done-when
-  1. <measurable artefact>
-  2. tests still green
-  3. followup written + this followup marked resolved
+/reckon-ship <slug> [§N]
 ```
+
+The live plan owns context, decisions, inputs, constraints, and done-when
+criteria. Do not copy any of them into the handoff. Model, effort, and
+concurrency are runtime choices supplied by the new session prompt or its
+coordinator, never persisted in the followup.
 
 ## Sprint / roadmap state → reckon-sprint
 

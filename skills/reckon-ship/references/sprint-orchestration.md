@@ -315,12 +315,14 @@ CONCURRENT WORKERS:
 
 Also include:
 
-- plan and section;
-- research/evidence inputs already read;
-- locked and open decisions;
+- the live plan and section to read as semantic authority;
 - selected skill(s);
-- task-requirement rationale and explicit runtime model/effort routing;
-- measurable done-when criteria.
+- explicit runtime model/effort routing;
+- only operational constraints that cannot live in the plan.
+
+Do not restate plan context, decisions, research, or done-when criteria in the
+worker prompt. Keeping those in the live plan prevents copied guidance from
+drifting between workers and sessions.
 
 ## 7. Orchestrator integration
 

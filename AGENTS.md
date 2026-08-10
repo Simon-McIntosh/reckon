@@ -63,7 +63,7 @@ writeback, content parity, fleet safety).
 |---|---|---|
 | Create a brand-new plan | `reckon-create` | `/reckon-create <slug>` |
 | Edit an existing plan, lock a decision, record an outcome, write a followup | `reckon-edit` | `/reckon-edit <slug>` |
-| Implement the work a plan describes; record outcomes; followup with §05 prompt | `reckon-ship` | `/reckon-ship <slug> [section]` |
+| Implement the work a plan describes; record outcomes; followup with §05 invocation | `reckon-ship` | `/reckon-ship <slug> [section]` |
 | Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Pending work, true blockers, critical/open paths, and DAG wiring | `reckon-roadmap` | `/reckon-roadmap` |
@@ -106,7 +106,7 @@ Concretely:
    - `modified` set to today (server-written on each POST)
    - **The driving followup MUST be resolved** with `resolved_at`,
      `resolved_by`, `outcome` describing what landed
-   - **A new followup MUST be written** with the §05 prompt template
+   - **A new followup MUST be written** with the one-line §05 invocation
      for whatever comes next — or with `outcome: "done — no followup"`
      when the chain truly closes
    - `version` will be incremented by the server on each POST (do
@@ -121,17 +121,16 @@ Concretely:
 
 3. **Coordinator dispatch contract.** When dispatching any worker to
    implement plan work, the dispatch prompt MUST:
-   - Include the **§05 prompt template** with locked decisions, open
-     decisions to surface, and a Done-when list
-   - **Require the worker to append a followup** to the plan's followups
-     section (via MCP or POST) before declaring done
-   - **Require the worker to resolve its driving followup** (if it
-     was dispatched from one) with `resolved_at`, `outcome`
+   - Identify the live plan and section as the semantic authority; do not copy
+     plan guidance into the handoff
+   - Include only runtime safety data that cannot live in the plan, such as
+     worktree, exclusive file scope, manifest path, model/effort, and
+     concurrency peers
+   - Require the worker to return outcome evidence to the coordinator; workers
+     do not edit shared plan state
 
-   When all workers land, the **coordinator MUST verify the followup
-   landed** before marking the plan-task as shipped. If a worker
-   omitted the followup, the coordinator writes it themselves
-   (reflecting what the worker reported).
+   When all workers land, the **coordinator MUST resolve the driving followup
+   and write the next one-line invocation** before marking the task shipped.
 
 4. **Eat-the-dog-food check.** Before marking any reckon-ship work
    "done" in chat, verify the plan-system itself reflects the work:
@@ -433,43 +432,22 @@ as dotted patches (e.g. `decisions.scan-strategy.choice`). The server sets
 A separate `decisions.html` is a **read-only aggregator** that reads each
 plan's parsed state and shows current choices — it never writes.
 
-### Mandatory prompt template (§05) on every followup
+### Mandatory one-line invocation (§05) on every followup
 
 Every followup written into the plan's followups section MUST set its `prompt`
-(in `<pre class="r-fu-prompt">`) to a copy-paste prompt for the next agent. The template:
+(in `<pre class="r-fu-prompt">`) to exactly one copy-paste line:
 
 ```
-Project: <project-name>
-Plan:    <slug> (https://<published>/<slug>.html)
-Section: <§ if applicable>
-Tier:    <haiku | sonnet | opus>  (latest version per family)
-
-Context
-  2–3 sentences on why this is queued now and what landed before it.
-
-State to read
-  GET /plan/<project>/<slug>   (parsed plan state — decisions, followups, status, version)
-  (any other plans whose state matters)
-
-Locked decisions to honour
-  <key> → <choice>
-  ...
-
-Open decisions to surface (do not resolve)
-  <key>, <key>, ...
-
-Constraints
-  licence, format, environment, blockers cleared by this point
-
-Done-when
-  1. measurable artefact (commit, file, bench number)
-  2. tests still green
-  3. followup written into plan + this followup marked resolved
+/reckon-ship <slug> [§N]
 ```
 
-The reckon-edit and reckon-ship skills enforce this. A followup
-without a prompt is a hard failure — the supervisor either fills it in
-or rejects the worker's report.
+The live plan owns context, decisions, evidence inputs, constraints, and
+done-when criteria. Copying them into a handoff creates a second stale source
+of truth. Runtime model, effort, concurrency, worktree, and file-scope choices
+belong to the new session and its coordinator, not to persisted followups.
+
+The reckon-edit and reckon-ship skills enforce this. A followup without a
+non-empty one-line invocation is a hard failure.
 
 ### Dissent flow (§07) — disagreeing with a locked decision
 
@@ -527,7 +505,7 @@ per-plan `state/<project>/<slug>.json` sidecar files.
 - `data-tier`, `data-written-by`, `data-written-at`, `data-recommends-skill`
 - `data-resolved-at`, `data-resolved-by` — set when resolved
 - `<h4 class="r-fu-title">`, `<div class="r-fu-body">`
-- `<pre class="r-fu-prompt">` — §05 copy-paste prompt (MANDATORY)
+- `<pre class="r-fu-prompt">` — §05 one-line invocation (MANDATORY)
 - `<p class="r-fu-outcome">` — added on resolve
 
 **Questions** (`<section data-reckon="questions">` → `<div class="r-q" data-id="…">`):

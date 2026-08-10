@@ -33,6 +33,18 @@ def test_ship_routing_is_prompt_owned_and_worktree_first() -> None:
     assert "opus" not in ship
 
 
+def test_followup_handoffs_are_single_line_plan_invocations() -> None:
+    edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text().lower()
+    create = (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text().lower()
+    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text().lower()
+    for text in (edit, create, ship):
+        assert "/reckon-ship <slug> [§n]" in text
+    assert "is exactly one line" in edit
+    assert "contains exactly one line" in create
+    assert "is one line" in ship
+    assert "the live plan owns all semantic guidance" in ship
+
+
 def test_sprint_skill_hands_execution_to_ship() -> None:
     sprint = normalized((ROOT / "skills" / "reckon-sprint" / "SKILL.md").read_text())
     assert "This skill never dispatches workers" in sprint
