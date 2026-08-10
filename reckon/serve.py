@@ -47,7 +47,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from reckon import _plan_html
-from reckon._store import _config_home
+from reckon._store import _config_home, _mounts_path, _state_root
 from reckon.lifecycle import effective_status, unresolved_dependencies
 from reckon.resources import (
     ROOT_TYPES,
@@ -71,8 +71,8 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
     global _MOUNTS_FILE, _STATE_ROOT, _HOME_HTML, _SHARED_ROOT
     # Config home: RECKON_HOME env → ~/.config/reckon (if present) → ~/docs-server.
     config_root = _config_home()
-    _MOUNTS_FILE = mounts_file or (config_root / "mounts.json")
-    _STATE_ROOT = config_root / "state"
+    _MOUNTS_FILE = mounts_file or _mounts_path()
+    _STATE_ROOT = _state_root()
     # Prefer the home page bundled in the reckon docs/ directory; fall back to
     # the config-home home.html from dotfiles if it doesn't exist yet.
     reckon_home = Path(__file__).parent.parent / "docs" / "home.html"
@@ -109,6 +109,8 @@ def _content_equal(patched: dict, reparsed: dict, *, cur_state: dict) -> bool:
 
 
 def load_mounts() -> dict[str, Path]:
+    if _MOUNTS_FILE is None:
+        _resolve_paths()
     if not _MOUNTS_FILE or not _MOUNTS_FILE.exists():
         return {}
     raw = json.loads(_MOUNTS_FILE.read_text())
@@ -863,7 +865,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path.startswith("/plan/"):
-            # GET /plan/<project>/<slug> — the plan's embedded semantic state
+            # GET /plan/<project>/<slug> — embedded semantic state for one plan
             # (raw, with version), for clients that need the current version
             # before a write. {} if the plan/state is absent.
             parts = path[len("/plan/") :].strip("/").split("/")
@@ -1230,7 +1232,7 @@ class Handler(BaseHTTPRequestHandler):
             return False, None
 
     def _handle_plan_write(self, path: str) -> None:
-        """POST /plan/<project>/<slug> — merge a dotted patch into the plan's
+        """POST /plan/<project>/<slug> — merge a dotted patch into the plan
         embedded semantic state and rewrite the HTML file in place. The plan HTML
         is the sole store; there is no sidecar state JSON.
 

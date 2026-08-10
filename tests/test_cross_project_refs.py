@@ -15,6 +15,7 @@ import pytest
 
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
+import reckon.serve as serve_module
 from reckon._schema import PlanState, parse_plan_ref, split_refs
 
 
@@ -188,3 +189,26 @@ def test_audit_quiet_when_external_ref_resolves(two_projects):
         if f["code"] in ("dangling-external-ref", "unmounted-external-project")
     ]
     assert external == []
+
+
+def test_roadmap_resolves_external_dependency_with_lazy_mount_initialization(
+    two_projects,
+):
+    dirs = two_projects
+    (dirs["beta"] / "provider.html").write_text(
+        _plan_html("beta", "provider", "shipped")
+    )
+    (dirs["alpha"] / "consumer.html").write_text(
+        _plan_html("alpha", "consumer", "active", "beta:provider")
+    )
+    serve_module._MOUNTS_FILE = None
+    serve_module._STATE_ROOT = None
+    serve_module._DISC_CACHE.clear()
+
+    result = mcp_module._roadmap("alpha")
+
+    assert [item["slug"] for item in result["ready_now"]] == ["consumer"]
+    assert not any(
+        item["code"] == "unresolved-external-dependency"
+        for item in result["wiring_findings"]
+    )
