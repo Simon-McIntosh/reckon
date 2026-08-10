@@ -743,7 +743,7 @@ _DOS_DONTS = {
     "do": [
         "read_plan first to get the current version; pass it as expected_version.",
         "use edit_plan with an ops list — one call may carry several ops applied in order.",
-        "give every followup a non-empty §05 prompt (mandatory; empty is rejected).",
+        "give every followup one /reckon-ship invocation line; store guidance in the plan.",
         "slug='index' is a composed compatibility read; edit named project resources with doc_type.",
         "use canonical artifact types plan, research, or evidence; doc reads as research.",
         "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
@@ -765,8 +765,8 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars + decisions.<key>.<field>; or one top-level field on a selected sprint/milestone/blocker/project resource. impl clamps to 0..1 and is plan-only.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events. followup needs a §05 prompt.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, or followups.<id>.prompt; or one top-level field on a selected sprint/milestone/blocker/project resource. impl clamps to 0..1 and is plan-only.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events. followup prompt is one /reckon-ship invocation line.",
     "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
@@ -1268,8 +1268,8 @@ def _append_followup(
     """Append a followup record to data.followups.
 
     The followup dict must include: id, written_by, written_at, title, body, prompt.
-    The prompt field must contain a copy-paste agent prompt per the §05 template.
-    A followup without a prompt is a hard failure per AGENTS.md.
+    The prompt field is one ``/reckon-ship`` invocation line; the plan owns all
+    semantic guidance.
     """
     required = {"id", "written_by", "written_at", "title", "body", "prompt"}
     missing = required - set(followup.keys())

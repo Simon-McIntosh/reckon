@@ -259,7 +259,7 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |

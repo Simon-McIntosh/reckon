@@ -636,6 +636,13 @@ def append_to_list(
     if expected_version != cur_version:
         raise VersionConflict(expected_version, cur_version, cur_data)
 
+    if field == "followups":
+        if not isinstance(item, dict):
+            raise OpError("followup must be an object")
+        item = {
+            **item,
+            "prompt": _validate_new_followup_prompt(item.get("prompt", "")),
+        }
     lst = list(cur_data.get(field, []))
     lst.append(item)
     merged = {**cur_data, field: lst}
@@ -827,6 +834,21 @@ def _gen_id(prefix: str) -> str:
     return f"{prefix}-{_dt.now(tz=timezone.utc):%Y%m%dT%H%M%S%f}"
 
 
+def _validate_new_followup_prompt(value: Any) -> str:
+    """Return one canonical session invocation or raise at the write boundary."""
+    prompt = str(value)
+    if (
+        prompt != prompt.strip()
+        or len(prompt.splitlines()) != 1
+        or not prompt.startswith("/reckon-ship ")
+    ):
+        raise OpError(
+            "followup prompt must be one /reckon-ship invocation line; "
+            "store guidance in the plan"
+        )
+    return prompt
+
+
 # Top-level plan scalar fields a `set` op may target directly (everything else
 # routes through dotted handling for decisions.<key>.<field>).
 _PLAN_SET_TOP = frozenset(
@@ -962,6 +984,19 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         cur[parts[-1]] = value
         decisions[key] = dec
         return
+    if head == "followups" and len(parts) == 3 and parts[2] == "prompt":
+        followups = working.setdefault("followups", [])
+        if not isinstance(followups, list):
+            raise OpError("plan has no followups list")
+        hit = _find_by_id(followups, parts[1])
+        if hit is None:
+            raise OpError(f"followup {parts[1]!r} not found")
+        idx, followup = hit
+        followups[idx] = {
+            **followup,
+            "prompt": _validate_new_followup_prompt(value),
+        }
+        return
     if len(parts) != 1 or head not in _PLAN_SET_TOP:
         raise OpError(f"unsupported plan set path {path!r}")
     if head == "impl":
@@ -1092,16 +1127,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         missing = [k for k in sorted(required) if not str(fu.get(k, "")).strip()]
         if missing:
             raise OpError(f"followup missing required fields: {missing}")
-        prompt = str(fu["prompt"])
-        if (
-            prompt != prompt.strip()
-            or len(prompt.splitlines()) != 1
-            or not prompt.startswith("/reckon-ship ")
-        ):
-            raise OpError(
-                "followup prompt must be one /reckon-ship invocation line; "
-                "store guidance in the plan"
-            )
+        fu["prompt"] = _validate_new_followup_prompt(fu["prompt"])
         working.setdefault("followups", []).append(fu)
         return
     if target == "research":

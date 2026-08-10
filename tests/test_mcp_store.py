@@ -342,7 +342,7 @@ def test_append_followup(setup):
         "body": "Do something",
         "written_by": "smc",
         "written_at": "2026-05-26",
-        "prompt": "...",
+        "prompt": "/reckon-ship plan-h §2",
         "status": "open",
     }
     new_version = _store_module.append_to_list(
@@ -354,14 +354,13 @@ def test_append_followup(setup):
     assert len(data["followups"]) == 1
     assert data["followups"][0]["id"] == "f1"
 
-    # Append a second
     followup2 = {
         "id": "f2",
         "title": "More",
         "body": "x",
         "written_by": "smc",
         "written_at": "2026-05-26",
-        "prompt": "y",
+        "prompt": "/reckon-ship plan-h §3",
         "status": "open",
     }
     _store_module.append_to_list(
@@ -369,6 +368,27 @@ def test_append_followup(setup):
     )
     data, _ = _store_module.read_plan(project, "plan-h")
     assert len(data["followups"]) == 2
+
+
+def test_append_followup_rejects_prompt_wall(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-h", {"version": 0, "followups": []})
+    followup = {
+        "id": "f1",
+        "title": "Next step",
+        "body": "Do something",
+        "written_by": "smc",
+        "written_at": "2026-05-26",
+        "prompt": "Project: proj\nDone-when: x",
+        "status": "open",
+    }
+    with pytest.raises(_store_module.OpError, match="one /reckon-ship"):
+        _store_module.append_to_list(
+            project, "plan-h", "followups", followup, expected_version=0
+        )
+    data, version = _store_module.read_plan(project, "plan-h")
+    assert data["followups"] == []
+    assert version == 0
 
 
 # ── resolve_in_list ────────────────────────────────────────────────────────

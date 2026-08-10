@@ -499,6 +499,43 @@ def test_append_followup_autogen_id(setup):
     assert data["followups"][0]["id"].startswith("f-")
 
 
+def test_set_followup_prompt_migrates_existing_handoff(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "followups": [
+                {
+                    "id": "f1",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "title": "next",
+                    "body": "do it",
+                    "prompt": "Project: proj\nDone-when: x",
+                }
+            ],
+        },
+    )
+    r = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "set",
+                "path": "followups.f1.prompt",
+                "value": "/reckon-ship plan-a §2",
+            }
+        ],
+        0,
+    )
+    assert r["ok"] is True
+    data, version = _store_module.read_plan(project, "plan-a")
+    assert data["followups"][0]["prompt"] == "/reckon-ship plan-a §2"
+    assert version == 1
+
+
 def test_append_comment_section_and_autogen_id(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0, "comments": {}})
