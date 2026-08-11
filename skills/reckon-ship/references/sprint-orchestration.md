@@ -266,7 +266,8 @@ Workers:
 - edit only exclusive paths;
 - never alter shared plan/index HTML;
 - never merge, rebase, stash, or push the primary branch;
-- stage explicit paths and make one or more coherent local commits;
+- stage explicit paths and make one or more coherent local commits, each
+  carrying a subject and a body (see contract rule 6);
 - return final commit SHA, `git show --stat`, tests, artifacts, and evidence
   inputs.
 
@@ -288,7 +289,9 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
    wildcards, git commit -a, or git commit -am.
 4. Do not edit Reckon plan/index state. Return outcome data to the orchestrator.
 5. Do not touch concurrent workers' paths. Request scope changes.
-6. Commit locally; do not merge or push the primary branch.
+6. Commit locally with a conventional subject AND a body stating what
+   changed and why — a bodiless commit fails the orchestrator's audit. Do
+   not merge or push the primary branch.
 7. Return the compact manifest from section 3 with commit SHA, git show --stat,
    concise test results and on-disk log paths, artifacts, and evidence inputs.
 8. WRITE that manifest to the MANIFEST PATH below, then reply with the path and
