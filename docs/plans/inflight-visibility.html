@@ -21,10 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="4">
-<meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29,9b483972468d977de2ff8a96f1d7be63802449f3">
 <meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/archive/inflight-visibility-landed.html">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-impl" content="0.38">
 </head>
 <body>
   <main class="plan-doc">
@@ -263,6 +263,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260812T183600" data-who="reckon-ship" data-when="2026-08-12T18:36:00Z">
     <div class="r-comment-body">watcher-surface landed — commit 1cfe5cad344681688e3fe6e10958a0582b4dce29; gate passed; measure: tests/test_build.py 12 passed / 0 failed in 1.9s with 1 drift test and 4 new assertions, and reckon build exit 0 copying 17 UI and 5 shared files with _ui/crew.jsx emitted in its index; a fifth glyph tab hash-routes as #crew and survives project navigation, and crew.jsx polls GET /crew every 3s rendering one semantic tbody row per run over ten fields. The node first audited rather than wrote, and found three independent SPA entry points each carrying their own JSX script list — reckon/serve.py, reckon/cli.py and docs/index.html — none of which loaded the new component; tests/test_build.py now asserts the three normalised JSX sets are identical, so the hand audit became a standing check. Recorded scope-changed: those three files were granted mid-flight. RESTART OUTSTANDING — serve.py and cli.py changed and are not hot, so the route and tab exist in the repository and not yet in the live instance. Artifacts docs/evidence/archive/inflight-visibility-landed.html#watcher-surface</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260812T185500" data-who="reckon-ship" data-when="2026-08-12T18:55:00Z">
+    <div class="r-comment-body">milestone-identifier-shape landed — commit 9b483972468d977de2ff8a96f1d7be63802449f3; gate passed; measure: tests/test_schema.py + tests/test_capability.py 1,102 passed / 0 failed with 4 new validation cases; strict write validation refuses milestone=— with an error naming the field while M2 and empty both remain accepted, the regenerated schema carries the constraint as ^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$ with an empty default, and the placeholder in docs/plans/agent-plan-authoring.html is cleared. Reads stay lenient by design so an existing document carrying the old placeholder remains readable rather than becoming unopenable the moment the constraint landed. Artifacts docs/evidence/archive/inflight-visibility-landed.html#milestone-shape</div>
 </div>
 </section>
 </main>

@@ -186,8 +186,41 @@
     survives promotion. Both figures in the table above were derived that way. The repair is
     therefore a third source ranked between the two that exist — event timestamp where a backend
     supplies one, else the stream's last-write time, else promotion wall-clock — each recorded
-    distinctly so no reader can mistake a proxy for a measurement. That work is carried as
-    <a href="/reckon/plans/effort-calibration#s8">§8</a> of the plan.</p>
+    distinctly so no reader can mistake a proxy for a measurement. Landed below.</p>
+  </section>
+
+  <section id="ranked-sources">
+    <h2>Three ranked completion sources, and proxies kept out of calibration</h2>
+
+    <p>Commit <code>e57b28b</code> — <code>reckon/crew.py</code>, <code>reckon/ledger.py</code>,
+    <code>tests/test_ledger.py</code>; 168 insertions, 42 deletions across 3 files. Gate
+    <strong>passed</strong>: 105 passed, 0 failed, 6.3 s, 5 new test functions plus one updated
+    fallback regression.</p>
+
+    <p>The vocabulary is three ranked automatic values — <code>terminal_event</code>,
+    <code>stream_mtime</code>, <code>promotion_time</code> — so a record always states which of them
+    produced its figure.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Event timestamp available</td><td>Ranks above filesystem time and is used</td></tr>
+        <tr><td>No event timestamp</td><td>Resolves the newest mtime across <code>stream.jsonl</code> and every <code>resume-*.jsonl</code></td></tr>
+        <tr><td>A resumed run</td><td>Either the original or a resume stream can win by being newest, so a run that blocked and was answered is not read as finishing when it first stopped</td></tr>
+        <tr><td>No surviving stream</td><td>Records <code>promotion_time</code> explicitly</td></tr>
+        <tr><td>Calibration input</td><td><code>effort_report</code> excludes <code>promotion_time</code> records and reports <code>excluded_unusable_completion</code> at both report and plan-row level</td></tr>
+      </tbody>
+    </table>
+
+    <p>The resumed-run case was found by measurement rather than by design: a resumed worker writes
+    <code>resume-1.jsonl</code> and never touches the original stream again, so a naive last-write
+    proxy read one of this sprint's own runs as finishing 11 minutes early — wrong in the opposite
+    direction from the promotion-time inflation, and therefore invisible to any check that only looked
+    for overstatement.</p>
+
+    <p>The exclusion is what makes the whole repair safe rather than merely better: a proxy duration
+    is still a proxy, so rather than being quietly averaged in, a <code>promotion_time</code> record is
+    withheld from calibration and counted where a reader can see how many there are.</p>
   </section>
 
 </main>

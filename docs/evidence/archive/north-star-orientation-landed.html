@@ -35,7 +35,7 @@
         <tr><td>Suite green</td><td>Full suite 1,731 passed / 0 failed at the integrated commit — <a href="#plan-label">§ plan label</a></td><td>pass</td></tr>
         <tr><td>Declared and rendered</td><td>—</td><td>open</td></tr>
         <tr><td>Plans point at them</td><td>—</td><td>open</td></tr>
-        <tr><td>Orientation rollup</td><td>—</td><td>open</td></tr>
+        <tr><td>Orientation rollup</td><td>Per-direction plans, completion and remaining effort, with unoriented at info and undeclared at error — <a href="#orientation-rollup">§ orientation rollup</a></td><td>pass</td></tr>
       </tbody>
     </table>
   </section>
@@ -102,6 +102,41 @@
     any change to the typed plan model invalidates the committed
     <code>docs/_shared/plan.schema.json</code>, so a node touching the model must own the generated
     file too or it cannot reach a green combined lane.</p>
+  </section>
+
+  <section id="orientation-rollup">
+    <h2>The dependency scan reports how much work points at each direction</h2>
+
+    <p>Commit <code>d4d1502</code> — <code>reckon/roadmap.py</code>,
+    <code>tests/test_roadmap.py</code>; 185 insertions, 1 deletion across 2 files. Gate
+    <strong>passed</strong>: 25 passed, 0 failed, 1.0 s, 4 new tests, ruff clean.</p>
+
+    <p><code>roadmap</code> gains a <code>north_stars</code> rollup — one declaration-ordered row per
+    direction carrying plans, completed, lifecycle completion percentage and remaining effort.
+    Declaration order rather than a computed ranking, so the reading matches how the project stated
+    its own priorities.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Rollup figures</td><td>Three declared directions produced 2 plans / 1 complete / 50.0% / 3.0 remaining, 1 / 0 / 0.0% / 1.0, and 0 / 0 / 0.0% / 0</td></tr>
+        <tr><td>A direction nothing points at</td><td>Still reported, with zeroes — an unclaimed direction is visible rather than absent</td></tr>
+        <tr><td>Unoriented live plan</td><td>Exactly one <code>unoriented-plan</code> finding at <strong>info</strong> severity</td></tr>
+        <tr><td>Draft and completed plans</td><td>Produce no orientation finding — only authorised, non-terminal work is asked to point somewhere</td></tr>
+        <tr><td>Undeclared id</td><td><code>undeclared-north-star</code> at <strong>error</strong> severity, naming both the slug and the id</td></tr>
+        <tr><td>Unmigrated project</td><td>Empty rollup and neither finding, even with labelled and unlabelled plans in inventory</td></tr>
+      </tbody>
+    </table>
+
+    <p>The two severities are deliberately different and both follow the locked decision. A plan that
+    points nowhere is a prompt to think, so it is information. A plan that points at something that
+    does not exist is a dangling reference, which is the same fault class as a dangling dependency
+    slug and carries the same error severity — so it is repaired before execution rather than
+    accumulating.</p>
+
+    <p>Reporting a zero-work direction matters more than it looks: a direction with no plans pointing
+    at it is exactly the case the project most needs to see, and a rollup that only listed directions
+    with work would silently hide it.</p>
   </section>
 
 </main>

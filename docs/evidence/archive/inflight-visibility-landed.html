@@ -36,7 +36,7 @@
         <tr><td>No second daemon</td><td>The surface is a tab in the existing SPA on the existing port; no new listener was added — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
         <tr><td>Portfolio scan usable</td><td>—</td><td>open</td></tr>
         <tr><td>Drift detectable</td><td>—</td><td>open</td></tr>
-        <tr><td>Placeholder rejected</td><td>—</td><td>open</td></tr>
+        <tr><td>Placeholder rejected</td><td>An em-dash milestone is refused on write and the live plan is cleared — <a href="#milestone-shape">§ milestone shape</a></td><td>pass</td></tr>
         <tr><td>Suite green</td><td>—</td><td>open</td></tr>
       </tbody>
     </table>
@@ -71,6 +71,25 @@
     the 3-second latency figure needs a real dispatch observed through a restarted server, and the
     navigability measure needs the rendered surface that the watcher-tab node supplies. Both are
     recorded as partial rather than passed.</p>
+  </section>
+
+  <section id="milestone-shape">
+    <h2>A milestone is an identifier or nothing</h2>
+
+    <p>Commit <code>9b48397</code> — <code>reckon/_schema.py</code>,
+    <code>docs/_shared/plan.schema.json</code>, <code>tests/test_schema.py</code>,
+    <code>docs/plans/agent-plan-authoring.html</code>; 54 insertions, 4 deletions across 4 files.
+    Gate <strong>passed</strong>: 1,102 passed, 0 failed, 4 new validation cases.</p>
+
+    <p>Strict write validation refuses <code>milestone="—"</code> with an error naming the field,
+    while <code>"M2"</code> and <code>""</code> both remain accepted. The published schema carries the
+    matching constraint as <code>^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$</code> with an empty default, and
+    the em-dash that had been sitting in <code>agent-plan-authoring</code> is cleared.</p>
+
+    <p>The split between strict and lenient is the part worth keeping: writes refuse the placeholder,
+    but <em>reads</em> stay lenient, so an existing document carrying one is still readable rather
+    than becoming unopenable the moment the constraint lands. A validation tightening that made old
+    documents unreadable would be a worse defect than the one it fixed.</p>
   </section>
 
   <section id="watcher-surface">

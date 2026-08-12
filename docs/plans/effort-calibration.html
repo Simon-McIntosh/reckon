@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="8">
-<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48">
+<meta name="plan-version" content="9">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.27">
+<meta name="plan-impl" content="0.36">
 </head>
 <body>
   <main class="plan-doc">
@@ -321,6 +321,9 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260812T183200" data-who="reckon-ship" data-when="2026-08-12T18:32:00Z">
     <div class="r-comment-body">diff-boundary-absence landed — commit 0a83bde067dd35851208b7a2421329400c060c48; gate passed; measure: tests/test_crew.py + tests/test_ledger.py 100 passed / 0 failed in 6.7s with 3 new tests; promoting with no commit argument stores an empty commits list and null changed_lines without running a diff or capturing git output, an unresolvable commit value is refused naming it while leaving the live pointer recoverable, and a declared write path outside the repository yields null rather than a diagnostic string. Five existing ledger cases were migrated off the deadbee placeholder onto resolvable revisions. Recorded scope-changed: tests/test_ledger.py was granted mid-flight, and promotion demonstrated the consequence — the scoped diff recorded 77 insertions over 3 files against a commit of 97 over 4, because it measures the declared fence rather than the widened one. Artifacts docs/evidence/archive/effort-calibration-landed.html#diff-boundary</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260812T185200" data-who="reckon-ship" data-when="2026-08-12T18:52:00Z">
+    <div class="r-comment-body">ranked-completion-sources landed — commit e57b28bbd3902d928d522f1fced17186e90b6ed1; gate passed; measure: tests/test_crew.py + tests/test_ledger.py 105 passed / 0 failed in 6.3s with 5 new test functions and one updated fallback regression; completion resolves through three ranked named sources terminal_event, stream_mtime and promotion_time, the mtime path takes the newest across stream.jsonl and every resume-*.jsonl so either the original or a resumed stream can win, an absent stream records promotion_time explicitly, and effort_report excludes promotion_time records from calibration while reporting excluded_unusable_completion at both report and plan-row level. The resumed-stream case came from measurement, not design: a resumed worker writes resume-1.jsonl and never touches the original again, so a naive proxy read one of this sprint's runs as finishing 11 minutes early — an understatement, invisible to any check looking only for inflation. Artifacts docs/evidence/archive/effort-calibration-landed.html#ranked-sources</div>
 </div>
 </section>
 </main>
