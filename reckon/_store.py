@@ -293,6 +293,15 @@ def _read_state(
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
     state = _plan_html.read_state(text)
+    if state.get("type", "plan") == "plan" and state.get("status") == "blocked":
+        warning = (
+            "status: persisted 'blocked' is legacy compatibility input; "
+            "effective status is derived from current blockers"
+        )
+        warnings = list(state.get("compatibility_warnings") or [])
+        if warning not in warnings:
+            warnings.append(warning)
+        state["compatibility_warnings"] = warnings
     version = int(state.get("version", 0) or 0)
     return state, version
 

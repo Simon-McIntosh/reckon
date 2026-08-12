@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 COMPLETED_STATUSES = frozenset({"shipped", "done"})
+LEGACY_BLOCKED_OPEN_STATUS = "active"
 TERMINAL_STATUSES = frozenset(
     {
         *COMPLETED_STATUSES,
@@ -58,12 +59,16 @@ def effective_status(
 ) -> str:
     """Project blockers over a plan's persisted workflow status.
 
-    Terminal states remain terminal. Open work reads as blocked while any
-    derived dependency or explicit blocker exists, then automatically returns
-    to its persisted workflow state when those blockers clear.
+    Terminal states remain terminal. Legacy persisted ``blocked`` uses
+    ``active`` as its open-state compatibility fallback. Open work reads as
+    blocked while any derived dependency or explicit blocker exists, then
+    automatically returns to its persisted workflow state when those blockers
+    clear.
     """
 
     status = str(workflow_status or "draft")
+    if status == "blocked":
+        status = LEGACY_BLOCKED_OPEN_STATUS
     if status in TERMINAL_STATUSES:
         return status
     return "blocked" if blocking else status
