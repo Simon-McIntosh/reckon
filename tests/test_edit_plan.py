@@ -20,6 +20,7 @@ import pytest
 
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
+from reckon.lifecycle import effective_status
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -1212,6 +1213,48 @@ def test_reject_invalid_status_enum(setup):
     data, ver = _store_module.read_plan(project, "plan-a")
     assert data["status"] == "active"
     assert ver == 0
+
+
+def test_reject_persisted_blocked_status(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "status", "value": "blocked"}],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "schema_validation"
+    assert any(
+        "status" in detail and "blocked" in detail for detail in result["details"]
+    )
+    data, version = _store_module.read_plan(project, "plan-a")
+    assert data["status"] == "active"
+    assert version == 0
+
+
+def test_read_legacy_persisted_blocked_status_with_diagnostic(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "blocked"})
+
+    result = mcp_module._read_plan(project, "plan-a")
+
+    assert result["data"]["status"] == "blocked"
+    assert result["version"] == 0
+    assert any(
+        "persisted 'blocked'" in warning
+        for warning in result["data"]["compatibility_warnings"]
+    )
+
+
+def test_effective_status_normalizes_legacy_blocked_before_projection():
+    assert effective_status("blocked", []) == "active"
+    assert effective_status("blocked", [{"kind": "explicit", "id": "hold"}]) == (
+        "blocked"
+    )
 
 
 def test_reject_blank_required_title(setup):

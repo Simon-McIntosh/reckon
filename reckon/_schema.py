@@ -100,6 +100,7 @@ STATUS_ENUM = [
     "historical",
     "reference",
 ]
+PERSISTABLE_STATUS_ENUM = [status for status in STATUS_ENUM if status != "blocked"]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
 TYPE_ENUM = ["plan", "research", "evidence"]
@@ -605,8 +606,15 @@ class PlanState(BaseModel):
         for fld in required:
             if not (getattr(self, fld) or "").strip():
                 errors.append(f"{fld}: required on write (empty)")
-        if self.type == "plan" and self.status and self.status not in STATUS_ENUM:
-            errors.append(f"status: {self.status!r} not in {STATUS_ENUM}")
+        if (
+            self.type == "plan"
+            and self.status
+            and self.status not in PERSISTABLE_STATUS_ENUM
+        ):
+            errors.append(
+                f"status: {self.status!r} not in persistable statuses "
+                f"{PERSISTABLE_STATUS_ENUM}"
+            )
         if self.type == "plan" and self.roi and self.roi not in ROI_ENUM:
             errors.append(f"roi: {self.roi!r} not in {ROI_ENUM}")
         if self.type == "plan" and self.effort and self.effort not in EFFORT_ENUM:
