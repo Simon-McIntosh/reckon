@@ -21,10 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="11">
 <meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29,9b483972468d977de2ff8a96f1d7be63802449f3,e2fb7886b10535ae66e93e15b01544d0e3288998,1d4543a511f277926028f948b54a8645cf156935,fb95f4f41b864663661608d263bc0c82842c538a,2f1bb2335b21171a78675f2d2c1ddd164c2b0e3f,3f7c6d3983e84bc6c3a77c24f5a4c9c78dd81abc">
 <meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/archive/inflight-visibility-landed.html">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -228,6 +228,49 @@
       </tbody>
     </table>
 
+    <h2 id="s6">§6 — Cleanup must consult live run state before removing a worktree</h2>
+
+    <p>Worktree cleanup preflights for tracked and untracked changes and for reachability from the
+    integrated branch, and refuses on either. Both checks protect committed or uncommitted
+    <em>work</em>. Neither asks whether a worker is still <em>running</em> there.</p>
+
+    <p>So a node that has produced no commit yet — a read-only analysis, a verification run, anything
+    early in its turn — presents as a clean worktree whose HEAD is already an ancestor of the primary
+    branch, and cleanup removes it out from under a live process. Measured here: a session-wide cleanup
+    removed five worktrees, one of which belonged to a run still in flight. The worker had read its
+    ledger, was partway through its analysis, found its own working directory gone, and correctly
+    refused to continue elsewhere rather than silently completing outside its fence. Its manifest
+    reported the anomaly precisely; nothing was corrupted, and the node was redispatched. But the
+    failure mode is a lost node with no signal beyond the worker noticing, and a worker that had
+    <em>not</em> noticed would have written results from an unfenced location.</p>
+
+    <p>The live pointers already hold everything needed to prevent this: each names its worktree, and
+    this plan's own work made that set readable in one call. Cleanup should consult it and refuse a
+    path that a live run still claims, in the same visible-blocker style it already uses for a dirty
+    tree. That is strictly better than asking the caller to remember, because the caller who forgets is
+    an orchestrator mid-wave with several sessions of state in flight.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A claimed worktree is refused</td>
+          <td>Cleanup refuses to remove a worktree named by a live run pointer, reporting the run id,
+          and removes it once that pointer is gone. Asserted by test.</td>
+        </tr>
+        <tr>
+          <td>The refusal is visible, not silent</td>
+          <td>The refusal appears in the command's own result alongside any dirty-tree refusals rather
+          than as a skipped path. Asserted by test.</td>
+        </tr>
+        <tr>
+          <td>A stale pointer does not block forever</td>
+          <td>A pointer whose process is gone and whose classification is abandoned does not prevent
+          cleanup, so a crashed run cannot strand its worktree permanently. Asserted by test.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="watcher-host" data-choice="fold-into-reckon-server" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -281,6 +324,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260812T190500" data-who="reckon-ship" data-when="2026-08-12T19:05:00Z">
     <div class="r-comment-body">recovery-classification landed — commit e2fb7886b10535ae66e93e15b01544d0e3288998; gate passed; measure: tests/test_crew.py 72 passed / 0 failed in 4.5s with 6 new tests, ruff clean; the vocabulary grew from three classes to five — running, completed_unpromoted, blocked, failed, abandoned — and status complete is now the only manifest status producing promote advice. A terminal stored phase with no manifest classifies abandoned with a next action naming stderr.log; blocked and failed manifests classify distinctly and never produce promotion advice; the MCP crew live view and CLI crew recover returned identical classification, manifest_status and next_action for the same pointer; and direct, MCP and recovery paths all classify a terminal run with no manifest and no commits as abandoned. This closes the hazard that produced the section: the old advice would have written a success with a nonexistent commit into the ledger that calibration reads as ground truth. Artifacts docs/evidence/archive/inflight-visibility-landed.html#recovery-classification</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260812T210500" data-who="reckon-ship" data-when="2026-08-12T21:05:00Z">
+    <div class="r-comment-body">Found by causing it. A session-wide worktree cleanup removed five trees, one belonging to a run still in flight: cleanup preflights for dirty state and for reachability from the integrated branch, and a node that has produced no commit yet passes both, so a live read-only analysis presents as a clean removable tree. The worker read its ledger at c840cdb with 75 records, was partway through its analysis, found its working directory gone, and correctly refused to continue outside its fence rather than silently completing elsewhere — its manifest reported the anomaly precisely and the node was redispatched under a separate session id. Nothing was corrupted, but a worker that had not noticed would have written results from an unfenced location. The live pointers already name their worktrees and this plan made that set readable in one call, so cleanup should consult it and refuse a claimed path in the same visible-blocker style it uses for a dirty tree. Recorded as §6 with three measures including one that stops a stale pointer stranding a worktree forever. Denominator grew from 9 nodes to 10, so impl reads 9/10.</div>
 </div>
 </section>
 </main>
