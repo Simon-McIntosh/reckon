@@ -10,8 +10,8 @@ reckon server reads and writes directly. There is NO embedded JSON blob.
     <section data-reckon="decisions">, with visible <button class="r-opt"
     data-value=…> options, a data-choice attribute (the locked answer, an
     option value OR free text), and a free-form .r-dec-rat rationale.
-  - Followups / questions / comments are matching <section data-reckon=…>
-    blocks of semantic elements.
+  - Gates / followups / questions / comments are matching
+    <section data-reckon=…> blocks of semantic elements.
 
 `read_state` parses this into the canonical dict; `write_state` regenerates
 the reckon-owned sections + meta from the dict, leaving authored prose
@@ -102,7 +102,7 @@ _DEFAULTS = {
 
 # reckon-owned section ids — regenerated on write, stripped by the SPA before
 # rendering the authored prose (it renders interactive widgets instead).
-SECTION_IDS = ("decisions", "followups", "questions", "research", "comments")
+SECTION_IDS = ("gates", "decisions", "followups", "questions", "research", "comments")
 
 _CAPABILITY_REQUIREMENTS = (
     "reasoning",
@@ -247,6 +247,39 @@ def read_state(html_text: str) -> dict:
     if title_tag and not st.get("title"):
         st["title"] = title_tag.get_text(strip=True).split("|")[0].strip()
 
+    # Evidence gates. ``passed`` is derived from the recorded verdict so the
+    # semantic HTML never carries two values that can disagree.
+    gates_section = soup.select_one('section[data-reckon="gates"]')
+    if gates_section is not None:
+        gates = []
+        for gate in gates_section.select(".r-gate[data-id]"):
+            verdict = (gate.get("data-verdict") or "").strip()
+            evidence_link = gate.select_one(".r-gate-evidence")
+            gates.append(
+                {
+                    "id": (gate.get("data-id") or "").strip(),
+                    "section": (gate.get("data-section") or "").strip(),
+                    "gated_sections": [
+                        section.strip()
+                        for section in (gate.get("data-gated-sections") or "").split(
+                            ","
+                        )
+                        if section.strip()
+                    ],
+                    "status": (gate.get("data-status") or "").strip(),
+                    "measure": _txt(gate.select_one(".r-gate-measure")),
+                    "required_evidence": _inner_html(
+                        gate.select_one(".r-gate-required-evidence")
+                    ),
+                    "verdict": verdict,
+                    "evidence": (
+                        (evidence_link.get("href") or "") if evidence_link else ""
+                    ),
+                    "passed": verdict == "passed",
+                }
+            )
+        st["gates"] = gates
+
     # Decisions
     decisions: dict[str, dict] = {}
     for dec in soup.select('section[data-reckon="decisions"] .r-dec[data-key]'):
@@ -370,6 +403,36 @@ def read_state(html_text: str) -> dict:
 
 
 # ── Render ───────────────────────────────────────────────────────────────--
+
+
+def _render_gates(gates: list) -> str:
+    if not gates or not isinstance(gates, list):
+        return ""
+    items = []
+    for gate in gates:
+        gate = gate or {}
+        gated_sections = ",".join(gate.get("gated_sections") or [])
+        evidence = (
+            f'<a class="r-gate-evidence" href="{_esc(gate.get("evidence"))}">Evidence</a>\n'
+            if gate.get("evidence")
+            else ""
+        )
+        items.append(
+            f'<div class="r-gate" data-id="{_esc(gate.get("id"))}"'
+            f' data-section="{_esc(gate.get("section"))}"'
+            f' data-gated-sections="{_esc(gated_sections)}"'
+            f' data-status="{_esc(gate.get("status"))}"'
+            f' data-verdict="{_esc(gate.get("verdict"))}">\n'
+            f'    <h4 class="r-gate-measure">{_esc(gate.get("measure"))}</h4>\n'
+            f'    <p class="r-gate-required-evidence">{_body(gate.get("required_evidence"))}</p>\n'
+            f"    {evidence}</div>"
+        )
+    return (
+        '<section data-reckon="gates" id="gates" class="r-gates">\n'
+        '<h2><span class="sec">§</span> Evidence gates</h2>\n'
+        + "\n".join(items)
+        + "\n</section>"
+    )
 
 
 def _render_decisions(decisions: dict) -> str:
@@ -524,6 +587,7 @@ def _render_comments(comments: dict) -> str:
 
 
 _RENDERERS = {
+    "gates": _render_gates,
     "decisions": _render_decisions,
     "followups": _render_followups,
     "questions": _render_questions,
