@@ -172,6 +172,21 @@ def test_spa_entry_points_load_the_same_jsx_files(built_source_site):
     assert built == checked_in
 
 
+def test_plan_and_sprint_views_surface_only_matching_live_work():
+    plan = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
+    sprint = (REPO_ROOT / "docs" / "ui" / "sprint.jsx").read_text()
+
+    assert 'aria-label="Work in flight"' in plan
+    assert "if (!runs.length) return null" in plan
+    assert "payload.runs.filter(run => run.plan === slug)" in plan
+    assert "{runs.map(run => (" in plan
+    assert 'run.member || "unassigned"' in plan
+    assert 'run.section || "whole plan"' in plan
+    assert 'className="r-inflight-badge"' in sprint
+    assert "const itemRuns = runsByPlan[p.slug] || []" in sprint
+    assert "{itemRuns.length > 0 && (" in sprint
+
+
 def test_build_bakes_discovery_and_preserves_authored_project_state(
     built_source_site,
 ):

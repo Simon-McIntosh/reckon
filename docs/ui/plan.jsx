@@ -117,6 +117,38 @@ function GateTable({ gates }) {
   );
 }
 
+function PlanInFlightBand({ runs }) {
+  if (!runs.length) return null;
+  return (
+    <aside
+      className="r-inflight-band"
+      role="status"
+      aria-label="Work in flight"
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: 12,
+        marginBottom: 18,
+        padding: "9px 12px",
+        borderLeft: "3px solid var(--accent)",
+        background: "var(--accent-2)",
+        fontSize: 12,
+      }}
+    >
+      <strong style={{ whiteSpace: "nowrap" }}>In flight</strong>
+      <ul style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", margin: 0, paddingLeft: 18 }}>
+        {runs.map(run => (
+          <li key={run.run_id}>
+            <code>{run.run_id || "run"}</code>
+            {" · "}{run.member || "unassigned"}
+            {" · "}{run.section || "whole plan"}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
 function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
@@ -127,6 +159,29 @@ function Plan({ slug, onNav }) {
   const isResearch = PG.type === "research";
   const isEvidence = PG.type === "evidence";
   const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
+  const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+  const [liveRuns, setLiveRuns] = useState([]);
+
+  useEffect(() => {
+    if (!project || isResearch || isEvidence) { setLiveRuns([]); return; }
+    let active = true;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/crew/${encodeURIComponent(project)}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (active && Array.isArray(payload.runs)) {
+          setLiveRuns(payload.runs.filter(run => run.plan === slug));
+        }
+      } catch (_) { /* The plan remains readable when live state is unavailable. */ }
+    };
+    poll();
+    const timer = window.setInterval(poll, 3000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [project, slug, isResearch, isEvidence]);
 
   const stored = planLoad(slug) || {};
   // The inventory is lightweight; full per-doc state (decisions, followups) is
@@ -145,7 +200,6 @@ function Plan({ slug, onNav }) {
   useEffect(() => {
     setHtmlReady(false);
     setPlanHtml(null);
-    const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
     if (!project) { setHtmlReady(true); return; }
 
     // Use plan's href (may include subdir e.g. "curated/slug") if available
@@ -183,13 +237,12 @@ function Plan({ slug, onNav }) {
         setHtmlReady(true);
       })
       .catch(() => setHtmlReady(true));
-  }, [slug]);
+  }, [project, slug]);
 
   // ── Fetch full doc state (decisions, followups) ─────────────────────────
   useEffect(() => {
     setFullState(null);
     setDecs([]);
-    const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
     if (!project) return;
     const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[PG.type || "plan"];
     const statePath = `${stateRoot}/${PG.slug}`;
@@ -218,7 +271,7 @@ function Plan({ slug, onNav }) {
         }));
       })
       .catch(() => {});
-  }, [slug]);
+  }, [project, slug, PG.type]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
@@ -366,6 +419,7 @@ function Plan({ slug, onNav }) {
   return (
     <div className="r-page">
       <article className="r-reading" ref={articleRef}>
+          <PlanInFlightBand runs={liveRuns} />
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
