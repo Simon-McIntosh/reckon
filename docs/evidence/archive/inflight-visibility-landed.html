@@ -32,7 +32,7 @@
         <tr><td>Bounded reads</td><td>Exactly one 65,536-byte read observed on an oversized stream — <a href="#crew-routes">§ crew routes</a></td><td>pass</td></tr>
         <tr><td>Live run visible</td><td>Phase classification proven on fixtures; the 3-second latency measure against a real dispatch is still open — <a href="#crew-routes">§ crew routes</a></td><td>partial</td></tr>
         <tr><td>Navigable</td><td>The crew tab renders each run with linked plan and section; the screenshot figure and the in-flight band remain open — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
-        <tr><td>Visible to agents too</td><td>—</td><td>open</td></tr>
+        <tr><td>Visible to agents too</td><td>One pointer produces identical <code>in_flight</code> data on both the plan read and the roadmap row — <a href="#inflight-read-tools">§ in-flight read tools</a></td><td>pass</td></tr>
         <tr><td>No second daemon</td><td>The surface is a tab in the existing SPA on the existing port; no new listener was added — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
         <tr><td>Portfolio scan usable</td><td>2,873 bytes against a 180,224-byte baseline — a 98.4% reduction with all 12 rows intact — <a href="#portfolio-view">§ portfolio view</a></td><td>pass</td></tr>
         <tr><td>Drift detectable</td><td>Reported on a fixture and repaired behind a flag; two live findings reported without modification — <a href="#skill-drift">§ skill drift</a></td><td>partial</td></tr>
@@ -71,6 +71,36 @@
     the 3-second latency figure needs a real dispatch observed through a restarted server, and the
     navigability measure needs the rendered surface that the watcher-tab node supplies. Both are
     recorded as partial rather than passed.</p>
+  </section>
+
+  <section id="inflight-read-tools">
+    <h2>The tools agents already call now say a node is taken</h2>
+
+    <p>Commit <code>2f1bb23</code> — <code>reckon/mcp_views.py</code>,
+    <code>reckon/roadmap.py</code>, <code>tests/test_mcp_views.py</code>; 233 insertions, 20 deletions
+    across 3 files. Gate <strong>passed</strong>: 53 passed, 0 failed, 1.0 s, 6 new test functions.</p>
+
+    <p>Typed plan reads derive an optional <code>in_flight</code> list from live pointers across the
+    summary, detail, history and raw views, each record carrying <code>run_id</code>,
+    <code>member</code>, <code>section</code> and <code>started_at</code>. Roadmap pending-work rows use
+    the <em>same shared projection</em>, so one pointer produces identical data on both surfaces rather
+    than two implementations that can disagree.</p>
+
+    <table>
+      <thead><tr><th>Property</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Both surfaces agree</td><td>One pointer, identical data on the plan read and the roadmap row</td></tr>
+        <tr><td>Silent when idle</td><td>Unmatched plans, non-plan resources, archived plans and roadmap rows without pointers all omit the key entirely</td></tr>
+        <tr><td>Read-only</td><td>The path calls <code>crew.list_live</code> and neither persists nor mutates state</td></tr>
+        <tr><td>Discoverable</td><td>The response schema advertises the optional projection</td></tr>
+        <tr><td>Non-breaking</td><td>The legacy untyped read shape is unchanged</td></tr>
+      </tbody>
+    </table>
+
+    <p>This is the cheapest available guard against double-dispatch: a second orchestrator — or a
+    worker reading its own plan — sees the node is taken without needing to know the crew tool exists.
+    For a node holding write scope, a duplicate dispatch risks a conflicting second commit, which is
+    the concrete failure this closes.</p>
   </section>
 
   <section id="portfolio-view">

@@ -35,7 +35,7 @@
         <tr><td>Loops are separable</td><td>2.0× agent moves only its factor; 2.0× plan moves only its estimate — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
         <tr><td>Scope change excluded</td><td>A 200 h scope-changed outlier and a 50 h proxy-timed one are both withheld — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
         <tr><td>Cold start terminates</td><td>Eight noisy observations converge to 3.009 h and factor 2.003 — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
-        <tr><td>Horizon drives splitting</td><td>—</td><td>open</td></tr>
+        <tr><td>Horizon drives splitting</td><td>4.0 ÷ 1.4 = 2.857 h refused above a 2.5 h horizon with a 3.5 h split target; 1.5 ÷ 0.9 = 1.667 h dispatched — <a href="#competence-horizon">§ competence horizon</a></td><td>pass</td></tr>
         <tr><td>Cache is rebuildable</td><td>Delete and rebuild reproduced byte-equivalent figures; nothing is authored — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>—</td><td>open</td></tr>
@@ -262,6 +262,40 @@
     cannot be discharged on historical data and must wait for records the automatic path produces. A
     negative result on sample size is a legitimate outcome; fitting the comparison to the data that
     exists would not be.</p>
+  </section>
+
+  <section id="competence-horizon">
+    <h2>A measurement decides how small to split, and its absence decides nothing</h2>
+
+    <p>Commit <code>98b3a03</code> — <code>reckon/crew.py</code>, <code>tests/test_crew.py</code>;
+    283 insertions, 8 deletions across 2 files. Gate <strong>passed</strong>: 76 passed, 0 failed,
+    4 new tests, ruff clean and formatted.</p>
+
+    <p>Dispatch reads the node's neutral worker-hours from the canonical plan — explicit or
+    legacy-mapped — divides by the measured mean speed factor for the <em>exact</em> agent
+    configuration recorded on run records, and compares the result against that configuration's
+    measured horizon. All four paths were exercised through real dispatch calls:</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Arithmetic</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Above the horizon</td><td>4.0 ÷ 1.4 = 2.857 h vs 2.5 h</td><td>Refused before worktree creation, with a 3.5 worker-hour split target</td></tr>
+        <tr><td>Below the horizon</td><td>1.5 ÷ 0.9 = 1.667 h vs 2.5 h</td><td>Dispatched and persisted with <code>allowed=true</code></td></tr>
+        <tr><td>Empty capabilities cache</td><td>no figure</td><td><code>allowed=true</code>, <code>reason=no-measured-horizon</code></td></tr>
+        <tr><td>Null horizon for the configuration</td><td>no figure</td><td><code>allowed=true</code>, <code>reason=no-measured-horizon</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The last two rows are the ones that matter most right now, and they were specified deliberately
+    rather than discovered: this project's capabilities cache currently yields <em>zero</em>
+    configurations, so a horizon check that treated a missing measurement as a small one would refuse
+    every node in the fleet. Absence is explicitly non-blocking, in the same spirit as an unknown
+    budget signal never holding a wave.</p>
+
+    <p>Two ordering details worth keeping: the refusal raises before the budget check and before any
+    worktree exists, so a refused node costs nothing and leaves nothing to unwind; and the allowance
+    verdict is recorded on successful runs, so a later reader can see the check ran rather than
+    inferring it from the absence of a refusal.</p>
   </section>
 
   <section id="stream-carries-no-timestamps">
