@@ -8,8 +8,8 @@ using the same `version` optimistic-concurrency field.  The docs-server owns
 the browser UI; this MCP server owns the agent IO path.  They coexist safely
 because both use atomic .tmp rename.
 
-For "index" and "project" slugs the old JSON-envelope backing (_version field)
-is used unchanged — sprints/milestones live there.
+For "index" and "project" slugs, the JSON-envelope backing (_version field)
+remains canonical — sprints/milestones live there.
 
 Usage (stdio, the Claude Code default):
     reckon mcp
@@ -844,6 +844,8 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "dec_open": int(item.get("dec_open", 0) or 0),
                 "blockers": int(item.get("blockers", 0) or 0),
                 "blocking": list(item.get("blocking") or []),
+                "gates": list(item.get("gates") or []),
+                "followups": list(item.get("followups") or []),
                 "depends_on": list(item.get("depends_on") or []),
                 "blocks": list(item.get("blocks") or []),
             }
@@ -2403,9 +2405,22 @@ def _roadmap(
             if project_rows and isinstance(project_rows[0], dict)
             else {}
         )
+        inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        followups_by_plan: dict[str, list[dict[str, Any]]] = {}
+        for followup in list_followups_across(
+            project,
+            unresolved_only=False,
+            root=checkout_path,
+        ):
+            plan_slug = str(followup.get("plan_slug") or "")
+            if plan_slug:
+                followups_by_plan.setdefault(plan_slug, []).append(followup)
+        for item in inventory:
+            if item.get("type", "plan") == "plan":
+                item["followups"] = followups_by_plan.get(str(item.get("slug")), [])
         return build_roadmap(
             project,
-            [_inventory_row(item) for item in discovered.get("inventory", [])],
+            inventory,
             list(discovered.get("sprints", [])),
             active_sprint_id=(
                 discovered.get("active_sprint_id") or index_data.get("active_sprint_id")

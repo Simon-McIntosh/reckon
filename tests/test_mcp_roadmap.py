@@ -57,6 +57,19 @@ def _write_plan(
                 "title": slug.title(),
                 "status": status,
                 "depends_on": depends_on or [],
+                "gates": [
+                    {
+                        "id": "verified-input",
+                        "measure": "Required evidence is present",
+                        "verdict": "passed",
+                    }
+                ],
+                "followups": [
+                    {
+                        "id": "next-action",
+                        "prompt": f"/reckon-ship {slug}",
+                    }
+                ],
                 "version": 0,
             },
         ),
@@ -74,6 +87,11 @@ def test_mcp_roadmap_scans_mounted_project(mounted_project) -> None:
 
     assert result["project"] == project
     assert [item["slug"] for item in result["ready_now"]] == ["foundation"]
+    foundation = next(
+        item for item in result["pending_work"] if item["slug"] == "foundation"
+    )
+    assert foundation["dispatchable"] is True
+    assert "open_followup" not in foundation["missing_dispatchability"]
     assert result["critical_path"]["plans"] == ["foundation", "consumer"]
 
 
