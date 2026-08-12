@@ -8,8 +8,10 @@ the whole chain from a worker manifest to a sprint rollup.
 
 from __future__ import annotations
 
+import http.client
 import importlib
 import json
+import threading
 from pathlib import Path
 
 import pytest
@@ -294,6 +296,113 @@ def test_an_index_write_is_never_a_plan_landing() -> None:
         working, [{"op": "set", "path": "sprints.S1.status", "value": "done"}], True
     )
     assert working["sprints"][0]["status"] == "done"
+
+
+def test_mid_run_resolve_agrees_across_ops_and_http_patch(setup) -> None:
+    docs_dir, _, project = setup
+    initial = {
+        "version": 0,
+        "status": "active",
+        "impl": 0.5,
+        "followups": [_followup("driver")],
+    }
+    _plan_html(docs_dir, "ops-plan", initial)
+    _plan_html(docs_dir, "http-plan", initial)
+
+    resolve = {
+        "op": "resolve",
+        "target": "followups",
+        "id": "driver",
+        "by": "reckon-ship",
+        "outcome": "the dispatched section landed with 4 tests passing",
+    }
+    ops_result = mcp_module._edit_plan(project, "ops-plan", [resolve], 0)
+
+    import reckon.serve as serve_module
+
+    serve_module._DISC_CACHE.clear()
+    server = serve_module.ThreadingHTTPServer(("127.0.0.1", 0), serve_module.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+    resolved = _followup("driver", status="resolved")
+    resolved["outcome"] = resolve["outcome"]
+    try:
+        connection.request(
+            "POST",
+            f"/plan/{project}/http-plan",
+            body=json.dumps({"followups": [resolved]}),
+            headers={"Content-Type": "application/json", "If-Match": "0"},
+        )
+        response = connection.getresponse()
+        response.read()
+        http_ok = response.status == 200
+    finally:
+        connection.close()
+        server.shutdown()
+
+    assert [ops_result["ok"], http_ok] == [True, True]
+    for slug in ("ops-plan", "http-plan"):
+        state, _ = _store_module.read_plan(project, slug)
+        assert [item for item in state["followups"] if item["status"] == "open"] == []
+
+
+def test_active_incomplete_plan_carries_its_own_continuation() -> None:
+    state = {"type": "plan", "status": "active", "impl": 0.75, "followups": []}
+    assert _store_module.continuation_present(state) is True
+
+
+def test_full_implementation_does_not_carry_its_own_continuation(setup) -> None:
+    docs_dir, _, project = setup
+    _plan_html(
+        docs_dir,
+        "plan-a",
+        {"version": 0, "status": "active", "impl": 1.0, "followups": [_followup("f1")]},
+    )
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "resolve",
+                "target": "followups",
+                "id": "f1",
+                "by": "reckon-ship",
+                "outcome": "the final section landed with 4 tests passing",
+            }
+        ],
+        0,
+    )
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert result["detail"] == _store_module.CONTINUATION_REQUIRED
+
+
+@pytest.mark.parametrize("status", ["shipped", "done"])
+def test_new_terminal_status_without_continuation_is_refused(status: str) -> None:
+    state = {"type": "plan", "status": "active", "impl": 0.5, "followups": []}
+    with pytest.raises(_store_module.OpError, match="plan landing leaves"):
+        _store_module.apply_ops(
+            state,
+            [{"op": "set", "path": "status", "value": status}],
+            False,
+        )
+
+
+def test_historical_terminal_plan_without_followup_stays_writable(setup) -> None:
+    docs_dir, _, project = setup
+    _plan_html(
+        docs_dir,
+        "plan-a",
+        {"version": 0, "status": "shipped", "impl": 1.0, "followups": []},
+    )
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "summary", "value": "corrected history"}],
+        0,
+    )
+    assert result["ok"] is True
 
 
 # ── Sprint altitude ─────────────────────────────────────────────────────────
