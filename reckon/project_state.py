@@ -25,7 +25,7 @@ import os
 import re
 import shutil
 import tempfile
-from contextlib import ExitStack, contextmanager, nullcontext
+from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -39,6 +39,7 @@ from reckon._schema import (
     Sprint,
     TimelineEntry,
 )
+from reckon.lifecycle import COMPLETED_STATUSES
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 SNAPSHOT_ROOT = Path(".reckon/snapshots/project-state")
@@ -514,19 +515,6 @@ def _validate_runtime_references(
                     f"sprint item {slug!r} references missing milestone "
                     f"{milestone_id!r}"
                 )
-        if data.get("status") == "active":
-            active_others = []
-            for sprint_id in _distributed_ids(docs_dir, "sprints") - {resource_id}:
-                sprint, _ = _read_resource_unchecked(
-                    docs_dir, project, "sprint", sprint_id
-                )
-                if sprint.get("status") == "active":
-                    active_others.append(sprint_id)
-            if active_others:
-                raise ValueError(
-                    "activating this sprint would create multiple active sprints: "
-                    + ", ".join(sorted(active_others))
-                )
     elif resource_type == "milestone":
         milestone_ids = _distributed_ids(docs_dir, "milestones") | {resource_id}
         missing = set(data.get("depends_on") or []) - milestone_ids
@@ -546,7 +534,6 @@ def write_resource(
     expected_version: int,
     *,
     create: bool = False,
-    before_invariant_lock: Callable[[], None] | None = None,
 ) -> int:
     """Version-check and atomically write one distributed resource."""
     mode = project_state_mode(docs_dir)
@@ -564,7 +551,6 @@ def write_resource(
             data,
             expected_version,
             create=create,
-            before_invariant_lock=before_invariant_lock,
         )
 
 
@@ -577,7 +563,6 @@ def _write_resource_unlocked(
     expected_version: int,
     *,
     create: bool = False,
-    before_invariant_lock: Callable[[], None] | None = None,
 ) -> int:
     """Write while the caller holds the corresponding resource lock."""
     path = resource_path(docs_dir, project, resource_type, resource_id)
@@ -602,60 +587,46 @@ def _write_resource_unlocked(
             "version": current_version + 1,
         },
     )
-    activates_sprint = (
-        resource_type == "sprint"
-        and current.get("status") != "active"
-        and payload.get("status") == "active"
-    )
-    if activates_sprint and before_invariant_lock:
-        before_invariant_lock()
-    lock = (
-        _resource_lock(docs_dir, project, "invariant", "active-sprint")
-        if activates_sprint
-        else nullcontext()
-    )
-    with lock:
-        if resource_type == "timeline" and current:
-            previous_events = list(current.get("events", []))
-            next_events = list(payload.get("events", []))
-            if (
-                len(next_events) < len(previous_events)
-                or next_events[: len(previous_events)] != previous_events
-            ):
-                raise ValueError(
-                    "timeline is append-only; existing events must remain "
-                    "an exact prefix"
-                )
-        _validate_runtime_references(
-            docs_dir,
-            project,
-            resource_type,
-            resource_id,
-            payload,
-        )
-        path.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp_name = tempfile.mkstemp(
-            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
-        )
-        os.close(fd)
-        tmp = Path(tmp_name)
-        if resource_type == "project":
-            envelope = {
-                "updated": datetime.now(UTC).isoformat(timespec="seconds"),
-                "project": project,
-                "doc": "project",
-                "data": payload,
-            }
-            tmp.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-        else:
-            tmp.write_text(
-                _render_resource(project, resource_type, resource_id, payload),
-                encoding="utf-8",
+    if resource_type == "timeline" and current:
+        previous_events = list(current.get("events", []))
+        next_events = list(payload.get("events", []))
+        if (
+            len(next_events) < len(previous_events)
+            or next_events[: len(previous_events)] != previous_events
+        ):
+            raise ValueError(
+                "timeline is append-only; existing events must remain an exact prefix"
             )
-        try:
-            _durable_replace(tmp, path)
-        finally:
-            tmp.unlink(missing_ok=True)
+    _validate_runtime_references(
+        docs_dir,
+        project,
+        resource_type,
+        resource_id,
+        payload,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    os.close(fd)
+    tmp = Path(tmp_name)
+    if resource_type == "project":
+        envelope = {
+            "updated": datetime.now(UTC).isoformat(timespec="seconds"),
+            "project": project,
+            "doc": "project",
+            "data": payload,
+        }
+        tmp.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+    else:
+        tmp.write_text(
+            _render_resource(project, resource_type, resource_id, payload),
+            encoding="utf-8",
+        )
+    try:
+        _durable_replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
     return current_version + 1
 
 
@@ -751,13 +722,6 @@ def _validate_migration_payloads(
         for (resource_type, _), data in validated.items()
         if resource_type == "sprint"
     ]
-    derived_active = _derive_active_sprint(sprints)
-    legacy_active = legacy.get("active_sprint_id") or None
-    if legacy_active != derived_active:
-        raise ProjectStateError(
-            "legacy active_sprint_id does not match the unique active sprint: "
-            f"{legacy_active!r} != {derived_active!r}"
-        )
     plan_slugs = _live_plan_slugs(docs_dir, project)
     blocker_ids = {
         resource_id
@@ -818,13 +782,14 @@ def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any
     return result
 
 
-def _derive_active_sprint(sprints: list[dict[str, Any]]) -> str | None:
-    active = [str(item.get("id")) for item in sprints if item.get("status") == "active"]
-    if len(active) > 1:
-        raise ProjectStateError(
-            "multiple active sprints violate derive-unique-active: " + ", ".join(active)
-        )
-    return active[0] if active else None
+def _derive_default_sprint_focus(sprints: list[dict[str, Any]]) -> str | None:
+    """Return the first sprint in composed order with unfinished plan work."""
+    for sprint in sprints:
+        for item in sprint.get("items", []):
+            status = item.get("status") if isinstance(item, dict) else None
+            if str(status or "") not in COMPLETED_STATUSES:
+                return str(sprint.get("id") or "") or None
+    return None
 
 
 def _derive_blocker_counts(
@@ -922,10 +887,10 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     milestones.sort(key=lambda item: str(item.get("id", "")))
     blockers.sort(key=lambda item: str(item.get("id", "")))
     hydrated_sprints = _hydrate_items(docs_dir, project, sprints)
-    active_id = _derive_active_sprint(hydrated_sprints)
+    focus_id = _derive_default_sprint_focus(hydrated_sprints)
     return {
         "_version": 0,
-        "active_sprint_id": active_id,
+        "active_sprint_id": focus_id,
         "projects": [project_manifest],
         "sprints": hydrated_sprints,
         "milestones": milestones,
@@ -937,19 +902,20 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
 
 
 def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
-    """Report distributed resource and unique-active invariant violations."""
+    """Report invalid distributed project resources."""
     if project_state_mode(docs_dir).format != "distributed":
         return []
     try:
         compose_project_state(docs_dir, project)
     except ProjectStateError as exc:
         message = str(exc)
-        code = (
-            "multiple-active-sprints"
-            if message.startswith("multiple active sprints")
-            else "distributed-project-state-invalid"
-        )
-        return [{"code": code, "severity": "error", "message": message}]
+        return [
+            {
+                "code": "distributed-project-state-invalid",
+                "severity": "error",
+                "message": message,
+            }
+        ]
     return []
 
 
@@ -958,7 +924,6 @@ def _parity_projection(
 ) -> dict[str, Any]:
     """Normalise old/new views to durable, non-derived project state."""
     result = {
-        "active_sprint_id": data.get("active_sprint_id") or None,
         "project": {},
         "sprints": [],
         "milestones": [],
