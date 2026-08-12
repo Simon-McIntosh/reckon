@@ -95,6 +95,28 @@ function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
   );
 }
 
+function GateTable({ gates }) {
+  if (!gates || gates.length === 0) return null;
+  return (
+    <section className="r-gates" aria-labelledby="gate-state-heading">
+      <h2 id="gate-state-heading"><span className="sec">§</span>Evidence gates</h2>
+      <table className="r-gates-table">
+        <thead><tr><th>Measure</th><th>Status</th><th>Verdict</th><th>Evidence</th></tr></thead>
+        <tbody>
+          {gates.map(gate => (
+            <tr key={gate.id} className={gate.passed ? "passed" : "closed"}>
+              <td>{gate.measure || gate.id}</td>
+              <td>{gate.status || "open"}</td>
+              <td>{gate.verdict || "pending"}</td>
+              <td>{gate.evidence ? <a href={gate.evidence}>Evidence</a> : "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 function Plan({ slug, onNav }) {
   const M = window.STATE;
   if (!M) return null;
@@ -145,6 +167,9 @@ function Plan({ slug, onNav }) {
         // questions / comments otherwise stay as authored HTML (passthrough is
         // their single render source — see the suppressed React panels below).
         article.querySelector('section[data-reckon="decisions"]')?.remove();
+        // Gates are rendered from parsed state so status and verdict attributes
+        // become visible text rather than remaining hidden HTML metadata.
+        article.querySelector('section[data-reckon="gates"]')?.remove();
         // Decision-anchored comments are the one exception: they are rendered by
         // the interactive ActionableCommentList under the decision widgets (with
         // Edit/Delete). Strip them from the passthrough comments section so they
@@ -411,6 +436,8 @@ function Plan({ slug, onNav }) {
             /* Fallback: no HTML file — render from state JSON sections */
             <GenericBody PG={PG} decs={decs} onUpdateDec={onUpdateDec} comments={comments} />
           )}
+
+          <GateTable gates={fullState?.gates || []} />
 
           {/* Followups are NOT re-rendered here. When the authored HTML body is
               present it carries section[data-reckon="followups"] through the
