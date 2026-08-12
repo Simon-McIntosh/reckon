@@ -162,3 +162,74 @@ def test_install_skills_excludes_python_bytecode(tmp_path, monkeypatch):
         assert (installed / "SKILL.md").is_file()
         assert (installed / "scripts" / "run.py").is_file()
         assert not (installed / "scripts" / "__pycache__").exists()
+
+
+def _seed_link_drift(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    for name in ("reckon-linked", "reckon-copied"):
+        skill = source / name
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(f"# {name}\n")
+
+    home = tmp_path / "home"
+    skills = home / ".claude" / "skills"
+    skills.mkdir(parents=True)
+    (skills / "reckon-linked").symlink_to(
+        source / "reckon-linked", target_is_directory=True
+    )
+    copied = skills / "reckon-copied"
+    copied.mkdir()
+    (copied / "SKILL.md").write_text("# reckon-copied\n")
+    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("pathlib.Path.home", lambda: home)
+    return source, home, copied
+
+
+def test_install_skills_reports_copied_directory_among_links(
+    tmp_path, monkeypatch
+) -> None:
+    source, _home, copied = _seed_link_drift(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(main, ["install-skills"])
+
+    assert result.exit_code == 0
+    assert "reckon-copied" in result.output
+    assert "copied directory" in result.output
+    assert f"expected symlink → {source / 'reckon-copied'}" in result.output
+    assert copied.is_dir()
+    assert not copied.is_symlink()
+
+
+def test_install_skills_repairs_copied_directory_when_requested(
+    tmp_path, monkeypatch
+) -> None:
+    source, _home, copied = _seed_link_drift(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(main, ["install-skills", "--repair"])
+
+    assert result.exit_code == 0
+    assert "repaired .claude/reckon-copied" in result.output
+    assert copied.is_symlink()
+    assert copied.resolve() == source / "reckon-copied"
+
+
+def test_install_skills_accepts_a_consistently_copied_runtime(
+    tmp_path, monkeypatch
+) -> None:
+    source = tmp_path / "source"
+    home = tmp_path / "home"
+    for name in ("reckon-one", "reckon-two"):
+        skill = source / name
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(f"# {name}\n")
+        installed = home / ".claude" / "skills" / name
+        installed.mkdir(parents=True)
+        (installed / "SKILL.md").write_text(f"# {name}\n")
+    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("pathlib.Path.home", lambda: home)
+
+    result = CliRunner().invoke(main, ["install-skills"])
+
+    assert result.exit_code == 0
+    assert "copied directory" not in result.output
+    assert "repaired" not in result.output
