@@ -1542,10 +1542,16 @@ def complete(
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
 
-# What a live pointer can be once nobody is watching it. Three, because those
-# are the three distinguishable states: still working, finished but never
-# promoted, or dead with nothing delivered.
-RECOVERY_CLASSES = ("running", "completed_unpromoted", "abandoned")
+# What a live pointer can be once nobody is watching it. Worker-reported
+# blocked and failed outcomes remain distinct so neither can be mistaken for a
+# completed delivery that is eligible for promotion.
+RECOVERY_CLASSES = (
+    "running",
+    "completed_unpromoted",
+    "blocked",
+    "failed",
+    "abandoned",
+)
 
 # How long a log may go quiet before its freshness is reported as stale. Only
 # ever reported beside the classification — a slow worker is not a dead one.
@@ -1561,13 +1567,24 @@ def classify_pointer(
 
     Pure and read-only, so the same judgement serves an MCP read and
     :func:`recover`. Liveness comes from the process table and delivery from the
-    manifest on disk, because a stream that stops without a terminal event reads
-    as working forever and would otherwise hide a dead worker.
+    manifest's status, because a terminal stream event only says the worker's
+    turn ended. It does not say the node completed successfully.
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
     manifest = Path(str(record.get("manifest_path") or ""))
     manifest_present = manifest.is_file()
+    manifest_data: dict[str, Any] = {}
+    manifest_error = ""
+    if manifest_present:
+        try:
+            manifest_data = parse_manifest(manifest.read_text())
+        except OSError as exc:
+            manifest_error = str(exc)
+    manifest_status = str(manifest_data.get("status") or "").strip().lower()
+    manifest_commits = list(manifest_data.get("commits") or [])
+    manifest_blockers = list(manifest_data.get("blockers") or [])
+    needs_help = manifest_data.get("needs_help")
     alive = record.get("process_alive")
     if alive is None and record.get("pid"):
         alive = process_alive(record.get("pid"))
@@ -1577,13 +1594,46 @@ def classify_pointer(
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
     terminal = phase in ("complete", "failed")
 
-    if manifest_present or terminal:
+    if manifest_status == "complete":
         classification = "completed_unpromoted"
         detail = (
-            "the run finished and its record is still a pointer; promoting it "
-            "moves it into the repository ledger"
+            "the worker manifest reports completion and the run is still a "
+            "pointer; promoting it moves the delivered record into the repository ledger"
         )
-        action = f"reckon crew complete --run {run_id} --gate <verdict> --commit <sha>"
+        action = f"reckon crew complete --run {run_id} --gate <verdict>"
+        action += "".join(f" --commit {commit}" for commit in manifest_commits)
+    elif manifest_status == "blocked":
+        classification = "blocked"
+        blocker = "; ".join(manifest_blockers) or "the manifest reports a blocker"
+        detail = f"the worker manifest reports blocked: {blocker}"
+        if isinstance(needs_help, Mapping) and needs_help.get("complete"):
+            action = f"reckon crew resume --run {run_id} --advice <answer>"
+        else:
+            action = f"read {manifest}; resolve the blocker before resuming the run"
+    elif manifest_status == "failed":
+        classification = "failed"
+        failure = "; ".join(manifest_blockers) or "the worker manifest reports failure"
+        detail = f"the worker manifest reports failed: {failure}"
+        action = (
+            f"read {manifest} and launch log {record.get('stderr_path')}; "
+            "repair or redispatch the run"
+        )
+    elif terminal:
+        classification = "abandoned"
+        if not manifest_present:
+            delivery = "no manifest was delivered"
+        elif manifest_error:
+            delivery = f"the manifest could not be read: {manifest_error}"
+        else:
+            delivery = f"the manifest status {manifest_status!r} is not usable"
+        detail = (
+            f"the stored phase is terminal but {delivery}; nothing is eligible "
+            "for promotion"
+        )
+        action = (
+            f"read launch log {record.get('stderr_path')}; inspect the worktree at "
+            f"{record.get('worktree')} and redispatch if needed"
+        )
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
@@ -1591,11 +1641,11 @@ def classify_pointer(
     elif alive is False:
         classification = "abandoned"
         detail = (
-            "the process is gone with no terminal event and no manifest; nothing "
-            "was delivered"
+            "the process is gone without a complete manifest; nothing is eligible "
+            "for promotion"
         )
         action = (
-            f"read {record.get('stderr_path')}; the worktree at "
+            f"read launch log {record.get('stderr_path')}; the worktree at "
             f"{record.get('worktree')} is left in place for review and is never "
             "force-removed"
         )
@@ -1617,6 +1667,8 @@ def classify_pointer(
         "process_alive": alive,
         "manifest_present": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
+        "manifest_status": manifest_status or None,
+        "manifest_commits": manifest_commits,
         "log_age_seconds": age,
         "log_fresh": None if age is None else age <= stale_after_seconds,
         "worktree": record.get("worktree"),
@@ -1662,8 +1714,12 @@ def recover(
         reports.append(report)
     counts = {
         name: sum(1 for item in reports if item["classification"] == name)
-        for name in RECOVERY_CLASSES
+        for name in ("running", "completed_unpromoted", "abandoned")
     }
+    for name in ("blocked", "failed"):
+        count = sum(1 for item in reports if item["classification"] == name)
+        if count:
+            counts[name] = count
     return {"runs": reports, "counts": counts, "classes": list(RECOVERY_CLASSES)}
 
 
