@@ -1374,6 +1374,41 @@ def _elapsed_seconds(start: Any, end: Any) -> int | None:
     return max(0, int((last - first).total_seconds()))
 
 
+def _terminal_stream_data(record: Mapping[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    """Return the last valid event time and the terminal stream's budget."""
+    budget = dict(record.get("budget") or {})
+    if record.get("launch") != "cli":
+        return None, budget
+
+    backend_name = str(record.get("backend") or "")
+    backend = _backend_settings(record, None)
+    observation = _backends.observe_log(
+        backend_name=backend_name,
+        backend=backend,
+        log_path=record.get("log_path", ""),
+    )
+    if not observation.terminal:
+        return None, budget
+
+    budget = dict(observation.budget)
+    path = Path(str(record.get("log_path") or ""))
+    if not path.is_file():
+        return None, budget
+    with path.open(encoding="utf-8", errors="replace") as handle:
+        events, _malformed = _backends.parse_events(handle)
+    for event in reversed(events):
+        timestamp = event.get("timestamp")
+        if not isinstance(timestamp, str) or not timestamp.strip():
+            continue
+        try:
+            parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if parsed.tzinfo is not None:
+            return timestamp, budget
+    return None, budget
+
+
 def complete(
     run_id: str,
     *,
@@ -1393,14 +1428,22 @@ def complete(
     pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
     reverse order would lose the record outright.
 
-    Worker-time is measured from dispatch to completion. Pass ``completed_at``
-    to use an observed terminal event instead, when the orchestrator promoted
-    the run some time after the worker finished.
+    Worker-time is measured from dispatch to the stream's last timestamped
+    event. Promotion time is an explicit fallback for streams without one.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
-    finished = completed_at or _utc_now()
+    terminal_time, terminal_budget = _terminal_stream_data(record)
+    if completed_at:
+        finished = completed_at
+        completion_source = "provided"
+    elif terminal_time:
+        finished = terminal_time
+        completion_source = "terminal_event"
+    else:
+        finished = _utc_now()
+        completion_source = "promotion_time"
     ledger_root = root if root is not None else record.get("repo")
 
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
@@ -1427,6 +1470,7 @@ def complete(
         agent=record.get("agent") or {},
         dispatched_at=str(record.get("created_at") or ""),
         completed_at=finished,
+        completed_at_source=completion_source,
         worker_seconds=_elapsed_seconds(record.get("created_at"), finished),
         time_budget=str(node.get("time_budget") or ""),
         base_sha=str(record.get("base_sha") or ""),
@@ -1438,7 +1482,7 @@ def complete(
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=record.get("session_id"),
-        budget=record.get("budget"),
+        budget=terminal_budget,
     )
     written = ledger.append_run(project, run, root=ledger_root)
 
