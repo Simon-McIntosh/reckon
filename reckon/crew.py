@@ -41,6 +41,7 @@ holding write scope, which is the one failure that costs another worker's work.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import shutil
@@ -52,8 +53,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import _backends, ledger
+from reckon import _backends, _plan_html, capabilities, ledger
 from reckon._store import _config_home
+from reckon.calibration import agent_configuration_key
 
 # The seven properties of the task-definition contract, in the order a reader of
 # the plan meets them. Order is part of the contract: a node that is not scoped
@@ -192,6 +194,19 @@ class BudgetHold(CrewError):
         super().__init__(
             f"wave held on budget for backend {verdict.get('backend')!r} — "
             f"{verdict.get('reason')}"
+        )
+
+
+class CompetenceLimit(CrewError):
+    """A node must be split before this worker configuration can run it."""
+
+    def __init__(self, verdict: Mapping[str, Any]) -> None:
+        self.verdict = dict(verdict)
+        super().__init__(
+            f"node estimate {verdict['estimated_hours']} worker-hours exceeds "
+            f"the {verdict['competence_horizon_hours']} worker-hour competence "
+            f"horizon after speed adjustment; split into nodes no larger than "
+            f"{verdict['target_size_hours']} worker-hours"
         )
 
 
@@ -822,6 +837,108 @@ def require_plan_section_visible(
         )
 
 
+def _agent_configuration(
+    backend_name: str, launch_kind: str, backend: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Return the exact worker configuration persisted on a run record."""
+
+    return {
+        "backend": backend_name,
+        "launch": launch_kind,
+        "model": backend.get("model"),
+        "effort": backend.get("effort"),
+        "sandbox": backend.get("sandbox"),
+    }
+
+
+def _plan_estimated_hours(repo: Path, project: str, node: TaskNode) -> float | None:
+    """Read the node's neutral-hours estimate from its owning plan."""
+
+    from reckon.resources import resolve_resource
+
+    resource = resolve_resource(
+        repo / "docs", project, node.plan, "plan", include_archived=False
+    )
+    if resource is None:
+        return None
+    value = _plan_html.parse_meta(resource.path).get("effort_hours")
+    try:
+        hours = float(value)
+    except (TypeError, ValueError):
+        return None
+    return hours if math.isfinite(hours) and hours > 0 else None
+
+
+def _competence_verdict(
+    *,
+    resolution: DispatchPlan,
+    project: str,
+    repo: Path,
+) -> dict[str, Any]:
+    """Compare plan size with the selected configuration's measured horizon."""
+
+    agent = _agent_configuration(
+        resolution.backend, resolution.launch, resolution.backend_settings
+    )
+    key = agent_configuration_key({"agent": agent})
+    estimated_hours = _plan_estimated_hours(repo, project, resolution.node)
+    cache = capabilities.load_capabilities()
+    configuration = next(
+        (
+            item
+            for item in cache.get("configurations", [])
+            if isinstance(item, Mapping) and item.get("key") == key
+        ),
+        None,
+    )
+    horizon = configuration.get("competence_horizon_hours") if configuration else None
+    try:
+        horizon_hours = float(horizon)
+    except (TypeError, ValueError):
+        horizon_hours = 0.0
+
+    verdict: dict[str, Any] = {
+        "allowed": True,
+        "agent_key": key,
+        "estimated_hours": estimated_hours,
+        "reason": "no-measured-horizon",
+    }
+    if not math.isfinite(horizon_hours) or horizon_hours <= 0:
+        return verdict
+    if estimated_hours is None:
+        verdict["reason"] = "no-estimated-hours"
+        return verdict
+
+    speed = configuration.get("speed") if configuration else None
+    try:
+        speed_factor = float(speed.get("mean")) if isinstance(speed, Mapping) else 1.0
+    except (TypeError, ValueError):
+        speed_factor = 1.0
+    if not math.isfinite(speed_factor) or speed_factor <= 0:
+        speed_factor = 1.0
+
+    adjusted_hours = estimated_hours / speed_factor
+    target_size = horizon_hours * speed_factor
+    verdict.update(
+        {
+            "allowed": adjusted_hours <= horizon_hours,
+            "adjusted_hours": round(adjusted_hours, 6),
+            "competence_horizon_hours": round(horizon_hours, 6),
+            "reason": "within-competence-horizon"
+            if adjusted_hours <= horizon_hours
+            else "competence-horizon-exceeded",
+            "speed_factor": round(speed_factor, 6),
+            "target_size_hours": round(target_size, 6),
+        }
+    )
+    if not verdict["allowed"]:
+        verdict["recommendation"] = (
+            f"split into nodes no larger than {verdict['target_size_hours']} "
+            "worker-hours for this agent configuration"
+        )
+    return verdict
+
+
 @dataclass
 class DispatchPlan:
     """Everything a dispatch resolved, before anything on disk has changed.
@@ -957,6 +1074,14 @@ def dispatch(
             )
         )
 
+    competence = _competence_verdict(
+        resolution=resolution,
+        project=project,
+        repo=repo_root,
+    )
+    if not competence["allowed"]:
+        raise CompetenceLimit(competence)
+
     if check_budget:
         # Before the worktree, not after: a hold that had already cut a worktree
         # would leave write scope claimed by a node nobody is running.
@@ -1028,13 +1153,8 @@ def dispatch(
             # The configuration that actually ran the node, recorded now because
             # a later config layer change makes it unreconstructable — and
             # without it a measured duration cannot be attributed to anything.
-            "agent": {
-                "backend": backend_name,
-                "launch": launch_kind,
-                "model": backend.get("model"),
-                "effort": backend.get("effort"),
-                "sandbox": backend.get("sandbox"),
-            },
+            "agent": _agent_configuration(backend_name, launch_kind, backend),
+            "competence": competence,
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
