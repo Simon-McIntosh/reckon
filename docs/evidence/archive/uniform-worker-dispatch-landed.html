@@ -427,6 +427,22 @@ WHEN   next the run ledger, which promotes these pointers into committed
     S5 feeds S6, S7 feeds S8, S8 feeds S9 — matching the delivery shape the architecture reference
     describes, without anyone writing it down.</p>
 
+    <h3>The rule had to cover both write paths, and its scope was measured</h3>
+
+    <p>The first implementation validated the ops writer only. A live probe found the gap
+    immediately: a plain HTTP patch marked a plan landed without going near that code. A rule one
+    <code>curl</code> can walk around is a courtesy, not a rule, so both paths now share one
+    predicate and the server answers <code>400 no_continuation</code> — verified live, with the
+    plan's version and status unchanged afterwards.</p>
+
+    <p>Its <em>scope</em> was chosen by measurement rather than by taste. A state-level invariant —
+    "a terminal plan must carry a continuation" — is the tidier rule and would have covered every
+    path at once, so the portfolio was counted first: <strong>155 of 202 terminal plans across the
+    mounted projects carry no continuation</strong>, and all 155 would have become unwritable. The
+    rule is therefore keyed to the <em>write</em>: only a new landing owes an answer, and recorded
+    history stays editable. A test pins that, so the tidier rule cannot be adopted later without
+    someone confronting the number.</p>
+
     <p>Enforcing the plan altitude changed behaviour, and five existing tests had to be retargeted:
     each set a terminal status incidentally while testing something else — scalar mechanics, op
     ordering, worktree routing — and now use a non-landing value or carry the chain. One test was

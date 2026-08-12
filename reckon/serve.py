@@ -1327,6 +1327,18 @@ class Handler(BaseHTTPRequestHandler):
         patch.pop("_version", None)
         _patch_into(state, patch)
         state.setdefault("slug", slug)
+        # The continuation rule has to hold on every write path, or an agent can
+        # mark a plan landed here and tell nobody what comes next.
+        try:
+            from reckon._store import OpError, validate_landing_patch
+
+            validate_landing_patch(state, patch)
+        except OpError as exc:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "no_continuation", "detail": str(exc)},
+            )
+            return
         try:
             from reckon._schema import PlanState
 

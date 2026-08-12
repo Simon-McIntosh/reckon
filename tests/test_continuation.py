@@ -252,6 +252,41 @@ def test_only_plans_owe_a_continuation() -> None:
         _store_module.apply_ops({"type": "plan", "followups": []}, landing, False)
 
 
+def test_the_http_patch_path_enforces_the_same_rule() -> None:
+    """The rule must hold on every write path, or it is a courtesy not a rule.
+
+    Checked against the shared validator the server calls, because a landing
+    marked through the HTTP patch surface would otherwise bypass the ops writer
+    entirely.
+    """
+    landed = {"type": "plan", "status": "shipped", "followups": []}
+    with pytest.raises(_store_module.OpError) as excinfo:
+        _store_module.validate_landing_patch(landed, {"status": "shipped"})
+    assert "/reckon-ship <slug> [§N]" in str(excinfo.value)
+
+    carried = {"type": "plan", "status": "shipped", "followups": [_followup("f1")]}
+    _store_module.validate_landing_patch(carried, {"status": "shipped"})
+
+    closed = {
+        "type": "plan",
+        "status": "shipped",
+        "followups": [_followup("f1", status="resolved", outcome="done — no followup")],
+    }
+    _store_module.validate_landing_patch(closed, {"status": "done"})
+
+
+def test_a_plan_already_landed_without_a_continuation_stays_editable() -> None:
+    """History is not retroactively locked — only a new landing owes an answer.
+
+    Measured before choosing the rule's scope: 155 of 202 terminal plans across
+    the mounted projects carry no continuation. A state-level invariant would
+    have made all of them unwritable.
+    """
+    legacy = {"type": "plan", "status": "shipped", "followups": []}
+    _store_module.validate_landing_patch(legacy, {"summary": "a corrected summary"})
+    _store_module.validate_landing_patch(legacy, {"impl": 1.0})
+
+
 def test_an_index_write_is_never_a_plan_landing() -> None:
     """Sprint state is not a plan, and its own status verb is not a landing."""
     working = {"sprints": [{"id": "S1", "status": "active", "items": []}]}

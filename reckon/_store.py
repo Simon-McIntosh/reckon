@@ -1277,6 +1277,55 @@ def _chain_closed(text: Any) -> bool:
     return any(marker in lowered for marker in _CHAIN_CLOSED_MARKERS)
 
 
+CONTINUATION_REQUIRED = (
+    "plan landing leaves no continuation: append a followup whose prompt is "
+    "the next '/reckon-ship <slug> [§N]' invocation, or resolve with an "
+    "outcome recording that the chain closes (e.g. 'done — no followup')"
+)
+
+
+def _followup_is_open(followup: dict[str, Any]) -> bool:
+    """Whether a followup is still carrying the chain.
+
+    Mirrors how the schema derives the field: a resolved timestamp means
+    resolved whatever the literal status says, and an absent status on an
+    unresolved followup means open. Deriving it here too keeps the rule correct
+    on a raw dict that has not been through the model.
+    """
+    status = str(followup.get("status", "") or "").lower()
+    if status:
+        return status == "open"
+    return not followup.get("resolved_at")
+
+
+def continuation_present(state: dict[str, Any]) -> bool:
+    """Whether a plan's state names what comes next, or says nothing does.
+
+    One definition shared by both write paths, so the ops writer and the HTTP
+    patch writer cannot disagree about what a closed chain looks like.
+    """
+    followups = [f for f in (state.get("followups") or []) if isinstance(f, dict)]
+    if any(_followup_is_open(f) for f in followups):
+        return True
+    return any(_chain_closed(f.get("outcome")) for f in followups)
+
+
+def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
+    """Refuse a merge patch that lands a plan without naming a continuation.
+
+    Deliberately keyed to the *write* rather than to the resulting state. A
+    state-level invariant would retroactively lock every plan already recorded
+    as shipped without a followup — measured at 155 of 202 across the mounted
+    projects — so history stays editable and only a new landing owes an answer.
+    """
+    if str(state.get("type", "plan") or "plan") != "plan":
+        return
+    if str(patch.get("status", "")).lower() not in _LANDED_STATUSES:
+        return
+    if not continuation_present(state):
+        raise OpError(CONTINUATION_REQUIRED)
+
+
 def _validate_continuation(working: dict, ops: list[dict]) -> None:
     """Refuse a plan landing that names neither a next step nor an end.
 
@@ -1301,18 +1350,11 @@ def _validate_continuation(working: dict, ops: list[dict]) -> None:
     )
     if not resolved and not landed:
         return
-    followups = [f for f in (working.get("followups") or []) if isinstance(f, dict)]
-    if any(str(f.get("status", "")).lower() == "open" for f in followups):
+    if continuation_present(working):
         return
     if any(_chain_closed(op.get("outcome")) for op in resolved):
         return
-    if any(_chain_closed(f.get("outcome")) for f in followups):
-        return
-    raise OpError(
-        "plan landing leaves no continuation: append a followup whose prompt is "
-        "the next '/reckon-ship <slug> [§N]' invocation, or resolve with an "
-        "outcome recording that the chain closes (e.g. 'done — no followup')"
-    )
+    raise OpError(CONTINUATION_REQUIRED)
 
 
 def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
