@@ -4,22 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="inflight-visibility">
-  <meta name="plan-title"     content="In-flight Visibility">
-  <meta name="plan-summary"   content="Fold the watcher into the reckon server as a native surface, band plans and sprints with live run state, expose in-flight through the read tools agents already call, and repair the measured MCP defects.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="M">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="inflight-visibility">
+  <meta name="plan-title" content="In-flight Visibility">
+  <meta name="plan-summary" content="Fold the watcher into the reckon server as a native surface, band plans and sprints with live run state, expose in-flight through the read tools agents already call, and repair the measured MCP defects.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S9">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="crew-run-ledger">
   <title>In-flight Visibility | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -165,33 +167,33 @@
     in memory.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="watcher-host" data-choice="fold-into-reckon-server" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Where does the live watcher run?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="fold-into-reckon-server">Folded into the existing reckon server as a native SPA surface</button>
-          <button class="r-opt" data-value="separate-daemon">A separate console daemon on its own port, as upstream ships it</button>
-        </p>
-        <p class="r-dec-rat">Reckon already runs one systemd-managed, lingering-enabled server serving every mounted project, with plan and sprint context the watcher needs to link into. A second daemon would need its own supervision, its own port and its own enrolment step, and could not band a plan page with live state.</p>
-      </div>
-      <div class="r-dec" data-key="phase-derivation" data-choice="derive-on-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Is phase derived on read or maintained by a poller?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="derive-on-read">Derived on read by tailing the run's log</button>
-          <button class="r-opt" data-value="server-poller">Maintained by a background poller in the server</button>
-        </p>
-        <p class="r-dec-rat">A poller would make the server a second writer of run state, reintroducing exactly the coupling the three-tier ownership split avoids. Deriving on read keeps a single writer and costs one bounded tail per request.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="watcher-host" data-choice="fold-into-reckon-server" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Where does the live watcher run?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="fold-into-reckon-server">Folded into the existing reckon server as a native SPA surface</button>
+      <button class="r-opt" data-value="separate-daemon">A separate console daemon on its own port, as upstream ships it</button>
+      </p>
+    <p class="r-dec-rat">Reckon already runs one systemd-managed, lingering-enabled server serving every mounted project, with plan and sprint context the watcher needs to link into. A second daemon would need its own supervision, its own port and its own enrolment step, and could not band a plan page with live state.</p>
+    </div>
+<div class="r-dec" data-key="phase-derivation" data-choice="derive-on-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Is phase derived on read or maintained by a poller?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derive-on-read">Derived on read by tailing the run&#x27;s log</button>
+      <button class="r-opt" data-value="server-poller">Maintained by a background poller in the server</button>
+      </p>
+    <p class="r-dec-rat">A poller would make the server a second writer of run state, reintroducing exactly the coupling the three-tier ownership split avoids. Deriving on read keeps a single writer and costs one bounded tail per request.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-ifv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship inflight-visibility">
-        <h4 class="r-fu-title">Fold the watcher into the server and expose in-flight to agents</h4>
-        <div class="r-fu-body"><p>Land the crew routes with read-derived phase, the fifth SPA tab, in-flight bands on plan and sprint views, in-flight blocks on the existing read tools, and the three measured MCP and installation repairs.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship inflight-visibility</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ifv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship inflight-visibility" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Fold the watcher into the server and expose in-flight to agents</h4>
+    <div class="r-fu-body"><p>Land the crew routes with read-derived phase, the fifth SPA tab, in-flight bands on plan and sprint views, in-flight blocks on the existing read tools, and the three measured MCP and installation repairs.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship inflight-visibility</pre>
+    </article>
+</section>
 
   </main>
 </body>

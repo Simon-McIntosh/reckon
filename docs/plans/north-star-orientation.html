@@ -4,20 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="north-star-orientation">
-  <meta name="plan-title"     content="North-star Orientation">
-  <meta name="plan-summary"   content="Make durable project direction a first-class label: a small set of north-stars per project, plans declaring which one they serve, prominence in the server, and visibility when a plan points nowhere.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="M">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="north-star-orientation">
+  <meta name="plan-title" content="North-star Orientation">
+  <meta name="plan-summary" content="Make durable project direction a first-class label: a small set of north-stars per project, plans declaring which one they serve, prominence in the server, and visibility when a plan points nowhere.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
-  <meta name="plan-sprint"    content="S9">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>North-star Orientation | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -109,34 +111,34 @@
     </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="north-star-model" data-choice="project-state-plus-meta" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How is a north-star modelled?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="project-state-plus-meta">A project-state entry with an optional href, plus a plan meta label</button>
-          <button class="r-opt" data-value="typed-html-resource">A new typed HTML resource root with its own archive path</button>
-          <button class="r-opt" data-value="milestone-flavour">A milestone flavour with a kind discriminator</button>
-        </p>
-        <p class="r-dec-rat">Reuses the existing rollup machinery that sprints and milestones already use, and the optional href gives prose room without adding a typed root, route resolution, schema type and archive path. A milestone flavour was rejected because milestones complete and north-stars do not — conflating a dated target with a durable direction loses the distinction that makes the label worth having.</p>
-      </div>
-      <div class="r-dec" data-key="unoriented-severity" data-choice="info-not-warn" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How severe is a live plan that declares no north-star?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="info-not-warn">Info — surfaced, never blocking</button>
-          <button class="r-opt" data-value="warn">Warn, alongside other graph faults</button>
-        </p>
-        <p class="r-dec-rat">Orientation is a prompt to think about direction, not a structural fault. Raising it to warn would put it beside genuine wiring errors and train readers to ignore the category. Some plans legitimately point nowhere — infrastructure repairs and cleanups among them.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="north-star-model" data-choice="project-state-plus-meta" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How is a north-star modelled?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="project-state-plus-meta">A project-state entry with an optional href, plus a plan meta label</button>
+      <button class="r-opt" data-value="typed-html-resource">A new typed HTML resource root with its own archive path</button>
+      <button class="r-opt" data-value="milestone-flavour">A milestone flavour with a kind discriminator</button>
+      </p>
+    <p class="r-dec-rat">Reuses the existing rollup machinery that sprints and milestones already use, and the optional href gives prose room without adding a typed root, route resolution, schema type and archive path. A milestone flavour was rejected because milestones complete and north-stars do not — conflating a dated target with a durable direction loses the distinction that makes the label worth having.</p>
+    </div>
+<div class="r-dec" data-key="unoriented-severity" data-choice="info-not-warn" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How severe is a live plan that declares no north-star?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="info-not-warn">Info — surfaced, never blocking</button>
+      <button class="r-opt" data-value="warn">Warn, alongside other graph faults</button>
+      </p>
+    <p class="r-dec-rat">Orientation is a prompt to think about direction, not a structural fault. Raising it to warn would put it beside genuine wiring errors and train readers to ignore the category. Some plans legitimately point nowhere — infrastructure repairs and cleanups among them.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-nso-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship north-star-orientation">
-        <h4 class="r-fu-title">Make north-stars first-class and orient this sprint set against them</h4>
-        <div class="r-fu-body"><p>Land the project-state collection with schema and advisory cap, the plan meta label with dangling-reference validation, cockpit prominence and a plans filter, the roadmap orientation rollup with an info-severity unoriented finding, then declare reckon's own north-stars and label the S7–S9 plans.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship north-star-orientation</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-nso-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship north-star-orientation" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make north-stars first-class and orient this sprint set against them</h4>
+    <div class="r-fu-body"><p>Land the project-state collection with schema and advisory cap, the plan meta label with dangling-reference validation, cockpit prominence and a plans filter, the roadmap orientation rollup with an info-severity unoriented finding, then declare reckon's own north-stars and label the S7–S9 plans.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship north-star-orientation</pre>
+    </article>
+</section>
 
   </main>
 </body>
