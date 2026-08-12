@@ -65,7 +65,34 @@
     to <code>git</code>. Two distinct repairs follow: a failed diff must surface as an explicit
     absence rather than as captured stderr, and a run that legitimately produced no commit must be
     representable as such rather than inferred. A record carrying an error string where a number
-    belongs is worse than an empty one, because every later reader has to know it is not data.</p>
+    belongs is worse than an empty one, because every later reader has to know it is not data.
+    Repaired below.</p>
+  </section>
+
+  <section id="diff-boundary">
+    <h2>An unavailable measurement is an absence, not a diagnostic string</h2>
+
+    <p>Commit <code>0a83bde</code> — <code>reckon/crew.py</code>, <code>reckon/ledger.py</code>,
+    <code>tests/test_crew.py</code>, <code>tests/test_ledger.py</code>; 97 insertions, 24 deletions
+    across 4 files. Gate <strong>passed</strong>: 100 passed, 0 failed, 6.7 s, 3 new tests. Scope was
+    widened mid-flight, so this run is excluded from calibration.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>No commit argument</td><td><code>commits</code> is an empty list and <code>changed_lines</code> is null; no diff is run and no git output is captured</td></tr>
+        <tr><td>Unresolvable commit value</td><td>Refused before promotion, naming the value, and the live pointer stays recoverable rather than being consumed by the failed attempt</td></tr>
+        <tr><td>Write path outside the repository</td><td><code>changed_lines</code> is null; a diagnostic string cannot reach the field</td></tr>
+        <tr><td>Commit-backed diff</td><td>Still records added, removed and file counts</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two details are worth keeping. The refusal leaves the pointer recoverable, so a mistyped
+    revision costs a retry rather than a lost run. And promoting this very node showed the scoped
+    diff measuring the <em>declared</em> fence rather than the widened one — 77 insertions across 3
+    files recorded against a commit of 97 across 4, because the fourth file was granted after
+    dispatch. That is correct behaviour and it is exactly why a scope-changed run is withheld from
+    calibration: its diff measures the fence it was given, not the work it did.</p>
   </section>
 
   <section id="promotion-terminal-read">

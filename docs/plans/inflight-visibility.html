@@ -21,10 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="3">
-<meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1">
-<meta name="plan-artifacts" content="reckon/serve.py,tests/test_crew_routes.py,docs/evidence/archive/inflight-visibility-landed.html">
-<meta name="plan-impl" content="0.13">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29">
+<meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/archive/inflight-visibility-landed.html">
+<meta name="plan-impl" content="0.25">
 </head>
 <body>
   <main class="plan-doc">
@@ -260,6 +260,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260812T174900" data-who="reckon-ship" data-when="2026-08-12T17:49:00Z">
     <div class="r-comment-body">crew-routes landed — commit 7c1c3de534ff22301a3630ffa0bc91a1272104c1; gate passed; measure: tests/test_crew_routes.py 7 passed / 0 failed in 3.4s with 7 new tests; a terminal turn.completed event classifies phase done, a log inside the 900s freshness window classifies working and an older one idle, and on an oversized stream exactly one 65,536-byte read was observed so the whole file is never loaded; aggregate and project-filtered routes both returned the fixture pointers and the route persists nothing. Two declared measures are only partly discharged and stay open: the 3-second live-dispatch latency needs a restarted server, and navigability needs the watcher surface. Artifacts reckon/serve.py, tests/test_crew_routes.py, docs/evidence/archive/inflight-visibility-landed.html#crew-routes</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260812T183600" data-who="reckon-ship" data-when="2026-08-12T18:36:00Z">
+    <div class="r-comment-body">watcher-surface landed — commit 1cfe5cad344681688e3fe6e10958a0582b4dce29; gate passed; measure: tests/test_build.py 12 passed / 0 failed in 1.9s with 1 drift test and 4 new assertions, and reckon build exit 0 copying 17 UI and 5 shared files with _ui/crew.jsx emitted in its index; a fifth glyph tab hash-routes as #crew and survives project navigation, and crew.jsx polls GET /crew every 3s rendering one semantic tbody row per run over ten fields. The node first audited rather than wrote, and found three independent SPA entry points each carrying their own JSX script list — reckon/serve.py, reckon/cli.py and docs/index.html — none of which loaded the new component; tests/test_build.py now asserts the three normalised JSX sets are identical, so the hand audit became a standing check. Recorded scope-changed: those three files were granted mid-flight. RESTART OUTSTANDING — serve.py and cli.py changed and are not hot, so the route and tab exist in the repository and not yet in the live instance. Artifacts docs/evidence/archive/inflight-visibility-landed.html#watcher-surface</div>
 </div>
 </section>
 </main>

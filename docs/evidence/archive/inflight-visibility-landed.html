@@ -31,9 +31,9 @@
       <tbody>
         <tr><td>Bounded reads</td><td>Exactly one 65,536-byte read observed on an oversized stream — <a href="#crew-routes">§ crew routes</a></td><td>pass</td></tr>
         <tr><td>Live run visible</td><td>Phase classification proven on fixtures; the 3-second latency measure against a real dispatch is still open — <a href="#crew-routes">§ crew routes</a></td><td>partial</td></tr>
-        <tr><td>Navigable</td><td>Routes emit <code>plan_href</code> and <code>sprint_href</code>; the rendered surface is still open — <a href="#crew-routes">§ crew routes</a></td><td>partial</td></tr>
+        <tr><td>Navigable</td><td>The crew tab renders each run with linked plan and section; the screenshot figure and the in-flight band remain open — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
         <tr><td>Visible to agents too</td><td>—</td><td>open</td></tr>
-        <tr><td>No second daemon</td><td>—</td><td>open</td></tr>
+        <tr><td>No second daemon</td><td>The surface is a tab in the existing SPA on the existing port; no new listener was added — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
         <tr><td>Portfolio scan usable</td><td>—</td><td>open</td></tr>
         <tr><td>Drift detectable</td><td>—</td><td>open</td></tr>
         <tr><td>Placeholder rejected</td><td>—</td><td>open</td></tr>
@@ -71,6 +71,50 @@
     the 3-second latency figure needs a real dispatch observed through a restarted server, and the
     navigability measure needs the rendered surface that the watcher-tab node supplies. Both are
     recorded as partial rather than passed.</p>
+  </section>
+
+  <section id="watcher-surface">
+    <h2>The watcher is a tab in the existing SPA, and three entry points now agree</h2>
+
+    <p>Commit <code>1cfe5ca</code> — <code>docs/ui/crew.jsx</code>, <code>docs/ui/shell.jsx</code>,
+    <code>docs/ui/glyphs.jsx</code>, <code>docs/index.html</code>, <code>reckon/serve.py</code>,
+    <code>reckon/cli.py</code>, <code>tests/test_build.py</code>; 185 insertions, 2 deletions across
+    7 files. Gate <strong>passed</strong>: 12 passed, 0 failed, 1.9 s, and
+    <code>reckon build</code> exit 0. Scope was widened mid-flight, so this run is excluded from
+    calibration.</p>
+
+    <p>A fifth glyph tab hash-routes as <code>#crew</code> consistently with the existing four and
+    survives project navigation. <code>crew.jsx</code> polls <code>GET /crew</code> every 3 seconds
+    and renders one <code>tbody</code> row per run over ten fields — member, role, linked plan,
+    linked section, model, effort, elapsed time, phase, last activity and gate — as a semantic table,
+    because rows of labels and values are a table and not a card grid.</p>
+
+    <p><strong>The node's most useful output was an audit it produced before writing anything.</strong>
+    A component cannot render if no entry point loads it, and this SPA has three independent entry
+    points that each carry their own JSX script list: the live renderer in
+    <code>reckon/serve.py</code>, the static-build renderer in <code>reckon/cli.py</code>, and the
+    checked-in <code>docs/index.html</code>. All three loaded <code>graph.jsx</code> immediately
+    before <code>shell.jsx</code>, and none mentioned <code>crew.jsx</code>. Adding one component
+    therefore means editing three files that must agree, with nothing enforcing agreement — the same
+    latent-drift shape as the copied-where-linked skill this plan already carries.</p>
+
+    <p>So the repair went beyond registration: <code>tests/test_build.py</code> now asserts that the
+    normalised JSX sets loaded by the live renderer, the static-build renderer and the checked-in
+    index are <em>identical</em>. The hand audit that found this becomes a standing check, and a
+    component registered in two of three places now fails a test instead of silently failing to
+    render. The static build copied 17 UI files and 5 shared files and emitted
+    <code>_ui/crew.jsx</code> in its index.</p>
+
+    <p>Two measures move to partial rather than pass. No new listener or port was introduced, which
+    is most of the no-second-daemon claim, but the declared evidence is <code>ss -ltnp</code> output
+    with the watcher in use and that needs the restart below. Navigability has its links but not yet
+    its banked screenshot or its in-flight band.</p>
+
+    <p><strong>A restart is outstanding.</strong> <code>reckon/serve.py</code> and
+    <code>reckon/cli.py</code> both changed, and server, parse and render code is not hot: the
+    running server and every connected MCP stdio process hold the old code until restarted. Until
+    that is coordinated, the crew route and the tab exist in the repository and not in the live
+    instance.</p>
   </section>
 
 </main>

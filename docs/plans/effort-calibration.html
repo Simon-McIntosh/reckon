@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="7">
-<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124">
+<meta name="plan-version" content="8">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.18">
+<meta name="plan-impl" content="0.27">
 </head>
 <body>
   <main class="plan-doc">
@@ -318,6 +318,9 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260812T181600" data-who="reckon-ship" data-when="2026-08-12T18:16:00Z">
     <div class="r-comment-body">effort-hours-unit landed — commit 23252405a4013090a2b25a1f8259c93455ba2124; gate passed; measure: tests/test_schema.py + tests/test_capability.py 1,098 passed / 0 failed in 24.3s with 7 new functions over 10 collected cases, ruff clean; plan-effort-hours validates as a positive number at quarter-hour granularity and publishes as multipleOf 0.25 in the regenerated schema, 5.25h beside XL resolves 5.25 and reports the letter redundant, letter-only plans resolve S=1.0 M=2.0 L=4.0 XL=8.0 marked effort_calibrated=false and reported uncalibrated, and a plan with neither field gains no effort keys at all. A normal write preserves uncalibrated status rather than authoring derived hours, so the mapping stays a compatibility read and never becomes a silent re-estimate. Artifacts docs/evidence/archive/effort-calibration-landed.html#hours-unit</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260812T183200" data-who="reckon-ship" data-when="2026-08-12T18:32:00Z">
+    <div class="r-comment-body">diff-boundary-absence landed — commit 0a83bde067dd35851208b7a2421329400c060c48; gate passed; measure: tests/test_crew.py + tests/test_ledger.py 100 passed / 0 failed in 6.7s with 3 new tests; promoting with no commit argument stores an empty commits list and null changed_lines without running a diff or capturing git output, an unresolvable commit value is refused naming it while leaving the live pointer recoverable, and a declared write path outside the repository yields null rather than a diagnostic string. Five existing ledger cases were migrated off the deadbee placeholder onto resolvable revisions. Recorded scope-changed: tests/test_ledger.py was granted mid-flight, and promotion demonstrated the consequence — the scoped diff recorded 77 insertions over 3 files against a commit of 97 over 4, because it measures the declared fence rather than the widened one. Artifacts docs/evidence/archive/effort-calibration-landed.html#diff-boundary</div>
 </div>
 </section>
 </main>
