@@ -9,6 +9,7 @@ import pytest
 import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon._plan_html import write_state
+from reckon.mcp_views import compact_size
 
 
 @pytest.fixture()
@@ -108,11 +109,83 @@ def test_mcp_roadmap_portfolio_rolls_up_mounted_projects(mounted_project) -> Non
 
     result = mcp_module._roadmap("*")
 
+    assert result["view"] == "summary"
     assert result["portfolio"]["projects"] == 1
     assert result["portfolio"]["plans"] == 1
     assert result["portfolio"]["ready"] == 1
     assert result["portfolio"]["blocked"] == 0
     assert result["portfolio"]["deferred"] == 0
+    assert result["projects"][0]["completion"]["plans"] == 1
+    assert result["projects"][0]["ready"] == 1
+    assert result["projects"][0]["blocked"] == 0
+    assert result["projects"][0]["finding_counts"]["total"] >= 0
+
+
+def test_portfolio_summary_is_bounded_against_measured_baseline(
+    mounted_project,
+) -> None:
+    _project, docs = mounted_project
+    for index in range(40):
+        _write_plan(docs, f"work-{index}", depends_on=[f"missing-{index}"])
+
+    result = mcp_module._roadmap("*")
+
+    assert compact_size(result) < 32 * 1024
+    assert compact_size(result) < 176 * 1024
+
+
+def test_single_project_summary_reports_counts(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(docs, "ready")
+    _write_plan(docs, "blocked", depends_on=["missing"])
+
+    result = mcp_module._roadmap(project, view="summary")
+
+    assert result["view"] == "summary"
+    assert result["completion"]["plans"] == 2
+    assert result["ready"] == 1
+    assert result["blocked"] == 1
+    assert result["finding_counts"]["total"] >= 1
+
+
+def test_single_project_detail_paginates_findings(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(docs, "first", depends_on=["missing-first"])
+    _write_plan(docs, "second", depends_on=["missing-second"])
+
+    first = mcp_module._roadmap(project, view="detail", limit=1)
+    second = mcp_module._roadmap(
+        project,
+        view="detail",
+        limit=1,
+        cursor=first["pagination"]["next_cursor"],
+    )
+
+    assert first["view"] == "detail"
+    assert first["pagination"]["count"] == 1
+    assert first["pagination"]["total"] >= 2
+    assert first["pagination"]["next_cursor"]
+    assert second["wiring_findings"] != first["wiring_findings"]
+
+
+def test_single_project_raw_preserves_lossless_report(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(docs, "work")
+
+    legacy = mcp_module._roadmap(project)
+    raw = mcp_module._roadmap(project, view="raw")
+
+    assert raw == {"project": project, "view": "raw", "data": legacy}
+
+
+def test_roadmap_rejects_unsupported_progressive_view(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(docs, "work")
+
+    result = mcp_module._roadmap(project, view="history")
+
+    assert result["ok"] is False
+    assert result["error"] == "invalid_view"
 
 
 def test_edit_plan_in_text_mode_replaces_exact_prose_and_advances_version(
