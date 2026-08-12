@@ -128,7 +128,12 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
     offenders: list[str] = []
     for directory in ("skills", "reckon"):
         for path in sorted((ROOT / directory).rglob("*")):
-            if not path.is_file() or path.suffix not in (".py", ".md", ".yaml", ".json"):
+            if not path.is_file() or path.suffix not in (
+                ".py",
+                ".md",
+                ".yaml",
+                ".json",
+            ):
                 continue
             relative = path.relative_to(ROOT)
             if relative in LEAKAGE_EXEMPT:
@@ -290,6 +295,74 @@ def test_continuation_closes_at_three_altitudes_in_the_skills() -> None:
     assert "THREE altitudes" in ship
     assert "feeds_sprints" in ship
     assert "report the sprints this one feeds" in orchestration.lower()
+
+
+def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert "Immediately after EACH `reckon crew complete`" in ship
+    assert "Immediately after each `reckon crew complete`" in reference
+    assert "Do not promote another run" in reference
+
+
+def test_ship_advances_implementation_for_every_node_landing() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+
+    assert "count of completed executable nodes" in ship
+    assert "count of total executable nodes" in ship
+    assert "Set it on EVERY node landing" in ship
+    assert "never wait for section closure to record earlier nodes" in ship
+
+
+def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert '"path": "impl"' in ship
+    assert '"path": "commits"' in ship
+    assert '"target": "comments"' in ship
+    assert "gate <gate-name> <verdict>" in ship
+    assert "quantitative measure" in reference
+    assert "one version-safe state write" in reference
+
+
+def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert "the orchestrator writes this node's commit" in ship
+    assert "Workers still only return outcome data" in ship
+    assert "Workers return outcome data in their manifests" in reference
+    assert "never write shared plan or index state" in reference
+
+
+def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert "Same-plan follow-on work becomes a section, never a followup" in ship
+    assert "Work owned by the plan in hand becomes a new evergreen section" in reference
+    assert (
+        "Do not set a terminal status while a same-plan section remains open"
+        in reference
+    )
 
 
 def test_edit_skill_uses_version_safe_prose_tool() -> None:

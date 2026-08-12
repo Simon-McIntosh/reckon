@@ -32,7 +32,7 @@ On a single-plan target without a section, you MUST:
 1. Read the complete plan HTML and classify every section
 2. Identify ALL implementable sections (not deferred/blocked/done)
 3. Delegate them all — sequentially for dependent sections, in a parallel fleet for independent ones
-4. Record outcomes after each section lands, then continue
+4. Promote each landed node and write its plan state in the same beat, then continue
 5. Stop only when all implementable sections are done OR you hit a hard prerequisite blocker
 
 On a sprint target, read `references/sprint-orchestration.md` completely before
@@ -138,6 +138,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → emit the dispatch summary, naming the gate that closes the wave
 → audit worker manifests/commits/tests → orchestrator merges
 → reckon crew complete each run — the record becomes committed evidence
+→ immediately write that node's commit, gate measure, artifacts, and impl to the plan
 → emit the completion summary, WHY carrying the gate evidence
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
@@ -181,10 +182,12 @@ structured state (decisions, followups). Do not implement items marked
 5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
-8. **Update the plan continuously.** After EACH section lands: collapse it in
-   the evergreen, update the plan's cumulative evidence HTML, and call
-   `edit_plan` to advance `impl`. Do not accumulate all outcomes for a final
-   write.
+8. **Update the plan at every node landing.** Immediately after EACH
+   `reckon crew complete`, the orchestrator updates the cumulative evidence and
+   calls `edit_plan` once with the node's commit, gate measure, artifacts, and
+   advanced `impl`. Nothing else may be promoted, merged, dispatched, or opened
+   before this write. Collapse the evergreen section only when its final node
+   lands; never wait for section closure to record earlier nodes.
 9. **One cumulative evidence record and a followup are required.** Default to
    `docs/evidence/archive/<slug>-landed.html`, carrying
    `reckon-type=evidence` and `plan-evidence-for=<slug>`, with one stable anchor
@@ -547,6 +550,11 @@ For each completed agent:
    moment `--tests-added` and `--scope-changed` can still be stated — a
    scope-changed node measures neither the estimate nor the worker, so saying so
    keeps it out of calibration instead of averaging it in.
+7. **In the same landing beat, perform the plan write in §7.** Immediately after
+   `reckon crew complete`, and before another promotion, merge, dispatch, or wave
+   transition, the orchestrator writes this node's commit, gate verdict and
+   quantitative measure, artifacts, and new `impl` together. Workers still only
+   return outcome data; they never write shared plan state.
 
 An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then any test logs or artifacts its
@@ -576,9 +584,12 @@ Inspect only the summary, scoped diff, and evidence needed to diagnose the
 failure. Sprint coordinators do not repair worker code themselves. Do not
 advance the dependency wave with incomplete work.
 
-### 6. Record outcomes — after EACH section
+### 6. Record outcomes — after EACH node
 
-**Do not wait until all sections are done.** Record outcomes immediately after each section lands.
+**Do not wait until a section is done.** Update its cumulative evidence anchor
+immediately after every node landing. The anchor is a living record: add the
+node's commit, gate verdict and quantitative measure, artifacts, tests, and any
+negative finding while the evidence is fresh.
 
 **Cumulative evidence file** — `docs/evidence/archive/<slug>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
@@ -637,43 +648,62 @@ advance the dependency wave with incomplete work.
   evidence HTML — gone from evergreen
 - **Author as HTML, never markdown**
 
-### 7. Update plan state — after EACH section
+### 7. Update plan state — in the SAME BEAT as EACH node promotion
 
 ```python
-# After each section lands, update atomically
+# Immediately after reckon crew complete, update this node atomically.
 state = read_plan(
     resource={"project": "<project>", "type": "plan", "id": "<slug>"},
     view="raw",
+)
+
+landing_detail = (
+    "<node> landed — commit <sha>; gate <gate-name> <verdict>; "
+    "measure <quantitative-result>; artifacts <paths-or-none>"
 )
 
 edit_plan(
   project="<project>",
   slug="<slug>",
   ops=[
-    {"op": "set", "path": "impl", "value": <shipped_count> / <total_count>},
-    {"op": "resolve", "target": "followups", "id": "<driving-followup-id>",
-     "by": "reckon-ship", "outcome": "§<N> landed — commit <sha>; <one-line result>"},
-    {"op": "append", "target": "followups", "item": {
-      "id": "f-<timestamp>",
-      "status": "open",
-      "written_by": "reckon-ship",
-      "written_at": "<iso-now>",
-      "title": "<next section imperative>",
-      "body": "<2–3 sentences: what landed, what comes next>",
-      "recommends_skill": "/reckon-ship <slug> §<N+1>",
-      "prompt": "/reckon-ship <slug> [§N]"
-    }}
+    {"op": "set", "path": "impl",
+     "value": <completed_executable_nodes> / <total_executable_nodes>},
+    {"op": "set", "path": "commits",
+     "value": <existing_commits_with_sha_appended_once>},
+    {"op": "set", "path": "artifacts",
+     "value": <existing_artifacts_with_node_artifacts_appended_once>},
+    {"op": "append", "target": "comments", "section": "<section-id>",
+     "item": {"id": "c-<timestamp>", "who": "reckon-ship",
+              "when": "<iso-now>", "body": landing_detail}}
   ],
   expected_version=state["version"]
 )
 ```
 
+That single state write carries the commit and gate measure alongside `impl`;
+a moved percentage is never the only new information. Preserve the manifest's
+exact measure and artifact paths rather than replacing them with “passed”. The
+cumulative evidence HTML receives the fuller record in the same landing beat.
+
 **`impl` calculation:**
-- Set `impl = (count of shipped sections) / (count of total implementable sections)`
+- Set `impl = (count of completed executable nodes) / (count of total executable nodes)`
+- Count the whole selected plan, including nodes in partially landed sections;
+  the orchestrator owns this denominator because it owns the complete DAG
 - Monotonic — only ever increases
-- Set it on EVERY section landing, not just the final one
+- Set it on EVERY node landing, not just the final node in a section
 
 Note: `impl` is a settable scalar — the server does NOT compute it automatically. You MUST set it.
+
+If the node also closes its section, include the driving-followup resolution in
+the same `edit_plan` call and then collapse the section as §6b requires. If it
+does not close the section, leave that followup open: a node landing advances the
+ledger without pretending the larger section is finished.
+
+**Same-plan follow-on work becomes a section, never a followup.** Before setting
+a terminal status, add discovered work that belongs to this plan to the evergreen
+as a concrete section, add its executable nodes to the DAG, and keep the plan
+active. A followup is reserved for work owned by a different plan, whose own
+lifecycle keeps it visible to `roadmap`.
 
 ### 7b. Continuation closes at THREE altitudes, not one
 
@@ -683,14 +713,15 @@ two dangling.
 
 | Altitude | What it owes | How |
 |---|---|---|
-| **Worker** | candidate follow-ons it was fenced out of | the manifest's `follow_ons` field; fold each into the current wave or write it as a plan followup |
-| **Plan landing** | the next one-line invocation, or an explicit end | the `resolve` + `append` pair above |
+| **Worker** | candidate follow-ons it was fenced out of | classify the manifest's `follow_ons`: same-plan work becomes a section; different-plan work routes to its owning plan |
+| **Plan landing** | visible continuation, or an explicit end | keep same-plan sections active; use a one-line followup only for another plan, or resolve with `done — no followup` |
 | **Sprint close** | the sprints this one lets us start | `roadmap(project)` → each sprint row's `feeds_sprints` and `unblocks`, derived from the dependency graph |
 
 A worker's out-of-scope discovery has nowhere to go but prose, where it is lost.
-`crew.followup_ops_from_manifest(manifest, slug=…, section=…)` turns each
-candidate into an append op with the canonical invocation line, so it reaches plan
-state without anyone retyping guidance.
+Classify every `follow_ons` entry before writing it. Never feed same-plan work
+blindly into `crew.followup_ops_from_manifest`: author it as a section and add
+its nodes to the live DAG. Only cross-plan work may become a followup invocation,
+pointing at the plan whose lifecycle owns and surfaces it.
 
 **The plan altitude is enforced at the write boundary.** A writeback that lands a
 plan — one that resolves a followup or sets a terminal status — is **refused**

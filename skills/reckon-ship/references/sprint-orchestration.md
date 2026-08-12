@@ -366,20 +366,36 @@ branch and continue only independent ready nodes.
 
 ## 8. Plan, evidence, and sprint writeback
 
-After each integrated node, the orchestrator:
+Each verified node has one landing beat: the orchestrator runs `reckon crew
+complete`, then immediately writes that node to the plan. Do not promote another
+run, merge another commit, dispatch more work, or open the next wave between
+those operations. Workers return outcome data in their manifests and never
+write shared plan or index state.
+
+Immediately after each `reckon crew complete`, the orchestrator:
 
 1. Updates the plan's cumulative evidence record at
    `docs/evidence/archive/<slug>-landed.html` and links the landed section to a
    stable anchor. Do not create per-node or per-section fragments; split a new
    evidence resource only for a materially independent artifact that stands on
-   its own.
-2. Resolves the driving followup with commit, tests, and quantitative outcome.
-3. Advances plan implementation fraction monotonically.
-4. Collapses fully landed sections in the evergreen plan.
-5. Re-reads the sprint resource and verifies its composed item status reflects
+   its own. Append the node's commit, gate verdict and quantitative measure,
+   tests, artifacts, and negative findings to that anchor.
+2. Calls `edit_plan` once with the advanced node-based `impl`, the commit added
+   to `commits`, artifacts added to `artifacts`, and a section comment carrying
+   the same commit, gate verdict, quantitative measure, and artifact paths. The
+   number and its evidence travel in one version-safe state write.
+3. Resolves the driving followup only when the node closes its section. A
+   partially landed section remains open even though its plan ledger advanced.
+4. Collapses a section in the evergreen only when its final node has landed.
+5. Classifies every manifest `follow_ons` entry before closure. Work owned by
+   the plan in hand becomes a new evergreen section and executable DAG node,
+   never a followup; only work owned by another plan may become a followup that
+   invokes that owning plan. Do not set a terminal status while a same-plan
+   section remains open.
+6. Re-reads the sprint resource and verifies its composed item status reflects
    the plan writeback. Item lifecycle status and implementation fraction are
    derived from plan HTML and must never be persisted in the sprint.
-6. Appends the next followup, or records `done — no followup`.
+7. Appends a cross-plan followup when needed, or records `done — no followup`.
 
 After all executable nodes:
 
