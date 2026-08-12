@@ -34,8 +34,8 @@
         <tr><td>Navigable</td><td>The crew tab renders each run with linked plan and section; the screenshot figure and the in-flight band remain open — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
         <tr><td>Visible to agents too</td><td>—</td><td>open</td></tr>
         <tr><td>No second daemon</td><td>The surface is a tab in the existing SPA on the existing port; no new listener was added — <a href="#watcher-surface">§ watcher surface</a></td><td>partial</td></tr>
-        <tr><td>Portfolio scan usable</td><td>—</td><td>open</td></tr>
-        <tr><td>Drift detectable</td><td>—</td><td>open</td></tr>
+        <tr><td>Portfolio scan usable</td><td>2,873 bytes against a 180,224-byte baseline — a 98.4% reduction with all 12 rows intact — <a href="#portfolio-view">§ portfolio view</a></td><td>pass</td></tr>
+        <tr><td>Drift detectable</td><td>Reported on a fixture and repaired behind a flag; two live findings reported without modification — <a href="#skill-drift">§ skill drift</a></td><td>partial</td></tr>
         <tr><td>Placeholder rejected</td><td>An em-dash milestone is refused on write and the live plan is cleared — <a href="#milestone-shape">§ milestone shape</a></td><td>pass</td></tr>
         <tr><td>Suite green</td><td>—</td><td>open</td></tr>
       </tbody>
@@ -71,6 +71,57 @@
     the 3-second latency figure needs a real dispatch observed through a restarted server, and the
     navigability measure needs the rendered surface that the watcher-tab node supplies. Both are
     recorded as partial rather than passed.</p>
+  </section>
+
+  <section id="portfolio-view">
+    <h2>The portfolio scan fits, at 1.6% of its former size</h2>
+
+    <p>Commit <code>1d4543a</code> — <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code>,
+    <code>tests/test_mcp_roadmap.py</code>; 199 insertions, 9 deletions across 3 files. Gate
+    <strong>passed</strong>: 12 passed, 0 failed, 5 new test functions.</p>
+
+    <p><code>project="*"</code> now defaults to <code>view=summary</code>. Measured against the live
+    12-project mount set, the default response is <strong>2,873 bytes against a 180,224-byte
+    baseline</strong> — a 98.4% reduction, and 1.6% of the figure that made this call unusable through
+    MCP — while comfortably inside the tested 32 KiB ceiling.</p>
+
+    <p>The reduction keeps what a portfolio scan is for. The payload still reports 12 mounted projects,
+    361 plans, 177 completed, 86 ready, 50 blocked, 11 deferred and 82 findings, with per-project
+    completion, ready, blocked, deferred and finding totals — all 12 rows retained rather than
+    truncated. Explicit <code>detail</code> gives cursor-paginated findings for portfolio and
+    single-project calls, explicit <code>raw</code> wraps the lossless legacy report, and a
+    single-project call with no view keeps its existing shape, so no caller changes behaviour without
+    asking to.</p>
+  </section>
+
+  <section id="skill-drift">
+    <h2>A copied skill directory standing among symlinks is now reported</h2>
+
+    <p>Commit <code>fb95f4f</code> — <code>reckon/cli.py</code>, <code>tests/test_doctor.py</code>;
+    122 insertions, 5 deletions across 2 files. Gate <strong>passed</strong>: 9 passed, 0 failed,
+    3 new tests, ruff clean.</p>
+
+    <p><code>reckon install-skills</code> infers the expected root from sibling symlinks and reports a
+    real directory standing among them, naming both the offending skill and the exact expected target.
+    Repair is behind an explicit <code>--repair</code> flag; the default path reports and changes
+    nothing. A runtime whose skills are <em>consistently</em> copied produces no finding, which is what
+    keeps the check from firing on a deliberately different installation style.</p>
+
+    <table>
+      <thead><tr><th>Runtime</th><th>Finding</th></tr></thead>
+      <tbody>
+        <tr><td><code>~/.claude/skills</code></td><td><code>reckon-roadmap</code> copied where linked</td></tr>
+        <tr><td><code>~/.agents/skills</code></td><td><code>reckon-roadmap</code> copied where linked</td></tr>
+        <tr><td><code>~/.codex/skills</code></td><td>None — all seven skills consistently copied</td></tr>
+      </tbody>
+    </table>
+
+    <p>The live count is <strong>two</strong>, not the one the plan anticipated: the same skill is a
+    real directory in two separate runtimes. Both were left untouched, with identical
+    <code>mtime_ns</code> before and after inspection — roughly a dozen concurrent agent sessions read
+    those directories, and converting one to a symlink underneath a running session is a change to take
+    when the fleet is quiet. The measure is therefore recorded <strong>partial</strong>: detection is
+    proven, the live repair is an outstanding coordinated action.</p>
   </section>
 
   <section id="recovery-classification">

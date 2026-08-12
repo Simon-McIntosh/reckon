@@ -36,8 +36,8 @@
         <tr><td>Scope change excluded</td><td>A 200 h scope-changed outlier and a 50 h proxy-timed one are both withheld — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
         <tr><td>Cold start terminates</td><td>Eight noisy observations converge to 3.009 h and factor 2.003 — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
         <tr><td>Horizon drives splitting</td><td>—</td><td>open</td></tr>
-        <tr><td>Cache is rebuildable</td><td>—</td><td>open</td></tr>
-        <tr><td>Lines are unrankable</td><td>—</td><td>open</td></tr>
+        <tr><td>Cache is rebuildable</td><td>Delete and rebuild reproduced byte-equivalent figures; nothing is authored — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
+        <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>—</td><td>open</td></tr>
         <tr><td>Prediction beats the letters</td><td>—</td><td>open</td></tr>
         <tr><td>Suite green</td><td>1,731 passed / 0 failed at the integrated commit — <a href="#integration-suite">§ integration suite</a></td><td>pass</td></tr>
@@ -206,6 +206,62 @@
     now withheld by construction rather than by anyone remembering to filter them. Confidence travels
     with each figure, so an agent with eight samples cannot present its number with the authority of
     one with eighty.</p>
+  </section>
+
+  <section id="capabilities-cache">
+    <h2>A disposable capabilities cache, and what it says the ledger is worth</h2>
+
+    <p>Commit <code>55e9148</code> — <code>reckon/capabilities.py</code>,
+    <code>tests/test_capabilities.py</code>; 501 insertions across 2 new files. Gate
+    <strong>passed</strong>: 10 passed, 0 failed, 10 new tests, ruff clean. Cache path
+    <code>&lt;RECKON_HOME&gt;/cache/capabilities.json</code>.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Rebuildable</td><td>Deleting and rebuilding reproduced byte-equivalent figures; direct derivation, rebuild return and the JSON cache were exactly equal</td></tr>
+        <tr><td>Nothing authored</td><td>Each ledger version and a deterministic source digest are recorded, so every value traces to a committed record</td></tr>
+        <tr><td>Size-conditioned success</td><td><code>success_by_estimated_hours</code> is cumulative over configurable hour bins; <code>competence_horizon_hours</code> is the largest measured size meeting the threshold</td></tr>
+        <tr><td>Distribution, not just a mean</td><td>Speed carries sorted empirical values with mean, median, min, max, p10 and p90</td></tr>
+        <tr><td>Lines unrankable</td><td><code>changed_lines</code> is copied only into observation metadata, and an AST guard confines its consumption to one descriptive helper plus its single call site</td></tr>
+      </tbody>
+    </table>
+
+    <p>The AST guard is the right shape for that last measure. The plan required the bar against
+    ranking to be enforced by test rather than convention, and a test that inspects the syntax tree
+    fails when a future edit feeds the field into a sort or comparison — which a test asserting only
+    today's outputs would not catch.</p>
+
+    <h3>The honest figure: 59 runs, 0 usable configurations</h3>
+
+    <p>Run against this project's live ledger, the cache read <strong>59 committed runs and produced
+    0 configurations</strong>, having excluded 3 scope-changed and 56 untrustworthy-completion
+    records. The exclusion rules are working exactly as specified; what they reveal is that the
+    historical ledger is essentially empty as calibration input. The breakdown:</p>
+
+    <table>
+      <thead><tr><th>Completion source</th><th>Runs</th><th>Usable</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><em>absent</em></td><td>38</td><td>no</td><td>Written before the field existed</td></tr>
+        <tr><td><code>provided</code></td><td>12</td><td>no</td><td>A hand-supplied stamp is not independently verifiable</td></tr>
+        <tr><td><code>promotion_time</code></td><td>9</td><td>no</td><td>The known-inflated fallback</td></tr>
+        <tr><td><code>stream_mtime</code> / <code>terminal_event</code></td><td>0</td><td>—</td><td>None yet at the time of the probe</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The 12 <code>provided</code> records are an own goal worth recording.</strong> They are
+    this sprint's own promotions, hand-corrected from the stream's last-write time while the automatic
+    path was still being built — accurate, but classified as unverifiable and therefore excluded. The
+    correction is to stop supplying the stamp and let the ranked-source code derive it: promoting the
+    capabilities node itself with no explicit stamp produced
+    <code>completed_at_source=stream_mtime</code> and 340 s, the <em>first</em> trustworthy record in
+    this ledger. Every later promotion follows that path.</p>
+
+    <p>This bears directly on the plan's final gate. A prediction comparison between hours and the
+    legacy letters needs usable runs, and at the time of this probe there were none — so that gate
+    cannot be discharged on historical data and must wait for records the automatic path produces. A
+    negative result on sample size is a legitimate outcome; fitting the comparison to the data that
+    exists would not be.</p>
   </section>
 
   <section id="stream-carries-no-timestamps">

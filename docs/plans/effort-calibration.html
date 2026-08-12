@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="10">
-<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079">
+<meta name="plan-version" content="11">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/roadmap.py,reckon/calibration.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_crew.py,tests/test_roadmap.py,tests/test_calibration.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.55">
+<meta name="plan-impl" content="0.64">
 </head>
 <body>
   <main class="plan-doc">
@@ -330,6 +330,9 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260812T191000" data-who="reckon-ship" data-when="2026-08-12T19:10:00Z">
     <div class="r-comment-body">hours-arithmetic landed — commit 07fb21b4ef3a62637a4b9cf527d9870d2aff10b5; gate passed; measure: tests/test_roadmap.py + tests/test_mcp_roadmap.py 29 passed / 0 failed with 4 new tests; the roadmap response names unit=worker-hours and carries per-plan effort_hours and remaining_effort_hours with length_hours on critical and open paths; 5.0h explicit overrides a legacy XL and yields 3.75h remaining at 25% implementation, legacy L maps to 4.0h and is reported uncalibrated, path totals equal the sum of per-plan remaining hours within a tested 0.25h tolerance, and uncalibrated_count plus uncalibrated_plans are reported beside the totals with zero-remaining completed plans excluded from the actionable count. Artifacts docs/evidence/archive/effort-calibration-landed.html#hours-arithmetic</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260812T192000" data-who="reckon-ship" data-when="2026-08-12T19:20:00Z">
+    <div class="r-comment-body">capabilities-cache-horizon landed — commit 55e9148262fb7819b04b462dbf17550c4d59c71e; gate passed; measure: tests/test_capabilities.py 10 passed / 0 failed with 10 new tests, ruff clean; the cache at <RECKON_HOME>/cache/capabilities.json rebuilds to byte-equivalent figures with direct derivation, rebuild return and JSON exactly equal, records each ledger version plus a deterministic source digest so nothing is authored, reports success_by_estimated_hours over configurable bins with competence_horizon_hours as the largest measured size meeting the threshold, carries sorted speed values with mean/median/min/max/p10/p90 rather than a mean alone, and confines changed_lines consumption to one descriptive helper and its single call site under an AST guard. NEGATIVE RESULT: run against the live ledger it read 59 committed runs and produced 0 configurations, excluding 3 scope-changed and 56 untrustworthy-completion records — 38 absent, 12 provided, 9 promotion_time, 0 stream_mtime or terminal_event. The 12 provided records are this session's own hand-corrected stamps, accurate but not independently verifiable; the correction is to stop supplying --completed-at and let the ranked-source code derive it, which on this node's own promotion produced completed_at_source=stream_mtime and 340s — the first trustworthy record in the ledger. The prediction gate therefore cannot be discharged on historical data. Artifacts docs/evidence/archive/effort-calibration-landed.html#capabilities-cache</div>
 </div>
 </section>
 </main>
