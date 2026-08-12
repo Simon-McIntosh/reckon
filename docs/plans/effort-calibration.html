@@ -22,7 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3">
+<meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,tests/test_ledger.py,docs/evidence/archive/effort-calibration-landed.html">
+<meta name="plan-impl" content="0.09">
 </head>
 <body>
   <main class="plan-doc">
@@ -194,6 +197,59 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
     recorded as a negative result. Do not tune the weights until the comparison passes — that would
     fit the measure to the conclusion and destroy the only external check this plan has.</p>
 
+    <h2 id="s8">§8 — Ranked completion-time sources</h2>
+
+    <p>Reading the finish time from the worker's terminal event assumed the event carries one. This
+    backend's stream does not: every event in it carries only a type, an item or a usage block, and a
+    scan of a full stream for any timestamp-shaped key returns nothing. The token half of that fold
+    works on real runs because usage <em>is</em> on the terminal event; the clock half falls back to
+    promotion wall-clock every time, which leaves the original inflation in place — measured at +43%
+    and +127% on the two runs that first exercised the new code.</p>
+
+    <p>The inflation is worse than noise because it is not random. It equals the interval between a
+    worker finishing and the orchestrator reaching that worker's landing beat, so it grows with wave
+    width and would bias exactly the runs dispatched in the widest waves. A speed factor fitted on
+    these numbers learns the orchestrator's promotion latency and charges it to the worker.</p>
+
+    <p>The finish time is recoverable with no backend cooperation, because the last write to a run's
+    event stream <em>is</em> its terminal event's wall-clock, and the run directory outlives
+    promotion. So completion time resolves from three ranked sources rather than two — the event's
+    own timestamp where a backend supplies one, else the stream's last-write time, else the
+    wall-clock at promotion — each recorded under its own distinct source name so that a proxy can
+    never be read as a measurement, and so a later reader can tell which figures are safe to
+    calibrate on.</p>
+
+    <p>This also governs the backfill: the six inflated historical records must be repaired from
+    whichever source their surviving stream supports, and records whose stream is gone stay marked as
+    unusable for calibration rather than being silently averaged in.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Proxy is used and named</td>
+          <td>A run whose stream carries no event timestamp resolves its completion time from the
+          stream's last-write time, recorded under a source distinct from both the event source and
+          promotion time. Asserted by test.</td>
+        </tr>
+        <tr>
+          <td>Ranking holds</td>
+          <td>A stream carrying an event timestamp still prefers it over the file's mtime, and a run
+          with no surviving stream still falls back to promotion time. Both asserted by test.</td>
+        </tr>
+        <tr>
+          <td>Real runs measured, not estimated</td>
+          <td>Re-derived worker times for this project's own runs, reported against the figures the
+          promotion path recorded, with the residual inflation stated per run.</td>
+        </tr>
+        <tr>
+          <td>Unusable records stay unusable</td>
+          <td>A record whose stream is absent is excluded from calibration input rather than
+          defaulting to promotion time silently. Asserted by test.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="effort-unit" data-choice="neutral-worker-hours" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -251,6 +307,11 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260812T173300" data-who="reckon-ship" data-when="2026-08-12T17:33:00Z">
+    <div class="r-comment-body">promotion-terminal-read landed — commit 69a3a21e35efa1d56bdda99bf409f64b31f209f3; gate passed on its declared measure; measure: tests/test_crew.py + tests/test_ledger.py 97 passed / 0 failed in 6.4s with 3 new tests, ruff clean; a synthetic stream ending 2027-01-02T03:04:05Z promoted with that exact completed_at, source terminal_event, and recovered 29,253 input / 5 output tokens with no prior observe. QUALIFIED: promoting the two real runs of this wave through the new code recorded completed_at_source=promotion_time for both, because this backend's stream carries no timestamp of any kind — measured inflation +140s (+43%) and +308s (+127%) against finish times taken from the stream's last-write time. Recorded as a negative result; the third-source repair is now §8. Artifacts docs/evidence/archive/effort-calibration-landed.html#promotion-terminal-read and #stream-carries-no-timestamps</div>
+</div>
+</section>
+</main>
 </body>
 </html>

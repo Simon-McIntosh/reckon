@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="effort-calibration-landed">
+  <meta name="plan-title" content="Effort calibration — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution record for moving effort onto neutral worker-hours and closing the two calibration loops. Includes the measured finding that this backend's event stream carries no timestamps, so completion time cannot be read from it.">
+  <meta name="plan-evidence-for" content="reckon:effort-calibration">
+  <meta name="plan-verifies" content="reckon:effort-calibration#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; codex CLI workers in detached worktrees">
+  <title>Effort calibration — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Effort calibration — landed evidence</h1>
+    <p class="plan-summary">One cumulative record, updated as each node lands. The first node
+    produced a <strong>qualified</strong> result: the promotion path now records where its
+    completion time came from, and that recording is what exposed the fact that this backend
+    supplies no timestamp to read.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each has produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Migration is lossless</td><td>—</td><td>open</td></tr>
+        <tr><td>Loops are separable</td><td>—</td><td>open</td></tr>
+        <tr><td>Scope change excluded</td><td>—</td><td>open</td></tr>
+        <tr><td>Cold start terminates</td><td>—</td><td>open</td></tr>
+        <tr><td>Horizon drives splitting</td><td>—</td><td>open</td></tr>
+        <tr><td>Cache is rebuildable</td><td>—</td><td>open</td></tr>
+        <tr><td>Lines are unrankable</td><td>—</td><td>open</td></tr>
+        <tr><td>Unit stated everywhere</td><td>—</td><td>open</td></tr>
+        <tr><td>Prediction beats the letters</td><td>—</td><td>open</td></tr>
+        <tr><td>Suite green</td><td>—</td><td>open</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="promotion-terminal-read">
+    <h2>Promotion folds the run's terminal state, and names its source</h2>
+
+    <p>Commit <code>69a3a21</code> — <code>reckon/crew.py</code>, <code>reckon/ledger.py</code>,
+    <code>tests/test_ledger.py</code>; 93 insertions, 5 deletions across 3 files. Gate
+    <strong>passed</strong> on its declared measure.</p>
+
+    <p>Completion no longer depends on someone having called <code>observe</code> at the right
+    moment. <code>complete</code> folds the run's terminal event directly, so token usage reaches
+    the ledger from the stream even when no observation ever happened, and
+    <code>completed_at_source</code> joins <code>RECORD_FIELDS</code> so every new record states
+    whether its finish time came from an event or from the wall-clock at promotion.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Terminal event honoured</td><td>Synthetic stream ending at <code>2027-01-02T03:04:05Z</code> promoted with that exact <code>completed_at</code>, source <code>terminal_event</code>, and 29,253 input / 5 output tokens recovered with no prior <code>observe</code></td></tr>
+        <tr><td>Fallback is explicit</td><td>Untimestamped stream fell back to promotion time and recorded <code>completed_at_source=promotion_time</code></td></tr>
+        <tr><td>Field is universal</td><td><code>completed_at_source</code> asserted present on every record <code>build_record</code> emits</td></tr>
+        <tr><td>Scoped suite</td><td><code>tests/test_crew.py tests/test_ledger.py</code> — 97 passed, 0 failed, 6.4 s; 3 new tests; ruff clean</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="stream-carries-no-timestamps">
+    <h2>Negative result — the backend's stream carries no timestamps, so the inflation survives</h2>
+
+    <p>The node above was specified against a synthetic stream and passes on one. Promoting the two
+    real runs of this same wave through the new code showed the fix does not reach the defect it was
+    written for: <strong>both real runs recorded <code>completed_at_source=promotion_time</code></strong>,
+    because this backend's <code>--json</code> stream contains no timestamp of any kind. Every event
+    in a full 296 KB stream carries only <code>type</code>, <code>item</code> or <code>usage</code>
+    keys; a scan for any key containing <em>time</em>, <em>ts</em>, <em>stamp</em> or <em>at</em>
+    returned none. The terminal <code>turn.completed</code> event supplies usage — which is why the
+    token half of the fix works on real runs — and no clock.</p>
+
+    <p>So the measurable residue is unchanged in kind and only smaller in size than the
+    415-minute case that motivated the repair. Both figures below are inflated by the interval
+    between a worker finishing and the orchestrator getting to its landing beat:</p>
+
+    <table>
+      <thead><tr><th>Run</th><th>Dispatched</th><th>True finish<br>(last stream write)</th><th>Recorded</th><th>Recorded<br>worker time</th><th>True</th><th>Inflation</th></tr></thead>
+      <tbody>
+        <tr><td><code>north-star-project-state</code></td><td>17:22:02Z</td><td>17:27:26Z</td><td>17:29:46Z</td><td>464 s</td><td>324 s</td><td>+140 s (+43%)</td></tr>
+        <tr><td><code>promotion-terminal-read</code></td><td>17:22:13Z</td><td>17:26:16Z</td><td>17:31:25Z</td><td>551 s</td><td>243 s</td><td>+308 s (+127%)</td></tr>
+      </tbody>
+    </table>
+
+    <p>The bias is not random: it grows with how much landing work the orchestrator does between a
+    worker finishing and that worker being promoted, which means it correlates with wave size and
+    would systematically inflate exactly the runs dispatched in the widest waves. A speed factor
+    fitted on these numbers would learn the orchestrator's promotion latency and attribute it to the
+    worker.</p>
+
+    <p>The finish time is nonetheless recoverable without any backend cooperation: the last write to
+    <code>stream.jsonl</code> <em>is</em> the terminal event's wall-clock, and the run directory
+    survives promotion. Both figures in the table above were derived that way. The repair is
+    therefore a third source ranked between the two that exist — event timestamp where a backend
+    supplies one, else the stream's last-write time, else promotion wall-clock — each recorded
+    distinctly so no reader can mistake a proxy for a measurement. That work is carried as
+    <a href="/reckon/plans/effort-calibration#s8">§8</a> of the plan.</p>
+  </section>
+
+</main>
+</body>
+</html>

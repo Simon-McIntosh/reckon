@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="north-star-orientation-landed">
+  <meta name="plan-title" content="North-star orientation — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution record for making durable project direction a first-class label: the project-state collection, the plan label, orientation reporting, prominence, and reckon's own adoption.">
+  <meta name="plan-evidence-for" content="reckon:north-star-orientation">
+  <meta name="plan-verifies" content="reckon:north-star-orientation#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; codex CLI workers in detached worktrees">
+  <title>North-star orientation — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>North-star orientation — landed evidence</h1>
+    <p class="plan-summary">One cumulative record, updated as each node of the plan lands. Anchors
+    below are stable; the plan's evergreen sections link to them as they collapse.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each has produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Count discipline</td><td>Six entries write and read while the audit returns one advisory warning — <a href="#project-state">§ project state</a></td><td>pass</td></tr>
+        <tr><td>Optional everywhere</td><td>A project omitting the collection composes without gaining the key — <a href="#project-state">§ project state</a></td><td>pass</td></tr>
+        <tr><td>Declared and rendered</td><td>—</td><td>open</td></tr>
+        <tr><td>Plans point at them</td><td>—</td><td>open</td></tr>
+        <tr><td>Dangling reference caught</td><td>—</td><td>open</td></tr>
+        <tr><td>Orientation rollup</td><td>—</td><td>open</td></tr>
+        <tr><td>Suite green</td><td>—</td><td>open</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="project-state">
+    <h2>A north-star collection in project state</h2>
+
+    <p>Commit <code>cb230a2</code> — <code>reckon/_schema.py</code>,
+    <code>reckon/project_state.py</code>, <code>tests/test_project_state.py</code>; 147 insertions
+    across 3 files. Gate <strong>passed</strong>.</p>
+
+    <p>Each entry requires a non-empty id, name and statement of what winning looks like, and
+    permits an optional <code>href</code> for a direction that needs argument rather than a
+    sentence. Duplicate and unsafe ids are refused; entries round-trip losslessly beside sprints
+    and milestones, reusing the rollup machinery those two already have rather than introducing a
+    typed resource root.</p>
+
+    <p>The count cap is advisory by construction, which is the property worth recording: at six
+    entries against a cap of five the write <em>succeeds</em> and
+    <code>audit_project_state</code> returns one warning coded
+    <code>north-star-advisory-cap-exceeded</code>. A project drifting past a handful of directions
+    is reported, never blocked. A distributed project resource that omits <code>north_stars</code>
+    entirely reads and composes without the key appearing, so no project is required to migrate.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Scoped suite</td><td><code>tests/test_project_state.py tests/test_schema.py</code> — 1,121 passed, 0 failed, 20.3 s</td></tr>
+        <tr><td>New cases</td><td>6 parameter-expanded: round-trip, each required field, advisory warning without rejection, absence preserved</td></tr>
+        <tr><td>Worker time</td><td>324 s measured from the run's own event stream</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+</body>
+</html>
