@@ -412,6 +412,10 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     assert stored["tests_added"] == 9
     assert stored["gate"] == "passed"
     assert stored["base_sha"]
+    # Whatever headroom the backend reported travels with the record: the pointer
+    # that held it is gone, and a later pre-flight reading a call instead would
+    # spend the resource it is measuring.
+    assert stored["budget"]["headroom"] in ("known", "unknown")
 
 
 def test_the_scope_changed_flag_defaults_false_and_is_settable(home, repo) -> None:
@@ -605,13 +609,41 @@ def test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one(home, repo) -
     assert from_worktree["path"].startswith(str(worktree))
 
 
-def test_an_unknown_crew_view_names_the_four(home, repo) -> None:
+def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     from reckon import mcp
 
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    assert "summary, flight, live or ledger" in result["detail"]
+    assert "summary, flight, live, ledger or budget" in result["detail"]
+
+
+def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:
+    """The pre-flight an in-harness orchestrator reads is the same one the CLI runs."""
+    from reckon import mcp
+
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-one",
+            plan="plan-a",
+            gate="passed",
+            agent={"backend": "native"},
+            budget={
+                "headroom": "known",
+                "utilisation_pct": 100.0,
+                "resets_at": "2099-01-01T00:00:00Z",
+            },
+        ),
+        root=repo,
+    )
+
+    report = mcp._crew(PROJECT, view="budget", checkout_path=str(repo))
+
+    assert report["ok"] is True
+    assert report["held"] is True
+    assert report["held_backends"] == ["native"]
+    assert report["resume_at"] == "2099-01-01T00:00:00Z"
 
 
 def test_the_mcp_surface_holds_at_five_tools() -> None:

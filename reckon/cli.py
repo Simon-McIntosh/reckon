@@ -277,7 +277,8 @@ def crew():
     These are agent-callable primitives rather than a human interface: output is
     JSON on stdout, each call is atomic, nothing is interactive, and exit codes
     are branchable — 0 succeeded, 1 the configuration or request is wrong, 2 the
-    node is not dispatchable and names which property it failed.
+    node is not dispatchable and names which property it failed, 3 the wave is
+    held on budget and names the backend, the utilisation and when it resets.
     """
 
 
@@ -336,6 +337,69 @@ def _peer_scopes(values) -> dict:
             )
         peers[name.strip()] = [part.strip() for part in paths.split(",") if part.strip()]
     return peers
+
+
+@crew.command(name="preflight")
+@click.option("--project", required=True, help="Project whose run records are read.")
+@click.option(
+    "--role",
+    "roles",
+    multiple=True,
+    help="Role taking part in the wave; its backend is checked. Repeat as needed.",
+)
+@click.option(
+    "--backend",
+    "backends",
+    multiple=True,
+    help="Backend to check by name, instead of resolving roles.",
+)
+@click.option(
+    "--purpose",
+    type=click.Choice(["dispatch", "resume"]),
+    default="dispatch",
+    show_default=True,
+    help="A dispatch keeps back the resume reserve; a resume may spend it.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose ledger and project flight layer are read.",
+)
+@click.option(
+    "--set",
+    "overrides",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="Flight override for this check; always wins over config layers.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, pretty):
+    """Decide, per backend, whether a wave may open — spending nothing to do it.
+
+    Reads the budget signal that earlier runs already recorded, so the check
+    costs no worker budget; a backend whose config sets ``budget_check`` also has
+    its own account surface read, which runs no model either. Exits 3 when any
+    backend is held, naming its utilisation and reset time; a backend reporting no
+    headroom is never held, because absence of a signal is not exhaustion.
+    """
+    from reckon import budget as budget_module
+
+    crew_module, flight_module = _crew_modules()
+    config = _resolved_flight(flight_module, project, checkout_path, overrides)
+    try:
+        report = budget_module.preflight(
+            project,
+            config,
+            backends=list(backends) or None,
+            roles=list(roles) or None,
+            root=checkout_path,
+            purpose=purpose,
+        )
+    except (crew_module.CrewError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
+    raise click.exceptions.Exit(3 if report["held"] else 0)
 
 
 @crew.command(name="dispatch")
@@ -480,6 +544,20 @@ def crew_dispatch(
             peer_scopes=node.peer_scopes,
             member=member,
         )
+    except crew_module.BudgetHold as exc:
+        # Held, not failed: nothing was created and the node is still ready, so
+        # this exits on its own code rather than as an error the caller would
+        # otherwise answer by reshaping work that is fine.
+        _emit(
+            {
+                "ok": False,
+                "error": "budget-hold",
+                "detail": str(exc),
+                "hold": exc.verdict,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit({"ok": False, "error": "not-dispatchable", "detail": str(exc)}, pretty)
@@ -564,6 +642,17 @@ def crew_resume(run_id, advice, print_only, pretty):
     crew_module, _ = _crew_modules()
     try:
         plan = crew_module.resume_plan(run_id, advice)
+    except crew_module.BudgetHold as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "budget-hold",
+                "detail": str(exc),
+                "hold": exc.verdict,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     payload = {"ok": True, "run_id": run_id, **plan.as_dict()}

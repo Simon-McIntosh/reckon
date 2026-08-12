@@ -14,6 +14,13 @@
                         "null"
                     ]
                 },
+                "budget_check": {
+                    "description": "Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "command": {
                     "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
                     "type": [
@@ -91,6 +98,13 @@
                         "null"
                     ]
                 },
+                "budget_check": {
+                    "description": "Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "command": {
                     "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
                     "type": [
@@ -152,6 +166,42 @@
             "title": "BackendConfig",
             "type": "object"
         },
+        "BudgetConfig": {
+            "additionalProperties": false,
+            "description": "Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.",
+            "properties": {
+                "exhausted_statuses": {
+                    "description": "Threshold-status values that count as exhausted whatever the utilisation reads \u2014 the overage question, answered as data so that the schema enumerates no backend's vocabulary. Empty leaves the ceiling as the only test.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "resume_reserve_pct": {
+                    "description": "Headroom withheld from new dispatches, in percentage points, so a worker that stops and asks for help can still be answered in its own session. A fresh dispatch stops at the ceiling less this reserve; answering a stuck worker may spend it. Spending the last of a quota on a new dispatch strands the wave in its worst state \u2014 work in flight and no way to unblock it.",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "utilisation_ceiling_pct": {
+                    "description": "Reported utilisation, as a percentage, at or above which a wave will not open. A backend reporting no headroom is never held by this: absence of a signal is not evidence of exhaustion, and a false hold stalls everything while a rejected call is cheap and announces itself.",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "title": "BudgetConfig",
+            "type": "object"
+        },
         "FenceConfig": {
             "additionalProperties": false,
             "description": "Limits a worker applies to itself before asking for help.",
@@ -202,6 +252,16 @@
                     "type": [
                         "object",
                         "null"
+                    ]
+                },
+                "budget": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/BudgetConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
                     ]
                 },
                 "default_backend": {
@@ -494,7 +554,8 @@
             "enum": [
                 "dispatch",
                 "completion",
-                "micro-plan"
+                "micro-plan",
+                "hold"
             ],
             "title": "SummaryOccasion",
             "type": "string"
@@ -542,6 +603,16 @@
             "type": [
                 "object",
                 "null"
+            ]
+        },
+        "budget": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/BudgetConfig"
+                },
+                {
+                    "type": "null"
+                }
             ]
         },
         "default_backend": {

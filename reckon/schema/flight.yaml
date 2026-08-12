@@ -95,6 +95,11 @@ enums:
       dispatch:
       completion:
       micro-plan:
+      hold:
+        description: >-
+          A wave that was held before it opened. It reports like a dispatched
+          one, because a hold that looks like silence is indistinguishable from
+          a crashed orchestrator.
 
 # ── Slots ───────────────────────────────────────────────────────────────────
 
@@ -128,6 +133,9 @@ slots:
 
   gates:
     range: GateConfig
+
+  budget:
+    range: BudgetConfig
 
   fences:
     range: FenceConfig
@@ -177,6 +185,45 @@ slots:
   session_reuse:
     description: Whether a finished worker session can be resumed rather than respawned.
     range: boolean
+
+  budget_check:
+    description: >-
+      Whether a pre-flight may read this backend's own account-limit surface
+      instead of relying on what earlier runs recorded. Off by default, because
+      a read that has to be asked for cannot happen by accident, and because a
+      backend exposing no such surface reports unknown rather than a guess. It
+      is never a model call and consumes no worker budget.
+    range: boolean
+
+  utilisation_ceiling_pct:
+    description: >-
+      Reported utilisation, as a percentage, at or above which a wave will not
+      open. A backend reporting no headroom is never held by this: absence of a
+      signal is not evidence of exhaustion, and a false hold stalls everything
+      while a rejected call is cheap and announces itself.
+    range: float
+    minimum_value: 0
+    maximum_value: 100
+
+  resume_reserve_pct:
+    description: >-
+      Headroom withheld from new dispatches, in percentage points, so a worker
+      that stops and asks for help can still be answered in its own session. A
+      fresh dispatch stops at the ceiling less this reserve; answering a stuck
+      worker may spend it. Spending the last of a quota on a new dispatch
+      strands the wave in its worst state — work in flight and no way to unblock
+      it.
+    range: float
+    minimum_value: 0
+    maximum_value: 100
+
+  exhausted_statuses:
+    description: >-
+      Threshold-status values that count as exhausted whatever the utilisation
+      reads — the overage question, answered as data so that the schema
+      enumerates no backend's vocabulary. Empty leaves the ceiling as the only
+      test.
+    multivalued: true
 
   concurrency:
     description: Maximum simultaneous workers this backend will run.
@@ -238,6 +285,7 @@ classes:
       - backends
       - roles
       - gates
+      - budget
       - fences
       - worktree
       - summary
@@ -253,6 +301,7 @@ classes:
       - effort
       - sandbox
       - session_reuse
+      - budget_check
       - concurrency
       - time_budget
 
@@ -276,6 +325,16 @@ classes:
       - enforce
       - require_evidence
       - on_fail
+
+  BudgetConfig:
+    description: >-
+      Thresholds that decide whether a wave opens. They are compared against
+      whatever a backend actually reported; a backend that reports nothing is
+      never held by them.
+    slots:
+      - utilisation_ceiling_pct
+      - resume_reserve_pct
+      - exhausted_statuses
 
   FenceConfig:
     description: Limits a worker applies to itself before asking for help.

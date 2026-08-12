@@ -12,6 +12,14 @@ run that silently reads as complete.
 | `codex-failed-turn.jsonl` | the same, with a model identifier the account cannot use | error event and failed turn carrying a nested message |
 | `claude-turn.jsonl` | `claude -p --output-format stream-json --verbose --add-dir <dir>` | session id from init, rate-limit event with utilisation and reset, successful result |
 | `claude-failed-turn.jsonl` | the same, with a model identifier that does not exist | a result whose `is_error` is true while its `subtype` reads `success` |
+| `codex-account-limits.jsonl` | `codex app-server`, fed an `initialize` handshake then `account/rateLimits/read` | headroom off the non-interactive path: used percentages and reset times for two metered windows, plus an unrelated notification interleaved with the answers |
+
+The last row is the exchange behind `budget_probe`. It records that the harness
+whose run stream reports no headroom does publish it elsewhere — the limits are
+answered over the app server's line protocol, by a read that runs no model. Its
+figures, window identifiers and account metadata are replaced with neutral
+values: what is under test is the shape of the answer and which window binds,
+and an account's real utilisation is not a constant anything should record.
 
 Two elisions, both in the `claude` streams:
 

@@ -77,6 +77,7 @@ RECORD_FIELDS = (
     "manifest_path",
     "scope_changed",
     "session_id",
+    "budget",
 )
 
 
@@ -287,6 +288,7 @@ def build_record(
     manifest_path: str = "",
     scope_changed: bool = False,
     session_id: str | None = None,
+    budget: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict."""
     verdict = str(gate).strip().lower()
@@ -316,6 +318,11 @@ def build_record(
         "manifest_path": str(manifest_path),
         "scope_changed": bool(scope_changed),
         "session_id": session_id,
+        # Whatever headroom the backend reported while this run was in flight.
+        # Carried here because the pointer that held it is deleted on promotion,
+        # and a pre-flight that has to make a call to learn headroom spends the
+        # very resource it is measuring — most often when it is scarcest.
+        "budget": dict(budget or {}),
     }
 
 

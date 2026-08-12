@@ -2428,30 +2428,41 @@ def _crew(
     view: str = "summary",
     checkout_path: str | None = None,
 ) -> dict[str, Any]:
-    """Read crew state: resolved routing, live runs, the ledger, or a summary.
+    """Read crew state: routing, budget headroom, live runs, or the ledger.
 
-    Read-only, and deliberately one tool over four views rather than four tools.
+    Read-only, and deliberately one tool over five views rather than five tools.
     ``ledger`` and ``summary`` read the project's committed run records —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
     classification :func:`reckon.crew.recover` would give it; ``flight`` reports
-    the resolved routing config with the layer that supplied every value.
+    the resolved routing config with the layer that supplied every value; and
+    ``budget`` reports, per backend, whether a wave may open — read from what
+    earlier runs recorded, so it spends nothing, and holding only where
+    exhaustion was actually reported.
 
     ``checkout_path`` follows the same worktree-routing contract as
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
+    from reckon import budget as budget_module
     from reckon import crew as crew_module
     from reckon import flight as flight_module
     from reckon import ledger as ledger_module
 
-    if view not in ("summary", "flight", "live", "ledger"):
+    if view not in ("summary", "flight", "live", "ledger", "budget"):
         return {
             "ok": False,
             "error": "invalid_view",
-            "detail": "view must be summary, flight, live or ledger",
+            "detail": "view must be summary, flight, live, ledger or budget",
         }
     try:
+        if view == "budget":
+            config = flight_module.resolve(project, checkout_path=checkout_path).config
+            return {
+                "ok": True,
+                "view": view,
+                **budget_module.preflight(project, config, root=checkout_path),
+            }
         if view == "flight":
             return {
                 "ok": True,

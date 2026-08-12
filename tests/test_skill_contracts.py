@@ -185,7 +185,10 @@ def test_ship_skill_carries_the_four_axis_summary_reflex() -> None:
     ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
     for axis in ("WHAT", "WHY", "HOW", "WHEN"):
         assert f"\n{axis}   " in ship
-    assert "at completion it carries the gate evidence" in ship
+    assert "`WHY` axis carries that gate's evidence" in ship
+    # The same discipline covers a held wave: a hold without a figure is not a
+    # report a lead can act on, so WHY is quantitative on both occasions.
+    assert "at completion or a hold it carries the figure" in ship
 
 
 def test_worker_protocol_owns_the_backend_independent_contract() -> None:
@@ -210,6 +213,71 @@ def test_worker_backends_reference_stays_about_mechanics() -> None:
     assert "Ownership test" in backends
     for topic in ("session", "observation", "budget", "launch"):
         assert topic in backends.lower()
+
+
+# Primitives and commands that belong to one HOST harness the orchestrator runs
+# inside. Naming any of them in the skill or a process reference couples the whole
+# skill to that host, which is the portability the single-skill design preserves.
+HARNESS_LOCAL_PRIMITIVES = re.compile(
+    r"run_in_background|ScheduleWakeup|CronCreate|CronList|TaskOutput"
+    r"|\bcodex (app-server|exec|resume|fork)\b|\bclaude -p\b|--output-format",
+)
+
+# The four capabilities an orchestrator's behaviour actually turns on. Each host
+# file states all four, so a capability this host lacks is recorded as absent
+# rather than left out — an omission reads as "not investigated".
+HOST_CAPABILITIES = (
+    "Background dispatch",
+    "Wake on completion",
+    "Self-scheduling",
+    "Budget visibility to itself",
+)
+
+
+def _harness_reference_dir():
+    return ROOT / "skills" / "reckon-ship" / "references" / "orchestrator-harness"
+
+
+def test_harness_local_primitives_appear_only_in_the_host_references() -> None:
+    """The quarantine, asserted rather than trusted to reviewer attention."""
+    quarantined = _harness_reference_dir()
+    offenders: list[str] = []
+    for path in sorted((ROOT / "skills").rglob("*.md")):
+        if quarantined in path.parents:
+            continue
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            if HARNESS_LOCAL_PRIMITIVES.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")
+    assert offenders == [], (
+        "harness-local primitives leaked out of orchestrator-harness/:\n"
+        + "\n".join(offenders)
+    )
+
+
+def test_every_host_reference_records_all_four_capabilities() -> None:
+    """Two hosts minimum, and neither may stay silent about what it cannot do."""
+    files = sorted(_harness_reference_dir().glob("*.md"))
+    assert len(files) >= 2, "a second host file is what proves the shape generalises"
+    for path in files:
+        text = path.read_text()
+        for capability in HOST_CAPABILITIES:
+            assert capability in text, f"{path.name} does not state {capability!r}"
+        assert "Ownership test" in text, path.name
+
+
+def test_ship_skill_authors_the_budget_fence_alone() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    assert "Authored here and nowhere else" in ship
+    assert "reckon crew preflight" in ship
+    assert "Unknown never holds" in ship
+    assert "orchestrator-harness/<harness>.md" in ship
+    others = [
+        path
+        for path in (ROOT / "skills").rglob("SKILL.md")
+        if path.parent.name != "reckon-ship"
+    ]
+    for path in others:
+        assert "budget fence" not in path.read_text().lower(), path
 
 
 def test_continuation_closes_at_three_altitudes_in_the_skills() -> None:

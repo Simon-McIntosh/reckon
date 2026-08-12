@@ -26,19 +26,30 @@ from live runs (``tests/fixtures/backends/``):
     stream interpretation   terminal event, final message, budget signal
 
 Budget is deliberately asymmetric and must stay that way. One harness reports
-utilisation and a reset time; another reports only tokens spent, with no
-headroom at all. So an observation carries ``headroom: "unknown"`` rather than a
-guess, and :func:`budget_exhausted` answers ``None`` where nothing is known.
-Absence of a signal is never read as exhaustion.
+utilisation and a reset time on its run stream; another reports only tokens
+spent there, with no headroom at all. So an observation carries
+``headroom: "unknown"`` rather than a guess, and :func:`budget_exhausted`
+answers ``None`` where nothing is known. Absence of a signal is never read as
+exhaustion.
+
+The asymmetry is in the *stream*, not necessarily in the harness: a dialect may
+also own a probe (:func:`probe_budget`) that asks the harness's own account
+surface what remains. Such a read costs no worker budget and runs no model, so
+it can serve a free pre-flight — but it spawns a process, so it happens only for
+a backend whose config asks for it. A dialect with no such surface returns no
+probe, and the answer stays honestly unknown.
 """
 
 from __future__ import annotations
 
 import json
+import queue
+import subprocess
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 # Sandbox tiers named by the flight schema. The mapping to concrete flags is
 # per-dialect; the tier names are shared vocabulary.
@@ -118,6 +129,31 @@ class LaunchPlan:
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
             "resumed_session": self.resumed_session,
+        }
+
+
+@dataclass(frozen=True)
+class BudgetProbe:
+    """A request-response exchange that asks a harness what headroom remains.
+
+    Modelled as requests written to a held-open stdin rather than as a plain
+    command because that is what the one harness offering such a surface needs:
+    it serves the answer over a line protocol and exits the moment its input
+    closes, so a naive ``command | read`` returns nothing at all.
+    """
+
+    argv: list[str]
+    requests: list[dict[str, Any]]
+    answer_id: Any
+    timeout_seconds: int = 20
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the probe as sorted JSON-ready data."""
+        return {
+            "answer_id": self.answer_id,
+            "argv": list(self.argv),
+            "requests": [dict(sorted(request.items())) for request in self.requests],
+            "timeout_seconds": self.timeout_seconds,
         }
 
 
@@ -201,6 +237,19 @@ class Dialect:
     def _sandbox_flags(self, tier: str | None) -> list[str]:
         raise NotImplementedError
 
+    def budget_probe(self, command: str) -> BudgetProbe | None:
+        """Return the exchange that reads remaining headroom, or None.
+
+        None is the honest default: a harness that publishes no account surface
+        must not be probed with a guessed one, because a probe that fails looks
+        the same to a caller as a harness reporting plenty.
+        """
+        return None
+
+    def read_probe(self, response: Mapping[str, Any]) -> dict[str, Any]:
+        """Fold a probe's answer into the shared budget block."""
+        return unknown_budget("dialect declares no budget probe to interpret")
+
 
 class _CodexDialect(Dialect):
     """codex-cli: `exec --json`, thread ids, token usage without headroom."""
@@ -275,15 +324,83 @@ class _CodexDialect(Dialect):
     def _budget(self, usage: Any) -> dict[str, Any]:
         """Record spent tokens, and state plainly that headroom is not reported.
 
-        This harness reports what a turn consumed and offers no query for what
-        remains, so the honest record is tokens plus an unknown headroom. A
+        This harness's run stream reports what a turn consumed and nothing about
+        what remains, so the honest record is tokens plus an unknown headroom. A
         later reader must not mistake the presence of token counts for a budget.
+        Headroom is obtainable from this harness — just not here; see
+        :meth:`budget_probe`.
         """
         budget = unknown_budget("backend reports token usage but no headroom")
         if isinstance(usage, Mapping):
             budget["tokens"] = {
                 key: usage[key] for key in sorted(usage) if usage[key] is not None
             }
+        return budget
+
+    def budget_probe(self, command: str) -> BudgetProbe | None:
+        """Ask this harness's app server for the account's rate limits.
+
+        The limits this harness shows its own interactive user do exist off the
+        non-interactive path — on a different transport. Its `exec` stream has no
+        headroom, but its app server answers `account/rateLimits/read` with used
+        percentages and reset times, and that read runs no model.
+
+        The handshake is required: the server rejects requests before
+        `initialize`. Its input must also stay open, since it stops the moment
+        stdin closes — which is why this is a probe rather than a command whose
+        output is read.
+        """
+        return BudgetProbe(
+            argv=[command, "app-server"],
+            requests=[
+                {
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "clientInfo": {
+                            "name": "reckon",
+                            "title": "reckon pre-flight",
+                            "version": "0",
+                        }
+                    },
+                },
+                {"id": 2, "method": "account/rateLimits/read", "params": {}},
+            ],
+            answer_id=2,
+        )
+
+    def read_probe(self, response: Mapping[str, Any]) -> dict[str, Any]:
+        """Turn an account-limits answer into utilisation and a reset time.
+
+        Several metered windows can be reported at once, and the binding one is
+        whichever is furthest through — that is the window a wave would run into,
+        and its reset is the moment the hold lifts. Only the single-bucket view
+        is read: the per-bucket map keys on identifiers this module must not
+        record.
+        """
+        result = response.get("result")
+        snapshot = result.get("rateLimits") if isinstance(result, Mapping) else None
+        if not isinstance(snapshot, Mapping):
+            return unknown_budget("account-limit answer carried no rate limits")
+        windows = [
+            window
+            for key in ("primary", "secondary")
+            if isinstance(window := snapshot.get(key), Mapping)
+            and isinstance(window.get("usedPercent"), (int, float))
+        ]
+        if not windows:
+            return unknown_budget("account limits reported no metered window")
+        binding = max(windows, key=lambda window: float(window["usedPercent"]))
+        budget = unknown_budget("")
+        budget.update(
+            {
+                "headroom": "known",
+                "utilisation_pct": float(binding["usedPercent"]),
+                "resets_at": _epoch_to_iso(binding.get("resetsAt")),
+                "threshold_status": snapshot.get("rateLimitReachedType"),
+                "detail": "backend's account surface reports utilisation and reset time",
+            }
+        )
         return budget
 
 
@@ -367,7 +484,12 @@ class _ClaudeDialect(Dialect):
         return obs
 
     def _budget(self, info: Any) -> dict[str, Any]:
-        """Parse reported utilisation and reset time into the shared block."""
+        """Parse reported utilisation and reset time into the shared block.
+
+        This dialect declares no probe because it needs none: headroom arrives on
+        the run stream every worker already writes, so a pre-flight reading past
+        runs learns it for free and a separate process would add nothing.
+        """
         if not isinstance(info, Mapping):
             return unknown_budget("rate-limit event carried no information")
         budget = unknown_budget("")
@@ -514,6 +636,84 @@ def launch_plan(
         final_message_path=final_path,
         resumed_session=resume_session,
     )
+
+
+def probe_budget(
+    *,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    runner: Callable[[BudgetProbe], Mapping[str, Any] | None] | None = None,
+) -> dict[str, Any]:
+    """Read a backend's remaining headroom from its own account surface.
+
+    Every way this can fail — no dialect, no probe, no answer, a broken exchange
+    — returns an unknown block naming the reason rather than raising. A pre-flight
+    must never be stopped by its own instrument: an unreadable probe leaves the
+    caller exactly where it was, reading what earlier runs recorded, whereas a
+    raised error would turn a missing measurement into a blocked wave.
+    """
+    try:
+        dialect = dialect_for(backend)
+    except BackendError as exc:
+        return unknown_budget(str(exc))
+    probe = dialect.budget_probe(str(backend.get("command") or ""))
+    if probe is None:
+        return unknown_budget(
+            f"backend '{backend_name}' exposes no account-limit surface to read"
+        )
+    try:
+        answer = (runner or run_probe)(probe)
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        return unknown_budget(f"account-limit read failed to run — {exc}")
+    if not isinstance(answer, Mapping):
+        return unknown_budget(
+            f"account-limit read returned no answer within {probe.timeout_seconds}s"
+        )
+    return dialect.read_probe(answer)
+
+
+def run_probe(probe: BudgetProbe) -> dict[str, Any] | None:
+    """Run one probe exchange and return the answering object, or None.
+
+    Input is held open for the life of the exchange and the reply is read on a
+    thread, because the server this serves streams unrelated notifications
+    alongside the answer and exits as soon as its input closes. Reading inline
+    would block on whichever arrives first; closing stdin would end the process
+    before it answered.
+    """
+    process = subprocess.Popen(
+        probe.argv,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+    )
+    answers: queue.Queue[dict[str, Any]] = queue.Queue()
+
+    def read() -> None:
+        for line in process.stdout or ():
+            try:
+                parsed = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(parsed, dict) and parsed.get("id") == probe.answer_id:
+                answers.put(parsed)
+                return
+
+    reader = threading.Thread(target=read, daemon=True)
+    reader.start()
+    try:
+        for request in probe.requests:
+            process.stdin.write(json.dumps(request) + "\n")
+        process.stdin.flush()
+        try:
+            return answers.get(timeout=probe.timeout_seconds)
+        except queue.Empty:
+            return None
+    finally:
+        process.kill()
+        process.wait(timeout=5)
 
 
 def parse_events(lines: Iterable[str]) -> tuple[list[dict[str, Any]], int]:

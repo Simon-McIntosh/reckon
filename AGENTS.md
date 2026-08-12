@@ -215,6 +215,12 @@ is never committed. `reckon crew complete` moves a record from the second to the
 first; `reckon crew recover` reports whatever an interrupted orchestrator left
 between them.
 
+Each completed record also carries whatever budget headroom its backend reported,
+which is what makes `reckon crew preflight` free: the pre-flight reads the ledger
+and the live pointers rather than making a call that would spend the very resource
+it is measuring. A backend publishing no headroom records `unknown`, and unknown
+never holds a wave — absence of a signal is not evidence of exhaustion.
+
 **Typed HTML roots are semantic.** Plans live under `docs/plans/`, research
 under `docs/research/`, and execution evidence under `docs/evidence/`.
 `reckon-type` must match the owning root; moving evidence into a plan path or
@@ -314,7 +320,7 @@ auditing, and run state keep their distinct read-only contracts:
 | `edit_plan` | The one validated write, selected by `mode`. `mode="state"` applies an ordered `ops` list to a working copy, schema-validates it, then writes atomically; verbs are `set` / `append` / `resolve` / `lock` / `move`, and `create=True` scaffolds a plan. `mode="text"` performs one version-safe exact `old_html` → `new_html` replacement for prose, tables, figures, or section bodies and refuses structured state changes. |
 | `roadmap` | Read-only DAG scan: all pending work, distinct ready/blocked/deferred sets, lifecycle and stored implementation percentages, sprint order, weighted critical/open paths, and wiring findings. `project="*"` returns a portfolio. |
 | `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
-| `crew` | Read-only run state over four views. `view="ledger"` and `view="summary"` read the project's committed run records (roster, gate outcomes, measured worker-time against declared effort); `view="live"` reads the never-committed pointers of runs still in flight, each with the classification `reckon crew recover` would give it; `view="flight"` reports resolved routing config with the layer that supplied every value. Accepts `checkout_path`. Writes are the CLI's (`reckon crew …`) — this tool never mutates. |
+| `crew` | Read-only run state over five views. `view="ledger"` and `view="summary"` read the project's committed run records (roster, gate outcomes, measured worker-time against declared effort); `view="live"` reads the never-committed pointers of runs still in flight, each with the classification `reckon crew recover` would give it; `view="flight"` reports resolved routing config with the layer that supplied every value; `view="budget"` reports per-backend headroom and whether a wave may open, read from what earlier runs recorded so it spends nothing. Accepts `checkout_path`. Writes are the CLI's (`reckon crew …`) — this tool never mutates. |
 
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
 for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
@@ -654,7 +660,8 @@ delivery fences.
 
 | Operation | Command | Contract |
 |---|---|---|
-| Dispatch | `reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal "<one deliverable>" --done-when "<measure>" --write-path <path> --time-budget <duration> --manifest <absolute-path> --session <session>` | Validates the node, resolves flight config and atomically creates the detached worktree plus either a launched CLI run or an in-harness dispatch directive. Repeat `--write-path` for the complete exclusive scope; use `--dry-run` to validate a wave without creating anything. Add `--member <id>` to run the node as a roster member, reusing that member's long-lived session. |
+| Pre-flight | `reckon crew preflight --project <project> [--role <role>] [--backend <name>] [--purpose dispatch\|resume]` | Decides per backend whether a wave may open, from the budget signal earlier runs already recorded — so it spends none of the resource it measures. Exits 3 when any backend is held, naming its utilisation and reset time; a backend reporting no headroom is never held. A `dispatch` keeps back `budget.resume_reserve_pct` so a stuck worker can still be answered; a `resume` may spend it. |
+| Dispatch | `reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal "<one deliverable>" --done-when "<measure>" --write-path <path> --time-budget <duration> --manifest <absolute-path> --session <session>` | Validates the node, resolves flight config and atomically creates the detached worktree plus either a launched CLI run or an in-harness dispatch directive. Runs the same budget check first and exits 3 with a `hold` payload rather than opening a wave into a spent quota — held, not failed: nothing is created and the node stays ready. Repeat `--write-path` for the complete exclusive scope; use `--dry-run` to validate a wave without creating anything. Add `--member <id>` to run the node as a roster member, reusing that member's long-lived session. |
 | Attach | `reckon crew attach --run <run-id> --task <harness-task-id>` | Binds an in-harness task to the prepared run record returned by dispatch. CLI-backed runs are already bound when launched and do not use this step. |
 | Observe | `reckon crew observe --run <run-id> [--project <project>]` | Folds the event stream, manifest presence and process liveness into the durable run record, including the phase, session id and any backend budget signal. An absent budget signal remains `unknown`; it is never evidence of exhaustion. |
 | Resume | `reckon crew resume --run <run-id> --advice "<answer>"` | Answers a structured `NEEDS-HELP:` report in the same worker session so its prior context is retained. Use `--print-only` to inspect the resume invocation without launching it. |

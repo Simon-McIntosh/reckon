@@ -163,6 +163,10 @@ class SummaryOccasion(str, Enum):
     dispatch = "dispatch"
     completion = "completion"
     micro_plan = "micro-plan"
+    hold = "hold"
+    """
+    A wave that was held before it opened. It reports like a dispatched one, because a hold that looks like silence is indistinguishable from a crashed orchestrator.
+    """
 
 
 
@@ -175,6 +179,7 @@ class FlightConfig(ConfiguredBaseModel):
     backends: Optional[dict[str, BackendConfig]] = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     roles: Optional[dict[str, RoleConfig]] = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     gates: Optional[GateConfig] = Field(default=None)
+    budget: Optional[BudgetConfig] = Field(default=None)
     fences: Optional[FenceConfig] = Field(default=None)
     worktree: Optional[WorktreeConfig] = Field(default=None)
     summary: Optional[SummaryConfig] = Field(default=None)
@@ -192,6 +197,7 @@ class BackendConfig(ConfiguredBaseModel):
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
+    budget_check: Optional[bool] = Field(default=None, description="""Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.""")
     concurrency: Optional[int] = Field(default=None, description="""Maximum simultaneous workers this backend will run.""", ge=1)
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
 
@@ -245,6 +251,15 @@ class GateConfig(ConfiguredBaseModel):
     on_fail: Optional[GateFailureAction] = Field(default=None)
 
 
+class BudgetConfig(ConfiguredBaseModel):
+    """
+    Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.
+    """
+    utilisation_ceiling_pct: Optional[float] = Field(default=None, description="""Reported utilisation, as a percentage, at or above which a wave will not open. A backend reporting no headroom is never held by this: absence of a signal is not evidence of exhaustion, and a false hold stalls everything while a rejected call is cheap and announces itself.""", ge=0, le=100)
+    resume_reserve_pct: Optional[float] = Field(default=None, description="""Headroom withheld from new dispatches, in percentage points, so a worker that stops and asks for help can still be answered in its own session. A fresh dispatch stops at the ceiling less this reserve; answering a stuck worker may spend it. Spending the last of a quota on a new dispatch strands the wave in its worst state — work in flight and no way to unblock it.""", ge=0, le=100)
+    exhausted_statuses: Optional[list[str]] = Field(default=None, description="""Threshold-status values that count as exhausted whatever the utilisation reads — the overage question, answered as data so that the schema enumerates no backend's vocabulary. Empty leaves the ceiling as the only test.""")
+
+
 class FenceConfig(ConfiguredBaseModel):
     """
     Limits a worker applies to itself before asking for help.
@@ -288,6 +303,7 @@ FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
 RoleConfig.model_rebuild()
 GateConfig.model_rebuild()
+BudgetConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SummaryConfig.model_rebuild()

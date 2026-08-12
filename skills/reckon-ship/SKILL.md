@@ -1,15 +1,16 @@
 ---
 name: reckon-ship
 description: >-
-  Execute a complete Reckon plan, or coordinate an entire sprint without doing
+  Execute a complete Reckon plan, or coordinate an entire sprint, without doing
   implementation inline. Resolves a plan slug with an optional section,
-  `/reckon-ship S1`, and a project-qualified sprint id. Sprint mode is strictly
-  coordinator-only: build the execution DAG, delegate every implementation,
-  investigation, test, pipeline, and repair node through isolated worktrees by
-  default, audit and integrate worker commits, record outcomes continuously,
-  and clean up worktrees. Trigger verbs: "implement / execute / ship / land /
-  deliver the sprint / run the sprint / /reckon-ship". For editing plan text use
-  reckon-edit; for defining or rebalancing sprint state use reckon-sprint.
+  `/reckon-ship S1`, and a project-qualified sprint id. Both modes are strictly
+  coordinator-only, a one-node plan included: build the execution DAG, delegate
+  every implementation, investigation, test, pipeline, and repair node through
+  isolated worktrees by default, audit and integrate worker commits, record
+  outcomes continuously, and clean up worktrees. Trigger verbs: "implement /
+  execute / ship / land / deliver the sprint / run the sprint / /reckon-ship".
+  For editing plan text use reckon-edit; for defining or rebalancing sprint
+  state use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
 ---
 
@@ -30,7 +31,7 @@ There are two execution modes:
 In plan mode without a section, you MUST:
 1. Read the complete plan HTML and classify every section
 2. Identify ALL implementable sections (not deferred/blocked/done)
-3. Implement them all — sequentially for dependent sections, in parallel fleet for independent ones
+3. Delegate them all — sequentially for dependent sections, in a parallel fleet for independent ones
 4. Record outcomes after each section lands, then continue
 5. Stop only when all implementable sections are done OR you hit a hard prerequisite blocker
 
@@ -44,21 +45,61 @@ rebuild plan dependency order from repeated discovery calls. Add section-level
 and file-conflict edges only after the tool returns no error-level wiring
 findings.
 
-### Sprint mode is coordinator-only
+### Both modes are coordinator-only
 
-For a full sprint, preserve coordinator context for orchestration. The coordinator
-may resolve/read state, checkpoint the DAG/scopes, create worktrees, dispatch or
-message workers, audit evidence, integrate/push, write state, clean, and report.
+**One contract, both modes, a one-node plan included.** Whichever mode resolved,
+preserve coordinator context for orchestration. The coordinator may resolve/read
+state, checkpoint the DAG/scopes, create worktrees, dispatch or message workers,
+audit evidence, integrate/push, write state, clean, and report.
 
 The coordinator MUST NOT implement, investigate implementation details beyond
 scoping/review, edit product/source/test files, execute tests or operational
 pipelines, or repair worker code. Every implementation, investigation, test
 execution, operational pipeline run, and corrective repair is a worker node,
 even when only one item is ready and a worker slot is available. On failure,
-redispatch a corrective worker. Inline fallback is exceptional: use it only
-when no capable worker or slot exists, report and context-budget it before
-implementation, and prefer pausing the node. The detailed contract, manifest,
-and checkpoint discipline live in `references/sprint-orchestration.md`.
+redispatch a corrective worker. The detailed contract, manifest, and checkpoint
+discipline live in `references/sprint-orchestration.md`.
+
+**A small plan is the case this rule exists for, not an exception to it.** One
+node is where inline is cheapest to rationalise and costs the most: the work
+lands in coordinator context that then cannot review it, no worktree bounds the
+blast radius, no manifest records what happened, and the run never reaches the
+ledger — so the node is invisible to calibration and to the next session. A
+single well-formed node dispatches in one call. Node count changes the shape of a
+wave, never whether there is one.
+
+Inline fallback is exceptional and is a reported event, not a judgement call: use
+it only when no capable worker or slot exists, say so and context-budget it
+before implementing, and prefer pausing the node. "The plan is small", "this is
+one file", "dispatch overhead exceeds the work" and "I already have the context"
+are not the exception — they are the rationalisation the exception is worded
+against.
+
+### Continuity — who receives the next piece of work
+
+A node's worker holds context no fresh worker can rebuild cheaply. Route by what
+the next piece of work *is*, not by whichever worker is convenient:
+
+| Next work | Goes to | How |
+|---|---|---|
+| A `NEEDS-HELP:` brief from a live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
+| A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
+| New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
+
+**This works only if the original dispatch named `--member`.** `reckon crew
+complete` deletes the live pointer, taking the run's `session_id` with it, so
+after promotion the session survives in exactly one place: the roster entry in
+committed `crew.json`, where `capture_session` recorded it on the member's first
+run (first id wins). **So dispatch every node as a roster member by default** —
+`reckon crew member list --project <project>` shows the team, `reckon crew member
+add` registers a new one, and a member registered with no session captures one
+from its first run.
+
+The boundary between the middle row and the last is scope, not size. Work that
+stays inside the landed node's declared write paths and its gate goes back to the
+same member. Work that widens the scope is a new node — dispatching it into an
+old session hides a scope change inside a session that was fenced for something
+else, and a scope change is exactly what `--scope-changed` exists to record.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
@@ -77,7 +118,7 @@ Continue through ordinary complexity, validation, and recoverable integration:
 | "This change is high-blast-radius / touches core code" | Allocate it to an appropriately capable worker, test it, and validate integration. |
 | "Better to confirm the approach before executing" | The plan IS the approved approach. Locked decisions ARE the confirmation. Asking again is re-litigating settled decisions. |
 | "This is a lot of work / the session is long / I've done enough" | Length and effort are not blockers. Continue until every implementable item is done or you hit a valid stop. |
-| "It needs full-suite validation first" | Then run it in plan mode or dispatch a test worker in sprint mode — validation is part of the work, not a reason to hand back. |
+| "It needs full-suite validation first" | Then dispatch a test worker — validation is part of the work, not a reason to hand back. |
 | "I'll present options A/B and let the user choose" | If the plan already determines the path, there is no choice to present. Pick the plan's path and execute. Offering A/B on already-decided work is a checkpoint in disguise. |
 
 Plans do not override global safety or expand user authority. A locked decision
@@ -87,11 +128,12 @@ settles implementation choices only inside the already-authorised scope.
 
 ```text
 resolve target
-├─ plan → roadmap + full plan → classify sections → execute dependency order
+├─ plan → roadmap + full plan → classify sections → delegate in dependency order
 └─ sprint → roadmap + all plans/research/evidence → enrich DAG → coordinate waves
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
 → check every node against the seven-property contract (§3b)
+→ reckon crew preflight — a spent backend holds its nodes, the rest still run
 → reckon crew dispatch each ready node — branch only on the returned launch kind
 → emit the dispatch summary, naming the gate that closes the wave
 → audit worker manifests/commits/tests → orchestrator merges
@@ -118,9 +160,10 @@ If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → 
 
 ## The model — the plan HTML is the document AND the store
 
-**The plan HTML is the source of truth.** Read it first — ALL of it. Plan mode
-implements what it describes; sprint mode delegates it and coordinates the
-outcomes. The HTML documents the work; the `data-reckon` sections carry
+**The plan HTML is the source of truth.** Read it first — ALL of it. Both modes
+delegate what it describes and coordinate the outcomes; the modes differ in the
+scope they resolve, never in who does the work. The HTML documents the work;
+the `data-reckon` sections carry
 structured state (decisions, followups). Do not implement items marked
 "deferred", "post-v1", or behind an unmet trigger.
 
@@ -134,8 +177,8 @@ structured state (decisions, followups). Do not implement items marked
 1. **Read the FULL selected scope before ANY implementation.** In plan mode, read the complete plan. In sprint mode, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Sprint coordinators delegate every executable node.** This includes a single ready item, investigation, test execution, operational pipelines, and corrective repair. Plan mode may still execute inline.
-5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. In sprint mode, test execution is a worker node.
+4. **Coordinators delegate every executable node, in both modes.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both modes are coordinator-only, never the default for small work.
+5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
 8. **Update the plan continuously.** After EACH section lands: collapse it in
@@ -355,17 +398,17 @@ process liveness back into its record — phase, captured session id, and whatev
 budget signal the backend emitted, which may legitimately read `unknown`. **Never
 read an absent budget signal as exhaustion.**
 
-The following table applies to plan mode. In sprint mode, delegate every ready
-node under the coordinator-only contract, including one-item and cross-cutting
-nodes; assign an appropriately capable worker rather than making the
+**The table shapes the wave; it never decides whether to delegate.** That is
+already settled for both modes — every ready node goes to an appropriately
+capable worker, one-item and cross-cutting nodes included, rather than making the
 coordinator the implementation owner.
 
 | Items | Strategy |
 |---|---|
-| 1 | Inline, or one worktree worker when isolation helps |
+| 1 | One worktree worker |
 | 2–8 independent | Parallel worktree fleet when workers are available |
 | > 8 | Reader fan-out followed by one synthesis/integration owner |
-| Cross-cutting / strategic | One highest-capability owner; do not fragment context |
+| Cross-cutting / strategic | One highest-capability worker; do not fragment context |
 
 Apply the model, effort, and concurrency routing stated by the current user
 prompt. If it is not specified, the coordinator chooses it explicitly for each
@@ -396,13 +439,59 @@ the negative result stays on the page.
 - `gates.enforce` and `gates.on_fail` in flight config tune strictness; they do
   not license skipping a gate whose measure simply was not run.
 
-### 4c. The summary reflex — what, why, how, when
+### 4c. The budget fence — a wave does not open into a spent quota
+
+**Authored here and nowhere else.** Before opening a wave, run the pre-flight and
+**refuse to open it on a backend whose headroom is spent:**
+
+```bash
+reckon crew preflight --project P --role implement --role review
+```
+
+It exits 3 when any backend is held, naming that backend, its utilisation and
+when it resets. It costs nothing to run — it reads the budget signal earlier runs
+already recorded, so it spends none of the resource it is measuring.
+
+Four properties of a hold, each the opposite of a failure mode:
+
+- **A hold is not a failure.** No worktree is created, no node fails, nothing has
+  to be unwound, and the nodes stay ready. `reckon crew dispatch` exits 3 with a
+  `hold` payload for the same reason — a caller that cannot tell a hold from a
+  malformed node either rewrites work that was fine or abandons work that was
+  only waiting.
+- **A hold is per-backend.** One spent backend must never stop ready nodes routed
+  somewhere else; the pre-flight reports held and clear backends side by side, and
+  the clear ones dispatch in the same wave.
+- **Unknown never holds.** A backend that publishes no headroom reads `unknown`,
+  and the wave opens. Absence of a signal is not evidence of exhaustion: a false
+  hold is invisible and stalls everything, while the failure it would prevent is a
+  rejected call that announces itself.
+- **A hold is never silent.** Report it on the four axes below, with the
+  occasion `hold`: what is held, why — with the figure — how it stays recoverable,
+  and when it lifts. A hold nobody reported is indistinguishable from a crashed
+  orchestrator.
+
+The reserve is worth understanding rather than tuning. A fresh dispatch stops at
+the ceiling *less* `budget.resume_reserve_pct`, while answering a stuck worker may
+spend it — because spending the last of a quota on a new node leaves nothing to
+answer a `NEEDS-HELP:` report with, which strands the wave in its worst possible
+state: work in flight and no way to unblock it.
+
+**Resuming a held wave without a human is a host capability, not a process rule.**
+Whether this orchestrator can schedule its own resumption at the reported
+`resume_at` depends entirely on the harness it is running inside, so it is
+documented per host in `references/orchestrator-harness/<harness>.md` and nowhere
+else. Read the file for the host you are on. Where no such capability exists,
+report the reset time and stop — degraded, not broken, and never a reason to
+dispatch into the quota anyway.
+
+### 4d. The summary reflex — what, why, how, when
 
 Dispatches are silent by design and workers report in their own idiom, so the
-orchestrator owes the lead a readable account at three occasions: **at dispatch,
-at completion, and when micro-planning the next step.** One habit, not three
-formats. Four lines, one per axis, at most two lines each, restating nothing the
-plan already says.
+orchestrator owes the lead a readable account at four occasions: **at dispatch,
+at completion, when a wave is held, and when micro-planning the next step.** One
+habit, not four formats. Four lines, one per axis, at most two lines each,
+restating nothing the plan already says.
 
 ```text
 Dispatching wave 2 — 3 workers
@@ -416,12 +505,18 @@ WHAT   dispatch primitive + observation + docs (1a2b3c4, 5d6e7f8, 9a0b1c2)
 WHY    gate evidence: node landed in its worktree, manifest on disk, 28 tests green
 HOW    all scoped clean on git show --stat; no out-of-scope paths
 WHEN   next §6 — ready, nothing blocks it
+
+Wave 3 held — 1 backend held, 1 clear
+WHAT   §6 integration (impl-d) held; §7 docs (impl-e) dispatching on the clear backend
+WHY    held backend at 97.2% utilisation against a 95% effective ceiling
+HOW    no worktree created and no node failed; both nodes stay ready
+WHEN   resets 2026-08-12T18:04:00Z, in 2280s — the wave reopens then
 ```
 
 `WHAT` names nodes and artifacts. `WHY` gives the causal reason this wave runs
-now — **and at completion it carries the gate evidence.** `HOW` carries runtime
-and isolation facts only. `WHEN` gives a duration estimate and names the gate
-that closes the wave.
+now — **and at completion or a hold it carries the figure.** `HOW` carries runtime
+and isolation facts only. `WHEN` gives a duration estimate and names the gate that
+closes the wave, or the reset that lifts the hold.
 
 That one discipline is why the format earns its place: it forces every wave
 report to be quantitative, and makes a wave that cannot state its gate evidence
@@ -443,8 +538,7 @@ For each completed agent:
    convenience — never wait on it as the sole channel
 2. Check the manifest for success/failure
 3. Run `git show --stat <sha>` — confirm ONLY assigned paths appear
-4. In plan mode, run the relevant tests; in sprint mode, dispatch a test worker
-   and audit its compact result manifest
+4. Dispatch a test worker and audit its compact result manifest
 5. Confirm the worker returned commit, test, artifact, and evidence inputs.
    The orchestrator writes plan/index state after integration.
 6. Promote the run: `reckon crew complete --run <id> --gate <verdict> --commit
@@ -473,9 +567,9 @@ reckon crew resume --run <run-id> --advice "<the answer>"
 ```
 
 If an agent genuinely FAILS or produces incomplete work:
-- In plan mode, repair inline or dispatch a corrective agent
-- In sprint mode, dispatch a corrective worker; pause the node if no capable
-  worker or slot exists
+- Dispatch a corrective worker; pause the node if no capable worker or slot
+  exists. A repair inside the failed node's own scope goes back to its roster
+  member, so the fix reaches a worker that remembers the attempt
 - Do NOT proceed to the next section while a failed section's work is outstanding
 
 Inspect only the summary, scoped diff, and evidence needed to diagnose the
@@ -720,6 +814,10 @@ after integration.
 
 - `references/worker-protocol.md` — the task contract, fences, manifest, escape hatch.
 - `references/worker-backends.md` — maintainer notes on launch translation (not agent-facing).
+- `references/orchestrator-harness/<harness>.md` — what the HOST harness lets the
+  orchestrator do: background dispatch, wake on completion, self-scheduling a
+  held wave's resumption, and whether it can see its own budget. One file per
+  host; read the one you are running inside.
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
 - `reckon-create/SKILL.md` — first-time plan scaffolding and §05 invocation.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.

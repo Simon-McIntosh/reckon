@@ -1,0 +1,534 @@
+"""Budget-aware dispatch: what holds a wave, and — harder — what never does.
+
+Every test is hermetic. ``RECKON_HOME`` moves the crew home into a temp tree,
+ledgers are written under a throwaway repository, and no test spawns a harness or
+reaches a network: the one exchange with a real account surface is replayed from
+a recorded fixture.
+
+The measures this file exists to demonstrate:
+
+  - headroom is parsed wherever a backend publishes it, from a recorded run
+    stream and from a recorded account-limit answer alike
+  - a backend publishing no headroom reads ``unknown`` and a wave still opens on
+    it — no test may show absence treated as exhaustion
+  - a recorded exhaustion holds a wave with no worktree created and the node left
+    ready rather than failed
+  - holds are per-backend: one held backend leaves another dispatching
+  - the reserve stops a dispatch that would leave nothing to answer a stuck
+    worker with, while leaving that answer itself possible
+  - the pre-flight spends no worker budget, asserted by making any spawned
+    process an error
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+
+from reckon import _backends, budget, crew, ledger
+from reckon.cli import main as cli_main
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backends"
+
+# Two backends, so every per-backend claim can be shown rather than asserted of a
+# single one. Neither names a provider: both are config data a project supplies.
+CONFIG = {
+    "default_backend": "alpha",
+    "backends": {
+        "alpha": {
+            "launch": "cli",
+            "command": "codex",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        },
+        "beta": {
+            "launch": "cli",
+            "command": "claude",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        },
+    },
+    "roles": {"implement": {}, "review": {"backend": "beta"}},
+    "budget": {
+        "utilisation_ceiling_pct": 100,
+        "resume_reserve_pct": 5,
+        "exhausted_statuses": [],
+    },
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+@pytest.fixture()
+def home(tmp_path, monkeypatch):
+    """Point the crew home at a temp tree, leaving this workstation's alone."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+@pytest.fixture()
+def repo(tmp_path):
+    """A throwaway git repository carrying the worktree fleet script."""
+    root = tmp_path / "repo"
+    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    source = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+        source.read_text()
+    )
+    (root / "seed.txt").write_text("seed\n")
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "skills"],
+        ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+    return root
+
+
+def _stamp(offset_seconds: int) -> str:
+    moment = datetime.now(tz=timezone.utc) + timedelta(seconds=offset_seconds)
+    return moment.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _known(utilisation: float, *, resets_in: int = 3600, status=None) -> dict:
+    """A budget block from a backend that reports headroom."""
+    block = _backends.unknown_budget("recorded by the backend's own report")
+    block.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": utilisation,
+            "resets_at": _stamp(resets_in),
+            "threshold_status": status,
+        }
+    )
+    return block
+
+
+def _record(project: str, root: Path, *, backend: str, budget_block: dict, run_id: str):
+    """Promote one completed run carrying a budget block into the ledger."""
+    record = ledger.build_record(
+        run_id=run_id,
+        plan="plan-a",
+        gate="passed",
+        agent={"backend": backend},
+        completed_at=_stamp(-60),
+        budget=budget_block,
+    )
+    ledger.append_run(project, record, root=root)
+    return record
+
+
+def _node(**overrides) -> crew.TaskNode:
+    fields = {
+        "id": "node-a",
+        "goal": "record the account-limit read for one backend",
+        "plan": "plan-a",
+        "section": "§2",
+        "done_when": "uv run pytest tests/test_budget.py reports 0 failures",
+        "write_paths": ["reckon/budget.py"],
+        "time_budget": "20m",
+        "manifest_path": "/tmp/node-a-manifest.md",
+    }
+    fields.update(overrides)
+    return crew.TaskNode(**fields)
+
+
+# ── Headroom is parsed wherever a backend publishes it ──────────────────────
+
+
+def test_a_recorded_run_stream_yields_utilisation_and_reset_time() -> None:
+    """The backend that publishes headroom on its stream is read from a real run."""
+    observation = _backends.observe_log(
+        backend_name="beta",
+        backend={"launch": "cli", "command": "claude"},
+        log_path=FIXTURES / "claude-turn.jsonl",
+    )
+    block = observation.budget
+    assert block["headroom"] == "known"
+    assert isinstance(block["utilisation_pct"], (int, float))
+    assert block["resets_at"] and block["resets_at"].endswith("Z")
+
+
+def test_a_recorded_account_limit_answer_yields_utilisation_and_reset_time() -> None:
+    """The other backend publishes headroom too — on its account surface."""
+    lines = (FIXTURES / "codex-account-limits.jsonl").read_text().splitlines()
+    answers = [json.loads(line) for line in lines if line.strip()]
+    answer = next(item for item in answers if item.get("id") == 2)
+
+    block = _backends.probe_budget(
+        backend_name="alpha",
+        backend={"launch": "cli", "command": "codex"},
+        runner=lambda probe: answer,
+    )
+    assert block["headroom"] == "known"
+    # The binding window is the one furthest through, not the first reported:
+    # that is the window a wave would actually run into.
+    assert block["utilisation_pct"] == 82.0
+    assert block["resets_at"] == _backends._epoch_to_iso(1790600000)
+
+
+def test_an_unreadable_probe_reports_unknown_rather_than_raising() -> None:
+    """An instrument that fails must never become a hold."""
+    block = _backends.probe_budget(
+        backend_name="alpha",
+        backend={"launch": "cli", "command": "codex"},
+        runner=lambda probe: None,
+    )
+    assert block["headroom"] == "unknown"
+    assert "no answer" in block["detail"]
+
+
+# ── Unknown is honest, and never blocks ─────────────────────────────────────
+
+
+def test_a_backend_with_no_headroom_signal_reads_unknown(home, repo) -> None:
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_backends.unknown_budget("backend reports no headroom"),
+        run_id="r-1",
+    )
+    report = budget.preflight("proj", CONFIG, root=repo)
+    state = next(item for item in report["backends"] if item["backend"] == "alpha")
+    assert state["state"]["headroom"] == "unknown"
+
+
+def test_a_wave_opens_on_a_backend_whose_headroom_is_unknown(home, repo) -> None:
+    """Absence of a signal is not evidence of exhaustion, and never holds."""
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_backends.unknown_budget("backend reports no headroom"),
+        run_id="r-1",
+    )
+    report = budget.preflight("proj", CONFIG, root=repo)
+    assert report["held"] is False
+    assert report["held_backends"] == []
+    verdict = next(item for item in report["backends"] if item["backend"] == "alpha")
+    assert "never read as exhaustion" in verdict["reason"]
+
+
+def test_a_project_with_no_records_at_all_holds_nothing(home, repo) -> None:
+    report = budget.preflight("proj", CONFIG, root=repo)
+    assert report["held"] is False
+    assert sorted(report["clear_backends"]) == ["alpha", "beta"]
+
+
+def test_a_later_silence_does_not_erase_a_recorded_exhaustion(home, repo) -> None:
+    """A silent run carries no information, so it must not outrank a measurement."""
+    _record("proj", repo, backend="alpha", budget_block=_known(99.0), run_id="r-old")
+    silent = ledger.build_record(
+        run_id="r-new",
+        plan="plan-a",
+        gate="passed",
+        agent={"backend": "alpha"},
+        completed_at=_stamp(-1),
+        budget=_backends.unknown_budget("no rate-limit event in the stream"),
+    )
+    ledger.append_run("proj", silent, root=repo)
+
+    best = budget.latest_recorded("proj", root=repo)
+    assert best["alpha"].budget["utilisation_pct"] == 99.0
+
+
+# ── Exhaustion holds the wave, and creates nothing ──────────────────────────
+
+
+def test_an_exhausted_backend_holds_the_wave_without_creating_a_worktree(
+    home, repo
+) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+
+    with pytest.raises(crew.BudgetHold) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    verdict = excinfo.value.verdict
+    assert verdict["held"] is True
+    assert verdict["backend"] == "alpha"
+    assert verdict["state"]["utilisation_pct"] == 100.0
+    assert verdict["state"]["resets_at"]
+    # Held, not failed: nothing exists to unwind and the node is still ready.
+    assert crew.list_live() == []
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "node-a" not in listed.stdout
+    assert crew.validate_node(_node(), budget_ceiling="25m").ok
+
+
+def test_a_declared_exhausted_status_holds_whatever_the_utilisation_reads(
+    home, repo
+) -> None:
+    """The overage question is answered as data, so reckon enumerates nothing."""
+    config = {**CONFIG, "budget": {**CONFIG["budget"], "exhausted_statuses": ["spent"]}}
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_known(12.0, status="spent"),
+        run_id="r-1",
+    )
+    report = budget.preflight("proj", config, root=repo)
+    assert report["held_backends"] == ["alpha"]
+    assert "counts as exhausted" in report["backends"][0]["reason"]
+
+
+def test_a_window_that_has_already_reset_stops_holding(home, repo) -> None:
+    """One exhausted record must not hold a project forever."""
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_known(100.0, resets_in=-60),
+        run_id="r-1",
+    )
+    report = budget.preflight("proj", CONFIG, root=repo)
+    state = next(item for item in report["backends"] if item["backend"] == "alpha")
+    assert state["state"]["expired"] is True
+    assert state["state"]["headroom"] == "unknown"
+    assert report["held"] is False
+
+
+# ── Holds are per-backend ───────────────────────────────────────────────────
+
+
+def test_one_backend_held_leaves_ready_nodes_on_another_dispatching(
+    home, repo
+) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    _record("proj", repo, backend="beta", budget_block=_known(10.0), run_id="r-2")
+
+    report = budget.preflight("proj", CONFIG, root=repo)
+    assert report["held_backends"] == ["alpha"]
+    assert report["clear_backends"] == ["beta"]
+
+    # And the node routed to the clear backend really does dispatch.
+    record = crew.dispatch(
+        node=_node(id="node-b", role="review", write_paths=["reckon/ledger.py"]),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: (
+            log_path.write_text("") or 4242
+        ),
+    )
+    assert record["backend"] == "beta"
+    assert Path(record["worktree"]).is_dir()
+
+
+# ── The reserve protects the escape hatch ───────────────────────────────────
+
+
+def test_the_reserve_holds_a_dispatch_but_still_allows_the_resume(home, repo) -> None:
+    """Spending the last of a quota on a new node strands the wave it starts."""
+    _record("proj", repo, backend="alpha", budget_block=_known(97.0), run_id="r-1")
+
+    dispatching = budget.preflight("proj", CONFIG, root=repo, purpose="dispatch")
+    resuming = budget.preflight("proj", CONFIG, root=repo, purpose="resume")
+
+    assert dispatching["held_backends"] == ["alpha"]
+    assert resuming["held_backends"] == []
+    held = next(
+        item for item in dispatching["backends"] if item["backend"] == "alpha"
+    )
+    assert held["effective_ceiling_pct"] == 95.0
+    assert held["ceiling_pct"] == 100.0
+
+
+def test_a_resume_is_still_held_at_a_genuinely_spent_quota() -> None:
+    state = budget.BudgetState(
+        backend="alpha", headroom="known", utilisation_pct=100.0
+    )
+    verdict = budget.decide(state, budget.policy(CONFIG), purpose="resume")
+    assert verdict["held"] is True
+    assert verdict["effective_ceiling_pct"] == 100.0
+
+
+# ── The pre-flight spends nothing ───────────────────────────────────────────
+
+
+def test_the_preflight_spawns_no_process(home, repo, monkeypatch) -> None:
+    """Free means free: any spawned process here would be a token cost."""
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("the pre-flight spawned a process")
+
+    monkeypatch.setattr(subprocess, "Popen", refuse)
+    monkeypatch.setattr(subprocess, "run", refuse)
+
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    report = budget.preflight("proj", CONFIG, root=repo)
+    assert report["held_backends"] == ["alpha"]
+
+
+def test_an_account_surface_is_read_only_when_the_backend_asks_for_it(
+    home, repo
+) -> None:
+    """A read that has to be configured cannot happen by accident."""
+    probed: list[str] = []
+
+    def runner(probe):
+        probed.append(probe.argv[0])
+        return None
+
+    budget.preflight("proj", CONFIG, root=repo, probe_runner=runner)
+    assert probed == []
+
+    asking = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "budget_check": True},
+        },
+    }
+    budget.preflight("proj", asking, root=repo, probe_runner=runner)
+    assert probed == ["codex"]
+
+
+def test_a_known_account_reading_outranks_an_older_record(home, repo) -> None:
+    """The surface describes now; a finished run describes whenever it ended."""
+    _record("proj", repo, backend="alpha", budget_block=_known(10.0), run_id="r-1")
+    answer = json.loads(
+        next(
+            line
+            for line in (FIXTURES / "codex-account-limits.jsonl").read_text().splitlines()
+            if '"id":2' in line
+        )
+    )
+    asking = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "budget_check": True},
+        },
+    }
+    report = budget.preflight(
+        "proj", asking, root=repo, probe_runner=lambda probe: answer
+    )
+    state = next(item for item in report["backends"] if item["backend"] == "alpha")
+    assert state["state"]["source"] == "account-surface"
+    assert state["state"]["utilisation_pct"] == 82.0
+
+
+# ── A hold reports like a dispatch ──────────────────────────────────────────
+
+
+def test_a_hold_reports_on_all_four_axes_with_a_figure(home, repo) -> None:
+    """A hold that looks like silence is indistinguishable from a crash."""
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    _record("proj", repo, backend="beta", budget_block=_known(3.0), run_id="r-2")
+
+    report = budget.preflight("proj", CONFIG, root=repo)
+    verdict = crew.validate_summary(report["summary"], occasion="hold")
+    assert verdict["ok"], verdict["findings"]
+    assert "beta" in report["summary"]
+    assert report["resume_after_seconds"] > 0
+    assert report["resume_at"] == report["backends"][0]["state"]["resets_at"]
+
+
+def test_a_clear_preflight_reports_no_hold_summary(home, repo) -> None:
+    report = budget.preflight("proj", CONFIG, root=repo)
+    assert report["summary"] == ""
+
+
+# ── The command surface ─────────────────────────────────────────────────────
+
+
+def test_cli_preflight_exits_three_when_a_backend_is_held(
+    home, repo, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent.yaml"))
+    _record("proj", repo, backend="native", budget_block=_known(100.0), run_id="r-1")
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "preflight",
+            "--project",
+            "proj",
+            "--checkout-path",
+            str(repo),
+        ],
+    )
+    payload = json.loads(result.output)
+    assert result.exit_code == 3
+    assert payload["held"] is True
+    assert payload["held_backends"] == ["native"]
+    assert payload["resume_at"]
+
+
+def test_cli_preflight_exits_zero_when_every_backend_is_clear(
+    home, repo, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent.yaml"))
+    result = CliRunner().invoke(
+        cli_main,
+        ["crew", "preflight", "--project", "proj", "--checkout-path", str(repo)],
+    )
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["held"] is False
+
+
+def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
+    """A held node is retried later; a malformed one is rewritten. Different codes."""
+    _record("proj", repo, backend="native", budget_block=_known(100.0), run_id="r-1")
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--node",
+            "node-a",
+            "--goal",
+            "record the account-limit read for one backend",
+            "--done-when",
+            "uv run pytest tests/test_budget.py reports 0 failures",
+            "--write-path",
+            "reckon/budget.py",
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--checkout-path",
+            str(repo),
+        ],
+    )
+    payload = json.loads(result.output)
+    assert result.exit_code == 3
+    assert payload["error"] == "budget-hold"
+    assert payload["hold"]["state"]["utilisation_pct"] == 100.0

@@ -196,6 +196,41 @@ def test_project_override_of_one_key_leaves_sibling_keys_standing(layers):
     assert resolve_files(layers).config["gates"]["enforce"] == "strict"
 
 
+def test_the_shipped_layer_carries_the_budget_thresholds(layers):
+    """The thresholds a hold is decided by are data, reported per layer like any."""
+    resolved = resolve_files(layers)
+    thresholds = resolved.config["budget"]
+
+    assert thresholds["utilisation_ceiling_pct"] == 100
+    assert thresholds["resume_reserve_pct"] == 5
+    # Empty by default: naming which threshold statuses count as exhausted is the
+    # config's job, so no backend's vocabulary is enumerated by the schema.
+    assert thresholds["exhausted_statuses"] == []
+    assert resolved.origin("budget.resume_reserve_pct") == "shipped"
+
+
+def test_a_project_may_tighten_the_budget_ceiling_alone(layers):
+    write(layers["project"], "budget:\n  utilisation_ceiling_pct: 80\n")
+    resolved = resolve_files(layers)
+
+    assert resolved.config["budget"]["utilisation_ceiling_pct"] == 80
+    assert resolved.config["budget"]["resume_reserve_pct"] == 5
+    assert resolved.origin("budget.utilisation_ceiling_pct") == "project"
+    assert resolved.origin("budget.resume_reserve_pct") == "shipped"
+
+
+def test_a_utilisation_ceiling_beyond_a_percentage_is_rejected(layers):
+    write(layers["host"], "budget:\n  utilisation_ceiling_pct: 140\n")
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    assert excinfo.value.key_path == "budget.utilisation_ceiling_pct"
+
+
+def test_a_hold_is_a_summary_occasion(layers):
+    """A held wave reports like a dispatched one, so the occasion is nameable."""
+    assert "hold" in resolve_files(layers).config["summary"]["at"]
+
+
 def test_shipped_backend_survives_a_host_layer_adding_another(layers):
     """Adding a backend must not delete the one that shipped."""
     write(

@@ -32,6 +32,14 @@ gates:
   require_evidence: true
   on_fail: hold
 
+# The ceiling sits at full utilisation, so only a backend that actually reported
+# being spent holds a wave; the reserve is what stops a dispatch spending the
+# last of a quota and leaving no way to answer a worker that asks for help.
+budget:
+  utilisation_ceiling_pct: 100
+  resume_reserve_pct: 5
+  exhausted_statuses: []
+
 fences:
   time_budget: 25m
   needs_help_after_failures: 2
@@ -42,4 +50,4 @@ worktree:
 
 summary:
   reflex: what-why-how-when
-  at: [dispatch, completion, micro-plan]
+  at: [dispatch, completion, micro-plan, hold]

@@ -6,7 +6,7 @@ Repo-agnostic agile planning system. Four surfaces share one repo and one venv:
 |---|---|---|
 | **reckon server** | `reckon serve` (`reckon service` to run it as a daemon) | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
-| **reckon crew** | `reckon crew dispatch` (`observe`, `resume`, `attach`, `list`, `stop`, `complete`, `recover`, `member`, `ledger`) | Backend-agnostic worker dispatch — validates the node contract, resolves flight config, creates its detached worktree, returns JSON describing the spawned run or in-harness directive, and promotes each finished run into the owning repository's committed ledger |
+| **reckon crew** | `reckon crew dispatch` (`preflight`, `observe`, `resume`, `attach`, `list`, `stop`, `complete`, `recover`, `member`, `ledger`) | Backend-agnostic worker dispatch — validates the node contract, resolves flight config, holds a wave whose backend has no headroom left, creates its detached worktree, returns JSON describing the spawned run or in-harness directive, and promotes each finished run into the owning repository's committed ledger |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
 The Python distribution is named `reckon-plans`; the import package and
@@ -19,6 +19,7 @@ uv sync
 uv run reckon serve           # HTTP server on port 8765
 uv run reckon serve --port 8766 --mounts /path/to/mounts.json
 uv run reckon mcp             # stdio MCP transport
+uv run reckon crew preflight --project sample --role implement  # exits 3 if held
 uv run reckon crew dispatch --project sample --plan plan-alpha --section s3 \
   --role implement --node docs-readme --goal "Document the crew CLI" \
   --done-when "grep -c 'reckon crew' README.md returns 3 or more" \
@@ -48,6 +49,16 @@ order, so an interruption leaves a recoverable pointer rather than a lost
 record. `recover` classifies whatever is left: running, completed-but-unpromoted
 (with its manifest path), or abandoned. It repairs the record only; it never
 force-removes a worktree.
+
+Each promoted record carries whatever headroom its backend reported, which is what
+lets `preflight` decide whether a wave may open without spending anything: a probe
+would consume the very resource it measures, and would do so most often when that
+resource is scarcest. A wave whose backend is spent is **held** — no worktree is
+created, no node fails, and both `preflight` and `dispatch` exit 3 naming the
+backend, its utilisation and when it resets. Holds are per-backend, so ready nodes
+routed elsewhere still run; and a backend that publishes no headroom reads
+`unknown`, which never holds, because absence of a signal is not evidence of
+exhaustion.
 
 ## Running the server as a service
 

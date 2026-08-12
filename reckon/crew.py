@@ -131,6 +131,24 @@ class CrewError(Exception):
     """A dispatch cannot proceed, and the message says what to fix."""
 
 
+class BudgetHold(CrewError):
+    """A wave is held on budget rather than failed.
+
+    A distinct type because the two outcomes call for opposite responses: a
+    malformed node is reshaped, while a held one is left exactly as it is and
+    retried after the reported reset. Nothing was created, nothing failed, and
+    the node stays ready — so a caller that cannot tell these apart either
+    rewrites work that was fine or abandons work that was only waiting.
+    """
+
+    def __init__(self, verdict: Mapping[str, Any]) -> None:
+        self.verdict = dict(verdict)
+        super().__init__(
+            f"wave held on budget for backend {verdict.get('backend')!r} — "
+            f"{verdict.get('reason')}"
+        )
+
+
 # ── Node definition and the task contract ───────────────────────────────────
 
 
@@ -357,6 +375,32 @@ def resolve_role(config: Mapping[str, Any], role: str) -> tuple[str, dict[str, A
             continue
         effective[key] = value
     return str(backend_name), effective
+
+
+def _budget_verdict(
+    *,
+    project: str,
+    root: str | Path | None,
+    config: Mapping[str, Any] | None,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    purpose: str,
+) -> dict[str, Any]:
+    """Judge one backend's headroom for one purpose.
+
+    Imported here rather than at module scope because the budget module reads run
+    records through this one; deferring the import to call time keeps that a
+    one-way dependency instead of a cycle.
+    """
+    from reckon import budget as budget_module
+
+    recorded = budget_module.latest_recorded(project, root=root)
+    state = budget_module.state_for(
+        backend_name,
+        backend,
+        recorded=recorded.get(backend_name),
+    )
+    return budget_module.decide(state, budget_module.policy(config), purpose=purpose)
 
 
 def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) -> str:
@@ -698,6 +742,7 @@ def dispatch(
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     member: str = "",
     launcher=None,
+    check_budget: bool = True,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -711,6 +756,11 @@ def dispatch(
     session when the backend reuses sessions, so a repository's team accumulates
     context across nodes instead of rebuilding it every dispatch. A member whose
     session is still null gets one captured on its first run.
+
+    A node whose backend has no headroom left is *held* rather than dispatched:
+    :class:`BudgetHold` is raised before any worktree exists, so the node stays
+    ready and nothing has to be judged or unwound. Holding costs nothing; a wave
+    launched into a spent quota costs its whole setup plus half-finished commits.
 
     Either way the operation is atomic: a failure after the worktree exists
     removes it and writes no pointer, so no orphan is left holding write scope.
@@ -730,6 +780,20 @@ def dispatch(
                 for finding in resolution.validation.findings
             )
         )
+
+    if check_budget:
+        # Before the worktree, not after: a hold that had already cut a worktree
+        # would leave write scope claimed by a node nobody is running.
+        verdict = _budget_verdict(
+            project=project,
+            root=repo_root,
+            config=config,
+            backend_name=resolution.backend,
+            backend=resolution.backend_settings,
+            purpose="dispatch",
+        )
+        if verdict["held"]:
+            raise BudgetHold(verdict)
 
     backend_name = resolution.backend
     backend = resolution.backend_settings
@@ -1030,6 +1094,11 @@ def resume_plan(
     Session reuse is load-bearing rather than an optimisation: the advice only
     makes sense to a worker that still remembers what it tried, so the resumed
     turn must carry the prior context rather than restate it.
+
+    A resumption is judged against the full ceiling rather than the reserved
+    portion, because answering a stuck worker is the expenditure the reserve was
+    withheld for. It is still held at a genuinely spent quota — a resume into one
+    fails anyway, and reporting the reset time is more use than the rejection.
     """
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
@@ -1040,6 +1109,16 @@ def resume_plan(
             f"run {run_id!r} has no captured session id yet; observe it first"
         )
     backend = _backend_settings(record, config)
+    verdict = _budget_verdict(
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+        config=config,
+        backend_name=str(record.get("backend") or ""),
+        backend=backend,
+        purpose="resume",
+    )
+    if verdict["held"]:
+        raise BudgetHold(verdict)
     backend.setdefault("sandbox", record.get("sandbox"))
     return _backends.launch_plan(
         backend_name=str(record.get("backend") or ""),
@@ -1180,6 +1259,7 @@ def complete(
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=record.get("session_id"),
+        budget=record.get("budget"),
     )
     written = ledger.append_run(project, run, root=ledger_root)
 
@@ -1477,12 +1557,14 @@ def followup_ops_from_manifest(
 
 
 def validate_summary(text: str, *, occasion: str) -> dict[str, Any]:
-    """Check a four-axis summary, and that a completion one carries evidence.
+    """Check a four-axis summary, and that a reporting one carries evidence.
 
     One discipline binds the reflex to the gating reflex and is why the format
     earns its place: at completion, WHY carries the gate evidence. That forces
     every wave report to be quantitative, and makes a wave that cannot state its
-    measure visibly incomplete rather than plausibly done.
+    measure visibly incomplete rather than plausibly done. A hold is held to the
+    same standard, because "we are out of budget" without a figure and a reset
+    time is not a report a lead can act on.
     """
     axes: dict[str, list[str]] = {}
     current: str | None = None
@@ -1504,11 +1586,11 @@ def validate_summary(text: str, *, occasion: str) -> dict[str, Any]:
         for axis, lines in sorted(axes.items())
         if len(lines) > 2
     ]
-    if occasion == "completion":
+    if occasion in ("completion", "hold"):
         why = " ".join(axes.get("WHY", []))
         if not re.search(r"\d", why):
             findings.append(
-                "completion WHY carries no quantitative gate evidence; state the "
+                f"{occasion} WHY carries no quantitative evidence; state the "
                 "measure and its value"
             )
     return {

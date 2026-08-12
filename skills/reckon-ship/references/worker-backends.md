@@ -87,13 +87,12 @@ failure streams are fixtures rather than a comment.
 
 ## Budget is asymmetric, and must stay that way
 
-The harnesses disagree about what they report, and the design must not pretend
-otherwise:
+The harnesses disagree about what their run streams report, and the design must
+not pretend otherwise:
 
 - one emits a structured rate-limit event carrying utilisation, a reset time and
   a threshold status — enough to reason about headroom;
-- another emits per-turn token usage and no headroom at all, and offers no query
-  command for it.
+- another emits per-turn token usage and no headroom at all.
 
 So the normalised block carries `headroom: "known"` or `headroom: "unknown"`, and
 `budget_exhausted()` answers `True`, `False` or `None`. **`None` is the point.**
@@ -103,7 +102,29 @@ can conclude "empty" from silence and stop a wave that had budget left, so
 absence is never read as exhaustion.
 
 Capturing whatever is emitted from the first dispatch onward is what gives later
-work a history to reason over. Acting on the signal is not this module's job.
+work a history to reason over. Deciding what to do with the signal belongs to
+`reckon/budget.py`, not here.
+
+### The asymmetry is in the stream, not always in the harness
+
+A probe established that the harness whose *stream* carries no headroom does
+publish it elsewhere — over its own account surface, on a different transport,
+answered by a read that runs no model. So a dialect may also supply a
+`BudgetProbe`: an argument vector plus the requests to write to a held-open stdin
+and the id of the answer to wait for. Two mechanics were learned by that probe and
+are why this is a probe rather than a command whose output is read:
+
+- the server rejects requests until a handshake has been answered, so the exchange
+  is a sequence rather than one call;
+- it exits the moment its input closes, so a `command < requests` redirect returns
+  nothing at all — stdin stays open for the life of the exchange, and the reply is
+  read on a thread because unrelated notifications arrive interleaved with it.
+
+A dialect whose stream already carries headroom declares no probe: a second
+process would learn nothing the run did not already report. And every failure path
+— no dialect, no probe, no answer, a broken exchange — returns an unknown block
+naming the reason instead of raising, because an instrument that fails must not
+become a hold.
 
 ## Recorded fixtures
 
