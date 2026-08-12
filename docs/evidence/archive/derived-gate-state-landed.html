@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="derived-gate-state-landed">
+  <meta name="plan-title" content="Derived gate state — landed evidence">
+  <meta name="plan-summary" content="One idea applied six times: state that can be computed must not also be stored. Gates became a real element whose unpassed rows feed the existing blocker derivation, the one-way blocked projection became two-way, and sprint focus, sprint-item status, runnability and staleness all moved from stored to derived. A suite gate failed usefully mid-way and is recorded as a result, not an embarrassment.">
+  <meta name="plan-evidence-for" content="reckon:derived-gate-state">
+  <meta name="plan-verifies" content="reckon:derived-gate-state#s2,reckon:derived-gate-state#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; six dispatch waves against the live mounted portfolio of twelve projects">
+  <meta name="plan-commits" content="cbeaa2e,18b0113,67d1cbd,63cb5a6,4554a75,bc0881d,ca18aef,54bdf1e,382501e,e570a14,7ae4fa3,7770425">
+  <meta name="plan-artifacts" content="reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,reckon/lifecycle.py,reckon/roadmap.py,reckon/mcp.py,reckon/mcp_views.py,reckon/serve.py,reckon/doccheck.py,reckon/project_state.py,docs/_shared/plan.schema.json,tests/test_gates.py,tests/test_roadmap.py,tests/test_lifecycle.py">
+  <title>Derived gate state — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Derived gate state — landed evidence</h1>
+    <p class="plan-summary">A gate is a declared blocker, so making gates first-class and repairing
+    the rotted blocked projection turned out to be one job rather than two. Every code rung has
+    landed across five waves; the document rungs — the skill's own fence, this sprint set's prose
+    gates, and the portfolio sweep — are recorded here as they close. The most useful single result
+    is a <em>failure</em>: the wave-four suite gate went red and exposed a readiness collapse that
+    no unit test had caught.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Two-way derivation</td><td><code>effective_status('blocked', [])</code> returns
+        <code>active</code> where it previously stayed blocked forever, while a live blocker still
+        yields <code>blocked</code>; the one-way behaviour is the seeded regression case —
+        <a href="#derivation">§ derivation</a></td><td>pass</td></tr>
+        <tr><td>Gate blocks and unblocks</td><td>One bidirectional test flips only the verdict from
+        <code>failed</code> to <code>passed</code> and proves both read paths plus
+        <code>ready_now</code> change in both directions, with persisted workflow status
+        <code>active</code> throughout — <a href="#gate-mechanism">§ mechanism</a></td><td>pass</td></tr>
+        <tr><td>Evidence-free pass rejected</td><td>A <code>pass</code> op with no recorded measure
+        is refused while <code>gates.require_evidence</code> holds, and the refusal names the gate —
+        <a href="#evidence-required">§ evidence</a></td><td>pass</td></tr>
+        <tr><td>Blocked unwritable</td><td>A write persisting <code>blocked</code> is rejected naming
+        the status, a persisted sprint-item status is rejected on write, and legacy documents
+        carrying either still read under a compatibility warning —
+        <a href="#blocked-unwritable">§ unwritable</a></td><td>pass</td></tr>
+        <tr><td>Round-trip parity</td><td>Gates survive the state round-trip with byte-identity of
+        the regenerated reckon-owned section, and <code>passed</code> is re-derived from verdict even
+        when contradictory input supplies <code>passed=true</code> —
+        <a href="#round-trip">§ round-trip</a></td><td>pass</td></tr>
+        <tr><td>Concurrent sprints expressible</td><td>Two sprints hold incomplete items
+        simultaneously with no error raised; the uniqueness invariant is gone and the default focus
+        derives from sprint order and incompleteness, so nothing persists it to go stale —
+        <a href="#concurrent-sprints">§ concurrency</a></td><td>pass</td></tr>
+        <tr><td>Runnability derived</td><td><code>dispatchable</code> and <code>authorised</code> are
+        separate derived signals: a well-formed draft reads <code>dispatchable=true</code>,
+        <code>authorised=false</code>, <code>ready=false</code>, and the report names which property
+        is absent — <a href="#runnability">§ runnability</a></td><td>pass</td></tr>
+        <tr><td>Staleness reaches the agent</td><td>A plan read carries derived age and a staleness
+        verdict computed from the audit's existing thresholds; a 31-day fixture reads stale with
+        <code>effective_status</code> still <code>active</code> and zero blockers, so the verdict is
+        advisory — <a href="#staleness">§ staleness</a></td><td>pass</td></tr>
+        <tr><td>Suite green</td><td>1,660 → 1,683 → 1,699 → <strong>failed at 1,706</strong> →
+        1,709 after correction. The failure is the entry worth reading —
+        <a href="#suite">§ suite</a></td><td>pass, after a real failure</td></tr>
+        <tr><td>Wave fence honoured</td><td>Pending: the fence still reads a prose table, so there is
+        no computed state for a transcript to demonstrate against —
+        <a href="#open">§ open</a></td><td>open</td></tr>
+        <tr><td>Draft decay alarmed</td><td>Pending, and its wording was corrected against the live
+        portfolio before it could be met — <a href="#draft-decay">§ decay</a></td><td>open</td></tr>
+        <tr><td>Own gates migrated</td><td>Pending — <a href="#open">§ open</a></td><td>open</td></tr>
+        <tr><td>Sweep complete</td><td>Pending, sized against the live portfolio —
+        <a href="#sweep-sizing">§ sizing</a></td><td>open</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="derivation">
+    <h2>The defect, and why it was one-way</h2>
+
+    <p>Reckon always derived a plan's blocked state, but the projection could only ever
+    <em>add</em> <code>blocked</code> — never remove a stale one. A plan authored
+    <code>plan-status="blocked"</code> therefore read blocked forever after every blocker cleared,
+    and <code>roadmap</code> knew: it filed the condition as an <code>orphaned-blocked-status</code>
+    finding instead of resolving it.</p>
+
+    <p>The repair resolves a legacy persisted <code>blocked</code> to its underlying open state
+    <em>before</em> the projection applies, which makes the same function answer in both directions.
+    Measured, with the former behaviour as the seeded regression:</p>
+
+    <pre>effective_status('blocked', [])        -&gt; 'active'    # was 'blocked' — never cleared
+effective_status('active',  [{...}])   -&gt; 'blocked'   # unchanged
+effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still wins</pre>
+
+    <p>Writing the status is now refused outright, naming <code>blocked</code> as derived-only, while
+    a legacy document carrying it still reads under a compatibility diagnostic — the posture the
+    <code>legacy-read-posture</code> decision locked. Commits <code>382501e</code>,
+    <code>4554a75</code>.</p>
+  </section>
+
+  <section id="gate-mechanism">
+    <h2>A gate is a declared blocker, so it reuses the derivation</h2>
+
+    <p>The gate element carries a stable id, the section it anchors to, the sections it gates, a
+    measure, the required evidence, a verdict and an evidence link. Nothing about blocking is new
+    machinery: <code>unpassed_gate_blockers</code> projects every gate whose verdict is not
+    <code>passed</code> into an ordinary blocker row, and the existing path carries it the rest of
+    the way.</p>
+
+    <figure>
+      <svg viewBox="0 0 660 232" width="100%" style="max-width:660px" role="img"
+           aria-label="A gate whose verdict is not passed becomes a blocker row. That row feeds three independent consumers — the typed plan read, the discovery read, and roadmap — each of which projects it through effective status, so a failed gate reads blocked and a passed gate returns the plan to ready with no status write anywhere.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="86" width="120" height="44" rx="4"/>
+          <rect x="188" y="86" width="128" height="44" rx="4"/>
+          <rect x="376" y="16" width="150" height="36" rx="4"/>
+          <rect x="376" y="86" width="150" height="36" rx="4"/>
+          <rect x="376" y="156" width="150" height="36" rx="4"/>
+          <path d="M128 108 L188 108"/>
+          <path d="M316 108 L346 108"/>
+          <path d="M346 108 L346 34 L376 34"/>
+          <path d="M346 108 L376 108"/>
+          <path d="M346 108 L346 174 L376 174"/>
+          <path d="M180 100 L188 108 L180 116"/>
+          <path d="M368 26 L376 34 L368 42"/>
+          <path d="M368 100 L376 108 L368 116"/>
+          <path d="M368 166 L376 174 L368 182"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="68" y="104" text-anchor="middle">gate</text>
+          <text x="68" y="119" text-anchor="middle">verdict ≠ passed</text>
+          <text x="252" y="104" text-anchor="middle">blocker row</text>
+          <text x="252" y="119" text-anchor="middle">kind: gate</text>
+          <text x="451" y="38" text-anchor="middle">typed read_plan</text>
+          <text x="451" y="108" text-anchor="middle">discovery read_plan</text>
+          <text x="451" y="178" text-anchor="middle">roadmap</text>
+          <text x="566" y="38">blocking</text>
+          <text x="566" y="108">blocking</text>
+          <text x="566" y="178">gate_blockers</text>
+          <text x="8" y="212">One shared derivation, three consumers. Passing the gate empties the row and every consumer returns to ready —</text>
+          <text x="8" y="228">the persisted workflow status is never written in either direction.</text>
+        </g>
+      </svg>
+      <figcaption>Three consumers were the reason the first attempt at this node stopped rather than
+      guessing: <code>read_plan</code> builds <code>blocking</code> in two modules the dispatch had
+      not scoped.</figcaption>
+    </figure>
+
+    <p>One bidirectional test carries the whole claim. It flips only the verdict, from
+    <code>failed</code> to <code>passed</code>, and asserts that both read paths and
+    <code>ready_now</code> change in both directions while the persisted workflow status stays
+    <code>active</code> throughout. <code>roadmap</code> reports the gate rows as
+    <code>gate_blockers</code>, derives <code>effective_status=blocked</code>, and drops the plan out
+    of <code>ready_now</code>. Commits <code>ca18aef</code>, <code>54bdf1e</code>.</p>
+  </section>
+
+  <section id="evidence-required">
+    <h2>A gate that can pass without evidence is not a gate</h2>
+
+    <p><code>edit_plan</code> gained <code>gate</code> to declare one and <code>pass</code>/<code>fail</code>
+    to record a verdict. A <code>pass</code> carrying no recorded measure is <em>rejected</em>, not
+    warned, while <code>gates.require_evidence</code> is in force, and the refusal names the gate so
+    the caller knows which one it tried to wave through. Commit <code>ca18aef</code>.</p>
+  </section>
+
+  <section id="round-trip">
+    <h2>Round-trip parity, and one derived field</h2>
+
+    <p>Gates round-trip byte-identically through the regenerated reckon-owned section, matching the
+    invariant decisions and followups already hold. <code>PlanState</code> carries them, the
+    published schema validates a gates-bearing document and rejects a gate missing its measure, and
+    <code>passed</code> is re-derived from the verdict even when contradictory input supplies
+    <code>passed=true</code> — the same discipline the plan is about, applied to the gate's own
+    state. Commits <code>cbeaa2e</code>, <code>63cb5a6</code>, <code>bc0881d</code>.</p>
+  </section>
+
+  <section id="blocked-unwritable">
+    <h2>Both halves of unwritable</h2>
+
+    <p>The sprint-item half landed first: item lifecycle status and implementation fraction derive
+    from plan HTML on read, are rejected on write, and a legacy document reads under a compatibility
+    warning. Measured on a real stale row — an item persisting <code>pending</code> with
+    implementation <code>0.0</code> reads <code>active</code> at <code>0.4</code>, with
+    <code>index.json</code> byte-unchanged. The plan-status half followed in wave four
+    (<a href="#derivation">§ derivation</a>). Commits <code>4554a75</code>, <code>382501e</code>.</p>
+  </section>
+
+  <section id="concurrent-sprints">
+    <h2>Concurrency stopped being an error</h2>
+
+    <p>A lock-guarded invariant used to raise when a second sprint was activated — a single-session
+    assumption that detached worktrees and independent orchestrators had already outgrown. The
+    invariant is gone; the default focus derives from sprint order and incompleteness. Two sprints
+    now hold incomplete items simultaneously with zero audit findings, and because nothing persists
+    the pointer, there is no state left for a test to catch going stale. Starting a sprint ceased to
+    be an operation. Commit <code>18b0113</code>.</p>
+  </section>
+
+  <section id="runnability">
+    <h2>Well-formedness derived, authorisation kept deliberate</h2>
+
+    <p>The authoring-status gate did one genuinely valuable job — separating written-down from
+    authorised-to-act-on — and one bad one: it decayed silently. Splitting it keeps the signal and
+    removes the decay. <code>dispatchable</code> is derived from checkable properties;
+    <code>authorised</code> stays a deliberate act and is reported with its age. A well-formed draft
+    reads <code>dispatchable=true</code>, <code>authorised=false</code>, <code>ready=false</code>,
+    and the report names which property is absent rather than merely withholding the plan.
+    Commit <code>e570a14</code>.</p>
+  </section>
+
+  <section id="staleness">
+    <h2>Detection that reaches the agent</h2>
+
+    <p>Staleness was already detected and never delivered: <code>reckon audit</code> knew, and no
+    agent reading a plan was told. Derived age and a staleness verdict now ride on the read payload,
+    computed from the thresholds the audit already defines rather than second ones invented for the
+    purpose. A 31-day fixture reads stale while <code>effective_status</code> stays
+    <code>active</code> with zero blockers — advisory, never blocking, which is the whole point: a
+    stale plan is a prompt to re-read its assumptions, not a refusal to work. Commit
+    <code>67d1cbd</code>.</p>
+  </section>
+
+  <section id="suite">
+    <h2>The wave-four gate failed, and was worth more than the tests</h2>
+
+    <p>Suite counts across the waves: 1,660 → 1,683 → 1,699 → <strong>1,706 with three roadmap
+    readiness failures</strong> → 1,709 after correction. The red run is the useful one.</p>
+
+    <p><code>ready_now</code> had emptied across all ten pending plans, from two stacked causes that
+    every unit test passed straight through:</p>
+
+    <ul>
+      <li><code>mcp._inventory_row</code> stripped gates and followups before
+      <code>build_roadmap</code> saw them, so <code>open_followup</code> read as missing on plans
+      that plainly had one. Fixed in 27 lines — commit <code>7ae4fa3</code>.</li>
+      <li>Gate-based dispatchability stranded every not-yet-migrated document, which the locked
+      <code>legacy-read-posture</code> decision forbids: rejection was always meant to apply to
+      writes only. Fixed in 8 lines — commit <code>7770425</code>.</li>
+    </ul>
+
+    <p>Both were adapter-shaped — a real derivation, correct in isolation, wrong at the boundary
+    where the public payload is assembled. Verification was moved off fixtures for the re-check:
+    <code>ready_now</code> was confirmed back to 6 against the live project, not a constructed one,
+    and the re-run gate passed at 1,709.</p>
+  </section>
+
+  <section id="sweep-sizing">
+    <h2>The sweep, sized against the live portfolio</h2>
+
+    <p>The plan's original figures were written before the scan existed and had drifted. Measured
+    across all twelve mounted projects on 2026-08-12:</p>
+
+    <table>
+      <thead><tr><th>What the sweep must clear</th><th>Count</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Live plans persisting <code>plan-status="blocked"</code></td><td>12</td>
+        <td>imas-efit 11, nova 1</td></tr>
+        <tr><td>Persisted sprint-item statuses</td><td>46</td>
+        <td>imas-ambix 36, reckon 8, nova 2</td></tr>
+        <tr><td>Error-level wiring findings</td><td>17</td>
+        <td>imas-efit 16 (including 2 dependency cycles, 8 non-executable and 3 inactive hard
+        dependencies, 3 sprint-order inversions), hanney 1</td></tr>
+        <tr><td>Wiring findings of all severities</td><td>82</td>
+        <td>imas-efit 69, the remaining 13 spread across six projects</td></tr>
+      </tbody>
+    </table>
+
+    <p>Eight of the twelve projects carry no error-level finding at all, so the sweep is
+    concentrated rather than broad: imas-efit is the work, and everything else is small.</p>
+  </section>
+
+  <section id="draft-decay">
+    <h2>The decay alarm's own evidence was stale</h2>
+
+    <p>The plan justified the runnability split with "four of eight draft plans across the portfolio
+    are more than two months old, and one carries three locked decisions and a resolved followup".
+    The live scan does not support it, and a gate stated against numbers that no longer exist cannot
+    be met by a correct implementation — so the claim was corrected in the plan before the gate could
+    be attempted.</p>
+
+    <table>
+      <thead><tr><th>Measured, 2026-08-12</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Authored-but-unauthorised plans</td><td>11, across 6 of 12 mounted projects</td></tr>
+        <tr><td>Beyond the staleness threshold</td><td>1 — <code>imas-efit:plan-lifecycle-hygiene</code>
+        at 64 days, verdict <code>stale</code></td></tr>
+        <tr><td>Reporting <strong>no age at all</strong></td><td>5 — imas-efit 1, tessera 2,
+        hanney 2</td></tr>
+      </tbody>
+    </table>
+
+    <p>The interesting number is the last one. Nearly half the unauthorised plans carry no recorded
+    modification date, so the alarm cannot classify their decay — it reports
+    <code>age_verdict: unknown</code> and says nothing. An alarm that goes quiet on the documents
+    most likely to have rotted is the same failure class the plan exists to remove, which is why the
+    age fallback is a prerequisite of the sweep rather than a tidy-up after it.</p>
+  </section>
+
+  <section id="open">
+    <h2>What is still open</h2>
+
+    <p>Every code rung has landed. Three document rungs remain, and each is gated on something real
+    rather than merely unfinished: the skill's fence has no computed state to read until it is
+    swapped onto one; the migration of this sprint set's own prose gates is constrained by
+    concurrent orchestrator sessions writing followups into the same plan HTML; and the sweep is
+    gated on the age fallback above.</p>
+  </section>
+</main>
+</body>
+</html>
