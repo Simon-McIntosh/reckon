@@ -149,6 +149,10 @@ class BudgetHold(CrewError):
         )
 
 
+class PlanVisibilityError(CrewError):
+    """The worker's base ref cannot show the named plan section."""
+
+
 # ── Node definition and the task contract ───────────────────────────────────
 
 
@@ -667,6 +671,110 @@ def _remove_worktree(repo: Path, path: str) -> None:
     )
 
 
+def _base_commit(repo: Path, base: str) -> str:
+    """Resolve a worktree base to a commit without accepting option-like refs."""
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "--end-of-options", f"{base}^{{commit}}"],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise PlanVisibilityError(
+            f"worktree base {base!r} is not a readable commit; commit the plan "
+            "before dispatching"
+        )
+    return result.stdout.strip()
+
+
+def _contains_plan_section(html_text: str, section: str) -> bool:
+    """Return whether authored HTML exposes the requested section."""
+    from bs4 import BeautifulSoup
+
+    requested = re.sub(r"\s+", " ", section.strip())
+    if not requested:
+        return True
+    requested_folded = requested.casefold()
+    ids = {requested_folded.removeprefix("#")}
+    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
+    if numbered:
+        ids.add(f"s{numbered.group(1)}".casefold())
+
+    soup = BeautifulSoup(html_text, "html.parser")
+    if any(
+        str(tag.get("id") or "").casefold() in ids for tag in soup.find_all(id=True)
+    ):
+        return True
+    for heading in soup.find_all(re.compile(r"^h[1-6]$")):
+        text = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)).casefold()
+        if text == requested_folded or re.match(
+            rf"^{re.escape(requested_folded)}(?:\s|[-—:])", text
+        ):
+            return True
+    return False
+
+
+def require_plan_section_visible(
+    *, node: TaskNode, project: str, repo: str | Path, base: str
+) -> None:
+    """Refuse when a named section is not identical and readable at ``base``."""
+    if not node.section.strip():
+        return
+
+    from reckon.resources import ResourceCollision, resolve_resource
+
+    repo_root = Path(repo).resolve()
+    docs_dir = repo_root / "docs"
+    if not docs_dir.is_dir() or not any(docs_dir.rglob("*.html")):
+        # Dispatch remains usable before a repository adopts HTML plan authority.
+        # Once it does, every named section must be visible from the worker base.
+        return
+    try:
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+    except ResourceCollision as exc:
+        raise PlanVisibilityError(
+            f"plan {node.plan!r} cannot be resolved in {docs_dir}: {exc}; "
+            "commit one unambiguous plan before dispatching"
+        ) from exc
+    if resource is None:
+        expected = Path("docs") / "plans" / f"{node.plan}.html"
+        raise PlanVisibilityError(
+            f"plan file {expected.as_posix()} is not readable in the working tree; "
+            "commit the plan and named section before dispatching"
+        )
+
+    relative_path = resource.path.resolve().relative_to(repo_root)
+    commit = _base_commit(repo_root, base)
+    blob = subprocess.run(
+        ["git", "show", f"{commit}:{relative_path.as_posix()}"],
+        cwd=str(repo_root),
+        capture_output=True,
+        check=False,
+    )
+    if blob.returncode:
+        raise PlanVisibilityError(
+            f"plan file {relative_path.as_posix()} is not readable at base {base!r}; "
+            "commit the plan and named section before dispatching"
+        )
+
+    working_bytes = resource.path.read_bytes()
+    if working_bytes != blob.stdout:
+        raise PlanVisibilityError(
+            f"plan file {relative_path.as_posix()} differs from base {base!r}; "
+            "commit the plan before dispatching"
+        )
+    base_html = blob.stdout.decode("utf-8", errors="replace")
+    if not _contains_plan_section(base_html, node.section):
+        raise PlanVisibilityError(
+            f"plan file {relative_path.as_posix()} does not contain section "
+            f"{node.section!r} at base {base!r}; commit the named section before "
+            "dispatching"
+        )
+
+
 @dataclass
 class DispatchPlan:
     """Everything a dispatch resolved, before anything on disk has changed.
@@ -703,6 +811,9 @@ def plan_dispatch(
     locked_decisions: Iterable[str] = (),
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str | None = None,
+    project: str = "",
+    repo: str | Path | None = None,
+    base: str = "HEAD",
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -731,6 +842,8 @@ def plan_dispatch(
     verdict = validate_node(
         node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
     )
+    if verdict.ok and repo is not None:
+        require_plan_section_visible(node=node, project=project, repo=repo, base=base)
     return DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -783,6 +896,9 @@ def dispatch(
         config=config,
         locked_decisions=locked_decisions,
         peer_scopes=peer_scopes,
+        project=project,
+        repo=repo_root,
+        base=base,
     )
     if not resolution.validation.ok:
         raise CrewError(

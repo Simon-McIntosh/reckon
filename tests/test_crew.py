@@ -13,7 +13,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon import crew
 
 
@@ -54,6 +56,7 @@ def repo(tmp_path):
     """A throwaway git repository carrying the worktree fleet script."""
     root = tmp_path / "repo"
     (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "docs" / "plans").mkdir(parents=True)
     source = (
         Path(__file__).parents[1]
         / "skills"
@@ -64,12 +67,21 @@ def repo(tmp_path):
     (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
         source.read_text()
     )
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        """<!doctype html>
+<html><head>
+<meta name="docs-project" content="proj">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="plan-a">
+</head><body><h2 id="s3">§3 — Dispatch</h2></body></html>
+"""
+    )
     (root / "seed.txt").write_text("seed\n")
     for args in (
         ["init", "-q", "-b", "main"],
         ["config", "user.email", "worker@example.invalid"],
         ["config", "user.name", "Worker"],
-        ["add", "seed.txt", "skills"],
+        ["add", "seed.txt", "skills", "docs/plans/plan-a.html"],
         ["commit", "-q", "-m", "chore: seed"],
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
@@ -268,6 +280,131 @@ def test_an_unsafe_node_id_is_refused_before_anything_is_created(home) -> None:
 
 
 # ── Dispatch ────────────────────────────────────────────────────────────────
+
+
+def _assert_no_dispatch_artifacts(repo: Path) -> None:
+    assert crew.list_live() == []
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "node-a" not in listed.stdout
+
+
+def test_dispatch_refuses_working_plan_changes_before_creating_anything(
+    home, repo
+) -> None:
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    plan.write_text(plan.read_text().replace("Dispatch", "Changed dispatch"))
+
+    with pytest.raises(crew.PlanVisibilityError) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    detail = str(excinfo.value)
+    assert "docs/plans/plan-a.html" in detail
+    assert "commit the plan" in detail
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_refuses_a_section_absent_from_the_base(home, repo) -> None:
+    with pytest.raises(crew.PlanVisibilityError) as excinfo:
+        crew.dispatch(
+            node=_node(section="§8"),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    detail = str(excinfo.value)
+    assert "docs/plans/plan-a.html" in detail
+    assert "does not contain section" in detail
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_refuses_a_plan_absent_from_the_base(home, repo) -> None:
+    plan = repo / "docs" / "plans" / "plan-b.html"
+    plan.write_text(
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="plan-b"><h2 id="s3">§3</h2>'
+    )
+
+    with pytest.raises(crew.PlanVisibilityError) as excinfo:
+        crew.dispatch(
+            node=_node(plan="plan-b"),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    assert "not readable at base" in str(excinfo.value)
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *a, **k: 4242,
+    )
+    assert record["pid"] == 4242
+    assert Path(record["worktree"]).is_dir()
+
+
+def test_cli_plan_visibility_refusal_has_its_own_exit_code(
+    home, repo, monkeypatch
+) -> None:
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    plan.write_text(plan.read_text().replace("Dispatch", "Changed dispatch"))
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            "§3",
+            "--node",
+            "node-a",
+            "--goal",
+            "record the launch matrix for one backend",
+            "--done-when",
+            "uv run pytest tests/test_crew.py reports 0 failures",
+            "--write-path",
+            "reckon/crew.py",
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 4
+    assert payload["error"] == "plan-unavailable"
+    assert "docs/plans/plan-a.html" in payload["detail"]
+    _assert_no_dispatch_artifacts(repo)
 
 
 def test_dispatch_launches_a_cli_backend_and_records_the_run(home, repo) -> None:
