@@ -445,6 +445,41 @@ are always fresh. Run `observe` first when the phase matters. And **`observe` is
 also what captures the run's token usage**, so promoting without it records
 `tokens: null` even though the stream held them all along.
 
+### Arm a watch when you dispatch, and watch the manifest's status
+
+**Nothing tells you a worker stopped.** Run state is pull-only: a worker that
+finishes, blocks, or dies changes a file, and you find out when you next look. So
+arm the watch as part of dispatching — not after, not when you remember. A node
+dispatched with nothing waiting on it is a node you will discover by accident,
+and the accident is usually someone asking why nothing has happened.
+
+**Wait on the manifest's `status:` line, never on the file existing.** A blocked
+manifest exists exactly like a successful one, so an existence test reports
+surrender as delivery:
+
+```bash
+# wrong — fires identically for status: complete and status: blocked
+until [ -f "$M/node.md" ]; do sleep 20; done
+
+# right — distinguishes delivery from surrender, and gives up on a dead run
+until grep -qE '^status: (complete|blocked|failed)' "$M/node.md" 2>/dev/null; do
+  kill -0 "$PID" 2>/dev/null || { echo "process gone, no manifest"; break; }
+  sleep 20
+done
+```
+
+The liveness check matters as much as the grep. A watch keyed only to a file
+waits forever when its run died before writing anything — which is exactly what a
+session-lock collision does, and the wait is silent, so the lost node looks like a
+slow one.
+
+Until the classifier reads manifests, **`completed_unpromoted` means "a manifest
+exists", not "the work succeeded"** — a blocked node carries that classification
+and a `next_action` telling you to promote it with a commit it never made. Read
+the manifest's own `status` and `blockers` before acting on any next-action
+advice, and never promote a run whose manifest says `blocked` or `failed` as
+though it passed.
+
 **The table shapes the wave; it never decides whether to delegate.** That is
 already settled for both targets — every ready node goes to an appropriately
 capable worker, one-item and cross-cutting nodes included, rather than making the
