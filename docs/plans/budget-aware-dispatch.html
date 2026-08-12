@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="budget-aware-dispatch">
   <meta name="plan-title" content="Budget-aware Dispatch">
   <meta name="plan-summary" content="Read each backend&#x27;s budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
@@ -21,8 +21,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="8">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="11">
+<meta name="plan-impl" content="0.86">
 </head>
 <body>
   <main class="plan-doc">
@@ -103,6 +103,56 @@
         (commit <code>6a0e3c9</code>).
       </p>
     </section>
+
+    <h2 id="s6">§6 — A recorded signal must stay attributable to its backend</h2>
+
+    <p>The reader matches a recorded budget block to a backend through the run record's agent block.
+    A record promoted without one carries its headroom into durable storage and loses the only thing
+    that makes it readable. Measured on this repository's own ledger: of seventeen records, six have
+    no <code>agent.backend</code>, and <strong>both</strong> records carrying a genuinely known
+    reading — utilisation 1.02%, resetting 2026-09-01 — are among them. Every real headroom signal
+    the project has ever recorded is currently invisible to the mechanism built to read it.</p>
+
+    <p>The loss is provably caused by promotion rather than by absence. The same reading was
+    attributed while its run was in flight, reported from the live pointer with a source and an
+    observation time; a recovery pass then promoted those pointers, and the identical read now
+    returns nothing for that backend. Durability cost the number its meaning.</p>
+
+    <p><strong>This sits under the locked read-source decision, not beside it.</strong> That decision
+    chose the ledger over a probe precisely because the ledger already holds what each backend
+    emitted. If promotion can strip the attribution, the foundation of the free pre-flight is
+    unsound, and no amount of correct threshold logic above it matters.</p>
+
+    <p><strong>The failure mode is the one the fail-safe posture was built to prevent, arriving by
+    another route.</strong> <code>unknown</code> must keep meaning "nothing was recorded". Here it
+    means "something was recorded and could not be matched" — indistinguishable to every caller, and
+    silently wrong in the direction that opens waves it should hold. A backend that publishes nothing
+    and a backend whose signal was mislaid must not read the same.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A promoted run keeps its attribution</td>
+          <td>A run promoted from a pointer whose agent block is absent is still matched to its
+          backend afterwards, shown by reading the same headroom before and after promotion.</td>
+        </tr>
+        <tr>
+          <td>The existing ledger becomes readable</td>
+          <td>The two unattributed known readings in this repository's ledger resolve to a backend
+          through the reader, without editing the committed records by hand.</td>
+        </tr>
+        <tr>
+          <td>Unattributable stays distinct from unrecorded</td>
+          <td>A record that genuinely cannot be attributed reports a reason that a caller can tell
+          apart from nothing-was-recorded; no path reports a mislaid signal as silence.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
 
     <h2 id="s4">§4 — Constraints</h2>
 
@@ -236,6 +286,12 @@
     <div class="r-fu-body"><p>A hold currently leaves no trace in the committed ledger: it creates no run, so nothing records that a wave was held, on which backend, for how long, or whether the scheduled resumption fired. That makes the one measurement the mechanism generates — how much wall-clock holding actually costs, against how much a burned wave would have — unavailable to any later reader, and it is exactly the class of measurement that cannot be reconstructed after the fact.</p><p>Out of scope for the five deliverables that just landed, hence additive rather than unfinished. Sizing note for whoever picks it up: the shape is a hold record beside the run records, not a run record with a held flag, since a hold has no worktree, no commit and no gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
     <p class="r-fu-outcome">Landed as §5 — commits 9bc21da and 49bc41c. A hold opens one record per continuous window carrying backend, utilisation, reset and purpose, and closes with wall-clock held_seconds measured rather than assumed: a test hold closed at 137 s against a 600 s predicted reset, which is the gap that reveals a late resumption. Holds sit beside runs, so the run count and effort report are provably unchanged. The audit added a seventh gate mid-flight: recording had been wired into the shared pre-flight, so the read-only tool opened a hold and took the ledger v1→v2 just by being asked — a reader inventing history by looking at it. Recording now belongs to the commands that decide to open a wave, the read is v1→v1, and resumption_fired is an explicit input rather than inferred from a stuck-worker check that shares the same ceiling. 8 new tests, suite green at 1,668; 783 s and 498 s of measured worker-time. Chain closes here — done, no followup.</p>
+    </article>
+<article class="r-fu" data-id="f-bad-003" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="2026-08-12T16:23:09+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Attribute a recorded headroom signal whose run has no agent block</h4>
+    <div class="r-fu-body"><p>A real headroom reading is present in the ledger and the budget view cannot see it. <code>flight-check-b</code> and <code>scope-fence</code> both carry <code>utilisation_pct: 1.02</code> with <code>resets_at: 2026-09-01</code>, yet <code>crew(view="budget")</code> reports the claude backend as <code>headroom: unknown, source: none - nothing recorded for this backend</code>. The cause is attribution: those two records have <code>agent.backend: null</code>, as do 6 of the 17 records in this ledger, so a signal that exists cannot be matched to the backend that produced it.</p><p>The loss is demonstrable rather than theoretical, because the signal was attributed until it was promoted. A pre-flight run at 15:35 reported claude at <code>utilisation 1.02% ... source: live-run, observed_at 08:50:49</code>, reading it from the live pointer. Those pointers were then promoted into the ledger by a recovery pass, and the same read now returns nothing for that backend. Promotion moved the number into durable storage and cost it its meaning.</p><p>The decision this plan locked - read the budget signal from recorded runs rather than probing - depends on those records staying attributable, so the gap sits squarely in its foundation. Either carry the backend forward at promotion for records that lack an agent block, or have the reader fall back to whatever identifies the backend on the record itself, and add a test that a promoted run's headroom is still attributed after the pointer is gone. Unknown must keep meaning nothing was recorded, never that something was recorded and could not be matched.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    <p class="r-fu-outcome">Verified against the live ledger and promoted into §6 rather than left as a followup. The claim understated it: of 17 records 6 carry no agent.backend, and BOTH records holding a genuinely known reading (utilisation 1.02%, resets 2026-09-01) are among them — so every real headroom signal this project has recorded is invisible to the reader, which reports source: none for that backend. A followup on a plan at shipped/1.0 would have been unreachable from roadmap; a section keeps the plan active and the work visible.</p>
     </article>
 </section>
 
