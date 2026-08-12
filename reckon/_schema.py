@@ -24,7 +24,7 @@ The shape contract (read this before touching the models)
 --------------------------------------------------------
 ``read_state`` produces a dict that is *sparse at the top level* (a scalar key
 exists only when its ``<meta>`` is present — no defaults are injected) but
-*dense in the nested sections* (always all five sections; every sub-key of each
+*dense in the nested sections* (always all six sections; every sub-key of each
 decision / followup / question / research / comment is present, except the
 conditional resolved/outcome fields).
 
@@ -400,6 +400,31 @@ class Comment(BaseModel):
     body: str = ""
 
 
+class Gate(BaseModel):
+    """An evidence gate (``.r-gate`` element).
+
+    ``passed`` is a read-only projection of ``verdict``. The renderer ignores
+    it, so semantic HTML carries only the authoritative verdict.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = ""
+    section: str = ""
+    gated_sections: list[str] = Field(default_factory=list)
+    status: str = ""
+    measure: str
+    required_evidence: str = ""
+    verdict: str = ""
+    evidence: str = ""
+    passed: bool = Field(False, json_schema_extra={"readOnly": True})
+
+    @model_validator(mode="after")
+    def _derive_passed(self) -> "Gate":
+        object.__setattr__(self, "passed", self.verdict == "passed")
+        return self
+
+
 # ── PlanState (the contract) ─────────────────────────────────────────────────
 
 
@@ -479,6 +504,7 @@ class PlanState(BaseModel):
     )
 
     # ── Body sections ──
+    gates: list[Gate] = Field(default_factory=list)
     decisions: dict[str, Decision] = Field(default_factory=dict)
     followups: list[Followup] = Field(default_factory=list)
     questions: list[Question] = Field(default_factory=list)
