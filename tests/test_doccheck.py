@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
+from datetime import date, datetime
 from pathlib import Path
 
-from reckon.doccheck import audit_html, audit_links
+from reckon.doccheck import audit_html, audit_links, derived_plan_age
 
 
 # ── audit_html (single-file checks) ──────────────────────────────────────────
@@ -69,6 +71,47 @@ def test_audit_html_relative_img_src():
     findings = audit_html(_bare('<img src="figures/foo.png">'), project="proj")
     codes = [f.code for f in findings]
     assert "img-relative-src" in codes
+
+
+def test_derived_plan_age_prefers_recorded_modification(tmp_path):
+    fallback = tmp_path / "plan.html"
+    fallback.write_text("fixture")
+    old_timestamp = datetime(2001, 1, 1).timestamp()
+    os.utime(fallback, (old_timestamp, old_timestamp))
+
+    age_days, source = derived_plan_age(
+        "2026-08-10",
+        created_at=datetime(2000, 1, 1).timestamp(),
+        fallback_path=fallback,
+        today=date(2026, 8, 12),
+    )
+
+    assert (age_days, source) == (2, "plan-modified")
+
+
+def test_derived_plan_age_uses_discovery_creation_time_without_modified():
+    age_days, source = derived_plan_age(
+        None,
+        created_at=datetime(2026, 7, 1).timestamp(),
+        today=date(2026, 8, 12),
+    )
+
+    assert (age_days, source) == (42, "file-created")
+
+
+def test_derived_plan_age_uses_file_mtime_as_last_available_source(tmp_path):
+    fallback = tmp_path / "plan.html"
+    fallback.write_text("fixture")
+    modified_timestamp = datetime(2026, 8, 5).timestamp()
+    os.utime(fallback, (modified_timestamp, modified_timestamp))
+
+    age_days, source = derived_plan_age(
+        None,
+        fallback_path=fallback,
+        today=date(2026, 8, 12),
+    )
+
+    assert (age_days, source) == (7, "file-mtime")
 
 
 # ── audit_links (corpus-aware dangling-link check) ────────────────────────────

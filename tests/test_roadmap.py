@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+import os
+from datetime import date, datetime, time, timedelta
 
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
@@ -280,6 +281,36 @@ def test_authorisation_report_lists_every_draft_with_age_and_decay_verdict() -> 
         rows[f"older-{name}"]["age_verdict"] == "stale"
         for name in ("one", "two", "three", "four")
     )
+    assert {row["age_source"] for row in rows.values()} == {"plan-modified"}
+
+
+def test_authorisation_report_derives_age_from_existing_plan_file(
+    tmp_path, monkeypatch
+) -> None:
+    docs_dir = tmp_path / "docs"
+    plan_path = docs_dir / "plans" / "unmodified.html"
+    plan_path.parent.mkdir(parents=True)
+    plan_path.write_text(
+        """<!doctype html>
+<html><head>
+<meta name="docs-project" content="sample">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="unmodified">
+<meta name="plan-status" content="draft">
+</head><body></body></html>
+"""
+    )
+    modified = date.today() - timedelta(days=17)
+    timestamp = datetime.combine(modified, time.min).timestamp()
+    os.utime(plan_path, (timestamp, timestamp))
+    monkeypatch.setattr("reckon.roadmap._load_mounts", lambda: {"sample": docs_dir})
+
+    result = build_roadmap("sample", [_plan("unmodified", status="draft")], [])
+    row = result["authorisation"]["authored_but_unauthorised"][0]
+
+    assert row["age_days"] == 17
+    assert row["age_source"] == "file-mtime"
+    assert row["age_verdict"] == "current"
 
 
 def test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit() -> (
