@@ -15,8 +15,8 @@
   <title>Plan schema-as-contract + tool-surface collapse | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-07-29">
-<meta name="plan-version" content="13">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="14">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -346,6 +346,11 @@ Done-when
      vvgs-pendulum-mechanism) → reckon-type=research + docs-project/slug/title/status=reference (do NOT
      fabricate plan metadata). reckon audit &lt;proj&gt; → 0 violations.
   4. This followup resolved or closed (&quot;done — no followup&quot;).</pre>
+    </article>
+<article class="r-fu" data-id="f-append-id-uniqueness" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship reckon-schema-and-tooling" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Reject an append whose id already exists in the target collection</h4>
+    <div class="r-fu-body"><p>The append op accepts a duplicate id, so a collection can hold two items that address the same way. Observed live today: two orchestrator sessions working the same repository each appended a followup to <code>uniform-worker-dispatch</code> and both chose <code>f-uwd-003</code>, because both read the plan, saw 002 as the highest, and incremented. The plan now carries two distinct followups under one id - one on the single-goal check over-matching conjunctions, one on the subjective-term check firing inside <code>machine-readable</code>.</p><p>The consequence is that resolve by id is ambiguous by construction. Whichever the implementation picks, the other stays open forever or is closed with an outcome describing work that was never done, and no version check catches it: both writes were correctly version-paired and neither conflicted, because appending is additive and the collision is in content rather than in sequence.</p><p>This is not an exotic race. Sequential ids invite it whenever two sessions hold the same plan, and concurrent orchestrators across worktrees are now the intended operating mode rather than an edge case - the same day this was observed, two sessions were dispatching against overlapping plans by design.</p><p>Reject an append whose id already exists, naming the collision, so the writer retries with a distinct one. Consider having the op mint the id when none is supplied, since a caller-chosen sequential id is the trap itself. A test appending the same id twice, and one appending concurrently from two readers of the same version, would both fail today.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship reckon-schema-and-tooling</pre>
     </article>
 </section>
   </main>

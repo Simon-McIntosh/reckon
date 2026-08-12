@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-verifies" content="">
 <meta name="plan-impl" content="0.85">
 </head>
@@ -428,6 +428,11 @@
 <article class="r-fu" data-id="f-uwd-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The subjective-term check fires inside hyphenated compounds</h4>
     <div class="r-fu-body"><p>The demonstrable property rejects a done-when containing a subjective adjective, matched on a word boundary. A hyphen is a word boundary, so <code>machine-readable</code>, <code>human-readable</code> and any compound ending in a listed term are rejected as opinions. Observed 2026-08-12 dispatching the section-6 guard itself: a done-when naming a machine-readable exit code was refused for resting on the subjective term 'readable', and the node had to be reworded rather than fixed.</p><p>The cost is small but the direction is wrong: the check exists to stop a worker being sent an unmeasurable goal, and here it blocks the most precise available wording. Narrow the match so a compound whose head is not the listed adjective passes, and keep a test for both the true positive and this false one.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    </article>
+<article class="r-fu" data-id="f-uwd-scope-sufficiency" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Scoped checks that paths are exclusive, never that they are sufficient</h4>
+    <div class="r-fu-body"><p>A node can satisfy all seven properties and still be unbuildable. The scoped property verifies that write paths are enumerated and shared with no concurrent node; nothing checks whether those paths can actually carry the goal. Observed today: a node routing gate state into the blocking derivation was fenced to <code>reckon/lifecycle.py</code> and <code>reckon/roadmap.py</code>, passed validation, and blocked on arrival - <code>read_plan</code> builds its blocking rows in <code>mcp_views._blocking</code> for typed reads and <code>serve._derive_lifecycle</code> for discovery reads, so exactly one of the two required surfaces was reachable and the two-direction assertion could not truthfully be made.</p><p>The escape hatch caught it cleanly, which is the intended division of labour: the worker audited the call graph, changed nothing, and named both missing files and functions. But the cost is a full dispatch cycle, and the fault was the coordinator's - the fence was inferred from a symbol search rather than from the callers of the thing being changed.</p><p>Two directions, and the first is cheap. Have <code>--dry-run</code> report the write scope back as a resolved list so a coordinator sees what it actually fenced before committing a wave to it. Then consider whether a sufficiency hint is possible at all: the paths naming a symbol the goal mentions, or the callers of a function in scope, would have surfaced both missing files here. If it cannot be checked, say so in the contract - a property that sounds like it guarantees buildability while checking only exclusivity is worse than one that states its own limit.</p></div>
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
     </article>
 </section>
