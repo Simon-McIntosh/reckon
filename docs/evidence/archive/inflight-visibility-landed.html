@@ -73,6 +73,33 @@
     recorded as partial rather than passed.</p>
   </section>
 
+  <section id="cleanup-liveness">
+    <h2>Cleanup now refuses a worktree a live run still claims</h2>
+
+    <p>Commit <code>e96cac1</code> — <code>skills/reckon-ship/scripts/worktree_fleet.py</code>,
+    <code>tests/test_worktree_fleet.py</code>; 139 insertions, 4 deletions across 2 files. Gate
+    <strong>passed</strong>: 82 passed, 0 failed, 7.4 s, 3 new tests.</p>
+
+    <p>This node exists because the orchestrator caused the defect during this sprint: a session-wide
+    cleanup removed the worktree of a running analysis node. Cleanup preflighted for a dirty tree and
+    for reachability from the integrated branch, and a node that had not committed yet passed both — so
+    a live read-only worker looked perfectly removable.</p>
+
+    <table>
+      <thead><tr><th>Behaviour</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>An active claim refuses</td><td>A worktree whose run classifies as <em>running</em> is refused, and the result reports the claiming run id under <code>claimed_by_live_runs</code></td></tr>
+        <tr><td>Refusals travel together</td><td>Active-claim and dirty-tree refusals are returned in the same result rather than one masking the other</td></tr>
+        <tr><td>Release permits removal</td><td>Deleting the pointer allows the same worktree to be removed</td></tr>
+        <tr><td>A crash cannot strand a tree</td><td>A dead-pid pointer classifies as abandoned and does not block removal; liveness is refreshed rather than trusted from the stored phase</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row is what keeps the new check from becoming its own trap. A liveness gate that trusted
+    the stored phase would let any crashed run hold its worktree forever, trading a rare destructive
+    error for a permanent leak — so the check re-reads the process table rather than the record.</p>
+  </section>
+
   <section id="inflight-bands">
     <h2>A plan and a sprint show which of their own work is in flight</h2>
 
