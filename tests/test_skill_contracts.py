@@ -186,6 +186,18 @@ def test_ship_skill_authors_the_gate_fence_rule_alone() -> None:
         assert "gate fence" not in path.read_text().lower(), path
 
 
+def test_ship_gate_fence_reads_computed_state() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    assert "computed gate state" in ship
+    assert "`read_plan` and `roadmap`" in ship
+    assert "returned `blocking` and `gate_blockers`" in ship
+    assert '`crew(project, view="flight")`' in ship
+    assert "resolved `gates.enforce`" in ship
+    assert "strict enforcement refuses" in ship
+    assert "advisory enforcement records a warning" in ship
+    assert "evidence-gate table" not in ship
+
+
 def test_ship_skill_carries_the_four_axis_summary_reflex() -> None:
     ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
     for axis in ("WHAT", "WHY", "HOW", "WHEN"):
