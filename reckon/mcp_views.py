@@ -9,7 +9,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from reckon.doccheck import lifecycle_staleness, modified_age_days
-from reckon.lifecycle import effective_status, unresolved_dependencies
+from reckon.lifecycle import (
+    effective_status,
+    unresolved_dependencies,
+    unpassed_gate_blockers,
+)
 
 VIEW_NAMES = frozenset({"summary", "detail", "history", "raw", "schema"})
 RESOURCE_TYPES = frozenset(
@@ -395,6 +399,7 @@ def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
     explicit = data.get("blocked_by")
     result = list(explicit) if isinstance(explicit, list) else []
     result.extend(unresolved_dependencies(deps))
+    result.extend(unpassed_gate_blockers(data.get("gates") or []))
     return result
 
 
