@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-impl" content="0.83">
 </head>
 <body>
@@ -164,6 +164,14 @@
           <td>The history is readable</td>
           <td>The committed ledger exposes holds through the existing read paths, with a count and a
           total held duration in the summary.</td>
+        </tr>
+        <tr>
+          <td>Recording never happens on a read</td>
+          <td>A test proving the read-only tool surface leaves the ledger version and the hold list
+          untouched across a check that would open a hold — the write belongs to the command that
+          decides to open a wave, not to whatever inspects the decision. A reader that records
+          invents history simply by looking at it, and a tool documented as never mutating must not
+          be the exception.</td>
         </tr>
         <tr>
           <td>Suite green</td>
