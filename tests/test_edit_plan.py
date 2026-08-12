@@ -432,6 +432,72 @@ def test_append_followup(setup):
     assert data["followups"][0]["id"] == "f1"
 
 
+def test_append_duplicate_followup_id_rejected(setup):
+    docs_dir, _, project = setup
+    existing = {
+        "id": "f1",
+        "written_by": "smc",
+        "written_at": "2026-01-01",
+        "title": "existing",
+        "body": "already recorded",
+        "prompt": "/reckon-ship plan-a",
+    }
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": [existing]})
+    duplicate = {**existing, "title": "collision"}
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "append", "target": "followups", "item": duplicate}],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert result["detail"] == "followup 'f1' already exists"
+    data, version = _store_module.read_plan(project, "plan-a")
+    assert [followup["id"] for followup in data["followups"]] == ["f1"]
+    assert version == 0
+
+
+def test_append_duplicate_ids_rejected_for_addressed_collections(setup):
+    docs_dir, _, project = setup
+    cases = [
+        (
+            "research-plan",
+            {"research": [{"id": "shared", "title": "existing"}]},
+            {"op": "append", "target": "research", "item": {"id": "shared"}},
+            "research entry 'shared' already exists",
+        ),
+        (
+            "question-plan",
+            {"questions": [{"id": "shared", "body": "existing"}]},
+            {"op": "append", "target": "questions", "item": {"id": "shared"}},
+            "question 'shared' already exists",
+        ),
+        (
+            "comment-plan",
+            {"comments": {"overview": [{"id": "shared", "body": "existing"}]}},
+            {
+                "op": "append",
+                "target": "comments",
+                "section": "details",
+                "item": {"id": "shared", "body": "collision"},
+            },
+            "comment 'shared' already exists",
+        ),
+    ]
+
+    for slug, initial, op, detail in cases:
+        _make_plan_html(docs_dir, slug, {"version": 0, **initial})
+        result = mcp_module._edit_plan(project, slug, [op], 0)
+        assert result["ok"] is False
+        assert result["error"] == "op_error"
+        assert result["detail"] == detail
+        _, version = _store_module.read_plan(project, slug)
+        assert version == 0
+
+
 def test_append_followup_empty_prompt_rejected(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": []})
@@ -759,6 +825,103 @@ def test_resolve_missing_id_rejected(setup):
     )
     assert r["ok"] is False
     assert r["error"] == "op_error"
+
+
+def test_resolve_requires_a_matching_open_entry(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "followups": [
+                {
+                    "id": "f1",
+                    "status": "resolved",
+                    "resolved_at": "2026-01-01T00:00:00+00:00",
+                    "resolved_by": "smc",
+                    "outcome": "done — no followup",
+                }
+            ],
+        },
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "resolve",
+                "target": "followups",
+                "id": "f1",
+                "by": "smc",
+                "outcome": "done — no followup",
+            }
+        ],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert result["detail"] == "followup 'f1' has no open entry"
+    _, version = _store_module.read_plan(project, "plan-a")
+    assert version == 0
+
+
+def test_resolve_duplicate_id_selects_the_open_entry(setup):
+    docs_dir, _, project = setup
+    duplicate_id = "f1"
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "followups": [
+                {
+                    "id": duplicate_id,
+                    "status": "resolved",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "title": "closed entry",
+                    "body": "already handled",
+                    "prompt": "/reckon-ship plan-a",
+                    "resolved_at": "2026-01-01T00:00:00+00:00",
+                    "resolved_by": "smc",
+                    "outcome": "folded into current work",
+                },
+                {
+                    "id": duplicate_id,
+                    "status": "open",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "title": "remaining entry",
+                    "body": "close this entry",
+                    "prompt": "/reckon-ship plan-a",
+                },
+            ],
+        },
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "resolve",
+                "target": "followups",
+                "id": duplicate_id,
+                "by": "smc",
+                "outcome": "done — no followup",
+            }
+        ],
+        0,
+    )
+
+    assert result["ok"] is True
+    data, version = _store_module.read_plan(project, "plan-a")
+    assert sum(followup["status"] == "open" for followup in data["followups"]) == 0
+    assert data["followups"][1]["outcome"] == "done — no followup"
+    assert version == 1
 
 
 # ── lock verb ───────────────────────────────────────────────────────────────

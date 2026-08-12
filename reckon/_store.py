@@ -644,6 +644,8 @@ def append_to_list(
             "prompt": _validate_new_followup_prompt(item.get("prompt", "")),
         }
     lst = list(cur_data.get(field, []))
+    if isinstance(item, dict) and item.get("id"):
+        _refuse_duplicate_id(lst, field, str(item["id"]))
     lst.append(item)
     merged = {**cur_data, field: lst}
     return write_plan(project, slug, merged, cur_version)
@@ -703,15 +705,11 @@ def resolve_in_list(
         raise VersionConflict(expected_version, cur_version, cur_data)
 
     lst = list(cur_data.get(field, []))
-    found = False
-    for i, item in enumerate(lst):
-        if isinstance(item, dict) and item.get("id") == item_id:
-            lst[i] = {**item, **updates}
-            found = True
-            break
-
-    if not found:
-        raise KeyError(f"{item_id!r} not found in data[{field!r}]")
+    hit = _find_open_by_id(lst, item_id)
+    if hit is None:
+        raise KeyError(_missing_open_entry_detail(lst, field, item_id))
+    idx, item = hit
+    lst[idx] = {**item, **updates}
 
     merged = {**cur_data, field: lst}
     return write_plan(project, slug, merged, cur_version)
@@ -893,6 +891,61 @@ def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict]
         if isinstance(el, dict) and el.get(id_field) == ident:
             return i, el
     return None
+
+
+def _entry_is_open(entry: dict[str, Any]) -> bool:
+    """Whether an id-addressed workflow entry is still open."""
+    if entry.get("resolved_at"):
+        return False
+    status = str(entry.get("status", "") or "").lower()
+    return not status or status == "open"
+
+
+def _find_open_by_id(lst: list, ident: str) -> tuple[int, dict] | None:
+    """Return the first open entry with ``ident``, ignoring closed matches."""
+    for i, entry in enumerate(lst):
+        if (
+            isinstance(entry, dict)
+            and entry.get("id") == ident
+            and _entry_is_open(entry)
+        ):
+            return i, entry
+    return None
+
+
+def _collection_label(collection: str) -> str:
+    return {
+        "followups": "followup",
+        "questions": "question",
+        "research": "research entry",
+        "comments": "comment",
+    }.get(collection, collection.rstrip("s") or "entry")
+
+
+def _refuse_duplicate_id(entries: list, collection: str, ident: str) -> None:
+    """Refuse an append whose id already addresses an existing entry."""
+    if _find_by_id(entries, ident) is not None:
+        raise OpError(f"{_collection_label(collection)} {ident!r} already exists")
+
+
+def _missing_open_entry_detail(entries: list, collection: str, ident: str) -> str:
+    """Describe whether a resolve missed entirely or found only closed entries."""
+    label = _collection_label(collection)
+    if _find_by_id(entries, ident) is not None:
+        return f"{label} {ident!r} has no open entry"
+    return f"{label} {ident!r} not found"
+
+
+def _comment_entries(comments: Any) -> list:
+    """Flatten section-addressed comments for document-wide id checks."""
+    if not isinstance(comments, dict):
+        return []
+    return [
+        comment
+        for section_comments in comments.values()
+        if isinstance(section_comments, list)
+        for comment in section_comments
+    ]
 
 
 def _item_slug(it: Any) -> str:
@@ -1128,7 +1181,9 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         if missing:
             raise OpError(f"followup missing required fields: {missing}")
         fu["prompt"] = _validate_new_followup_prompt(fu["prompt"])
-        working.setdefault("followups", []).append(fu)
+        followups = working.setdefault("followups", [])
+        _refuse_duplicate_id(followups, target, fu["id"])
+        followups.append(fu)
         return
     if target == "research":
         if not isinstance(item, dict):
@@ -1136,7 +1191,9 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         r = dict(item)
         if not r.get("id"):
             r["id"] = _gen_id("r")
-        working.setdefault("research", []).append(r)
+        research = working.setdefault("research", [])
+        _refuse_duplicate_id(research, target, r["id"])
+        research.append(r)
         return
     if target == "questions":
         if not isinstance(item, dict):
@@ -1144,7 +1201,9 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         q = dict(item)
         if not q.get("id"):
             q["id"] = _gen_id("q")
-        working.setdefault("questions", []).append(q)
+        questions = working.setdefault("questions", [])
+        _refuse_duplicate_id(questions, target, q["id"])
+        questions.append(q)
         return
     if target == "comments":
         if not isinstance(item, dict):
@@ -1154,6 +1213,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         if not c.get("id"):
             c["id"] = _gen_id("c")
         comments = working.setdefault("comments", {})
+        _refuse_duplicate_id(_comment_entries(comments), target, c["id"])
         comments.setdefault(section, []).append(c)
         return
     if target == "decisions":
@@ -1180,9 +1240,9 @@ def _apply_resolve(
     if not ident:
         raise OpError("resolve op requires an 'id'")
     lst = working.get(target, [])
-    hit = _find_by_id(lst, ident)
+    hit = _find_open_by_id(lst, ident)
     if hit is None:
-        raise OpError(f"{ident!r} not found in {target}")
+        raise OpError(_missing_open_entry_detail(lst, target, ident))
     idx, el = hit
     updates: dict[str, Any] = {
         "resolved_at": _utc_ts(),
@@ -1373,10 +1433,7 @@ def _followup_is_open(followup: dict[str, Any]) -> bool:
     unresolved followup means open. Deriving it here too keeps the rule correct
     on a raw dict that has not been through the model.
     """
-    status = str(followup.get("status", "") or "").lower()
-    if status:
-        return status == "open"
-    return not followup.get("resolved_at")
+    return _entry_is_open(followup)
 
 
 def continuation_present(state: dict[str, Any]) -> bool:
