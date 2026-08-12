@@ -98,6 +98,29 @@
     <p>The last row is what keeps the new check from becoming its own trap. A liveness gate that trusted
     the stored phase would let any crashed run hold its worktree forever, trading a rare destructive
     error for a permanent leak — so the check re-reads the process table rather than the record.</p>
+
+    <h3>The check broke the tool it protects, and then did not</h3>
+
+    <p>The first implementation reached for <code>reckon.crew</code> to read live pointers. That script
+    is deliberately standalone — the orchestration reference invokes it as
+    <code>python skills/reckon-ship/scripts/worktree_fleet.py …</code> in two places — so the very next
+    cleanup call failed with <code>ModuleNotFoundError: No module named 'reckon'</code>. Its own gate
+    could not see this: pytest runs inside the project environment, where the import succeeds.</p>
+
+    <p>Commit <code>d595280</code> — 193 insertions, 10 deletions across the same 2 files; 85 passed,
+    0 failed, 3 further new tests, ruff clean. The script now reads
+    <code>&lt;config-home&gt;/crew/live/*.json</code> directly and checks PIDs against the OS, importing
+    no reckon module at all. Under an interpreter hook that <em>rejects every</em>
+    <code>reckon</code> import: <code>create</code> exited 0, <code>cleanup-session</code> exited 0, a
+    live pointer still produced the visible claimed-worktree refusal with exit 2, and deleting that
+    pointer let cleanup exit 0. An AST inspection asserts the absence of the import, so the regression
+    cannot return quietly.</p>
+
+    <p>Two choices are worth stating because the tempting alternatives were both worse. The docs were
+    not edited to match the regression — the script is documented correctly and was wrong. And the
+    import was not wrapped in a <code>try</code> that skips the check when unavailable: a liveness guard
+    that silently does nothing precisely when invoked the documented way would be worse than the defect
+    it was written to fix.</p>
   </section>
 
   <section id="inflight-bands">
