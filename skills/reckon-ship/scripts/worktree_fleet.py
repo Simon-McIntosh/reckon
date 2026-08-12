@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 
@@ -68,6 +69,23 @@ def registered_worktrees(repo: Path) -> set[Path]:
     }
 
 
+def live_worktree_claims() -> dict[Path, list[str]]:
+    """Return worktrees claimed by runs whose current classification is running."""
+    from reckon import crew
+
+    claims: dict[Path, list[str]] = {}
+    for pointer in crew.list_live():
+        observed = dict(pointer)
+        if observed.get("pid"):
+            observed["process_alive"] = crew.process_alive(observed["pid"])
+        report = crew.classify_pointer(observed)
+        if report["classification"] != "running" or not report.get("worktree"):
+            continue
+        path = Path(str(report["worktree"])).resolve()
+        claims.setdefault(path, []).append(str(report["run_id"]))
+    return claims
+
+
 def create(args: argparse.Namespace) -> dict[str, object]:
     repo = repository_root(args.repo)
     worker = safe_token("worker", args.worker)
@@ -90,7 +108,12 @@ def create(args: argparse.Namespace) -> dict[str, object]:
     }
 
 
-def inspect_worktree(repo: Path, path: Path, integrated_into: str) -> dict[str, object]:
+def inspect_worktree(
+    repo: Path,
+    path: Path,
+    integrated_into: str,
+    claimed_by_live_runs: Iterable[str] = (),
+) -> dict[str, object]:
     resolved = path.resolve()
     if resolved not in registered_worktrees(repo):
         raise FleetError(f"path is not a registered worktree: {resolved}")
@@ -113,6 +136,7 @@ def inspect_worktree(repo: Path, path: Path, integrated_into: str) -> dict[str, 
         "dirty": dirty.splitlines(),
         "integrated_into": integrated_into,
         "reachable": reachable,
+        "claimed_by_live_runs": sorted(claimed_by_live_runs),
     }
 
 
@@ -121,8 +145,23 @@ def cleanup_session(args: argparse.Namespace) -> dict[str, object]:
     root = session_root(repo, args.session)
     registered = registered_worktrees(repo)
     paths = sorted(path for path in registered if path.parent == root)
-    reports = [inspect_worktree(repo, path, args.integrated_into) for path in paths]
-    unsafe = [report for report in reports if not report["clean"] or not report["reachable"]]
+    claims = live_worktree_claims()
+    reports = [
+        inspect_worktree(
+            repo,
+            path,
+            args.integrated_into,
+            claims.get(path.resolve(), ()),
+        )
+        for path in paths
+    ]
+    unsafe = [
+        report
+        for report in reports
+        if not report["clean"]
+        or not report["reachable"]
+        or report["claimed_by_live_runs"]
+    ]
     if unsafe:
         raise FleetError(f"cleanup refused; unsafe worktrees: {json.dumps(unsafe)}")
     for path in paths:
@@ -144,13 +183,20 @@ def inspect_session(args: argparse.Namespace) -> dict[str, object]:
     repo = repository_root(args.repo)
     root = session_root(repo, args.session)
     paths = sorted(path for path in registered_worktrees(repo) if path.parent == root)
+    claims = live_worktree_claims()
     return {
         "ok": True,
         "action": "inspect-session",
         "repo": str(repo),
         "session": args.session,
         "worktrees": [
-            inspect_worktree(repo, path, args.integrated_into) for path in paths
+            inspect_worktree(
+                repo,
+                path,
+                args.integrated_into,
+                claims.get(path.resolve(), ()),
+            )
+            for path in paths
         ],
     }
 

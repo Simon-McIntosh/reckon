@@ -78,6 +78,23 @@ def cleanup(repo: Path, session: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def write_live_pointer(home: Path, run_id: str, worktree: Path, **fields) -> Path:
+    live = home / "crew" / "live"
+    live.mkdir(parents=True, exist_ok=True)
+    path = live / f"{run_id}.json"
+    path.write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "worktree": str(worktree),
+                "manifest_path": "",
+                **fields,
+            }
+        )
+    )
+    return path
+
+
 def test_cleanup_requires_reachable_commit(tmp_path: Path) -> None:
     repo = repository(tmp_path)
     worktree = create_worktree(repo, "delivery", "worker-a")
@@ -110,6 +127,78 @@ def test_cleanup_refuses_dirty_worktree(tmp_path: Path) -> None:
 
     dirty.unlink()
     removed = cleanup(repo, "dirty-check")
+    assert removed.returncode == 0, removed.stdout
+    assert not worktree.exists()
+
+
+def test_cleanup_refuses_a_worktree_claimed_by_a_running_pointer(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = create_worktree(repo, "live-claim", "worker-live")
+    pointer = write_live_pointer(
+        home,
+        "run-active",
+        worktree,
+        process_alive=True,
+    )
+
+    refused = cleanup(repo, "live-claim")
+
+    assert refused.returncode == 2
+    assert "claimed_by_live_runs" in refused.stdout
+    assert "run-active" in refused.stdout
+    assert worktree.exists()
+
+    pointer.unlink()
+    removed = cleanup(repo, "live-claim")
+    assert removed.returncode == 0, removed.stdout
+    assert not worktree.exists()
+
+
+def test_cleanup_reports_live_and_dirty_refusals_together(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    claimed = create_worktree(repo, "mixed-refusal", "worker-live")
+    dirty = create_worktree(repo, "mixed-refusal", "worker-dirty")
+    (dirty / "untracked.txt").write_text("not committed\n")
+    write_live_pointer(
+        home,
+        "run-visible",
+        claimed,
+        process_alive=True,
+    )
+
+    refused = cleanup(repo, "mixed-refusal")
+
+    assert refused.returncode == 2
+    assert "run-visible" in refused.stdout
+    assert str(claimed) in refused.stdout
+    assert "untracked.txt" in refused.stdout
+    assert str(dirty) in refused.stdout
+    assert claimed.exists()
+    assert dirty.exists()
+
+
+def test_cleanup_ignores_an_abandoned_pointer(tmp_path: Path, monkeypatch) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = create_worktree(repo, "stale-claim", "worker-stale")
+    write_live_pointer(
+        home,
+        "run-abandoned",
+        worktree,
+        pid=999999999,
+    )
+
+    removed = cleanup(repo, "stale-claim")
+
     assert removed.returncode == 0, removed.stdout
     assert not worktree.exists()
 
