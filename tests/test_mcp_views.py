@@ -19,9 +19,11 @@ from reckon.mcp_views import (
     compact_size,
     discovery_view,
     error_response,
+    in_flight_by_plan,
     resource_view,
     storage_schema_for,
 )
+from reckon.roadmap import build_roadmap
 
 
 @pytest.fixture()
@@ -124,6 +126,24 @@ def _plan(
     return path
 
 
+def _live_pointer(
+    plan: str,
+    *,
+    project: str = "proj",
+    run_id: str = "run-live",
+    member: str = "worker-one",
+    section: str = "delivery",
+    created_at: str = "2026-08-12T18:00:00Z",
+) -> dict:
+    return {
+        "run_id": run_id,
+        "project": project,
+        "member": member,
+        "created_at": created_at,
+        "node": {"plan": plan, "section": section},
+    }
+
+
 def test_legacy_read_shape_is_exactly_unchanged(setup):
     docs_dir, project = setup
     _plan(docs_dir, "readable")
@@ -168,6 +188,134 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert "prompt" not in result["next"]
     assert compact_size(result) <= 2048
     assert compact_size(result) <= compact_size(raw) * 0.60
+
+
+def test_live_runs_are_grouped_by_target_plan_and_project():
+    pointers = [
+        _live_pointer("alpha", run_id="run-b"),
+        _live_pointer("alpha", run_id="run-a", section="verification"),
+        _live_pointer("beta", run_id="run-c"),
+        _live_pointer("alpha", project="elsewhere", run_id="run-d"),
+        {"run_id": "run-e", "project": "proj", "node": {}},
+    ]
+
+    grouped = in_flight_by_plan("proj", pointers)
+
+    assert list(grouped) == ["alpha", "beta"]
+    assert [run["run_id"] for run in grouped["alpha"]] == ["run-a", "run-b"]
+    assert grouped["alpha"][0] == {
+        "run_id": "run-a",
+        "member": "worker-one",
+        "section": "verification",
+        "started_at": "2026-08-12T18:00:00Z",
+    }
+
+
+def test_typed_plan_summary_reports_matching_live_run(setup, monkeypatch):
+    docs_dir, project = setup
+    _plan(docs_dir, "readable")
+    pointer = _live_pointer("readable")
+    monkeypatch.setattr("reckon.crew.list_live", lambda: [pointer])
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "readable"}
+    )
+
+    assert result["in_flight"] == [
+        {
+            "run_id": "run-live",
+            "member": "worker-one",
+            "section": "delivery",
+            "started_at": "2026-08-12T18:00:00Z",
+        }
+    ]
+
+
+def test_plan_data_views_keep_the_same_live_run(monkeypatch):
+    pointer = _live_pointer("readable")
+    monkeypatch.setattr("reckon.crew.list_live", lambda: [pointer])
+    selector = ResourceSelector("proj", "plan", "readable")
+    data = {
+        "title": "Readable",
+        "status": "active",
+        "followups": [{"id": "continue", "status": "open"}],
+    }
+
+    results = [
+        resource_view(selector, 3, data, view=view)
+        for view in ("summary", "detail", "history", "raw")
+    ]
+
+    assert all(result["in_flight"] == results[0]["in_flight"] for result in results)
+
+
+def test_unmatched_and_non_plan_resources_have_no_live_key(monkeypatch):
+    monkeypatch.setattr(
+        "reckon.crew.list_live", lambda: [_live_pointer("another-plan")]
+    )
+    unmatched = resource_view(
+        ResourceSelector("proj", "plan", "readable"),
+        3,
+        {"title": "Readable", "status": "active"},
+        view="summary",
+    )
+    sprint = resource_view(
+        ResourceSelector("proj", "sprint", "current"),
+        2,
+        {"theme": "Current", "status": "active", "items": []},
+        view="summary",
+    )
+    roadmap = build_roadmap(
+        "proj",
+        [
+            {
+                "slug": "readable",
+                "type": "plan",
+                "status": "active",
+                "gates": [{"id": "evidence", "verdict": "passed"}],
+                "followups": [{"id": "continue", "status": "open"}],
+            }
+        ],
+        [],
+    )
+
+    assert "in_flight" not in unmatched
+    assert "in_flight" not in sprint
+    assert "in_flight" not in roadmap["pending_work"][0]
+
+
+def test_archived_plan_does_not_claim_live_run_for_same_slug(monkeypatch):
+    monkeypatch.setattr("reckon.crew.list_live", lambda: [_live_pointer("readable")])
+
+    result = resource_view(
+        ResourceSelector("proj", "plan", "readable", archived=True),
+        3,
+        {"title": "Archived", "status": "done"},
+        view="summary",
+    )
+
+    assert "in_flight" not in result
+
+
+def test_plan_read_and_roadmap_share_the_live_run_projection(monkeypatch):
+    pointer = _live_pointer("readable")
+    monkeypatch.setattr("reckon.crew.list_live", lambda: [pointer])
+    selector = ResourceSelector("proj", "plan", "readable")
+    data = {
+        "slug": "readable",
+        "title": "Readable",
+        "type": "plan",
+        "status": "active",
+        "impl": 0.0,
+        "gates": [{"id": "evidence", "verdict": "passed"}],
+        "followups": [{"id": "continue", "status": "open"}],
+    }
+
+    plan_result = resource_view(selector, 3, data, view="summary")
+    roadmap_result = build_roadmap("proj", [data], [])
+    row = roadmap_result["pending_work"][0]
+
+    assert row["in_flight"] == plan_result["in_flight"]
 
 
 def test_plan_summary_surfaces_age_at_the_audit_staleness_boundary(setup):
@@ -459,6 +607,7 @@ def test_raw_and_schema_are_explicit_layers(setup):
     assert schema["storage_schema"]["title"] == "reckon PlanState"
     response_schemas = schema["response_schemas"]
     assert "data" in response_schemas["raw"]["required"]
+    assert response_schemas["summary"]["properties"]["in_flight"]["type"] == "array"
     assert {"records", "pagination"} <= set(response_schemas["history"]["required"])
     assert {"metadata", "relations", "followups", "questions"} <= set(
         response_schemas["detail"]["required"]

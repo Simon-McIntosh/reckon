@@ -19,6 +19,7 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
+from reckon.mcp_views import in_flight_by_plan
 
 _EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
@@ -362,6 +363,7 @@ def build_roadmap(
     membership, sprint_order = _sprint_membership(sprints)
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
+    live_runs = in_flight_by_plan(project)
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
@@ -693,6 +695,8 @@ def build_roadmap(
             "ready": is_ready,
             "readiness": readiness,
         }
+        if slug in live_runs:
+            row["in_flight"] = live_runs[slug]
         pending.append(row)
         if status == "draft":
             age_days, age_source = _authorisation_age(project, plan)
