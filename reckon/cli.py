@@ -45,6 +45,30 @@ def _skills_source() -> Path:
     raise click.ClickException(f"reckon skills are missing; searched: {searched}")
 
 
+def _copied_where_linked(
+    skills: list[Path], destination: Path
+) -> list[tuple[Path, Path]]:
+    """Find copied skill directories in an otherwise consistently linked set."""
+
+    links = [destination / skill.name for skill in skills]
+    link_parents = {
+        path.resolve(strict=False).parent for path in links if path.is_symlink()
+    }
+    if len(link_parents) != 1:
+        return []
+    expected_root = link_parents.pop()
+    drift: list[tuple[Path, Path]] = []
+    for skill, path in zip(skills, links, strict=True):
+        expected = expected_root / skill.name
+        if (
+            path.is_dir()
+            and not path.is_symlink()
+            and (expected / "SKILL.md").is_file()
+        ):
+            drift.append((path, expected))
+    return drift
+
+
 def _copy_asset_directory(source: Path, destination: Path) -> int:
     """Copy every top-level asset file, rejecting malformed destinations."""
     if destination.exists() and not destination.is_dir():
@@ -1916,14 +1940,25 @@ def audit_doc(paths, project, check_links):
 
 
 @main.command(name="install-skills")
-def install_skills():
+@click.option(
+    "--repair",
+    is_flag=True,
+    help="Replace copied-where-linked skill directories with the expected symlink.",
+)
+def install_skills(repair):
     """Install reckon skills into supported runtime skill directories.
 
     Copies each canonical skill into Claude, Codex, and shared agent dirs,
     preserving existing files that are identical and overwriting stale ones.
-    Reports: skipped (unchanged) vs updated (changed or new).
+    Reports copied directories in an otherwise linked set without replacing
+    them unless ``--repair`` is requested.
     """
     skills_src = _skills_source()
+    skills = [
+        path
+        for path in sorted(skills_src.iterdir())
+        if path.is_dir() and (path / "SKILL.md").is_file()
+    ]
     destinations = [
         Path.home() / ".claude" / "skills",
         Path.home() / ".codex" / "skills",
@@ -1934,9 +1969,20 @@ def install_skills():
 
     for skills_dst in destinations:
         skills_dst.mkdir(parents=True, exist_ok=True)
-        for skill_dir in sorted(skills_src.iterdir()):
-            if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").is_file():
-                continue
+        for copied, expected in _copied_where_linked(skills, skills_dst):
+            click.echo(
+                f"  drift    {copied.parent.parent.name}/{copied.name}: "
+                f"copied directory; expected symlink → {expected}"
+            )
+            if repair:
+                shutil.rmtree(copied)
+                copied.symlink_to(expected, target_is_directory=True)
+                click.echo(
+                    f"  repaired {copied.parent.parent.name}/{copied.name} → {expected}"
+                )
+            else:
+                click.echo("           run: reckon install-skills --repair")
+        for skill_dir in skills:
             dst_dir = skills_dst / skill_dir.name
             dst_dir.mkdir(parents=True, exist_ok=True)
             for src_file in sorted(skill_dir.rglob("*")):
