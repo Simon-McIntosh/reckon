@@ -31,6 +31,7 @@ from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
 )
+from reckon._schema import LEGACY_EFFORT_HOURS
 
 # ── Scalar fields carried in <meta name="plan-*"> ──────────────────────────
 _SCALARS = (
@@ -72,6 +73,7 @@ _LIST_SCALARS = (
 _PLAN_ONLY_METAS = (
     "plan-status",
     "plan-roi",
+    "plan-effort-hours",
     "plan-effort",
     "plan-milestone",
     "plan-sprint",
@@ -214,9 +216,9 @@ def read_state(html_text: str) -> dict:
             st[field] = content
         elif field in _LIST_SCALARS:
             st[field] = [x.strip() for x in content.split(",") if x.strip()]
-        elif field in ("impl", "version"):
+        elif field in ("impl", "effort_hours", "version"):
             try:
-                st[field] = float(content) if field == "impl" else int(content)
+                st[field] = int(content) if field == "version" else float(content)
             except (TypeError, ValueError):
                 pass
 
@@ -232,6 +234,23 @@ def read_state(html_text: str) -> dict:
         if mapped:
             st["capability"] = mapped
             warnings.append(f"plan: {diagnostic}")
+
+    authored_hours = "effort_hours" in st
+    legacy_effort = st.get("effort")
+    if authored_hours:
+        st["effort_calibrated"] = True
+        if legacy_effort:
+            warnings.append(
+                f"effort: legacy letter {legacy_effort!r} is redundant; "
+                "explicit worker-hours win"
+            )
+    elif legacy_effort in LEGACY_EFFORT_HOURS:
+        st["effort_hours"] = LEGACY_EFFORT_HOURS[legacy_effort]
+        st["effort_calibrated"] = False
+        warnings.append(
+            f"effort: legacy letter {legacy_effort!r} maps to "
+            f"{st['effort_hours']:.1f} worker-hours; plan is uncalibrated"
+        )
 
     # ``doc`` remains a compatibility alias on disk but reads are canonical.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
@@ -657,6 +676,8 @@ def write_state(html_text: str, state: dict) -> str:
     for f in _SCALARS:
         if f in state and state[f] is not None:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", state[f])
+    if "effort_hours" in state and state.get("effort_calibrated") is not False:
+        out = _set_meta(out, "plan-effort-hours", state["effort_hours"])
     for f in _LIST_SCALARS:
         if f in state:
             out = _set_meta(
@@ -798,9 +819,9 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
             rec[field] = content
         elif field in _LIST_SCALARS:
             rec[field] = [x.strip() for x in content.split(",") if x.strip()]
-        elif field == "impl":
+        elif field in ("impl", "effort_hours"):
             try:
-                rec["impl"] = float(content)
+                rec[field] = float(content)
             except ValueError:
                 pass
         elif field == "version":
@@ -819,6 +840,25 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
         if mapped:
             rec["capability"] = mapped
             rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
+    warnings = list(rec.get("compatibility_warnings") or [])
+    authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
+    legacy_effort = metas.get("plan-effort", "")
+    if authored_hours:
+        rec["effort_calibrated"] = True
+        if legacy_effort:
+            warnings.append(
+                f"effort: legacy letter {legacy_effort!r} is redundant; "
+                "explicit worker-hours win"
+            )
+    elif legacy_effort in LEGACY_EFFORT_HOURS:
+        rec["effort_hours"] = LEGACY_EFFORT_HOURS[legacy_effort]
+        rec["effort_calibrated"] = False
+        warnings.append(
+            f"effort: legacy letter {legacy_effort!r} maps to "
+            f"{rec['effort_hours']:.1f} worker-hours; plan is uncalibrated"
+        )
+    if warnings:
+        rec["compatibility_warnings"] = warnings
     rec["type"] = _canonical_type(metas.get("reckon-type"))
     tm = _TITLE_RE.search(head)
     if tm and not rec.get("title"):

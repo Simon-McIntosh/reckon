@@ -903,6 +903,7 @@ _PLAN_SET_TOP = frozenset(
         "status",
         "impl",
         "roi",
+        "effort_hours",
         "effort",
         "milestone",
         "sprint",
@@ -1107,6 +1108,14 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         except (TypeError, ValueError):
             raise OpError(f"impl must be a number, got {value!r}") from None
         working["impl"] = max(0.0, min(1.0, f))  # clamp 0..1 (was reject)
+        return
+    if head == "effort_hours":
+        working["effort_hours"] = value
+        working["effort_calibrated"] = True
+        if working.get("effort"):
+            warnings.append(
+                "legacy effort letter is redundant because explicit worker-hours win"
+            )
         return
     if head == "capability":
         working["capability"] = value

@@ -229,6 +229,68 @@ def test_legacy_html_maps_on_read_and_explicit_edit_migrates():
     assert not _plan_html.read_state(rendered).get("compatibility_warnings")
 
 
+def _effort_html(*metas: str) -> str:
+    return "<html><head>" + "".join(metas) + "</head><body></body></html>"
+
+
+def test_explicit_hours_win_and_report_redundant_legacy_letter():
+    state = _plan_html.read_state(
+        _effort_html(
+            '<meta name="plan-effort-hours" content="5.25">',
+            '<meta name="plan-effort" content="XL">',
+        )
+    )
+
+    assert state["effort_hours"] == 5.25
+    assert state["effort_calibrated"] is True
+    assert any("redundant" in warning for warning in state["compatibility_warnings"])
+
+
+@pytest.mark.parametrize(
+    ("letter", "hours"),
+    [("S", 1.0), ("M", 2.0), ("L", 4.0), ("XL", 8.0)],
+)
+def test_legacy_letter_resolves_to_uncalibrated_worker_hours(letter, hours):
+    state = _plan_html.read_state(
+        _effort_html(f'<meta name="plan-effort" content="{letter}">')
+    )
+
+    assert state["effort_hours"] == hours
+    assert state["effort_calibrated"] is False
+    assert any("uncalibrated" in warning for warning in state["compatibility_warnings"])
+
+
+def test_plan_without_either_effort_field_reads_unchanged():
+    state = _plan_html.read_state(_effort_html())
+
+    assert "effort" not in state
+    assert "effort_hours" not in state
+    assert "effort_calibrated" not in state
+    assert "compatibility_warnings" not in state
+
+
+def test_setting_worker_hours_is_supported_by_plan_ops():
+    working = {
+        "effort": "M",
+        "effort_hours": 2.0,
+        "effort_calibrated": False,
+        "decisions": {},
+        "followups": [],
+    }
+
+    warnings = apply_ops(
+        working,
+        [{"op": "set", "path": "effort_hours", "value": 2.75}],
+        is_index=False,
+    )
+
+    assert working["effort_hours"] == 2.75
+    assert working["effort_calibrated"] is True
+    assert warnings == [
+        "legacy effort letter is redundant because explicit worker-hours win"
+    ]
+
+
 def test_capability_edit_removes_legacy_field_with_warning():
     working = {
         "tier": "sonnet",
