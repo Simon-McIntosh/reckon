@@ -932,8 +932,8 @@ _PLAN_SET_TOP = frozenset(
     }
 )
 
-# Index top-level scalar fields a `set` op may target directly.
-_INDEX_SET_TOP = frozenset({"active_sprint_id"})
+# Index top-level fields a `set` op may target directly.
+_INDEX_SET_TOP = frozenset({"active_sprint_id", "north_stars"})
 
 
 def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict] | None:
@@ -941,6 +941,30 @@ def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict]
         if isinstance(el, dict) and el.get(id_field) == ident:
             return i, el
     return None
+
+
+def _check_north_star_ids(entries: Any, warnings: list[str]) -> None:
+    """Refuse duplicate direction ids and report the advisory collection cap."""
+    if not isinstance(entries, list):
+        return
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            continue
+        ident = entry["id"]
+        if ident in seen:
+            raise OpError(f"duplicate north-star id {ident!r}")
+        seen.add(ident)
+
+    from reckon.project_state import NORTH_STAR_ADVISORY_CAP
+
+    if len(entries) > NORTH_STAR_ADVISORY_CAP:
+        warning = (
+            f"project declares {len(entries)} north-stars; "
+            f"the advisory cap is {NORTH_STAR_ADVISORY_CAP}"
+        )
+        if warning not in warnings:
+            warnings.append(warning)
 
 
 def _entry_is_open(entry: dict[str, Any]) -> bool:
@@ -1020,7 +1044,7 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         if head == "active_sprint_id" and len(parts) == 1:
             working["active_sprint_id"] = value
             return
-        if head in ("sprints", "milestones") and len(parts) >= 3:
+        if head in ("sprints", "milestones", "north_stars") and len(parts) >= 3:
             # list-by-id dotted path: sprints.<id>.<field>[.<sub>...]
             ident = parts[1]
             lst = working.get(head)
@@ -1050,9 +1074,13 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
                     cur = nxt
                 cur[parts[-1]] = value
             lst[idx] = new_el
+            if head == "north_stars":
+                _check_north_star_ids(lst, warnings)
             return
         if head in _INDEX_SET_TOP and len(parts) == 1:
             working[head] = value
+            if head == "north_stars":
+                _check_north_star_ids(value, warnings)
             return
         if head == "inventory":
             # inventory[] is SYNTHESISED live by discover_plans and never
