@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="effort-calibration">
-  <meta name="plan-title"     content="Effort Calibration">
-  <meta name="plan-summary"   content="Replace the asserted effort letters with neutral worker-hours, then close two separate calibration loops so plan estimates and per-agent speed correct each other from recorded runs, yielding competence horizons that tell a boss how small to split.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="L">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="effort-calibration">
+  <meta name="plan-title" content="Effort Calibration">
+  <meta name="plan-summary" content="Replace the asserted effort letters with neutral worker-hours, then close two separate calibration loops so plan estimates and per-agent speed correct each other from recorded runs, yielding competence horizons that tell a boss how small to split.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S9">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="crew-run-ledger">
   <title>Effort Calibration | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -193,51 +195,56 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
     fit the measure to the conclusion and destroy the only external check this plan has.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="effort-unit" data-choice="neutral-worker-hours" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">What unit expresses plan effort?</p>
-        <p class="r-dec-ctx">The proposal was minutes of a frontier model's time, which is directly intuitive and anchored to the best available worker.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="neutral-worker-hours">Neutral worker-hours; per-agent speed held separately in the capabilities cache</button>
-          <button class="r-opt" data-value="frontier-minutes">Minutes of a frontier model's time</button>
-          <button class="r-opt" data-value="hours-vs-reference">Hours against a named reference agent configuration</button>
-        </p>
-        <p class="r-dec-rat">A tier-anchored unit puts a routing claim into plan state, which policy forbids, and its meaning drifts as capability improves — silently rebasing every historical estimate the way a version number in a symbol name rots. Neutral hours keep the size of the work stable and let improvement appear as a rising speed factor, which is also the figure a boss actually needs for routing. A named reference adds a re-baselining obligation for no gain over that.</p>
-      </div>
-      <div class="r-dec" data-key="calibration-topology" data-choice="two-separate-loops" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How do actuals feed back into estimates?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="two-separate-loops">Two loops — normalised actuals update the plan estimate, aggregate ratios update agent speed</button>
-          <button class="r-opt" data-value="single-loop">One loop feeding actuals directly into the plan estimate</button>
-        </p>
-        <p class="r-dec-rat">A single loop conflates estimate error with agent speed, so a slow worker permanently inflates the recorded size of the work and the number stops meaning what it claims. Separating them costs one division and keeps both figures interpretable; scope-changed runs are excluded from both because they measure neither.</p>
-      </div>
-      <div class="r-dec" data-key="capabilities-storage" data-choice="derived-cache" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Is the agent capabilities record authored or derived?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="derived-cache">Derived from the committed run ledgers and cached, rebuildable on demand</button>
-          <button class="r-opt" data-value="authored-file">An authored file maintained alongside configuration</button>
-        </p>
-        <p class="r-dec-rat">Authoring it would store computable state, the exact defect class being removed elsewhere in this sprint set, and a hand-maintained performance record decays the moment anyone forgets to update it. A cache carries no authority, may be deleted without loss, and is verifiable by rebuilding to identical figures.</p>
-      </div>
-      <div class="r-dec" data-key="lines-changed-role" data-choice="descriptive-never-ranked" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">What role do changed-line counts play?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="descriptive-never-ranked">Recorded as a covariate; barred from any ranking or selection path</button>
-          <button class="r-opt" data-value="tracked-metric">Tracked as an agent performance metric alongside speed and success</button>
-        </p>
-        <p class="r-dec-rat">Ranking workers by lines changed creates a gradient toward verbose code, corrupting the behaviour the measure claims to observe. The counts are free from the scoped diff and weakly informative for duration, so they are worth recording — but the bar against ranking is enforced by test rather than left to discipline, because incentive pressure erodes conventions.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="effort-unit" data-choice="neutral-worker-hours" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">What unit expresses plan effort?</p>
+    <p class="r-dec-ctx">The proposal was minutes of a frontier model&#x27;s time, which is directly intuitive and anchored to the best available worker.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="neutral-worker-hours">Neutral worker-hours; per-agent speed held separately in the capabilities cache</button>
+      <button class="r-opt" data-value="frontier-minutes">Minutes of a frontier model&#x27;s time</button>
+      <button class="r-opt" data-value="hours-vs-reference">Hours against a named reference agent configuration</button>
+      </p>
+    <p class="r-dec-rat">A tier-anchored unit puts a routing claim into plan state, which policy forbids, and its meaning drifts as capability improves — silently rebasing every historical estimate the way a version number in a symbol name rots. Neutral hours keep the size of the work stable and let improvement appear as a rising speed factor, which is also the figure a boss actually needs for routing. A named reference adds a re-baselining obligation for no gain over that.</p>
+    </div>
+<div class="r-dec" data-key="calibration-topology" data-choice="two-separate-loops" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How do actuals feed back into estimates?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="two-separate-loops">Two loops — normalised actuals update the plan estimate, aggregate ratios update agent speed</button>
+      <button class="r-opt" data-value="single-loop">One loop feeding actuals directly into the plan estimate</button>
+      </p>
+    <p class="r-dec-rat">A single loop conflates estimate error with agent speed, so a slow worker permanently inflates the recorded size of the work and the number stops meaning what it claims. Separating them costs one division and keeps both figures interpretable; scope-changed runs are excluded from both because they measure neither.</p>
+    </div>
+<div class="r-dec" data-key="capabilities-storage" data-choice="derived-cache" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Is the agent capabilities record authored or derived?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derived-cache">Derived from the committed run ledgers and cached, rebuildable on demand</button>
+      <button class="r-opt" data-value="authored-file">An authored file maintained alongside configuration</button>
+      </p>
+    <p class="r-dec-rat">Authoring it would store computable state, the exact defect class being removed elsewhere in this sprint set, and a hand-maintained performance record decays the moment anyone forgets to update it. A cache carries no authority, may be deleted without loss, and is verifiable by rebuilding to identical figures.</p>
+    </div>
+<div class="r-dec" data-key="lines-changed-role" data-choice="descriptive-never-ranked" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">What role do changed-line counts play?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="descriptive-never-ranked">Recorded as a covariate; barred from any ranking or selection path</button>
+      <button class="r-opt" data-value="tracked-metric">Tracked as an agent performance metric alongside speed and success</button>
+      </p>
+    <p class="r-dec-rat">Ranking workers by lines changed creates a gradient toward verbose code, corrupting the behaviour the measure claims to observe. The counts are free from the scoped diff and weakly informative for duration, so they are worth recording — but the bar against ranking is enforced by test rather than left to discipline, because incentive pressure erodes conventions.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-ec-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration">
-        <h4 class="r-fu-title">Move effort to worker-hours and close the calibration loops</h4>
-        <div class="r-fu-body"><p>Land the hours unit with lossless legacy mapping, the two separable calibration loops with scope-change exclusion and reported confidence, the derived capabilities cache with size-conditioned success curves and competence horizons that drive split decisions, and unit labelling on every surface. Close on whether hours predict remaining time better than the legacy weights, recording a negative result honestly if that is the answer.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship effort-calibration</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ec-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Move effort to worker-hours and close the calibration loops</h4>
+    <div class="r-fu-body"><p>Land the hours unit with lossless legacy mapping, the two separable calibration loops with scope-change exclusion and reported confidence, the derived capabilities cache with size-conditioned success curves and competence horizons that drive split decisions, and unit labelling on every surface. Close on whether hours predict remaining time better than the legacy weights, recording a negative result honestly if that is the answer.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship effort-calibration</pre>
+    </article>
+<article class="r-fu" data-id="f-ec-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stamp completion from the run&#x27;s last event, not from promotion time</h4>
+    <div class="r-fu-body"><p>The ledger's first six real records are unusable as calibration input. Promotion stamps <code>completed_at</code> with the wall-clock at promotion, so a run promoted late reads as having taken the whole interval. Measured on this project's own records: <code>flight-check-b</code> ran 08:44:22 to 08:45:24 by its own event stream - <strong>62 seconds</strong> - and its record says <strong>415 minutes</strong>. All six carry the same inflation because a later orchestrator session recovered and promoted them.</p><p>The true finish time is recoverable: the run directory under the crew home survives promotion, so <code>stream.jsonl</code> still holds the last event for every run that emitted timestamped events. Take <code>completed_at</code> from that event, falling back to promotion time only when a stream carries none, and record which source was used so an inflated figure can never masquerade as a measurement. Then repair the six existing records rather than averaging them into the first speed factors.</p><p>A second defect surfaced in the same promotion: <code>--commit none</code> - the literal string a read-only node's manifest writes - was accepted as a revision, and the resulting <code>fatal: bad revision</code> text was stored in the <code>changed_lines</code> field as though it were data. Reject a non-revision at the boundary, and represent a node that legitimately produced no commit as an explicit absence.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship effort-calibration</pre>
+    </article>
+</section>
 
   </main>
 </body>
