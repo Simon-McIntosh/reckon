@@ -1217,6 +1217,84 @@ def _apply_lock(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
         decisions[key] = merged
 
 
+def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    """Declare one evidence gate with a stable identity."""
+    if is_index:
+        raise OpError("gate op is plan-only")
+    ident = str(op.get("id", "")).strip()
+    measure = str(op.get("measure", "")).strip()
+    if not ident:
+        raise OpError("gate op requires an 'id'")
+    if not measure:
+        raise OpError(f"gate {ident!r} requires a non-empty 'measure'")
+    gates = working.setdefault("gates", [])
+    if not isinstance(gates, list):
+        raise OpError("plan has no gates list")
+    if _find_by_id(gates, ident) is not None:
+        raise OpError(f"gate {ident!r} already exists")
+    gated_sections = op.get("gated_sections", [])
+    if not isinstance(gated_sections, list) or not all(
+        isinstance(section, str) for section in gated_sections
+    ):
+        raise OpError("gate op 'gated_sections' must be a list of strings")
+    gates.append(
+        {
+            "id": ident,
+            "section": str(op.get("section", "")),
+            "gated_sections": gated_sections,
+            "status": str(op.get("status", "open")),
+            "measure": measure,
+            "required_evidence": str(op.get("required_evidence", "")),
+            "verdict": "",
+            "evidence": "",
+        }
+    )
+
+
+def _gate_requires_evidence(working: dict) -> bool:
+    """Read the resolved evidence requirement for the owning project."""
+    from reckon.flight import FlightConfigError, resolve
+
+    project = str(working.get("project", "") or "")
+    try:
+        config = resolve(project=project or None).config
+    except FlightConfigError as exc:
+        raise OpError(f"cannot resolve gates.require_evidence: {exc}") from exc
+    gates = config.get("gates") or {}
+    return bool(gates.get("require_evidence", False))
+
+
+def _apply_gate_verdict(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Close one declared gate with the verdict named by the op verb."""
+    if is_index:
+        raise OpError(f"{op.get('op')} op is plan-only")
+    ident = str(op.get("id", "")).strip()
+    if not ident:
+        raise OpError(f"{op.get('op')} op requires an 'id'")
+    gates = working.get("gates", [])
+    if not isinstance(gates, list):
+        raise OpError("plan has no gates list")
+    hit = _find_by_id(gates, ident)
+    if hit is None:
+        raise OpError(f"gate {ident!r} not found")
+    idx, gate = hit
+    evidence = str(op.get("evidence", "")).strip()
+    verdict = "passed" if op.get("op") == "pass" else "failed"
+    if verdict == "passed" and _gate_requires_evidence(working) and not evidence:
+        raise OpError(
+            f"gate {ident!r} cannot pass without evidence while "
+            "gates.require_evidence is enabled"
+        )
+    gates[idx] = {
+        **gate,
+        "status": "closed",
+        "verdict": verdict,
+        "evidence": evidence,
+    }
+
+
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     if not is_index:
         raise OpError("move op is index-only")
@@ -1259,6 +1337,9 @@ _OP_DISPATCH = {
     "append": _apply_append,
     "resolve": _apply_resolve,
     "lock": _apply_lock,
+    "gate": _apply_gate,
+    "pass": _apply_gate_verdict,
+    "fail": _apply_gate_verdict,
     "move": _apply_move,
 }
 
