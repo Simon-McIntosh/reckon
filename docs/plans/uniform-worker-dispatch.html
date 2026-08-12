@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-verifies" content="">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -442,6 +442,54 @@
           <td>The property states its own limit</td>
           <td>The contract says scoped checks exclusivity and not sufficiency, in the skill and in
           the worker protocol, asserted by a contract test.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s9">§9 — A followup id must identify exactly one followup</h2>
+
+    <p>Two sessions independently minted <code>f-uwd-003</code> against this plan, and the store
+    accepted both. The consequence is not cosmetic: <code>resolve</code> targets by id, so it matched
+    the same article twice and <strong>reported success both times</strong> while leaving the second
+    followup open. A write that cannot address a record it claims to have written is worse than one
+    that fails, because nothing surfaces the miss — it was caught only by reading the state back and
+    counting.</p>
+
+    <p>The neighbouring ledger already refuses this exact shape: <code>append_run</code> rejects a
+    second record for a run id, on the grounds that a double promotion double-counts the very
+    measurements a later reader depends on. A collection whose entries are addressed by id owes the
+    same guarantee, and followups are addressed by id on every resolve.</p>
+
+    <p>Two halves, and the second is what makes the first safe to rely on. <strong>Append refuses a
+    duplicate id</strong>, naming the existing entry, so the collision is a visible error at the
+    moment it is created rather than a silent one later. And <strong>a resolve that matches no open
+    entry says so</strong> instead of reporting success, which is the failure that hid this one.</p>
+
+    <p>The stuck record on this plan is the test case: its content is already folded into §7, and it
+    cannot be closed through any sanctioned write path today — the prose tool correctly refuses to
+    edit structured state, and the state tool cannot reach past the first match.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A duplicate id is refused on append</td>
+          <td>Appending a followup whose id already exists raises, naming the existing entry, in a
+          test; the same holds for the other id-addressed collections.</td>
+        </tr>
+        <tr>
+          <td>A resolve that matches nothing says so</td>
+          <td>Resolving an id with no open entry reports a failure rather than success, in a test
+          that would have caught the duplicate-id miss.</td>
+        </tr>
+        <tr>
+          <td>The stuck record closes</td>
+          <td>The second <code>f-uwd-003</code> on this plan is resolvable and resolved, shown by an
+          open-followup count of zero.</td>
         </tr>
         <tr>
           <td>Suite green</td>
