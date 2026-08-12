@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-12T19:16:47",
+  "updated": "2026-08-12T19:20:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1754,9 +1754,54 @@
           },
           "utilisation_pct": null
         }
+      },
+      {
+        "run_id": "r-20260812T171225553762-continuation-trigger",
+        "plan": "uniform-worker-dispatch",
+        "section": "\u00a710",
+        "node": "continuation-trigger",
+        "role": "implement",
+        "member": "",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-12T17:12:26Z",
+        "completed_at": "2026-08-12T17:20:51Z",
+        "worker_seconds": 505,
+        "time_budget": "25m",
+        "base_sha": "a0d4bedb54621d64bcc4627491cd6cb9c392bdf4",
+        "commits": [
+          "ac93488"
+        ],
+        "changed_lines": {
+          "added": 123,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "outcome": "Both write paths now return one verdict for the same mid-run resolve, and both persist zero open followups. An active plan below 1.0 carries its own continuation; at 1.0 a final resolve without a chain answer still refuses; new terminal landings without continuation still refuse; already-shipped plans stay writable. Reported blocked on a stale base - the 3 roadmap failures it saw were fixed on main before it finished; green at 1717 after integration.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260812T171225553762-continuation-trigger/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff6f6-068e-7c01-847f-97ac86b76b3e",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        }
       }
     ],
     "holds": [],
-    "_version": 43
+    "_version": 44
   }
 }

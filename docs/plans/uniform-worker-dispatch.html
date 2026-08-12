@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="uniform-worker-dispatch">
   <meta name="plan-title" content="Uniform Worker Dispatch">
   <meta name="plan-summary" content="One backend-agnostic dispatch call, a task-definition contract that makes a node well-formed before it is sent, a structured needs-help escape hatch, and the four-axis orchestrator summary reflex.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="25">
 <meta name="plan-verifies" content="">
-<meta name="plan-impl" content="0.92">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -305,7 +305,20 @@
       </tbody>
     </table>
 
-    <h2 id="s6">§6 — A worker must be able to read the plan it is sent to read</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s6">§6 — A worker must be able to read the plan it is sent to read</h2>
+    </header>
+    <p class="landed-summary">
+      Dispatch resolves the base to a commit, compares the working plan's bytes against that
+      commit's blob and verifies the named section by authored id or heading — all before a worktree
+      exists. It refuses at <strong>exit 4</strong> with <code>error=plan-unavailable</code>, beside
+      2 for a malformed node and 3 for a budget hold, so a caller branches without parsing prose.
+      Demonstrated on the live failure rather than a fixture: with the plan genuinely dirty, a
+      dispatch naming it returned <em>"differs from base 'HEAD'; commit the plan before
+      dispatching"</em> and created 0 worktrees. It then blocked this session twice more, correctly
+      both times. 5 new tests, suite green at 1,680 (commit <code>c558f47</code>).
+    </p>
 
     <p>A dispatch cuts a detached worktree from a base ref and then tells the worker its first act
     is to read the live plan at the named section. Those two facts do not compose: the worktree
@@ -534,7 +547,20 @@
       </tbody>
     </table>
 
-    <h2 id="s10">§10 — The continuation check must fire on a landing, not on a resolve</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s10">§10 — The continuation check must fire on a landing, not on a resolve</h2>
+    </header>
+    <p class="landed-summary">
+      An active plan below full implementation now carries its own continuation, so an ordinary
+      mid-run resolve passes; at 1.0 a final resolve with no chain answer still refuses, new terminal
+      landings without one still refuse, and plans already recorded as shipped stay writable. The
+      gate that mattered is met directly: the same resolve driven through the ops path and the HTTP
+      patch path returns <code>[true, true]</code>, and both persist zero open followups — the two
+      doors that disagreed now answer alike. 5 new tests over 6 cases, suite green at 1,717
+      (commit <code>ac93488</code>). Reported blocked on a stale base: the 3 roadmap failures it saw
+      had already been fixed on main by a concurrent session before it finished.
+    </p>
 
     <p>The rule that work must not end without naming what comes next is enforced on two write
     paths, and they disagree. The ops path treats a batch that resolves a followup <em>or</em> sets a
@@ -677,6 +703,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-uwd-close" data-who="reckon-ship" data-when="2026-08-12T17:22:00Z">
+    <div class="r-comment-body">Plan closed — done, no followup. Five sections landed in one run (§6 worktree-visibility guard, §7 contract precision, §8 scope sufficiency, §9 followup id integrity, §10 continuation trigger), every one of them work that surfaced during the run rather than being deferred out of it. Four followups were drained to zero: one closed against the plan that had since shipped its work, three folded into sections. Suite 1,717 green. Two workers reported blocked rather than claiming complete, both times against a suite made red by a concurrent session; the escape hatch and the ownership rule between them cost nothing and hid nothing.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
