@@ -582,6 +582,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "blocks": rec.get("blocks", []),
                 }
             )
+            if rec.get("north_star"):
+                item["north_star"] = rec["north_star"]
         inventory.append(item)
 
     # ── Distributed project state ──────────────────────────────────────────
@@ -602,6 +604,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "blockers": composed.get("blockers", []),
             "timeline": composed.get("timeline", []),
             "active_sprint_id": composed.get("active_sprint_id"),
+            "north_stars": composed.get("north_stars", []),
             "source_format": "distributed",
             "resource_versions": composed.get("resource_versions", {}),
         }
@@ -617,6 +620,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     blockers: list = []
     timeline: list = []
     active_sprint_id = None
+    north_stars: list = []
     if state_root is not None:
         sf = state_root / project / "index.json"
         if sf.is_file():
@@ -628,6 +632,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                 blockers = data.get("blockers", [])
                 timeline = data.get("timeline", [])
                 active_sprint_id = data.get("active_sprint_id")
+                north_stars = data.get("north_stars", [])
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -655,6 +660,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         "blockers": blockers,
         "timeline": timeline,
         "active_sprint_id": active_sprint_id,
+        "north_stars": north_stars,
         "source_format": "legacy-index",
     }
     _DISC_CACHE[cache_key] = (sig, result)
@@ -1167,6 +1173,7 @@ class Handler(BaseHTTPRequestHandler):
                                 "blockers",
                                 "timeline",
                                 "active_sprint_id",
+                                "north_stars",
                                 "source_format",
                                 "resource_versions",
                             ):
@@ -1318,6 +1325,7 @@ class Handler(BaseHTTPRequestHandler):
                             "blockers",
                             "timeline",
                             "active_sprint_id",
+                            "north_stars",
                             "source_format",
                             "resource_versions",
                         ):

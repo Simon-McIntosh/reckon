@@ -256,3 +256,42 @@ def test_unknown_project_route_is_not_found(crew_server) -> None:
 
     assert status == 404
     assert payload == "project not found"
+
+
+def test_discovery_serves_declared_directions_and_plan_alignment(crew_server) -> None:
+    project = "reckon"
+    docs_dir = crew_server["repos"][project] / "docs"
+    plan_path = docs_dir / "plans" / "visible-work.html"
+    plan_path.write_text(
+        plan_path.read_text().replace(
+            "</head>",
+            '<meta name="plan-north-star" content="reliable-delivery"></head>',
+        ),
+        encoding="utf-8",
+    )
+    state_dir = crew_server["config_home"] / "state" / project
+    state_dir.mkdir(parents=True, exist_ok=True)
+    directions = [
+        {
+            "id": "reliable-delivery",
+            "name": "Reliable delivery",
+            "statement": "Every release remains reproducible and observable.",
+        }
+    ]
+    (state_dir / "index.json").write_text(
+        json.dumps({"project": project, "data": {"north_stars": directions}}),
+        encoding="utf-8",
+    )
+    serve._DISC_CACHE.clear()
+
+    status, payload = _get(crew_server["port"], f"/_discover/{project}")
+    state_status, state_payload = _get(
+        crew_server["port"], f"/{project}/state/{project}/index.json"
+    )
+
+    assert status == 200
+    assert payload["north_stars"] == directions
+    assert payload["inventory"][0]["north_star"] == "reliable-delivery"
+    assert state_status == 200
+    assert state_payload["data"]["north_stars"] == directions
+    assert state_payload["data"]["inventory"][0]["north_star"] == "reliable-delivery"
