@@ -17,6 +17,27 @@ function Sprint({ sprintId, onNav }) {
 
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
   const [sprintPromptText, setSprintPromptText] = useState(null);
+  const [liveRuns, setLiveRuns] = useState([]);
+  const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+
+  useEffect(() => {
+    if (!project) { setLiveRuns([]); return; }
+    let active = true;
+    const poll = async () => {
+      try {
+        const response = await fetch(`/crew/${encodeURIComponent(project)}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (active && Array.isArray(payload.runs)) setLiveRuns(payload.runs);
+      } catch (_) { /* Sprint navigation remains available without live state. */ }
+    };
+    poll();
+    const timer = window.setInterval(poll, 3000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [project]);
 
   // Materialise items with their plan info + justification
   const items = sprint.items.map(it => {
@@ -62,6 +83,14 @@ function Sprint({ sprintId, onNav }) {
     }
     return g;
   }, [items, localStatus]);
+  const runsByPlan = useMemo(() => {
+    const grouped = {};
+    for (const run of liveRuns) {
+      if (!run.plan) continue;
+      (grouped[run.plan] ||= []).push(run);
+    }
+    return grouped;
+  }, [liveRuns]);
 
   const onDragStart = (e, slug) => {
     e.dataTransfer.setData("text/plain", slug);
@@ -133,16 +162,40 @@ function Sprint({ sprintId, onNav }) {
               <span>{col.title}</span>
               <span className="n">{col.cards.length}</span>
             </div>
-            {col.cards.map(p => (
-              <a
-                key={p.slug}
-                className={`r-kcard ${p._eff === "blocked" ? "blocked" : ""}`}
-                href={`#plan/${p.slug}`}
-                draggable
-                onDragStart={(e) => onDragStart(e, p.slug)}
-                onDragEnd={onDragEnd}
-              >
-                <div className="t">{p.title}</div>
+            {col.cards.map(p => {
+              const itemRuns = runsByPlan[p.slug] || [];
+              const liveSummary = itemRuns
+                .map(run => `${run.member || "unassigned"} · ${run.section || "whole plan"}`)
+                .join("; ");
+              return (
+                <a
+                  key={p.slug}
+                  className={`r-kcard ${p._eff === "blocked" ? "blocked" : ""}`}
+                  href={`#plan/${p.slug}`}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, p.slug)}
+                  onDragEnd={onDragEnd}
+                >
+                <div className="t">
+                  {p.title}
+                  {itemRuns.length > 0 && (
+                    <span
+                      className="r-inflight-badge"
+                      aria-label={`${itemRuns.length} live ${itemRuns.length === 1 ? "run" : "runs"}`}
+                      title={liveSummary}
+                      style={{
+                        float: "right",
+                        marginLeft: 8,
+                        color: "var(--accent)",
+                        fontFamily: "var(--mono)",
+                        fontSize: 10,
+                        fontWeight: 500,
+                      }}
+                    >
+                      ● in flight{itemRuns.length > 1 ? ` · ${itemRuns.length}` : ""}
+                    </span>
+                  )}
+                </div>
                 <div className="slug">/{p.slug}</div>
                 {p.justification && <div className="just">{p.justification}</div>}
                 <div className="progress">
@@ -160,8 +213,9 @@ function Sprint({ sprintId, onNav }) {
                   <span>Gates</span>
                   <span>{gateSummary(p.gates)}</span>
                 </div>
-              </a>
-            ))}
+                </a>
+              );
+            })}
             {col.cards.length === 0 && (
               <div style={{ textAlign: "center", padding: "20px 0", color: "var(--muted)", fontSize: 12 }}>
                 drop here
