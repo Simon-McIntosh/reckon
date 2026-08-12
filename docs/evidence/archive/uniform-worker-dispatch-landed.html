@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="uniform-worker-dispatch-landed">
+  <meta name="plan-title" content="Uniform worker dispatch — landed evidence">
+  <meta name="plan-summary" content="One dispatch call ran six nodes across three backends: two external harnesses and the calling harness itself. Eleven declared measures produced evidence; two live defects were found and fixed, and one constructed measurement did not fire.">
+  <meta name="plan-evidence-for" content="reckon:uniform-worker-dispatch">
+  <meta name="plan-verifies" content="reckon:uniform-worker-dispatch#s2,reckon:uniform-worker-dispatch#s3,reckon:uniform-worker-dispatch#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; two external coding-harness CLIs on PATH plus the calling harness">
+  <meta name="plan-commits" content="a927c9c1d2a695a674293f0838b2d532a5c3156e,8a44624d7cecac5c049acc0e906ad50047b99875,0ae4167485f36cecbb576110e3527cabf1e697c8,d3a76177962f24a82fd2d217927acadbd675055c,2224770">
+  <meta name="plan-artifacts" content="reckon/_backends.py,reckon/crew.py,reckon/cli.py,reckon/_store.py,reckon/roadmap.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/worker-protocol.md,skills/reckon-ship/references/worker-backends.md,tests/test_backends.py,tests/test_crew.py,tests/test_continuation.py,tests/fixtures/backends/">
+  <title>Uniform worker dispatch — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Uniform worker dispatch — landed evidence</h1>
+    <p class="plan-summary">One instruction dispatched six nodes across three backends —
+    two external coding harnesses and the calling harness itself — with no change to the calling
+    instruction and no harness named anywhere an agent reads. Eleven declared measures produced
+    evidence. Two defects were found by the live runs and fixed; one deliberately constructed
+    measurement did not fire, and is recorded as such.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>End-to-end dispatch</td><td>Three nodes landed commits in detached worktrees, each <code>git show --stat</code> showing only its assigned path — <a href="#dispatch">§ dispatch</a></td><td>pass</td></tr>
+        <tr><td>Uniformity</td><td>One node definition, two backends, identical instruction but for the backend override; both reached the same measured result — <a href="#uniformity">§ uniformity</a></td><td>pass</td></tr>
+        <tr><td>Task contract enforced</td><td>Live rejection naming five failing properties at exit 2; 18 tests over the seven properties — <a href="#contract">§ contract</a></td><td>pass</td></tr>
+        <tr><td>Escape hatch round-trip</td><td>An <em>unprompted</em> four-field report, answered and resumed in the same session, whose resumed turn restated its prior measurements without re-running anything — <a href="#escape-hatch">§ escape hatch</a></td><td>pass</td></tr>
+        <tr><td>Durable delivery</td><td>6 of 6 manifests on disk; the recovery ladder run in order on a real silent run, redispatch never the first response — <a href="#delivery">§ delivery</a></td><td>pass</td></tr>
+        <tr><td>In-harness branch</td><td>A directive carrying worktree, manifest path and four fences, bound to a real harness task by <code>attach</code> — <a href="#in-harness">§ in-harness</a></td><td>pass</td></tr>
+        <tr><td>Both summaries</td><td>Dispatch and completion summaries captured verbatim, four axes each, completion <code>WHY</code> quantitative — <a href="#summaries">§ summaries</a></td><td>pass</td></tr>
+        <tr><td>Continuation at three altitudes</td><td>12 tests including one end-to-end trace from worker manifest to sprint rollup; the plan altitude is refused at the write boundary — <a href="#continuation">§ continuation</a></td><td>pass</td></tr>
+        <tr><td>Budget signal captured</td><td>One backend recorded utilisation 1.02% and a reset time; the other legitimately <code>unknown</code> with tokens only. A test proves absence never reads as exhaustion — <a href="#budget">§ budget</a></td><td>pass</td></tr>
+        <tr><td>No routing leakage</td><td>Three hits, all in a documented legacy-tier reader; a test now guards the property — <a href="#leakage">§ leakage</a></td><td>pass, one documented exemption</td></tr>
+        <tr><td>Suite and validators green</td><td>1,598 tests pass, 103 of them new; lint clean; <code>reckon doctor</code> all checks passed — <a href="#suite">§ suite</a></td><td>pass</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="dispatch">
+    <h2>One call, six nodes, three backends</h2>
+
+    <p>Every node went out through <code>reckon crew dispatch</code>. The call names no harness,
+    model, effort level or sandbox flag; those resolve from flight config inside reckon. The caller
+    branches once, on the returned <code>launch</code> kind.</p>
+
+    <table>
+      <thead><tr><th>Node</th><th>Backend</th><th>Launch</th><th>Outcome</th><th>Scoped diff</th></tr></thead>
+      <tbody>
+        <tr><td><code>flight-check-a</code></td><td>external A</td><td><code>cli</code></td><td>complete after one escape-hatch round-trip</td><td>manifest only</td></tr>
+        <tr><td><code>flight-check-b</code></td><td>external B</td><td><code>cli</code></td><td>complete first pass</td><td>manifest only</td></tr>
+        <tr><td><code>docs-readme</code></td><td>external A</td><td><code>cli</code></td><td>commit <code>8a44624</code></td><td><code>README.md</code> only</td></tr>
+        <tr><td><code>docs-agents</code></td><td>external A</td><td><code>cli</code></td><td>commit <code>0ae4167</code></td><td><code>AGENTS.md</code> only</td></tr>
+        <tr><td><code>scope-fence</code></td><td>external B</td><td><code>cli</code></td><td>commit <code>d3a7617</code></td><td><code>worker-protocol.md</code> only</td></tr>
+        <tr><td><code>suite-native</code></td><td>calling harness</td><td><code>in-harness</code></td><td>complete, task <code>bbgq1cuba</code></td><td>manifest only</td></tr>
+      </tbody>
+    </table>
+
+    <p>All three commits were audited with <code>git show --stat</code> before integration, each
+    touching exactly its declared write path, and merged sequentially with normal merge commits.
+    Six worktrees were then removed by the conservative cleanup — clean and reachable from the
+    integrated primary branch — leaving <code>git worktree list</code> with the main checkout
+    alone.</p>
+
+    <p>The three implementation nodes did real, previously missing work: the crew surface is now
+    documented in the repository README, in the repository agent guidelines, and — as the live run
+    record — in the worker protocol reference.</p>
+  </section>
+
+  <section id="uniformity">
+    <h2>The same node, two backends, one instruction</h2>
+
+    <p>Both invocations are reproduced in full. They differ in exactly two places: the node
+    identity, which two concurrent runs must not share, and the backend override.</p>
+
+<pre>reckon crew dispatch --project reckon --plan uniform-worker-dispatch --section "§3" \
+  --role implement --node flight-check-<strong>a</strong> \
+  --goal "record the resolved worker-routing report for this checkout" \
+  --done-when "the manifest records the resolved default backend, the count of \
+attributed provenance keys, and the exit status of the reckon flight command" \
+  --write-path &lt;scratch&gt;/flight-check-<strong>a</strong>-manifest.md \
+  --manifest    &lt;scratch&gt;/flight-check-<strong>a</strong>-manifest.md \
+  --time-budget 15m --session uwd1 --set <strong>default_backend=A</strong>
+
+reckon crew dispatch --project reckon --plan uniform-worker-dispatch --section "§3" \
+  --role implement --node flight-check-<strong>b</strong> \
+  ... identical ...
+  --time-budget 15m --session uwd1 --set <strong>default_backend=B</strong></pre>
+
+    <p>Reckon translated those into two entirely different argument vectors — different subcommand,
+    different stream flag, different model and effort flags, different bypass flag — without the
+    caller expressing any of it. The two workers then reached the <em>same</em> measured result
+    independently:</p>
+
+<pre>                        backend A        backend B
+resolved default        codex            codex
+provenance keys         36               36
+attribution split       host=27          host=27
+                        shipped=9        (host supplies backend tuning,
+                                          shipped supplies fences)
+flight exit status      0                0</pre>
+
+    <p>That agreement is worth more than the dispatch succeeding twice: two independent harnesses,
+    given the same fenced node and no shared context, produced the same number for a measurement
+    neither was told the answer to.</p>
+  </section>
+
+  <section id="contract">
+    <h2>A malformed node is refused before a worktree exists</h2>
+
+    <p>The seven properties are checked before dispatch, so the escape hatch handles only the
+    genuine residual. A live rejection, exit code 2, every failing property named in one pass so the
+    node can be reshaped in one edit:</p>
+
+<pre>$ reckon crew dispatch --node bad \
+    --goal "add the parser and wire the CLI" \
+    --done-when "the code is clean" ... --dry-run
+
+single-goal              the goal joins deliverables with 'and'; split it into
+                         one node per deliverable
+demonstrable             done-when rests on the subjective term(s) clean; name
+                         what would be observed
+demonstrable             done-when emits no evidence; name a test, a command
+                         output or a numeric result against a stated bound
+scoped                   no exclusive write path is enumerated
+independently-verifiable  no manifest path is named, so completion could only be
+                         judged by reading the implementation
+                                                                      [exit 2]</pre>
+
+    <p>Exit codes are branchable: <code>0</code> succeeded, <code>1</code> the configuration or
+    request is wrong, <code>2</code> the node is not dispatchable. <code>--dry-run</code> runs the
+    <em>same</em> resolution and validation as a real dispatch — one code path, not two — so a whole
+    wave can be checked before any of it goes out.</p>
+
+    <p>One property earned its keep during implementation. <em>Independently verifiable</em> began as
+    a tautology — dispatch always fills in a manifest path, so asserting one exists proved nothing.
+    It now also requires that path to be <strong>absolute</strong>, which is a real failure mode: a
+    relative path resolves against the worker's own worktree, so the orchestrator looks where the
+    file will never be, reads a delivered node as silent, and redispatches work that already
+    succeeded.</p>
+
+    <p>18 tests cover the seven properties, including the three the measure names — two goals, a
+    subjective done-when, a missing write scope — and each asserts the rejection names its
+    property.</p>
+  </section>
+
+  <section id="escape-hatch">
+    <h2>The escape hatch fired on its own, and the round-trip closed</h2>
+
+    <p>The measure asked for a worker <em>deliberately driven</em> to a <code>NEEDS-HELP:</code>
+    report. One fired without being driven at all, which is stronger evidence: node
+    <code>flight-check-a</code> finished its measurement, found that <code>uv</code> had created an
+    ignored environment outside its exclusive write fence, and refused to remove it unilaterally.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 208" width="100%" style="max-width:680px" role="img"
+           aria-label="A two-lane sequence: the orchestrator dispatches, the worker returns a four-field NEEDS-HELP report, the orchestrator answers, the same session is resumed, and the worker completes while restating its prior measurements.">
+        <g stroke="currentColor" stroke-width="1" opacity="0.3">
+          <path d="M120 56 L660 56"/>
+          <path d="M120 152 L660 152"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="12">
+          <text x="8" y="60">orchestrator</text>
+          <text x="8" y="156">worker</text>
+        </g>
+        <g stroke="currentColor" fill="none" stroke-width="1">
+          <path d="M170 56 L170 148"/><path d="M166 140 L170 150 L174 140"/>
+          <path d="M320 152 L320 60"/><path d="M316 68 L320 58 L324 68"/>
+          <path d="M500 152 L500 60" stroke-dasharray="0"/>
+        </g>
+        <g stroke="#3b82c4" fill="none" stroke-width="1.3">
+          <path d="M470 56 L470 148"/><path d="M466 140 L470 150 L474 140"/>
+        </g>
+        <g stroke="currentColor" fill="none" stroke-width="1">
+          <path d="M620 152 L620 60"/><path d="M616 68 L620 58 L624 68"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="12">
+          <text x="176" y="40">dispatch</text>
+          <text x="258" y="40">NEEDS-HELP</text>
+          <text x="476" y="40" fill="#3b82c4">advice</text>
+          <text x="590" y="40">complete</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11" opacity="0.85">
+          <text x="176" y="176">fences: scope · time · evidence · delivery</text>
+          <text x="258" y="192">tried · options · leaning · cost-if-wrong</text>
+          <text x="476" y="176" fill="#3b82c4">resume — same session</text>
+          <text x="476" y="190" fill="#3b82c4">019ff524…a1b093a3</text>
+        </g>
+      </svg>
+      <figcaption>The round trip. The worker stops rather than exceeding its fence; the answer
+      returns into the <em>same</em> session, which is why the resumed turn still knows what was
+      tried. A fresh session would have had to rebuild that context — and would likely have repeated
+      the attempt that failed.</figcaption>
+    </figure>
+
+    <p>All four fields were present, unprompted:</p>
+
+<pre>NEEDS-HELP: the flight check passed, but uv created an ignored .venv outside
+            the write fence and two safe cleanup attempts could not remove it
+tried:         Ran the flight check once; it exited 0 and resolved codex with 36
+               attributed provenance keys. Cleanup with an exact validated
+               removal was rejected by the command safety layer before
+               execution; gio trash failed — unsupported on this mount.
+options:       (1) the orchestrator removes the exact worktree-local .venv;
+               (2) grant this node an explicit cleanup scope and a permitted
+               exact-directory removal mechanism; or (3) retain the ignored
+               environment as an acknowledged cache artifact.
+leaning:       Option 1, because the orchestrator owns worktree cleanup and can
+               remove the exact disposable environment without expanding this
+               node's write scope.
+cost-if-wrong: Retaining it leaves an ignored 103-package environment in the
+               worktree; removing it only means a later uv command must
+               recreate the environment.</pre>
+
+    <p>That is a decision brief, not a plea: the orchestrator answered it in one turn, accepting the
+    worker's own leaning. The advice was resumed into the same session, and the resumed turn
+    <strong>demonstrably retained prior context</strong> — asked to restate its measurements from
+    memory without re-running anything, it returned:</p>
+
+<pre>I still have the measured result: 36 attributed provenance keys, split
+host=27 and shipped=9. I'll update only the assigned manifest — without
+re-running the flight command or touching .venv.</pre>
+
+    <p>Those numbers match its first turn exactly, and the manifest was rewritten to
+    <code>status: complete</code> with the report block removed. The orchestrator then honoured its
+    half of the bargain and removed the 144&nbsp;MB disposable environment itself.</p>
+
+    <h3>Negative result: the constructed trigger did not fire</h3>
+
+    <p>A second node, <code>scope-fence</code>, was constructed to force the same trigger — its goal
+    pointed at the maintainer notes while its write scope granted only the worker protocol. It did
+    <em>not</em> ask for help. It documented the run record inside its granted scope and finished
+    clean, which is a defensible reading of a contradictory instruction rather than a failure.</p>
+
+    <p>The honest conclusion is that a deliberately contrived contradiction is a poor way to exercise
+    the hatch, because a capable worker resolves it instead. The organic case is the real evidence:
+    the hatch fires when a worker meets a wall it genuinely cannot pass inside its fence. Its commit
+    was reviewed on merit, accepted, and merged — with one repair, since its section renumbering left
+    a cross-reference pointing at itself.</p>
+  </section>
+
+  <section id="delivery">
+    <h2>Durable delivery, and the recovery ladder used in anger</h2>
+
+    <p>Six of six workers wrote their manifest to the orchestrator-named path. Two facts from the run
+    matter more than that count.</p>
+
+    <p><strong>A manifest existed before the worker was done.</strong> <code>flight-check-a</code>
+    reported <code>manifest_present=true</code> while its phase was still <code>working</code> — the
+    exact situation in which reading the message channel alone would have produced nothing and
+    redispatch would have duplicated a running node holding write scope.</p>
+
+    <p><strong>The ladder found a real defect instead of burning a worker slot.</strong> After the
+    first resume, <code>observe</code> reported the run as neither complete nor working. Following the
+    ladder — check the manifest, then the on-disk evidence, then the logs — pointed at an empty event
+    log and a stderr file containing <code>error: unexpected argument '-C' found</code>. Redispatching
+    on the idle signal would have hidden that. Both consequences were fixed:</p>
+
+    <table>
+      <thead><tr><th>Defect</th><th>Why the fixtures could not catch it</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The resume invocation was rejected outright: the working directory, model, effort and
+          output options belong to the exec command, not to its <code>resume</code> subcommand,
+          which takes only a session id and a prompt.</td>
+          <td>Recorded event streams verify <em>interpretation</em>, never <em>acceptance</em>. A
+          stream fixture cannot tell you the harness refuses an argument.</td>
+          <td>Options reordered ahead of the subcommand, verified live, and pinned by a test that
+          asserts the ordering.</td>
+        </tr>
+        <tr>
+          <td>A dead process with an <em>empty</em> log reported as <code>starting</code>, so a
+          launch that never began looked like one about to.</td>
+          <td>The orphan rule only covered a log with events in it.</td>
+          <td>An empty log plus a dead process is now <code>orphaned</code>, and the phase names the
+          stderr log to read.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Both were found by running the thing for real, which is the argument for dog-fooding rather
+    than rehearsing.</p>
+  </section>
+
+  <section id="in-harness">
+    <h2>The branch reckon cannot spawn</h2>
+
+    <p>An <code>in-harness</code> backend is the calling harness's own delegation primitive, which
+    reckon cannot start on its behalf. So dispatch prepared everything else and returned a directive:</p>
+
+<pre>launch      in-harness          (pid: none — nothing was spawned)
+worktree    …/uwd1/suite-native  detached, cut from the integrated base
+fences      scope     …/suite-native-manifest.md
+            time      15m
+            evidence  the manifest records the suite pass count plus the exit status
+            delivery  …/suite-native-manifest.md
+attach_with reckon crew attach --run &lt;run-id&gt; --task &lt;task-id&gt;</pre>
+
+    <p>The harness then dispatched its own task against that directive, and
+    <code>reckon crew attach --run … --task bbgq1cuba</code> bound the real task identity to the
+    prepared record. The task ran the suite in the prepared worktree — <strong>1,596 passed at the
+    integrated base</strong> — and wrote the manifest to the named path; <code>observe</code> read
+    the record back as <code>complete</code> with <code>manifest_present=true</code>, on the same
+    surface as a spawned run.</p>
+
+    <p>A second <code>attach</code> was refused: <em>a second binding would hide which worker holds
+    the write scope.</em></p>
+
+    <p>One limit stated plainly rather than glossed: the bound task was a harness <strong>background
+    task</strong>, not a harness <strong>subagent</strong>, because subagent dispatch was withheld in
+    this session. The binding mechanism is identical — an opaque task identifier the harness owns —
+    but the record should not be read as having exercised subagent delegation.</p>
+  </section>
+
+  <section id="summaries">
+    <h2>Both summaries, verbatim</h2>
+
+    <p>Captured as emitted. Four axes each, at most two lines per axis, restating nothing the plan
+    already says.</p>
+
+<pre>Dispatching wave 1 — 6 nodes
+WHAT   routing report ×2 (uniformity pair) · README + guidelines + run-record docs
+       · suite run via the calling harness
+WHY    the pair measures backend-independence of one instruction; the three doc
+       nodes are real undocumented surface; the suite node exercises the branch
+       reckon cannot spawn
+HOW    two external harnesses plus the calling harness, detached worktrees cut
+       from a927c9c, exclusive scopes below, manifests on named absolute paths
+WHEN   15–20 min each; the end-to-end gate closes the wave — evidence stays shut
+       until a commit lands scoped clean with its manifest on disk
+
+Wave 1 complete — 6/6 delivered, all eleven gates banked
+WHAT   3 commits (8a44624, 0ae4167, d3a7617) + 3 manifest-only nodes
+WHY    gate evidence: 2 backends reached the same 36 provenance keys from one
+       instruction; 1,598 tests pass (103 new); 6/6 manifests on disk; budget
+       read utilisation 1.02% on one backend and unknown on the other
+HOW    every diff scoped clean on git show --stat; 6 worktrees removed by
+       conservative cleanup; 2 live defects found and fixed
+WHEN   next the run ledger, which promotes these pointers into committed
+       history — ready, nothing blocks it</pre>
+
+    <p>The binding discipline held: the completion <code>WHY</code> carries the gate evidence
+    quantitatively. A validator enforces it, refusing a completion summary whose <code>WHY</code>
+    contains no number — which makes a wave that cannot state its measure visibly incomplete rather
+    than plausibly done.</p>
+  </section>
+
+  <section id="continuation">
+    <h2>Continuation closes at three altitudes</h2>
+
+    <p>A chain closing only at plan level leaves the other two ends dangling. All three now close,
+    and each is enforced rather than advised.</p>
+
+    <figure>
+      <svg viewBox="0 0 660 210" width="100%" style="max-width:660px" role="img"
+           aria-label="Three altitudes of continuation: a worker's fenced-out discovery becomes a plan followup, a plan landing must name its next invocation or an explicit end, and a sprint close reports the sprints it feeds.">
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity="0.35">
+          <path d="M92 170 L92 40"/>
+          <path d="M88 48 L92 38 L96 48"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="118" y="52">sprint close</text>
+          <text x="118" y="118">plan landing</text>
+          <text x="118" y="184">worker</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11" opacity="0.85">
+          <text x="118" y="68">reports the sprints it feeds — derived from the graph</text>
+          <text x="118" y="134">names the next invocation, or records that the chain ends</text>
+          <text x="118" y="200">returns what it found but was fenced out of</text>
+        </g>
+        <g stroke="#3b82c4" fill="#3b82c4" stroke-width="1.2">
+          <circle cx="92" cy="48" r="3.5"/>
+          <circle cx="92" cy="114" r="3.5"/>
+          <circle cx="92" cy="180" r="3.5"/>
+        </g>
+        <g fill="currentColor" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="10" opacity="0.7">
+          <text x="470" y="52">roadmap → feeds_sprints</text>
+          <text x="470" y="118">refused at the write boundary</text>
+          <text x="470" y="184">manifest → follow_ons</text>
+        </g>
+      </svg>
+      <figcaption>Each altitude answers a different question — what did I find, what comes next, what
+      does this let us start — and each has one mechanism. The middle one is the only one that can be
+      refused, because it is the only one written through a validated boundary.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Altitude</th><th>Mechanism</th><th>Enforcement</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Worker</td>
+          <td>The manifest's <code>follow_ons</code> field becomes plan followup append ops carrying
+          the canonical one-line invocation.</td>
+          <td>Tested: a manifest's candidate reaches a plan followup with the right prompt.</td>
+        </tr>
+        <tr>
+          <td>Plan landing</td>
+          <td>A writeback that resolves a followup or sets a terminal status must leave an open
+          followup or record in words that the chain closes.</td>
+          <td><strong>Refused at the write boundary</strong>, with a message naming the fix. Nothing
+          is written on refusal.</td>
+        </tr>
+        <tr>
+          <td>Sprint close</td>
+          <td><code>feeds_sprints</code> and <code>unblocks</code> per sprint row, derived from the
+          dependency graph.</td>
+          <td>Tested, including that a same-sprint dependency is not downstream work and a
+          cross-project edge is not claimed locally.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The sprint altitude reads correctly against this repository's own graph on its first run:
+    S5 feeds S6, S7 feeds S8, S8 feeds S9 — matching the delivery shape the architecture reference
+    describes, without anyone writing it down.</p>
+
+    <p>Enforcing the plan altitude changed behaviour, and five existing tests had to be retargeted:
+    each set a terminal status incidentally while testing something else — scalar mechanics, op
+    ordering, worktree routing — and now use a non-landing value or carry the chain. One test was
+    given a second open followup so its resolve remains a landing that still names what comes
+    next.</p>
+  </section>
+
+  <section id="budget">
+    <h2>Budget, captured asymmetrically and honestly</h2>
+
+    <p>The two external backends disagree about what they report, and the record does not pretend
+    otherwise. Both rows are real, from this wave:</p>
+
+    <table>
+      <thead><tr><th></th><th>Backend A</th><th>Backend B</th></tr></thead>
+      <tbody>
+        <tr><td><code>headroom</code></td><td><code>unknown</code></td><td><code>known</code></td></tr>
+        <tr><td><code>utilisation_pct</code></td><td>—</td><td>1.02</td></tr>
+        <tr><td><code>resets_at</code></td><td>—</td><td>2026-09-01T00:00:00Z</td></tr>
+        <tr><td><code>threshold_status</code></td><td>—</td><td><code>allowed_warning</code></td></tr>
+        <tr><td><code>tokens</code></td><td>input 1,047,173 · cached 914,944 · output 6,785 · reasoning 2,690</td><td>cache read 741,450 · created 59,283 · output 2,820</td></tr>
+        <tr><td><code>cost_usd</code></td><td>—</td><td>0.620</td></tr>
+        <tr><td><code>detail</code></td><td>backend reports token usage but no headroom</td><td>backend reports utilisation and reset time</td></tr>
+      </tbody>
+    </table>
+
+    <p>Backend A's row is the one that matters. It shows a million input tokens and <em>no headroom at
+    all</em> — and a caller reading fields directly could read that as a spent budget. So
+    <code>budget_exhausted()</code> answers <code>True</code>, <code>False</code> or
+    <code>None</code>, and returns <code>None</code> for every unknown case. A test asserts it over
+    three real fixtures plus the empty and partial blocks: <strong>absence is never exhaustion.</strong>
+    Acting on the signal belongs to later work; this plan only guarantees the history exists.</p>
+  </section>
+
+  <section id="leakage">
+    <h2>No routing leakage, with one exemption stated</h2>
+
+    <p>A grep for concrete model identifiers and provider names over <code>skills/</code> and
+    <code>reckon/</code>, excluding the translation module, returns three hits:</p>
+
+<pre>reckon/capability.py:33:    "haiku": "routine",
+reckon/capability.py:34:    "sonnet": "general",
+reckon/capability.py:35:    "opus": "orchestrator",</pre>
+
+    <p>These are a legacy-tier <em>reader</em>: a compatibility map that translates identifiers found
+    in plan state written before capability requests existed, documented in place as never emitted and
+    never used to select a worker. Repository policy admits legacy tier metadata as compatibility
+    input, so this is an exemption rather than a failure — but it is an exemption, not a clean sweep,
+    and it is recorded as such. Nothing added by this work appears.</p>
+
+    <p>A one-off grep decays, so the property is now a test: it walks both trees, exempts the
+    translation module and the legacy map by path, and fails with file and line on anything else.
+    The two new agent-facing references name no harness, no command and no model — including the
+    maintainer note, which describes launch mechanics as "one harness … another harness" throughout.</p>
+  </section>
+
+  <section id="divergences">
+    <h2>Where the implementation departs from the design sketch</h2>
+
+    <table>
+      <thead><tr><th>Sketch</th><th>Implemented</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>dispatch</code> and <code>attach</code> as the CLI surface</td>
+          <td>Also <code>observe</code>, <code>resume</code>, <code>list</code> and <code>stop</code></td>
+          <td>The declared measures are unreachable without them: <code>observe</code> is what folds a
+          stream, manifest presence and liveness into the run record, and <code>resume</code> is the
+          same-session round trip the escape hatch depends on. <code>stop</code> is a safety
+          counterpart — a dispatch mechanism with no way to stop a runaway worker holding write
+          access is not one to ship. Promotion into a committed ledger, and the read-side MCP view,
+          remain out of scope.</td>
+        </tr>
+        <tr>
+          <td>A dialect keyed to a backend</td>
+          <td>A dialect keyed to the backend's <code>command</code></td>
+          <td>Backend names are free-form user data — a config may call a backend <code>fast</code> —
+          while the command is the executable whose flags must be spoken. An unknown command raises
+          and lists what can be translated; there is no guessing fallback.</td>
+        </tr>
+        <tr>
+          <td>Workers deliver a manifest</td>
+          <td>Manifest paths must be absolute</td>
+          <td>A relative path resolves against the worker's worktree, so the orchestrator reads a
+          delivered node as silent and redispatches successful work — the very failure the delivery
+          fence exists to remove.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Two limits found while running it, for whoever picks this up</h3>
+
+    <p><strong>The read-only tier cannot write its own manifest on one backend.</strong> The flight
+    schema describes the tier as "no writes beyond the worker's own manifest file", but one harness's
+    restrained mode blocks all writes, manifest included. Every node in this wave therefore ran at the
+    worktree-bounded full-access tier — the plan's locked default — and the read-only tier's delivery
+    channel remains unresolved. It is not a blocker for dispatch; it is a real gap for review and
+    investigation roles.</p>
+
+    <p><strong>Concurrency is configured but not enforced.</strong> <code>concurrency</code> resolves
+    per backend, and nothing in <code>dispatch</code> queues against it — the wave stayed inside the
+    cap because the orchestrator counted, not because reckon refused. Scheduling belongs to the work
+    that reasons about budget and in-flight state; until then the cap is advice to the caller.</p>
+  </section>
+
+  <section id="suite">
+    <h2>Suite</h2>
+
+<pre>$ uv run pytest -q
+1598 passed in 44.81s          (baseline before this work: 1495)
+
+  tests/test_backends.py       29   translation + observation, per dialect,
+                                    against streams recorded from live runs
+  tests/test_crew.py           54   the seven properties, routing, dispatch
+                                    atomicity, attach, observe, reports, reflex
+  tests/test_continuation.py   12   all three altitudes + one end-to-end trace
+  tests/test_skill_contracts.py +8  uniform instruction, checklist, gate-fence
+                                    sole authorship, reflex, no routing leakage
+
+$ uv run ruff check reckon/ tests/     All checks passed!
+$ uv run reckon doctor                 All checks passed.
+$ uv run pytest -q  (in a detached worktree, via the in-harness node)
+1596 passed</pre>
+
+    <p>103 new tests, no failures, no skips. The two suite counts differ by the two tests added after
+    the in-harness node ran.</p>
+  </section>
+</main>
+</body>
+</html>

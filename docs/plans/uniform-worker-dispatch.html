@@ -4,27 +4,52 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="uniform-worker-dispatch">
-  <meta name="plan-title"     content="Uniform Worker Dispatch">
-  <meta name="plan-summary"   content="One backend-agnostic dispatch call, a task-definition contract that makes a node well-formed before it is sent, a structured needs-help escape hatch, and the four-axis orchestrator summary reflex.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="L">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="uniform-worker-dispatch">
+  <meta name="plan-title" content="Uniform Worker Dispatch">
+  <meta name="plan-summary" content="One backend-agnostic dispatch call, a task-definition contract that makes a node well-formed before it is sent, a structured needs-help escape hatch, and the four-axis orchestrator summary reflex.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S7">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S7">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="flight-control-config">
-  <meta name="plan-blocks"    content="crew-run-ledger">
+  <meta name="plan-blocks" content="crew-run-ledger">
   <title>Uniform Worker Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="5">
+<meta name="plan-verifies" content="">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
+
+    <section id="landed" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>Landed — one call, six nodes, three backends</h2>
+      </header>
+      <p class="landed-summary">
+        <code>reckon crew dispatch</code> ran six nodes across two external harnesses and the
+        calling harness, with no change to the calling instruction and no harness named anywhere an
+        agent reads. All eleven declared measures banked: one node definition reached the same
+        36-key routing result on two backends; three commits landed scoped clean; a worker's
+        <em>unprompted</em> four-field <code>NEEDS-HELP:</code> report was answered and resumed in
+        the same session, which restated its prior measurements without re-running anything; budget
+        read utilisation 1.02% on one backend and an explicit <code>unknown</code> on the other.
+        1,598 tests pass, 103 of them new. Two live defects were found and fixed; one constructed
+        measurement did not fire and is recorded as a negative result.
+        Full record: <a href="/reckon/evidence/archive/uniform-worker-dispatch-landed">landed
+        evidence</a> (commits <code>a927c9c</code>, <code>8a44624</code>, <code>0ae4167</code>,
+        <code>d3a7617</code>, <code>2224770</code>).
+      </p>
+    </section>
 
     <h2 id="s1">§1 — Why this exists</h2>
 
@@ -40,7 +65,15 @@
     <a href="/reckon/research/agent-fleet-orchestration#s2">Agent Fleet Orchestration §2–§3</a>.
     Read that before implementing.</p>
 
-    <h2 id="s2">§2 — The task-definition contract</h2>
+    <h2 id="s2"><span class="badge badge-shipped">✓ landed</span> §2 — The task-definition contract</h2>
+
+    <p class="landed-summary">Landed as <code>crew.validate_node</code> plus a pre-dispatch
+    checklist in the skill. A live rejection named five failing properties at exit 2; 18 tests cover
+    the seven, including the three the measure names. <em>Independently verifiable</em> gained a real
+    test on implementation — the manifest path must be absolute, because a relative one resolves
+    against the worker's own worktree and makes a delivered node look silent. Contract text now lives
+    in <code>references/worker-protocol.md</code>; the table below is the design record.
+    <a href="/reckon/evidence/archive/uniform-worker-dispatch-landed#contract">§ contract</a></p>
 
     <p>This is the highest-value deliverable in the sprint, because a worker that thrashes is
     almost always executing a malformed task. The contract makes well-formedness checkable
@@ -94,7 +127,18 @@
     done-when, or a write scope. A node that fails is reshaped or split — never dispatched
     with the hope that the worker will work it out.</p>
 
-    <h2 id="s3">§3 — Deliverables</h2>
+    <h2 id="s3"><span class="badge badge-shipped">✓ landed</span> §3 — Deliverables</h2>
+
+    <p class="landed-summary">All eight landed: <code>reckon/_backends.py</code> (translation, keyed
+    to a backend's <em>command</em>, verified against four event streams recorded from live runs),
+    <code>reckon crew dispatch</code>/<code>attach</code> — plus <code>observe</code>,
+    <code>resume</code>, <code>list</code> and <code>stop</code>, without which the measures are
+    unreachable — <code>references/worker-protocol.md</code>, the structured escape hatch, the
+    four-axis reflex with a validator that refuses a non-quantitative completion, continuation at
+    three altitudes, budget capture with an explicit unknown state, and the skill upgrade with the
+    gate-fence rule authored solely here.
+    <a href="/reckon/evidence/archive/uniform-worker-dispatch-landed#dispatch">§ dispatch</a>,
+    <a href="/reckon/evidence/archive/uniform-worker-dispatch-landed#divergences">§ divergences</a></p>
 
     <p><strong>The launch matrix as code.</strong> <code>reckon/_backends.py</code> translates
     a resolved flight config plus a node into a concrete invocation for each backend: argument
@@ -179,7 +223,14 @@
     until this plan's changes are integrated. Saying so explicitly is the point — two plans
     claiming one rule is how a worker rewrites a peer's text believing it owns it.</p>
 
-    <h2 id="gates">§4 — Evidence gates</h2>
+    <h2 id="gates"><span class="badge badge-shipped">✓ landed</span> §4 — Evidence gates</h2>
+
+    <p class="landed-summary">Eleven of eleven banked, with one exemption stated rather than glossed:
+    the routing-leakage grep returns three hits, all in a documented legacy-tier reader that never
+    selects a worker, and the property is now guarded by a test so it cannot decay. Two limits found
+    while running it are recorded for the work downstream: one backend's restrained tier blocks all
+    writes including the manifest, and configured concurrency is not yet enforced by dispatch.
+    <a href="/reckon/evidence/archive/uniform-worker-dispatch-landed#gates">§ gates</a></p>
 
     <p>Measures to demonstrate, not thresholds to tune around. The sprint closes on the first
     row; the rest must all bank before the sprint is done.</p>
@@ -271,42 +322,48 @@
     is routing, not a policy change.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="skill-topology" data-choice="single-skill-backend-reference" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">One execution skill, or a sibling skill for external-harness teams?</p>
-        <p class="r-dec-ctx">A sibling skill was designed first and rejected during review as a drift risk.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="single-skill-backend-reference">One reckon-ship; backend resolved by reckon from flight config</button>
-          <button class="r-opt" data-value="sibling-skill">A second skill dedicated to external-harness execution</button>
-        </p>
-        <p class="r-dec-rat">Classifying the intended additions showed only two of six were harness-specific — launch mechanics and session reuse. The other four would have been duplicated subsystems. The durable rule: split a skill when the process differs, never when only the substrate differs. Adding a thin entry point later costs a small file; un-forking two drifted skills is a real merge.</p>
-      </div>
-      <div class="r-dec" data-key="worker-sandbox-tier" data-choice="worktree-full-access" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">What tier do workers run at inside their worktree?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="worktree-full-access">Full access, detached worktree as the blast-radius boundary</button>
-          <button class="r-opt" data-value="reviewed-tier">A reviewed automatic-approval tier under a workspace-write sandbox</button>
-        </p>
-        <p class="r-dec-rat">A workspace-write sandbox is inherited by child processes and breaks test runners, builds and anything spawning subprocesses — workers must be able to run the verification their gates demand. The detached worktree bounds blast radius instead. The reviewed tier remains available per-node for work that does not build.</p>
-      </div>
-      <div class="r-dec" data-key="action-read-split" data-choice="cli-actions-mcp-reads" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Should dispatch be an MCP tool or a CLI command?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="cli-actions-mcp-reads">CLI owns actions; MCP owns reads</button>
-          <button class="r-opt" data-value="mcp-both">MCP owns both reads and dispatch</button>
-        </p>
-        <p class="r-dec-rat">Dispatch must spawn a background process the agent then yields on, which an MCP tool cannot usefully do. Keeping reads on MCP also holds that surface at five tools, consistent with reckon's ongoing tool-count collapse.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="skill-topology" data-choice="single-skill-backend-reference" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">One execution skill, or a sibling skill for external-harness teams?</p>
+    <p class="r-dec-ctx">A sibling skill was designed first and rejected during review as a drift risk.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="single-skill-backend-reference">One reckon-ship; backend resolved by reckon from flight config</button>
+      <button class="r-opt" data-value="sibling-skill">A second skill dedicated to external-harness execution</button>
+      </p>
+    <p class="r-dec-rat">Classifying the intended additions showed only two of six were harness-specific — launch mechanics and session reuse. The other four would have been duplicated subsystems. The durable rule: split a skill when the process differs, never when only the substrate differs. Adding a thin entry point later costs a small file; un-forking two drifted skills is a real merge.</p>
+    </div>
+<div class="r-dec" data-key="worker-sandbox-tier" data-choice="worktree-full-access" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">What tier do workers run at inside their worktree?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="worktree-full-access">Full access, detached worktree as the blast-radius boundary</button>
+      <button class="r-opt" data-value="reviewed-tier">A reviewed automatic-approval tier under a workspace-write sandbox</button>
+      </p>
+    <p class="r-dec-rat">A workspace-write sandbox is inherited by child processes and breaks test runners, builds and anything spawning subprocesses — workers must be able to run the verification their gates demand. The detached worktree bounds blast radius instead. The reviewed tier remains available per-node for work that does not build.</p>
+    </div>
+<div class="r-dec" data-key="action-read-split" data-choice="cli-actions-mcp-reads" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Should dispatch be an MCP tool or a CLI command?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="cli-actions-mcp-reads">CLI owns actions; MCP owns reads</button>
+      <button class="r-opt" data-value="mcp-both">MCP owns both reads and dispatch</button>
+      </p>
+    <p class="r-dec-rat">Dispatch must spawn a background process the agent then yields on, which an MCP tool cannot usefully do. Keeping reads on MCP also holds that surface at five tools, consistent with reckon&#x27;s ongoing tool-count collapse.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-uwd-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch">
-        <h4 class="r-fu-title">Build the uniform dispatch path and the worker contract</h4>
-        <div class="r-fu-body"><p>Land the backend translation module, the atomic dispatch and attach primitives, the task-definition contract with pre-dispatch validation, the structured escape hatch, the four-axis summary reflex, and the skill upgrade. Close on a real node dispatched end to end through the uniform call.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-uwd-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="2026-08-12T08:59:23+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Build the uniform dispatch path and the worker contract</h4>
+    <div class="r-fu-body"><p>Land the backend translation module, the atomic dispatch and attach primitives, the task-definition contract with pre-dispatch validation, the structured escape hatch, the four-axis summary reflex, and the skill upgrade. Close on a real node dispatched end to end through the uniform call.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    <p class="r-fu-outcome">Landed — commits a927c9c, 8a44624, 0ae4167, d3a7617, 2224770. Six nodes dispatched through one call across two external harnesses and the calling harness; all 11 gates banked. One node definition reached the same 36-key routing result on two backends; an unprompted four-field NEEDS-HELP report was answered and resumed in the same session, which restated its measurements without re-running; budget read utilisation 1.02% on one backend and explicit unknown on the other. 1,598 tests pass (103 new). Two live defects found and fixed: the resume invocation was rejected on argument order, and a dead process with an empty log misread as starting.</p>
+    </article>
+<article class="r-fu" data-id="f-uwd-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-08-12T09:20:00Z" data-recommends-skill="/reckon-ship crew-run-ledger" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Promote live run pointers into the committed run ledger</h4>
+    <div class="r-fu-body"><p>Dispatch now writes a transient live pointer per run and observation folds the stream, manifest presence and budget signal back into it, but nothing promotes a finished run into durable committed history. Two limits surfaced while running the wave and belong to this work or its neighbours: one backend's restrained tier blocks all writes including the manifest, so a read-only node has no delivery channel; and configured per-backend concurrency is resolved but not enforced by dispatch, so the cap is currently advice to the caller.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-run-ledger</pre>
+    </article>
+</section>
 
   </main>
 </body>
