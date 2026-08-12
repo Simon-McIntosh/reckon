@@ -94,11 +94,21 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     which turns the one-way defect into a two-way derivation. Persisted sprint-item status goes
     the same way — derived from plan HTML on read, rejected on write.</p>
 
-    <p><strong>Skill and server integration.</strong> <code>reckon-ship</code> honours the gate
-    fence: a wave does not open through a gate that is not passed, and
-    <code>gates.enforce</code> from flight config selects strict refusal or a warning. The
-    server renders gates on the plan page and surfaces a gate column in sprint view, so a closed
-    gate is visible without reading prose.</p>
+    <p><strong>Server rendering.</strong> The server renders gates on the plan page and surfaces a
+    gate column in sprint view, so a closed gate is visible without reading prose. This touches
+    only server and SPA files and conflicts with nothing.</p>
+
+    <p><strong>Swap the skill's gate enforcement — do not re-author the rule.</strong> The
+    gate-fence rule itself is owned by <code>uniform-worker-dispatch</code>, which authors it in
+    <code>reckon-ship/SKILL.md</code> with enforcement by reading the plan's prose evidence-gate
+    table. This plan changes only the <em>mechanism</em>: enforcement moves to computed gate state,
+    and <code>gates.enforce</code> from flight config selects strict refusal or a warning. Two
+    consequences bind. The rule's wording is not this plan's to rewrite. And because
+    <code>SKILL.md</code> is a shared file, <strong>this slice is a separate node that must not be
+    dispatched until the owning plan's changes are integrated</strong> — everything else here
+    touches only <code>reckon/</code> and the SPA and may run concurrently. Split the node at that
+    file boundary rather than serialising the whole plan; the file-conflict edge belongs in the
+    execution graph, which the sprint contract already requires for shared files.</p>
 
     <p><strong>The portfolio sweep.</strong> Once the pattern exists, sweep every mounted
     project: migrate each persisted <code>plan-status="blocked"</code> to a recorded blocker or

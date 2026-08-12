@@ -162,13 +162,22 @@
     the data is captured from the first dispatch onward, so the later work has history to reason
     over.</p>
 
-    <p><strong>The skill upgrade.</strong> <code>reckon-ship/SKILL.md</code> gains the
-    pre-dispatch checklist, the one dispatch instruction, the summary reflex and the gate-fence
-    rule that a wave does not open through a closed gate. It gains no backend-specific text.
+    <p><strong>The skill upgrade — and this plan owns <code>SKILL.md</code> outright.</strong>
+    <code>reckon-ship/SKILL.md</code> gains the pre-dispatch checklist, the one dispatch
+    instruction, the summary reflex and the gate-fence rule that a wave does not open through a
+    closed gate. It gains no backend-specific text.
     <code>references/worker-backends.md</code> is added as maintainer documentation of what
     <code>_backends.py</code> does internally — it is not agent-facing, and the ownership test
     is that a sentence in it which does not turn on process, session or observation mechanics
     is misfiled.</p>
+
+    <p>The gate-fence rule is <em>authored here and nowhere else</em>. Gates are not yet structured
+    state, so enforcement at this stage means the orchestrator reads the plan's declared
+    evidence-gate table and refuses to open the next wave until its measure has produced evidence.
+    <code>derived-gate-state</code> later swaps that enforcement from reading prose to reading
+    computed state; it must not re-author the rule, and no concurrent node may write this file
+    until this plan's changes are integrated. Saying so explicitly is the point — two plans
+    claiming one rule is how a worker rewrites a peer's text believing it owns it.</p>
 
     <h2 id="gates">§4 — Evidence gates</h2>
 
