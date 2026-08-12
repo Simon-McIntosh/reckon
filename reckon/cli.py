@@ -397,6 +397,12 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
             root=checkout_path,
             purpose=purpose,
         )
+        report["hold_history"] = budget_module.record_checks(
+            project,
+            report["backends"],
+            root=checkout_path,
+            resumption_fired=purpose == "resume",
+        )
     except (crew_module.CrewError, ledger_module.LedgerError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **report}, pretty)

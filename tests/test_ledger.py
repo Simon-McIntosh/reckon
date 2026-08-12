@@ -696,6 +696,34 @@ def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None
     assert report["resume_at"] == "2099-01-01T00:00:00Z"
 
 
+def test_the_crew_budget_view_never_records_a_hold(home, repo) -> None:
+    from reckon import mcp
+
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-one",
+            plan="plan-a",
+            gate="passed",
+            agent={"backend": "native"},
+            budget={
+                "headroom": "known",
+                "utilisation_pct": 100.0,
+                "resets_at": "2099-01-01T00:00:00Z",
+            },
+        ),
+        root=repo,
+    )
+    before, version_before = ledger.load(PROJECT, repo)
+
+    report = mcp._crew(PROJECT, view="budget", checkout_path=str(repo))
+
+    after, version_after = ledger.load(PROJECT, repo)
+    assert report["held"] is True
+    assert version_after == version_before
+    assert after["holds"] == before["holds"] == []
+
+
 def test_the_mcp_surface_holds_at_five_tools() -> None:
     from reckon import mcp
 

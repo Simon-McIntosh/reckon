@@ -401,11 +401,20 @@ def record_checks(
     *,
     root: str | Path | None = None,
     now: datetime | None = None,
+    resumption_fired: bool = False,
 ) -> dict[str, Any]:
-    """Persist held and newly clear verdicts beside completed run records."""
+    """Persist held and newly clear verdicts beside completed run records.
+
+    ``resumption_fired`` is explicit because a stuck-worker resume uses the
+    same budget ceiling as a scheduled wave resumption without proving that a
+    scheduler fired.
+    """
+    checks = [
+        {**dict(verdict), "resumption_fired": resumption_fired} for verdict in verdicts
+    ]
     return ledger.record_hold_checks(
         project,
-        verdicts,
+        checks,
         checked_at=_iso(_now(now)),
         root=root,
     )
@@ -433,6 +442,10 @@ def preflight(
     probe_runner: Callable[[Any], Mapping[str, Any] | None] | None = None,
 ) -> dict[str, Any]:
     """Decide, per backend, whether a wave may open — without spending anything.
+
+    This is an observational check. Command paths that act on its verdict call
+    :func:`record_checks`; read-only surfaces return the report without
+    inventing hold history.
 
     Per-backend rather than global, because that is the whole reason budget state
     is tracked per backend: one backend being spent must not stop ready nodes
@@ -462,7 +475,6 @@ def preflight(
         )
         verdicts.append(decide(state, policy_block, purpose=purpose))
 
-    hold_history = record_checks(project, verdicts, root=root, now=moment)
     held = [verdict for verdict in verdicts if verdict["held"]]
     waits = [
         verdict["state"]["seconds_until_reset"]
@@ -480,7 +492,6 @@ def preflight(
             verdict["backend"] for verdict in verdicts if not verdict["held"]
         ],
         "backends": verdicts,
-        "hold_history": hold_history,
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }

@@ -478,9 +478,7 @@ def record_hold_checks(
             open_hold["closed_at"] = checked_at
             open_hold["held_seconds"] = max(0, int((moment - opened).total_seconds()))
             open_hold["closed_by_purpose"] = str(check.get("purpose") or "dispatch")
-            open_hold["resumption_fired"] = (
-                str(check.get("purpose") or "dispatch") == "resume"
-            )
+            open_hold["resumption_fired"] = bool(check.get("resumption_fired"))
             outcomes.append({"action": "closed", "hold": dict(open_hold)})
             changed = True
 

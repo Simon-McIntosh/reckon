@@ -462,13 +462,12 @@ def test_a_clear_preflight_reports_no_hold_summary(home, repo) -> None:
 # ── Holds are committed measurements ───────────────────────────────────────
 
 
-def test_a_held_preflight_records_the_decision_and_increments_the_ledger(
-    home, repo
-) -> None:
+def test_recording_a_held_preflight_increments_the_ledger(home, repo) -> None:
     _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
     _data, version_before = ledger.load("proj", repo)
 
     report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+    budget.record_checks("proj", report["backends"], root=repo)
 
     history = ledger.holds("proj", repo)
     _data, version_after = ledger.load("proj", repo)
@@ -485,7 +484,8 @@ def test_a_hold_does_not_change_run_or_effort_measurements(home, repo) -> None:
     runs_before = ledger.runs("proj", repo)
     effort_before = ledger.effort_report("proj", root=repo, declared={"plan-a": "M"})
 
-    budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+    budget.record_checks("proj", report["backends"], root=repo)
 
     assert ledger.runs("proj", repo) == runs_before
     assert (
@@ -499,6 +499,9 @@ def test_repeated_preflights_in_one_hold_window_write_one_record(home, repo) -> 
     moment = datetime.now(tz=timezone.utc).replace(microsecond=0)
 
     first = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=moment)
+    first_history = budget.record_checks(
+        "proj", first["backends"], root=repo, now=moment
+    )
     second = budget.preflight(
         "proj",
         CONFIG,
@@ -506,10 +509,16 @@ def test_repeated_preflights_in_one_hold_window_write_one_record(home, repo) -> 
         backends=["alpha"],
         now=moment + timedelta(seconds=90),
     )
+    second_history = budget.record_checks(
+        "proj",
+        second["backends"],
+        root=repo,
+        now=moment + timedelta(seconds=90),
+    )
 
     assert len(ledger.holds("proj", repo)) == 1
-    assert first["hold_history"]["version"] == second["hold_history"]["version"]
-    assert second["hold_history"]["outcomes"][0]["action"] == "unchanged"
+    assert first_history["version"] == second_history["version"]
+    assert second_history["outcomes"][0]["action"] == "unchanged"
 
 
 def test_a_clear_resume_closes_the_hold_with_actual_elapsed_time(
@@ -535,8 +544,9 @@ def test_a_clear_resume_closes_the_hold_with_actual_elapsed_time(
     )
     monkeypatch.setattr(budget, "state_for", lambda *args, **kwargs: next(states))
 
-    budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=opened)
-    budget.preflight(
+    held = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=opened)
+    budget.record_checks("proj", held["backends"], root=repo, now=opened)
+    clear = budget.preflight(
         "proj",
         CONFIG,
         root=repo,
@@ -544,12 +554,56 @@ def test_a_clear_resume_closes_the_hold_with_actual_elapsed_time(
         purpose="resume",
         now=opened + timedelta(seconds=137),
     )
+    budget.record_checks(
+        "proj",
+        clear["backends"],
+        root=repo,
+        now=opened + timedelta(seconds=137),
+        resumption_fired=True,
+    )
 
     record = ledger.holds("proj", repo)[0]
     assert record["held_seconds"] == 137
     assert record["held_seconds"] != 600
     assert record["closed_by_purpose"] == "resume"
     assert record["resumption_fired"] is True
+
+
+def test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption(home, repo) -> None:
+    opened = datetime(2026, 8, 12, 12, 0, tzinfo=timezone.utc)
+    held = {
+        "backend": "alpha",
+        "purpose": "dispatch",
+        "held": True,
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation is at the effective ceiling",
+        "state": {
+            "utilisation_pct": 100.0,
+            "resets_at": (opened + timedelta(seconds=600)).isoformat(),
+        },
+    }
+    budget.record_checks("proj", [held], root=repo, now=opened)
+    _record("proj", repo, backend="alpha", budget_block=_known(10.0), run_id="r-1")
+    crew._write_json(
+        crew.pointer_path("r-stuck"),
+        {
+            "run_id": "r-stuck",
+            "launch": "cli",
+            "session_id": "session-one",
+            "backend": "alpha",
+            "project": "proj",
+            "repo": str(repo),
+            "worktree": str(repo),
+            "argv": ["codex"],
+            "sandbox": "worktree-full",
+        },
+    )
+
+    crew.resume_plan("r-stuck", "continue", config=CONFIG)
+
+    record = ledger.holds("proj", repo)[0]
+    assert record["closed_by_purpose"] == "resume"
+    assert record["resumption_fired"] is False
 
 
 def test_a_dispatch_path_records_its_hold_before_creating_any_worktree(
