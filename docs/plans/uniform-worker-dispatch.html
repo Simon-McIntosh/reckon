@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-verifies" content="">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-impl" content="0.92">
 </head>
 <body>
   <main class="plan-doc">
@@ -422,7 +422,20 @@
       </tbody>
     </table>
 
-    <h2 id="s8">§8 — A property that checks exclusivity must not sound like it checks sufficiency</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s8">§8 — A property that checks exclusivity must not sound like it checks sufficiency</h2>
+    </header>
+    <p class="landed-summary">
+      A dry run now returns the write paths it resolved, so a coordinator sees what it actually
+      fenced before committing a wave to it, and the worker protocol states plainly that scoped
+      checks exclusivity and does not prove the named paths can carry the goal. 2 new tests
+      (commit <code>7952c4c</code>). The worker reported <strong>blocked</strong> rather than
+      claiming complete, because the full suite was red on arrival from a concurrent commit deriving
+      plan dispatchability — its own two measures passed throughout, and the suite came back green at
+      1,711 once that peer landed its fix. The run is recorded with gate <code>not-run</code>: the
+      measure was unevaluable against this node, which is not the same as failed.
+    </p>
 
     <p>A node can satisfy all seven properties and still be unbuildable. Scoped verifies that write
     paths are enumerated and shared with no concurrent node; nothing verifies that those paths can
