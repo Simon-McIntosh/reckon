@@ -398,11 +398,12 @@ def _budget_verdict(
     """
     from reckon import budget as budget_module
 
-    recorded = budget_module.latest_recorded(project, root=root)
+    recorded = budget_module.latest_recorded(project, root=root, config=config)
     state = budget_module.state_for(
         backend_name,
         backend,
         recorded=recorded.get(backend_name),
+        unattributed=recorded.unattributed,
     )
     verdict = budget_module.decide(state, budget_module.policy(config), purpose=purpose)
     try:
@@ -1373,6 +1374,9 @@ def complete(
         node=str(node.get("id") or ""),
         role=str(record.get("role") or ""),
         member_id=str(record.get("member") or ""),
+        backend=str(
+            record.get("backend") or (record.get("agent") or {}).get("backend") or ""
+        ),
         agent=record.get("agent") or {},
         dispatched_at=str(record.get("created_at") or ""),
         completed_at=finished,
