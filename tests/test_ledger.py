@@ -15,8 +15,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import _store, crew, ledger
+from reckon.cli import main as cli_main
 
 
 CONFIG = {
@@ -552,6 +554,54 @@ def test_the_summary_rolls_up_gates_roster_and_measured_effort(home, repo) -> No
 
 
 # ── The read tool ───────────────────────────────────────────────────────────
+
+
+def test_hold_history_is_exposed_with_count_and_total_duration(home, repo) -> None:
+    held = {
+        "backend": "alpha",
+        "purpose": "dispatch",
+        "held": True,
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation is at the effective ceiling",
+        "state": {
+            "utilisation_pct": 97.0,
+            "resets_at": "2026-08-12T12:10:00Z",
+        },
+    }
+    clear = {**held, "purpose": "resume", "held": False}
+    ledger.record_hold_checks(
+        PROJECT, [held], checked_at="2026-08-12T12:00:00Z", root=repo
+    )
+    ledger.record_hold_checks(
+        PROJECT, [clear], checked_at="2026-08-12T12:02:15Z", root=repo
+    )
+
+    summary = ledger.summary(PROJECT, root=repo)
+    records = json.loads(
+        CliRunner()
+        .invoke(
+            cli_main,
+            [
+                "crew",
+                "ledger",
+                "--project",
+                PROJECT,
+                "--view",
+                "records",
+                "--checkout-path",
+                str(repo),
+            ],
+        )
+        .output
+    )
+    from reckon import mcp
+
+    committed = mcp._crew(PROJECT, view="ledger", checkout_path=str(repo))
+    assert summary["holds"] == 1
+    assert summary["open_holds"] == 0
+    assert summary["total_held_seconds"] == 135
+    assert records["holds"][0]["held_seconds"] == 135
+    assert committed["holds"][0]["hold_id"] == records["holds"][0]["hold_id"]
 
 
 def _worktree(repo: Path, name: str) -> Path:

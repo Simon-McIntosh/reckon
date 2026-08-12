@@ -395,6 +395,22 @@ def decide(
 # ── The pre-flight ──────────────────────────────────────────────────────────
 
 
+def record_checks(
+    project: str,
+    verdicts: Iterable[Mapping[str, Any]],
+    *,
+    root: str | Path | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Persist held and newly clear verdicts beside completed run records."""
+    return ledger.record_hold_checks(
+        project,
+        verdicts,
+        checked_at=_iso(_now(now)),
+        root=root,
+    )
+
+
 def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[str]:
     """Resolve the backends a set of roles would dispatch to."""
     names: list[str] = []
@@ -446,6 +462,7 @@ def preflight(
         )
         verdicts.append(decide(state, policy_block, purpose=purpose))
 
+    hold_history = record_checks(project, verdicts, root=root, now=moment)
     held = [verdict for verdict in verdicts if verdict["held"]]
     waits = [
         verdict["state"]["seconds_until_reset"]
@@ -463,6 +480,7 @@ def preflight(
             verdict["backend"] for verdict in verdicts if not verdict["held"]
         ],
         "backends": verdicts,
+        "hold_history": hold_history,
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
