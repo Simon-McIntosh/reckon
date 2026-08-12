@@ -292,17 +292,23 @@ def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) 
     assert state["utilisation_pct"] == 71.0
 
 
-def test_manifest_marker_recovers_two_known_readings(home, repo) -> None:
+def test_stream_evidence_recovers_two_known_readings(home, repo) -> None:
     """Two durable measurements remain useful without rewriting their records."""
+    stream_budget = _backends.observe_log(
+        backend_name="beta",
+        backend=CONFIG["backends"]["beta"],
+        log_path=FIXTURES / "claude-turn.jsonl",
+    ).budget
     for position, utilisation in enumerate((41.0, 42.0), start=1):
+        reading = {**stream_budget, "utilisation_pct": utilisation}
         record = ledger.build_record(
             run_id=f"r-legacy-{position}",
             plan="plan-a",
             gate="passed",
             agent={},
             completed_at=_stamp(-120 + position),
-            manifest_path=f"/tmp/beta-39486/run-{position}/manifest.md",
-            budget=_known(utilisation),
+            manifest_path=f"/tmp/worker/run-{position}/manifest.md",
+            budget=reading,
         )
         ledger.append_run("proj", record, root=repo)
 
@@ -311,8 +317,65 @@ def test_manifest_marker_recovers_two_known_readings(home, repo) -> None:
 
     recovered = [reading for reading in all_readings if reading.backend == "beta"]
     assert len(recovered) == 2
-    assert {reading.attribution for reading in recovered} == {"manifest-path"}
+    assert {reading.attribution for reading in recovered} == {"budget-evidence"}
     assert best["beta"].budget["utilisation_pct"] == 42.0
+
+
+def test_delivery_path_naming_another_harness_cannot_change_the_producer(
+    home, repo
+) -> None:
+    stream_budget = _backends.observe_log(
+        backend_name="beta",
+        backend=CONFIG["backends"]["beta"],
+        log_path=FIXTURES / "claude-turn.jsonl",
+    ).budget
+    record = ledger.build_record(
+        run_id="r-misleading-path",
+        plan="plan-a",
+        gate="passed",
+        agent={},
+        completed_at=_stamp(-60),
+        manifest_path="/tmp/alpha-39486/run/manifest.md",
+        budget=stream_budget,
+    )
+    ledger.append_run("proj", record, root=repo)
+
+    reading = budget.latest_recorded("proj", root=repo, config=CONFIG)["beta"]
+
+    assert reading.record_id == "r-misleading-path"
+    assert reading.attribution == "budget-evidence"
+
+
+def test_duplicate_stream_interpreters_leave_the_producer_unattributed(
+    home, repo
+) -> None:
+    stream_budget = _backends.observe_log(
+        backend_name="beta",
+        backend=CONFIG["backends"]["beta"],
+        log_path=FIXTURES / "claude-turn.jsonl",
+    ).budget
+    record = ledger.build_record(
+        run_id="r-ambiguous-producer",
+        plan="plan-a",
+        gate="passed",
+        agent={},
+        completed_at=_stamp(-60),
+        budget=stream_budget,
+    )
+    ledger.append_run("proj", record, root=repo)
+    ambiguous = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "beta-peer": dict(CONFIG["backends"]["beta"]),
+        },
+    }
+
+    readings = budget.latest_recorded("proj", root=repo, config=ambiguous)
+
+    assert "beta" not in readings
+    assert len(readings.unattributed) == 1
+    assert readings.unattributed[0].record_id == "r-ambiguous-producer"
 
 
 def test_unattributable_known_reading_reports_recorded_not_silent(home, repo) -> None:
