@@ -15,6 +15,14 @@ window.GLYPHS = {
       <path d="M3 21 H21" opacity="0.4"/>
     </svg>
   ),
+  crew: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.5"/>
+      <circle cx="16" cy="8" r="2.5"/>
+      <path d="M3.5 19v-2.2c0-2.4 2-4.3 4.5-4.3s4.5 1.9 4.5 4.3V19"/>
+      <path d="M11.5 14.2c.8-1.1 2.1-1.7 3.6-1.7 2.5 0 4.5 1.9 4.5 4.3V19" opacity="0.65"/>
+    </svg>
+  ),
   reckon: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9"/>

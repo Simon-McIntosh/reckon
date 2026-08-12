@@ -1173,6 +1173,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
   <script type=\"text/babel\" src=\"/_ui/plan.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/sprint.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/graph.jsx\"></script>
+  <script type=\"text/babel\" src=\"/_ui/crew.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/shell.jsx\"></script>
 </body>
 </html>
@@ -1998,6 +1999,7 @@ _BUILD_INDEX_TEMPLATE = """\
   <script type="text/babel" src="_ui/plan.jsx"></script>
   <script type="text/babel" src="_ui/sprint.jsx"></script>
   <script type="text/babel" src="_ui/graph.jsx"></script>
+  <script type="text/babel" src="_ui/crew.jsx"></script>
   <script type="text/babel" src="_ui/shell.jsx"></script>
 </body>
 </html>
