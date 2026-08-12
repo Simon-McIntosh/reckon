@@ -13,7 +13,7 @@
   <meta name="plan-recorded-at" content="2026-08-12">
   <meta name="plan-verdict" content="partial">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; six dispatch waves against the live mounted portfolio of twelve projects">
-  <meta name="plan-commits" content="cbeaa2e,18b0113,67d1cbd,63cb5a6,4554a75,bc0881d,ca18aef,54bdf1e,382501e,e570a14,7ae4fa3,7770425">
+  <meta name="plan-commits" content="cbeaa2e,18b0113,67d1cbd,63cb5a6,4554a75,bc0881d,ca18aef,54bdf1e,382501e,e570a14,7ae4fa3,7770425,3984939,0183e95,8747f33,e855ffc,ea82ad9">
   <meta name="plan-artifacts" content="reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,reckon/lifecycle.py,reckon/roadmap.py,reckon/mcp.py,reckon/mcp_views.py,reckon/serve.py,reckon/doccheck.py,reckon/project_state.py,docs/_shared/plan.schema.json,tests/test_gates.py,tests/test_roadmap.py,tests/test_lifecycle.py">
   <title>Derived gate state — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -68,16 +68,23 @@
         <code>effective_status</code> still <code>active</code> and zero blockers, so the verdict is
         advisory — <a href="#staleness">§ staleness</a></td><td>pass</td></tr>
         <tr><td>Suite green</td><td>1,660 → 1,683 → 1,699 → <strong>failed at 1,706</strong> →
-        1,709 after correction. The failure is the entry worth reading —
+        1,709 after correction → 1,738 (+29) with 0 failures and 0 lint diagnostics against the
+        integrated tree. The failure is the entry worth reading —
         <a href="#suite">§ suite</a></td><td>pass, after a real failure</td></tr>
-        <tr><td>Wave fence honoured</td><td>Pending: the fence still reads a prose table, so there is
-        no computed state for a transcript to demonstrate against —
-        <a href="#open">§ open</a></td><td>open</td></tr>
-        <tr><td>Draft decay alarmed</td><td>Pending, and its wording was corrected against the live
-        portfolio before it could be met — <a href="#draft-decay">§ decay</a></td><td>open</td></tr>
-        <tr><td>Own gates migrated</td><td>Pending — <a href="#open">§ open</a></td><td>open</td></tr>
-        <tr><td>Sweep complete</td><td>Pending, sized against the live portfolio —
-        <a href="#sweep-sizing">§ sizing</a></td><td>open</td></tr>
+        <tr><td>Draft decay alarmed</td><td>All 11 authored-but-unauthorised plans across the 6
+        projects holding them report an age and the source it came from — 6 from
+        <code>plan-modified</code>, 5 from file modification time — with 0 null ages, 0 unknown
+        verdicts, and the 64-day plan verdicted <code>stale</code> —
+        <a href="#draft-decay">§ decay</a></td><td>pass</td></tr>
+        <tr><td>Wave fence honoured</td><td>The mechanism landed — the fence reads computed
+        <code>blocking</code> and <code>gate_blockers</code> — but no wave was actually refused
+        <em>by a gate</em> this session, so there is no transcript to record and the gate is not
+        claimed — <a href="#open">§ open</a></td><td>open</td></tr>
+        <tr><td>Own gates migrated</td><td>5 of the 8 plans done, carrying 48 migrated measures; the
+        other 3 were held because concurrent sessions were mid-landing on them —
+        <a href="#fence-and-migration">§ migration</a></td><td>open</td></tr>
+        <tr><td>Sweep complete</td><td>1 of 5 repositories done; the rest is held on a dispatch gap,
+        not on the work — <a href="#sweep-sizing">§ sizing</a></td><td>open</td></tr>
       </tbody>
     </table>
   </section>
@@ -249,6 +256,10 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     where the public payload is assembled. Verification was moved off fixtures for the re-check:
     <code>ready_now</code> was confirmed back to 6 against the live project, not a constructed one,
     and the re-run gate passed at 1,709.</p>
+
+    <p>The following wave's five commits then measured 1,738 passing and 0 failing in 48.68 s, +29
+    on the previous count, with 0 lint diagnostics, against an integrated tree from which all five
+    commits are reachable.</p>
   </section>
 
   <section id="sweep-sizing">
@@ -274,6 +285,27 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
 
     <p>Eight of the twelve projects carry no error-level finding at all, so the sweep is
     concentrated rather than broad: imas-efit is the work, and everything else is small.</p>
+
+    <p><strong>One row of it landed, and the rest stalled on something other than the work.</strong>
+    This project's own index dropped its 8 persisted item statuses: compatibility warnings went from
+    8 to 0 while the composed sprint items stayed byte-identical at 4,948 bytes with a matching
+    digest — proof that only ignored state was removed, since the reader was already deriving those
+    values from plan HTML. Commit <code>ea82ad9</code>, 8 deletions and no additions.</p>
+
+    <p>Every other row is undispatchable. <code>reckon crew dispatch --repo &lt;other&gt;</code>
+    resolves the node's plan inside the repository it dispatches into and refuses with
+    <code>plan-unavailable</code>, so a node serving a reckon-owned plan cannot edit imas-efit,
+    imas-ambix, nova or hanney — which is the whole remaining sweep. The available workaround is
+    worse than the gap: aiming write paths at a foreign checkout puts a worker outside the worktree
+    that bounds its blast radius, and one of those four repositories had eight concurrent runs
+    writing its state at the time. The <code>sweep-complete</code> gate therefore stays closed, which
+    is the fence behaving correctly rather than a step skipped.</p>
+
+    <p>Of imas-efit's 16 error-level findings, only the 8 <code>non-executable-hard-dependency</code>
+    edges are inside the sweep's remit — the scan names their repair, moving a research input from
+    <code>depends_on</code> to <code>informs</code>. The other 8 need a material judgement or a sprint
+    rebalance, both of which the plan's constraints forbid the sweep from making. They are residue to
+    report to the owning project, not work to guess at.</p>
   </section>
 
   <section id="draft-decay">
@@ -296,21 +328,97 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
       </tbody>
     </table>
 
-    <p>The interesting number is the last one. Nearly half the unauthorised plans carry no recorded
-    modification date, so the alarm cannot classify their decay — it reports
-    <code>age_verdict: unknown</code> and says nothing. An alarm that goes quiet on the documents
+    <p>The interesting number is the last one. Nearly half the unauthorised plans carried no recorded
+    modification date, so the alarm could not classify their decay — it reported
+    <code>age_verdict: unknown</code> and said nothing. An alarm that goes quiet on the documents
     most likely to have rotted is the same failure class the plan exists to remove, which is why the
     age fallback is a prerequisite of the sweep rather than a tidy-up after it.</p>
+
+    <p><strong>Repaired.</strong> Every authorisation row now carries an <code>age_source</code>,
+    resolved in precedence order: the recorded <code>plan-modified</code> first, then a discovery
+    creation timestamp, then the mounted plan file's modification time. Nothing is guessed — a row
+    always says where its number came from. Measured across the portfolio before and after:</p>
+
+    <table>
+      <thead><tr><th>Authorisation rows</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Total</td><td>11</td><td>11</td></tr>
+        <tr><td>Reporting a null age</td><td>5</td><td>0</td></tr>
+        <tr><td>Naming an age source</td><td>0</td><td>11 — 6 <code>plan-modified</code>,
+        5 file modification time</td></tr>
+        <tr><td>Verdicted <code>stale</code></td><td>1 (of the 6 that could be classified)</td>
+        <td>1 (of all 11)</td></tr>
+      </tbody>
+    </table>
+
+    <p>A recorded <code>plan-modified</code> stays authoritative, so the fallback never overrides a
+    real timestamp; it only speaks where the document was silent. Commit <code>0183e95</code>,
+    36 tests passing of which 4 are new.</p>
+  </section>
+
+  <section id="fence-and-migration">
+    <h2>The fence stopped reading prose, and the documents stopped storing it</h2>
+
+    <p>The gate fence in the orchestration skill enforced itself by reading a plan's prose
+    evidence-gate table — discipline, not state. It now reads the computed
+    <code>blocking</code> and <code>gate_blockers</code> the derivation produces, with
+    <code>gates.enforce</code> resolved from flight config selecting strict refusal or an advisory
+    warning. The rule's own wording belongs to the plan that authored it and was left byte-identical:
+    the four normative bullets and the refusal sentence are unchanged in the diff, and a new contract
+    test asserts the fence reads computed state and pins out any regression to prose parsing. The
+    prose-table grep count is 0. Commit <code>3984939</code>, 30 contract tests passing.</p>
+
+    <p>The migration then proved the path on real documents. Five plans carry their measures as gate
+    elements instead of tables:</p>
+
+    <table>
+      <thead><tr><th>Plan</th><th>Measures migrated</th><th>Verdicts recorded</th></tr></thead>
+      <tbody>
+        <tr><td><code>budget-aware-dispatch</code></td><td>22</td><td>22 passed</td></tr>
+        <tr><td><code>uniform-worker-dispatch</code></td><td>11</td><td>11 passed</td></tr>
+        <tr><td><code>crew-run-ledger</code></td><td>8</td><td>8 passed</td></tr>
+        <tr><td><code>flight-control-config</code></td><td>7</td><td>7 passed</td></tr>
+        <tr><td><code>derived-gate-state</code> (this plan)</td><td>13</td><td>9 passed, 4 open</td></tr>
+      </tbody>
+    </table>
+
+    <p>Sixty-one measures, no measure dropped, every evidence anchor resolved, and
+    <code>audit-doc</code> reporting no errors across all five. The three remaining plans of the
+    sprint set were held rather than migrated: concurrent orchestrator sessions were mid-landing on
+    all three, writing followups into the same HTML, and racing them would have produced merge
+    conflicts on documents that are the system's own state store.</p>
+
+    <p>This plan's own migration is the sharpest evidence that the mechanism works, because it
+    turned the document against itself. With 4 of its 13 gates unpassed, <code>roadmap</code>
+    reports <code>effective_status: blocked</code>, <code>readiness: blocked</code>, the four gate
+    ids by name, and drops the plan out of <code>ready_now</code> — while its persisted workflow
+    status stays <code>active</code> and no status was written anywhere.</p>
   </section>
 
   <section id="open">
     <h2>What is still open</h2>
 
-    <p>Every code rung has landed. Three document rungs remain, and each is gated on something real
-    rather than merely unfinished: the skill's fence has no computed state to read until it is
-    swapped onto one; the migration of this sprint set's own prose gates is constrained by
-    concurrent orchestrator sessions writing followups into the same plan HTML; and the sweep is
-    gated on the age fallback above.</p>
+    <p>Three things remain, and none of them is unfinished work in the ordinary sense — each is held
+    by a named condition.</p>
+
+    <ul>
+      <li><strong>Wave fence honoured.</strong> The mechanism landed, but no wave was actually
+      refused by a gate this session; the two waves that did not open were held by a dispatch gap and
+      by concurrency instead. Recording a manufactured transcript would defeat the gate, so it stays
+      open until a real gate refusal happens.</li>
+      <li><strong>Own gates migrated.</strong> Three plans of the sprint set were being written by
+      other sessions throughout. The migration needs a quiet window on those documents, not more
+      effort.</li>
+      <li><strong>Sweep complete.</strong> Held on the cross-repository dispatch gap recorded on the
+      orchestration plan. The survey is done and written down, so the work resumes from an inventory
+      rather than a re-scan.</li>
+    </ul>
+
+    <p>Two mechanisms were found missing while doing the work, and both are recorded as sections on
+    the plan rather than as handoffs: a node cannot be dispatched into a repository other than the
+    one holding its plan, and there is no op that retires the authored prose a gate section
+    supersedes — so every migration in this record went through raw HTML inside a worktree, announced
+    as a bypass each time.</p>
   </section>
 </main>
 </body>
