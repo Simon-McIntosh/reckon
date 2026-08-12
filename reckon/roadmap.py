@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from reckon._schema import parse_plan_ref
+from reckon._schema import LEGACY_EFFORT_HOURS, parse_plan_ref
 from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
@@ -20,7 +20,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 
-_EFFORT_WEIGHT = {"S": 1.0, "M": 2.0, "L": 4.0, "XL": 8.0}
+_EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
 _AUTHORISED_STATUSES = frozenset({"pending", "active", "in-progress"})
 
@@ -40,9 +40,39 @@ def _progress(plan: dict[str, Any]) -> float:
         return 0.0
 
 
-def _remaining_effort(plan: dict[str, Any]) -> float:
-    weight = _EFFORT_WEIGHT.get(str(plan.get("effort") or "M").upper(), 2.0)
-    return round(weight * (1.0 - _progress(plan)), 3)
+def _effort_hours(plan: dict[str, Any]) -> float:
+    explicit = plan.get("effort_hours")
+    if explicit is not None:
+        try:
+            return max(0.0, float(explicit))
+        except (TypeError, ValueError):
+            pass
+    return LEGACY_EFFORT_HOURS.get(
+        str(plan.get("effort") or "M").upper(),
+        LEGACY_EFFORT_HOURS["M"],
+    )
+
+
+def _effort_calibrated(plan: dict[str, Any]) -> bool:
+    if "effort_calibrated" in plan:
+        return plan.get("effort_calibrated") is True
+    return plan.get("effort_hours") is not None
+
+
+def _remaining_effort_hours(plan: dict[str, Any]) -> float:
+    return round(_effort_hours(plan) * (1.0 - _progress(plan)), 3)
+
+
+def _uncalibrated_plans(
+    plans: dict[str, dict[str, Any]], slugs: list[str] | set[str] | None = None
+) -> list[str]:
+    selected = sorted(slugs if slugs is not None else plans)
+    return [
+        slug
+        for slug in selected
+        if _remaining_effort_hours(plans[slug]) > 0
+        and not _effort_calibrated(plans[slug])
+    ]
 
 
 def _north_star_rows(
@@ -70,8 +100,19 @@ def _north_star_rows(
                 "lifecycle_completion_pct": (
                     round(100 * completed / len(aligned), 1) if aligned else 0.0
                 ),
-                "remaining_effort": round(
-                    sum(_remaining_effort(plan) for plan in aligned), 3
+                "effort_unit": _EFFORT_UNIT,
+                "remaining_effort_hours": round(
+                    sum(_remaining_effort_hours(plan) for plan in aligned), 3
+                ),
+                "uncalibrated_plans": sorted(
+                    str(plan.get("slug") or "")
+                    for plan in aligned
+                    if _remaining_effort_hours(plan) > 0
+                    and not _effort_calibrated(plan)
+                ),
+                "uncalibrated_count": sum(
+                    _remaining_effort_hours(plan) > 0 and not _effort_calibrated(plan)
+                    for plan in aligned
                 ),
             }
         )
@@ -641,8 +682,10 @@ def build_roadmap(
             "sprint": plan.get("sprint") or (membership.get(slug) or [None])[0],
             "roi": plan.get("roi") or "mid",
             "effort": plan.get("effort") or "M",
+            "effort_hours": _effort_hours(plan),
+            "effort_calibrated": _effort_calibrated(plan),
             "progress_pct": round(_progress(plan) * 100, 1),
-            "remaining_effort": _remaining_effort(plan),
+            "remaining_effort_hours": _remaining_effort_hours(plan),
             "depends_on": dependency_rows.get(slug, []),
             "explicit_blockers": explicit_blockers,
             "gate_blockers": gate_blockers,
@@ -685,7 +728,7 @@ def build_roadmap(
         ]
         best = max(
             candidates,
-            key=lambda path: sum(_remaining_effort(plans[item]) for item in path),
+            key=lambda path: sum(_remaining_effort_hours(plans[item]) for item in path),
             default=[],
         )
         return [*best, node]
@@ -697,14 +740,33 @@ def build_roadmap(
         path = longest_path(slug)
         if path:
             path_candidates[tuple(path)] = round(
-                sum(_remaining_effort(plans[item]) for item in path), 3
+                sum(_remaining_effort_hours(plans[item]) for item in path), 3
             )
     sorted_paths = sorted(path_candidates.items(), key=lambda item: (-item[1], item[0]))
-    open_paths = [
-        {"plans": list(path), "remaining_effort": effort}
-        for path, effort in sorted_paths[: max(1, max_paths)]
-    ]
-    critical = open_paths[0] if open_paths else {"plans": [], "remaining_effort": 0.0}
+    open_paths = []
+    for path, length_hours in sorted_paths[: max(1, max_paths)]:
+        path_plans = list(path)
+        uncalibrated = _uncalibrated_plans(plans, path_plans)
+        open_paths.append(
+            {
+                "plans": path_plans,
+                "length_hours": length_hours,
+                "effort_unit": _EFFORT_UNIT,
+                "uncalibrated_plans": uncalibrated,
+                "uncalibrated_count": len(uncalibrated),
+            }
+        )
+    critical = (
+        open_paths[0]
+        if open_paths
+        else {
+            "plans": [],
+            "length_hours": 0.0,
+            "effort_unit": _EFFORT_UNIT,
+            "uncalibrated_plans": [],
+            "uncalibrated_count": 0,
+        }
+    )
     critical_members = set(critical["plans"])
 
     def priority(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -714,7 +776,7 @@ def build_roadmap(
             sprint_position,
             _ROI_ORDER.get(str(row.get("roi") or "mid").lower(), 1),
             -len(row.get("unlocks") or []),
-            row["remaining_effort"],
+            row["remaining_effort_hours"],
             row["slug"],
         )
 
@@ -781,6 +843,7 @@ def build_roadmap(
 
     plan_values = list(plans.values())
     completed_count = sum(_status(plan) in COMPLETED_STATUSES for plan in plan_values)
+    uncalibrated = _uncalibrated_plans(plans)
     allocation = (project_manifest or {}).get("scope") or {}
     return {
         "project": project,
@@ -801,6 +864,14 @@ def build_roadmap(
             )
             if plan_values
             else 0.0,
+        },
+        "effort": {
+            "unit": _EFFORT_UNIT,
+            "remaining_hours": round(
+                sum(_remaining_effort_hours(plan) for plan in plan_values), 3
+            ),
+            "uncalibrated_plans": uncalibrated,
+            "uncalibrated_count": len(uncalibrated),
         },
         "allocation": {
             "configured": bool(allocation),
