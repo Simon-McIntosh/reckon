@@ -325,7 +325,7 @@ def build_record(
         "time_budget": str(time_budget),
         "base_sha": str(base_sha),
         "commits": [str(sha) for sha in commits if str(sha).strip()],
-        "changed_lines": dict(changed_lines or {}),
+        "changed_lines": None if changed_lines is None else dict(changed_lines),
         "tests_added": None if tests_added is None else int(tests_added),
         "gate": verdict,
         "outcome": str(outcome),
