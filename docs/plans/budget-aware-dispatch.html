@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="budget-aware-dispatch">
   <meta name="plan-title" content="Budget-aware Dispatch">
   <meta name="plan-summary" content="Read each backend&#x27;s budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
@@ -21,8 +21,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="6">
-<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="8">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -114,7 +114,21 @@
     node, and always reports. An orchestrator that cannot schedule its own resumption reports the
     reset time for a human instead — degraded, not broken.</p>
 
-    <h2 id="s5">§5 — Holds are measurable</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s5">§5 — Holds are measurable</h2>
+    </header>
+    <p class="landed-summary">
+      Holds now live in <code>crew.json</code> beside the runs: one record per continuous window,
+      opened by the command that decides to open a wave and closed with the measured wall-clock.
+      A test hold closed at <strong>137 s measured against a 600 s predicted reset</strong> — the
+      gap is the point, since it is what shows whether a resumption fired late. Seven gates passed,
+      including the one added mid-flight after the audit found a read-only tool writing history
+      (ledger v1→v2 on a read; now v1→v1). Two runs, 783 s and 498 s of worker-time, 8 new tests,
+      suite green at 1,668.
+      Full record: <a href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">§5 landed</a>
+      (commits <code>9bc21da</code>, <code>49bc41c</code>).
+    </p>
 
     <p>A hold leaves no trace. It creates no run, so nothing in the committed ledger records that a
     wave was held, on which backend, for how long, or whether the scheduled resumption fired — which
@@ -217,10 +231,11 @@
     <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
     <p class="r-fu-outcome">Landed — commit 6a0e3c9. Per-backend budget reader over the ledger and live pointers, the free pre-flight hold with per-backend granularity and a 5-point escape-hatch reserve, three thresholds in flight config, and two quarantined orchestrator-harness references. All ten gates passed: 100.0% holds a dispatch with no worktree created and the node still dispatchable; 97.0% holds a dispatch at the 95.0% effective ceiling but not a resume; unknown never holds; the pre-flight returns its hold with both subprocess entry points replaced by an assertion; a held wave scheduled its own resumption and fired in 86 s, resuming clear. 29 new tests, suite green at 1,657. The open investigation is answered POSITIVELY: the backend believed to publish no headroom answers an account-limits read over its app server, giving used percentage and reset time by a call that runs no model — so the asymmetry is in the run stream, not the harness. That is now an opt-in per-backend reader (budget_check), leaving the ledger as the free base case and the locked decision intact.</p>
     </article>
-<article class="r-fu" data-id="f-bad-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bad-002" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="2026-08-12T16:10:57+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Record held waves so a hold is visible to calibration</h4>
     <div class="r-fu-body"><p>A hold currently leaves no trace in the committed ledger: it creates no run, so nothing records that a wave was held, on which backend, for how long, or whether the scheduled resumption fired. That makes the one measurement the mechanism generates — how much wall-clock holding actually costs, against how much a burned wave would have — unavailable to any later reader, and it is exactly the class of measurement that cannot be reconstructed after the fact.</p><p>Out of scope for the five deliverables that just landed, hence additive rather than unfinished. Sizing note for whoever picks it up: the shape is a hold record beside the run records, not a run record with a held flag, since a hold has no worktree, no commit and no gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    <p class="r-fu-outcome">Landed as §5 — commits 9bc21da and 49bc41c. A hold opens one record per continuous window carrying backend, utilisation, reset and purpose, and closes with wall-clock held_seconds measured rather than assumed: a test hold closed at 137 s against a 600 s predicted reset, which is the gap that reveals a late resumption. Holds sit beside runs, so the run count and effort report are provably unchanged. The audit added a seventh gate mid-flight: recording had been wired into the shared pre-flight, so the read-only tool opened a hold and took the ledger v1→v2 just by being asked — a reader inventing history by looking at it. Recording now belongs to the commands that decide to open a wave, the read is v1→v1, and resumption_fired is an explicit input rather than inferred from a stuck-worker check that shares the same ceiling. 8 new tests, suite green at 1,668; 783 s and 498 s of measured worker-time. Chain closes here — done, no followup.</p>
     </article>
 </section>
 
