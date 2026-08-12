@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from datetime import date, datetime, time, timedelta
 
+import pytest
+
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle
@@ -16,6 +18,8 @@ def _plan(
     depends_on: list[str] | None = None,
     sprint: str | None = None,
     effort: str = "M",
+    effort_hours: float | None = None,
+    effort_calibrated: bool | None = None,
     north_star: str | None = None,
 ) -> dict:
     plan = {
@@ -34,6 +38,10 @@ def _plan(
     }
     if north_star is not None:
         plan["north_star"] = north_star
+    if effort_hours is not None:
+        plan["effort_hours"] = effort_hours
+    if effort_calibrated is not None:
+        plan["effort_calibrated"] = effort_calibrated
     return plan
 
 
@@ -50,7 +58,7 @@ def _project_with_north_stars(*ids: str) -> dict:
     }
 
 
-def test_roadmap_returns_ready_work_and_weighted_critical_path() -> None:
+def test_roadmap_returns_ready_work_and_hourly_critical_path() -> None:
     inventory = [
         _plan("foundation", effort="S"),
         _plan("integration", depends_on=["foundation"], effort="L"),
@@ -69,7 +77,10 @@ def test_roadmap_returns_ready_work_and_weighted_critical_path() -> None:
     assert [item["slug"] for item in result["ready_now"]] == ["foundation"]
     assert result["critical_path"] == {
         "plans": ["foundation", "integration", "release"],
-        "remaining_effort": 7.0,
+        "length_hours": 7.0,
+        "effort_unit": "worker-hours",
+        "uncalibrated_plans": ["foundation", "integration", "release"],
+        "uncalibrated_count": 3,
     }
     assert result["immediate_roadmap"][0]["reason"] == "critical path"
     assert result["completion"]["pending"] == 3
@@ -113,7 +124,10 @@ def test_north_star_rollup_reports_alignment_completion_and_remaining_effort() -
             "plans": 2,
             "completed": 1,
             "lifecycle_completion_pct": 50.0,
-            "remaining_effort": 3.0,
+            "effort_unit": "worker-hours",
+            "remaining_effort_hours": 3.0,
+            "uncalibrated_plans": ["partial"],
+            "uncalibrated_count": 1,
         },
         {
             "id": "usability",
@@ -122,7 +136,10 @@ def test_north_star_rollup_reports_alignment_completion_and_remaining_effort() -
             "plans": 1,
             "completed": 0,
             "lifecycle_completion_pct": 0.0,
-            "remaining_effort": 1.0,
+            "effort_unit": "worker-hours",
+            "remaining_effort_hours": 1.0,
+            "uncalibrated_plans": ["usable"],
+            "uncalibrated_count": 1,
         },
         {
             "id": "unclaimed",
@@ -131,9 +148,88 @@ def test_north_star_rollup_reports_alignment_completion_and_remaining_effort() -
             "plans": 0,
             "completed": 0,
             "lifecycle_completion_pct": 0.0,
-            "remaining_effort": 0,
+            "effort_unit": "worker-hours",
+            "remaining_effort_hours": 0,
+            "uncalibrated_plans": [],
+            "uncalibrated_count": 0,
         },
     ]
+
+
+def test_explicit_hours_win_over_legacy_letter_in_remaining_arithmetic() -> None:
+    result = build_roadmap(
+        "sample",
+        [
+            _plan(
+                "estimated",
+                impl=0.25,
+                effort="XL",
+                effort_hours=5.0,
+                effort_calibrated=True,
+            )
+        ],
+        [],
+    )
+
+    row = result["pending_work"][0]
+    assert row["effort_hours"] == 5.0
+    assert row["remaining_effort_hours"] == 3.75
+    assert row["effort_calibrated"] is True
+
+
+def test_legacy_letter_maps_to_hours_and_is_reported_uncalibrated() -> None:
+    result = build_roadmap("sample", [_plan("legacy", effort="L")], [])
+
+    row = result["pending_work"][0]
+    assert row["effort_hours"] == 4.0
+    assert row["remaining_effort_hours"] == 4.0
+    assert row["effort_calibrated"] is False
+    assert result["effort"]["uncalibrated_plans"] == ["legacy"]
+    assert result["effort"]["uncalibrated_count"] == 1
+
+
+def test_open_path_length_equals_its_plans_remaining_hours() -> None:
+    inventory = [
+        _plan(
+            "foundation",
+            impl=0.5,
+            effort_hours=2.5,
+            effort_calibrated=True,
+        ),
+        _plan("consumer", depends_on=["foundation"], effort="L", impl=0.25),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+    rows = {row["slug"]: row for row in result["pending_work"]}
+    path = result["open_paths"][0]
+    summed_hours = sum(rows[slug]["remaining_effort_hours"] for slug in path["plans"])
+
+    assert path["effort_unit"] == "worker-hours"
+    assert path["length_hours"] == pytest.approx(summed_hours, abs=0.25)
+    assert path["uncalibrated_plans"] == ["consumer"]
+    assert path["uncalibrated_count"] == 1
+
+
+def test_effort_summary_names_unit_and_reports_remaining_hours() -> None:
+    inventory = [
+        _plan(
+            "calibrated",
+            impl=0.5,
+            effort_hours=3.0,
+            effort_calibrated=True,
+        ),
+        _plan("legacy", effort="S"),
+        _plan("finished", status="shipped", impl=1.0, effort="XL"),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+
+    assert result["effort"] == {
+        "unit": "worker-hours",
+        "remaining_hours": 2.5,
+        "uncalibrated_plans": ["legacy"],
+        "uncalibrated_count": 1,
+    }
 
 
 def test_live_actionable_plan_without_north_star_is_informational() -> None:
