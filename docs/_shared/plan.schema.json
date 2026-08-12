@@ -313,6 +313,63 @@
       "title": "Followup",
       "type": "object"
     },
+    "Gate": {
+      "description": "An evidence gate (``.r-gate`` element).\n\n``passed`` is a read-only projection of ``verdict``. The renderer ignores\nit, so semantic HTML carries only the authoritative verdict.",
+      "properties": {
+        "id": {
+          "default": "",
+          "title": "Id",
+          "type": "string"
+        },
+        "section": {
+          "default": "",
+          "title": "Section",
+          "type": "string"
+        },
+        "gated_sections": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Gated Sections",
+          "type": "array"
+        },
+        "status": {
+          "default": "",
+          "title": "Status",
+          "type": "string"
+        },
+        "measure": {
+          "title": "Measure",
+          "type": "string"
+        },
+        "required_evidence": {
+          "default": "",
+          "title": "Required Evidence",
+          "type": "string"
+        },
+        "verdict": {
+          "default": "",
+          "title": "Verdict",
+          "type": "string"
+        },
+        "evidence": {
+          "default": "",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "passed": {
+          "default": false,
+          "readOnly": true,
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "measure"
+      ],
+      "title": "Gate",
+      "type": "object"
+    },
     "Question": {
       "description": "A question (``.r-q`` element). No ``status`` *field* \u2014 read_state omits it\nfrom question dicts. Use the :attr:`status` property for views; a Pydantic\nfield (or computed_field) would force-include it and break the round-trip.",
       "properties": {
@@ -716,6 +773,13 @@
       },
       "readOnly": true,
       "title": "Compatibility Warnings",
+      "type": "array"
+    },
+    "gates": {
+      "items": {
+        "$ref": "#/$defs/Gate"
+      },
+      "title": "Gates",
       "type": "array"
     },
     "decisions": {

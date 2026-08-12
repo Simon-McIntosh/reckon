@@ -21,6 +21,8 @@ import os
 from pathlib import Path
 
 import pytest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 
 from reckon._plan_html import from_html, read_state, to_html, write_state
 from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
@@ -130,6 +132,29 @@ FULL_PLAN = (
     "</main>\n</body>\n</html>\n"
 )
 
+GATES_SECTION = (
+    '<section data-reckon="gates" id="gates" class="r-gates">\n'
+    '<h2><span class="sec">§</span> Evidence gates</h2>\n'
+    '<div class="r-gate" data-id="proof" data-section="verification"'
+    ' data-gated-sections="delivery,release" data-status="recorded"'
+    ' data-verdict="passed">\n'
+    '    <h4 class="r-gate-measure">The focused contract tests pass</h4>\n'
+    '    <p class="r-gate-required-evidence">Test log and commit</p>\n'
+    '    <a class="r-gate-evidence" href="evidence/test.log">Evidence</a>\n'
+    "</div>\n</section>"
+)
+
+GATES_PLAN = SPARSE_PLAN.replace(
+    '<main class="plan-doc"></main>',
+    f'<main class="plan-doc">\n{GATES_SECTION}\n</main>',
+)
+
+
+def _section_html(html: str, section: str) -> str:
+    start = html.index(f'<section data-reckon="{section}"')
+    end = html.index("</section>", start) + len("</section>")
+    return html[start:end]
+
 
 # ── 1. Canonical-dump shape contract ─────────────────────────────────────────
 
@@ -178,6 +203,26 @@ def test_byte_identity_on_real_reckon_plans():
         assert to_html(html, from_html(html)) == write_state(html, read_state(html)), (
             p.name
         )
+
+
+def test_gate_state_is_typed_and_passed_is_derived():
+    state = from_html(GATES_PLAN)
+    parsed_gate = read_state(GATES_PLAN)["gates"][0]
+
+    assert len(state.gates) == 1
+    assert state.gates[0].model_dump() == parsed_gate
+    assert state.gates[0].passed is True
+
+    contradicted = PlanState.model_validate(
+        {"gates": [{"measure": "measured", "verdict": "failed", "passed": True}]}
+    )
+    assert contradicted.gates[0].passed is False
+
+
+def test_gate_section_survives_typed_round_trip_byte_identical():
+    rendered = to_html(GATES_PLAN, from_html(GATES_PLAN))
+
+    assert _section_html(rendered, "gates") == GATES_SECTION
 
 
 # ── 3. State-level round-trip ───────────────────────────────────────────────
@@ -384,6 +429,18 @@ def test_committed_schema_matches_generated():
     assert committed == gen_json_schema(), (
         "plan.schema.json is stale — regenerate with write_json_schema()"
     )
+
+
+def test_published_schema_validates_gate_and_requires_measure():
+    schema = json.loads(schema_path().read_text(encoding="utf-8"))
+    validator = Draft202012Validator(schema)
+    document = read_state(GATES_PLAN)
+
+    validator.validate(document)
+
+    del document["gates"][0]["measure"]
+    with pytest.raises(ValidationError):
+        validator.validate(document)
 
 
 # ── 8. IndexState modelling of real index.json ──────────────────────────────
