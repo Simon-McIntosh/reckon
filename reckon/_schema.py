@@ -756,6 +756,15 @@ class Milestone(_TolerantIndexModel):
     evidence: list[str] | None = None
 
 
+class NorthStar(_TolerantIndexModel):
+    """One durable direction declared by a project."""
+
+    id: str
+    name: str
+    statement: str
+    href: str | None = None
+
+
 class TimelineEntry(_TolerantIndexModel):
     id: str = ""
     when: str = ""
@@ -797,6 +806,7 @@ class IndexData(_TolerantIndexModel):
     active_sprint_id: str | None = None
     sprints: list[Sprint] = Field(default_factory=list)
     milestones: list[Milestone] = Field(default_factory=list)
+    north_stars: list[NorthStar] = Field(default_factory=list)
     timeline: list[TimelineEntry] = Field(default_factory=list)
     blockers: list[Blocker] = Field(default_factory=list)
     projects: list[ProjectRollup] | None = None

@@ -36,6 +36,7 @@ from reckon._schema import (
     SPRINT_STATUS_ENUM,
     Blocker,
     Milestone,
+    NorthStar,
     Sprint,
     TimelineEntry,
 )
@@ -46,6 +47,7 @@ SNAPSHOT_ROOT = Path(".reckon/snapshots/project-state")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset({"sprint", "milestone", "blocker", "timeline", "project"})
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
+NORTH_STAR_ADVISORY_CAP = 5
 PROJECT_DERIVED_FIELDS = frozenset(
     {
         "active_sprint_id",
@@ -471,6 +473,24 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
                 if not isinstance(work, str) or not work.strip():
                     raise ValueError("project scope route work must be non-empty")
                 _safe_segment(str(destination or ""), "project scope route project")
+        north_stars = cleaned.get("north_stars")
+        if north_stars is not None:
+            if not isinstance(north_stars, list):
+                raise ValueError("project north_stars must be a list")
+            validated_north_stars: list[dict[str, Any]] = []
+            seen_north_star_ids: set[str] = set()
+            for raw in north_stars:
+                north_star = NorthStar.model_validate(raw).model_dump(exclude_none=True)
+                for field in ("id", "name", "statement"):
+                    if not north_star[field].strip():
+                        raise ValueError(f"north-star {field} must be non-empty")
+                north_star_id = north_star["id"]
+                _safe_segment(north_star_id, "north-star id")
+                if north_star_id in seen_north_star_ids:
+                    raise ValueError(f"duplicate north-star id {north_star_id!r}")
+                seen_north_star_ids.add(north_star_id)
+                validated_north_stars.append(north_star)
+            cleaned["north_stars"] = validated_north_stars
         cleaned["version"] = int(data.get("version", 0) or 0)
     cleaned["type"] = resource_type
     return cleaned
@@ -673,6 +693,8 @@ def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
         for key, value in row.items()
         if key not in PROJECT_DERIVED_FIELDS
     }
+    if "north_stars" in legacy:
+        retained["north_stars"] = deepcopy(legacy["north_stars"])
     return {**retained, "project": project, "version": 0}
 
 
@@ -941,6 +963,8 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         "source_format": "distributed",
         "resource_versions": versions,
     }
+    if "north_stars" in project_manifest:
+        composed["north_stars"] = deepcopy(project_manifest["north_stars"])
     if compatibility_warnings:
         composed["compatibility_warnings"] = compatibility_warnings
     return composed
@@ -951,7 +975,7 @@ def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
     if project_state_mode(docs_dir).format != "distributed":
         return []
     try:
-        compose_project_state(docs_dir, project)
+        composed = compose_project_state(docs_dir, project)
     except ProjectStateError as exc:
         message = str(exc)
         return [
@@ -959,6 +983,18 @@ def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
                 "code": "distributed-project-state-invalid",
                 "severity": "error",
                 "message": message,
+            }
+        ]
+    north_star_count = len(composed.get("north_stars") or [])
+    if north_star_count > NORTH_STAR_ADVISORY_CAP:
+        return [
+            {
+                "code": "north-star-advisory-cap-exceeded",
+                "severity": "warning",
+                "message": (
+                    f"project declares {north_star_count} north-stars; "
+                    f"the advisory cap is {NORTH_STAR_ADVISORY_CAP}"
+                ),
             }
         ]
     return []
