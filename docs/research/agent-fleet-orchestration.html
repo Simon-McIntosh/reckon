@@ -8,7 +8,7 @@
   <meta name="plan-slug"     content="agent-fleet-orchestration">
   <meta name="plan-title"    content="Agent Fleet Orchestration — architecture">
   <meta name="plan-summary"  content="Architecture for orchestrating external coding-harness workers from reckon: one uniform dispatch surface, a layered flight-control config, repo-owned run ledgers, and gates that derive blocked state.">
-  <meta name="plan-informs"  content="flight-control-config,uniform-worker-dispatch,crew-run-ledger,derived-gate-state,inflight-visibility,north-star-orientation">
+  <meta name="plan-informs"  content="flight-control-config,uniform-worker-dispatch,crew-run-ledger,derived-gate-state,budget-aware-dispatch,inflight-visibility,north-star-orientation">
   <meta name="plan-owner"    content="Simon McIntosh">
   <title>Agent Fleet Orchestration — architecture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -479,10 +479,29 @@ WHEN   next §6 north-star — ready, nothing blocks it</pre>
 
     <h2 id="s11">§11 — Delivery shape</h2>
 
-    <p>Six plans across three sprints, each sprint closed by one evidence gate. The
+    <p>Seven plans across three sprints, each sprint closed by one evidence gate. The
     sequencing is deliberate: the first sprint is built conventionally so that the
-    <em>second and third are executed by the codex team it creates</em>, which dog-foods the
+    <em>second and third are executed by the worker team it creates</em>, which dog-foods the
     whole mechanism on real work rather than a rehearsal.</p>
+
+    <p>Continuation is wired at three altitudes rather than one, because a chain that closes only
+    at plan level leaves the other two ends dangling. A <strong>worker</strong> returns candidate
+    follow-ons it was fenced out of, which the orchestrator folds into the wave or writes as a
+    followup. A <strong>plan landing</strong> appends the next one-line invocation or records that
+    the chain closes — a rule that exists today but is enforced only by discipline, so it becomes a
+    validated condition of the writeback. A <strong>sprint close</strong> reports the downstream
+    sprints its plans unblock, derived from the graph, which does not exist at all today. At every
+    altitude, ending without either a next invocation or an explicit no-followup outcome is a
+    failure.</p>
+
+    <p>Two measurement questions are answered by the ledger rather than by definition. The effort
+    scale is currently a relative doubling series consumed only for critical-path weighting, with
+    nothing tying a letter to an observable — so it is asserted, not measured. Because every
+    completed run records its dispatch and completion times, effort becomes <em>calibratable</em>
+    from history, and a finding that the letters overlap heavily is itself a legitimate result.
+    Staleness is the mirror case: detection already exists in the audit command, but never reaches
+    the agent doing the work, so a worker can begin on a plan idle for months with no signal that
+    its assumptions may have expired.</p>
 
     <table>
       <thead><tr><th>Sprint</th><th>Plans</th><th>Built by</th><th>Closing gate</th></tr></thead>
@@ -495,9 +514,9 @@ WHEN   next §6 north-star — ready, nothing blocks it</pre>
         </tr>
         <tr>
           <td><code>S8</code> — execution substrate</td>
-          <td><code>crew-run-ledger</code>, <code>derived-gate-state</code></td>
-          <td>codex team</td>
-          <td>a dispatch is recorded and promoted; a failed gate blocks downstream work and passing it unblocks, proven by test; no persisted blocked or item status remains in any mounted project</td>
+          <td><code>crew-run-ledger</code>, <code>derived-gate-state</code>, <code>budget-aware-dispatch</code></td>
+          <td>worker team</td>
+          <td>a dispatch is recorded and promoted; a failed gate blocks downstream work and passing it unblocks, proven by test; no persisted blocked, item status or sprint-activation state remains in any mounted project; a wave holds on exhausted budget and resumes itself</td>
         </tr>
         <tr>
           <td><code>S9</code> — observation surface</td>

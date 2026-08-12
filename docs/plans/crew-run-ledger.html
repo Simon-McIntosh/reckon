@@ -71,6 +71,18 @@
     and every escape-hatch resumption reach the same long-lived session. Members are per
     project so a repository's team is committed with its plans.</p>
 
+    <p><strong>Ground the effort scale.</strong> Effort is currently a relative weight —
+    <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code> mapped to a doubling series
+    consumed only for critical-path weighting. That gives it arithmetic meaning and no empirical
+    meaning: nothing ties a letter to an observable, so the labels are asserted rather than
+    measured, and a plan sized <code>L</code> by one author may cost a quarter of another's. The
+    ledger is what makes this falsifiable, because every completed run records when it was
+    dispatched and when it finished. Report measured worker-time per plan against its declared
+    effort, so the scale can be <em>calibrated</em> from history instead of redefined by opinion.
+    Do not change the weights in this plan — gather the evidence first and record the observed
+    distribution, including how wide the spread within each letter turns out to be. A scale whose
+    letters overlap heavily is telling you something, and that finding is a legitimate outcome.</p>
+
     <p><strong>The read tool.</strong> One new MCP tool, <code>crew(project,
     view="flight"|"live"|"ledger"|"summary")</code>, read-only, holding the MCP surface at
     five tools. It accepts <code>checkout_path</code> and follows the same worktree-routing
@@ -114,6 +126,12 @@
           <td>Worktree routing</td>
           <td><code>crew(..., checkout_path=…)</code> reads the worktree's ledger, not the
           registered main checkout's. Verified against a real worktree.</td>
+        </tr>
+        <tr>
+          <td>Effort scale measured</td>
+          <td>Measured worker-time per completed plan reported against its declared effort letter,
+          with the observed spread inside each letter stated. A finding that the letters overlap is
+          a valid result and must be recorded, not smoothed.</td>
         </tr>
         <tr>
           <td>Suite green</td>

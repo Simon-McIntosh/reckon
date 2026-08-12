@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="derived-gate-state">
-  <meta name="plan-title"     content="Derived Gate State">
-  <meta name="plan-summary"   content="Harden the evidence-gate reflex into first-class plan state that feeds the blocker derivation, make blocked and sprint-item status derived-only, and sweep stale persisted labels across every mounted project.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="L">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="derived-gate-state">
+  <meta name="plan-title" content="Derived Gate State">
+  <meta name="plan-summary" content="Apply one idea six times — state that can be computed must not also be stored: gates as declared blockers, blocked and sprint-item status derived-only, sprint activation derived, plan runnability derived plus alarmed, staleness surfaced to the working agent, then sweep every mounted project.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="XL">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S8">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S8">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Derived Gate State | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -57,7 +59,13 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     only consumers of the raw index are misled — which includes any agent reading project state
     directly.</p>
 
-    <p>One mechanism fixes all three, because a gate <em>is</em> a declared blocker.</p>
+    <p>Reviewing the surface for this defect class found four further instances, so this plan's
+    scope is one idea applied six times: <strong>state that can be computed must not also be
+    stored.</strong> Persisted blocked status, persisted sprint-item status, hand-set sprint
+    activation guarded by a single-session invariant, plan runnability as an authoring default
+    with no decay alarm, and staleness that is detected but never reaches the agent doing the
+    work. The gate mechanism leads because a gate <em>is</em> a declared blocker, so it reuses
+    the derivation the others are being moved onto.</p>
 
     <h2 id="s2">§2 — Deliverables</h2>
 
@@ -101,7 +109,41 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     the owning skill, re-scanned after. A finding that needs a material decision is reported,
     not guessed. Cross-repository edits stay in their owning checkout.</p>
 
-    <p><strong>Migrate this sprint's own gates.</strong> The six plans of sprints S7 to S9
+    <p><strong>Sprint activation becomes derived.</strong> Today a sprint's <code>active</code>
+    status is hand-set and guarded by an invariant that raises when a second sprint is
+    activated, enforced under a lock. That is a single-session assumption: with detached
+    worktrees, per-node exclusive write scopes and independent orchestrators, concurrent sprints
+    are the intended mode of operation, and the invariant forbids expressing it — a plan with no
+    dependencies cannot run alongside another sprint's last item purely because of a
+    presentational pointer. Drop the uniqueness constraint and derive the default focus as the
+    earliest sprint in order holding incomplete items. The consuming views already degrade
+    gracefully through fallback chains, so they need <em>a</em> default rather than a maintained
+    one. Two consequences follow: the pointer can never be stale, and starting a sprint ceases
+    to be an operation at all.</p>
+
+    <p><strong>Plan runnability becomes derived plus alarmed.</strong> A plan is excluded from
+    runnable work by its authoring status, which does one genuinely valuable job — separating
+    written-down from authorised-to-act-on, which becomes safety-relevant once an orchestrator
+    can fan out unattended workers. But it is an authoring <em>default</em> with no decay alarm,
+    and it has rotted: four of eight draft plans across the portfolio are more than two months
+    old, and one carries three locked decisions and a resolved followup while still reading as a
+    draft. Split the concept. Derive the well-formedness half — a plan is dispatchable when it
+    declares at least one gate and carries an open followup, which lifts the node-level
+    task-definition contract to plan level and is checkable rather than asserted. Keep the
+    authorisation half as a deliberate act, but report it: an authored-but-unauthorised plan
+    surfaces with its age, so a months-old draft with locked decisions cannot sit silent.</p>
+
+    <p><strong>Staleness becomes visible to the agent doing the work.</strong> Detection already
+    exists — <code>reckon audit</code> flags plans active beyond thirty days with incomplete
+    implementation, research beyond sixty days that never closed, and completed plans with no
+    implementation fraction — and <code>plan-modified</code> is server-stamped on every write.
+    The gap is that none of it reaches an agent reading the plan, so a worker can begin on a plan
+    idle for three months with no signal that its assumptions may have expired. Surface derived
+    age and the staleness verdict on the plan read payload, using the thresholds the audit
+    already defines rather than inventing second ones. This is advisory, never blocking: a stale
+    plan is a prompt to re-read its assumptions, not a refusal to work.</p>
+
+    <p><strong>Migrate this sprint's own gates.</strong> The seven plans of sprints S7 to S9
     author their gates in ambix's prose form because the element did not yet exist. Converting
     them to the new element is this plan's first dogfood and proves the migration path on real
     documents.</p>
@@ -145,6 +187,29 @@ effective_status('active',  [])        -&gt; 'active'</pre>
           and opened once it passes.</td>
         </tr>
         <tr>
+          <td>Concurrent sprints expressible</td>
+          <td>Two sprints hold incomplete items simultaneously with no error raised, the derived
+          default focus resolves to the earliest of them, and a test proves the derivation cannot
+          go stale because nothing persists it.</td>
+        </tr>
+        <tr>
+          <td>Runnability derived</td>
+          <td>A plan declaring a gate and carrying an open followup reads runnable; one missing
+          either does not, and the report names which property is absent. Authorisation remains a
+          separate deliberate act.</td>
+        </tr>
+        <tr>
+          <td>Draft decay alarmed</td>
+          <td>A portfolio scan lists every authored-but-unauthorised plan with its age. The four
+          currently-rotted drafts appear, including the one holding locked decisions.</td>
+        </tr>
+        <tr>
+          <td>Staleness reaches the agent</td>
+          <td>A plan read carries derived age and a staleness verdict computed from the audit's
+          existing thresholds, not new ones. A test proves the verdict is advisory and never
+          blocks a read or a dispatch.</td>
+        </tr>
+        <tr>
           <td>Sweep complete</td>
           <td>A portfolio re-scan showing zero <code>orphaned-blocked-status</code> findings,
           zero persisted sprint-item status across all mounted projects, and error-level wiring
@@ -153,7 +218,7 @@ effective_status('active',  [])        -&gt; 'active'</pre>
         </tr>
         <tr>
           <td>Own gates migrated</td>
-          <td>All six S7–S9 plans carry <code>data-reckon="gates"</code> elements and pass
+          <td>All seven S7–S9 plans carry <code>data-reckon="gates"</code> elements and pass
           <code>reckon audit-doc</code> with no errors.</td>
         </tr>
         <tr>
@@ -174,34 +239,53 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     finding whose repair requires a material judgement is reported for the owning project.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How are gates represented so the toolset and server enforce them?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="first-class-derived-blocker">A first-class gates section whose unpassed gates feed the blocker derivation</button>
-          <button class="r-opt" data-value="gate-flavoured-followups">Followups with a gate discriminator</button>
-          <button class="r-opt" data-value="prose-and-discipline">Prose gates enforced only by skill discipline</button>
-        </p>
-        <p class="r-dec-rat">Routing gates through the existing blocking derivation makes downstream blocking automatic in both directions with no new machinery, and unifies the fix for persisted blocked status. Followups conflate work-to-do with evidence-that-must-hold; prose decays exactly the way persisted blocked did.</p>
-      </div>
-      <div class="r-dec" data-key="legacy-read-posture" data-choice="reject-write-warn-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How strict is the removal of persisted blocked and item status?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="reject-write-warn-read">Reject on write, warn on read</button>
-          <button class="r-opt" data-value="reject-both">Reject on both read and write</button>
-        </p>
-        <p class="r-dec-rat">Matches reckon's existing reject-write-warn-doctor posture. A read-side hard failure would strand every unmigrated project across the portfolio until the sweep completed.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How are gates represented so the toolset and server enforce them?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="first-class-derived-blocker">A first-class gates section whose unpassed gates feed the blocker derivation</button>
+      <button class="r-opt" data-value="gate-flavoured-followups">Followups with a gate discriminator</button>
+      <button class="r-opt" data-value="prose-and-discipline">Prose gates enforced only by skill discipline</button>
+      </p>
+    <p class="r-dec-rat">Routing gates through the existing blocking derivation makes downstream blocking automatic in both directions with no new machinery, and unifies the fix for persisted blocked status. Followups conflate work-to-do with evidence-that-must-hold; prose decays exactly the way persisted blocked did.</p>
+    </div>
+<div class="r-dec" data-key="legacy-read-posture" data-choice="reject-write-warn-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How strict is the removal of persisted blocked and item status?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="reject-write-warn-read">Reject on write, warn on read</button>
+      <button class="r-opt" data-value="reject-both">Reject on both read and write</button>
+      </p>
+    <p class="r-dec-rat">Matches reckon&#x27;s existing reject-write-warn-doctor posture. A read-side hard failure would strand every unmigrated project across the portfolio until the sweep completed.</p>
+    </div>
+<div class="r-dec" data-key="concurrent-sprints" data-choice="derive-drop-uniqueness" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Should more than one sprint be allowed in flight at once?</p>
+    <p class="r-dec-ctx">A lock-guarded invariant currently raises when a second sprint is activated. The consuming views already fall back to the first sprint when no pointer resolves.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derive-drop-uniqueness">Drop the uniqueness constraint; derive the default focus from sprint order and completeness</button>
+      <button class="r-opt" data-value="keep-single-active">Keep one active sprint enforced by the invariant</button>
+      </p>
+    <p class="r-dec-rat">Worktree isolation and independent orchestrators make concurrent sprints the intended mode, and the dependency graph already answers what is runnable — the pointer is a weaker second answer to the same question, which loses whenever the two disagree. Deriving it removes the staleness class entirely and retires sprint activation as an operation.</p>
+    </div>
+<div class="r-dec" data-key="runnability-model" data-choice="derived-wellformedness-plus-alarmed-authorisation" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Is the authoring-status gate on runnable work worth keeping?</p>
+    <p class="r-dec-ctx">Four of eight draft plans portfolio-wide are more than two months old; one holds three locked decisions and a resolved followup.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derived-wellformedness-plus-alarmed-authorisation">Split it — derive well-formedness, keep authorisation deliberate but report it with age</button>
+      <button class="r-opt" data-value="delete-the-gate">Delete the distinction; every authored plan is runnable</button>
+      <button class="r-opt" data-value="keep-as-is">Keep the hand-set default unchanged</button>
+      </p>
+    <p class="r-dec-rat">The gate does real work once an orchestrator can dispatch unattended, so deleting it trades a safety signal for convenience. But an unalarmed default decays, as the four rotted drafts demonstrate. Deriving the checkable half and alarming the deliberate half keeps the signal and removes the decay.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-dgs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state">
-        <h4 class="r-fu-title">Make gates first-class and blocked derived-only, then sweep the portfolio</h4>
-        <div class="r-fu-body"><p>Land the gates element with parser, schema, renderer and ops; wire unpassed gates into the blocker derivation; make blocked and sprint-item status derived-only with reject-on-write; then sweep every mounted project for stale labels and error-level wiring findings, and migrate this sprint set's own prose gates.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship derived-gate-state</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dgs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make gates first-class and blocked derived-only, then sweep the portfolio</h4>
+    <div class="r-fu-body"><p>Land the gates element with parser, schema, renderer and ops; wire unpassed gates into the blocker derivation; make blocked and sprint-item status derived-only with reject-on-write; then sweep every mounted project for stale labels and error-level wiring findings, and migrate this sprint set's own prose gates.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship derived-gate-state</pre>
+    </article>
+</section>
 
   </main>
 </body>

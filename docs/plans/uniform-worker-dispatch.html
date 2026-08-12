@@ -139,6 +139,29 @@
     than plausibly done. Specified with worked examples in
     <a href="/reckon/research/agent-fleet-orchestration#s8">Agent Fleet Orchestration §8</a>.</p>
 
+    <p><strong>Continuation wiring at every level.</strong> Work must never end without naming
+    what comes next, and the chain has to close at three altitudes rather than one. A
+    <strong>worker</strong> returns candidate follow-ons in its manifest — work it discovered but
+    was fenced out of — which the orchestrator either folds into the current wave or writes as a
+    plan followup; today a worker's out-of-scope discovery has nowhere to go but prose. A
+    <strong>plan landing</strong> resolves its driving followup and appends the next one-line
+    invocation, or records that the chain closes; this rule exists but is enforced only by
+    discipline, so make it a validated condition of the writeback. A <strong>sprint close</strong>
+    reports the sprints it feeds, derived from the dependency graph — the downstream sprints whose
+    items this sprint's plans unblock — which does not exist at all today. Enforce all three: a
+    session ending with neither a next invocation nor an explicit no-followup outcome is a
+    failure, at every altitude.</p>
+
+    <p><strong>Record whatever budget signal the backend emits.</strong> The two CLI backends are
+    asymmetric here and the design must not pretend otherwise. One emits a structured rate-limit
+    event carrying utilisation, reset time and a threshold status — enough to reason about
+    headroom. The other emits per-turn token usage but no headroom at all, and offers no query
+    command for it. So capture what is emitted into the run record, expose it as a budget block
+    that may legitimately read <em>unknown</em>, and never infer exhaustion from absence. Acting
+    on that signal is the subject of <code>budget-aware-dispatch</code>; this plan only ensures
+    the data is captured from the first dispatch onward, so the later work has history to reason
+    over.</p>
+
     <p><strong>The skill upgrade.</strong> <code>reckon-ship/SKILL.md</code> gains the
     pre-dispatch checklist, the one dispatch instruction, the summary reflex and the gate-fence
     rule that a wave does not open through a closed gate. It gains no backend-specific text.
@@ -195,6 +218,19 @@
           <td>Both summaries</td>
           <td>Verbatim dispatch and completion summaries captured, four axes each, with the
           completion <code>WHY</code> carrying a quantitative gate measure.</td>
+        </tr>
+        <tr>
+          <td>Continuation closes at three altitudes</td>
+          <td>Tests proving each: a worker manifest carrying a candidate follow-on reaches a plan
+          followup; a plan writeback without a next invocation or an explicit no-followup outcome
+          is refused; a sprint close reports its downstream sprints derived from the graph. A
+          recorded end-to-end trace shows the chain intact from worker to sprint.</td>
+        </tr>
+        <tr>
+          <td>Budget signal captured</td>
+          <td>A run record from each CLI backend, one carrying parsed utilisation and reset time,
+          the other legitimately reading <code>unknown</code>. A test proves absence is never read
+          as exhaustion.</td>
         </tr>
         <tr>
           <td>No routing leakage</td>
