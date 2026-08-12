@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="14">
 <meta name="plan-verifies" content="">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -362,6 +362,94 @@
       </tbody>
     </table>
 
+    <h2 id="s7">§7 — The contract must not refuse a well-formed node</h2>
+
+    <p>Two properties reject nodes that satisfy them, and both failures share a shape: a pattern
+    matching a surface feature of the wording rather than the thing the property is about.</p>
+
+    <p><strong>Single-goal matches any <code>" and "</code>.</strong> A goal naming one deliverable
+    through a conjoined noun phrase — "round-trip a section from parse and serialisation", "derived
+    age and a staleness verdict", "sprint order and incompleteness" — is refused as two nodes. Three
+    of three nodes in one wave were refused this way, each reworded to remove a conjunction that was
+    never a second deliverable. The distinction that matters is between a conjunction joining two
+    verb phrases and one joining a noun phrase.</p>
+
+    <p><strong>Demonstrable matches a subjective term inside a compound.</strong> The check tests a
+    word boundary, and a hyphen is one, so <code>machine-readable</code>, <code>human-readable</code>
+    and any compound ending in a listed adjective are rejected as opinions. Observed twice today,
+    once while dispatching the guard in §6 itself: a done-when naming a machine-readable exit code
+    was refused for resting on the term "readable".</p>
+
+    <p><strong>The direction of the error is what makes these worth fixing.</strong> Both checks
+    exist to stop a worker being sent an unmeasurable goal; here they block the most precise
+    available wording and push the coordinator toward vaguer text. And both were survivable only
+    because a human noticed — a refused dispatch is silent about whether the refusal was correct.</p>
+
+    <p>The checks are worth keeping: the same pass correctly caught a genuine two-deliverable goal
+    and a time budget overrunning its fence. The defect is precision, not existence, so the measure
+    is a test carrying both the correctly-refused and the wrongly-refused wording from the waves that
+    produced them.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A conjoined noun phrase passes</td>
+          <td>The three real goals refused in one wave pass, while a genuine two-deliverable goal
+          from the same wave is still refused, in one test.</td>
+        </tr>
+        <tr>
+          <td>A hyphenated compound passes</td>
+          <td><code>machine-readable</code> in a done-when passes while a bare subjective adjective
+          is still refused, in one test.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s8">§8 — A property that checks exclusivity must not sound like it checks sufficiency</h2>
+
+    <p>A node can satisfy all seven properties and still be unbuildable. Scoped verifies that write
+    paths are enumerated and shared with no concurrent node; nothing verifies that those paths can
+    carry the goal. Observed today: a node fenced to two files passed validation and blocked on
+    arrival, because the behaviour it had to change lived in two further files — exactly one of the
+    two required surfaces was reachable, so the assertion the node existed to make could not
+    truthfully be made.</p>
+
+    <p>The escape hatch handled it as designed: the worker audited the call graph, changed nothing,
+    and named both missing files. The cost was still a full dispatch cycle, and the fault was the
+    coordinator's — the fence came from a symbol search rather than from the callers of the thing
+    being changed.</p>
+
+    <p><strong>A property that sounds like it guarantees buildability while checking only
+    exclusivity is worse than one that states its own limit.</strong> So the cheap half is to report
+    the resolved write scope back from a dry run, letting a coordinator see what it actually fenced
+    before committing a wave to it; and the honest half is to say plainly, in the contract, what
+    scoped does and does not check.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A dry run reports the scope it resolved</td>
+          <td>The dry-run payload carries the resolved write paths, shown by a test reading them
+          back.</td>
+        </tr>
+        <tr>
+          <td>The property states its own limit</td>
+          <td>The contract says scoped checks exclusivity and not sufficiency, in the skill and in
+          the worker protocol, asserted by a contract test.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <h2 id="s5">§5 — Constraints</h2>
 
     <p>Worker prompts carry fences and a pointer to the live plan. They never copy plan
@@ -415,25 +503,28 @@
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
     <p class="r-fu-outcome">Landed — commits a927c9c, 8a44624, 0ae4167, d3a7617, 2224770. Six nodes dispatched through one call across two external harnesses and the calling harness; all 11 gates banked. One node definition reached the same 36-key routing result on two backends; an unprompted four-field NEEDS-HELP report was answered and resumed in the same session, which restated its measurements without re-running; budget read utilisation 1.02% on one backend and explicit unknown on the other. 1,598 tests pass (103 new). Two live defects found and fixed: the resume invocation was rejected on argument order, and a dead process with an empty log misread as starting.</p>
     </article>
-<article class="r-fu" data-id="f-uwd-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-08-12T09:20:00Z" data-recommends-skill="/reckon-ship crew-run-ledger" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-uwd-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-08-12T09:20:00Z" data-recommends-skill="/reckon-ship crew-run-ledger" data-resolved-at="2026-08-12T16:52:24+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Promote live run pointers into the committed run ledger</h4>
     <div class="r-fu-body"><p>Dispatch now writes a transient live pointer per run and observation folds the stream, manifest presence and budget signal back into it, but nothing promotes a finished run into durable committed history. Two limits surfaced while running the wave and belong to this work or its neighbours: one backend's restrained tier blocks all writes including the manifest, so a read-only node has no delivery channel; and configured per-backend concurrency is resolved but not enforced by dispatch, so the cap is currently advice to the caller.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-run-ledger</pre>
+    <p class="r-fu-outcome">Foreign-owner: the promotion work it names landed in crew-run-ledger, which is shipped at 1.0 — live pointers now promote into the repository's committed ledger with recovery for an interrupted orchestrator. Closed here rather than left open against a plan that no longer owns it.</p>
     </article>
-<article class="r-fu" data-id="f-uwd-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-uwd-003" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="2026-08-12T16:52:24+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Stop the single-goal check rejecting a conjoined noun phrase</h4>
     <div class="r-fu-body"><p>The single-goal property matches any <code>" and "</code> in the goal, so it refuses goals that name one deliverable: <em>round-trip a section from parse and serialisation</em>, <em>derived age and a staleness verdict</em>, <em>sprint order and incompleteness</em>. Three of three nodes in one wave were refused on this, each reworded to remove a conjunction that was never a second deliverable.</p><p>The check is worth keeping - the same pass correctly caught a genuine two-deliverable goal and a time budget overrunning its fence in the same wave. The defect is precision, not existence. Distinguish a conjunction joining two verb phrases (two deliverables) from one joining a noun phrase (one deliverable), and measure it with a test carrying both the refused-correctly and refused-wrongly goals from that wave.</p></div>
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    <p class="r-fu-outcome">Folded into §7 with its twin. Note the duplicate id: two sessions independently minted f-uwd-003 on this plan, which is why followup ids are audit keys and never the way follow-on work is addressed.</p>
     </article>
 <article class="r-fu" data-id="f-uwd-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The subjective-term check fires inside hyphenated compounds</h4>
     <div class="r-fu-body"><p>The demonstrable property rejects a done-when containing a subjective adjective, matched on a word boundary. A hyphen is a word boundary, so <code>machine-readable</code>, <code>human-readable</code> and any compound ending in a listed term are rejected as opinions. Observed 2026-08-12 dispatching the section-6 guard itself: a done-when naming a machine-readable exit code was refused for resting on the subjective term 'readable', and the node had to be reworded rather than fixed.</p><p>The cost is small but the direction is wrong: the check exists to stop a worker being sent an unmeasurable goal, and here it blocks the most precise available wording. Narrow the match so a compound whose head is not the listed adjective passes, and keep a test for both the true positive and this false one.</p></div>
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
     </article>
-<article class="r-fu" data-id="f-uwd-scope-sufficiency" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-uwd-scope-sufficiency" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="2026-08-12T16:52:24+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Scoped checks that paths are exclusive, never that they are sufficient</h4>
     <div class="r-fu-body"><p>A node can satisfy all seven properties and still be unbuildable. The scoped property verifies that write paths are enumerated and shared with no concurrent node; nothing checks whether those paths can actually carry the goal. Observed today: a node routing gate state into the blocking derivation was fenced to <code>reckon/lifecycle.py</code> and <code>reckon/roadmap.py</code>, passed validation, and blocked on arrival - <code>read_plan</code> builds its blocking rows in <code>mcp_views._blocking</code> for typed reads and <code>serve._derive_lifecycle</code> for discovery reads, so exactly one of the two required surfaces was reachable and the two-direction assertion could not truthfully be made.</p><p>The escape hatch caught it cleanly, which is the intended division of labour: the worker audited the call graph, changed nothing, and named both missing files and functions. But the cost is a full dispatch cycle, and the fault was the coordinator's - the fence was inferred from a symbol search rather than from the callers of the thing being changed.</p><p>Two directions, and the first is cheap. Have <code>--dry-run</code> report the write scope back as a resolved list so a coordinator sees what it actually fenced before committing a wave to it. Then consider whether a sufficiency hint is possible at all: the paths naming a symbol the goal mentions, or the callers of a function in scope, would have surfaced both missing files here. If it cannot be checked, say so in the contract - a property that sounds like it guarantees buildability while checking only exclusivity is worse than one that states its own limit.</p></div>
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    <p class="r-fu-outcome">Folded into §8. The finding is sharper than a missing check: a property that sounds like it guarantees buildability while verifying only exclusivity is worse than one that states its limit, so the section requires both the cheap fix (a dry run reporting the scope it resolved) and the honest one (the contract saying what scoped does not check).</p>
     </article>
 </section>
 
