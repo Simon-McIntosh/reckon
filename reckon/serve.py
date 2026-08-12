@@ -40,13 +40,13 @@ import os
 import re
 import socket
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from reckon import _plan_html
+from reckon import _backends, _plan_html, crew, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
 from reckon.lifecycle import (
     effective_status,
@@ -90,6 +90,7 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
 
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
+CREW_LOG_TAIL_BYTES = 64 * 1024
 
 # Fields that are updated on every write and therefore excluded from the
 # content-equality check in _content_equal.
@@ -126,6 +127,149 @@ def load_mounts() -> dict[str, Path]:
         if p.is_dir():
             out[name] = p
     return out
+
+
+def _read_log_tail(path: Path, *, byte_limit: int = CREW_LOG_TAIL_BYTES) -> list[str]:
+    """Read at most ``byte_limit`` bytes from the end of an event stream."""
+    try:
+        size = path.stat().st_size
+        start = max(0, size - byte_limit)
+        with path.open("rb") as handle:
+            handle.seek(start)
+            payload = handle.read(byte_limit)
+    except OSError:
+        return []
+    if start:
+        _partial, separator, payload = payload.partition(b"\n")
+        if not separator:
+            return []
+    return payload.decode("utf-8", errors="replace").splitlines()
+
+
+def _stream_is_terminal(pointer: dict, lines: list[str]) -> bool:
+    """Recognise a terminal event using the recorded backend dialect."""
+    dialect = str(pointer.get("dialect") or "")
+    argv = pointer.get("argv") or []
+    command = dialect or (str(argv[0]) if isinstance(argv, list) and argv else "")
+    if not command:
+        return False
+    try:
+        observation = _backends.observe_stream(
+            backend_name=str(pointer.get("backend") or dialect),
+            backend={"command": command},
+            lines=lines,
+        )
+    except _backends.BackendError:
+        return False
+    return observation.terminal
+
+
+def _log_activity(pointer: dict) -> tuple[str | None, float | None, list[str]]:
+    """Return the log modification stamp, age in seconds and bounded tail."""
+    raw_path = pointer.get("log_path")
+    if not raw_path:
+        return None, None, []
+    path = Path(str(raw_path))
+    try:
+        if not path.is_file():
+            return None, None, []
+        modified = path.stat().st_mtime
+    except OSError:
+        return None, None, []
+    stamp = (
+        datetime.fromtimestamp(modified, tz=timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+    age = max(0.0, datetime.now(tz=timezone.utc).timestamp() - modified)
+    return stamp, age, _read_log_tail(path)
+
+
+def _elapsed_since(stamp: object) -> int | None:
+    """Return whole elapsed seconds from an ISO timestamp, when available."""
+    if not stamp:
+        return None
+    try:
+        started = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
+
+
+def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
+    """Join mounted live pointers with roster and navigation state."""
+    selected = {project} if project else set(mounts)
+    roster_by_project: dict[str, dict[str, dict]] = {}
+    sprint_by_project: dict[str, dict[str, str]] = {}
+    for name in selected:
+        docs = mounts.get(name)
+        if docs is None:
+            continue
+        try:
+            roster, _version = ledger.load(name, docs.parent)
+        except (OSError, ledger.LedgerError):
+            roster = {"members": []}
+        roster_by_project[name] = {
+            str(member.get("id") or ""): member
+            for member in roster.get("members", [])
+            if isinstance(member, dict) and member.get("id")
+        }
+        try:
+            discovered = discover_plans(docs, name, _STATE_ROOT)
+            sprint_by_project[name] = {
+                str(item.get("slug") or ""): str(item.get("sprint") or "")
+                for item in discovered.get("inventory", [])
+                if isinstance(item, dict) and item.get("slug")
+            }
+        except (OSError, ValueError, ResourceCollision):
+            sprint_by_project[name] = {}
+
+    rows: list[dict] = []
+    for pointer in crew.list_live():
+        name = str(pointer.get("project") or "")
+        if name not in selected or name not in mounts:
+            continue
+        node = pointer.get("node") if isinstance(pointer.get("node"), dict) else {}
+        agent = pointer.get("agent") if isinstance(pointer.get("agent"), dict) else {}
+        plan = str(node.get("plan") or "")
+        member_id = str(pointer.get("member") or "")
+        roster_member = roster_by_project.get(name, {}).get(member_id, {})
+        last_activity, age, lines = _log_activity(pointer)
+        terminal = _stream_is_terminal(pointer, lines)
+        phase = (
+            "done"
+            if terminal
+            else "working"
+            if age is not None and age <= crew.LOG_STALE_AFTER_SECONDS
+            else "idle"
+        )
+        sprint = sprint_by_project.get(name, {}).get(plan) or ""
+        rows.append(
+            {
+                "run_id": str(pointer.get("run_id") or ""),
+                "project": name,
+                "member": str(roster_member.get("id") or member_id),
+                "role": str(
+                    roster_member.get("role")
+                    or pointer.get("role")
+                    or node.get("role")
+                    or ""
+                ),
+                "plan": plan,
+                "section": str(node.get("section") or ""),
+                "model": agent.get("model"),
+                "effort": agent.get("effort"),
+                "elapsed_seconds": _elapsed_since(pointer.get("created_at")),
+                "phase": phase,
+                "last_activity": last_activity,
+                "gate": str(node.get("done_when") or ""),
+                "plan_href": f"/{name}/#plan/{plan}" if plan else None,
+                "sprint_href": f"/{name}/#sprint/{sprint}" if sprint else None,
+            }
+        )
+    return rows
 
 
 def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> bytes:
@@ -881,6 +1025,21 @@ class Handler(BaseHTTPRequestHandler):
                 )
             except OSError as e:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
+            return
+
+        if path == "/crew" or path.startswith("/crew/"):
+            project = None if path == "/crew" else path[len("/crew/") :]
+            if project is not None and not SAFE_NAME.fullmatch(project):
+                self._send(HTTPStatus.BAD_REQUEST, b"bad project name")
+                return
+            mounts = load_mounts()
+            if project is not None and project not in mounts:
+                self._send(HTTPStatus.NOT_FOUND, b"project not found")
+                return
+            self._send_json(
+                HTTPStatus.OK,
+                {"project": project, "runs": _crew_rows(mounts, project)},
+            )
             return
 
         if path.startswith("/plan/"):
