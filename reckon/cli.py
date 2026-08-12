@@ -278,7 +278,8 @@ def crew():
     JSON on stdout, each call is atomic, nothing is interactive, and exit codes
     are branchable — 0 succeeded, 1 the configuration or request is wrong, 2 the
     node is not dispatchable and names which property it failed, 3 the wave is
-    held on budget and names the backend, the utilisation and when it resets.
+    held on budget and names the backend, the utilisation and when it resets, 4
+    the named plan section is unavailable at the worktree base ref.
     """
 
 
@@ -530,7 +531,16 @@ def crew_dispatch(
                 config=config,
                 locked_decisions=locked_decisions,
                 peer_scopes=node.peer_scopes,
+                project=project,
+                repo=_repo_root(repo),
+                base=base,
             )
+        except crew_module.PlanVisibilityError as exc:
+            _emit(
+                {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                pretty,
+            )
+            raise click.exceptions.Exit(4) from exc
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(
@@ -551,6 +561,12 @@ def crew_dispatch(
             peer_scopes=node.peer_scopes,
             member=member,
         )
+    except crew_module.PlanVisibilityError as exc:
+        _emit(
+            {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+            pretty,
+        )
+        raise click.exceptions.Exit(4) from exc
     except crew_module.BudgetHold as exc:
         # Held, not failed: nothing was created and the node is still ready, so
         # this exits on its own code rather than as an error the caller would
