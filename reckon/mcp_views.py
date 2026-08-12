@@ -440,6 +440,37 @@ def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
     return result
 
 
+def _plan_effort(data: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the plan estimate and its derived consumption in named units."""
+
+    raw_hours = data.get("effort_hours")
+    if raw_hours is None:
+        return None
+    estimated_hours = float(raw_hours)
+    progress = float(data.get("impl", 0.0) or 0.0)
+    spent_hours = estimated_hours * progress
+    return {
+        "estimated_hours": round(estimated_hours, 2),
+        "spent_hours": round(spent_hours, 2),
+        "remaining_hours": round(estimated_hours - spent_hours, 2),
+        "unit": "worker-hours",
+    }
+
+
+def _sprint_capacity(data: dict[str, Any]) -> dict[str, Any]:
+    """Return the summed plan estimates for a sprint in named units."""
+
+    capacity = data.get("capacity")
+    if isinstance(capacity, dict) and capacity.get("unit") == "worker-hours":
+        return capacity
+    total_hours = sum(
+        float(item.get("effort_hours") or 0.0)
+        for item in data.get("items") or []
+        if isinstance(item, dict)
+    )
+    return {"total_hours": round(total_hours, 2), "unit": "worker-hours"}
+
+
 def _state(
     selector: ResourceSelector,
     data: dict[str, Any],
@@ -449,7 +480,7 @@ def _state(
     if resource_type == "plan":
         workflow_status = str(data.get("status") or "draft")
         age_days = modified_age_days(data.get("modified"))
-        return {
+        state = {
             "status": workflow_status,
             "effective_status": effective_status(workflow_status, blocking),
             "progress": float(data.get("impl", 0.0) or 0.0),
@@ -464,6 +495,10 @@ def _state(
             "milestone": data.get("milestone") or None,
             "capability": data.get("capability") or {},
         }
+        effort = _plan_effort(data)
+        if effort is not None:
+            state["effort"] = effort
+        return state
     if resource_type == "research":
         reviewed_at = data.get("reviewed_at", "")
         return {
@@ -490,6 +525,7 @@ def _state(
             "items": len(items),
             "completed": sum(status in {"shipped", "done"} for status in statuses),
             "blocked": sum(status == "blocked" for status in statuses),
+            "capacity": _sprint_capacity(data),
         }
     if resource_type == "milestone":
         return {
@@ -565,7 +601,6 @@ def _detail(
             "owner",
             "modified",
             "roi",
-            "effort",
             "source",
             "source_quality",
             "verdict",
@@ -598,6 +633,7 @@ def _detail(
                 )
                 if item.get(key) is not None
             }
+            | ({"effort": _plan_effort(item)} if _plan_effort(item) is not None else {})
             for item in data.get("items") or []
             if isinstance(item, dict)
         ]
@@ -929,6 +965,7 @@ def discovery_view(
             )
             if item.get(key) not in (None, "")
         }
+        | ({"effort": _plan_effort(item)} if _plan_effort(item) is not None else {})
         for item in raw.get("plans") or []
         if isinstance(item, dict)
     ]
@@ -950,6 +987,7 @@ def discovery_view(
                 for item in sprint.get("items") or []
                 if isinstance(item, dict)
             ),
+            "capacity": _sprint_capacity(sprint),
         }
         for sprint in raw.get("sprints") or []
         if isinstance(sprint, dict)

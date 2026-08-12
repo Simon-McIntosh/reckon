@@ -83,7 +83,18 @@ function FleetCmdKPalette({onClose, projects}) {
           if (!r.ok) continue;
           const d = await r.json();
           if (Array.isArray(d.inventory)) {
-            for (const p of d.inventory) items.push({...p, project: proj.project, accent: proj.accent});
+            const enriched = await Promise.all(d.inventory.map(async p => {
+              if ((p.type || "plan") !== "plan") return p;
+              try {
+                const detail = await fetch(`/plan/${proj.project}/${p.slug}`, {cache: "no-store"});
+                if (!detail.ok) return p;
+                const state = await detail.json();
+                return {...p, effort_hours: state.effort_hours};
+              } catch {
+                return p;
+              }
+            }));
+            for (const p of enriched) items.push({...p, project: proj.project, accent: proj.accent});
           }
         } catch {}
       }
@@ -146,6 +157,7 @@ function FleetCmdKPalette({onClose, projects}) {
               <span className="cmeta">
                 {p.project} · {p.type || "plan"}
                 {(p.type || "plan") === "plan" ? ` · ${Math.round((p.impl || 0) * 100)}%` : ""}
+                {(p.type || "plan") === "plan" && Number.isFinite(p.effort_hours) ? ` · ${p.effort_hours} worker-hours` : ""}
                 {p.type === "evidence" && p.verdict ? ` · ${p.verdict}` : ""}
               </span>
             </button>

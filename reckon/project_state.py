@@ -849,11 +849,28 @@ def _hydrate_items(
             item = {"slug": raw} if isinstance(raw, str) else dict(raw)
             state = plans.get(str(item.get("slug", "")))
             if state:
-                for key in ("title", "status", "impl"):
+                for key in (
+                    "title",
+                    "status",
+                    "impl",
+                    "effort_hours",
+                    "effort_calibrated",
+                ):
                     if key in state:
                         item[key] = state[key]
             items.append(item)
         sprint["items"] = items
+        sprint["capacity"] = {
+            "total_hours": round(
+                sum(
+                    float(item.get("effort_hours") or 0.0)
+                    for item in items
+                    if isinstance(item, dict)
+                ),
+                2,
+            ),
+            "unit": "worker-hours",
+        }
     return hydrated
 
 
@@ -1017,12 +1034,18 @@ def _parity_projection(
         record.pop("resource_id", None)
         record.pop("href", None)
         record.pop("version", None)
+        record.pop("capacity", None)
         for field in ("description", "starts", "ends", "summary"):
             if not record.get(field):
                 record.pop(field, None)
         for item in record.get("items", []):
             if isinstance(item, dict):
-                for field in (*LIFECYCLE_ITEM_FIELDS, "title"):
+                for field in (
+                    *LIFECYCLE_ITEM_FIELDS,
+                    "title",
+                    "effort_hours",
+                    "effort_calibrated",
+                ):
                     item.pop(field, None)
         result["sprints"].append(record)
     for key in ("milestones", "blockers"):

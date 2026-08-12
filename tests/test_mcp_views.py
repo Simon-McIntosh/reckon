@@ -873,6 +873,118 @@ def test_sprint_summary_uses_live_composed_items():
     assert compact_size(result) <= compact_size(raw) / 2
 
 
+def test_plan_summary_names_estimated_spent_and_remaining_hours():
+    selector = ResourceSelector("proj", "plan", "estimated")
+
+    result = resource_view(
+        selector,
+        1,
+        {"status": "active", "impl": 0.25, "effort_hours": 4.0},
+        view="summary",
+    )
+
+    assert result["state"]["effort"] == {
+        "estimated_hours": 4.0,
+        "spent_hours": 1.0,
+        "remaining_hours": 3.0,
+        "unit": "worker-hours",
+    }
+
+
+def test_plan_summary_omits_effort_when_no_estimate_exists():
+    selector = ResourceSelector("proj", "plan", "unestimated")
+
+    result = resource_view(
+        selector,
+        1,
+        {"status": "draft", "impl": 0.0},
+        view="summary",
+    )
+
+    assert "effort" not in result["state"]
+
+
+def test_sprint_summary_names_total_capacity_hours():
+    selector = ResourceSelector("proj", "sprint", "current")
+
+    result = resource_view(
+        selector,
+        1,
+        {
+            "status": "active",
+            "items": [
+                {"slug": "one", "effort_hours": 1.25},
+                {"slug": "two", "effort_hours": 2.0},
+                {"slug": "unestimated"},
+            ],
+        },
+        view="summary",
+    )
+
+    assert result["state"]["capacity"] == {
+        "total_hours": 3.25,
+        "unit": "worker-hours",
+    }
+
+
+def test_sprint_detail_names_each_item_effort_unit():
+    selector = ResourceSelector("proj", "sprint", "current")
+
+    result = resource_view(
+        selector,
+        1,
+        {
+            "status": "active",
+            "items": [{"slug": "one", "impl": 0.5, "effort_hours": 1.5}],
+        },
+        view="detail",
+    )
+
+    assert result["items"][0]["effort"] == {
+        "estimated_hours": 1.5,
+        "spent_hours": 0.75,
+        "remaining_hours": 0.75,
+        "unit": "worker-hours",
+    }
+
+
+def test_discovery_names_plan_effort_and_sprint_capacity_units():
+    result = discovery_view(
+        "proj",
+        {
+            "plans": [
+                {
+                    "slug": "one",
+                    "type": "plan",
+                    "status": "active",
+                    "impl": 0.5,
+                    "effort_hours": 2.0,
+                }
+            ],
+            "sprints": [
+                {
+                    "id": "current",
+                    "status": "active",
+                    "items": [{"slug": "one", "effort_hours": 2.0}],
+                }
+            ],
+            "summary": {},
+        },
+        view="summary",
+        cursor=None,
+        limit=None,
+        include_prompts=False,
+    )
+
+    sprint, plan = result["resources"]
+    assert plan["effort"]["unit"] == "worker-hours"
+    assert plan["effort"]["estimated_hours"] == 2.0
+    assert sprint["capacity"] == {
+        "total_hours": 2.0,
+        "unit": "worker-hours",
+    }
+
+
 def test_discovery_summary_is_paginated_and_small():
     raw = {
         "project": "proj",
@@ -964,6 +1076,7 @@ def test_discovery_summary_includes_concise_sprint_cards():
             "items": 2,
             "completed": 1,
             "blocked": 1,
+            "capacity": {"total_hours": 0.0, "unit": "worker-hours"},
         }
     ]
     assert result["pagination"] == {
