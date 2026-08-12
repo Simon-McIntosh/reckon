@@ -34,6 +34,7 @@ rather than averaging it in silently.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -393,6 +394,163 @@ def runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     return load(project, root)[0]["runs"]
 
 
+def _run_streams(run_id: str, streams_root: Path) -> list[Path]:
+    """Return every surviving stream for one run in stable path order."""
+
+    directory = streams_root / run_id
+    candidates = [directory / "stream.jsonl", *sorted(directory.glob("resume-*.jsonl"))]
+    return [path for path in candidates if path.is_file()]
+
+
+def _event_completion(paths: Iterable[Path]) -> str | None:
+    """Return the newest aware event timestamp across surviving streams."""
+
+    timestamps: list[tuple[datetime, str]] = []
+    for path in paths:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                timestamp = event.get("timestamp")
+                if not isinstance(timestamp, str) or not timestamp.strip():
+                    continue
+                try:
+                    parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                except ValueError:
+                    continue
+                if parsed.tzinfo is not None:
+                    timestamps.append((parsed, timestamp))
+    return max(timestamps, key=lambda item: item[0])[1] if timestamps else None
+
+
+def _stream_completion(paths: list[Path]) -> tuple[str, str]:
+    """Resolve completion from event timestamps, then the newest stream mtime."""
+
+    event_time = _event_completion(paths)
+    if event_time:
+        return event_time, "terminal_event"
+    newest = max(path.stat().st_mtime for path in paths)
+    completed = (
+        datetime.fromtimestamp(newest, tz=timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+    return completed, "stream_mtime"
+
+
+def _worker_seconds(dispatched_at: Any, completed_at: Any) -> int | None:
+    """Return whole non-negative seconds between two aware timestamps."""
+
+    try:
+        start = datetime.fromisoformat(str(dispatched_at).replace("Z", "+00:00"))
+        finish = datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if start.tzinfo is None or finish.tzinfo is None:
+        return None
+    return max(0, int((finish - start).total_seconds()))
+
+
+def repair_completion(
+    project: str,
+    *,
+    root: str | Path | None = None,
+    write_changes: bool = False,
+    streams_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Re-derive historical completion measurements from surviving streams.
+
+    Reporting is the default.  Persistence requires ``write_changes=True``;
+    records with no surviving stream are reported as unusable and never
+    rewritten, because promotion time is not a worker completion measurement.
+    """
+
+    data, version = load(project, root)
+    stream_base = (
+        Path(streams_root)
+        if streams_root is not None
+        else _store._config_home() / "crew" / "runs"
+    )
+    repaired_runs: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    changes = 0
+    unusable = 0
+    unchanged = 0
+    for raw_record in data["runs"]:
+        record = dict(raw_record)
+        run_id = str(record.get("run_id") or "")
+        paths = _run_streams(run_id, stream_base)
+        if not paths:
+            unusable += 1
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "action": "unusable",
+                    "calibration_usable": False,
+                    "completion_source": None,
+                    "detail": "no surviving stream file; record left unchanged",
+                }
+            )
+            repaired_runs.append(record)
+            continue
+
+        completed_at, source = _stream_completion(paths)
+        seconds = _worker_seconds(record.get("dispatched_at"), completed_at)
+        replacement = {
+            "completed_at": completed_at,
+            "completed_at_source": source,
+            "worker_seconds": seconds,
+        }
+        changed_fields = {
+            field: {"before": record.get(field), "after": value}
+            for field, value in replacement.items()
+            if record.get(field) != value
+        }
+        action = "updated" if changed_fields else "unchanged"
+        if changed_fields:
+            changes += 1
+            record.update(replacement)
+        else:
+            unchanged += 1
+        rows.append(
+            {
+                "run_id": run_id,
+                "action": action,
+                "calibration_usable": True,
+                "completion_source": source,
+                "completed_at": completed_at,
+                "worker_seconds": seconds,
+                "changed_fields": changed_fields,
+                "stream_files": [str(path) for path in paths],
+            }
+        )
+        repaired_runs.append(record)
+
+    new_version = version
+    written = False
+    if write_changes and changes:
+        repaired = {**data, "runs": repaired_runs}
+        new_version = write(project, repaired, version, root)
+        written = True
+    return {
+        "project": project,
+        "path": str(ledger_path(project, root)),
+        "write_requested": bool(write_changes),
+        "written": written,
+        "version_before": version,
+        "version_after": new_version,
+        "records": len(rows),
+        "updated": changes,
+        "unchanged": unchanged,
+        "unusable": unusable,
+        "rows": rows,
+    }
+
+
 # ── Budget holds ────────────────────────────────────────────────────────────
 
 
@@ -594,7 +752,10 @@ def effort_report(
             row["excluded_scope_changed"] += 1
             excluded_scope_changed += 1
             continue
-        if record.get("completed_at_source") == "promotion_time":
+        if record.get("completed_at_source") not in {
+            "terminal_event",
+            "stream_mtime",
+        }:
             row["excluded_unusable_completion"] += 1
             excluded_unusable_completion += 1
             continue

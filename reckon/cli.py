@@ -360,7 +360,9 @@ def _peer_scopes(values) -> dict:
             raise click.ClickException(
                 f"--peer {value!r} must be written as name=path[,path]"
             )
-        peers[name.strip()] = [part.strip() for part in paths.split(",") if part.strip()]
+        peers[name.strip()] = [
+            part.strip() for part in paths.split(",") if part.strip()
+        ]
     return peers
 
 
@@ -607,7 +609,9 @@ def crew_dispatch(
         raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
-            _emit({"ok": False, "error": "not-dispatchable", "detail": str(exc)}, pretty)
+            _emit(
+                {"ok": False, "error": "not-dispatchable", "detail": str(exc)}, pretty
+            )
             raise click.exceptions.Exit(2) from exc
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **record}, pretty)
@@ -928,6 +932,36 @@ def crew_ledger(project, view, checkout_path, pretty):
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, "project": project, **payload}, pretty)
+
+
+@crew.command(name="repair-completion")
+@click.option("--project", required=True, help="Project whose run ledger is checked.")
+@click.option(
+    "--write",
+    "write_changes",
+    is_flag=True,
+    help="Persist re-derived completion measurements; the default only reports.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose ledger is checked (default: the registered checkout).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_repair_completion(project, write_changes, checkout_path, pretty):
+    """Repair historical completion measurements from surviving run streams."""
+
+    ledger_module = _ledger_module()
+    try:
+        report = ledger_module.repair_completion(
+            project,
+            root=checkout_path,
+            write_changes=write_changes,
+        )
+    except ledger_module.LedgerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
 
 
 @main.group(name="service")
@@ -1742,9 +1776,7 @@ def doctor():
             config_errors.append(f"{codex_candidate.name} unreadable: {e}")
 
     if mcp_registration is not None:
-        click.echo(
-            f"  ✓  MCP server 'reckon' registered in {mcp_registration.name}"
-        )
+        click.echo(f"  ✓  MCP server 'reckon' registered in {mcp_registration.name}")
     else:
         click.echo(
             "  ✗  MCP server 'reckon' is not registered in Claude Desktop or Codex"
