@@ -8,16 +8,16 @@
   <meta name="plan-slug" content="reckon-skill-overhaul">
   <meta name="plan-title" content="Reckon skill overhaul: fix adoption friction, record the temporary ship→implement rename, and restore reckon-ship">
   <meta name="plan-summary" content="The reckon skill family is under-used for four mechanical reasons (impl never advances, MCP tools ungranted, redundancy with SPA/CLI, high activation energy) plus dependency-order blindness. This plan records why the family briefly renamed reckon-ship→reckon-implement, while the live repo has now reverted the skill name to reckon-ship and kept the systemic + structural fixes.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-owner" content="Simon McIntosh">
   <title>Reckon skill overhaul | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-07-29">
-<meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="5">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 </head>
@@ -133,6 +133,65 @@
       <li><strong>Sprint management.</strong> ~78 lines of sprint orchestration in <code>reckon-edit</code> has a distinct trigger surface from plan-text editing — see decision.</li>
     </ul>
 
+    <h2 id="s4">§4 — Plan state is a living ledger, not a closing entry</h2>
+
+    <p>§2 fixed what <code>impl</code> <em>is</em> — a settable scalar the executing skill writes,
+    not a figure the server computes. It did not fix <em>when</em>. The skill writes plan state per
+    section, and a section spans several nodes, so a plan with three landed nodes and two still in
+    flight reads exactly like one nobody has started. The figure is stalest precisely while the work
+    is most active, which is when every reader needs it: the next session deciding what is left, the
+    roadmap deciding what is ready, and the lead looking at a board that appears dead.</p>
+
+    <p><strong>The unit of advance is the node landing, not the section.</strong> A landing is
+    already a discrete, evidenced event — a promoted run with a commit, a gate verdict and a
+    measure. Writing plan state in the same beat as that promotion costs one call and removes the
+    window in which the plan disagrees with the repository. Waiting for the section to close is what
+    creates the window.</p>
+
+    <p><strong>Detail advances with the number.</strong> A percentage that moves while the prose
+    still describes unstarted work is a progress bar, not a record. Each landing writes what landed:
+    the commit, the measure the gate produced, the artifact. A reader must be able to see what has
+    been done without running anything, at any moment, not only after the last node.</p>
+
+    <p><strong>A followup on the plan being shipped is a section, not a followup.</strong> Deferring
+    same-plan work into a followup and then marking the plan complete hides it: lifecycle status is
+    what the roadmap filters on, so a plan at shipped with <code>impl</code> 1.0 leaves
+    <code>pending_work</code> and <code>ready_now</code> entirely, taking its open followup with it.
+    Followups are for work belonging to a different plan, whose own lifecycle surfaces it.</p>
+
+    <h3 id="s4-gates">Evidence gates</h3>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The cadence is stated as per-landing</td>
+          <td>The executing skill requires the plan-state write immediately after each run is
+          promoted, and a contract test asserts that wording rather than trusting it.</td>
+        </tr>
+        <tr>
+          <td>The writer is named, once</td>
+          <td>The skill and its orchestration reference agree that the orchestrator writes plan
+          state and that workers return outcome data instead — no second candidate writer, and the
+          existing ban on workers touching shared state left intact.</td>
+        </tr>
+        <tr>
+          <td>Landing detail is required, not just the number</td>
+          <td>The skill requires the commit and the gate's measure in the same write that advances
+          <code>impl</code>, so a moved percentage is never the only change.</td>
+        </tr>
+        <tr>
+          <td>Same-plan work cannot be deferred out of sight</td>
+          <td>The skill states that follow-on work on the plan in hand becomes a section of it, and
+          a contract test asserts the rule is present.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="naming" data-choice="keep-prefix-rename-ship" data-by="Simon McIntosh" data-when="2026-06-23">
@@ -158,6 +217,15 @@
       <button class="r-opt" data-value="also-server">also server-side (add ready-set/critical-path + computed impl to the MCP discovery payload)</button>
       </p>
     <p class="r-dec-rat">Shipped the skill-side dependency gate in reckon-ship (read depends_on; STOP if a prerequisite is not shipped/done; name blocks successors on completion). Server-side ready-set/computed-impl deferred as an optional follow-up.</p>
+    </div>
+<div class="r-dec" data-key="plan-state-writer" data-choice="orchestrator-writes" data-by="Simon McIntosh" data-when="2026-08-12T16:06:08+00:00">
+    <p class="r-dec-q">Who writes plan state when a node lands?</p>
+    <p class="r-dec-ctx">A landing is evidenced at the moment a run is promoted, and both the worker that produced it and the orchestrator that promoted it could write the plan.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="orchestrator-writes">The orchestrator writes plan state after each landing</button>
+      <button class="r-opt" data-value="worker-writes">Each worker updates the plan when its own node lands</button>
+      </p>
+    <p class="r-dec-rat">The orchestrator holds the full picture and has read the whole plan, so it is the only party that knows what one landing means for the rest — the denominator, which section it closes, and what is still in flight. A worker knows its own node and nothing else, so a worker-written advance would be a guess about a total it cannot see. It also keeps the existing rule intact rather than carving an exception into it: workers commit in detached worktrees and never touch shared reckon state, which is what stops concurrent nodes clobbering each other&#x27;s writes.</p>
     </div>
 </section>
 
