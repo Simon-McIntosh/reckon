@@ -1332,17 +1332,16 @@ def scoped_diff_stat(
     base: str,
     head: str = "HEAD",
     paths: Iterable[str] = (),
-) -> dict[str, Any]:
+) -> dict[str, int] | None:
     """Count the lines a run changed inside its own write scope.
 
     Measured against the node's exclusive paths rather than the whole diff, so
     the number describes the node rather than whatever else the branch carried.
-    A failure to measure is reported as a detail rather than raised: an
-    unmeasurable diff must not block a record from being promoted, or the run is
-    lost to keep one field tidy.
+    An unmeasurable diff is an explicit absence. Command diagnostics are not
+    measurements and must never enter the durable numeric field.
     """
     if not base:
-        return {"detail": "no base sha recorded, so no scoped diff could be taken"}
+        return None
     argv = ["git", "diff", "--numstat", f"{base}..{head}"]
     if paths:
         argv += ["--", *[str(path) for path in paths]]
@@ -1350,8 +1349,7 @@ def scoped_diff_stat(
         argv, cwd=str(cwd), capture_output=True, text=True, check=False
     )
     if result.returncode:
-        detail = result.stderr.strip() or result.stdout.strip() or "git diff failed"
-        return {"detail": detail.splitlines()[0][:200]}
+        return None
     added = removed = files = 0
     for line in result.stdout.splitlines():
         parts = line.split("\t")
@@ -1364,6 +1362,27 @@ def scoped_diff_stat(
     return {"added": added, "removed": removed, "files": files}
 
 
+def _require_resolvable_commits(cwd: Path, commits: Iterable[str]) -> None:
+    """Refuse commit values that Git cannot resolve to a commit object."""
+    for revision in commits:
+        result = subprocess.run(
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                f"{revision}^{{commit}}",
+            ],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode:
+            raise CrewError(f"commit {revision!r} is not a resolvable revision")
+
+
 def _elapsed_seconds(start: Any, end: Any) -> int | None:
     """Return whole seconds between two ISO-8601 stamps, or None."""
     try:
@@ -1374,7 +1393,9 @@ def _elapsed_seconds(start: Any, end: Any) -> int | None:
     return max(0, int((last - first).total_seconds()))
 
 
-def _terminal_stream_data(record: Mapping[str, Any]) -> tuple[str | None, dict[str, Any]]:
+def _terminal_stream_data(
+    record: Mapping[str, Any],
+) -> tuple[str | None, dict[str, Any]]:
     """Return the last valid event time and the terminal stream's budget."""
     budget = dict(record.get("budget") or {})
     if record.get("launch") != "cli":
@@ -1447,14 +1468,19 @@ def complete(
     ledger_root = root if root is not None else record.get("repo")
 
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
+    worktree = Path(str(record.get("worktree") or ""))
+    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    _require_resolvable_commits(tree, commit_list)
     if changed_lines is None:
-        worktree = Path(str(record.get("worktree") or ""))
-        tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-        changed_lines = scoped_diff_stat(
-            cwd=tree,
-            base=str(record.get("base_sha") or ""),
-            head=commit_list[-1] if commit_list else "HEAD",
-            paths=node.get("write_paths") or (),
+        changed_lines = (
+            scoped_diff_stat(
+                cwd=tree,
+                base=str(record.get("base_sha") or ""),
+                head=commit_list[-1],
+                paths=node.get("write_paths") or (),
+            )
+            if commit_list
+            else None
         )
 
     run = ledger.build_record(

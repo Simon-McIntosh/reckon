@@ -793,6 +793,41 @@ def test_the_prompt_names_concurrent_scopes(home, repo) -> None:
     assert record["peer_scopes"] == {"node-b": ["reckon/cli.py"]}
 
 
+# ── Promotion measurements ─────────────────────────────────────────────────
+
+
+def test_promotion_without_a_commit_records_absent_changed_lines(home, repo) -> None:
+    record = _dispatched(home, repo)
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["commits"] == []
+    assert stored["changed_lines"] is None
+
+
+def test_promotion_refuses_an_unresolvable_commit_value(home, repo) -> None:
+    record = _dispatched(home, repo)
+    revision = "not-a-revision"
+
+    with pytest.raises(crew.CrewError, match=revision):
+        crew.complete(record["run_id"], gate="passed", commits=[revision])
+
+    assert crew.pointer_path(record["run_id"]).is_file()
+
+
+def test_outside_repository_scope_records_absent_changed_lines(
+    home, repo, tmp_path
+) -> None:
+    record = _dispatched(home, repo)
+    pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
+    pointer["node"]["write_paths"] = [str(tmp_path / "outside.py")]
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+
+    stored = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])["record"]
+
+    assert stored["changed_lines"] is None
+
+
 # ── Worker reports ──────────────────────────────────────────────────────────
 
 MANIFEST = """\

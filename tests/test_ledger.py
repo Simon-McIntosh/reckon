@@ -152,7 +152,9 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     assert before == [f"{record['run_id']}.json"]
     assert not (repo / "docs" / "state" / PROJECT / "crew.json").exists()
 
-    result = crew.complete(record["run_id"], gate="passed", commits=["deadbee"])
+    result = crew.complete(
+        record["run_id"], gate="passed", commits=[record["base_sha"]]
+    )
 
     assert result["ledger_path"] == str(repo / "docs" / "state" / PROJECT / "crew.json")
     assert result["ledger_version"] == 1
@@ -161,7 +163,7 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     stored = ledger.runs(PROJECT, repo)
     assert [item["run_id"] for item in stored] == [record["run_id"]]
     assert stored[0]["gate"] == "passed"
-    assert stored[0]["commits"] == ["deadbee"]
+    assert stored[0]["commits"] == [record["base_sha"]]
     # The ledger is the only state file the promotion changed.
     changed = [line for line in _porcelain(repo) if "docs/state" in line]
     assert changed == [f"?? docs/state/{PROJECT}/crew.json"]
@@ -170,8 +172,7 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
 def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     events = [
-        json.loads(line)
-        for line in Path(record["log_path"]).read_text().splitlines()
+        json.loads(line) for line in Path(record["log_path"]).read_text().splitlines()
     ]
     terminal_time = "2027-01-02T03:04:05Z"
     events[-1]["timestamp"] = terminal_time
@@ -256,7 +257,9 @@ def test_a_killed_run_that_delivered_is_completed_but_unpromoted(home, repo) -> 
         f"reckon crew complete --run {record['run_id']}"
     )
     # And promotion then succeeds, so nothing was lost by the interruption.
-    promoted = crew.complete(record["run_id"], gate="passed", commits=["deadbee"])
+    promoted = crew.complete(
+        record["run_id"], gate="passed", commits=[record["base_sha"]]
+    )
     assert promoted["record"]["run_id"] == record["run_id"]
 
 
@@ -420,7 +423,9 @@ def test_a_promoted_record_names_the_member_and_its_session(home, repo) -> None:
     crew.observe(record["run_id"])
     _deliver(record)
 
-    promoted = crew.complete(record["run_id"], gate="passed", commits=["deadbee"])
+    promoted = crew.complete(
+        record["run_id"], gate="passed", commits=[record["base_sha"]]
+    )
 
     assert promoted["record"]["member"] == "worker-a"
     assert promoted["record"]["session_id"] == SESSION_ID
@@ -436,7 +441,7 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     stored = crew.complete(
         record["run_id"],
         gate="passed",
-        commits=["deadbee"],
+        commits=[record["base_sha"]],
         tests_added=9,
         outcome="landed the dispatch primitive",
     )["record"]
@@ -488,8 +493,15 @@ def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
         ["commit", "-q", "-m", "feat: widen the target\n\nBody."],
     ):
         subprocess.run(["git", *args], cwd=worktree, check=True, capture_output=True)
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(record["run_id"], gate="passed", commits=[commit])["record"]
 
     assert stored["changed_lines"] == {"added": 1, "removed": 0, "files": 1}
 
