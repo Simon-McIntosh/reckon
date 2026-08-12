@@ -574,7 +574,8 @@ def effort_report(
         declared = declared_efforts(project, root)
     letters = {str(k): str(v) for k, v in declared.items()}
     by_plan: dict[str, dict[str, Any]] = {}
-    excluded = 0
+    excluded_scope_changed = 0
+    excluded_unusable_completion = 0
     for record in runs(project, root):
         plan = str(record.get("plan") or "")
         row = by_plan.setdefault(
@@ -584,13 +585,18 @@ def effort_report(
                 "declared_effort": letters.get(plan, ""),
                 "runs": 0,
                 "excluded_scope_changed": 0,
+                "excluded_unusable_completion": 0,
                 "measured_minutes": 0.0,
                 "durations": [],
             },
         )
         if record.get("scope_changed"):
             row["excluded_scope_changed"] += 1
-            excluded += 1
+            excluded_scope_changed += 1
+            continue
+        if record.get("completed_at_source") == "promotion_time":
+            row["excluded_unusable_completion"] += 1
+            excluded_unusable_completion += 1
             continue
         minutes = _minutes(record.get("worker_seconds"))
         if minutes is None:
@@ -640,11 +646,13 @@ def effort_report(
     return {
         "plans": plans,
         "by_effort": buckets,
-        "excluded_scope_changed": excluded,
+        "excluded_scope_changed": excluded_scope_changed,
+        "excluded_unusable_completion": excluded_unusable_completion,
         "note": (
             "A run whose scope was widened mid-flight measures neither the "
-            "estimate nor the worker, so it is excluded from the measured "
-            "columns and counted here instead."
+            "estimate nor the worker, and a run completed at promotion time "
+            "has no surviving stream boundary. Both are excluded from the "
+            "measured columns and counted separately."
         ),
     }
 
