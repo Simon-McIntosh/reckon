@@ -1022,3 +1022,98 @@ def audit_view(
     summary["pagination"] = pagination
     summary["violations"] = list(raw.get("violations") or [])
     return summary
+
+
+def _roadmap_finding_counts(findings: list[dict[str, Any]]) -> dict[str, Any]:
+    by_severity: dict[str, int] = {}
+    for finding in findings:
+        severity = str(finding.get("severity") or "unknown")
+        by_severity[severity] = by_severity.get(severity, 0) + 1
+    return {"total": len(findings), "by_severity": by_severity}
+
+
+def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
+    findings = [
+        item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
+    ]
+    completion = raw.get("completion") or {}
+    return {
+        "project": raw.get("project", ""),
+        "completion": {
+            key: completion.get(key, 0)
+            for key in (
+                "plans",
+                "completed",
+                "pending",
+                "lifecycle_completion_pct",
+                "implementation_pct",
+            )
+        },
+        "ready": len(raw.get("ready_now") or []),
+        "blocked": len(raw.get("blocked") or []),
+        "deferred": len(raw.get("deferred") or []),
+        "finding_counts": _roadmap_finding_counts(findings),
+    }
+
+
+def roadmap_view(
+    raw: dict[str, Any],
+    *,
+    view: str,
+    cursor: str | None,
+    limit: int | None,
+) -> dict[str, Any]:
+    """Build compact, paginated roadmap views while preserving raw opt-in."""
+
+    selected = normalize_view(view)
+    if selected not in {"summary", "detail", "raw"}:
+        raise ViewRequestError(
+            "invalid_view",
+            "Roadmaps support summary, detail, or raw views.",
+            "Use summary for counts, detail for paginated findings, or raw.",
+        )
+    project = str(raw.get("project") or "")
+    if selected == "raw":
+        return {"project": project, "view": "raw", "data": raw}
+
+    if project == "*":
+        reports = [item for item in raw.get("projects") or [] if isinstance(item, dict)]
+        projects = [_roadmap_project_summary(report) for report in reports]
+        result: dict[str, Any] = {
+            "project": "*",
+            "view": selected,
+            "portfolio": raw.get("portfolio") or {},
+            "projects": projects,
+        }
+        if selected == "summary":
+            return result
+        findings = [
+            {"project": report.get("project", ""), **finding}
+            for report in reports
+            for finding in report.get("wiring_findings") or []
+            if isinstance(finding, dict)
+        ]
+        page, pagination = paginate(findings, cursor=cursor, limit=limit)
+        result["findings"] = page
+        result["finding_counts"] = _roadmap_finding_counts(findings)
+        result["pagination"] = pagination
+        return result
+
+    if selected == "summary":
+        return {
+            "project": project,
+            "view": "summary",
+            **_roadmap_project_summary(raw),
+            "critical_path": raw.get("critical_path") or {},
+        }
+
+    findings = [
+        item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
+    ]
+    page, pagination = paginate(findings, cursor=cursor, limit=limit)
+    result = dict(raw)
+    result["view"] = "detail"
+    result["wiring_findings"] = page
+    result["finding_counts"] = _roadmap_finding_counts(findings)
+    result["pagination"] = pagination
+    return result

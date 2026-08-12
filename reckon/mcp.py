@@ -2325,16 +2325,18 @@ def _roadmap(
     checkout_path: str | None = None,
     sprint: str | None = None,
     max_paths: int = 5,
+    view: Literal["summary", "detail", "raw"] | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
 ) -> dict[str, Any]:
     """Scan plan dependencies and return executable work plus graph health.
 
-    The response contains every pending plan in scope, ready, blocked, and
-    deferred sets,
-    lifecycle and implementation percentages, ordered sprint rollups, the
-    weighted critical path, alternative open paths, and wiring findings.
-    ``project='*'`` returns the same report for every mounted project plus a
-    portfolio rollup.  ``checkout_path`` is accepted for a single project and
-    follows the same worktree-routing contract as ``read_plan``.
+    Portfolio scans default to ``view='summary'`` with per-project completion,
+    ready/blocked/deferred counts, and finding totals. ``view='detail'`` adds a
+    cursor-paginated findings page; ``view='raw'`` returns the lossless report.
+    Single-project calls without ``view`` preserve the legacy raw response.
+    ``checkout_path`` is accepted for a single project and follows the same
+    worktree-routing contract as ``read_plan``.
     """
 
     from reckon.roadmap import build_roadmap
@@ -2374,7 +2376,7 @@ def _roadmap(
             * report.get("completion", {}).get("plans", 0)
             for report in valid
         )
-        return {
+        raw = {
             "project": "*",
             "portfolio": {
                 "projects": len(valid),
@@ -2395,6 +2397,18 @@ def _roadmap(
             },
             "projects": reports,
         }
+        selected_view = view or "summary"
+        from reckon.mcp_views import ViewRequestError, error_response, roadmap_view
+
+        try:
+            return roadmap_view(
+                raw,
+                view=selected_view,
+                cursor=cursor,
+                limit=limit,
+            )
+        except ViewRequestError as exc:
+            return error_response(exc.code, exc.message, hint=exc.hint)
 
     try:
         discovered = _discover_project(project, checkout_path)
@@ -2418,7 +2432,7 @@ def _roadmap(
         for item in inventory:
             if item.get("type", "plan") == "plan":
                 item["followups"] = followups_by_plan.get(str(item.get("slug")), [])
-        return build_roadmap(
+        raw = build_roadmap(
             project,
             inventory,
             list(discovered.get("sprints", [])),
@@ -2429,6 +2443,14 @@ def _roadmap(
             max_paths=max_paths,
             project_manifest=project_manifest,
         )
+        if view is None:
+            return raw
+        from reckon.mcp_views import ViewRequestError, error_response, roadmap_view
+
+        try:
+            return roadmap_view(raw, view=view, cursor=cursor, limit=limit)
+        except ViewRequestError as exc:
+            return error_response(exc.code, exc.message, hint=exc.hint)
     except Exception as exc:  # noqa: BLE001 — MCP errors stay structured
         return {
             "ok": False,
