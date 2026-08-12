@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 import sys
@@ -42,6 +43,38 @@ def repository(tmp_path: Path) -> Path:
 def command(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
+        cwd=repo,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+
+def command_without_reckon(
+    repo: Path, runner: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
+    runner.write_text(
+        """\
+import builtins
+import runpy
+import sys
+
+real_import = builtins.__import__
+
+def reject_reckon(name, *args, **kwargs):
+    if name == "reckon" or name.startswith("reckon."):
+        raise ImportError("reckon is unavailable in this interpreter")
+    return real_import(name, *args, **kwargs)
+
+builtins.__import__ = reject_reckon
+script = sys.argv[1]
+sys.argv = [script, *sys.argv[2:]]
+runpy.run_path(script, run_name="__main__")
+"""
+    )
+    return subprocess.run(
+        [sys.executable, str(runner), str(SCRIPT), *args],
         cwd=repo,
         check=False,
         text=True,
@@ -201,6 +234,107 @@ def test_cleanup_ignores_an_abandoned_pointer(tmp_path: Path, monkeypatch) -> No
 
     assert removed.returncode == 0, removed.stdout
     assert not worktree.exists()
+
+
+def test_create_and_cleanup_run_without_reckon_importable(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
+    runner = tmp_path / "without_reckon.py"
+
+    created = command_without_reckon(
+        repo,
+        runner,
+        "create",
+        "--repo",
+        str(repo),
+        "--session",
+        "standalone",
+        "--worker",
+        "worker-independent",
+    )
+    assert created.returncode == 0, created.stderr
+    worktree = Path(json.loads(created.stdout)["path"])
+    assert worktree.exists()
+
+    removed = command_without_reckon(
+        repo,
+        runner,
+        "cleanup-session",
+        "--repo",
+        str(repo),
+        "--session",
+        "standalone",
+        "--integrated-into",
+        "HEAD",
+    )
+    assert removed.returncode == 0, removed.stderr
+    assert not worktree.exists()
+
+
+def test_standalone_cleanup_still_refuses_a_live_claim(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = create_worktree(repo, "standalone-claim", "worker-live")
+    runner = tmp_path / "without_reckon.py"
+    pointer = write_live_pointer(
+        home,
+        "run-standalone",
+        worktree,
+        process_alive=True,
+    )
+
+    refused = command_without_reckon(
+        repo,
+        runner,
+        "cleanup-session",
+        "--repo",
+        str(repo),
+        "--session",
+        "standalone-claim",
+        "--integrated-into",
+        "HEAD",
+    )
+    assert refused.returncode == 2
+    assert "run-standalone" in refused.stdout
+    assert worktree.exists()
+
+    pointer.unlink()
+    removed = command_without_reckon(
+        repo,
+        runner,
+        "cleanup-session",
+        "--repo",
+        str(repo),
+        "--session",
+        "standalone-claim",
+        "--integrated-into",
+        "HEAD",
+    )
+    assert removed.returncode == 0, removed.stderr
+    assert not worktree.exists()
+
+
+def test_worktree_script_has_no_reckon_import() -> None:
+    tree = ast.parse(SCRIPT.read_text())
+    imports = [
+        node
+        for node in ast.walk(tree)
+        if (
+            isinstance(node, ast.Import)
+            and any(alias.name == "reckon" or alias.name.startswith("reckon.") for alias in node.names)
+        )
+        or (
+            isinstance(node, ast.ImportFrom)
+            and node.module is not None
+            and (node.module == "reckon" or node.module.startswith("reckon."))
+        )
+    ]
+    assert imports == []
 
 
 def test_rejects_unsafe_session_token(tmp_path: Path) -> None:
