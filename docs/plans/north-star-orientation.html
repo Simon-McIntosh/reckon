@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="cb230a2f7402a39405af252f27d4b53f963f979c,d7dfd50ae2f9a217fce0f545d10847c16fc51d63,d4d15023f06f11be7abb6f9dd07ad3252a5fd2b5,9ded8c0b03a625677e0681102a86d88656ade53b,e8efbc740199bebff99a022f1849819a6199118b">
 <meta name="plan-artifacts" content="reckon/_schema.py,reckon/project_state.py,reckon/_plan_html.py,reckon/_store.py,reckon/roadmap.py,reckon/serve.py,docs/ui/shell.jsx,docs/ui/state-loader.js,docs/_shared/plan.schema.json,docs/evidence/archive/north-star-orientation-landed.html">
 <meta name="plan-impl" content="0.83">
@@ -233,6 +233,11 @@
     <div class="r-fu-body"><p>Land the project-state collection with schema and advisory cap, the plan meta label with dangling-reference validation, cockpit prominence and a plans filter, the roadmap orientation rollup with an info-severity unoriented finding, then declare reckon's own north-stars and label the S7–S9 plans.</p></div>
     <pre class="r-fu-prompt">/reckon-ship north-star-orientation</pre>
     </article>
+<article class="r-fu" data-id="f-nso-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship north-star-orientation" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Adopt the directions once the server and MCP carry the new write path</h4>
+    <div class="r-fu-body"><p>Everything §5 needs is landed and green: the collection is writable through <code>edit_plan</code> (commit <code>e8efbc7</code>, 5 tool-boundary tests), the rollup reports per-direction work, and the cockpit band, plan badge and list facet all render. The declaration itself cannot be written from this session because <strong>server, parse and render code is not hot</strong> — the running HTTP server and every connected MCP stdio process hold the pre-merge code, so both write routes still refuse <code>north_stars</code> with <code>unsupported index set path</code>, and reckon exposes no CLI route to project state.</p><p>The unblock is <code>reckon service restart</code> plus an MCP reconnect. That was not taken unilaterally: this server is shared infrastructure that several concurrent agent sessions on this workstation read, and restarting it out from under them is the lead's call rather than a coordinator's. The same restart discharges the four measures across this sprint that need a live instance — the cockpit screenshot here, the 3-second dispatch-to-<code>working</code> latency and the <code>ss -ltnp</code> single-listener check on in-flight visibility, and the watcher navigability screenshot.</p><p>After the restart: declare the four directions on the project resource, label all eight plans of the three execution sprints, then re-run the dependency scan and confirm no undeclared-reference finding and a non-zero plan count against each direction.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship north-star-orientation §5</pre>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -253,6 +258,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260812T203900" data-who="reckon-ship" data-when="2026-08-12T20:39:00Z">
     <div class="r-comment-body">direction-write-path landed — commit e8efbc740199bebff99a022f1849819a6199118b; gate passed; measure: tests/test_mcp_store.py + tests/test_project_state.py 80 passed / 0 failed in 4.4s with 5 new tool-boundary tests; edit_plan now round-trips a whole north_stars collection and updates one entry by dotted id in the same style sprints and milestones use, a missing statement returns schema_validation with no write, a duplicate id returns op_error with no write, and six entries write successfully while returning the warning 'project declares 6 north-stars; the advisory cap is 5'. The private door is closed: the collection is now writable, readable and rendered through the same surfaces its neighbours use. Adoption (§5) is unblocked but held behind the failed integration suite gate. Artifacts docs/evidence/archive/north-star-orientation-landed.html</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260812T205800" data-who="reckon-ship" data-when="2026-08-12T20:58:00Z">
+    <div class="r-comment-body">Adoption attempted and blocked on a stale runtime, not on missing work. The write path landed in commit e8efbc7 and its 5 tool-boundary tests pass, but edit_plan still refuses north_stars with 'unsupported index set path' because the live MCP stdio process and the HTTP server both hold pre-merge code — server, parse and render changes are not hot — and no CLI route to project state exists. Recorded as followup f-nso-002 under the authority-required exemption: the unblock is reckon service restart plus an MCP reconnect, and this server is shared infrastructure that several concurrent agent sessions read, so restarting it is the lead's call rather than a coordinator's. Not worked around by hand-editing docs/state/reckon/project.json, for the same reason §4 exists: that would leave the write path unexercised on the one case it was built for.</div>
 </div>
 </section>
 </main>
