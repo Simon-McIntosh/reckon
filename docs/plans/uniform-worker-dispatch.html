@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-verifies" content="">
 <meta name="plan-impl" content="0.85">
 </head>
@@ -423,6 +423,11 @@
 <article class="r-fu" data-id="f-uwd-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Stop the single-goal check rejecting a conjoined noun phrase</h4>
     <div class="r-fu-body"><p>The single-goal property matches any <code>" and "</code> in the goal, so it refuses goals that name one deliverable: <em>round-trip a section from parse and serialisation</em>, <em>derived age and a staleness verdict</em>, <em>sprint order and incompleteness</em>. Three of three nodes in one wave were refused on this, each reworded to remove a conjunction that was never a second deliverable.</p><p>The check is worth keeping - the same pass correctly caught a genuine two-deliverable goal and a time budget overrunning its fence in the same wave. The defect is precision, not existence. Distinguish a conjunction joining two verb phrases (two deliverables) from one joining a noun phrase (one deliverable), and measure it with a test carrying both the refused-correctly and refused-wrongly goals from that wave.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    </article>
+<article class="r-fu" data-id="f-uwd-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The subjective-term check fires inside hyphenated compounds</h4>
+    <div class="r-fu-body"><p>The demonstrable property rejects a done-when containing a subjective adjective, matched on a word boundary. A hyphen is a word boundary, so <code>machine-readable</code>, <code>human-readable</code> and any compound ending in a listed term are rejected as opinions. Observed 2026-08-12 dispatching the section-6 guard itself: a done-when naming a machine-readable exit code was refused for resting on the subjective term 'readable', and the node had to be reworded rather than fixed.</p><p>The cost is small but the direction is wrong: the check exists to stop a worker being sent an unmeasurable goal, and here it blocks the most precise available wording. Narrow the match so a compound whose head is not the listed adjective passes, and keep a test for both the true positive and this false one.</p></div>
     <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
     </article>
 </section>
