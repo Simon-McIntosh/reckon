@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="north-star-orientation">
+  <meta name="plan-title"     content="North-star Orientation">
+  <meta name="plan-summary"   content="Make durable project direction a first-class label: a small set of north-stars per project, plans declaring which one they serve, prominence in the server, and visibility when a plan points nowhere.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="M">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-sprint"    content="S9">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>North-star Orientation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this exists</h2>
+
+    <p>Reckon models sprints, milestones, ROI and effort — all of which answer <em>when</em> and
+    <em>how much</em>. None answers <em>toward what</em>. A milestone is a dated target that
+    completes and is gone; a project's durable direction is a different kind of object, and its
+    absence shows: across twelve mounted projects and 352 plans, the phrase "north-star" already
+    appears as prose in dozens of <code>imas-ambix</code> documents, doing real work informally
+    with no structure behind it.</p>
+
+    <p>The purpose of making it structural is not decoration. It is to make it <strong>visible
+    when a plan points nowhere</strong>. The majority of plans should point at a north-star; a
+    project should carry a handful at most, because a dozen directions is no direction.</p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+
+    <p><strong>North-stars in project state.</strong> A <code>north_stars</code> collection
+    alongside sprints and milestones in <code>docs/state/&lt;project&gt;/</code>, each carrying a
+    stable id, a name, a one-sentence statement of what winning looks like, and an optional
+    <code>href</code> to a strategy or research document. The <code>href</code> is the escape
+    hatch that keeps the entry cheap while allowing depth where a direction needs argument rather
+    than a sentence. Schema-validated with an advisory cap on the count, so a project drifting
+    past a handful is reported rather than silently accepted.</p>
+
+    <p><strong>The plan label.</strong> <code>&lt;meta name="plan-north-star"&gt;</code>, parsed
+    into plan state and validated against the owning project's declared set. A plan naming an
+    unknown north-star is a wiring finding, consistent with how dangling dependency slugs are
+    already handled.</p>
+
+    <p><strong>Server prominence.</strong> A north-star band on the cockpit showing each
+    direction, its statement, and how much live work points at it; a badge on plan pages and in
+    the plan list; a filter on the plans list. Follow the repository's minimal-ink discipline —
+    aligned labels and hairline rules, no card grids or status pills, and a table where the
+    content is labels and values.</p>
+
+    <p><strong>Orientation reporting.</strong> <code>roadmap</code> gains a per-north-star rollup
+    — plans, completion and remaining effort pointing at each — plus an
+    <code>unoriented-plan</code> finding at info severity for live actionable plans that declare
+    none. Info rather than warn: an unoriented plan is a prompt to think, not a defect to
+    block on.</p>
+
+    <p><strong>Adopt it here first.</strong> Declare reckon's own north-stars and label the six
+    plans of sprints S7 to S9 against them. Partner projects adopt when they choose; the label is
+    optional everywhere and its absence never blocks execution.</p>
+
+    <h2 id="gates">§3 — Evidence gates</h2>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Declared and rendered</td>
+          <td>Reckon's own north-stars are declared in project state and render in the cockpit
+          band with their statements and live-work counts. Screenshot banked as a figure.</td>
+        </tr>
+        <tr>
+          <td>Plans point at them</td>
+          <td>All six S7–S9 plans carry <code>plan-north-star</code>, each resolving to a declared
+          id, shown as a badge on the plan page and filterable in the list.</td>
+        </tr>
+        <tr>
+          <td>Dangling reference caught</td>
+          <td>A test proving a plan naming an undeclared north-star produces a wiring finding
+          rather than passing silently.</td>
+        </tr>
+        <tr>
+          <td>Orientation rollup</td>
+          <td><code>roadmap</code> reports plans, completion and remaining effort per north-star,
+          and lists unoriented live plans at info severity. Recorded output for reckon.</td>
+        </tr>
+        <tr>
+          <td>Count discipline</td>
+          <td>A test proving a project exceeding the advisory cap is reported, and that the report
+          does not block a write.</td>
+        </tr>
+        <tr>
+          <td>Optional everywhere</td>
+          <td>A project with no north-stars declared, and a plan with no label, both continue to
+          read, scan and execute unchanged — asserted by test against an unmigrated project.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="north-star-model" data-choice="project-state-plus-meta" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">How is a north-star modelled?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="project-state-plus-meta">A project-state entry with an optional href, plus a plan meta label</button>
+          <button class="r-opt" data-value="typed-html-resource">A new typed HTML resource root with its own archive path</button>
+          <button class="r-opt" data-value="milestone-flavour">A milestone flavour with a kind discriminator</button>
+        </p>
+        <p class="r-dec-rat">Reuses the existing rollup machinery that sprints and milestones already use, and the optional href gives prose room without adding a typed root, route resolution, schema type and archive path. A milestone flavour was rejected because milestones complete and north-stars do not — conflating a dated target with a durable direction loses the distinction that makes the label worth having.</p>
+      </div>
+      <div class="r-dec" data-key="unoriented-severity" data-choice="info-not-warn" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">How severe is a live plan that declares no north-star?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="info-not-warn">Info — surfaced, never blocking</button>
+          <button class="r-opt" data-value="warn">Warn, alongside other graph faults</button>
+        </p>
+        <p class="r-dec-rat">Orientation is a prompt to think about direction, not a structural fault. Raising it to warn would put it beside genuine wiring errors and train readers to ignore the category. Some plans legitimately point nowhere — infrastructure repairs and cleanups among them.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-nso-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship north-star-orientation">
+        <h4 class="r-fu-title">Make north-stars first-class and orient this sprint set against them</h4>
+        <div class="r-fu-body"><p>Land the project-state collection with schema and advisory cap, the plan meta label with dangling-reference validation, cockpit prominence and a plans filter, the roadmap orientation rollup with an info-severity unoriented finding, then declare reckon's own north-stars and label the S7–S9 plans.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship north-star-orientation</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

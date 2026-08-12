@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="reckon">
+  <meta name="reckon-type"   content="research">
+  <meta name="plan-slug"     content="agent-fleet-orchestration">
+  <meta name="plan-title"    content="Agent Fleet Orchestration — architecture">
+  <meta name="plan-summary"  content="Architecture for orchestrating external coding-harness workers from reckon: one uniform dispatch surface, a layered flight-control config, repo-owned run ledgers, and gates that derive blocked state.">
+  <meta name="plan-informs"  content="flight-control-config,uniform-worker-dispatch,crew-run-ledger,derived-gate-state,inflight-visibility,north-star-orientation">
+  <meta name="plan-owner"    content="Simon McIntosh">
+  <title>Agent Fleet Orchestration — architecture | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What this is, and what it replaces</h2>
+
+    <p>This document is the architecture reference for orchestrating <strong>external
+    coding-harness workers</strong> from reckon. It repurposes the orchestrator pattern
+    published as <code>tuoxiansp/fable-the-boss</code> — an Anthropic-model boss that
+    composes self-contained task prompts, dispatches them to long-lived worker sessions of
+    other vendors' harnesses running as true background processes, and wakes on completion
+    to review reports rather than code. Six of that skillset's ideas survive intact: the
+    session/workspace split, the ephemeral per-task worktree cut from HEAD, the
+    background-dispatch-then-yield loop, the structured advice escape hatch, the
+    reporting-surface discipline, and a live console for otherwise-silent dispatches.</p>
+
+    <p>What does <em>not</em> survive is its packaging. The upstream skillset is a
+    standalone skill with its own registry file, its own Node daemon on its own port, and
+    its own dispatch prose. Reckon already owns every one of those concerns: plan state,
+    project config, a systemd-managed HTTP server on <code>127.0.0.1:8765</code>, an MCP
+    surface, worktree lifecycle via <code>worktree_fleet.py</code>, and a sprint
+    orchestration contract with manifest-to-file delivery. Bolting a second orchestration
+    system beside it would fork the execution story.</p>
+
+    <p>So the gap this work closes is narrow and specific. Reckon's
+    <code>reckon-ship</code> already coordinates sprints, isolates workers in worktrees,
+    audits scoped diffs, integrates commits and cleans up conservatively. It has
+    <strong>no path to dispatch a worker that is not an in-process subagent of the
+    orchestrator's own harness</strong>, no worker roster or session reuse, no live view of
+    an in-flight worker, no structured way for a worker to ask for help instead of
+    thrashing, and no machine-enforced gate between execution waves. Those five things are
+    the entire scope.</p>
+
+    <h2 id="s2">§2 — The dispatch seam</h2>
+
+    <p>The central design question is where harness-specific knowledge lives. Two axes look
+    independent — who orchestrates, and who works — but they vary in the same place. A skill
+    file <em>is</em> the orchestrator's instructions, so consider what changes when a
+    different harness reads <code>reckon-ship/SKILL.md</code>. Target resolution, plan
+    pre-flight through MCP, gate fences, scope allocation, worker verification, commit
+    integration, state writeback, cleanup and reporting are all identical. Only the
+    mechanics of starting a background worker and observing it differ — which is exactly
+    where the worker side varies too.</p>
+
+    <p>Both axes therefore collapse into one seam, and that seam belongs in reckon's code
+    rather than in prose an agent reads. The skill states <em>what</em> it wants; reckon
+    resolves <em>how</em>. The consequence is that <code>SKILL.md</code> carries a single
+    dispatch instruction covering every backend, and per-backend flag translation lives in
+    a unit-testable module the agent never sees.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 232" width="100%" style="max-width:640px" role="img"
+           aria-label="One skill issues one uniform dispatch call; reckon resolves flight config and fans out to three backends; only the launch kind branches.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="16" width="150" height="34" rx="3"/>
+          <rect x="8" y="84" width="150" height="34" rx="3" stroke="#3b82c4"/>
+          <rect x="228" y="84" width="150" height="34" rx="3"/>
+          <rect x="452" y="12" width="180" height="30" rx="3"/>
+          <rect x="452" y="56" width="180" height="30" rx="3"/>
+          <rect x="452" y="150" width="180" height="30" rx="3"/>
+          <path d="M83 50 L83 84"/>
+          <path d="M158 101 L228 101"/>
+          <path d="M378 101 L415 101 L415 27 L452 27"/>
+          <path d="M415 101 L452 71"/>
+          <path d="M415 101 L415 165 L452 165"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="83" y="37" text-anchor="middle">agent</text>
+          <text x="83" y="105" text-anchor="middle">/reckon-ship &lt;target&gt;</text>
+          <text x="303" y="98" text-anchor="middle">reckon crew dispatch</text>
+          <text x="303" y="113" text-anchor="middle" font-size="11">resolves flight config</text>
+          <text x="462" y="31">codex CLI</text>
+          <text x="462" y="75">claude CLI</text>
+          <text x="462" y="169">native — harness subagent</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="418" y="126">launch: cli</text>
+          <text x="418" y="196">launch: in-harness</text>
+          <text x="536" y="112" text-anchor="middle">reckon spawns · returns run id</text>
+          <text x="536" y="212" text-anchor="middle">reckon prepares · agent dispatches</text>
+        </g>
+      </svg>
+      <figcaption>One skill, one uniform call. Backend selection resolves from flight
+      config inside reckon, so the skill never names a model, an effort level or a harness.
+      The agent branches once — on <code>launch:</code> kind, two cases — and adding a
+      fourth harness never adds a third branch.</figcaption>
+    </figure>
+
+    <p>The single branch is unavoidable and bounded. A <code>launch: cli</code> backend is
+    an external process reckon can spawn, so <code>reckon crew dispatch</code> creates the
+    worktree, launches it, writes the live pointer and returns a run id; the agent
+    backgrounds that call and yields. A <code>launch: in-harness</code> backend is the
+    orchestrator's own delegation primitive, which reckon cannot spawn on its behalf — so
+    reckon prepares the worktree, live pointer, manifest path and resolved fences, returns a
+    dispatch directive, and the agent binds its own task back with
+    <code>reckon crew attach</code>.</p>
+
+    <p>This also settles a question that arose during design: whether a second skill should
+    exist for external-harness execution. It should not. Classifying the intended additions
+    showed only two of six were harness-specific — the launch mechanics and session reuse.
+    The other four (a run ledger, the escape hatch, the summary reflex, gate fences) are
+    improvements to <code>reckon-ship</code> that a sibling skill would have duplicated. The
+    durable rule: <strong>split a skill when the process differs — a different checkpoint
+    model, a different authority boundary. Never when only the substrate differs.</strong></p>
+
+    <h2 id="s3">§3 — Verified backend matrix</h2>
+
+    <p>All three backends were probed live before this design was accepted, because the
+    long-lived-session half of the pattern depends on each harness exposing a resumable
+    session id through its machine-readable stream. Both external CLIs do, and their shapes
+    are close enough that one document describes both.</p>
+
+    <table>
+      <thead>
+        <tr><th>Concern</th><th><code>codex</code></th><th><code>claude</code></th><th><code>native</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Version probed</td><td>codex-cli 0.147.0</td><td>Claude Code 2.1.228</td><td>host harness</td></tr>
+        <tr><td>Launch</td><td><code>codex exec --json -C &lt;wt&gt;</code></td><td><code>claude -p --output-format stream-json --verbose --add-dir &lt;wt&gt;</code></td><td>harness delegation primitive</td></tr>
+        <tr><td>Model</td><td><code>-m &lt;model&gt;</code></td><td><code>--model &lt;model&gt;</code></td><td>harness-selected</td></tr>
+        <tr><td>Reasoning effort</td><td><code>-c model_reasoning_effort=&lt;level&gt;</code></td><td><code>--effort &lt;level&gt;</code></td><td>harness-selected</td></tr>
+        <tr><td>Permission tier</td><td><code>--dangerously-bypass-approvals-and-sandbox</code></td><td><code>--dangerously-skip-permissions</code></td><td>harness policy</td></tr>
+        <tr><td>Read-only tier</td><td><code>--sandbox read-only</code></td><td>permission mode</td><td>harness policy</td></tr>
+        <tr><td>Session id source</td><td><code>thread.started</code> event → <code>thread_id</code></td><td><code>system/init</code> event → <code>session_id</code></td><td>none — ephemeral</td></tr>
+        <tr><td>Resume</td><td><code>resume &lt;thread_id&gt;</code></td><td><code>--resume &lt;session_id&gt;</code></td><td>not applicable</td></tr>
+        <tr><td>Terminal event</td><td><code>turn.completed</code></td><td><code>result</code> with <code>is_error</code>, <code>total_cost_usd</code></td><td>tool return</td></tr>
+        <tr><td>Final message</td><td><code>-o &lt;file&gt;</code></td><td><code>result.result</code> field</td><td>tool return</td></tr>
+        <tr><td>Long prompt</td><td>stdin via trailing <code>-</code></td><td>stdin via <code>--input-format</code></td><td>tool argument</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two probe results are worth recording because they de-risk load-bearing assumptions.
+    A codex session resumed by <code>thread_id</code> demonstrably retained memory of its
+    prior turn, confirming that a worker's session can outlive its workspace. And codex
+    0.147 ships <code>--approve-for-me</code>, a genuinely reviewed tier routing approval
+    requests through automatic review under a <code>workspace-write</code> sandbox — a
+    capability the upstream reference states does not exist on the headless path. It is not
+    the chosen default, because a <code>workspace-write</code> sandbox is inherited by child
+    processes and breaks test runners, builds and anything spawning subprocesses; the
+    detached worktree is the blast-radius boundary instead. It is nonetheless available
+    per-node and should be reconsidered whenever a node does not need to build.</p>
+
+    <p>The <code>native</code> backend is not a consolation option. It is the correct choice
+    for short read and synthesis nodes where process-spawn overhead dominates, for nodes
+    needing tools only the host harness exposes, and as the degradation target when no
+    external CLI is on <code>PATH</code> or authenticated. Its presence is also what makes
+    <code>default_backend</code> meaningful: <code>reckon flight</code> probes availability
+    and can fall back.</p>
+
+    <h2 id="s4">§4 — Flight control</h2>
+
+    <p>Routing must be tunable from one surface without editing a skill. Four layers
+    resolve upward, each overriding the one below:</p>
+
+    <table>
+      <thead><tr><th>Layer</th><th>Location</th><th>Committed</th><th>Owns</th></tr></thead>
+      <tbody>
+        <tr><td>prompt</td><td>the current user or coordinator instruction</td><td>—</td><td>always wins; per-task model, effort, concurrency</td></tr>
+        <tr><td>project</td><td><code>&lt;repo&gt;/docs/state/&lt;project&gt;/flight.yaml</code></td><td>yes, optional</td><td>a repository whose work needs different defaults</td></tr>
+        <tr><td>host</td><td><code>~/.config/reckon/flight.yaml</code></td><td>no</td><td>this workstation's standing preferences</td></tr>
+        <tr><td>shipped</td><td>generated model defaults inside the package</td><td>in the wheel</td><td>a fresh install works with zero config</td></tr>
+      </tbody>
+    </table>
+
+    <p>The prompt layer winning is not a convenience — it is required by the user-space
+    agent policy, which states that model family, concrete model, reasoning effort and
+    worker concurrency are runtime choices for the current task and that skills must not
+    prescribe them. That same policy permits application configuration, which is precisely
+    what the lower three layers are.</p>
+
+    <p>A <code>[tool.reckon]</code> section in <code>pyproject.toml</code> was considered and
+    rejected: <code>pyproject.toml</code> is not shipped in the wheel, so it would resolve
+    only from a source checkout and would break <code>reckon build</code> and any wheel
+    install. It also conflates build metadata with runtime routing. Shipped defaults
+    therefore live in the generated model, which <em>is</em> in the wheel.</p>
+
+    <p>The schema follows the LinkML idiom already established in this codebase's sibling
+    projects — <code>nova</code>, <code>helix</code> and <code>imas-codex</code> all declare
+    it as an optional authoring extra whose generated Pydantic models and JSON-Schema export
+    are committed, so runtime needs none of the toolchain. Reckon adopts the same shape:
+    <code>reckon/schema/flight.yaml</code> is the LinkML source;
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>
+    are generated and committed; <code>schema = ["linkml&gt;=1.9"]</code> becomes an optional
+    extra. Runtime gains exactly one dependency, <code>pyyaml</code>. Serving the JSON Schema
+    at <code>/_shared/flight.schema.json</code> lets a
+    <code>yaml-language-server</code> header give editor completion while tuning.</p>
+
+    <p>The surface itself is deliberately flat enough to hold in one screen — the whole ship
+    tunes here:</p>
+
+    <pre>version: 1
+default_backend: codex                    # codex | claude | native
+
+backends:
+  codex:   { launch: cli, command: codex,  model: gpt-5.6-sol,
+             effort: high,   sandbox: worktree-full, session_reuse: true,
+             concurrency: 3, time_budget: 25m }
+  claude:  { launch: cli, command: claude, model: claude-sonnet-5,
+             effort: medium, sandbox: worktree-full, session_reuse: true,
+             concurrency: 3, time_budget: 25m }
+  native:  { launch: in-harness,
+             concurrency: 4, time_budget: 25m, session_reuse: false }
+
+roles:
+  implement:   {}                         # inherits default_backend
+  review:      { sandbox: read-only }     # writes only its manifest
+  investigate: { sandbox: read-only }
+  cleanup:     {}
+
+gates:    { enforce: strict, require_evidence: true, on_fail: hold }
+fences:   { time_budget: 25m, needs_help_after_failures: 2, manifest_required: true }
+worktree: { cleanup: conservative }
+summary:  { reflex: what-why-how-when, at: [dispatch, completion, micro-plan] }</pre>
+
+    <p>Roles matter because a team is not only implementers. <code>implement</code> and
+    <code>cleanup</code> produce commits; <code>review</code> and <code>investigate</code>
+    produce a findings manifest and nothing else, so they need no write access beyond that
+    file and drop to a read-only tier as a runtime choice rather than a policy change.</p>
+
+    <h2 id="s5">§5 — Ownership: the repo owns its implementation record</h2>
+
+    <p>Run state has two natures that must not share a home. While a worker is in flight its
+    record changes every few seconds and is worthless once the run ends. Once the run
+    completes, the record is durable evidence of how the plan was implemented — and plans
+    are repo-local and committed, so their implementation record should be too. Storing
+    either in plan HTML is wrong: every progress tick would bump the server-owned version
+    counter and fight optimistic concurrency.</p>
+
+    <p>Reckon already has the mechanism for the durable half.
+    <code>~/.config/reckon/state/&lt;project&gt;</code> is a symlink into
+    <code>&lt;repo&gt;/docs/state/&lt;project&gt;</code>, which is how <code>index.json</code>
+    is server-written and git-committed. A ledger placed beside it inherits exactly that
+    property for free.</p>
+
+    <figure>
+      <svg viewBox="0 0 620 208" width="100%" style="max-width:620px" role="img"
+           aria-label="A live pointer in reckon config home is promoted on completion into a committed ledger in the owning repository; the server joins both to derive the live view.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="26" width="212" height="52" rx="3"/>
+          <rect x="352" y="26" width="260" height="52" rx="3" stroke="#3b82c4"/>
+          <rect x="150" y="144" width="330" height="46" rx="3"/>
+          <path d="M220 52 L352 52"/>
+          <path d="M114 78 L114 167 L150 167"/>
+          <path d="M482 78 L482 167 L480 167"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="18" y="46">live pointer — config home</text>
+          <text x="362" y="46">run ledger — owning repository</text>
+          <text x="160" y="164">reckon server</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="18" y="62">worktree · log · manifest · pid</text>
+          <text x="18" y="74">never committed</text>
+          <text x="362" y="62">roster · commit · gate verdict · outcome</text>
+          <text x="362" y="74">committed with the plan</text>
+          <text x="286" y="46" text-anchor="middle">promote</text>
+          <text x="160" y="180">tails each pointer's log for phase, joins the ledger for identity</text>
+        </g>
+      </svg>
+      <figcaption>Three tiers. Nothing transient is ever committed; nothing durable is ever
+      only in a cache. A stale pointer with a dead process and a terminal event in its log
+      is a recoverable orphan, handled the same way as an unmerged worktree.</figcaption>
+    </figure>
+
+    <p>So: durable roster and completed-run records live in
+    <code>&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code>, committed. Ephemeral live
+    pointers live in <code>~/.config/reckon/crew/live/&lt;run-id&gt;.json</code>, never
+    committed. On completion the orchestrator promotes the pointer into the ledger and
+    deletes it. The server joins both to serve a live view across every mounted project
+    without owning any of their data. The division of file formats follows the same logic
+    reckon already uses — YAML for what humans tune, JSON for what machines record.</p>
+
+    <h2 id="s6">§6 — Gates as derived blockers</h2>
+
+    <p>The gating reflex being hardened here is not new; it was developed in
+    <code>imas-ambix</code>, where a plan declares an <code>Evidence gates</code> section as
+    a two-column table of measure against required evidence <em>before</em> the work starts,
+    with the explicit caveat that thresholds are hypotheses to measure rather than
+    acceptance criteria to tune around. Downstream work stays visibly closed when a gate
+    fails, and negative results stay on the page. Today that reflex is prose, so nothing but
+    discipline enforces it and nothing else can read it.</p>
+
+    <p>Making it first-class state resolves a second, measured problem at the same time.
+    Reckon derives a plan's blocked state dynamically — <code>blocking</code> comes from
+    unresolved dependencies, and <code>effective_status</code> projects it over the persisted
+    workflow status. But the projection is <strong>one-way</strong>: it can add
+    <code>blocked</code> and never remove a stale one.</p>
+
+    <pre>effective_status('blocked', [])        -> 'blocked'   # never clears
+effective_status('active',  [{...}])   -> 'blocked'   # correctly derived
+effective_status('active',  [])        -> 'active'</pre>
+
+    <p>A plan authored <code>plan-status="blocked"</code> therefore reads blocked forever
+    after every blocker has cleared. <code>roadmap</code> already detects this as an
+    <code>orphaned-blocked-status</code> wiring finding — the system knows the state has
+    rotted and files a report instead of resolving it. Two plans across the portfolio
+    currently persist it, so the blast radius is small and the fix is cheap.</p>
+
+    <p>The same class of defect exists in sprint items, where it contradicts an explicit
+    written contract. Sprint orchestration states that item lifecycle status and
+    implementation fraction are derived from plan HTML and must never be persisted in the
+    sprint — yet <code>index.json</code> carries a persisted <code>status</code> per item,
+    and it is already stale: <code>distributed-sprint-state</code> reads
+    <code>pending</code> in its sprint while its plan is <code>shipped</code>.
+    <code>roadmap</code> derives the correct rollup, so only consumers of the raw index are
+    misled, but that includes any agent reading project state directly.</p>
+
+    <p>One mechanism fixes all three. A gate becomes a declared element carrying its
+    measure, required evidence, verdict and evidence link, anchored to a section and naming
+    the sections it gates. An unpassed gate is a <em>derived blocker</em>, so it flows
+    through the existing <code>blocking</code> → <code>effective_status</code> path.
+    Consequences follow without new machinery: a failed gate renders downstream work blocked
+    automatically, passing it unblocks automatically, no status edit is involved anywhere,
+    and <code>blocked</code> becomes a state that is <strong>only ever derived and never
+    stored</strong> — which the write path enforces by rejecting it, matching reckon's
+    established reject-write-warn-doctor posture. Persisted sprint-item status goes the same
+    way. A closing sweep across all mounted projects then migrates existing stale labels to
+    the new pattern.</p>
+
+    <h2 id="s7">§7 — Worker fences and the escape hatch</h2>
+
+    <p>Workers are locked into highly specified, time- and scope-limited, evidence-producing
+    bursts. Each dispatch carries four fences and nothing else, because the live plan
+    remains the semantic authority and copying plan prose into a prompt creates a second
+    source of truth that drifts between workers:</p>
+
+    <table>
+      <thead><tr><th>Fence</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td>Scope</td><td>exclusive write paths; no two concurrent workers share a file</td></tr>
+        <tr><td>Time</td><td>an explicit budget; exceeding it means stop and report, never push on</td></tr>
+        <tr><td>Evidence</td><td>the gate's measure <em>is</em> the done-when, stated quantitatively</td></tr>
+        <tr><td>Delivery</td><td>a named manifest path on disk; long output goes in the file and the reply is the path</td></tr>
+      </tbody>
+    </table>
+
+    <p>Delivery is a fence rather than a convention because of a known failure mode: a
+    background worker can finish its work and end its turn without delivering a report, at
+    which point the runtime signals idle and the node looks failed when it is not.
+    Re-asking often produces another bare idle signal and redispatching repeats work that
+    already succeeded. Requiring the manifest on disk removes the failure mode for the cost
+    of one write.</p>
+
+    <p>The escape hatch is structured, because a vague "I'm stuck" wastes as much time as
+    confused thrashing. A worker stops and emits a report whose first line is
+    <code>NEEDS-HELP:</code> followed by four required fields — <code>tried:</code> what was
+    attempted and the observable result, <code>options:</code> two or three concrete paths
+    it can see, <code>leaning:</code> which one and why, and <code>cost-if-wrong:</code>
+    what must be redone if the wrong path is chosen. Those fields turn a plea into a
+    decision brief the orchestrator can act on in one turn.</p>
+
+    <p>Knowing <em>when</em> to stop matters as much as how. Named triggers: the same command
+    has failed twice with different fixes attempted; a decision the plan does not settle is
+    required to proceed; the necessary change extends beyond the exclusive write scope; the
+    gate's required evidence cannot be produced with the available tools or data; or the time
+    budget is spent with the gate still closed. On receiving one, the orchestrator answers it
+    itself by default, escalates only genuinely user-owned decisions such as scope trade-offs
+    and irreversible choices, and resumes the <em>same</em> session with the advice — which is
+    why session reuse is load-bearing rather than an optimisation.</p>
+
+    <h2 id="s8">§8 — The summary reflex</h2>
+
+    <p>Dispatches are silent by design and workers report in their own idiom, so the
+    orchestrator owes the lead a readable account at two moments — when work goes out, and
+    when a batch comes back. The same four-axis shape is used when micro-planning the next
+    step, so it is one habit rather than three formats. Four lines, one per axis, at most two
+    lines each:</p>
+
+    <pre>Dispatching wave 2 — 3 workers
+WHAT   §3 /crew routes (impl-a) · §4 watcher tab (impl-b) · §5 MCP in_flight (impl-c)
+WHY    §3 unblocks §4 and §5; all three read the §2 ledger; no shared files
+HOW    codex gpt-5.6-sol @high, detached worktrees, scopes below, manifests on disk
+WHEN   ~20 min each; gate g-live-run closes the wave — §6 stays shut until it passes
+
+Wave 2 complete — 3/3 landed, gate g-live-run PASSED
+WHAT   /crew routes + watcher tab + MCP in_flight (1a2b3c4, 5d6e7f8, 9a0b1c2)
+WHY    gate evidence: GET /crew returned phase=working 1.8s after dispatch (&lt;3s required)
+HOW    all scoped clean on git show --stat; 41 tests green; no out-of-scope paths
+WHEN   next §6 north-star — ready, nothing blocks it</pre>
+
+    <p>Each axis has one job. <code>WHAT</code> names nodes and artifacts;
+    <code>WHY</code> gives the causal reason this wave runs now; <code>HOW</code> carries
+    runtime and isolation facts only; <code>WHEN</code> gives a duration estimate and names
+    the gate that closes the wave. Nothing restates what the plan already says.</p>
+
+    <p>One discipline binds the reflex to the gating reflex and is the reason the format
+    earns its place: <strong>at completion, <code>WHY</code> carries the gate
+    evidence.</strong> That forces every wave report to be quantitative, and makes a wave
+    that cannot state its gate evidence visibly incomplete rather than plausibly done.</p>
+
+    <h2 id="s9">§9 — Tool surface</h2>
+
+    <p>The skill is the uniform surface; the command-line entry points are agent-callable
+    primitives, not a human interface. That has consequences for their contract: output is
+    JSON on stdout by default with human formatting as an afterthought, each call is atomic
+    so an agent cannot perform half of it, nothing is ever interactive, and exit codes are
+    branchable.</p>
+
+    <p>Actions belong to the CLI because dispatch must spawn a background process, which an
+    MCP tool cannot usefully do. Reads belong to MCP, which keeps that surface at five tools
+    and honours reckon's ongoing collapse of its tool count.</p>
+
+    <table>
+      <thead><tr><th>Surface</th><th>Entry point</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>CLI</td><td><code>reckon flight [--project X]</code></td><td>resolved config plus backend availability; the skill's first pre-flight step</td></tr>
+        <tr><td>CLI</td><td><code>reckon crew dispatch …</code></td><td>flight-resolve, create worktree, launch backend, write live pointer, return run id</td></tr>
+        <tr><td>CLI</td><td><code>reckon crew attach --run R --task T</code></td><td>bind an in-harness dispatch to its live pointer</td></tr>
+        <tr><td>CLI</td><td><code>reckon crew complete --run R …</code></td><td>promote the pointer into the repo ledger with gate verdict, delete the pointer</td></tr>
+        <tr><td>CLI</td><td><code>reckon crew recover</code></td><td>find orphaned pointers — dead process, terminal event in log</td></tr>
+        <tr><td>MCP</td><td><code>crew(project, view=…)</code></td><td>read-only: resolved flight config, roster, live runs, ledger</td></tr>
+        <tr><td>MCP</td><td><code>read_plan</code> / <code>roadmap</code></td><td>gain an <code>in_flight</code> block on plan and row payloads</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row carries more weight than its size suggests. Folding
+    <code>in_flight</code> into the tools agents <em>already</em> call means a second
+    orchestrator session, or a worker reading its own plan, sees that a node is being worked
+    without needing to know the crew tool exists. That is the cheapest available guard
+    against double-dispatch, which for a node holding write scope risks a conflicting second
+    commit.</p>
+
+    <h2 id="s10">§10 — Defects found while exercising the tools</h2>
+
+    <p>These were measured while validating the design and are repaired as part of it.
+    Reckon's own schema audit is clean at 17 of 17 conformant, so these are graph- and
+    tool-surface faults rather than plan-state rot.</p>
+
+    <table>
+      <thead><tr><th>Defect</th><th>Evidence</th><th>Repaired in</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Persisted <code>blocked</code> never clears</td>
+          <td><code>effective_status('blocked', [])</code> returns <code>blocked</code>; already reported as <code>orphaned-blocked-status</code></td>
+          <td><code>derived-gate-state</code></td>
+        </tr>
+        <tr>
+          <td>Persisted sprint-item status contradicts its own contract and is stale</td>
+          <td><code>distributed-sprint-state</code> persists <code>pending</code>; its plan is <code>shipped</code></td>
+          <td><code>derived-gate-state</code></td>
+        </tr>
+        <tr>
+          <td><code>roadmap(project="*")</code> unusable through MCP</td>
+          <td>176 KB response exceeded the token ceiling; <code>read_plan</code> and <code>audit</code> both take progressive <code>view</code>, <code>roadmap</code> takes none</td>
+          <td><code>inflight-visibility</code></td>
+        </tr>
+        <tr>
+          <td>Portfolio graph faults</td>
+          <td>81 wiring findings, 69 in <code>imas-efit</code>, including 2 dependency cycles and 4 <code>inactive-hard-dependency</code> errors</td>
+          <td>sweep in <code>derived-gate-state</code></td>
+        </tr>
+        <tr>
+          <td>Skill installation drift risk</td>
+          <td><code>~/.claude/skills/reckon-roadmap</code> is a real directory where the other six are symlinks; contents currently identical</td>
+          <td><code>inflight-visibility</code></td>
+        </tr>
+        <tr>
+          <td>Placeholder passes schema validation as an identifier</td>
+          <td><code>agent-plan-authoring</code> carries <code>milestone: "—"</code></td>
+          <td><code>inflight-visibility</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s11">§11 — Delivery shape</h2>
+
+    <p>Six plans across three sprints, each sprint closed by one evidence gate. The
+    sequencing is deliberate: the first sprint is built conventionally so that the
+    <em>second and third are executed by the codex team it creates</em>, which dog-foods the
+    whole mechanism on real work rather than a rehearsal.</p>
+
+    <table>
+      <thead><tr><th>Sprint</th><th>Plans</th><th>Built by</th><th>Closing gate</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>S7</code> — uniform dispatch</td>
+          <td><code>flight-control-config</code>, <code>uniform-worker-dispatch</code></td>
+          <td>orchestrator, conventionally</td>
+          <td>one real codex node lands in a detached worktree with its manifest on disk, dispatched through the uniform call, with both summaries emitted</td>
+        </tr>
+        <tr>
+          <td><code>S8</code> — execution substrate</td>
+          <td><code>crew-run-ledger</code>, <code>derived-gate-state</code></td>
+          <td>codex team</td>
+          <td>a dispatch is recorded and promoted; a failed gate blocks downstream work and passing it unblocks, proven by test; no persisted blocked or item status remains in any mounted project</td>
+        </tr>
+        <tr>
+          <td><code>S9</code> — observation surface</td>
+          <td><code>inflight-visibility</code>, <code>north-star-orientation</code></td>
+          <td>codex team</td>
+          <td>a live run is visible in the SPA and through MCP; north-stars render with plans pointing at them; <code>roadmap("*")</code> returns a usable summary</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The north-star work lands last but changes how everything above is read. A north-star
+    is a durable direction rather than a dated target, defined per project in a small
+    set — a handful at most — with plans declaring which one they serve. Its purpose is to
+    make it visible when a plan points nowhere, and the majority of plans should point at
+    one.</p>
+
+  </main>
+</body>
+</html>

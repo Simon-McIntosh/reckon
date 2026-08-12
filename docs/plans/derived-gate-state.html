@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="derived-gate-state">
+  <meta name="plan-title"     content="Derived Gate State">
+  <meta name="plan-summary"   content="Harden the evidence-gate reflex into first-class plan state that feeds the blocker derivation, make blocked and sprint-item status derived-only, and sweep stale persisted labels across every mounted project.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="L">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S8">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Derived Gate State | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this exists</h2>
+
+    <p>The gating reflex being hardened here was developed in <code>imas-ambix</code>, where a
+    plan declares an evidence-gate table of measure against required evidence <em>before</em>
+    the work starts, downstream work stays visibly closed when a gate fails, and negative
+    results stay on the page. Today that reflex is prose: nothing but discipline enforces it,
+    and nothing else can read it.</p>
+
+    <p>Making it first-class state repairs a measured defect at the same time. Reckon derives a
+    plan's blocked state — <code>blocking</code> comes from unresolved dependencies and
+    <code>effective_status</code> projects it over the persisted workflow status — but the
+    projection is <strong>one-way</strong>. It can add <code>blocked</code> and never remove a
+    stale one:</p>
+
+    <pre>effective_status('blocked', [])        -&gt; 'blocked'   # never clears
+effective_status('active',  [{...}])   -&gt; 'blocked'   # correctly derived
+effective_status('active',  [])        -&gt; 'active'</pre>
+
+    <p>A plan authored <code>plan-status="blocked"</code> therefore reads blocked forever after
+    every blocker clears. <code>roadmap</code> already detects this as
+    <code>orphaned-blocked-status</code> — the system knows the state has rotted and files a
+    report instead of resolving it.</p>
+
+    <p>The same defect class exists in sprint items, where it contradicts an explicit written
+    contract. <code>references/sprint-orchestration.md §8</code> states that item lifecycle
+    status and implementation fraction are derived from plan HTML and must never be persisted in
+    the sprint — yet <code>index.json</code> carries a persisted per-item <code>status</code>,
+    and it is already stale: <code>distributed-sprint-state</code> reads <code>pending</code>
+    while its plan is <code>shipped</code>. <code>roadmap</code> derives the correct rollup, so
+    only consumers of the raw index are misled — which includes any agent reading project state
+    directly.</p>
+
+    <p>One mechanism fixes all three, because a gate <em>is</em> a declared blocker.</p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+
+    <p><strong>The gate element.</strong> A <code>&lt;section data-reckon="gates"&gt;</code>
+    whose <code>&lt;div class="r-gate"&gt;</code> children carry a stable id, the section they
+    anchor to, the sections they gate, status, the measure, the required evidence, the verdict
+    and an evidence link. Parser, schema, renderer and round-trip parity follow the pattern
+    already established for decisions and followups — including the derived-status discipline
+    that a gate's <code>passed</code> state is computed from its verdict rather than stored
+    twice.</p>
+
+    <p><strong>Write ops.</strong> <code>edit_plan</code> gains <code>gate</code> to declare
+    one and <code>pass</code>/<code>fail</code> to record a verdict with evidence. A pass with
+    <code>gates.require_evidence</code> in force and no recorded measure is rejected, not
+    warned — a gate that can pass without evidence is not a gate.</p>
+
+    <p><strong>Derivation wiring.</strong> An unpassed gate becomes a row in
+    <code>blocking</code>, flowing through the existing <code>effective_status</code> path. A
+    failed gate therefore renders downstream sections and plans blocked automatically, and
+    passing it unblocks them automatically, with no status edit anywhere.</p>
+
+    <p><strong>Blocked becomes derived-only.</strong> Remove <code>blocked</code> from the
+    persistable status set and reject it on write, matching reckon's established
+    reject-write-warn-doctor posture. Fix <code>effective_status</code> so a legacy persisted
+    <code>blocked</code> resolves to its underlying open state before the projection is applied,
+    which turns the one-way defect into a two-way derivation. Persisted sprint-item status goes
+    the same way — derived from plan HTML on read, rejected on write.</p>
+
+    <p><strong>Skill and server integration.</strong> <code>reckon-ship</code> honours the gate
+    fence: a wave does not open through a gate that is not passed, and
+    <code>gates.enforce</code> from flight config selects strict refusal or a warning. The
+    server renders gates on the plan page and surfaces a gate column in sprint view, so a closed
+    gate is visible without reading prose.</p>
+
+    <p><strong>The portfolio sweep.</strong> Once the pattern exists, sweep every mounted
+    project: migrate each persisted <code>plan-status="blocked"</code> to a recorded blocker or
+    gate, drop persisted sprint-item status, and repair the error-level wiring findings the
+    portfolio scan reported — 81 findings, 69 in <code>imas-efit</code>, including two
+    dependency cycles and four <code>inactive-hard-dependency</code> errors. This is a
+    review-and-cleanup job, not an implementation one: each repair is a plan-state edit through
+    the owning skill, re-scanned after. A finding that needs a material decision is reported,
+    not guessed. Cross-repository edits stay in their owning checkout.</p>
+
+    <p><strong>Migrate this sprint's own gates.</strong> The six plans of sprints S7 to S9
+    author their gates in ambix's prose form because the element did not yet exist. Converting
+    them to the new element is this plan's first dogfood and proves the migration path on real
+    documents.</p>
+
+    <h2 id="gates">§3 — Evidence gates</h2>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Two-way derivation</td>
+          <td>A test asserting <code>effective_status</code> returns an open state for a legacy
+          persisted <code>blocked</code> with no blockers, and <code>blocked</code> when a
+          blocker exists. The current one-way behaviour is the seeded regression case.</td>
+        </tr>
+        <tr>
+          <td>Gate blocks and unblocks</td>
+          <td>A failed gate renders its downstream sections blocked in
+          <code>read_plan</code> and <code>roadmap</code>; passing it returns them to ready,
+          with no status write in between. Both directions asserted in one test.</td>
+        </tr>
+        <tr>
+          <td>Evidence-free pass rejected</td>
+          <td>A test proving a <code>pass</code> op with no recorded measure is refused while
+          <code>require_evidence</code> is in force, and that the refusal names the gate.</td>
+        </tr>
+        <tr>
+          <td>Blocked unwritable</td>
+          <td>Tests proving <code>plan-status="blocked"</code> and a persisted sprint-item
+          status are both rejected on write, and that reading a legacy document carrying them
+          still succeeds with a compatibility diagnostic.</td>
+        </tr>
+        <tr>
+          <td>Round-trip parity</td>
+          <td>Gates survive the existing state round-trip invariant with byte-identity of the
+          regenerated reckon-owned section, matching decisions and followups.</td>
+        </tr>
+        <tr>
+          <td>Wave fence honoured</td>
+          <td>A recorded orchestrator transcript showing a wave refused while a gate is closed,
+          and opened once it passes.</td>
+        </tr>
+        <tr>
+          <td>Sweep complete</td>
+          <td>A portfolio re-scan showing zero <code>orphaned-blocked-status</code> findings,
+          zero persisted sprint-item status across all mounted projects, and error-level wiring
+          findings reduced to a listed residue each carrying a stated reason it was not
+          auto-repairable.</td>
+        </tr>
+        <tr>
+          <td>Own gates migrated</td>
+          <td>All six S7–S9 plans carry <code>data-reckon="gates"</code> elements and pass
+          <code>reckon audit-doc</code> with no errors.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Constraints</h2>
+
+    <p>Legacy documents carrying persisted <code>blocked</code> or item status must still
+    <em>read</em> successfully with a compatibility diagnostic. Rejection applies to writes
+    only; a read-side hard failure would strand every unmigrated project in the portfolio.</p>
+
+    <p>The sweep never rebalances a sprint, retires a plan, or resolves a decision to make a
+    finding disappear. It migrates state representation and repairs mis-wired relationships. A
+    finding whose repair requires a material judgement is reported for the owning project.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">How are gates represented so the toolset and server enforce them?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="first-class-derived-blocker">A first-class gates section whose unpassed gates feed the blocker derivation</button>
+          <button class="r-opt" data-value="gate-flavoured-followups">Followups with a gate discriminator</button>
+          <button class="r-opt" data-value="prose-and-discipline">Prose gates enforced only by skill discipline</button>
+        </p>
+        <p class="r-dec-rat">Routing gates through the existing blocking derivation makes downstream blocking automatic in both directions with no new machinery, and unifies the fix for persisted blocked status. Followups conflate work-to-do with evidence-that-must-hold; prose decays exactly the way persisted blocked did.</p>
+      </div>
+      <div class="r-dec" data-key="legacy-read-posture" data-choice="reject-write-warn-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">How strict is the removal of persisted blocked and item status?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="reject-write-warn-read">Reject on write, warn on read</button>
+          <button class="r-opt" data-value="reject-both">Reject on both read and write</button>
+        </p>
+        <p class="r-dec-rat">Matches reckon's existing reject-write-warn-doctor posture. A read-side hard failure would strand every unmigrated project across the portfolio until the sweep completed.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-dgs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state">
+        <h4 class="r-fu-title">Make gates first-class and blocked derived-only, then sweep the portfolio</h4>
+        <div class="r-fu-body"><p>Land the gates element with parser, schema, renderer and ops; wire unpassed gates into the blocker derivation; make blocked and sprint-item status derived-only with reject-on-write; then sweep every mounted project for stale labels and error-level wiring findings, and migrate this sprint set's own prose gates.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship derived-gate-state</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

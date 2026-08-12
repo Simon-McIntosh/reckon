@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="inflight-visibility">
+  <meta name="plan-title"     content="In-flight Visibility">
+  <meta name="plan-summary"   content="Fold the watcher into the reckon server as a native surface, band plans and sprints with live run state, expose in-flight through the read tools agents already call, and repair the measured MCP defects.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="M">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S9">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-depends-on" content="crew-run-ledger">
+  <title>In-flight Visibility | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this exists</h2>
+
+    <p>Dispatches are silent by design: a headless worker opens with one short message and then
+    works through tool calls for twenty minutes. Without a live view the lead cannot tell a deep
+    worker from a stalled one, and a second orchestrator session cannot tell that a node is
+    already being worked.</p>
+
+    <p>The upstream skillset solved this with a separate daemon on its own port. Reckon already
+    runs one systemd-managed server on <code>127.0.0.1:8765</code> serving every mounted
+    project, so a second daemon would be a regression. This plan folds the watcher into that
+    server as a native surface and — more importantly — exposes in-flight state through the read
+    tools agents <em>already</em> call.</p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+
+    <p><strong>Server routes.</strong> <code>GET /crew</code> across all mounted projects and
+    <code>GET /crew/&lt;project&gt;</code> for one. Each response joins the live pointers with
+    the owning repository's ledger: member identity and role from the ledger, phase and last
+    activity derived by tailing the run's machine-readable log. Phase derivation is per-backend
+    and reuses the terminal-event recognition already built for dispatch — <code>done</code> on a
+    terminal event, <code>working</code> when the log was written recently, <code>idle</code>
+    otherwise. Rows carry direct <code>plan_href</code> and <code>sprint_href</code> links so the
+    view is navigable rather than merely informative. Tailing is bounded — read the tail of the
+    log, never the whole file.</p>
+
+    <p><strong>The watcher surface.</strong> A fifth glyph tab in the SPA shell beside Overview,
+    Plans, Sprints and Graph, hash-routed consistently with the existing four, polling
+    <code>/crew</code>. One row per run: member, role, plan and section with links, resolved
+    model and effort, elapsed time, phase, last activity, and the gate the run is working
+    toward. Follow the repository's minimal-ink figure discipline — this is a table of labels and
+    values, so it is a semantic HTML table, never cards or tiles.</p>
+
+    <p><strong>In-flight bands on plans and sprints.</strong> A plan page shows a band when any
+    live run targets it; a sprint view badges each item that is in flight. This is what makes the
+    live state answer the question the lead actually asks — not "what is the crew doing" but "is
+    <em>this</em> being worked".</p>
+
+    <p><strong>In-flight through the existing read tools.</strong> <code>read_plan</code> gains an
+    <code>in_flight</code> block and <code>roadmap</code> rows gain an <code>in_flight</code>
+    field carrying run id, member, section and start time. This is the cheapest available guard
+    against double-dispatch: a second orchestrator, or a worker reading its own plan, sees a node
+    is taken without needing to know the crew tool exists. For a node holding write scope a
+    duplicate dispatch risks a conflicting second commit.</p>
+
+    <p><strong>Repair the measured MCP and installation defects.</strong> Each was found while
+    exercising the tools during design:</p>
+
+    <table>
+      <thead><tr><th>Defect</th><th>Repair</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>roadmap(project="*")</code> returned 176 KB and exceeded the response
+          ceiling, making the portfolio scan unusable through MCP.
+          <code>read_plan</code> and <code>audit</code> both take a progressive
+          <code>view</code>; <code>roadmap</code> takes none.</td>
+          <td>Add the same progressive <code>view</code> contract —
+          <code>summary</code> default for a portfolio, with <code>detail</code> and
+          <code>raw</code> opting deeper, plus pagination on findings.</td>
+        </tr>
+        <tr>
+          <td><code>~/.claude/skills/reckon-roadmap</code> is a real directory where the other six
+          reckon skills are symlinks. Contents are currently identical, so this is latent drift
+          rather than active divergence.</td>
+          <td>Make <code>reckon install-skills</code> detect and report a
+          copied-where-linked skill, and repair this one.</td>
+        </tr>
+        <tr>
+          <td><code>agent-plan-authoring</code> carries <code>milestone: "—"</code>: an em-dash
+          passes schema validation as a milestone identifier.</td>
+          <td>Constrain the milestone field to an identifier shape or empty, and clear the
+          placeholder.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="gates">§3 — Evidence gates</h2>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Live run visible</td>
+          <td><code>GET /crew</code> reports <code>phase=working</code> within 3 s of a real
+          dispatch, and <code>done</code> after the worker's terminal event. Both latencies
+          recorded.</td>
+        </tr>
+        <tr>
+          <td>Visible to agents too</td>
+          <td>While that run is live, <code>read_plan</code> on its plan and the matching
+          <code>roadmap</code> row both carry <code>in_flight</code> with the run id. Recorded
+          payload excerpts.</td>
+        </tr>
+        <tr>
+          <td>Navigable</td>
+          <td>The watcher tab renders the run with working links to its plan and sprint, and the
+          plan page shows its in-flight band. Screenshot banked as a figure.</td>
+        </tr>
+        <tr>
+          <td>No second daemon</td>
+          <td>Only one listener on <code>:8765</code> and no new port; confirmed by
+          <code>ss -ltnp</code> output with the watcher in use.</td>
+        </tr>
+        <tr>
+          <td>Bounded reads</td>
+          <td>A test proving log tailing reads a bounded tail rather than the whole file, on a
+          log grown past that bound.</td>
+        </tr>
+        <tr>
+          <td>Portfolio scan usable</td>
+          <td><code>roadmap(project="*")</code> default view returns a response that fits well
+          inside the MCP ceiling while still reporting per-project completion, ready and blocked
+          counts and finding totals. Byte size recorded against the 176 KB baseline.</td>
+        </tr>
+        <tr>
+          <td>Drift detectable</td>
+          <td><code>reckon install-skills</code> reports the copied-where-linked case on a
+          seeded fixture, and the live instance is repaired.</td>
+        </tr>
+        <tr>
+          <td>Placeholder rejected</td>
+          <td>A test proving an em-dash milestone is refused on write; the live plan is
+          cleared.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Constraints</h2>
+
+    <p>The server derives phase on read and stores nothing. Adding a background poller inside
+    the server would create a second writer of run state and reintroduce the coupling the
+    three-tier ownership split exists to avoid.</p>
+
+    <p>Server, parse and render changes are not hot. A restart is required and must be
+    coordinated, since a running server and every connected MCP stdio process hold the old code
+    in memory.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="watcher-host" data-choice="fold-into-reckon-server" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">Where does the live watcher run?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="fold-into-reckon-server">Folded into the existing reckon server as a native SPA surface</button>
+          <button class="r-opt" data-value="separate-daemon">A separate console daemon on its own port, as upstream ships it</button>
+        </p>
+        <p class="r-dec-rat">Reckon already runs one systemd-managed, lingering-enabled server serving every mounted project, with plan and sprint context the watcher needs to link into. A second daemon would need its own supervision, its own port and its own enrolment step, and could not band a plan page with live state.</p>
+      </div>
+      <div class="r-dec" data-key="phase-derivation" data-choice="derive-on-read" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">Is phase derived on read or maintained by a poller?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="derive-on-read">Derived on read by tailing the run's log</button>
+          <button class="r-opt" data-value="server-poller">Maintained by a background poller in the server</button>
+        </p>
+        <p class="r-dec-rat">A poller would make the server a second writer of run state, reintroducing exactly the coupling the three-tier ownership split avoids. Deriving on read keeps a single writer and costs one bounded tail per request.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-ifv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship inflight-visibility">
+        <h4 class="r-fu-title">Fold the watcher into the server and expose in-flight to agents</h4>
+        <div class="r-fu-body"><p>Land the crew routes with read-derived phase, the fifth SPA tab, in-flight bands on plan and sprint views, in-flight blocks on the existing read tools, and the three measured MCP and installation repairs.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship inflight-visibility</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
