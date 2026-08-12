@@ -295,6 +295,7 @@ def _read_state(
         return {}, 0
     text = html_file.read_text(encoding="utf-8", errors="replace")
     state = _plan_html.read_state(text)
+    _add_north_star_diagnostic(project, state, root)
     if state.get("type", "plan") == "plan" and state.get("status") == "blocked":
         warning = (
             "status: persisted 'blocked' is legacy compatibility input; "
@@ -306,6 +307,43 @@ def _read_state(
         state["compatibility_warnings"] = warnings
     version = int(state.get("version", 0) or 0)
     return state, version
+
+
+def _add_north_star_diagnostic(
+    project: str,
+    state: dict,
+    root: str | Path | None = None,
+) -> None:
+    """Report a plan label that is absent from its project's directions."""
+    north_star = str(state.get("north_star") or "").strip()
+    if not north_star or state.get("type", "plan") != "plan":
+        return
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return
+    from reckon.project_state import ProjectStateError, compose_project_state
+
+    try:
+        project_state = compose_project_state(docs_dir, project)
+    except ProjectStateError:
+        return
+    declared = {
+        str(item.get("id") or "")
+        for item in project_state.get("north_stars", [])
+        if isinstance(item, dict)
+    }
+    if north_star in declared:
+        return
+    state["validation_diagnostics"] = [
+        *state.get("validation_diagnostics", []),
+        {
+            "code": "undeclared-north-star",
+            "severity": "warning",
+            "message": (
+                f"plan north-star {north_star!r} is not declared by project {project!r}"
+            ),
+        },
+    ]
 
 
 def _write_state(
