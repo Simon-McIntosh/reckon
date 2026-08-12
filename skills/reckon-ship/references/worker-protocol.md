@@ -140,7 +140,31 @@ anything spawning subprocesses — so the worktree is the blast-radius boundary
 instead, and the reviewed read-only tier is a per-node runtime choice for work
 that does not build.
 
-## 6. The escape hatch
+## 6. The live run record
+
+Dispatch writes a JSON pointer under the crew home the moment a worktree
+exists, before the worker has produced anything — this is what `reckon crew
+observe`/`resume` read, and it is a different document from the manifest in
+§4: the manifest is the worker's own report of what it did, the run record is
+the orchestrator's account of where and how it is running. Recovery in §3
+reads this record first, before assuming a silent worker has failed.
+
+| Field | What it identifies |
+|---|---|
+| `run_id` | The stable id for this dispatch; keys the pointer file itself and the run's on-disk directory. |
+| `worktree` | The detached worktree path the worker is confined to — the blast-radius boundary named in §5. |
+| `log_path` | The machine-readable event stream (`stream.jsonl`) a backend writes as it runs; `observe` derives `phase` and `budget` from this file, not from asking the worker. |
+| `manifest_path` | The absolute path the worker must write its manifest to — copied from the node's own fence (§1, §2) so the pointer and the dispatch agree on where delivery lands. |
+| `phase` | `starting` until the first event arrives, then whatever the backend's stream reports; a stream that stops without a terminal event reads as still working rather than failed, because only the process table can tell the difference. |
+| `session_id` | The backend's resumable session identifier, captured once known; this is what makes `reckon crew resume --run <run-id> --advice ...` (§6) continue the *same* session rather than starting a fresh one that has to rebuild context from nothing (§7). |
+| `budget` | The backend's reported usage/headroom, or an explicit unknown-reason placeholder when a dialect reports no headroom signal at all — silence is never read as exhaustion. |
+| `pid` | The spawned process id for a CLI-launch worker, or `None` for a delegated launch that has no process of its own; `process_alive(pid)` is how a dead worker is told apart from a slow one. |
+
+None of these fields are written by the worker. They exist so the orchestrator
+can recover a run without reading the worker's own output — the run record
+answers "where is it and is it alive," the manifest answers "what did it do."
+
+## 7. The escape hatch
 
 A vague "I'm stuck" wastes as much time as confused thrashing. A worker that
 stops emits a report whose first line is `NEEDS-HELP:` followed by four required
