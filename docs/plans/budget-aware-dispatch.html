@@ -85,7 +85,7 @@
       </p>
     </section>
 
-    <section id="gates" class="section-landed">
+    <section id="gate-results" class="section-landed">
       <header>
         <span class="badge badge-shipped">✓ landed 2026-08-12</span>
         <h2>§3 — Evidence gates</h2>
@@ -103,6 +103,120 @@
         (commit <code>6a0e3c9</code>).
       </p>
     </section>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="headroom-parsed" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Headroom parsed where it exists</h4>
+    <p class="r-gate-required-evidence">A recorded budget state from the backend that emits rate-limit data, showing utilisation and reset time recovered from a real run's stream — not a fixture.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#reading">Evidence</a>
+</div>
+<div class="r-gate" data-id="unknown-non-blocking" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Unknown is honest and non-blocking</h4>
+    <p class="r-gate-required-evidence">A budget state reading <code>unknown</code> for the backend with no headroom signal, and a test proving a wave still opens on it. No test may show absence treated as exhaustion.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#unknown">Evidence</a>
+</div>
+<div class="r-gate" data-id="exhaustion-holds-wave" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Exhaustion holds the wave</h4>
+    <p class="r-gate-required-evidence">A simulated exhausted state holds a wave with no worktree created, records the backend, utilisation and reset time, and leaves the nodes ready rather than failed.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#hold">Evidence</a>
+</div>
+<div class="r-gate" data-id="holds-per-backend" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Holds are per-backend</h4>
+    <p class="r-gate-required-evidence">With one backend held, independent ready nodes on another dispatch normally in the same session.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#hold">Evidence</a>
+</div>
+<div class="r-gate" data-id="escape-hatch-reserve" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Reserve protects the escape hatch</h4>
+    <p class="r-gate-required-evidence">A test proving the configured reserve prevents a dispatch that would leave insufficient headroom to answer a <code>NEEDS-HELP:</code> report and resume its session.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#reserve">Evidence</a>
+</div>
+<div class="r-gate" data-id="free-preflight" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Pre-flight is free</h4>
+    <p class="r-gate-required-evidence">The pre-flight consumes no backend tokens — asserted by showing it reads only ledger records and any genuine status command, with the token cost of a hold decision recorded as zero.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#free">Evidence</a>
+</div>
+<div class="r-gate" data-id="harness-capability-quarantined" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Harness capability quarantined</h4>
+    <p class="r-gate-required-evidence">A grep proving no harness-local command or self-scheduling primitive appears in <code>SKILL.md</code> or the process references — only in <code>orchestrator-harness/</code>. A second harness file exists, even if it only records which capabilities are absent.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#quarantine">Evidence</a>
+</div>
+<div class="r-gate" data-id="resume-fires" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Resume actually fires</h4>
+    <p class="r-gate-required-evidence">A held wave schedules its own resumption and demonstrably resumes, with the elapsed time and the resumed wave's outcome recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#resume">Evidence</a>
+</div>
+<div class="r-gate" data-id="investigation-answered" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Investigation answered</h4>
+    <p class="r-gate-required-evidence">A recorded finding on whether the headroom-less backend exposes limits off its non-interactive path. A negative answer is a valid outcome and closes the question.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#investigation">Evidence</a>
+</div>
+<div class="r-gate" data-id="dispatch-suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#suite">Evidence</a>
+</div>
+<div class="r-gate" data-id="promoted-run-attributed" data-section="s6" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">A promoted run keeps its attribution</h4>
+    <p class="r-gate-required-evidence">A run promoted from a pointer whose agent block is absent is still matched to its backend afterwards, shown by reading the same headroom before and after promotion.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#attribution">Evidence</a>
+</div>
+<div class="r-gate" data-id="existing-ledger-readable" data-section="s6" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">The existing ledger becomes readable</h4>
+    <p class="r-gate-required-evidence">The two unattributed known readings in this repository's ledger resolve to a backend through the reader, without editing the committed records by hand.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#attribution">Evidence</a>
+</div>
+<div class="r-gate" data-id="attribution-from-producer" data-section="s6" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Attribution never depends on where the orchestrator ran</h4>
+    <p class="r-gate-required-evidence">A recovered attribution is derived from evidence the producing backend left — its recorded stream, its argv, or a field written at promotion — never from the delivery path. Shown by a test in which the same reading, reached through a path naming a different harness, still attributes to the backend that produced it. A path component can carry the host's own runtime directory name, so matching on it tracks the orchestrator's environment rather than the signal's origin, and is right only by coincidence.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#attribution">Evidence</a>
+</div>
+<div class="r-gate" data-id="unattributable-distinct" data-section="s6" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Unattributable stays distinct from unrecorded</h4>
+    <p class="r-gate-required-evidence">A record that genuinely cannot be attributed reports a reason that a caller can tell apart from nothing-was-recorded; no path reports a mislaid signal as silence.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#attribution">Evidence</a>
+</div>
+<div class="r-gate" data-id="attribution-suite-green" data-section="s6" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#suite">Evidence</a>
+</div>
+<div class="r-gate" data-id="hold-recorded" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">A hold is recorded</h4>
+    <p class="r-gate-required-evidence">A held pre-flight writes one record carrying the backend, utilisation, reset time and purpose, and the ledger version increments.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="holds-excluded-from-run-measurements" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Holds never pollute run measurements</h4>
+    <p class="r-gate-required-evidence">A test showing the effort report and the run count are identical before and after a hold is recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="one-hold-per-window" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">One window is one hold</h4>
+    <p class="r-gate-required-evidence">Several pre-flights inside the same window produce exactly one record.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="resumption-closes-hold" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">A resumption closes the hold</h4>
+    <p class="r-gate-required-evidence">A later clear pre-flight closes the open hold and records the wall-clock wait in seconds, distinct from the reported reset.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="hold-history-readable" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">The history is readable</h4>
+    <p class="r-gate-required-evidence">The committed ledger exposes holds through the existing read paths, with a count and a total held duration in the summary.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="reads-never-record-holds" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Recording never happens on a read</h4>
+    <p class="r-gate-required-evidence">A test proving the read-only tool surface leaves the ledger version and the hold list untouched across a check that would open a hold — the write belongs to the command that decides to open a wave, not to whatever inspects the decision. A reader that records invents history simply by looking at it, and a tool documented as never mutating must not be the exception.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#holds">Evidence</a>
+</div>
+<div class="r-gate" data-id="hold-suite-green" data-section="s5" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/budget-aware-dispatch-landed#suite">Evidence</a>
+</div>
+</section>
 
     <header class="section-landed">
       <span class="badge badge-shipped">✓ landed 2026-08-12</span>
@@ -144,41 +258,6 @@
     means "something was recorded and could not be matched" — indistinguishable to every caller, and
     silently wrong in the direction that opens waves it should hold. A backend that publishes nothing
     and a backend whose signal was mislaid must not read the same.</p>
-
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>A promoted run keeps its attribution</td>
-          <td>A run promoted from a pointer whose agent block is absent is still matched to its
-          backend afterwards, shown by reading the same headroom before and after promotion.</td>
-        </tr>
-        <tr>
-          <td>The existing ledger becomes readable</td>
-          <td>The two unattributed known readings in this repository's ledger resolve to a backend
-          through the reader, without editing the committed records by hand.</td>
-        </tr>
-        <tr>
-          <td>Attribution never depends on where the orchestrator ran</td>
-          <td>A recovered attribution is derived from evidence the producing backend left — its
-          recorded stream, its argv, or a field written at promotion — never from the delivery
-          path. Shown by a test in which the same reading, reached through a path naming a
-          different harness, still attributes to the backend that produced it. A path component
-          can carry the host's own runtime directory name, so matching on it tracks the
-          orchestrator's environment rather than the signal's origin, and is right only by
-          coincidence.</td>
-        </tr>
-        <tr>
-          <td>Unattributable stays distinct from unrecorded</td>
-          <td>A record that genuinely cannot be attributed reports a reason that a caller can tell
-          apart from nothing-was-recorded; no path reports a mislaid signal as silence.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
 
     <h2 id="s4">§4 — Constraints</h2>
 
@@ -225,50 +304,6 @@
     closed one records a duration. The wait is measured against the wall clock rather than assumed
     from the reported reset, because the two differ whenever a resumption fires late — and the
     difference is exactly what tells a reader whether self-scheduled resumption is working.</p>
-
-    <h3 id="s5-gates">Evidence gates</h3>
-
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>A hold is recorded</td>
-          <td>A held pre-flight writes one record carrying the backend, utilisation, reset time and
-          purpose, and the ledger version increments.</td>
-        </tr>
-        <tr>
-          <td>Holds never pollute run measurements</td>
-          <td>A test showing the effort report and the run count are identical before and after a
-          hold is recorded.</td>
-        </tr>
-        <tr>
-          <td>One window is one hold</td>
-          <td>Several pre-flights inside the same window produce exactly one record.</td>
-        </tr>
-        <tr>
-          <td>A resumption closes the hold</td>
-          <td>A later clear pre-flight closes the open hold and records the wall-clock wait in
-          seconds, distinct from the reported reset.</td>
-        </tr>
-        <tr>
-          <td>The history is readable</td>
-          <td>The committed ledger exposes holds through the existing read paths, with a count and a
-          total held duration in the summary.</td>
-        </tr>
-        <tr>
-          <td>Recording never happens on a read</td>
-          <td>A test proving the read-only tool surface leaves the ledger version and the hold list
-          untouched across a check that would open a hold — the write belongs to the command that
-          decides to open a wave, not to whatever inspects the decision. A reader that records
-          invents history simply by looking at it, and a tool documented as never mutating must not
-          be the exception.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
