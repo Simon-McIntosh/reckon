@@ -233,6 +233,79 @@
     to the clear one dispatched and got its worktree in the same session.</p>
   </section>
 
+  <section id="holds">
+    <h2>Holds are recorded, and the record is a measurement</h2>
+
+    <p>A hold produced no run, so nothing recorded that a wave was held, on which backend, or for
+    how long — the one measurement the mechanism generates was the one thing it did not keep. Holds
+    now sit in <code>crew.json</code> beside the runs, never among them: a hold has no worktree,
+    commit, gate or worker-time, and putting it in the run list would feed empty measurements to the
+    effort report that averages over it.</p>
+
+    <p>One record spans one continuous window, so an orchestrator checking every few minutes does
+    not turn "how often were we held" into "how often did we look". Closing is what turns the record
+    into a measurement: a test hold closed at <strong>137 s of wall-clock against a 600 s predicted
+    reset</strong>. The gap is the point — it is what reveals a resumption that fired late, and it is
+    unavailable to anyone who restates the forecast instead of measuring.</p>
+
+    <p>Two defects surfaced in audit rather than in the gates, and both were fixed at the root:</p>
+
+    <table>
+      <thead><tr><th>Found</th><th>Why it mattered</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Recording was wired into the shared pre-flight, so the read-only tool opened a hold
+          and took the ledger from version 1 to 2 just by being asked</td>
+          <td>A reader that records invents history by looking at it, and the tool is documented as
+          never mutating</td>
+          <td>Recording belongs to the commands that decide to open a wave; the read is now
+          v1→v1 with zero holds written while still reporting <code>held: true</code></td>
+        </tr>
+        <tr>
+          <td><code>resumption_fired</code> was true whenever a resume-purpose check closed the
+          hold</td>
+          <td>That is a stuck worker being answered, not a scheduled wave resuming — the field
+          answered the opposite of the question the section asks</td>
+          <td>An explicit input, because a stuck-worker resume uses the same ceiling as a scheduled
+          resumption without proving a scheduler fired</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="attribution">
+    <h2>A promoted signal keeps its producer</h2>
+
+    <p>The reader matches a recorded budget block to a backend through the run's agent block, and a
+    record promoted without one keeps its headroom while losing the only thing that makes it
+    readable. Measured on this repository's own ledger: six of seventeen records carried no
+    <code>agent.backend</code>, and <em>both</em> records holding a genuinely known reading were
+    among them. Every real headroom signal the project had recorded was invisible to the mechanism
+    built to read it — and the loss was caused by promotion, not absence, since the same reading was
+    attributed from the live pointer minutes earlier.</p>
+
+    <p>That sits under the locked read-source decision rather than beside it: the ledger was chosen
+    over a probe because the ledger already holds what each backend emitted. It also revived the
+    failure the fail-safe posture exists to prevent, by another route — <code>unknown</code> came to
+    mean "recorded but unmatched" while still claiming to mean "nothing recorded", which is wrong in
+    the direction that opens waves it should hold.</p>
+
+    <p><strong>The first fix was right by coincidence, which is why the gate changed.</strong> It
+    recovered the backend by matching a configured name against a component of the manifest path —
+    and that path runs through the host harness's own runtime directory. Tested as a counterfactual
+    rather than argued: the identical reading, reached through a scratch directory named for a
+    different harness, attributed to that other harness. The answer tracked where the orchestrator
+    ran, not what produced the signal.</p>
+
+    <p>Attribution now walks a ladder of real evidence — a backend field written at promotion, the
+    agent block, the budget block, the roster member — and recovers a legacy record from the
+    normalised evidence its stream interpreter produced. Both known readings resolve to their
+    producing backend with <code>attribution: budget-evidence</code>; a misleading delivery path does
+    not change the answer; ambiguous producer evidence stays unattributed; and a record with nothing
+    recoverable reports <code>source: unattributed-ledger</code>, which a caller can tell apart from
+    nothing-was-recorded.</p>
+  </section>
+
   <section id="unknown">
     <h2>Silence is never read as exhaustion</h2>
 

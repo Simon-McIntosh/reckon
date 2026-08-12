@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="budget-aware-dispatch">
   <meta name="plan-title" content="Budget-aware Dispatch">
   <meta name="plan-summary" content="Read each backend&#x27;s budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
@@ -21,8 +21,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="12">
-<meta name="plan-impl" content="0.86">
+<meta name="plan-version" content="14">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,7 +104,23 @@
       </p>
     </section>
 
-    <h2 id="s6">§6 — A recorded signal must stay attributable to its backend</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s6">§6 — A recorded signal must stay attributable to its backend</h2>
+    </header>
+    <p class="landed-summary">
+      Promotion now writes the backend as a first-class ledger field, and the reader walks
+      record → agent → budget → member, recovering a legacy record from the normalised evidence its
+      stream interpreter produced. Both previously-lost readings resolve to their producing backend
+      (<code>utilisation 1.02%</code>, <code>attribution: budget-evidence</code>) with no committed
+      record hand-edited; a delivery path naming a different harness does not change the answer;
+      ambiguity stays unattributed and reports <code>unattributed-ledger</code>, distinct from
+      nothing-recorded. The first attempt matched the manifest path and was right only by
+      coincidence — it tracked the host's own runtime directory — which is why the fourth gate
+      exists. 7 new tests, suite green at 1,698.
+      Full record: <a href="/reckon/evidence/archive/budget-aware-dispatch-landed#attribution">§6 landed</a>
+      (commits <code>7c5f54d</code>, <code>4593f96</code>).
+    </p>
 
     <p>The reader matches a recorded budget block to a backend through the run record's agent block.
     A record promoted without one carries its headroom into durable storage and loses the only thing
@@ -305,6 +321,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-attribution" data-who="reckon-ship" data-when="2026-08-12T16:50:00Z">
+    <div class="r-comment-body">attribution-from-evidence landed — commit 4593f96, merged; gate §6 passed on all four measures; measure 1,698 tests pass with 3 new, 597 s worker-time, 102 lines in scope. Verified independently against the live ledger rather than from the manifest: claude resolves at utilisation 1.02% with attribution budget-evidence. No foldable followup remains against this plan, so it closes — done, no followup.</div>
+</div>
+</section>
+</main>
 </body>
 </html>

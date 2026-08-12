@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-12T18:38:18",
+  "updated": "2026-08-12T18:49:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1066,9 +1066,154 @@
           "tokens": null,
           "utilisation_pct": null
         }
+      },
+      {
+        "run_id": "r-20260812T163950645772-gate-write-ops",
+        "plan": "derived-gate-state",
+        "section": "\u00a72",
+        "node": "gate-write-ops",
+        "role": "implement",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-12T16:39:51Z",
+        "completed_at": "2026-08-12T16:47:34Z",
+        "worker_seconds": 463,
+        "time_budget": "25m",
+        "base_sha": "50b68e52d9f55d84aa4feb09e1c5b20960f90b3e",
+        "commits": [
+          "ca18aef"
+        ],
+        "changed_lines": {
+          "added": 197,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/3d179d1e-4c7d-45f4-a139-4151709eba76/scratchpad/manifests/gate-write-ops.md",
+        "scope_changed": false,
+        "session_id": "019ff69e-daef-75a1-99cb-8609f30bb500",
+        "budget": {
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom",
+          "headroom": "unknown",
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 12721408,
+            "input_tokens": 13411522,
+            "output_tokens": 50954,
+            "reasoning_output_tokens": 17555
+          },
+          "utilisation_pct": null
+        }
+      },
+      {
+        "run_id": "r-20260812T164001132312-gate-derivation",
+        "plan": "derived-gate-state",
+        "section": "\u00a72",
+        "node": "gate-derivation",
+        "role": "implement",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-12T16:40:01Z",
+        "completed_at": "2026-08-12T16:47:35Z",
+        "worker_seconds": 454,
+        "time_budget": "25m",
+        "base_sha": "50b68e52d9f55d84aa4feb09e1c5b20960f90b3e",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "not-run",
+        "outcome": "",
+        "manifest_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/3d179d1e-4c7d-45f4-a139-4151709eba76/scratchpad/manifests/gate-derivation.md",
+        "scope_changed": false,
+        "session_id": "019ff69f-3f50-7762-9e47-ece7bb791e5a",
+        "budget": {
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom",
+          "headroom": "unknown",
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 11705600,
+            "input_tokens": 12237254,
+            "output_tokens": 36457,
+            "reasoning_output_tokens": 13778
+          },
+          "utilisation_pct": null
+        }
+      },
+      {
+        "run_id": "r-20260812T163956135982-attribution-from-evidence",
+        "plan": "budget-aware-dispatch",
+        "section": "\u00a76",
+        "node": "attribution-from-evidence",
+        "role": "implement",
+        "member": "",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-12T16:39:57Z",
+        "completed_at": "2026-08-12T16:49:54Z",
+        "worker_seconds": 597,
+        "time_budget": "25m",
+        "base_sha": "50b68e52d9f55d84aa4feb09e1c5b20960f90b3e",
+        "commits": [
+          "4593f96"
+        ],
+        "changed_lines": {
+          "added": 102,
+          "removed": 30,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "Attribution now derives from the normalised budget evidence a configured stream interpreter produces; the manifest-path match is gone (0 references). Both known durable readings resolve to their producing backend, a path naming a different harness does not change the answer, and ambiguous producer evidence stays unattributed.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260812T163956135982-attribution-from-evidence/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff6d8-4934-71f0-b7a6-e2f3945b0904",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        }
       }
     ],
     "holds": [],
-    "_version": 29
+    "_version": 32
   }
 }
