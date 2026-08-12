@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-verifies" content="">
 <meta name="plan-impl" content="0.85">
 </head>
@@ -513,6 +513,70 @@
           <td>The stuck record closes</td>
           <td>The second <code>f-uwd-003</code> on this plan is resolvable and resolved, shown by an
           open-followup count of zero.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s10">§10 — The continuation check must fire on a landing, not on a resolve</h2>
+
+    <p>The rule that work must not end without naming what comes next is enforced on two write
+    paths, and they disagree. The ops path treats a batch that resolves a followup <em>or</em> sets a
+    terminal status as a landing; the HTTP patch path keys on terminal status alone. The same resolve
+    is therefore refused through one door and accepted through the other — which is exactly the drift
+    the shared definition was introduced to prevent, and the module says so in its own words: one
+    definition exists "so the ops writer and the HTTP patch writer cannot disagree". They share the
+    definition of a continuation. They do not share the trigger.</p>
+
+    <p><strong>Resolving a followup is not a landing.</strong> A plan left active, below full
+    implementation, with a section dispatched and in flight, has manifestly not ended — yet the
+    refusal reads "plan landing leaves no continuation". An error that misdescribes what happened is
+    worse than no error, because the reader satisfies the string instead of the intent.</p>
+
+    <p><strong>And the cheapest way past a false fire corrodes the signal it protects.</strong> The
+    outcome text only has to contain "no followup" to pass, so a check firing on ordinary mid-run
+    resolves trains its users to write that phrase into outcomes that are not final. Every false fire
+    devalues the marker for the one case it exists to catch. This was met live: the phrase had to be
+    worded carefully into a genuinely non-final outcome to get a true statement past the check.</p>
+
+    <p>Once same-plan follow-on work is folded into sections rather than deferred as followups,
+    <strong>zero open followups becomes the normal state of a healthy active plan</strong>. A check
+    keyed to that condition fires on the common case and stays quiet on the rare one.</p>
+
+    <p><strong>Fix the definition, not the trigger.</strong> Narrowing the ops trigger to terminal
+    status would lose a real protection: a session that resolves its driving followup, leaves the
+    plan active and ends naming nothing is the failure this was built for. Instead let a plan that is
+    manifestly still in progress — non-terminal status below full implementation — count as carrying
+    its own continuation. A final resolve on a plan with nothing left still refuses; both fields are
+    already structured state, so nothing has to parse the HTML for a rendering convention that would
+    rot; and the reconciliation lands in the shared definition, which is where the module already
+    says the single truth belongs.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Both write paths agree</td>
+          <td>One test drives the same resolve through the ops path and the HTTP patch path and
+          asserts the same verdict from each.</td>
+        </tr>
+        <tr>
+          <td>A mid-run resolve passes</td>
+          <td>Resolving a followup on an active plan below full implementation succeeds and leaves
+          no open followup, reproducing the case met on this plan today.</td>
+        </tr>
+        <tr>
+          <td>The real failure still refuses</td>
+          <td>A batch setting a terminal status with no open followup and no chain-closed outcome is
+          still refused, and so is a final resolve that leaves nothing naming what comes next.</td>
+        </tr>
+        <tr>
+          <td>History stays editable</td>
+          <td>The existing rule that only a new landing owes an answer is preserved, so plans already
+          recorded as shipped without a followup remain writable.</td>
         </tr>
         <tr>
           <td>Suite green</td>
