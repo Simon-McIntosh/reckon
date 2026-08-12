@@ -807,6 +807,122 @@ def test_lock_preserves_authored_fields(setup):
     assert dec["when"]
 
 
+# ── gate verdict verbs ─────────────────────────────────────────────────────
+
+
+def _gate_op() -> dict:
+    return {
+        "op": "gate",
+        "id": "round-trip-parity",
+        "section": "parser",
+        "gated_sections": ["renderer", "writeback"],
+        "measure": "Reckon-owned sections remain byte-identical",
+        "required_evidence": "Focused round-trip test log",
+    }
+
+
+def test_gate_op_declares_gate_readable_through_read_plan(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+
+    result = mcp_module._edit_plan(project, "plan-a", [_gate_op()], 0)
+
+    assert result["ok"] is True
+    readback = mcp_module._read_plan(project, "plan-a")
+    assert readback["data"]["gates"] == [
+        {
+            "id": "round-trip-parity",
+            "section": "parser",
+            "gated_sections": ["renderer", "writeback"],
+            "status": "open",
+            "measure": "Reckon-owned sections remain byte-identical",
+            "required_evidence": "Focused round-trip test log",
+            "verdict": "",
+            "evidence": "",
+            "passed": False,
+        }
+    ]
+
+
+def test_pass_op_records_verdict_and_evidence(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    evidence = "/proj/evidence/archive/round-trip#result"
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            _gate_op(),
+            {
+                "op": "pass",
+                "id": "round-trip-parity",
+                "evidence": evidence,
+            },
+        ],
+        0,
+    )
+
+    assert result["ok"] is True
+    gate = mcp_module._read_plan(project, "plan-a")["data"]["gates"][0]
+    assert gate["status"] == "closed"
+    assert gate["verdict"] == "passed"
+    assert gate["evidence"] == evidence
+    assert gate["passed"] is True
+
+
+def test_pass_without_evidence_is_rejected_when_required(setup):
+    docs_dir, _, project = setup
+    project_config = docs_dir / "state" / project / "flight.yaml"
+    project_config.parent.mkdir(parents=True)
+    project_config.write_text("gates:\n  require_evidence: true\n")
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    declared = mcp_module._edit_plan(project, "plan-a", [_gate_op()], 0)
+    assert declared["ok"] is True
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "pass", "id": "round-trip-parity"}],
+        1,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert "round-trip-parity" in result["detail"]
+    assert "evidence" in result["detail"]
+    readback = mcp_module._read_plan(project, "plan-a")
+    assert readback["version"] == 1
+    assert readback["data"]["gates"][0]["verdict"] == ""
+
+
+def test_fail_op_records_negative_verdict(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    evidence = "/proj/evidence/archive/round-trip#failure"
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            _gate_op(),
+            {
+                "op": "fail",
+                "id": "round-trip-parity",
+                "evidence": evidence,
+            },
+        ],
+        0,
+    )
+
+    assert result["ok"] is True
+    gate = mcp_module._read_plan(project, "plan-a")["data"]["gates"][0]
+    assert gate["status"] == "closed"
+    assert gate["verdict"] == "failed"
+    assert gate["evidence"] == evidence
+    assert gate["passed"] is False
+
+
 # ── move verb ───────────────────────────────────────────────────────────────
 
 
