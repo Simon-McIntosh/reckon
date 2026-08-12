@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -69,20 +70,68 @@ def registered_worktrees(repo: Path) -> set[Path]:
     }
 
 
+def config_home() -> Path:
+    """Resolve the configuration directory without importing the package."""
+    override = os.environ.get("RECKON_HOME")
+    if override:
+        return Path(override).expanduser().resolve()
+    preferred = Path.home() / ".config" / "reckon"
+    if preferred.exists():
+        return preferred
+    return Path.home() / "docs-server"
+
+
+def live_pointers() -> list[dict[str, object]]:
+    """Read live run pointers directly from the transient crew directory."""
+    directory = config_home() / "crew" / "live"
+    if not directory.is_dir():
+        return []
+    pointers = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            pointer = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(pointer, dict):
+            pointers.append(pointer)
+    return pointers
+
+
+def process_alive(pid: object) -> bool | None:
+    """Report OS liveness, or None when the pointer has no usable pid."""
+    if not pid:
+        return None
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except (TypeError, ValueError):
+        return None
+    return True
+
+
+def pointer_is_running(pointer: dict[str, object]) -> bool:
+    """Apply the cleanup-relevant subset of live-run classification."""
+    if str(pointer.get("phase") or "") in ("complete", "failed"):
+        return False
+    alive = (
+        process_alive(pointer["pid"])
+        if pointer.get("pid")
+        else pointer.get("process_alive")
+    )
+    return alive is not False
+
+
 def live_worktree_claims() -> dict[Path, list[str]]:
     """Return worktrees claimed by runs whose current classification is running."""
-    from reckon import crew
-
     claims: dict[Path, list[str]] = {}
-    for pointer in crew.list_live():
-        observed = dict(pointer)
-        if observed.get("pid"):
-            observed["process_alive"] = crew.process_alive(observed["pid"])
-        report = crew.classify_pointer(observed)
-        if report["classification"] != "running" or not report.get("worktree"):
+    for pointer in live_pointers():
+        if not pointer_is_running(pointer) or not pointer.get("worktree"):
             continue
-        path = Path(str(report["worktree"])).resolve()
-        claims.setdefault(path, []).append(str(report["run_id"]))
+        path = Path(str(pointer["worktree"])).resolve()
+        claims.setdefault(path, []).append(str(pointer.get("run_id") or ""))
     return claims
 
 
