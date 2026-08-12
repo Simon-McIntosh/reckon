@@ -206,6 +206,7 @@ def test_closed_sprint_history_does_not_duplicate_live_membership() -> None:
 def test_dispatchability_is_derived_separately_from_authorisation() -> None:
     without_gate = _plan("without-gate")
     without_gate["gates"] = []
+    without_gate["followups"] = []
     without_followup = _plan("without-followup")
     without_followup["followups"] = []
     result = build_roadmap(
@@ -226,12 +227,13 @@ def test_dispatchability_is_derived_separately_from_authorisation() -> None:
     assert rows["awaiting-authorisation"]["dispatchable"] is True
     assert rows["awaiting-authorisation"]["authorised"] is False
     assert rows["awaiting-authorisation"]["ready"] is False
-    assert rows["without-gate"]["missing_dispatchability"] == ["declared_gate"]
+    assert rows["without-gate"]["dispatchable"] is True
+    assert rows["without-gate"]["missing_dispatchability"] == []
+    assert rows["without-gate"]["ready"] is True
     assert rows["without-followup"]["missing_dispatchability"] == ["open_followup"]
     assert result["blocked"] == []
     assert {item["slug"] for item in result["deferred"]} == {
         "awaiting-authorisation",
-        "without-gate",
         "without-followup",
     }
 

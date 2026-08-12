@@ -50,9 +50,11 @@ def _status(plan: dict[str, Any]) -> str:
 
 
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
+    gates = [gate for gate in plan.get("gates") or [] if isinstance(gate, dict)]
+    if not gates:
+        return True, []
+
     missing: list[str] = []
-    if not any(isinstance(gate, dict) for gate in plan.get("gates") or []):
-        missing.append("declared_gate")
     if not any(
         isinstance(followup, dict) and followup.get("status", "open") == "open"
         for followup in plan.get("followups") or []
