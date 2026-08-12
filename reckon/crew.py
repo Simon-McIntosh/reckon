@@ -400,7 +400,14 @@ def _budget_verdict(
         backend,
         recorded=recorded.get(backend_name),
     )
-    return budget_module.decide(state, budget_module.policy(config), purpose=purpose)
+    verdict = budget_module.decide(state, budget_module.policy(config), purpose=purpose)
+    try:
+        budget_module.record_checks(project, [verdict], root=root)
+    except ledger.LedgerError as exc:
+        raise CrewError(
+            f"cannot record the budget check before opening the wave: {exc}"
+        ) from exc
+    return verdict
 
 
 def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) -> str:

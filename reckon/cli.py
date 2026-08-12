@@ -384,6 +384,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     headroom is never held, because absence of a signal is not exhaustion.
     """
     from reckon import budget as budget_module
+    from reckon import ledger as ledger_module
 
     crew_module, flight_module = _crew_modules()
     config = _resolved_flight(flight_module, project, checkout_path, overrides)
@@ -396,7 +397,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
             root=checkout_path,
             purpose=purpose,
         )
-    except (crew_module.CrewError, ValueError) as exc:
+    except (crew_module.CrewError, ledger_module.LedgerError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **report}, pretty)
     raise click.exceptions.Exit(3 if report["held"] else 0)
@@ -873,6 +874,7 @@ def crew_ledger(project, view, checkout_path, pretty):
         if view == "records":
             payload = {
                 "runs": ledger_module.runs(project, checkout_path),
+                "holds": ledger_module.holds(project, checkout_path),
                 "members": ledger_module.members(project, checkout_path),
             }
         else:

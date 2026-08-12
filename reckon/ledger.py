@@ -16,8 +16,10 @@ orchestrators cannot clobber each other.
 Two rules shape everything here.
 
 **Nothing transient is committed, and nothing durable is only cached.** The
-ledger holds the roster and completed runs; it never holds a pid, a worktree
-path or a phase. :func:`append_run` refuses a second record for a run id
+ledger holds the roster, completed runs and budget holds; it never holds a pid,
+a worktree path or a phase. Holds sit beside runs because they have no worker,
+worktree, commit or gate, and therefore must not enter worker-effort
+measurements. :func:`append_run` refuses a second record for a run id
 because a double promotion double-counts the very measurements
 ``effort-calibration`` will read.
 
@@ -120,10 +122,12 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
     data, version = _store._load_json_envelope(path)
     members = data.get("members")
     runs = data.get("runs")
+    holds = data.get("holds")
     return (
         {
             "members": list(members) if isinstance(members, list) else [],
             "runs": list(runs) if isinstance(runs, list) else [],
+            "holds": list(holds) if isinstance(holds, list) else [],
         },
         version,
     )
@@ -148,6 +152,7 @@ def write(
             key=lambda member: str(member.get("id", "")),
         ),
         "runs": list(data.get("runs", [])),
+        "holds": list(data.get("holds", [])),
     }
     try:
         return _store._write_json_envelope(
@@ -379,6 +384,135 @@ def runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     return load(project, root)[0]["runs"]
 
 
+# ── Budget holds ────────────────────────────────────────────────────────────
+
+
+def _parse_utc(value: Any) -> datetime:
+    """Parse one ledger timestamp and normalise it to an aware instant."""
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise LedgerError(f"hold check time {value!r} is not ISO-8601") from exc
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _hold_id(
+    backend: str, checked_at: str, existing: Iterable[Mapping[str, Any]]
+) -> str:
+    """Return a readable id that remains unique within one ledger."""
+    safe_backend = re.sub(r"[^A-Za-z0-9._-]+", "-", backend).strip("-") or "backend"
+    stamp = re.sub(r"[^0-9]", "", checked_at)
+    base = f"hold-{safe_backend}-{stamp}"
+    used = {str(item.get("hold_id") or "") for item in existing}
+    if base not in used:
+        return base
+    suffix = 2
+    while f"{base}-{suffix}" in used:
+        suffix += 1
+    return f"{base}-{suffix}"
+
+
+def record_hold_checks(
+    project: str,
+    checks: Iterable[Mapping[str, Any]],
+    *,
+    checked_at: str,
+    root: str | Path | None = None,
+    attempts: int = 5,
+) -> dict[str, Any]:
+    """Open, deduplicate or close budget holds from one pre-flight.
+
+    At most one hold is open per backend. Rechecking a backend while it remains
+    held therefore preserves one record for the continuous hold window. The
+    first later clear check closes that record and measures actual wall-clock
+    elapsed time; the reported reset remains separate because a scheduled
+    resumption can fire early or late.
+    """
+    moment = _parse_utc(checked_at)
+    prepared = [dict(check) for check in checks]
+    last: LedgerError | None = None
+    for _attempt in range(max(1, attempts)):
+        data, version = load(project, root)
+        history = [dict(item) for item in data["holds"]]
+        changed = False
+        outcomes: list[dict[str, Any]] = []
+        for check in prepared:
+            backend = str(check.get("backend") or "").strip()
+            if not backend:
+                raise LedgerError("a hold check must name its backend")
+            open_hold = next(
+                (
+                    item
+                    for item in reversed(history)
+                    if str(item.get("backend") or "") == backend
+                    and not item.get("closed_at")
+                ),
+                None,
+            )
+            if bool(check.get("held")):
+                if open_hold is not None:
+                    outcomes.append({"action": "unchanged", "hold": dict(open_hold)})
+                    continue
+                state = check.get("state") or {}
+                record = {
+                    "hold_id": _hold_id(backend, checked_at, history),
+                    "backend": backend,
+                    "purpose": str(check.get("purpose") or "dispatch"),
+                    "opened_at": checked_at,
+                    "closed_at": None,
+                    "held_seconds": None,
+                    "utilisation_pct": state.get("utilisation_pct"),
+                    "resets_at": state.get("resets_at"),
+                    "effective_ceiling_pct": check.get("effective_ceiling_pct"),
+                    "reason": str(check.get("reason") or ""),
+                    "closed_by_purpose": None,
+                    "resumption_fired": False,
+                }
+                history.append(record)
+                outcomes.append({"action": "opened", "hold": dict(record)})
+                changed = True
+                continue
+            if open_hold is None:
+                continue
+            opened = _parse_utc(open_hold.get("opened_at"))
+            open_hold["closed_at"] = checked_at
+            open_hold["held_seconds"] = max(0, int((moment - opened).total_seconds()))
+            open_hold["closed_by_purpose"] = str(check.get("purpose") or "dispatch")
+            open_hold["resumption_fired"] = (
+                str(check.get("purpose") or "dispatch") == "resume"
+            )
+            outcomes.append({"action": "closed", "hold": dict(open_hold)})
+            changed = True
+
+        if not changed:
+            return {
+                "path": str(ledger_path(project, root)),
+                "version": version,
+                "outcomes": outcomes,
+            }
+        data["holds"] = history
+        try:
+            new_version = write(project, data, version, root)
+        except LedgerError as exc:
+            last = exc
+            continue
+        return {
+            "path": str(ledger_path(project, root)),
+            "version": new_version,
+            "outcomes": outcomes,
+        }
+    raise LedgerError(
+        f"ledger for {project!r} was rewritten on every hold-check attempt — {last}"
+        if last
+        else f"ledger for {project!r} could not record its hold check"
+    )
+
+
+def holds(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Return every budget hold, in opening order."""
+    return load(project, root)[0]["holds"]
+
+
 # ── Measured effort ─────────────────────────────────────────────────────────
 
 
@@ -514,9 +648,10 @@ def summary(
     root: str | Path | None = None,
     declared: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Summarise the ledger: roster, gate outcomes and measured effort."""
+    """Summarise runs and holds without mixing their measurements."""
     data, version = load(project, root)
     records = data["runs"]
+    hold_records = data["holds"]
     gates: dict[str, int] = {}
     for record in records:
         verdict = str(record.get("gate") or "unknown")
@@ -528,6 +663,11 @@ def summary(
         "members": len(data["members"]),
         "members_with_session": sessions,
         "runs": len(records),
+        "holds": len(hold_records),
+        "open_holds": sum(1 for record in hold_records if not record.get("closed_at")),
+        "total_held_seconds": sum(
+            int(record.get("held_seconds") or 0) for record in hold_records
+        ),
         "gates": dict(sorted(gates.items())),
         "plans": sorted({str(record.get("plan") or "") for record in records}),
         "effort": effort_report(project, root=root, declared=declared),

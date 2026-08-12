@@ -459,6 +459,118 @@ def test_a_clear_preflight_reports_no_hold_summary(home, repo) -> None:
     assert report["summary"] == ""
 
 
+# ── Holds are committed measurements ───────────────────────────────────────
+
+
+def test_a_held_preflight_records_the_decision_and_increments_the_ledger(
+    home, repo
+) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    _data, version_before = ledger.load("proj", repo)
+
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+
+    history = ledger.holds("proj", repo)
+    _data, version_after = ledger.load("proj", repo)
+    assert version_after == version_before + 1
+    assert len(history) == 1
+    assert history[0]["backend"] == "alpha"
+    assert history[0]["utilisation_pct"] == 100.0
+    assert history[0]["resets_at"] == report["resume_at"]
+    assert history[0]["purpose"] == "dispatch"
+
+
+def test_a_hold_does_not_change_run_or_effort_measurements(home, repo) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    runs_before = ledger.runs("proj", repo)
+    effort_before = ledger.effort_report("proj", root=repo, declared={"plan-a": "M"})
+
+    budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+
+    assert ledger.runs("proj", repo) == runs_before
+    assert (
+        ledger.effort_report("proj", root=repo, declared={"plan-a": "M"})
+        == effort_before
+    )
+
+
+def test_repeated_preflights_in_one_hold_window_write_one_record(home, repo) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    moment = datetime.now(tz=timezone.utc).replace(microsecond=0)
+
+    first = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=moment)
+    second = budget.preflight(
+        "proj",
+        CONFIG,
+        root=repo,
+        backends=["alpha"],
+        now=moment + timedelta(seconds=90),
+    )
+
+    assert len(ledger.holds("proj", repo)) == 1
+    assert first["hold_history"]["version"] == second["hold_history"]["version"]
+    assert second["hold_history"]["outcomes"][0]["action"] == "unchanged"
+
+
+def test_a_clear_resume_closes_the_hold_with_actual_elapsed_time(
+    home, repo, monkeypatch
+) -> None:
+    opened = datetime(2026, 8, 12, 12, 0, tzinfo=timezone.utc)
+    reset = opened + timedelta(seconds=600)
+    states = iter(
+        [
+            budget.BudgetState(
+                backend="alpha",
+                headroom="known",
+                utilisation_pct=100.0,
+                resets_at=reset.isoformat().replace("+00:00", "Z"),
+            ),
+            budget.BudgetState(
+                backend="alpha",
+                headroom="known",
+                utilisation_pct=10.0,
+                resets_at=reset.isoformat().replace("+00:00", "Z"),
+            ),
+        ]
+    )
+    monkeypatch.setattr(budget, "state_for", lambda *args, **kwargs: next(states))
+
+    budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=opened)
+    budget.preflight(
+        "proj",
+        CONFIG,
+        root=repo,
+        backends=["alpha"],
+        purpose="resume",
+        now=opened + timedelta(seconds=137),
+    )
+
+    record = ledger.holds("proj", repo)[0]
+    assert record["held_seconds"] == 137
+    assert record["held_seconds"] != 600
+    assert record["closed_by_purpose"] == "resume"
+    assert record["resumption_fired"] is True
+
+
+def test_a_dispatch_path_records_its_hold_before_creating_any_worktree(
+    home, repo
+) -> None:
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+
+    with pytest.raises(crew.BudgetHold):
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *args, **kwargs: 1,
+        )
+
+    assert len(ledger.holds("proj", repo)) == 1
+    assert ledger.holds("proj", repo)[0]["backend"] == "alpha"
+
+
 # ── The command surface ─────────────────────────────────────────────────────
 
 
