@@ -40,7 +40,7 @@
         <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>Plan read, sprint capacity, plans list and authoring guidance all name worker-hours; unit grep found 0 bare figures — <a href="#unit-surfaced">§ unit surfaced</a></td><td>pass</td></tr>
         <tr><td>Prediction beats the letters</td><td>—</td><td>open</td></tr>
-        <tr><td>Suite green</td><td><strong>1,826 passed / 5 FAILED</strong> at the fully integrated commit — <a href="#suite-regression">§ suite regression</a></td><td>fail</td></tr>
+        <tr><td>Suite green</td><td>Failed at 1,826/5, repaired, then <strong>1,837 passed / 0 failed</strong> — <a href="#suite-regression">§ suite regression</a></td><td>pass</td></tr>
       </tbody>
     </table>
   </section>
@@ -380,6 +380,53 @@
     <p>The verification node modified no repository file and did not rerun the suite, which is what a
     read-only gate should do: report the failure precisely enough to scope its repair, and change
     nothing.</p>
+
+    <h3>Repaired, and re-gated green</h3>
+
+    <p>Three corrective nodes, one per root cause. The full suite on integrated
+    <code>99583a4</code>: <strong>1,837 passed, 0 failed</strong>, exit 0, 54.3 s, no failing test
+    names.</p>
+
+    <table>
+      <thead><tr><th>Repair</th><th>Commit</th><th>What it changed</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Promotion fixture</td><td><code>b8a9934</code></td>
+          <td>The fixture resolves its repository HEAD to a full SHA and promotes that. The strict
+          boundary is untouched — the test was updated to assert the current contract, not the
+          contract relaxed to suit the test.</td>
+        </tr>
+        <tr>
+          <td>Non-plan validation scope</td><td><code>21288f8</code></td>
+          <td>The legacy milestone placeholder joins the neutral values stripped from non-plan
+          canonical writes. A plan still refuses an em-dash and a non-plan still refuses a
+          <em>meaningful</em> milestone, both proven by existing tests staying green, plus one new
+          case pinning the boundary.</td>
+        </tr>
+        <tr>
+          <td>Fleet verification</td><td><code>5ef8876</code></td>
+          <td>Counts persisted tier fields directly from <code>repository_inventory</code> instead of
+          reading audit warnings.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The fleet root cause is the most instructive of the three.</strong> The field reaching
+    verification was <code>effort_calibrated=false</code>, derived from a fixture's legacy
+    <code>plan-effort S</code>. Its uncalibrated-effort compatibility warning was emitted under the
+    broad <code>legacy-capability-tier</code> code, so verification mistook an <em>effort</em>
+    diagnostic for a <em>persisted tier</em> and rolled the migration back. The defect was not the new
+    field; it was that a verification step inferred structure by pattern-matching a diagnostic string.
+    Counting the fields directly removes the coupling rather than teaching the matcher about one more
+    field it should ignore.</p>
+
+    <p>Two process notes from this repair, recorded because both are coordinator errors rather than
+    worker ones. A manifest reported commit <code>21288f8fdd927ed6e169968cb8f5ef70bc333411</code>,
+    which does not exist — the real commit is <code>21288f82216afce3bb5ebaa1d47fbf16c0446337</code>,
+    agreeing only on the abbreviated prefix. <code>git merge</code> refused it, which is the only reason
+    a nonexistent SHA did not reach this record and the plan's commit list. And the fleet node's gate
+    command named a test file a concurrent node owned, so its lane could not go green regardless of its
+    own work; its three target tests passed, and the red was a gate-specification error.</p>
   </section>
 
   <section id="ledger-repair">

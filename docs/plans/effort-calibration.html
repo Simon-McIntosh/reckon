@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="15">
-<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b">
+<meta name="plan-version" content="16">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b,b8a9934a178a4606ef89b798c7166dbf4ec27961,5ef88765c8ecb1be01fad7a2bfff257625974759">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/roadmap.py,reckon/calibration.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_crew.py,tests/test_roadmap.py,tests/test_calibration.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-impl" content="0.93">
 </head>
 <body>
   <main class="plan-doc">
@@ -348,6 +348,9 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260812T203801" data-who="reckon-ship" data-when="2026-08-12T20:38:01Z">
     <div class="r-comment-body">suite-gate FAILED — no commit; measure: uv run pytest -q on integrated 279b6f1 gave 1,826 passed / 5 FAILED, exit 1, 58.7s. Every one of the fifteen nodes landed so far passed its own scoped gate and the suite still broke, which is the argument for a separate integration gate rather than trusting the sum of scoped ones. Failures: test_budget promotion fixture promotes the placeholder revision deadbee that the new commit boundary correctly refuses; three test_fleet_migration cases around snapshot, verification and CLI reporting — a rolled-back state where verified was expected, a legacy capability rejected before the injected failure, and a CLI result lacking the after key; and test_provenance where a neutral em-dash milestone reaches PLAN-ONLY validation on a NON-PLAN canonical dump, which is a scoping defect in the tightening rather than a validation that is too strict. Downstream work is held per gates.on_fail rather than worked around. The gate node modified no repository file and did not rerun. Artifacts docs/evidence/archive/effort-calibration-landed.html#suite-regression</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260812T205200" data-who="reckon-ship" data-when="2026-08-12T20:52:00Z">
+    <div class="r-comment-body">Suite gate now PASSED after three corrective nodes — full suite on integrated 99583a4: 1,837 passed / 0 failed, exit 0, 54.3s, no failing test names. Repairs: promotion fixture b8a9934a178a4606ef89b798c7166dbf4ec27961 resolves its repository HEAD to a full SHA and promotes that, leaving the strict boundary untouched; non-plan validation scope 21288f82216afce3bb5ebaa1d47fbf16c0446337 strips the legacy milestone placeholder from non-plan canonical writes while a plan still refuses an em-dash and a non-plan still refuses a meaningful milestone; fleet verification 5ef88765c8ecb1be01fad7a2bfff257625974759 counts persisted tier fields directly from repository_inventory instead of reading audit warnings. The fleet root cause: effort_calibrated=false derived from a fixture's legacy plan-effort S emitted its uncalibrated warning under the broad legacy-capability-tier code, so verification mistook an effort diagnostic for a persisted tier — the defect was inferring structure from a diagnostic string, not the new field. Two coordinator errors recorded: a manifest reported commit 21288f8fdd927ed6e169968cb8f5ef70bc333411 which does not exist, caught only because git merge refused it; and the fleet node's gate command named a test file a concurrent node owned, so its lane could not go green regardless of its own work.</div>
 </div>
 </section>
 </main>
