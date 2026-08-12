@@ -262,6 +262,18 @@ def test_the_contract_has_exactly_seven_properties() -> None:
     assert len(crew.NODE_PROPERTIES) == 7
 
 
+def test_worker_protocol_states_scope_exclusivity_is_not_sufficiency() -> None:
+    protocol = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "references"
+        / "worker-protocol.md"
+    ).read_text()
+    assert "This checks exclusivity, not sufficiency" in protocol
+    assert "does not prove the named paths can carry the goal" in protocol
+
+
 # ── Routing ─────────────────────────────────────────────────────────────────
 
 
@@ -308,6 +320,48 @@ def test_the_resolution_fills_the_defaults_a_dispatch_would_fill(home) -> None:
     assert resolution.run_id in resolution.node.manifest_path
     assert resolution.validation.ok
     assert resolution.launch == "cli"
+
+
+def test_dry_run_payload_reports_the_resolved_write_paths(
+    home, repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    node = _node()
+    write_paths = ["reckon/crew.py", "tests/test_crew.py"]
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            write_paths[0],
+            "--write-path",
+            write_paths[1],
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["write_paths"] == write_paths
+    _assert_no_dispatch_artifacts(repo)
 
 
 def test_an_unsafe_node_id_is_refused_before_anything_is_created(home) -> None:

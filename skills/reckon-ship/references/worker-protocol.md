@@ -24,15 +24,17 @@ A node is dispatchable only when all seven hold:
 | Fully specified | Every input is already in the live plan or in the node's fences. Nothing requires the worker to infer intent. |
 | Demonstrable | Done-when is a *measure* that emits evidence — a named test, a recorded command output, a numeric result against a stated bound. A subjective adjective ("clean", "robust", "better") fails this test. |
 | Closed | No decision from outside the node is needed. A required-but-unlocked decision means a decision node precedes it. |
-| Scoped | Exclusive write paths are enumerated, and nothing outside them is needed. No concurrent node shares a path. |
+| Scoped | Exclusive write paths are enumerated and no concurrent node shares a path. This checks exclusivity, not sufficiency: it does not prove the named paths can carry the goal. |
 | Bounded | The work fits the resolved time budget. If it cannot, split it — a budget is not a target to overrun. |
 | Independently verifiable | The orchestrator can audit completion from the manifest, `git show --stat` and the gate evidence, without reading the implementation. |
 
 `reckon crew dispatch` enforces the same seven and refuses a node that fails,
 naming every failing property in one pass so the node can be reshaped in one
 edit. `--dry-run` runs the identical resolution and validation without creating
-a worktree or a process, so a whole wave can be checked before any of it goes
-out.
+a worktree or a process. Its payload reports the resolved write paths explicitly,
+so a coordinator can inspect the actual exclusivity fence before sending a whole
+wave. The coordinator still owns the sufficiency review: dry-run cannot infer
+that the named paths contain every implementation surface the goal will need.
 
 Two properties are worth stating plainly because they are the ones a hurried
 dispatch skips.

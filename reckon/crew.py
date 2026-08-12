@@ -848,6 +848,7 @@ class DispatchPlan:
             "run_id": self.run_id,
             "time_budget": self.node.time_budget,
             "validation": self.validation.as_dict(),
+            "write_paths": list(self.node.write_paths),
         }
 
 
