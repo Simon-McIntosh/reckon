@@ -1,11 +1,12 @@
 # reckon
 
-Repo-agnostic agile planning system. Three surfaces share one repo and one venv:
+Repo-agnostic agile planning system. Four surfaces share one repo and one venv:
 
 | Surface | CLI | What it does |
 |---|---|---|
 | **reckon server** | `reckon serve` (`reckon service` to run it as a daemon) | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
+| **reckon crew** | `reckon crew dispatch` (`observe`, `resume`, `attach`, `list`, and `stop` manage the run) | Backend-agnostic worker dispatch — validates the node contract, resolves flight config, creates its detached worktree, and returns JSON describing the spawned run or in-harness directive |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
 The Python distribution is named `reckon-plans`; the import package and
@@ -18,9 +19,23 @@ uv sync
 uv run reckon serve           # HTTP server on port 8765
 uv run reckon serve --port 8766 --mounts /path/to/mounts.json
 uv run reckon mcp             # stdio MCP transport
+uv run reckon crew dispatch --project sample --plan plan-alpha --section s3 \
+  --role implement --node docs-readme --goal "Document the crew CLI" \
+  --done-when "grep -c 'reckon crew' README.md returns 3 or more" \
+  --write-path README.md --time-budget 20m \
+  --manifest /tmp/docs-readme-manifest.md --session example
+uv run reckon crew observe --run <run-id> --project sample
+uv run reckon crew attach --run <run-id> --task <harness-task-id>  # in-harness runs only
 uv run reckon build docs      # portable static site under docs/
 uv run reckon migrate-layout docs --check  # collision-safe migration preview
 ```
+
+`reckon crew dispatch` is the single launch instruction for every configured
+backend. It refuses malformed nodes before creating a worktree, then returns
+one JSON document whose `launch` field tells the caller whether a process was
+spawned or an in-harness task must be launched and bound with `attach`. Use the
+returned run id with `observe`; if a worker reports `NEEDS-HELP:`, answer it in
+the same session with `resume` rather than dispatching a replacement.
 
 ## Running the server as a service
 
