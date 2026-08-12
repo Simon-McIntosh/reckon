@@ -365,6 +365,81 @@ def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
     )
 
 
+def test_ship_retriages_followups_after_every_wave_until_dry() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    for text in (ship, reference):
+        assert "re-triage" in text.lower()
+        assert "after every wave" in text
+        assert "complete pass finds nothing foldable" in text
+        assert "fixed pass count" in text
+
+
+def test_ship_enumerates_the_only_open_followup_exemptions() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    for text in (ship, reference):
+        for exemption in ("authority-required", "dissent-reopen", "foreign-owner"):
+            assert f"`{exemption}`" in text
+        assert "spend, an outward-facing effect, or an irreversible" in text
+        assert "asks to reopen a locked decision" in text
+        assert (
+            "different plan or repository" in text
+            or "another plan or repository" in text
+        )
+
+
+def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    sentence = "Manifest `follow_ons` enter the same triage loop as open plan followups"
+    assert sentence in ship
+    assert sentence in reference
+
+
+def test_terminal_status_waits_for_the_followup_drain() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    for text in (ship, reference):
+        assert "Do not set" in text
+        assert "`shipped` or `done` while" in text
+        assert "foldable followup is open" in text
+
+
+def test_exempt_open_followup_records_its_claim() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    for text in (ship, reference):
+        assert "exempt open followup" in text.lower()
+        assert "record" in text.lower()
+        assert "which exemption it claims" in text
+
+
 def test_edit_skill_uses_version_safe_prose_tool() -> None:
     edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text()
 

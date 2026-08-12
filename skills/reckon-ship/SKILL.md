@@ -156,6 +156,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → reckon crew complete each run — the record becomes committed evidence
 → immediately write that node's commit, gate measure, artifacts, and impl to the plan
 → emit the completion summary, WHY carrying the gate evidence
+→ re-triage open followups + manifest follow_ons; fold them into the DAG until dry
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
 ```
@@ -220,6 +221,10 @@ structured state (decisions, followups). Do not implement items marked
 14. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
+15. **Drain foldable followups before closure.** Re-triage open followups after
+    every wave, route that wave's manifest `follow_ons` through the same loop,
+    and repeat until a complete pass finds nothing foldable. Never set a plan
+    to `shipped` or `done` while a foldable followup is open.
 
 ## §Prerequisite blocking — STOP and ask for authorization
 
@@ -777,6 +782,41 @@ Report the sprint altitude at close from `feeds_sprints` rather than from memory
 it is derived, so it cannot go stale the way a written list would, and a sprint
 that feeds nothing says so instead of staying silent.
 
+### 7c. Followup drain — re-triage after every wave until dry
+
+**A followup generated during execution is triage input for the current run,
+not a handoff by default.** After every wave, collect the selected plan's open
+followups and every manifest `follow_ons` entry returned by that wave into one
+triage queue. Manifest `follow_ons` enter the same triage loop as open plan
+followups; their origin changes the evidence trail, not their disposal.
+
+Folding is the default. For each queue entry, either fold its executable work
+into the current orchestration — same-plan work becomes an evergreen section and
+DAG nodes — or leave it open under exactly one recorded exemption:
+
+- **`authority-required`** — it requires authority the orchestrator does not
+  hold: spend, an outward-facing effect, or an irreversible action;
+- **`dissent-reopen`** — it asks to reopen a locked decision and therefore
+  stays in the dissent flow;
+- **`foreign-owner`** — the work belongs to a different plan or repository,
+  whose own lifecycle must surface it.
+
+An exempt open followup must record which exemption it claims and the concrete
+authority, decision, owning plan, or repository that makes the exemption true.
+Do not invent a fourth category such as inconvenience, worker capacity, or
+ordinary unfinished work.
+
+After folding and executing the added nodes, re-read open followups before
+testing for completion: landing that work may have generated more. Re-triage
+after every wave and terminate only when a complete pass finds nothing
+foldable. A fixed pass count, the end of the original DAG, or an empty
+`follow_ons` field from one manifest is not the termination condition.
+
+**Terminal status is gated on this drain.** Do not set `status` to `shipped` or
+`done` while any foldable followup is open. Exempt followups may remain open only
+with the recorded exemption above; their presence is an explicit authority,
+dissent, or ownership boundary rather than forgotten executable work.
+
 ### 8. Final validation — eat the dog food
 
 Before declaring the overall plan done:
@@ -792,6 +832,7 @@ assert state["data"]["impl"] == expected_fraction         # set correctly
 # All shipped sections are collapsed in the HTML
 # Driving followup is resolved
 # A next followup or "done — no followup" outcome is present
+# No foldable followup remains open; each exempt open followup records its exemption
 # version has incremented
 ```
 
