@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="6">
+<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="9">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 </head>
@@ -133,7 +133,19 @@
       <li><strong>Sprint management.</strong> ~78 lines of sprint orchestration in <code>reckon-edit</code> has a distinct trigger surface from plan-text editing — see decision.</li>
     </ul>
 
-    <h2 id="s4">§4 — Plan state is a living ledger, not a closing entry</h2>
+    <header class="section-landed">
+      <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+      <h2 id="s4">§4 — Plan state is a living ledger, not a closing entry</h2>
+    </header>
+    <p class="landed-summary">
+      Writeback is bound to <code>reckon crew complete</code>: nothing else may be promoted, merged,
+      dispatched or opened before the plan write. <code>impl</code> advances per node landing over
+      the orchestrator's executable-node denominator, carrying the commit and the gate's
+      quantitative measure — a moved percentage is never the only new information — and a landing
+      no longer pretends to close its section. 5 contract tests, suite green at 1,671; the four
+      prescribed ops were checked against a real plan copy before integration.
+      Full record: commit <code>f6e2518</code>, merged <code>005fc81</code>.
+    </p>
 
     <p>§2 fixed what <code>impl</code> <em>is</em> — a settable scalar the executing skill writes,
     not a figure the server computes. It did not fix <em>when</em>. The skill writes plan state per
@@ -192,6 +204,66 @@
       </tbody>
     </table>
 
+    <h2 id="s5">§5 — A run does not end with a foldable followup open</h2>
+
+    <p>§4 fixed the cadence of the plan write. It left the disposal of everything a run
+    <em>discovers</em>. A followup created while shipping — by the orchestrator on a landing, or by a
+    worker reporting work it was fenced out of — is currently written and left for a session that may
+    never come. The plan accretes debt at exactly the rate the run generates insight, which is the
+    worst possible coupling: the more the run learns, the more it defers.</p>
+
+    <p><strong>Followups generated during a run are triage input for that run, not a handoff.</strong>
+    The orchestrator classifies every open followup and folds each one that needs no decision it
+    cannot make into the current plan as a section, with nodes on the DAG. It repeats after every
+    wave, because landing work generates more followups, and stops when a pass turns up nothing
+    foldable. That termination condition is the same shape as the loop-until-dry rule already used
+    for discovery: a simple counter would stop while the tail is still arriving.</p>
+
+    <p><strong>Most followups need no decision at all</strong> — they are work somebody noticed and
+    was fenced out of. So folding is the default and leaving one open is the exception that must name
+    itself. The exemption is narrow and enumerable: the followup needs authority the orchestrator
+    does not hold (spend, an outward-facing effect, an irreversible action), or it asks to reopen a
+    locked decision and belongs in the dissent flow, or its work is owned by a different plan or
+    repository whose own lifecycle will surface it. Anything else is folded.</p>
+
+    <p><strong>The enforcement point is terminal status.</strong> A plan may not be set shipped or
+    done while a foldable followup against it is open — which is the same failure §4 already
+    identified from the other side: a terminal status removes the plan from the ready set and takes
+    its open work with it. An exempt followup may remain open precisely because it states why it
+    cannot be folded, so a reader can tell a blocked promise from a forgotten one.</p>
+
+    <h3 id="s5-gates">Evidence gates</h3>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The loop is stated with its termination</td>
+          <td>The executing skill requires re-triage after every wave and stops on a pass that finds
+          nothing foldable, not on a fixed count; a contract test asserts the wording.</td>
+        </tr>
+        <tr>
+          <td>Folding is the default</td>
+          <td>The skill states that a followup discovered during a run is folded unless it meets a
+          named exemption, and the exemptions are enumerated rather than left to judgement.</td>
+        </tr>
+        <tr>
+          <td>Worker discoveries enter the same loop</td>
+          <td>A manifest's <code>follow_ons</code> are triage input for the current run rather than
+          deferred by default, and the skill says so where those candidates are handled.</td>
+        </tr>
+        <tr>
+          <td>Terminal status is gated on the drain</td>
+          <td>The skill forbids a terminal status while a foldable followup is open, and requires an
+          exempt one to record which exemption it claims.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="naming" data-choice="keep-prefix-rename-ship" data-by="Simon McIntosh" data-when="2026-06-23">
@@ -226,6 +298,15 @@
       <button class="r-opt" data-value="worker-writes">Each worker updates the plan when its own node lands</button>
       </p>
     <p class="r-dec-rat">The orchestrator holds the full picture and has read the whole plan, so it is the only party that knows what one landing means for the rest — the denominator, which section it closes, and what is still in flight. A worker knows its own node and nothing else, so a worker-written advance would be a guess about a total it cannot see. It also keeps the existing rule intact rather than carving an exception into it: workers commit in detached worktrees and never touch shared reckon state, which is what stops concurrent nodes clobbering each other&#x27;s writes.</p>
+    </div>
+<div class="r-dec" data-key="followup-disposal" data-choice="fold-into-current-run" data-by="Simon McIntosh" data-when="2026-08-12T16:30:38+00:00">
+    <p class="r-dec-q">What happens to a followup a shipping run generates?</p>
+    <p class="r-dec-ctx">A run discovers work at every landing: the orchestrator writes followups, and workers report follow-ons they were fenced out of.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="fold-into-current-run">Fold it into the current orchestration and close it, looping until only externally-decided ones remain</button>
+      <button class="r-opt" data-value="defer-to-next-session">Write it and leave it for a later session</button>
+      </p>
+    <p class="r-dec-rat">Deferring by default couples debt to insight: the more a run learns, the more it leaves behind, and the promise is made to a session that may never come. Most followups need no decision at all — they are work somebody noticed and was fenced out of — so folding is the default and leaving one open is the exception that has to name itself. The orchestrator is the party that can do this: it holds the DAG, so it can add a section and its nodes, and it is already the sole writer of plan state. The loop repeats after every wave because landing work generates more followups, and terminates on a pass that finds nothing foldable rather than on a count.</p>
     </div>
 </section>
 
