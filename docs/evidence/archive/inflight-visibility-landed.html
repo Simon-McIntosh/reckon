@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="inflight-visibility-landed">
+  <meta name="plan-title" content="In-flight visibility — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution record for folding the watcher into the reckon server: the crew routes, the SPA surface, in-flight bands, in-flight through the read tools, and the measured MCP and installation repairs.">
+  <meta name="plan-evidence-for" content="reckon:inflight-visibility">
+  <meta name="plan-verifies" content="reckon:inflight-visibility#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; codex CLI workers in detached worktrees">
+  <title>In-flight visibility — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>In-flight visibility — landed evidence</h1>
+    <p class="plan-summary">One cumulative record, updated as each node lands. Anchors are stable;
+    the plan's evergreen sections link to them as they collapse.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each has produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Bounded reads</td><td>Exactly one 65,536-byte read observed on an oversized stream — <a href="#crew-routes">§ crew routes</a></td><td>pass</td></tr>
+        <tr><td>Live run visible</td><td>Phase classification proven on fixtures; the 3-second latency measure against a real dispatch is still open — <a href="#crew-routes">§ crew routes</a></td><td>partial</td></tr>
+        <tr><td>Navigable</td><td>Routes emit <code>plan_href</code> and <code>sprint_href</code>; the rendered surface is still open — <a href="#crew-routes">§ crew routes</a></td><td>partial</td></tr>
+        <tr><td>Visible to agents too</td><td>—</td><td>open</td></tr>
+        <tr><td>No second daemon</td><td>—</td><td>open</td></tr>
+        <tr><td>Portfolio scan usable</td><td>—</td><td>open</td></tr>
+        <tr><td>Drift detectable</td><td>—</td><td>open</td></tr>
+        <tr><td>Placeholder rejected</td><td>—</td><td>open</td></tr>
+        <tr><td>Suite green</td><td>—</td><td>open</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="crew-routes">
+    <h2>Crew routes, with phase derived on read</h2>
+
+    <p>Commit <code>7c1c3de</code> — <code>reckon/serve.py</code>,
+    <code>tests/test_crew_routes.py</code>; 419 insertions, 2 deletions across 2 files. Gate
+    <strong>passed</strong>: 7 focused tests, 0 failures, 3.4 s.</p>
+
+    <p><code>GET /crew</code> and <code>GET /crew/reckon</code> each emit one row per mounted live
+    pointer, joining the pointer with the owning repository's ledger for member and role, and adding
+    plan and section, resolved model and effort, elapsed seconds, derived phase, last activity, the
+    gate the run works toward, and direct <code>plan_href</code> and <code>sprint_href</code> links.
+    The route reads live pointers, ledgers, plan discovery and bounded log tails, and persists
+    nothing — so the server remains a reader of run state rather than a second writer of it.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Phase from a terminal event</td><td>A stream ending in <code>turn.completed</code> classifies <code>done</code></td></tr>
+        <tr><td>Phase from freshness</td><td>A log written inside the 900-second window classifies <code>working</code>; older classifies <code>idle</code></td></tr>
+        <tr><td>Read is bounded</td><td>On a stream grown past the bound, exactly one 65,536-byte read was observed — the whole file is never loaded</td></tr>
+        <tr><td>Both routes</td><td>Aggregate and project-filtered routes each returned the fixture pointers</td></tr>
+        <tr><td>Scoped suite</td><td><code>tests/test_crew_routes.py</code> — 7 passed, 0 failed; 7 new tests</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two of this plan's declared measures are only partly discharged by this node and stay open:
+    the 3-second latency figure needs a real dispatch observed through a restarted server, and the
+    navigability measure needs the rendered surface that the watcher-tab node supplies. Both are
+    recorded as partial rather than passed.</p>
+  </section>
+
+</main>
+</body>
+</html>

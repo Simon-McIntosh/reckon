@@ -21,7 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1">
+<meta name="plan-artifacts" content="reckon/serve.py,tests/test_crew_routes.py,docs/evidence/archive/inflight-visibility-landed.html">
+<meta name="plan-impl" content="0.13">
 </head>
 <body>
   <main class="plan-doc">
@@ -166,6 +169,65 @@
     coordinated, since a running server and every connected MCP stdio process hold the old code
     in memory.</p>
 
+    <h2 id="s5">§5 — Recovery classification must read what the worker delivered</h2>
+
+    <p>Run-state legibility is this plan's subject, and the classifier that a fresh orchestrator
+    session depends on most is currently able to recommend promoting a run that delivered nothing.
+    <code>classify_pointer</code> decides delivery from
+    <code>manifest_present or phase in ("complete", "failed")</code>, and each half of that
+    expression fails differently.</p>
+
+    <p><strong>A terminal turn is not a terminal node.</strong> The stored phase reaches
+    <code>complete</code> when the backend emits its end-of-turn event, which fires whenever the
+    worker's turn ends — including a turn that ended in a <code>NEEDS-HELP:</code> surrender having
+    produced nothing at all. Measured on this project: a run whose launch was rejected before its
+    command started stored <code>phase=complete</code> with <em>no manifest on disk</em>, and
+    <code>recover</code> classified it <code>completed_unpromoted</code> with the next action
+    <code>reckon crew complete --gate &lt;verdict&gt; --commit &lt;sha&gt;</code> — a commit that
+    does not exist, for work that never ran. Following that advice writes a fabricated success into
+    the committed ledger, which is the one record later calibration treats as ground truth.</p>
+
+    <p><strong>A failed run is advised to be promoted as a success.</strong> The same expression puts
+    <code>"failed"</code> inside the terminal set, so the classification and the next action are
+    identical for a run that failed and a run that succeeded.</p>
+
+    <p><strong>Manifest presence is not manifest content.</strong> A blocked manifest exists exactly
+    like a complete one, so a worker that correctly reported <code>status: blocked</code> is also
+    classified as promotable. Delivery is a claim the manifest makes about itself, so the classifier
+    must read the claim rather than infer it from the file existing.</p>
+
+    <p>The repair is to make the manifest's own <code>status</code> the authority on delivery, keep
+    liveness where it already is in the process table, and let a run whose evidence disagrees with
+    its phase report that disagreement rather than resolving it silently in favour of promotion.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Empty delivery is not completion</td>
+          <td>A pointer whose stored phase is terminal but whose manifest is absent classifies as
+          abandoned, and its next action names the launch log rather than promotion. Asserted by
+          test.</td>
+        </tr>
+        <tr>
+          <td>Blocked and failed are distinguished</td>
+          <td>Manifests reading <code>status: blocked</code> and <code>status: failed</code> each
+          classify separately from a complete one, and neither returns a promote action. Asserted by
+          test.</td>
+        </tr>
+        <tr>
+          <td>Both readers agree</td>
+          <td>The same pointer returns the same classification through the crew read tool and through
+          the recovery command, since both already share one function. Asserted by test.</td>
+        </tr>
+        <tr>
+          <td>No fabricated promotion</td>
+          <td>A test proving that no classification path emits a promote action for a run with no
+          commit and no manifest.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="watcher-host" data-choice="fold-into-reckon-server" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -195,6 +257,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260812T174900" data-who="reckon-ship" data-when="2026-08-12T17:49:00Z">
+    <div class="r-comment-body">crew-routes landed — commit 7c1c3de534ff22301a3630ffa0bc91a1272104c1; gate passed; measure: tests/test_crew_routes.py 7 passed / 0 failed in 3.4s with 7 new tests; a terminal turn.completed event classifies phase done, a log inside the 900s freshness window classifies working and an older one idle, and on an oversized stream exactly one 65,536-byte read was observed so the whole file is never loaded; aggregate and project-filtered routes both returned the fixture pointers and the route persists nothing. Two declared measures are only partly discharged and stay open: the 3-second live-dispatch latency needs a restarted server, and navigability needs the watcher surface. Artifacts reckon/serve.py, tests/test_crew_routes.py, docs/evidence/archive/inflight-visibility-landed.html#crew-routes</div>
+</div>
+</section>
+</main>
 </body>
 </html>
