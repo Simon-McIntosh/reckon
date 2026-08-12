@@ -225,6 +225,74 @@ def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
     assert "plans_count" not in manifest
 
 
+def test_legacy_item_lifecycle_reads_from_plan_with_compatibility_warning(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, "alpha", "active", 0.4)
+    index = _legacy_index(docs)
+    original = index.read_bytes()
+
+    composed = compose_project_state(docs, "sample")
+    current = next(item for item in composed["sprints"] if item["id"] == "current")
+
+    assert current["items"][0]["status"] == "active"
+    assert current["items"][0]["impl"] == pytest.approx(0.4)
+    assert any(
+        "sprint current item alpha: persisted status is ignored" in warning
+        for warning in composed["compatibility_warnings"]
+    )
+    assert index.read_bytes() == original
+
+
+def test_typed_sprint_legacy_status_reads_derived_but_is_rejected_on_write(migrated):
+    docs, _, _ = migrated
+    path = resource_path(docs, "sample", "sprint", "current")
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        text.replace(
+            '"slug":"alpha"',
+            '"impl":0.0,"slug":"alpha","status":"pending"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    sprint, version = read_resource(docs, "sample", "sprint", "current")
+
+    assert sprint["items"][0]["status"] == "pending"
+    assert any(
+        "sprint current item alpha: persisted status is ignored" in warning
+        for warning in sprint["compatibility_warnings"]
+    )
+    composed = compose_project_state(docs, "sample")
+    current = next(item for item in composed["sprints"] if item["id"] == "current")
+    assert current["items"][0]["status"] == "active"
+    assert current["items"][0]["impl"] == pytest.approx(0.4)
+    with pytest.raises(
+        ValueError,
+        match="sprint item 'alpha' must not persist status",
+    ):
+        stored = {
+            **sprint,
+            "compatibility_warnings": [],
+            "items": [
+                {
+                    key: value
+                    for key, value in sprint["items"][0].items()
+                    if key != "impl"
+                }
+            ],
+        }
+        write_resource(
+            docs,
+            "sample",
+            "sprint",
+            "current",
+            stored,
+            version,
+        )
+
+
 def test_project_scope_routes_are_validated_and_composed(migrated):
     docs, _index, _evidence = migrated
     project, version = read_resource(docs, "sample", "project", "project")

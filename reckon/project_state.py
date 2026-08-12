@@ -342,7 +342,18 @@ def read_resource(
             "distributed_resource_inactive: project-state marker is not complete"
         )
     recover_project_state_transactions(docs_dir, project)
-    return _read_resource_unchecked(docs_dir, project, resource_type, resource_id)
+    data, version = _read_resource_unchecked(
+        docs_dir, project, resource_type, resource_id
+    )
+    if resource_type == "sprint":
+        warnings = _item_lifecycle_warnings([data])
+        if warnings:
+            data = deepcopy(data)
+            data["compatibility_warnings"] = [
+                *data.get("compatibility_warnings", []),
+                *warnings,
+            ]
+    return data, version
 
 
 def _read_resource_unchecked(
@@ -824,12 +835,38 @@ def _hydrate_items(
     return hydrated
 
 
+def _item_lifecycle_warnings(sprints: list[dict[str, Any]]) -> list[str]:
+    """Report stored item fields whose values are supplied by live plans."""
+    warnings: list[str] = []
+    for sprint in sprints:
+        sprint_id = str(sprint.get("id") or "<no-id>")
+        for raw in sprint.get("items", []):
+            if not isinstance(raw, dict):
+                continue
+            slug = str(raw.get("slug") or "<no-slug>")
+            for field in sorted(LIFECYCLE_ITEM_FIELDS & raw.keys()):
+                warnings.append(
+                    f"sprint {sprint_id} item {slug}: persisted {field} is ignored; "
+                    "the value is derived from plan HTML"
+                )
+    return warnings
+
+
 def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     """Compose the distributed resources into the compatibility index shape."""
     mode = project_state_mode(docs_dir)
     if mode.format != "distributed":
         data, _ = _load_legacy_index(docs_dir, project)
-        return {**deepcopy(data), "source_format": "legacy-index"}
+        composed = deepcopy(data)
+        sprints = list(composed.get("sprints", []))
+        warnings = _item_lifecycle_warnings(sprints)
+        composed["sprints"] = _hydrate_items(docs_dir, project, sprints)
+        if warnings:
+            composed["compatibility_warnings"] = [
+                *composed.get("compatibility_warnings", []),
+                *warnings,
+            ]
+        return {**composed, "source_format": "legacy-index"}
 
     marker = mode.marker or {}
     resources = marker.get("resources")
@@ -886,9 +923,14 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     sprints.sort(key=lambda item: str(item.get("id", "")))
     milestones.sort(key=lambda item: str(item.get("id", "")))
     blockers.sort(key=lambda item: str(item.get("id", "")))
+    compatibility_warnings = [
+        warning
+        for sprint in sprints
+        for warning in sprint.get("compatibility_warnings", [])
+    ]
     hydrated_sprints = _hydrate_items(docs_dir, project, sprints)
     focus_id = _derive_default_sprint_focus(hydrated_sprints)
-    return {
+    composed = {
         "_version": 0,
         "active_sprint_id": focus_id,
         "projects": [project_manifest],
@@ -899,6 +941,9 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         "source_format": "distributed",
         "resource_versions": versions,
     }
+    if compatibility_warnings:
+        composed["compatibility_warnings"] = compatibility_warnings
+    return composed
 
 
 def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
