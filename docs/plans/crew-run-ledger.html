@@ -4,23 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="crew-run-ledger">
-  <meta name="plan-title"     content="Crew Run Ledger">
-  <meta name="plan-summary"   content="Repo-owned committed run records with ephemeral config-home pointers, promoted on completion, recoverable when orphaned, and readable through one MCP tool.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="M">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-run-ledger">
+  <meta name="plan-title" content="Crew Run Ledger">
+  <meta name="plan-summary" content="Repo-owned committed run records with ephemeral config-home pointers, promoted on completion, recoverable when orphaned, and readable through one MCP tool.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S8">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S8">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="uniform-worker-dispatch">
-  <meta name="plan-blocks"    content="inflight-visibility">
+  <meta name="plan-blocks" content="inflight-visibility">
   <title>Crew Run Ledger | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -37,131 +40,68 @@
     symlink into the repository gives the durable half its properties for free, are recorded in
     <a href="/reckon/research/agent-fleet-orchestration#s5">Agent Fleet Orchestration §5</a>.</p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§2 — Deliverables</h2>
+      </header>
+      <p class="landed-summary">
+        Built <code>reckon/ledger.py</code> plus promotion, three-way recovery, roster-backed
+        session reuse and the read-only <code>crew</code> MCP tool. A run's durable record now
+        lands in <code>&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code>, committed beside
+        <code>index.json</code>; the transient pointer never leaves the config home.
+        28 new tests, suite green at 1,628; the MCP surface is asserted at five tools.
+        Full record: <a href="/reckon/evidence/archive/crew-run-ledger-landed#round-trip">§2 landed</a>
+        (commit <code>3bf7865</code>).
+      </p>
+    </section>
 
-    <p><strong>The committed ledger.</strong>
-    <code>&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code>, written beside
-    <code>index.json</code> so it inherits the existing symlink and is server-written and
-    git-committed. It holds the team roster — member id, harness, role, long-lived session id,
-    created date — and one record per completed run: run id, plan, section, node, member,
-    resolved model and effort, dispatched and completed timestamps, commit SHAs, gate verdict,
-    manifest path and outcome. Machine-written JSON, matching <code>index.json</code>'s
-    convention; humans tune YAML, machines record JSON.</p>
-
-    <p><strong>Ephemeral live pointers.</strong>
-    <code>~/.config/reckon/crew/live/&lt;run-id&gt;.json</code> holding project, repository root,
-    worktree, the backend's machine-readable log path, manifest path, process id and start
-    time. Never committed, and never the sole home of a durable fact.</p>
-
-    <p><strong>Promotion.</strong> <code>reckon crew complete --run R --gate &lt;verdict&gt;
-    --commit &lt;sha&gt;</code> appends the finished record to the owning repository's ledger and
-    deletes the pointer, in that order, so an interruption leaves a recoverable pointer rather
-    than a lost record. Ledger writes are version-paired the same way <code>index.json</code>
-    writes are, so two orchestrators cannot clobber each other.</p>
-
-    <p><strong>Orphan recovery.</strong> <code>reckon crew recover</code> classifies every live
-    pointer: process alive and log fresh means running; process dead with a terminal event in
-    the log means completed-but-unpromoted, and it reports the manifest path so the record can
-    be promoted; process dead with no terminal event means genuinely abandoned. It reports and
-    repairs; it never force-removes a worktree, matching the conservative cleanup posture
-    already in the fleet script.</p>
-
-    <p><strong>Session reuse through the roster.</strong> A member registered with a null
-    session captures its id from the backend's first run and persists it, so subsequent nodes
-    and every escape-hatch resumption reach the same long-lived session. Members are per
-    project so a repository's team is committed with its plans.</p>
-
-    <p><strong>Record what makes effort measurable later.</strong> Effort is currently an asserted
-    letter with no external referent, and the ledger is what makes it falsifiable — but only if the
-    right fields are captured from the first run. Record per node: dispatch and completion
-    timestamps, the agent configuration that ran it, changed-line counts from the scoped diff, tests
-    added, the gate outcome, and an explicit flag when a node's scope was widened mid-flight. That
-    last field is the one easy to omit and impossible to reconstruct: a scope-changed run measures
-    neither the estimate nor the worker, so it must be excluded from calibration rather than
-    silently averaged in. Report measured worker-time per plan against its declared effort so the
-    spread is visible. Do not change the effort weights here — <code>effort-calibration</code> owns
-    the unit migration and the calibration loops; this plan owns capturing the data they need.</p>
-
-    <p><strong>The read tool.</strong> One new MCP tool, <code>crew(project,
-    view="flight"|"live"|"ledger"|"summary")</code>, read-only, holding the MCP surface at
-    five tools. It accepts <code>checkout_path</code> and follows the same worktree-routing
-    contract as <code>read_plan</code>, so a worker inside a worktree reads its own checkout's
-    ledger rather than the registered main one.</p>
-
-    <h2 id="gates">§3 — Evidence gates</h2>
-
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Round-trip</td>
-          <td>A dispatch writes a pointer; completion promotes it into the repository ledger and
-          removes the pointer. Recorded before-and-after file listings plus the resulting
-          <code>git status</code> showing the ledger as the only changed state file.</td>
-        </tr>
-        <tr>
-          <td>Nothing transient is committed</td>
-          <td>A test asserting no live-pointer path resolves inside any repository working tree,
-          and that an in-flight run leaves the working tree clean apart from the worker's own
-          scoped files.</td>
-        </tr>
-        <tr>
-          <td>Interruption is recoverable</td>
-          <td>A killed run leaves a pointer that <code>recover</code> classifies as
-          completed-but-unpromoted, reporting the manifest path; promotion then succeeds. All
-          three classifications exercised by test.</td>
-        </tr>
-        <tr>
-          <td>Concurrent writes are safe</td>
-          <td>A test proving two interleaved ledger writes both survive — version-paired, no
-          lost update.</td>
-        </tr>
-        <tr>
-          <td>Session reuse</td>
-          <td>A member registered with a null session captures an id on first run, and a second
-          node against that member demonstrably resumes the same session.</td>
-        </tr>
-        <tr>
-          <td>Worktree routing</td>
-          <td><code>crew(..., checkout_path=…)</code> reads the worktree's ledger, not the
-          registered main checkout's. Verified against a real worktree.</td>
-        </tr>
-        <tr>
-          <td>Calibration inputs captured</td>
-          <td>A completed run record carrying dispatch and completion timestamps, agent
-          configuration, changed lines, tests added, gate outcome, and the scope-changed flag, with
-          a test proving that flag is settable and defaults false. Measured worker-time per completed
-          plan reported against its declared effort with the observed spread stated.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
+    <section id="gates" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§3 — Evidence gates</h2>
+      </header>
+      <p class="landed-summary">
+        All eight declared measures produced evidence and passed: round-trip (ledger v1→v2,
+        pointer gone, <code>crew.json</code> the only changed state file), nothing transient
+        committed, all three recovery classes, interleaved writes both surviving, session capture
+        and resume, worktree routing against a real worktree, all 20 calibration fields with the
+        scope-changed exclusion, and 1,628 tests green.
+        One measure is mechanism-proven but data-empty: reckon's own ledger starts here, so it has
+        no measured effort spread yet.
+        Full table with per-measure evidence:
+        <a href="/reckon/evidence/archive/crew-run-ledger-landed#gates">§3 landed</a>.
+      </p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="run-state-ownership" data-choice="repo-ledger-config-pointers" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Where does run state live?</p>
-        <p class="r-dec-ctx">Plans are repo-local and committed; their implementation record arguably should be too. But in-flight state churns too fast to commit.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="repo-ledger-config-pointers">Repository owns the committed ledger; config home owns ephemeral pointers</button>
-          <button class="r-opt" data-value="config-home-only">Reckon config home owns everything</button>
-          <button class="r-opt" data-value="plan-html-runs">A data-reckon runs section inside plan HTML</button>
-        </p>
-        <p class="r-dec-rat">A repository owns every durable fact about its own implementation, exactly as it owns its plans; reckon holds only the pointer that lets one view aggregate across mounted projects. Plan HTML was rejected because every progress tick would bump the version counter and fight optimistic concurrency.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="run-state-ownership" data-choice="repo-ledger-config-pointers" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Where does run state live?</p>
+    <p class="r-dec-ctx">Plans are repo-local and committed; their implementation record arguably should be too. But in-flight state churns too fast to commit.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="repo-ledger-config-pointers">Repository owns the committed ledger; config home owns ephemeral pointers</button>
+      <button class="r-opt" data-value="config-home-only">Reckon config home owns everything</button>
+      <button class="r-opt" data-value="plan-html-runs">A data-reckon runs section inside plan HTML</button>
+      </p>
+    <p class="r-dec-rat">A repository owns every durable fact about its own implementation, exactly as it owns its plans; reckon holds only the pointer that lets one view aggregate across mounted projects. Plan HTML was rejected because every progress tick would bump the version counter and fight optimistic concurrency.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-crl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship crew-run-ledger">
-        <h4 class="r-fu-title">Build the run ledger, pointers, promotion and recovery</h4>
-        <div class="r-fu-body"><p>Land the committed per-project ledger, ephemeral live pointers, version-paired promotion, three-way orphan classification, roster-backed session reuse, and the read-only crew MCP tool with worktree routing.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship crew-run-ledger</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-crl-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship crew-run-ledger" data-resolved-at="2026-08-12T09:39:56+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Build the run ledger, pointers, promotion and recovery</h4>
+    <div class="r-fu-body"><p>Land the committed per-project ledger, ephemeral live pointers, version-paired promotion, three-way orphan classification, roster-backed session reuse, and the read-only crew MCP tool with worktree routing.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-run-ledger</pre>
+    <p class="r-fu-outcome">Landed — commit 3bf7865. Ledger at docs/state/<project>/crew.json with version-paired writes, promotion before pointer deletion, three-way recovery, roster session capture and reuse, all 20 calibration fields with the scope-changed exclusion, and the read-only crew MCP tool holding the surface at five tools. 28 new tests; suite 1,628 green. All eight evidence gates passed; the effort report is mechanism-proven but data-empty for reckon until nodes are dispatched through the CLI.</p>
+    </article>
+<article class="r-fu" data-id="f-crl-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Dispatch the work the ledger unblocked</h4>
+    <div class="r-fu-body"><p>The ledger and its roster are in place, so the three plans that depended on it are now executable. <code>budget-aware-dispatch</code> is the nearest: it reads the same run records and the budget signal already captured on every pointer. <code>inflight-visibility</code> and <code>effort-calibration</code> follow, the latter owning the unit migration this plan deliberately left alone.</p><p>First real measurement note: reckon's own ledger is empty until nodes are dispatched and promoted through <code>reckon crew</code>, so the effort spread stays unreported until then.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    </article>
+</section>
 
   </main>
 </body>

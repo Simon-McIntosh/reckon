@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-run-ledger-landed">
+  <meta name="plan-title" content="Crew run ledger — landed evidence">
+  <meta name="plan-summary" content="A run's record now has two homes: a config-home pointer while it churns, and the owning repository's committed crew.json once it is durable evidence. Eight declared measures produced evidence; the calibration report is proven on recorded data and starts empty for reckon itself, which is stated rather than implied.">
+  <meta name="plan-evidence-for" content="reckon:crew-run-ledger">
+  <meta name="plan-verifies" content="reckon:crew-run-ledger#s2,reckon:crew-run-ledger#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; git worktrees; no external harness spawned — the shipped in-harness backend and a substituted launcher cover the dispatch paths">
+  <meta name="plan-commits" content="3bf78653f464accca190222ef06ccc686c78f89f">
+  <meta name="plan-artifacts" content="reckon/ledger.py,reckon/crew.py,reckon/cli.py,reckon/mcp.py,reckon/_mcp_tools.py,tests/test_ledger.py,AGENTS.md,README.md,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/worker-protocol.md">
+  <title>Crew run ledger — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Crew run ledger — landed evidence</h1>
+    <p class="plan-summary">The durable half of a run now lives where the plan it implemented
+    lives: <code>&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code>, committed beside
+    <code>index.json</code> and version-paired the same way. The transient half never leaves
+    reckon's config home. Eight declared measures produced evidence, 28 new tests cover them, and
+    the suite is green at 1,628. One measure is reported as mechanism-proven but data-empty:
+    reckon's own ledger begins now, so it has no measured spread to show yet.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Round-trip</td><td>A real CLI round-trip: pointer written at dispatch, ledger at
+        version 2 after promotion, pointer gone, and <code>git status</code> showing
+        <code>crew.json</code> as the only changed state file — <a href="#round-trip">§ round-trip</a></td><td>pass</td></tr>
+        <tr><td>Nothing transient is committed</td><td>No pointer, log or crew-home path resolves
+        inside the working tree, and an in-flight run leaves <code>git status --porcelain</code>
+        empty — <a href="#transient">§ transient</a></td><td>pass</td></tr>
+        <tr><td>Interruption is recoverable</td><td>A killed run that delivered classifies as
+        completed-but-unpromoted with its manifest path, and promotion then succeeds; all three
+        classes exercised in one report — <a href="#recovery">§ recovery</a></td><td>pass</td></tr>
+        <tr><td>Concurrent writes are safe</td><td>Two interleaved promotions both survive, the
+        retry provably forced; a stale version is refused and a double promotion is refused —
+        <a href="#concurrency">§ concurrency</a></td><td>pass</td></tr>
+        <tr><td>Session reuse</td><td>A null-session member captures an id on its first run; a
+        second node's argv carries <code>resume &lt;that id&gt;</code> — <a href="#sessions">§ sessions</a></td><td>pass</td></tr>
+        <tr><td>Worktree routing</td><td>Against a real <code>git worktree</code>,
+        <code>crew(…, checkout_path=…)</code> reads that checkout's ledger while the main
+        checkout's read returns its own — <a href="#routing">§ routing</a></td><td>pass</td></tr>
+        <tr><td>Calibration inputs captured</td><td>All 20 record fields present on a promoted
+        run; <code>scope_changed</code> defaults false and is settable; the report shows 40.0 min
+        over 2 runs against declared effort M with a 20.0 min spread, and excludes the
+        scope-changed run — <a href="#calibration">§ calibration</a></td><td>pass — data-empty for
+        reckon itself, see below</td></tr>
+        <tr><td>Suite green</td><td>1,628 tests pass, 28 of them new; lint clean —
+        <a href="#suite">§ suite</a></td><td>pass</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="shape">
+    <h2>The shape that makes recovery possible</h2>
+
+    <p>Promotion is two writes in a fixed order, and the order is the whole recovery story. The
+    ledger is appended first and the pointer deleted second, so the only state an interruption can
+    leave is a pointer whose run has finished — which is recoverable. The reverse order would lose
+    the record outright.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 232" width="100%" style="max-width:640px" role="img"
+           aria-label="A live pointer in the config home is appended to the repository ledger and then deleted; an interruption between the two writes leaves a pointer that recover classifies as completed-but-unpromoted, alongside running and abandoned.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="24" width="216" height="46" rx="3"/>
+          <rect x="392" y="24" width="240" height="46" rx="3" stroke="#3b82c4"/>
+          <path d="M224 40 L392 40"/>
+          <path d="M384 47 l8 -7 -8 -7"/>
+          <path d="M116 70 L116 128"/>
+          <path d="M109 120 l7 8 7 -8"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="18" y="43">live pointer — config home</text>
+          <text x="402" y="43">crew.json — owning repository</text>
+          <text x="8" y="148">what an interruption can leave, and what recover calls it</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="18" y="60">pid · worktree · log · phase — never committed</text>
+          <text x="402" y="60">roster · commits · gate · measures — committed</text>
+          <text x="308" y="33" text-anchor="middle">1. append</text>
+          <text x="308" y="60" text-anchor="middle">2. delete the pointer</text>
+          <text x="18" y="172">process alive</text>
+          <text x="18" y="186">→ running</text>
+          <text x="228" y="172">dead, manifest or terminal event</text>
+          <text x="228" y="186">→ completed-but-unpromoted, with its manifest path</text>
+          <text x="18" y="212">dead, nothing delivered</text>
+          <text x="228" y="212">→ abandoned; the worktree is left in place, never force-removed</text>
+        </g>
+      </svg>
+      <figcaption>Three classes, because those are the three distinguishable states. Liveness comes
+      from the process table and delivery from the manifest on disk — a stream that stops without a
+      terminal event reads as working forever, and would otherwise hide a dead worker.</figcaption>
+    </figure>
+  </section>
+
+  <section id="round-trip">
+    <h2>Round-trip, run through the CLI</h2>
+
+    <p>Recorded against a throwaway repository with the shipped in-harness backend, so nothing was
+    spawned. The roster write created the ledger at version 1; the promotion appended to it at
+    version 2.</p>
+
+    <table>
+      <thead><tr><th></th><th>Live pointers</th><th><code>docs/state/smoke/</code></th><th><code>git status --porcelain</code></th></tr></thead>
+      <tbody>
+        <tr><td>after dispatch</td><td><code>r-20260812T093244038067-node-a.json</code></td><td><code>crew.json</code>, <code>index.json</code></td><td><code>?? docs/state/smoke/crew.json</code></td></tr>
+        <tr><td>after <code>crew complete</code></td><td>none</td><td><code>crew.json</code>, <code>index.json</code></td><td><code>?? docs/state/smoke/crew.json</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The ledger is the only state file either step touched. It is untracked in the listing above
+    only because the throwaway repository never committed it; in a real project it is committed
+    beside <code>index.json</code>, which is the point of putting it there.</p>
+
+    <p>The promoted record, abridged to the fields the measures name:</p>
+
+    <pre>run_id        r-20260812T093244038067-node-a
+plan/section  plan-a / §2        node  node-a        member  worker-a
+agent         backend native, launch in-harness, sandbox worktree-full
+dispatched    2026-08-12T09:32:44Z   completed  2026-08-12T09:32:44Z
+base_sha      c57aeb3f116a3a5680edc04842320035e2888e6c   commits  b2f9f7d
+changed_lines added 1, removed 0, files 1     tests_added  28
+gate          passed        scope_changed  false        time_budget  20m</pre>
+
+    <p>A gate verdict is one of <code>passed</code>, <code>failed</code> or
+    <code>not-run</code>, refused otherwise. Free text would have made the field unqueryable by the
+    calibration loops that will read it, and <code>not-run</code> is a real answer: a gate whose
+    evidence could not be produced is a recorded negative, not a silent pass.</p>
+  </section>
+
+  <section id="transient">
+    <h2>Nothing transient reaches a working tree</h2>
+
+    <p>Two tests hold the boundary from both sides. The first asserts that the crew home, the live
+    directory, the pointer file and the event log are all outside the repository — the property that
+    would otherwise decay the first time someone moved the config home. The second asserts that a
+    run in flight leaves <code>git status --porcelain</code> empty in the main tree, with the
+    worker's own scoped files confined to its detached worktree, which is itself outside the
+    repository.</p>
+  </section>
+
+  <section id="recovery">
+    <h2>An interruption is recoverable, and recovery is conservative</h2>
+
+    <p>A run whose process was killed after it delivered its manifest classifies as
+    <code>completed_unpromoted</code>, reports the manifest path, and names the exact promotion
+    command; promoting it then succeeds, so nothing was lost by the interruption. A run whose process
+    died having delivered nothing classifies as <code>abandoned</code> and points at its stderr log.
+    A live process classifies as <code>running</code>. One report over three concurrent runs returned
+    exactly one of each.</p>
+
+    <p>Recovery repairs the <em>record</em> and nothing else: after a recover pass over an abandoned
+    run, the worktree is still there and the pointer is still there. Removing either would destroy
+    the evidence a human needs to decide, which is why the conservative posture already in the fleet
+    script is matched here rather than reinvented.</p>
+  </section>
+
+  <section id="concurrency">
+    <h2>Two orchestrators cannot clobber each other</h2>
+
+    <p>Ledger writes are paired with the version they read, exactly as <code>index.json</code>
+    writes are, and a stale version is refused with an instruction to re-read. Appending retries on
+    that refusal, which is what makes interleaving safe rather than merely detected: with a competing
+    record injected mid-write, the loser re-read the winner's ledger and appended to it, leaving all
+    three records — and the test asserts the retry actually fired rather than inferring it from the
+    result.</p>
+
+    <p>A second record for the same run id is refused instead of retried. That is not concurrency,
+    it is a double promotion, and it would double-count every measurement the record carries.</p>
+  </section>
+
+  <section id="sessions">
+    <h2>A member's session outlives its first node</h2>
+
+    <p>A member registered with no session captures one from its first run: observation is where a
+    backend's session id first becomes knowable, so that is where the roster learns it — waiting for
+    completion would leave a second node dispatched in the meantime unable to reach the same session.
+    A second node dispatched to that member launched with <code>resume &lt;the captured id&gt;</code>
+    in its argv.</p>
+
+    <p>The first id wins. A later run reporting a different session is reported and not written over
+    the top, because overwriting would silently retire the long-lived session every subsequent node
+    and every escape-hatch resumption is meant to reach. Dispatching to an unregistered member is
+    refused before any worktree exists, naming the command that registers one.</p>
+  </section>
+
+  <section id="routing">
+    <h2>A worker inside a worktree reads its own ledger</h2>
+
+    <p>Verified against a real second checkout cut with <code>git worktree add</code>, holding a
+    different record from the main one. <code>crew(project, view="ledger",
+    checkout_path=&lt;worktree&gt;)</code> returned the worktree's record and a path under the
+    worktree; the same call against the main checkout returned the main record. The contract is the
+    one <code>read_plan</code> already uses, so nothing new has to be learned to use it.</p>
+  </section>
+
+  <section id="calibration">
+    <h2>What makes effort falsifiable later</h2>
+
+    <p>Effort is an asserted letter with no external referent. The ledger is what can make it
+    falsifiable, but only if the fields are captured while they are still knowable — after the
+    worktree is gone, the wall-clock, the configuration that ran the node and the scoped diff cannot
+    be reconstructed. All twenty record fields are present on a promoted run, including the
+    <code>agent</code> block and a <code>changed_lines</code> count taken from the diff restricted to
+    the node's own write paths: a count over the whole diff would describe the branch, not the
+    node.</p>
+
+    <p><code>scope_changed</code> defaults false and is settable. It is the field easiest to omit and
+    impossible to reconstruct, so the report excludes those runs from every measured column and
+    counts them separately rather than averaging them in — a scope-changed run measures neither the
+    estimate nor the worker. On recorded data, two runs of a plan declared effort M reported measured
+    40.0 min, mean 20.0, min 10.0, max 30.0, spread 20.0; adding a 100-minute scope-changed run left
+    the mean at 10.0 with one run excluded.</p>
+
+    <p><strong>Stated rather than implied:</strong> reckon's own ledger begins with this change, and
+    this plan was implemented inline rather than through <code>crew dispatch</code>, so the project
+    has no crew-dispatched runs yet and its measured spread is empty. The mechanism is proven on
+    recorded data; the first real spread appears once nodes are dispatched and promoted through the
+    CLI. Declared effort is read from the plans themselves, so the claim and the measurement cannot
+    drift apart. Weighting and the unit migration remain <code>effort-calibration</code>'s.</p>
+  </section>
+
+  <section id="suite">
+    <h2>Suite, lint and the tool surface</h2>
+
+    <p><code>uv run pytest -q</code> → <strong>1,628 passed</strong>, up from 1,600, with 28 new
+    tests in <code>tests/test_ledger.py</code>. <code>uv run ruff check reckon tests</code> → all
+    checks passed. The MCP surface is asserted equal to exactly five tools —
+    <code>read_plan</code>, <code>edit_plan</code>, <code>roadmap</code>, <code>audit</code>,
+    <code>crew</code> — so a sixth cannot be added without the assertion failing.</p>
+
+    <p>One defect surfaced and was fixed during the work: the ledger reached the store's classes by
+    importing their names, and a test that reloads the store module rebinds those classes in place, so
+    a captured exception class no longer matched the one its own function raised. Two tests passed in
+    isolation and failed in the suite. The module now reaches the store through the module object,
+    which is why the whole-suite run is the one that counts.</p>
+  </section>
+</main>
+</body>
+</html>
