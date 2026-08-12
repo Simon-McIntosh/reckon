@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="uniform-worker-dispatch">
   <meta name="plan-title" content="Uniform Worker Dispatch">
   <meta name="plan-summary" content="One backend-agnostic dispatch call, a task-definition contract that makes a node well-formed before it is sent, a structured needs-help escape hatch, and the four-axis orchestrator summary reflex.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-verifies" content="">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-impl" content="0.85">
 </head>
 <body>
   <main class="plan-doc">
@@ -301,6 +301,63 @@
         <tr>
           <td>Suite and validators green</td>
           <td>Full reckon suite passes; both skill validators pass; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">§6 — A worker must be able to read the plan it is sent to read</h2>
+
+    <p>A dispatch cuts a detached worktree from a base ref and then tells the worker its first act
+    is to read the live plan at the named section. Those two facts do not compose: the worktree
+    holds the <em>committed</em> plan, so any edit still sitting in the orchestrator's working tree
+    is invisible to the worker. The node names a section that, from where the worker stands, does
+    not exist.</p>
+
+    <p>The failure is quiet in the worst way. The node is well-formed — it passes all seven
+    properties, because well-formedness is judged against the node, never against what its
+    worktree can show. Nothing warns. The worker either burns its budget hunting a missing section
+    or, worse, finds an older revision of it and implements the previous intent faithfully.</p>
+
+    <p>Observed 2026-08-12 while dispatching against a section written minutes earlier: caught
+    thirty-seven seconds in, by chance, only because the worktree was opened to check. The cost was
+    one stopped run and one removed worktree; unnoticed it would have been a wasted budget and a
+    plausible-looking wrong result.</p>
+
+    <p><strong>Dispatch refuses before it creates anything.</strong> The plan the node names must be
+    readable at the base ref, must contain the named section there, and must not differ from the
+    orchestrator's working copy. Any of those failing is a refusal that names the file and says to
+    commit — checked before the worktree exists, so a refused dispatch leaves nothing to unwind.</p>
+
+    <p>No override accompanies this. The remedy is one commit, the rule is cheap to satisfy, and an
+    escape hatch here would be taken exactly in the hurry that produces the bug.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>An uncommitted plan is refused</td>
+          <td>A dispatch whose plan differs between the working tree and the base ref is refused
+          with no worktree created and no run record written, and the message names the file and
+          the remedy.</td>
+        </tr>
+        <tr>
+          <td>A missing section is refused</td>
+          <td>A dispatch naming a section absent from the plan at the base ref is refused the same
+          way, rather than being discovered by the worker.</td>
+        </tr>
+        <tr>
+          <td>A clean plan is unaffected</td>
+          <td>A dispatch whose plan and section are present and committed proceeds exactly as
+          before; the existing dispatch tests pass unchanged.</td>
+        </tr>
+        <tr>
+          <td>The refusal is branchable</td>
+          <td>The caller can distinguish this refusal from a malformed node and from a budget hold
+          without parsing prose, and the command surface documents which code it is.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
         </tr>
       </tbody>
     </table>
