@@ -3,7 +3,7 @@ name: reckon-ship
 description: >-
   Execute a complete Reckon plan, or coordinate an entire sprint, without doing
   implementation inline. Resolves a plan slug with an optional section,
-  `/reckon-ship S1`, and a project-qualified sprint id. Both modes are strictly
+  `/reckon-ship S1`, and a project-qualified sprint id. Both targets are strictly
   coordinator-only, a one-node plan included: build the execution DAG, delegate
   every implementation, investigation, test, pipeline, and repair node through
   isolated worktrees by default, audit and integrate worker commits, record
@@ -18,24 +18,24 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__r
 
 ## Critical behaviour: resolve the target, then finish its executable scope
 
-There are two execution modes:
+There are two execution targets:
 
-- **Plan mode:** `/reckon-ship <slug>` delivers the entire plan;
+- **Single-plan target:** `/reckon-ship <slug>` delivers the entire plan;
   `/reckon-ship <slug> §N` delivers only the named section.
-- **Sprint mode:** `/reckon-ship S1` executes the current project's sprint;
+- **Sprint target:** `/reckon-ship S1` executes the current project's sprint;
   `/reckon-ship <project>:S1` selects a project explicitly. It reads every
   sprint plan, transitive dependencies, linked research, and prior evidence,
   then coordinates ready dependency waves. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
 
-In plan mode without a section, you MUST:
+On a single-plan target without a section, you MUST:
 1. Read the complete plan HTML and classify every section
 2. Identify ALL implementable sections (not deferred/blocked/done)
 3. Delegate them all — sequentially for dependent sections, in a parallel fleet for independent ones
 4. Record outcomes after each section lands, then continue
 5. Stop only when all implementable sections are done OR you hit a hard prerequisite blocker
 
-In sprint mode, read `references/sprint-orchestration.md` completely before
+On a sprint target, read `references/sprint-orchestration.md` completely before
 dispatch. The sprint invocation authorises the listed plans and their actionable
 same-project prerequisites; it does not broaden authority to unrelated projects,
 external systems, destructive actions, or new outward-facing effects.
@@ -45,9 +45,9 @@ rebuild plan dependency order from repeated discovery calls. Add section-level
 and file-conflict edges only after the tool returns no error-level wiring
 findings.
 
-### Both modes are coordinator-only
+### Both targets are coordinator-only
 
-**One contract, both modes, a one-node plan included.** Whichever mode resolved,
+**One contract, both targets, a one-node plan included.** Whichever target resolved,
 preserve coordinator context for orchestration. The coordinator may resolve/read
 state, checkpoint the DAG/scopes, create worktrees, dispatch or message workers,
 audit evidence, integrate/push, write state, clean, and report.
@@ -160,7 +160,7 @@ If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → 
 
 ## The model — the plan HTML is the document AND the store
 
-**The plan HTML is the source of truth.** Read it first — ALL of it. Both modes
+**The plan HTML is the source of truth.** Read it first — ALL of it. Both targets
 delegate what it describes and coordinate the outcomes; the modes differ in the
 scope they resolve, never in who does the work. The HTML documents the work;
 the `data-reckon` sections carry
@@ -174,10 +174,10 @@ structured state (decisions, followups). Do not implement items marked
 
 ## Hard rules
 
-1. **Read the FULL selected scope before ANY dispatch.** In plan mode, read the complete plan. In sprint mode, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
+1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Coordinators delegate every executable node, in both modes.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both modes are coordinator-only, never the default for small work.
+4. **Coordinators delegate every executable node, on both targets.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both targets are coordinator-only, never the default for small work.
 5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
 7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
@@ -204,8 +204,8 @@ structured state (decisions, followups). Do not implement items marked
 
 ## §Prerequisite blocking — STOP and ask for authorization
 
-In plan mode, an unshipped prerequisite remains a hard stop unless the user
-authorises implementing or overriding it. In sprint mode, actionable
+On a single-plan target, an unshipped prerequisite remains a hard stop unless the user
+authorises implementing or overriding it. On a sprint target, actionable
 same-project prerequisites become nodes in the execution DAG automatically.
 Stop for cross-project, unavailable, abandoned, or authority-expanding
 prerequisites.
@@ -250,8 +250,8 @@ Wait for the user's response before doing anything else. If the user authorizes 
 1. Derive the current project from the repository/mount context.
 2. Call `roadmap(project)` and match the argument against exact sprint ids.
 3. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as sprint
-   mode. Treat `plan:<slug>` or every other slug as plan mode.
-4. If sprint mode, read `references/sprint-orchestration.md` completely and
+   a sprint target. Treat `plan:<slug>` or every other slug as a single-plan target.
+4. If a sprint target, read `references/sprint-orchestration.md` completely and
    follow it. Do not continue with the plan-only preflight below.
 
 ### 1. Plan pre-flight — read the FULL plan
@@ -399,7 +399,7 @@ budget signal the backend emitted, which may legitimately read `unknown`. **Neve
 read an absent budget signal as exhaustion.**
 
 **The table shapes the wave; it never decides whether to delegate.** That is
-already settled for both modes — every ready node goes to an appropriately
+already settled for both targets — every ready node goes to an appropriately
 capable worker, one-item and cross-cutting nodes included, rather than making the
 coordinator the implementation owner.
 
@@ -720,7 +720,7 @@ assert state["data"]["impl"] == expected_fraction         # set correctly
 # version has incremented
 ```
 
-For sprint mode, also verify every sprint item is done or explicitly blocked,
+For a sprint target, also verify every sprint item is done or explicitly blocked,
 all integrated worker commits are reachable from the primary branch, the
 sprint summary links its plan/evidence outcomes, and no session worktree
 remains. Close the sprint only when all executable nodes are complete.
@@ -796,7 +796,7 @@ recovery ladder and the escape hatch. Read it before composing any dispatch.
 (`references/worker-backends.md` is maintainer documentation of the translation
 internals; an orchestrator never needs it.)
 
-Every node is delegated in both modes, so read
+Every node is delegated on both targets, so read
 `references/sprint-orchestration.md` completely before any dispatch. It owns:
 
 - prompt-owned runtime model, effort, and concurrency routing;

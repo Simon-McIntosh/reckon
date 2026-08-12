@@ -1,7 +1,7 @@
 # Sprint orchestration reference
 
-Read this file completely before any `reckon-ship` dispatch. Both modes delegate
-every node, so everything here binds a plan-mode coordinator exactly as it binds
+Read this file completely before any `reckon-ship` dispatch. Both targets delegate
+every node, so everything here binds a single-plan coordinator exactly as it binds
 a sprint one; only target resolution and sprint writeback are sprint-specific.
 Where the text says "sprint coordinator", read "coordinator".
 
@@ -95,7 +95,7 @@ environment, artifacts, quantitative results, and negative findings.
 
 ## 3. Coordinator-only contract and context budget
 
-Full sprint mode is strict coordination, not an implementation role.
+A sprint target is strict coordination, not an implementation role.
 
 The coordinator may only:
 
