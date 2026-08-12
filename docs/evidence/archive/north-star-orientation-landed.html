@@ -31,11 +31,11 @@
       <tbody>
         <tr><td>Count discipline</td><td>Six entries write and read while the audit returns one advisory warning — <a href="#project-state">§ project state</a></td><td>pass</td></tr>
         <tr><td>Optional everywhere</td><td>A project omitting the collection composes without gaining the key — <a href="#project-state">§ project state</a></td><td>pass</td></tr>
+        <tr><td>Dangling reference caught</td><td>An undeclared id returns a non-fatal diagnostic naming it, and the write still succeeds — <a href="#plan-label">§ plan label</a></td><td>pass</td></tr>
+        <tr><td>Suite green</td><td>Full suite 1,731 passed / 0 failed at the integrated commit — <a href="#plan-label">§ plan label</a></td><td>pass</td></tr>
         <tr><td>Declared and rendered</td><td>—</td><td>open</td></tr>
         <tr><td>Plans point at them</td><td>—</td><td>open</td></tr>
-        <tr><td>Dangling reference caught</td><td>—</td><td>open</td></tr>
         <tr><td>Orientation rollup</td><td>—</td><td>open</td></tr>
-        <tr><td>Suite green</td><td>—</td><td>open</td></tr>
       </tbody>
     </table>
   </section>
@@ -68,6 +68,40 @@
         <tr><td>Worker time</td><td>324 s measured from the run's own event stream</td></tr>
       </tbody>
     </table>
+  </section>
+
+  <section id="plan-label">
+    <h2>A plan declares which direction it serves</h2>
+
+    <p>Commit <code>d7dfd50</code> — <code>reckon/_plan_html.py</code>,
+    <code>reckon/_store.py</code>, <code>reckon/_schema.py</code>,
+    <code>docs/_shared/plan.schema.json</code>, <code>tests/test_mcp_store.py</code>; 173
+    insertions across 5 files. Gate <strong>passed</strong>: 1,094 passed, 0 failed, 91.1 s, 4 new
+    tests. This run's scope was widened mid-flight and it is therefore excluded from calibration.</p>
+
+    <p><code>plan-north-star</code> parses from semantic HTML into typed plan state, persists through
+    write and read, and appears in the regenerated public schema. The behaviour that matters is what
+    happens to a label the owning project has not declared: the read returns a <em>non-fatal</em>
+    diagnostic naming the unknown id, the write succeeds, and the label stays stored. Orientation is
+    a prompt to think about direction, so a dangling reference is surfaced without becoming a barrier
+    to writing — which is the locked <code>unoriented-severity</code> choice applied to the label as
+    well as to its absence.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Declared label round-trips</td><td>Read, write and meta round-trip preserve the label</td></tr>
+        <tr><td>Undeclared label diagnosed</td><td>Non-fatal <code>undeclared-north-star</code> warning names the id; write succeeds; label retained</td></tr>
+        <tr><td>Unlabelled plans untouched</td><td>No <code>north_star</code> and no <code>validation_diagnostics</code> keys appear, and a no-op write leaves bytes and version unchanged</td></tr>
+        <tr><td>Public schema regenerated</td><td><code>docs/_shared/plan.schema.json</code> regenerated from the model, restoring committed-schema parity</td></tr>
+        <tr><td>Integrated suite</td><td><code>uv run pytest -q</code> at the integrated commit — <strong>1,731 passed, 0 failed</strong>, exit 0, 276 s</td></tr>
+      </tbody>
+    </table>
+
+    <p>The derived-artifact dependency is worth recording because it is not visible from the plan:
+    any change to the typed plan model invalidates the committed
+    <code>docs/_shared/plan.schema.json</code>, so a node touching the model must own the generated
+    file too or it cannot reach a green combined lane.</p>
   </section>
 
 </main>
