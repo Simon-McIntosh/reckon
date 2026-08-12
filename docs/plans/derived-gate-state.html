@@ -22,7 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -290,9 +291,15 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-dgs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dgs-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state" data-resolved-at="2026-08-12T16:38:36+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Make gates first-class and blocked derived-only, then sweep the portfolio</h4>
     <div class="r-fu-body"><p>Land the gates element with parser, schema, renderer and ops; wire unpassed gates into the blocker derivation; make blocked and sprint-item status derived-only with reject-on-write; then sweep every mounted project for stale labels and error-level wiring findings, and migrate this sprint set's own prose gates.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship derived-gate-state</pre>
+    <p class="r-fu-outcome">Waves 1-2 landed — commits cbeaa2e, 18b0113, 67d1cbd, 63cb5a6, 4554a75, bc0881d. Gates are now a real element: they round-trip byte-identically, PlanState carries them, the published schema validates a gates-bearing document and rejects a gate missing its measure, and passed is re-derived from verdict even when contradictory input supplies passed=true. Five of the six derived-state rungs have their first half: sprint focus derives from order and incompleteness with the uniqueness invariant removed (two concurrent incomplete sprints, zero audit findings); sprint-item status derives from plan HTML with reject-on-write and a read-side compatibility warning (a legacy pending/0.0 item reads active/0.4, index.json byte-unchanged); staleness reaches the agent as advisory age plus verdict from doccheck's existing thresholds (31-day fixture reads stale, effective_status active, zero blockers); and a closed gate renders in both plan and sprint views with audit-doc reporting no errors. Suite green at 1,683 after wave 2, up from 1,660 after wave 1. Remaining rungs move to f-dgs-002.</p>
+    </article>
+<article class="r-fu" data-id="f-dgs-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship derived-gate-state" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Wire gates into the blocker derivation, then finish blocked-unwritable and sweep the portfolio</h4>
+    <div class="r-fu-body"><p>The gate element exists and is typed, so the rungs that consume it are now unblocked. Write ops come first - <code>edit_plan</code> gains <code>gate</code> to declare one and <code>pass</code>/<code>fail</code> to record a verdict, with an evidence-free pass rejected rather than warned. Then the derivation: an unpassed gate becomes a row in <code>blocking</code> so a failed gate renders downstream sections blocked and passing it unblocks them, with no status edit anywhere.</p><p>Blocked-unwritable still needs its plan-status half - remove <code>blocked</code> from the persistable set, reject it on write, and fix <code>effective_status</code> so a legacy persisted <code>blocked</code> resolves to its underlying open state before the projection applies. The sprint-item half of that rung already landed. Plan runnability derived plus alarmed follows the same shape and depends on gates existing, which they now do.</p><p>Two rungs remain that are not code. The skill's gate enforcement swaps from reading prose to reading computed gate state - a <code>SKILL.md</code> edit whose owning plan has shipped, so the file-conflict fence is clear. And the portfolio sweep migrates every mounted project's persisted blocked status and repairs the error-level wiring findings, ending with this sprint set's own prose gates migrated to the element.</p></div>
     <pre class="r-fu-prompt">/reckon-ship derived-gate-state</pre>
     </article>
 </section>
