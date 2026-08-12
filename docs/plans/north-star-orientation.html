@@ -19,10 +19,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="cb230a2f7402a39405af252f27d4b53f963f979c,d7dfd50ae2f9a217fce0f545d10847c16fc51d63,d4d15023f06f11be7abb6f9dd07ad3252a5fd2b5,9ded8c0b03a625677e0681102a86d88656ade53b">
 <meta name="plan-artifacts" content="reckon/_schema.py,reckon/project_state.py,reckon/_plan_html.py,reckon/_store.py,reckon/roadmap.py,reckon/serve.py,docs/ui/shell.jsx,docs/ui/state-loader.js,docs/_shared/plan.schema.json,docs/evidence/archive/north-star-orientation-landed.html">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -113,6 +113,98 @@
       </tbody>
     </table>
 
+    <h2 id="s4">§4 — The collection needs a write path, not only a read path</h2>
+
+    <p>Declaring reckon's own directions was blocked by a gap the earlier work left behind. The
+    collection validates, composes and reads correctly, and the served surfaces render it — but it
+    cannot be <em>written</em> through the documented write surface. <code>edit_plan</code> refuses
+    <code>north_stars</code> with <code>unsupported index set path</code>, because the allowed set of
+    top-level project keys admits only <code>active_sprint_id</code>. Validation was added at the
+    project-state layer and exercised through that layer's own writer, so nothing in the node's own
+    gate detected that the surface every agent actually calls has no route to it.</p>
+
+    <p>Hand-editing the state file would have hidden exactly that: the adoption step would have
+    succeeded while the write path stayed missing and untested, and the next project to adopt a
+    direction would hit the same wall with no test to explain it. So the write path comes first and
+    adoption follows it.</p>
+
+    <p>The general lesson is worth stating beyond this collection: a state field is finished when it is
+    writable, readable and rendered through the same surfaces its neighbours use. A field that only
+    one internal writer can reach is a field with a private door.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Writable through the tool</td>
+          <td>Setting the whole collection through <code>edit_plan</code> succeeds and the value
+          round-trips through a subsequent read, asserted by test.</td>
+        </tr>
+        <tr>
+          <td>Addressable per entry</td>
+          <td>A single entry's field is settable by id in the same dotted style sprints and milestones
+          already use, asserted by test.</td>
+        </tr>
+        <tr>
+          <td>Validation still applies</td>
+          <td>A write missing a required field, and one carrying a duplicate id, are both refused
+          through the tool rather than only through the internal writer.</td>
+        </tr>
+        <tr>
+          <td>Advisory cap still advisory</td>
+          <td>A write exceeding the cap succeeds through the tool and returns the warning, matching the
+          behaviour already proven at the state layer.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — Adopt the directions here first</h2>
+
+    <p>Once the write path exists, reckon declares its own directions and every plan of the three
+    execution sprints points at one. Four are proposed, inside the advisory cap of five, each a durable
+    direction rather than a dated target:</p>
+
+    <table>
+      <thead><tr><th>Direction</th><th>What winning looks like</th></tr></thead>
+      <tbody>
+        <tr><td><strong>State that tells the truth</strong></td><td>Every status, number and gate verdict is derived from evidence a reader can re-check, and nothing computable is stored as an assertion.</td></tr>
+        <tr><td><strong>Unattended execution</strong></td><td>An orchestrator carries a sprint from ready node to committed evidence without a human in the loop, and holds recoverably rather than failing when it must stop.</td></tr>
+        <tr><td><strong>Legible to human and agent alike</strong></td><td>A person and an agent read the same plan state through surfaces suited to each, with neither a second store nor a second truth.</td></tr>
+        <tr><td><strong>Portable across harnesses</strong></td><td>Reckon's contracts hold whichever agent harness runs the work, so adding a backend never adds a second execution path.</td></tr>
+      </tbody>
+    </table>
+
+    <p>The plan's prose says seven plans span the three sprints; the sprint resources hold
+    <strong>eight</strong>. All eight are labelled, and each of the four directions receives at least
+    one — which is the useful check on the set, since a direction nothing points at is either premature
+    or misnamed.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Declared</td>
+          <td>The four directions are present in project state and returned by a read of the project
+          resource.</td>
+        </tr>
+        <tr>
+          <td>Every plan oriented</td>
+          <td>All eight plans of the three execution sprints carry a label resolving to a declared id,
+          and the dependency scan reports no undeclared-reference finding.</td>
+        </tr>
+        <tr>
+          <td>Rollup non-trivial</td>
+          <td>The per-direction rollup reports a non-zero plan count for each of the four, with the
+          recorded figures.</td>
+        </tr>
+        <tr>
+          <td>Rendered</td>
+          <td>The cockpit band shows the four with their live-work counts against a restarted server,
+          banked as a figure.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="north-star-model" data-choice="project-state-plus-meta" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -155,6 +247,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260812T195500" data-who="reckon-ship" data-when="2026-08-12T19:55:00Z">
     <div class="r-comment-body">north-star-prominence landed — commit 9ded8c0b03a625677e0681102a86d88656ade53b; gate passed; measure: tests/test_build.py 14 passed / 0 failed in 4.3s with 16 new assertions, reckon build exit 0, ruff clean, and the three SPA entry-point script sets verified identical at 11 = 11 = 11 JSX paths; served discovery and state routes both return declarations and inventory alignment, the cockpit band renders every declaration in declaration order with statement and live-work count over pending/active/in-progress/blocked plans, title and plan-list rows name the resolved direction, one facet selects exactly one id, and zero declarations omit the band and facet while zero labels omit both badges. The node first refused to write and audited instead, correctly reporting the deliverable unreachable from its original fence — served state carried no declarations and inventory rows no label — citing shell.jsx:1042, shell.jsx:134-256 and :950-977, serve.py:529-584 and :598-607, and state-loader.js, leaving the worktree clean. Recorded scope-changed: four files granted mid-flight. Two measures stay partial — the screenshot needs the restarted server and the labelling of all seven S7–S9 plans is the adoption node's work. Artifacts docs/evidence/archive/north-star-orientation-landed.html#prominence</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260812T200500" data-who="reckon-ship" data-when="2026-08-12T20:05:00Z">
+    <div class="r-comment-body">Adoption blocked on a missing write path, found by attempting it. edit_plan refuses north_stars with 'unsupported index set path' because _INDEX_SET_TOP admits only active_sprint_id; validation and composition were added at the project_state layer and exercised through that layer's own writer, so the node's gate never touched the surface agents actually call. Not hand-edited: writing docs/state/reckon/project.json directly would have let adoption succeed while the write path stayed missing and untested, so the next project to adopt a direction would hit the same wall with no test explaining it. Recorded as §4 with four measures, and adoption becomes §5 behind it. Denominator grew from 5 nodes to 6, so impl reads 4/6.</div>
 </div>
 </section>
 </main>
