@@ -1,7 +1,9 @@
 # Sprint orchestration reference
 
-Read this file completely for sprint execution or whenever `reckon-ship`
-delegates plan work.
+Read this file completely before any `reckon-ship` dispatch. Both modes delegate
+every node, so everything here binds a plan-mode coordinator exactly as it binds
+a sprint one; only target resolution and sprint writeback are sprint-specific.
+Where the text says "sprint coordinator", read "coordinator".
 
 `worker-protocol.md` is its companion and is not repeated here: it owns the
 seven-property task contract, the four fences, the manifest shape, the recovery

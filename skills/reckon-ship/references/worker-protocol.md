@@ -182,6 +182,16 @@ nor the worker and is excluded from calibration rather than averaged in. The
 wall-clock, the agent configuration that ran the node, and the scoped diff's
 changed lines are captured for you.
 
+Promotion also ends the run's session as an addressable thing: deleting the
+pointer takes `session_id` with it, so a followup arriving after completion has
+no live run to resume. The session survives promotion in exactly one place — the
+roster entry `capture_session` wrote in committed `crew.json` on that member's
+first run. **A node dispatched with `--member` can therefore still be continued
+after it lands; a node dispatched without one cannot.** That is why the roster is
+the default dispatch path rather than an optimisation, and why the continuity
+routing in `SKILL.md` distinguishes a followup (same member) from new scope (new
+node).
+
 `reckon crew recover` is what a fresh session runs before assuming anything: it
 classifies every remaining pointer as **running**, **completed-but-unpromoted**
 (reporting the manifest path to promote from), or **abandoned**, and names the

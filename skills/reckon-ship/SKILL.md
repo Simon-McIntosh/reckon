@@ -20,8 +20,8 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__r
 
 There are two execution modes:
 
-- **Plan mode:** `/reckon-ship <slug>` implements the entire plan;
-  `/reckon-ship <slug> §N` implements only the named section.
+- **Plan mode:** `/reckon-ship <slug>` delivers the entire plan;
+  `/reckon-ship <slug> §N` delivers only the named section.
 - **Sprint mode:** `/reckon-ship S1` executes the current project's sprint;
   `/reckon-ship <project>:S1` selects a project explicitly. It reads every
   sprint plan, transitive dependencies, linked research, and prior evidence,
@@ -174,7 +174,7 @@ structured state (decisions, followups). Do not implement items marked
 
 ## Hard rules
 
-1. **Read the FULL selected scope before ANY implementation.** In plan mode, read the complete plan. In sprint mode, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
+1. **Read the FULL selected scope before ANY dispatch.** In plan mode, read the complete plan. In sprint mode, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
 4. **Coordinators delegate every executable node, in both modes.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both modes are coordinator-only, never the default for small work.
@@ -735,8 +735,9 @@ uv run --project ~/Code/reckon reckon audit-doc docs/plans/<slug>.html
 # Must report no ERRORs before committing
 ```
 
-Run that command directly in plan mode. In sprint mode, dispatch it as a
-validation worker node and audit the returned result.
+The coordinator runs this itself in either mode. It validates a document the
+coordinator just authored — its own state write, not a worker's product — which
+is why it is not a delegated node. Product tests are, and remain, worker nodes.
 
 Commit:
 ```bash
@@ -795,8 +796,8 @@ recovery ladder and the escape hatch. Read it before composing any dispatch.
 (`references/worker-backends.md` is maintainer documentation of the translation
 internals; an orchestrator never needs it.)
 
-For any delegated plan work, and always for sprint mode, read
-`references/sprint-orchestration.md` completely. It owns:
+Every node is delegated in both modes, so read
+`references/sprint-orchestration.md` completely before any dispatch. It owns:
 
 - prompt-owned runtime model, effort, and concurrency routing;
 - skill and reasoning-effort selection;
