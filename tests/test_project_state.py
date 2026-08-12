@@ -22,6 +22,7 @@ from reckon.project_state import (
     ProjectStateConflict,
     ProjectStateError,
     append_timeline_event,
+    audit_project_state,
     compose_project_state,
     migrate_project_state,
     move_sprint_item,
@@ -84,15 +85,16 @@ def _concurrent_read(
         queue.put(("error", str(exc)))
 
 
-def _concurrent_activate(
+def _concurrent_status_update(
     docs: str,
     sprint_id: str,
     barrier: multiprocessing.synchronize.Barrier,
     queue: multiprocessing.queues.Queue,
 ) -> None:
-    """Process target: activate a different sprint at the same instant."""
+    """Process target: update a different sprint at the same instant."""
     root = Path(docs)
     sprint, version = read_resource(root, "sample", "sprint", sprint_id)
+    barrier.wait()
     try:
         new_version = write_resource(
             root,
@@ -101,7 +103,6 @@ def _concurrent_activate(
             sprint_id,
             {**sprint, "status": "active"},
             version,
-            before_invariant_lock=barrier.wait,
         )
         queue.put(("ok", sprint_id, new_version))
     except ValueError as exc:
@@ -427,21 +428,45 @@ def test_concurrent_same_resource_writers_have_one_winner(migrated):
     assert results == ["conflict", "ok"]
 
 
-def test_unique_active_is_derived_and_multiple_active_rejects(migrated):
+def test_default_sprint_focus_is_earliest_incomplete_and_never_persisted(migrated):
     docs, _, _ = migrated
+    _write_plan(docs, "beta", "active", 0.2)
     earlier, earlier_version = read_resource(docs, "sample", "sprint", "earlier")
-    with pytest.raises(ValueError, match="multiple active sprints"):
-        write_resource(
-            docs,
-            "sample",
-            "sprint",
-            "earlier",
-            {**earlier, "status": "active"},
-            earlier_version,
-        )
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "earlier",
+        {
+            **earlier,
+            "status": "active",
+            "items": [{"slug": "beta"}],
+        },
+        earlier_version,
+    )
+
+    composed = compose_project_state(docs, "sample")
+    incomplete = [
+        sprint["id"]
+        for sprint in composed["sprints"]
+        if any(item["status"] not in {"shipped", "done"} for item in sprint["items"])
+    ]
+    assert incomplete == ["current", "earlier"]
+    assert composed["active_sprint_id"] == "current"
+    assert audit_project_state(docs, "sample") == []
+
+    sprint_paths = [
+        resource_path(docs, "sample", "sprint", sprint_id) for sprint_id in incomplete
+    ]
+    sprint_bytes = {path: path.read_bytes() for path in sprint_paths}
+    _write_plan(docs, "alpha", "shipped", 1.0)
+
+    refreshed = compose_project_state(docs, "sample")
+    assert refreshed["active_sprint_id"] == "earlier"
+    assert {path: path.read_bytes() for path in sprint_paths} == sprint_bytes
 
 
-def test_concurrent_activation_has_exactly_one_winner(migrated):
+def test_concurrent_sprint_status_updates_both_succeed(migrated):
     docs, _, _ = migrated
     current, current_version = read_resource(docs, "sample", "sprint", "current")
     write_resource(
@@ -467,7 +492,7 @@ def test_concurrent_activation_has_exactly_one_winner(migrated):
     queue = context.Queue()
     workers = [
         context.Process(
-            target=_concurrent_activate,
+            target=_concurrent_status_update,
             args=(str(docs), sprint_id, barrier, queue),
         )
         for sprint_id in ("earlier", "future")
@@ -478,37 +503,31 @@ def test_concurrent_activation_has_exactly_one_winner(migrated):
         worker.join(timeout=30)
         assert worker.exitcode == 0
     results = [queue.get(timeout=2) for _ in workers]
-    assert sorted(result[0] for result in results) == ["ok", "rejected"]
-    rejected = next(result for result in results if result[0] == "rejected")
-    assert "multiple active sprints" in rejected[2]
+    assert sorted(result[0] for result in results) == ["ok", "ok"]
     active = [
         sprint["id"]
         for sprint in compose_project_state(docs, "sample")["sprints"]
         if sprint["status"] == "active"
     ]
-    assert len(active) == 1
-    assert active[0] in {"earlier", "future"}
+    assert set(active) == {"earlier", "future"}
 
 
-def test_non_activation_sprint_edits_do_not_take_invariant_lock(migrated):
+def test_sprint_edits_do_not_create_global_focus_state(migrated):
     docs, _, _ = migrated
     earlier, version = read_resource(docs, "sample", "sprint", "earlier")
-
-    def unexpected() -> None:
-        raise AssertionError("unrelated edit took the active-sprint lock")
-
-    assert (
-        write_resource(
-            docs,
-            "sample",
-            "sprint",
-            "earlier",
-            {**earlier, "summary": "unrelated"},
-            version,
-            before_invariant_lock=unexpected,
-        )
-        == version + 1
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "earlier",
+        {**earlier, "status": "active"},
+        version,
     )
+    assert not (
+        docs / ".reckon" / "locks" / "sample-invariant-active-sprint.lock"
+    ).exists()
+    project, _ = read_resource(docs, "sample", "project", "project")
+    assert "active_sprint_id" not in project
 
 
 def test_timeline_is_append_only(migrated):
@@ -898,7 +917,7 @@ def test_source_mutation_before_marker_rolls_back_every_destination(tmp_path):
     assert not (docs / "milestones" / "launch.html").exists()
 
 
-def test_migration_rejects_pointer_and_reference_mismatches(tmp_path):
+def test_migration_ignores_legacy_focus_but_rejects_reference_mismatches(tmp_path):
     docs = tmp_path / "docs"
     docs.mkdir()
     _write_plan(docs, "alpha", "active", 0.4)
@@ -906,14 +925,18 @@ def test_migration_rejects_pointer_and_reference_mismatches(tmp_path):
     envelope = json.loads(index.read_text(encoding="utf-8"))
     envelope["data"]["active_sprint_id"] = "earlier"
     index.write_text(json.dumps(envelope), encoding="utf-8")
-    with pytest.raises(ProjectStateError, match="active_sprint_id"):
-        migrate_project_state(docs, "sample")
+    migrate_project_state(docs, "sample")
+    assert compose_project_state(docs, "sample")["active_sprint_id"] == "current"
 
-    envelope["data"]["active_sprint_id"] = "current"
+    other_docs = tmp_path / "other-docs"
+    other_docs.mkdir()
+    _write_plan(other_docs, "alpha", "active", 0.4)
+    other_index = _legacy_index(other_docs)
+    envelope = json.loads(other_index.read_text(encoding="utf-8"))
     envelope["data"]["sprints"][1]["items"][0]["blocked_by"] = ["absent"]
-    index.write_text(json.dumps(envelope), encoding="utf-8")
+    other_index.write_text(json.dumps(envelope), encoding="utf-8")
     with pytest.raises(ProjectStateError, match="missing blockers"):
-        migrate_project_state(docs, "sample")
+        migrate_project_state(other_docs, "sample")
 
 
 def test_migration_parity_preserves_timeline_order_and_project_manifest(tmp_path):
