@@ -589,8 +589,39 @@
       "title": "Roi",
       "type": "string"
     },
+    "effort_hours": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "multipleOf": 0.25,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Neutral worker-hours from the plan-effort-hours meta",
+      "title": "Effort Hours"
+    },
+    "effort_calibrated": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Whether worker-hours were authored rather than mapped from a letter",
+      "readOnly": true,
+      "title": "Effort Calibrated"
+    },
     "effort": {
       "default": "M",
+      "deprecated": true,
+      "description": "Deprecated compatibility input; use effort_hours",
       "enum": [
         "S",
         "M",

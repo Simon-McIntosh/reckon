@@ -103,6 +103,7 @@ STATUS_ENUM = [
 PERSISTABLE_STATUS_ENUM = [status for status in STATUS_ENUM if status != "blocked"]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
+LEGACY_EFFORT_HOURS = {"S": 1.0, "M": 2.0, "L": 4.0, "XL": 8.0}
 TYPE_ENUM = ["plan", "research", "evidence"]
 RESOURCE_TYPE_ENUM = [
     *TYPE_ENUM,
@@ -449,7 +450,22 @@ class PlanState(BaseModel):
     # ── Authored scalars ──
     status: str = Field("draft", json_schema_extra=_enum(STATUS_ENUM))
     roi: str = Field("mid", json_schema_extra=_enum(ROI_ENUM))
-    effort: str = Field("M", json_schema_extra=_enum(EFFORT_ENUM))
+    effort_hours: float | None = Field(
+        None,
+        gt=0,
+        multiple_of=0.25,
+        description="Neutral worker-hours from the plan-effort-hours meta",
+    )
+    effort_calibrated: bool | None = Field(
+        None,
+        description="Whether worker-hours were authored rather than mapped from a letter",
+        json_schema_extra={"readOnly": True},
+    )
+    effort: str = Field(
+        "M",
+        description="Deprecated compatibility input; use effort_hours",
+        json_schema_extra={**_enum(EFFORT_ENUM), "deprecated": True},
+    )
     milestone: str = "—"
     sprint: str | None = None
     north_star: str | None = None
@@ -578,6 +594,8 @@ class PlanState(BaseModel):
             for field in (
                 "status",
                 "roi",
+                "effort_hours",
+                "effort_calibrated",
                 "effort",
                 "milestone",
                 "sprint",
@@ -635,6 +653,8 @@ class PlanState(BaseModel):
             neutral = {
                 "status": ("", "draft", "reference"),
                 "roi": ("", "mid"),
+                "effort_hours": (None,),
+                "effort_calibrated": (None,),
                 "effort": ("", "M"),
                 "milestone": ("", "—"),
                 "sprint": ("", None),

@@ -28,6 +28,7 @@ from reckon._plan_html import from_html, read_state, to_html, write_state
 from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
 from reckon._schema import (
     EFFORT_ENUM,
+    LEGACY_EFFORT_HOURS,
     PlanState,
     ROI_ENUM,
     STATUS_ENUM,
@@ -245,6 +246,11 @@ def test_state_round_trip():
 
     rendered = write_state(FULL_PLAN, state)
     expected = {k: v for k, v in state.items() if k != "compatibility_warnings"}
+    expected["compatibility_warnings"] = [
+        warning
+        for warning in state["compatibility_warnings"]
+        if "uncalibrated" in warning
+    ]
     assert read_state(rendered) == expected
 
     # And the typed wrappers must agree: read_state(to_html(html, ps)) == state
@@ -409,6 +415,8 @@ def test_gen_json_schema_has_version_and_enums():
     assert props["status"]["enum"] == STATUS_ENUM
     assert props["roi"]["enum"] == ROI_ENUM
     assert props["effort"]["enum"] == EFFORT_ENUM
+    assert props["effort"]["deprecated"] is True
+    assert props["effort_hours"]["anyOf"][0]["multipleOf"] == 0.25
     capability = props["capability"]["anyOf"][0]
     capability_ref = capability["$ref"].split("/")[-1]
     capability_schema = s["$defs"][capability_ref]
@@ -417,6 +425,29 @@ def test_gen_json_schema_has_version_and_enums():
         CAPABILITY_SCHEMA_VERSION
     )
     assert props["tier"]["deprecated"] is True
+
+
+def test_explicit_worker_hours_parse_as_float_and_round_trip():
+    html = FULL_PLAN.replace(
+        '<meta name="plan-effort" content="L">',
+        '<meta name="plan-effort-hours" content="3.25">',
+    )
+
+    state = read_state(html)
+
+    assert state["effort_hours"] == 3.25
+    assert isinstance(state["effort_hours"], float)
+    assert state["effort_calibrated"] is True
+    assert read_state(write_state(html, state))["effort_hours"] == 3.25
+
+
+def test_worker_hours_require_quarter_hour_granularity():
+    with pytest.raises(ValueError, match="multiple of 0.25"):
+        PlanState.model_validate({"effort_hours": 1.1})
+
+
+def test_legacy_effort_mapping_is_complete_and_lossless():
+    assert LEGACY_EFFORT_HOURS == {"S": 1.0, "M": 2.0, "L": 4.0, "XL": 8.0}
 
 
 def test_committed_schema_matches_generated():
