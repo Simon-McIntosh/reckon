@@ -70,6 +70,7 @@ _PRE_LINE_LIMIT = 120
 SEVERITIES = ("error", "warn", "info")
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
 OPEN_RESEARCH_STALE_AFTER_DAYS = 60
+UNAUTHORISED_PLAN_STALE_AFTER_DAYS = 60
 
 
 @dataclass
@@ -134,6 +135,16 @@ def lifecycle_staleness(
             and age_days > ACTIVE_PLAN_STALE_AFTER_DAYS
         )
     return "stale" if is_stale else "current"
+
+
+def authorisation_staleness(*, status: str, age_days: int | None) -> str:
+    """Return the advisory age verdict for authored but unauthorised plans."""
+
+    if status != "draft":
+        return "not_applicable"
+    if age_days is None:
+        return "unknown"
+    return "stale" if age_days > UNAUTHORISED_PLAN_STALE_AFTER_DAYS else "current"
 
 
 def _visible_text(el) -> str:
