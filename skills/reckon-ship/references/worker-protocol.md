@@ -72,6 +72,11 @@ write. The file is the delivery; the reply is a convenience.
 
 Recover in this order, and do not redispatch first:
 
+0. **Zero-length stream** — the run never started. `observe` reports `orphaned`,
+   which is indistinguishable from a mid-work crash until you read `stderr.log`
+   in the run directory; a launch that failed writes its reason there and
+   nowhere else. A session-lock collision from reusing a busy roster member is
+   the common cause. Redispatch is correct here, and only here, as a first move.
 1. **Idle with no report** — check whether the manifest file exists. It very
    often does. `reckon crew observe --run <id>` reports this as
    `manifest_present`.
@@ -191,6 +196,11 @@ after it lands; a node dispatched without one cannot.** That is why the roster i
 the default dispatch path rather than an optimisation, and why the continuity
 routing in `SKILL.md` distinguishes a followup (same member) from new scope (new
 node).
+
+Read that classification for every run at once with the `crew` MCP tool,
+`view="live"` — it carries the same verdict and next action per run without
+touching a worker. The CLI command below is the write-side twin: reach for it to
+*repair* the record, not to look at it.
 
 `reckon crew recover` is what a fresh session runs before assuming anything: it
 classifies every remaining pointer as **running**, **completed-but-unpromoted**

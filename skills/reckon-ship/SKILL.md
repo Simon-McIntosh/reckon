@@ -101,6 +101,22 @@ same member. Work that widens the scope is a new node — dispatching it into an
 old session hides a scope change inside a session that was fenced for something
 else, and a scope change is exactly what `--scope-changed` exists to record.
 
+**A member is a serial worker, so size a wave in members, not in nodes.** The
+session that makes continuity possible is a single-writer resource: a second run
+resuming a session that still holds the writer lock dies at launch, and it dies
+*quietly* — no stream, no manifest, and a phase that reads `orphaned` rather than
+`failed`, because an empty stream cannot say why it is empty. Two rules follow.
+Never give two concurrent nodes the same member — a three-node wave needs three
+members, and `reckon crew member list` is how you check before dispatching, not
+after. And let a member's previous run release before reusing it: back-to-back
+dispatch onto a just-finished member is the same collision with a narrower
+window. When a member is busy and the work cannot wait, dispatch without
+`--member` and accept a fresh session — losing continuity beats losing the node.
+
+When a run reads `orphaned` with a zero-length stream, read `stderr.log` in its
+run directory before concluding anything. A launch that never started writes its
+reason there and nowhere else.
+
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
 - A prerequisite plan is unshipped (hard stop — see §Prerequisite blocking)
@@ -397,6 +413,34 @@ between execution paths impossible to express.
 process liveness back into its record — phase, captured session id, and whatever
 budget signal the backend emitted, which may legitimately read `unknown`. **Never
 read an absent budget signal as exhaustion.**
+
+### Reading run state — MCP owns reads, the CLI owns actions
+
+**To see how the fleet is doing, call the `crew` MCP tool. Do not shell out.**
+The split is a locked decision, not a style preference: the CLI exists for the
+things that change the world — `dispatch`, `attach`, `resume`, `stop`,
+`complete`, `member add` — and every *read* belongs to the tool.
+
+```text
+crew(project, view="live")      every run in flight: node, plan, phase, process_alive,
+                                manifest_present, worktree, its recover classification,
+                                and the next action for each — one call, no worker touched
+crew(project, view="ledger")    committed run records
+crew(project, view="summary")   roster, gate outcomes, measured time against declared effort
+crew(project, view="flight")    resolved routing, and which layer supplied each value
+```
+
+`view="live"` answers "are my background workers alive, and where are they" for
+the whole fleet at once. Reaching for `reckon crew list`, a `stat` on a stream
+file, or a `ps` grep instead is a sign you skipped the tool — those give you less,
+one run at a time, and a `ps` grep cannot tell your workers from a peer session's.
+
+Two things the tool cannot do for you. **`phase` is read from the stored record,
+so it lags** — a run deep into its work still reads `starting` until an `observe`
+folds its stream, while `process_alive` and `log_age_seconds` in the same payload
+are always fresh. Run `observe` first when the phase matters. And **`observe` is
+also what captures the run's token usage**, so promoting without it records
+`tokens: null` even though the stream held them all along.
 
 **The table shapes the wave; it never decides whether to delegate.** That is
 already settled for both targets — every ready node goes to an appropriately
