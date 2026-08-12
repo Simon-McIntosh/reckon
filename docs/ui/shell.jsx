@@ -135,6 +135,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
   const M = window.STATE;
   const milestones = M.projects?.[0]?.milestones || M.milestones || [];
   const sprints = M.sprints || [];
+  const northStars = M.north_stars || [];
 
   const toggle = (group, value) => {
     setFilters(f => {
@@ -145,7 +146,7 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
     });
   };
 
-  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) + (filters.type?.length || 0) > 0;
+  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) + (filters.type?.length || 0) + (northStars.length ? (filters.north_star?.length || 0) : 0) > 0;
 
   // Sprints that have plans in inventory
   const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.type === "plan" && p.sprint === s.id));
@@ -205,6 +206,22 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
           </button>
         )}
       </div>
+
+      {northStars.length > 0 && (
+        <div className="r-filter-group">
+          <div className="r-filter-h">North star</div>
+          {northStars.map(direction => {
+            const n = actionable.filter(p => p.north_star === direction.id).length;
+            const on = (filters.north_star || []).includes(direction.id);
+            return (
+              <div key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} title={direction.statement}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{direction.name}</span>
+                <span className="n">{n}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {sprintsWithPlans.length > 0 && (
         <div className="r-filter-group">
@@ -431,7 +448,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
       {items.length === 0 ? (
         <div className="r-list-empty">
           No artifacts match.
-          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length || filters?.type?.length) && (
+          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length || filters?.type?.length || ((window.STATE?.north_stars || []).length && filters?.north_star?.length)) && (
             <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
           )}
         </div>
@@ -455,6 +472,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
                   <span className="ms">{p.ms}</span>
                   <span className="sp">·</span>
                   <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
+                  {p.north_star && <><span className="sp">·</span><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span></>}
                   <span className="sp">·</span>
                 </>}
                 {artifactType === "research" && <>
@@ -664,6 +682,7 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
     const p = M.inventory.find(x => (x.nav_key || x.slug) === route.slug);
     if (!p) return null;
     const isPlan = (p.type || "plan") === "plan";
+    const direction = (M.north_stars || []).find(item => item.id === p.north_star);
     const openDecs = p.dec_open || 0;
     const blockedByDecisions = isPlan && openDecs > 0;
     return (
@@ -709,6 +728,10 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
             </>}
             <span className="dot-sep">·</span>
             <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round((p.impl || 0) * 100)}%</span></span>
+            {p.north_star && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item r-north-star-badge" title={direction?.statement || p.north_star}><span className="k">north star</span><span className="v">{direction?.name || p.north_star}</span></span>
+            </>}
             {p.capability?.class && <>
               <span className="dot-sep">·</span>
               <span className="meta-item"><span className="k">capability</span><span className="v">{p.capability.class}</span></span>
@@ -958,6 +981,7 @@ function App() {
     if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
     if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
     if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
+    if ((M.north_stars || []).length && filters.north_star?.length) list = list.filter(p => filters.north_star.includes(p.north_star));
     if (filters.type?.length) {
       list = list.filter(p => {
         const t = p.type || "plan";
@@ -1105,6 +1129,7 @@ function CockpitBody({ onNav }) {
   const M = window.STATE;
   if (!M) return null;
   const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
+  const northStars = M.north_stars || [];
   const allSprints = M.sprints || [];
   const [ckSprintIdx, setCkSprintIdx] = useState(() => {
     const i = allSprints.findIndex(s => s.id === M.active_sprint_id);
@@ -1116,6 +1141,7 @@ function CockpitBody({ onNav }) {
     .filter(i => (i.dec_open || 0) > 0)
     .sort((a, b) => (b.dec_open || 0) - (a.dec_open || 0));
   const decisionTotal = decisionPlans.reduce((n, p) => n + (p.dec_open || 0), 0);
+  const liveStatuses = new Set(["pending", "active", "in-progress", "blocked"]);
   const planSlugsWithDecs = new Set(decisionPlans.map(p => p.slug));
   const decsByMs = {};
   for (const p of decisionPlans) decsByMs[p.ms] = (decsByMs[p.ms] || 0) + (p.dec_open || 0);
@@ -1124,6 +1150,30 @@ function CockpitBody({ onNav }) {
 
   return (
     <>
+      {northStars.length > 0 && (
+        <>
+          <div className="r-ck-h">
+            <span className="r-eyebrow">North stars</span>
+          </div>
+          <table aria-label="North stars" style={{ width: "100%", borderCollapse: "collapse", marginBottom: 22 }}>
+            <tbody>
+              {northStars.map(direction => {
+                const liveCount = M.inventory.filter(plan => plan.type === "plan" && plan.north_star === direction.id && liveStatuses.has(plan.status)).length;
+                return (
+                  <tr key={direction.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                    <th scope="row" style={{ padding: "9px 12px 9px 0", textAlign: "left", verticalAlign: "top", width: "24%" }}>
+                      {direction.href ? <a href={direction.href}>{direction.name}</a> : direction.name}
+                    </th>
+                    <td style={{ padding: "9px 12px", color: "var(--ink-2)" }}>{direction.statement}</td>
+                    <td style={{ padding: "9px 0 9px 12px", textAlign: "right", whiteSpace: "nowrap", fontFamily: "var(--mono)" }}>{liveCount} live</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
+
       <div className="r-ck-h">
         <span className="r-eyebrow">Milestones</span>
       </div>

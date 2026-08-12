@@ -70,6 +70,7 @@ window.STATE_READY = (async function () {
     : [];
   let milestones = Array.isArray(idx.milestones) ? idx.milestones : [];
   let inventory  = Array.isArray(idx.inventory)  ? idx.inventory  : [];
+  let northStars = Array.isArray(idx.north_stars) ? idx.north_stars : [];
 
   // ── 2. Central-index layout: data.plans[] (no data.inventory) ─────────
   // Handles repos that store plan metadata in a central index.json using
@@ -135,6 +136,7 @@ window.STATE_READY = (async function () {
       `/_discover/${PROJECT} returned HTTP ${discoveryResponse.status}`
     );
   }
+  if (Array.isArray(disc?.north_stars)) northStars = disc.north_stars;
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
     inventory = disc.inventory;
     if (disc.source_format === "distributed") {
@@ -248,6 +250,7 @@ window.STATE_READY = (async function () {
     project:          PROJECT,
     projects,
     milestones,
+    north_stars:       northStars,
     inventory:        mergedInventory,
     active_sprint_id: disc?.active_sprint_id ?? idx.active_sprint_id ?? null,
     sprints:          augmentedSprints,

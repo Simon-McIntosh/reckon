@@ -18,7 +18,17 @@ import reckon.serve as serve
 REPO_ROOT = Path(__file__).parents[1]
 
 
-def _write_plan(docs_dir: Path, *, project: str, slug: str, sprint: str) -> None:
+def _write_plan(
+    docs_dir: Path,
+    *,
+    project: str,
+    slug: str,
+    sprint: str,
+    north_star: str | None = None,
+) -> None:
+    direction_meta = (
+        f'<meta name="plan-north-star" content="{north_star}">' if north_star else ""
+    )
     (docs_dir / f"{slug}.html").write_text(
         "<!doctype html><html><head>"
         f'<meta name="docs-project" content="{project}">'
@@ -26,6 +36,7 @@ def _write_plan(docs_dir: Path, *, project: str, slug: str, sprint: str) -> None
         f'<meta name="plan-title" content="{slug.title()}">'
         '<meta name="plan-status" content="active">'
         f'<meta name="plan-sprint" content="{sprint}">'
+        f"{direction_meta}"
         '<meta name="plan-impl" content="0.5">'
         f"<title>{slug.title()}</title>"
         "</head><body><main></main></body></html>"
@@ -178,6 +189,66 @@ def test_build_bakes_discovery_and_preserves_authored_project_state(
     assert data["blockers"] == [{"id": "network", "owner": "ops"}]
     assert data["active_sprint_id"] == "S7"
     assert data["_version"] == 5
+
+
+def test_build_carries_directions_into_the_project_surfaces(tmp_path):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    directions = [
+        {
+            "id": "reliable-delivery",
+            "name": "Reliable delivery",
+            "statement": "Every release remains reproducible and observable.",
+        },
+        {
+            "id": "clear-work",
+            "name": "Clear work",
+            "statement": "Every active plan states what it advances.",
+        },
+    ]
+    _write_plan(
+        docs_dir,
+        project="fixture",
+        slug="alpha",
+        sprint="S8",
+        north_star="reliable-delivery",
+    )
+    _write_discovery_pages(docs_dir)
+    index_path = _seed_project_index(docs_dir, "fixture")
+    envelope = json.loads(index_path.read_text())
+    envelope["data"]["north_stars"] = directions
+    index_path.write_text(json.dumps(envelope, indent=2) + "\n")
+
+    result = _invoke_build(docs_dir)
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(index_path.read_text())["data"]
+    alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
+    shell = (docs_dir / "_ui" / "shell.jsx").read_text()
+    loader = (docs_dir / "_ui" / "state-loader.js").read_text()
+    assert data["north_stars"] == directions
+    assert alpha["north_star"] == "reliable-delivery"
+    assert 'aria-label="North stars"' in shell
+    assert "northStars.map(direction =>" in shell
+    assert "{direction.statement}" in shell
+    assert "{liveCount} live" in shell
+    assert "r-north-star-badge" in shell
+    assert 'toggle("north_star", direction.id)' in shell
+    assert "filters.north_star.includes(p.north_star)" in shell
+    assert "north_stars:       northStars" in loader
+
+
+def test_build_without_directions_preserves_the_unlabelled_shape(built_source_site):
+    _, index_path, _ = built_source_site
+    data = json.loads(index_path.read_text())["data"]
+    alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
+    shell = (REPO_ROOT / "docs" / "ui" / "shell.jsx").read_text()
+
+    assert "north_stars" not in data
+    assert "north_star" not in alpha
+    assert "{northStars.length > 0 && (" in shell
+    assert "{p.north_star && <>" in shell
+    assert "(M.north_stars || []).length && filters.north_star?.length" in shell
 
 
 @pytest.mark.parametrize("destination", ["_ui", "_shared"])
