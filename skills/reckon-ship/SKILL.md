@@ -512,11 +512,15 @@ cap, launch the wave together, then wait for all results before integration.
 
 ### 4b. The gate fence — a wave does not open through a closed gate
 
-**Authored here and nowhere else.** Read the plan's declared evidence-gate table
-before opening a wave, and **refuse to open the next wave until the gate's
-measure has produced evidence.** A gate is a measure to demonstrate, not a
-threshold to tune around: when it fails, downstream work stays visibly closed and
-the negative result stays on the page.
+**Authored here and nowhere else.** Read computed gate state for the plan through
+`read_plan` and `roadmap`: use the returned `blocking` and `gate_blockers` rather
+than reconstructing gate verdicts from prose. Read the resolved `gates.enforce`
+setting through `crew(project, view="flight")`; strict enforcement refuses a
+closed gate, while advisory enforcement records a warning. Under strict
+enforcement, **refuse to open the next wave until the gate's measure has produced
+evidence.** A gate is a measure to demonstrate, not a threshold to tune around:
+when it fails, downstream work stays visibly closed and the negative result stays
+on the page.
 
 - Name the gate that closes the current wave in the dispatch summary's `WHEN`
   axis, so it is stated before the work starts rather than after.
