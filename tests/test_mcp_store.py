@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 import reckon._store as _store_module
+import reckon.mcp as _mcp_module
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ def setup(tmp_path, monkeypatch):
     serve_mod._STATE_ROOT = state_root
 
     importlib.reload(_store_module)
+    importlib.reload(_mcp_module)
 
     return docs_dir, state_root, project
 
@@ -96,6 +98,20 @@ def _declare_north_stars(docs_dir: Path, project: str, *ids: str) -> None:
         },
     }
     (state_dir / "index.json").write_text(json.dumps(envelope), encoding="utf-8")
+
+
+def _write_project_config(state_root: Path, project: str, data: dict) -> None:
+    project_state = state_root / project
+    project_state.mkdir(parents=True, exist_ok=True)
+    envelope = {
+        "updated": "2026-01-01T00:00:00",
+        "project": project,
+        "doc": "project",
+        "data": {"_version": 0, **data},
+    }
+    (project_state / "project.json").write_text(
+        json.dumps(envelope, indent=2), encoding="utf-8"
+    )
 
 
 # ── read_plan ──────────────────────────────────────────────────────────────
@@ -658,3 +674,151 @@ def test_project_slug_uses_json(setup):
     data, version = _store_module.read_plan(project, "project")
     assert version == 0
     assert data["name"] == "Test Project"
+
+
+def test_edit_project_sets_north_star_collection_and_reads_it_back(setup):
+    _, state_root, project = setup
+    _write_project_config(state_root, project, {"name": "Test Project"})
+    north_stars = [
+        {
+            "id": "reliable-delivery",
+            "name": "Reliable delivery",
+            "statement": "Every accepted change is reproducible and observable.",
+        },
+        {
+            "id": "clear-direction",
+            "name": "Clear direction",
+            "statement": "Every material plan serves a durable outcome.",
+            "href": "/test-proj/research/direction",
+        },
+    ]
+
+    result = _mcp_module._edit_plan(
+        project,
+        "project",
+        [{"op": "set", "path": "north_stars", "value": north_stars}],
+        expected_version=0,
+    )
+
+    assert result["ok"] is True
+    stored, version = _store_module.read_plan(project, "project")
+    assert version == result["new_version"] == 1
+    assert stored["north_stars"] == north_stars
+
+
+def test_edit_project_sets_north_star_field_by_id(setup):
+    _, state_root, project = setup
+    north_star = {
+        "id": "clear-direction",
+        "name": "Clear direction",
+        "statement": "Every material plan serves a durable outcome.",
+    }
+    _write_project_config(
+        state_root,
+        project,
+        {"name": "Test Project", "north_stars": [north_star]},
+    )
+
+    result = _mcp_module._edit_plan(
+        project,
+        "project",
+        [
+            {
+                "op": "set",
+                "path": "north_stars.clear-direction.statement",
+                "value": "Every active plan names the durable outcome it serves.",
+            }
+        ],
+        expected_version=0,
+    )
+
+    assert result["ok"] is True
+    stored, _ = _store_module.read_plan(project, "project")
+    assert stored["north_stars"][0]["statement"] == (
+        "Every active plan names the durable outcome it serves."
+    )
+
+
+def test_edit_project_refuses_north_star_missing_required_field(setup):
+    _, state_root, project = setup
+    _write_project_config(state_root, project, {"name": "Test Project"})
+
+    result = _mcp_module._edit_plan(
+        project,
+        "project",
+        [
+            {
+                "op": "set",
+                "path": "north_stars",
+                "value": [{"id": "clear-direction", "name": "Clear direction"}],
+            }
+        ],
+        expected_version=0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "schema_validation"
+    assert "statement" in "\n".join(result["details"])
+    stored, version = _store_module.read_plan(project, "project")
+    assert version == 0
+    assert "north_stars" not in stored
+
+
+def test_edit_project_refuses_duplicate_north_star_id(setup):
+    _, state_root, project = setup
+    _write_project_config(state_root, project, {"name": "Test Project"})
+    duplicate = {
+        "id": "clear-direction",
+        "name": "Clear direction",
+        "statement": "Every material plan serves a durable outcome.",
+    }
+
+    result = _mcp_module._edit_plan(
+        project,
+        "project",
+        [
+            {
+                "op": "set",
+                "path": "north_stars",
+                "value": [duplicate, {**duplicate, "name": "Repeated direction"}],
+            }
+        ],
+        expected_version=0,
+    )
+
+    assert result == {
+        "ok": False,
+        "error": "op_error",
+        "detail": "duplicate north-star id 'clear-direction'",
+    }
+    stored, version = _store_module.read_plan(project, "project")
+    assert version == 0
+    assert "north_stars" not in stored
+
+
+def test_edit_project_warns_when_north_stars_exceed_advisory_cap(setup):
+    _, state_root, project = setup
+    _write_project_config(state_root, project, {"name": "Test Project"})
+    north_stars = [
+        {
+            "id": f"direction-{index}",
+            "name": f"Direction {index}",
+            "statement": f"Durable outcome {index} remains visible.",
+        }
+        for index in range(6)
+    ]
+
+    result = _mcp_module._edit_plan(
+        project,
+        "project",
+        [{"op": "set", "path": "north_stars", "value": north_stars}],
+        expected_version=0,
+    )
+
+    assert result["ok"] is True
+    assert result["warnings"] == [
+        "project declares 6 north-stars; the advisory cap is 5"
+    ]
+    stored, version = _store_module.read_plan(project, "project")
+    assert version == result["new_version"] == 1
+    assert stored["north_stars"] == north_stars
