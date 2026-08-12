@@ -65,7 +65,7 @@
       </p>
     </section>
 
-    <section id="gates" class="section-landed">
+    <section data-reckon="gates" id="gates" class="r-gates section-landed">
       <header>
         <span class="badge badge-shipped">✓ landed 2026-08-12</span>
         <h2>§3 — Evidence gates</h2>
@@ -79,6 +79,41 @@
         across runs, exit 0 valid / 1 invalid; 1,495 tests pass, 35 of them new.
         Full record: <a href="/reckon/evidence/archive/flight-control-config-landed#gates">landed evidence</a>.
       </p>
+      <div class="r-gate" data-id="schema-round-trip" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Schema round-trip</h4>
+        <p class="r-gate-required-evidence">The committed Pydantic model and JSON Schema are both regenerable from <code>reckon/schema/flight.yaml</code> with no diff, proving the committed artifacts are not hand-edited drift.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#schema">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="layer-precedence" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Layer precedence</h4>
+        <p class="r-gate-required-evidence">A test asserting all four layers, in which a project layer overriding one backend key leaves that backend's other keys at their host or shipped values — deep merge, not replacement.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#resolution">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="provenance" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Provenance</h4>
+        <p class="r-gate-required-evidence"><code>reckon flight --project reckon</code> reports, for every resolved key, which layer supplied it. Spot-checked against a deliberately three-layer setup.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#provenance">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="malformed-config-fails-loudly" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Malformed config fails loudly</h4>
+        <p class="r-gate-required-evidence">A test proving an invalid enum and an unknown key each raise an error naming file, key path and constraint. No test may show a silent fallback to defaults.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#failures">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="availability" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Availability</h4>
+        <p class="r-gate-required-evidence">Recorded output showing <code>codex</code> and <code>claude</code> detected on <code>PATH</code>, and the report a missing binary produces.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#availability">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="machine-contract" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Machine contract</h4>
+        <p class="r-gate-required-evidence">Default stdout parses as JSON with a stable key order; exit code is 0 on a valid config and non-zero on an invalid one.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#contract">Evidence</a>
+      </div>
+      <div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+        <h4 class="r-gate-measure">Suite green</h4>
+        <p class="r-gate-required-evidence">The full reckon test suite passes, with the new-test count recorded.</p>
+        <a class="r-gate-evidence" href="/reckon/evidence/archive/flight-control-config-landed#suite">Evidence</a>
+      </div>
     </section>
 
     <h2 id="s4">§4 — Constraints</h2>
