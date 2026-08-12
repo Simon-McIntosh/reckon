@@ -402,7 +402,12 @@ def _budget_verdict(
     )
     verdict = budget_module.decide(state, budget_module.policy(config), purpose=purpose)
     try:
-        budget_module.record_checks(project, [verdict], root=root)
+        budget_module.record_checks(
+            project,
+            [verdict],
+            root=root,
+            resumption_fired=False,
+        )
     except ledger.LedgerError as exc:
         raise CrewError(
             f"cannot record the budget check before opening the wave: {exc}"
