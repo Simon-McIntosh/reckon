@@ -354,6 +354,32 @@ def test_validate_for_write_accepts_complete_state():
     assert ps.validate_for_write() is ps
 
 
+def test_validate_for_write_rejects_milestone_placeholder():
+    ps = PlanState(
+        project="reckon",
+        slug="x",
+        title="X",
+        status="active",
+        milestone="—",
+    )
+
+    with pytest.raises(ValueError, match="milestone"):
+        ps.validate_for_write()
+
+
+@pytest.mark.parametrize("milestone", ["M2", ""])
+def test_validate_for_write_accepts_optional_milestone_identifier(milestone):
+    ps = PlanState(
+        project="reckon",
+        slug="x",
+        title="X",
+        status="active",
+        milestone=milestone,
+    )
+
+    assert ps.validate_for_write() is ps
+
+
 @pytest.mark.parametrize("missing", ["project", "slug", "title", "status"])
 def test_validate_for_write_rejects_missing_required(missing):
     kw = {"project": "reckon", "slug": "x", "title": "X", "status": "active"}
@@ -425,6 +451,16 @@ def test_gen_json_schema_has_version_and_enums():
         CAPABILITY_SCHEMA_VERSION
     )
     assert props["tier"]["deprecated"] is True
+
+
+def test_gen_json_schema_requires_optional_milestone_identifier():
+    schema = gen_json_schema()
+    validator = Draft202012Validator(schema)
+
+    validator.validate({"milestone": "M2"})
+    validator.validate({"milestone": ""})
+    with pytest.raises(ValidationError):
+        validator.validate({"milestone": "—"})
 
 
 def test_explicit_worker_hours_parse_as_float_and_round_trip():
