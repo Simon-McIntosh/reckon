@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="budget-aware-dispatch">
   <meta name="plan-title" content="Budget-aware Dispatch">
   <meta name="plan-summary" content="Read each backend&#x27;s budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
@@ -21,8 +21,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="0.83">
 </head>
 <body>
   <main class="plan-doc">
@@ -113,6 +113,64 @@
     <p>A hold is never silent and never destructive. It creates no worktree, cancels no ready
     node, and always reports. An orchestrator that cannot schedule its own resumption reports the
     reset time for a human instead — degraded, not broken.</p>
+
+    <h2 id="s5">§5 — Holds are measurable</h2>
+
+    <p>A hold leaves no trace. It creates no run, so nothing in the committed ledger records that a
+    wave was held, on which backend, for how long, or whether the scheduled resumption fired — which
+    loses the one measurement the mechanism generates: what holding actually costs in wall-clock,
+    against what a burned wave would have cost. That figure cannot be reconstructed afterwards, so
+    it has to be captured at the moment it is knowable.</p>
+
+    <p><strong>A hold record, beside the run records rather than among them.</strong> A hold has no
+    worktree, no commit, no gate and no worker-time, so writing it into the run list would feed
+    empty measurements to the effort report that averages over it. A hold opens when a wave is held
+    and closes when a later pre-flight finds that backend clear, carrying the measured wait.</p>
+
+    <p><strong>Repeated pre-flights inside one window are one hold, not many.</strong> An
+    orchestrator that checks every few minutes must not multiply records for the same window, or the
+    count stops meaning "how often were we held" and starts meaning "how often did we look".</p>
+
+    <p><strong>Closing is what makes it a measurement.</strong> An open hold records a decision; a
+    closed one records a duration. The wait is measured against the wall clock rather than assumed
+    from the reported reset, because the two differ whenever a resumption fires late — and the
+    difference is exactly what tells a reader whether self-scheduled resumption is working.</p>
+
+    <h3 id="s5-gates">Evidence gates</h3>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A hold is recorded</td>
+          <td>A held pre-flight writes one record carrying the backend, utilisation, reset time and
+          purpose, and the ledger version increments.</td>
+        </tr>
+        <tr>
+          <td>Holds never pollute run measurements</td>
+          <td>A test showing the effort report and the run count are identical before and after a
+          hold is recorded.</td>
+        </tr>
+        <tr>
+          <td>One window is one hold</td>
+          <td>Several pre-flights inside the same window produce exactly one record.</td>
+        </tr>
+        <tr>
+          <td>A resumption closes the hold</td>
+          <td>A later clear pre-flight closes the open hold and records the wall-clock wait in
+          seconds, distinct from the reported reset.</td>
+        </tr>
+        <tr>
+          <td>The history is readable</td>
+          <td>The committed ledger exposes holds through the existing read paths, with a count and a
+          total held duration in the summary.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
