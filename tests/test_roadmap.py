@@ -16,8 +16,9 @@ def _plan(
     depends_on: list[str] | None = None,
     sprint: str | None = None,
     effort: str = "M",
+    north_star: str | None = None,
 ) -> dict:
-    return {
+    plan = {
         "slug": slug,
         "title": slug.title(),
         "type": "plan",
@@ -30,6 +31,22 @@ def _plan(
         "blocking": [],
         "gates": [{"id": "evidence", "verdict": "passed"}],
         "followups": [{"id": "next", "status": "open"}],
+    }
+    if north_star is not None:
+        plan["north_star"] = north_star
+    return plan
+
+
+def _project_with_north_stars(*ids: str) -> dict:
+    return {
+        "north_stars": [
+            {
+                "id": north_star_id,
+                "name": north_star_id.replace("-", " ").title(),
+                "statement": f"{north_star_id} remains the durable direction.",
+            }
+            for north_star_id in ids
+        ]
     }
 
 
@@ -70,6 +87,108 @@ def test_completed_dependency_clears_without_hiding_stored_progress() -> None:
     assert [item["slug"] for item in result["ready_now"]] == ["integration"]
     assert result["completion"]["lifecycle_completion_pct"] == 50.0
     assert result["completion"]["implementation_pct"] == 62.5
+
+
+def test_north_star_rollup_reports_alignment_completion_and_remaining_effort() -> None:
+    inventory = [
+        _plan("finished", status="shipped", impl=1.0, north_star="reliability"),
+        _plan("partial", impl=0.25, effort="L", north_star="reliability"),
+        _plan("usable", effort="S", north_star="usability"),
+    ]
+
+    result = build_roadmap(
+        "sample",
+        inventory,
+        [],
+        project_manifest=_project_with_north_stars(
+            "reliability", "usability", "unclaimed"
+        ),
+    )
+
+    assert result["north_stars"] == [
+        {
+            "id": "reliability",
+            "name": "Reliability",
+            "statement": "reliability remains the durable direction.",
+            "plans": 2,
+            "completed": 1,
+            "lifecycle_completion_pct": 50.0,
+            "remaining_effort": 3.0,
+        },
+        {
+            "id": "usability",
+            "name": "Usability",
+            "statement": "usability remains the durable direction.",
+            "plans": 1,
+            "completed": 0,
+            "lifecycle_completion_pct": 0.0,
+            "remaining_effort": 1.0,
+        },
+        {
+            "id": "unclaimed",
+            "name": "Unclaimed",
+            "statement": "unclaimed remains the durable direction.",
+            "plans": 0,
+            "completed": 0,
+            "lifecycle_completion_pct": 0.0,
+            "remaining_effort": 0,
+        },
+    ]
+
+
+def test_live_actionable_plan_without_north_star_is_informational() -> None:
+    inventory = [
+        _plan("actionable"),
+        _plan("unauthorised", status="draft"),
+        _plan("complete", status="shipped", impl=1.0),
+    ]
+
+    result = build_roadmap(
+        "sample",
+        inventory,
+        [],
+        project_manifest=_project_with_north_stars("reliability"),
+    )
+
+    findings = [
+        item for item in result["wiring_findings"] if item["code"] == "unoriented-plan"
+    ]
+    assert [(item["slug"], item["severity"]) for item in findings] == [
+        ("actionable", "info")
+    ]
+
+
+def test_plan_naming_undeclared_north_star_is_a_wiring_error() -> None:
+    result = build_roadmap(
+        "sample",
+        [_plan("misdirected", north_star="missing")],
+        [],
+        project_manifest=_project_with_north_stars("reliability"),
+    )
+
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "undeclared-north-star"
+    )
+    assert finding["severity"] == "error"
+    assert finding["slug"] == "misdirected"
+    assert finding["extra"] == {"north_star": "missing"}
+
+
+def test_project_without_north_stars_has_no_orientation_findings() -> None:
+    result = build_roadmap(
+        "sample",
+        [_plan("unlabelled"), _plan("labelled", north_star="not-declared")],
+        [],
+        project_manifest={},
+    )
+
+    assert result["north_stars"] == []
+    assert not {item["code"] for item in result["wiring_findings"]} & {
+        "unoriented-plan",
+        "undeclared-north-star",
+    }
 
 
 def test_reference_input_in_depends_on_is_a_wiring_error() -> None:
