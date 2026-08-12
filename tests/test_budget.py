@@ -247,6 +247,111 @@ def test_a_later_silence_does_not_erase_a_recorded_exhaustion(home, repo) -> Non
     assert best["alpha"].budget["utilisation_pct"] == 99.0
 
 
+def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) -> None:
+    """The pointer's routing identity survives independently of agent metadata."""
+    run_id = "r-promoted"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "repo": str(repo),
+            "node": {
+                "id": "signal-reader",
+                "plan": "plan-a",
+                "section": "reading",
+                "time_budget": "20m",
+                "write_paths": ["reckon/budget.py"],
+            },
+            "role": "implement",
+            "member": "",
+            "backend": "beta",
+            "agent": {},
+            "created_at": _stamp(-60),
+            "manifest_path": "/tmp/signal-reader-manifest.md",
+            "session_id": None,
+            "budget": _known(71.0),
+        },
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        commits=["deadbee"],
+        changed_lines={"added": 0, "removed": 0, "files": 0},
+    )
+    readings = budget.latest_recorded("proj", root=repo)
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["beta"])
+    state = report["backends"][0]["state"]
+
+    assert promoted["record"]["agent"] == {}
+    assert promoted["record"]["backend"] == "beta"
+    assert readings["beta"].budget["utilisation_pct"] == 71.0
+    assert readings["beta"].attribution == "record"
+    assert state["headroom"] == "known"
+    assert state["utilisation_pct"] == 71.0
+
+
+def test_manifest_marker_recovers_two_known_readings(home, repo) -> None:
+    """Two durable measurements remain useful without rewriting their records."""
+    for position, utilisation in enumerate((41.0, 42.0), start=1):
+        record = ledger.build_record(
+            run_id=f"r-legacy-{position}",
+            plan="plan-a",
+            gate="passed",
+            agent={},
+            completed_at=_stamp(-120 + position),
+            manifest_path=f"/tmp/beta-39486/run-{position}/manifest.md",
+            budget=_known(utilisation),
+        )
+        ledger.append_run("proj", record, root=repo)
+
+    all_readings = budget._readings("proj", root=repo, config=CONFIG)
+    best = budget.latest_recorded("proj", root=repo, config=CONFIG)
+
+    recovered = [reading for reading in all_readings if reading.backend == "beta"]
+    assert len(recovered) == 2
+    assert {reading.attribution for reading in recovered} == {"manifest-path"}
+    assert best["beta"].budget["utilisation_pct"] == 42.0
+
+
+def test_unattributable_known_reading_reports_recorded_not_silent(home, repo) -> None:
+    record = ledger.build_record(
+        run_id="r-unmatched",
+        plan="plan-a",
+        gate="passed",
+        agent={},
+        completed_at=_stamp(-60),
+        manifest_path="/tmp/worker/manifest.md",
+        budget=_known(88.0),
+    )
+    ledger.append_run("proj", record, root=repo)
+
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+    verdict = report["backends"][0]
+
+    assert verdict["state"]["headroom"] == "unknown"
+    assert verdict["state"]["source"] == "unattributed-ledger"
+    assert "recorded but could not be attributed" in verdict["reason"]
+    assert report["unattributed_records"] == [
+        {
+            "observed_at": record["completed_at"],
+            "record_id": "r-unmatched",
+            "source": "ledger",
+        }
+    ]
+
+
+def test_nothing_recorded_keeps_its_own_reason(home, repo) -> None:
+    report = budget.preflight("empty-project", CONFIG, root=repo, backends=["alpha"])
+    verdict = report["backends"][0]
+
+    assert verdict["state"]["source"] == "none"
+    assert "nothing recorded for this backend" in verdict["reason"]
+    assert "could not be attributed" not in verdict["reason"]
+    assert report["unattributed_records"] == []
+
+
 # ── Exhaustion holds the wave, and creates nothing ──────────────────────────
 
 
@@ -319,9 +424,7 @@ def test_a_window_that_has_already_reset_stops_holding(home, repo) -> None:
 # ── Holds are per-backend ───────────────────────────────────────────────────
 
 
-def test_one_backend_held_leaves_ready_nodes_on_another_dispatching(
-    home, repo
-) -> None:
+def test_one_backend_held_leaves_ready_nodes_on_another_dispatching(home, repo) -> None:
     _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
     _record("proj", repo, backend="beta", budget_block=_known(10.0), run_id="r-2")
 
@@ -356,17 +459,13 @@ def test_the_reserve_holds_a_dispatch_but_still_allows_the_resume(home, repo) ->
 
     assert dispatching["held_backends"] == ["alpha"]
     assert resuming["held_backends"] == []
-    held = next(
-        item for item in dispatching["backends"] if item["backend"] == "alpha"
-    )
+    held = next(item for item in dispatching["backends"] if item["backend"] == "alpha")
     assert held["effective_ceiling_pct"] == 95.0
     assert held["ceiling_pct"] == 100.0
 
 
 def test_a_resume_is_still_held_at_a_genuinely_spent_quota() -> None:
-    state = budget.BudgetState(
-        backend="alpha", headroom="known", utilisation_pct=100.0
-    )
+    state = budget.BudgetState(backend="alpha", headroom="known", utilisation_pct=100.0)
     verdict = budget.decide(state, budget.policy(CONFIG), purpose="resume")
     assert verdict["held"] is True
     assert verdict["effective_ceiling_pct"] == 100.0
@@ -419,7 +518,9 @@ def test_a_known_account_reading_outranks_an_older_record(home, repo) -> None:
     answer = json.loads(
         next(
             line
-            for line in (FIXTURES / "codex-account-limits.jsonl").read_text().splitlines()
+            for line in (FIXTURES / "codex-account-limits.jsonl")
+            .read_text()
+            .splitlines()
             if '"id":2' in line
         )
     )

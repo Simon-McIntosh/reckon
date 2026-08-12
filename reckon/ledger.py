@@ -65,6 +65,7 @@ RECORD_FIELDS = (
     "node",
     "role",
     "member",
+    "backend",
     "agent",
     "dispatched_at",
     "completed_at",
@@ -280,6 +281,7 @@ def build_record(
     section: str = "",
     role: str = "",
     member_id: str = "",
+    backend: str = "",
     agent: Mapping[str, Any] | None = None,
     dispatched_at: str = "",
     completed_at: str = "",
@@ -309,6 +311,10 @@ def build_record(
         "node": str(node),
         "role": str(role),
         "member": str(member_id),
+        # Routing is a property of the run, not only of the agent description.
+        # Keeping it at the record level preserves attribution when a recovered
+        # pointer carries no agent block.
+        "backend": str(backend),
         "agent": dict(agent or {}),
         "dispatched_at": str(dispatched_at),
         "completed_at": str(completed_at) or _utc_now(),

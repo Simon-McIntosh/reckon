@@ -41,6 +41,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
@@ -150,14 +151,92 @@ def _parse_stamp(value: Any) -> datetime | None:
 class _Reading:
     """One recorded budget block with the backend and moment it belongs to."""
 
-    backend: str
+    backend: str | None
     budget: dict[str, Any]
     observed_at: str
     when: datetime
     source: str
+    record_id: str = ""
+    attribution: str = ""
 
 
-def _readings(project: str, *, root: str | Path | None = None) -> list[_Reading]:
+class _RecordedReadings(dict[str, _Reading]):
+    """Best reading per backend plus signals whose owner is still unknown."""
+
+    def __init__(
+        self,
+        best: Mapping[str, _Reading],
+        *,
+        unattributed: Iterable[_Reading] = (),
+    ) -> None:
+        super().__init__(best)
+        self.unattributed = tuple(unattributed)
+
+
+def _manifest_backend(
+    record: Mapping[str, Any], config: Mapping[str, Any] | None
+) -> str | None:
+    """Recover one backend from an unambiguous manifest path marker.
+
+    A durable record can carry the harness-owned delivery path without a
+    backend field. Backend names are user configuration, so matching a whole
+    path component (or its numeric harness suffix) stays provider-neutral.
+    Ambiguity is preserved rather than guessed.
+    """
+    path = str(record.get("manifest_path") or "")
+    if not path:
+        return None
+    components = Path(path).parts
+    names = [str(name) for name in ((config or {}).get("backends") or {})]
+    matches = {
+        name
+        for name in names
+        if any(
+            component == name or re.fullmatch(rf"{re.escape(name)}-[0-9]+", component)
+            for component in components
+        )
+    }
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _record_backend(
+    record: Mapping[str, Any],
+    budget_block: Mapping[str, Any],
+    *,
+    members: Mapping[str, str],
+    config: Mapping[str, Any] | None,
+) -> tuple[str | None, str]:
+    """Resolve a durable record's backend without inventing an attribution."""
+    agent = record.get("agent")
+    candidates = (
+        (record.get("backend"), "record"),
+        (
+            agent.get("backend") if isinstance(agent, Mapping) else None,
+            "agent",
+        ),
+        (budget_block.get("backend"), "budget"),
+        (members.get(str(record.get("member") or "")), "member"),
+    )
+    for candidate, source in candidates:
+        if candidate:
+            return str(candidate), source
+
+    # A silent block carries no measurement, so path-based recovery is neither
+    # needed nor useful. Restrict the fallback to the known signals that
+    # would otherwise disappear from the budget view.
+    if budget_block.get("headroom") == "known":
+        recovered = _manifest_backend(record, config)
+        if recovered:
+            return recovered, "manifest-path"
+    return None, "unattributed"
+
+
+def _readings(
+    project: str,
+    *,
+    root: str | Path | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> list[_Reading]:
     """Collect every recorded budget block for a project, from both homes.
 
     Both homes are read because a run's record moves between them: while it is in
@@ -181,42 +260,68 @@ def _readings(project: str, *, root: str | Path | None = None) -> list[_Reading]
                 observed_at=str(stamp),
                 when=when,
                 source="live-run",
+                record_id=str(pointer.get("run_id") or ""),
+                attribution="record",
             )
         )
     try:
-        records = ledger.runs(project, root)
+        data, _version = ledger.load(project, root)
+        records = data["runs"]
+        members = {
+            str(item.get("id") or ""): str(item.get("harness") or "")
+            for item in data.get("members", ())
+            if item.get("id") and item.get("harness")
+        }
     except ledger.LedgerError:
         records = []
+        members = {}
     for record in records:
         stamp = record.get("completed_at")
         when = _parse_stamp(stamp)
         budget = record.get("budget")
         if when is None or not isinstance(budget, Mapping):
             continue
+        backend, attribution = _record_backend(
+            record,
+            budget,
+            members=members,
+            config=config,
+        )
         found.append(
             _Reading(
-                backend=str((record.get("agent") or {}).get("backend") or ""),
+                backend=backend,
                 budget=dict(budget),
                 observed_at=str(stamp),
                 when=when,
                 source="ledger",
+                record_id=str(record.get("run_id") or ""),
+                attribution=attribution,
             )
         )
-    return [reading for reading in found if reading.backend]
+    return found
 
 
 def latest_recorded(
-    project: str, *, root: str | Path | None = None
-) -> dict[str, _Reading]:
+    project: str,
+    *,
+    root: str | Path | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> _RecordedReadings:
     """Return the best recorded reading per backend, preferring a known one.
 
     A known measurement outranks any silence, however recent, because silence
     carries no information: letting a later unknown win would erase a recorded
-    exhaustion and open exactly the wave this module holds. Between two readings
-    of the same kind, the newer wins.
+    exhaustion and open exactly the wave this module holds. Between two
+    readings of the same kind, the newer wins. Known signals that cannot be
+    matched remain available through ``unattributed`` on the result.
     """
     best: dict[str, _Reading] = {}
-    for reading in _readings(project, root=root):
+    unattributed: list[_Reading] = []
+    for reading in _readings(project, root=root, config=config):
+        if reading.backend is None:
+            if reading.budget.get("headroom") == "known":
+                unattributed.append(reading)
+            continue
         current = best.get(reading.backend)
         if current is None:
             best[reading.backend] = reading
@@ -229,7 +334,7 @@ def latest_recorded(
             continue
         if reading.when > current.when:
             best[reading.backend] = reading
-    return best
+    return _RecordedReadings(best, unattributed=unattributed)
 
 
 # ── State ───────────────────────────────────────────────────────────────────
@@ -240,6 +345,7 @@ def state_for(
     backend: Mapping[str, Any] | None = None,
     *,
     recorded: _Reading | None = None,
+    unattributed: Iterable[_Reading] = (),
     now: datetime | None = None,
     probe_runner: Callable[[Any], Mapping[str, Any] | None] | None = None,
 ) -> BudgetState:
@@ -260,6 +366,17 @@ def state_for(
             observed_at=recorded.observed_at,
             source=recorded.source,
             now=moment,
+        )
+    elif unmatched := sorted(unattributed, key=lambda item: item.when):
+        latest = unmatched[-1]
+        count = len(unmatched)
+        noun = "signal" if count == 1 else "signals"
+        identity = f"; latest record {latest.record_id}" if latest.record_id else ""
+        state.source = "unattributed-ledger"
+        state.observed_at = latest.observed_at
+        state.detail = (
+            f"{count} known headroom {noun} were recorded but could not be "
+            f"attributed to a backend{identity}"
         )
     if (backend or {}).get("budget_check"):
         block = _backends.probe_budget(
@@ -462,7 +579,7 @@ def preflight(
     else:
         names = sorted(str(name) for name in configured)
 
-    recorded = latest_recorded(project, root=root)
+    recorded = latest_recorded(project, root=root, config=config)
     verdicts = []
     for name in names:
         settings = configured.get(name)
@@ -470,6 +587,7 @@ def preflight(
             name,
             settings if isinstance(settings, Mapping) else {},
             recorded=recorded.get(name),
+            unattributed=recorded.unattributed,
             now=moment,
             probe_runner=probe_runner,
         )
@@ -492,6 +610,14 @@ def preflight(
             verdict["backend"] for verdict in verdicts if not verdict["held"]
         ],
         "backends": verdicts,
+        "unattributed_records": [
+            {
+                "observed_at": reading.observed_at,
+                "record_id": reading.record_id,
+                "source": reading.source,
+            }
+            for reading in recorded.unattributed
+        ],
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
