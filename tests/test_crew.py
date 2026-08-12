@@ -733,6 +733,129 @@ def test_a_run_stays_observable_without_its_config_layer(home, repo) -> None:
     assert crew.observe(record["run_id"], config={})["phase"] == "complete"
 
 
+def _deliver_manifest(record: dict, status: str, **fields: str) -> None:
+    lines = ["node: node-a", f"status: {status}"]
+    lines.extend(f"{key}: {value}" for key, value in fields.items())
+    Path(record["manifest_path"]).write_text("\n".join(lines) + "\n")
+
+
+def test_terminal_phase_without_a_manifest_is_abandoned(home, repo) -> None:
+    record = _dispatched(home, repo, "codex-turn.jsonl")
+    observed = crew.observe(record["run_id"])
+
+    row = crew.classify_pointer(observed)
+
+    assert observed["phase"] == "complete"
+    assert row["classification"] == "abandoned"
+    assert row["manifest_status"] is None
+    assert record["stderr_path"] in row["next_action"]
+    assert "complete --run" not in row["next_action"]
+
+
+def test_blocked_manifest_is_not_promotable(home, repo) -> None:
+    manifest = home / "blocked-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        manifest_path=str(manifest),
+    )
+    _deliver_manifest(
+        record,
+        "blocked",
+        blockers="the schema choice needs direction",
+    )
+
+    row = crew.classify_pointer(crew.observe(record["run_id"]))
+
+    assert row["classification"] == "blocked"
+    assert row["manifest_status"] == "blocked"
+    assert "schema choice" in row["detail"]
+    assert "complete --run" not in row["next_action"]
+
+
+def test_failed_manifest_is_not_promotable(home, repo) -> None:
+    manifest = home / "failed-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        manifest_path=str(manifest),
+    )
+    _deliver_manifest(record, "failed", blockers="the focused test failed")
+
+    row = crew.classify_pointer(crew.observe(record["run_id"]))
+
+    assert row["classification"] == "failed"
+    assert row["manifest_status"] == "failed"
+    assert "focused test failed" in row["detail"]
+    assert record["stderr_path"] in row["next_action"]
+    assert "complete --run" not in row["next_action"]
+
+
+def test_only_a_complete_manifest_returns_promotion_advice(home, repo) -> None:
+    manifest = home / "complete-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        manifest_path=str(manifest),
+    )
+    _deliver_manifest(record, "complete", commits="HEAD")
+
+    row = crew.classify_pointer(crew.observe(record["run_id"]))
+
+    assert row["classification"] == "completed_unpromoted"
+    assert row["manifest_status"] == "complete"
+    assert row["manifest_commits"] == ["HEAD"]
+    assert row["next_action"].endswith("--commit HEAD")
+
+
+def test_crew_read_and_recovery_command_share_classification(home, repo) -> None:
+    from reckon import mcp
+
+    manifest = home / "shared-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        manifest_path=str(manifest),
+    )
+    _deliver_manifest(record, "blocked", blockers="waiting for direction")
+    crew.observe(record["run_id"])
+
+    read_row = mcp._crew("proj", view="live")["runs"][0]
+    command = CliRunner().invoke(cli_module.main, ["crew", "recover"])
+    command_row = json.loads(command.output)["runs"][0]
+
+    assert command.exit_code == 0
+    assert command_row["classification"] == read_row["classification"] == "blocked"
+    assert command_row["manifest_status"] == read_row["manifest_status"] == "blocked"
+    assert command_row["next_action"] == read_row["next_action"]
+
+
+def test_no_reader_promotes_a_run_without_commit_or_manifest(home, repo) -> None:
+    from reckon import mcp
+
+    record = _dispatched(home, repo, "codex-turn.jsonl")
+    observed = crew.observe(record["run_id"])
+    observed["commits"] = []
+    crew._write_json(crew.pointer_path(record["run_id"]), observed)
+
+    direct = crew.classify_pointer(observed)
+    read_row = mcp._crew("proj", view="live")["runs"][0]
+    recovered = crew.recover()["runs"][0]
+
+    assert {
+        direct["classification"],
+        read_row["classification"],
+        recovered["classification"],
+    } == {"abandoned"}
+    for row in (direct, read_row, recovered):
+        assert row["manifest_present"] is False
+        assert "complete --run" not in row["next_action"]
+
+
 def test_liveness_is_reported_not_inferred() -> None:
     assert crew.process_alive(None) is None
     assert crew.process_alive(999999999) is False
