@@ -141,6 +141,49 @@ def _porcelain(root: Path) -> list[str]:
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
+def _historical_record(
+    repo: Path,
+    run_id: str,
+    *,
+    completed_at: str = "2027-01-01T02:00:00Z",
+    completed_at_source: str = "provided",
+    worker_seconds: int = 7200,
+) -> None:
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id=run_id,
+            plan="plan-a",
+            gate="passed",
+            dispatched_at="2027-01-01T00:00:00Z",
+            completed_at=completed_at,
+            completed_at_source=completed_at_source,
+            worker_seconds=worker_seconds,
+        ),
+        root=repo,
+    )
+
+
+def _historical_stream(
+    home: Path,
+    run_id: str,
+    *,
+    timestamp: str | None = None,
+    mtime: str = "2027-01-01T01:00:00Z",
+    resume: bool = False,
+) -> Path:
+    directory = home / "crew" / "runs" / run_id
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / ("resume-1.jsonl" if resume else "stream.jsonl")
+    event = {"type": "result"}
+    if timestamp is not None:
+        event["timestamp"] = timestamp
+    path.write_text(json.dumps(event) + "\n")
+    instant = datetime.fromisoformat(mtime.replace("Z", "+00:00")).timestamp()
+    os.utime(path, (instant, instant))
+    return path
+
+
 # ── Round-trip: pointer in flight, ledger on completion ─────────────────────
 
 
@@ -269,6 +312,154 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
     assert "completed_at_source" in ledger.RECORD_FIELDS
     assert set(ledger.RECORD_FIELDS) <= set(stored)
     assert stored["completed_at_source"] == "promotion_time"
+
+
+def test_completion_repair_reports_event_time_without_writing(home, repo) -> None:
+    _historical_record(repo, "historical-event")
+    _historical_stream(
+        home,
+        "historical-event",
+        timestamp="2027-01-01T00:30:00Z",
+        mtime="2027-01-01T01:00:00Z",
+    )
+    before, version_before = ledger.load(PROJECT, repo)
+
+    report = ledger.repair_completion(PROJECT, root=repo)
+
+    after, version_after = ledger.load(PROJECT, repo)
+    assert report["write_requested"] is False
+    assert report["written"] is False
+    assert report["updated"] == 1
+    assert report["rows"][0]["completion_source"] == "terminal_event"
+    assert report["rows"][0]["completed_at"] == "2027-01-01T00:30:00Z"
+    assert report["rows"][0]["worker_seconds"] == 1800
+    assert after == before
+    assert version_after == version_before
+
+
+def test_completion_repair_writes_newest_resume_stream_mtime(home, repo) -> None:
+    _historical_record(repo, "historical-resume")
+    _historical_stream(home, "historical-resume", mtime="2027-01-01T00:20:00Z")
+    _historical_stream(
+        home,
+        "historical-resume",
+        mtime="2027-01-01T00:45:00Z",
+        resume=True,
+    )
+
+    report = ledger.repair_completion(PROJECT, root=repo, write_changes=True)
+
+    stored = ledger.runs(PROJECT, repo)[0]
+    assert report["written"] is True
+    assert report["updated"] == 1
+    assert report["rows"][0]["completion_source"] == "stream_mtime"
+    assert stored["completed_at"] == "2027-01-01T00:45:00Z"
+    assert stored["completed_at_source"] == "stream_mtime"
+    assert stored["worker_seconds"] == 2700
+
+
+def test_completion_repair_leaves_missing_stream_record_unusable(home, repo) -> None:
+    _historical_record(repo, "missing-stream")
+    before, version_before = ledger.load(PROJECT, repo)
+
+    report = ledger.repair_completion(PROJECT, root=repo, write_changes=True)
+
+    after, version_after = ledger.load(PROJECT, repo)
+    row = report["rows"][0]
+    effort = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    assert row["action"] == "unusable"
+    assert row["calibration_usable"] is False
+    assert row["completion_source"] is None
+    assert "left unchanged" in row["detail"]
+    assert report["written"] is False
+    assert after == before
+    assert version_after == version_before
+    assert effort["excluded_unusable_completion"] == 1
+
+
+def test_completion_repair_reports_updated_unchanged_and_unusable_rows(
+    home, repo
+) -> None:
+    _historical_record(repo, "needs-update")
+    _historical_stream(home, "needs-update", timestamp="2027-01-01T00:30:00Z")
+    _historical_record(
+        repo,
+        "already-derived",
+        completed_at="2027-01-01T00:40:00Z",
+        completed_at_source="terminal_event",
+        worker_seconds=2400,
+    )
+    _historical_stream(home, "already-derived", timestamp="2027-01-01T00:40:00Z")
+    _historical_record(repo, "gone")
+
+    report = ledger.repair_completion(PROJECT, root=repo)
+
+    rows = {row["run_id"]: row for row in report["rows"]}
+    assert report["records"] == 3
+    assert report["updated"] == 1
+    assert report["unchanged"] == 1
+    assert report["unusable"] == 1
+    assert rows["needs-update"]["action"] == "updated"
+    assert rows["needs-update"]["completion_source"] == "terminal_event"
+    assert rows["already-derived"]["action"] == "unchanged"
+    assert rows["already-derived"]["completion_source"] == "terminal_event"
+    assert rows["gone"]["action"] == "unusable"
+
+
+def test_completion_repair_write_is_idempotent(home, repo) -> None:
+    _historical_record(repo, "idempotent")
+    _historical_stream(home, "idempotent", mtime="2027-01-01T00:25:00Z")
+
+    first = ledger.repair_completion(PROJECT, root=repo, write_changes=True)
+    second = ledger.repair_completion(PROJECT, root=repo, write_changes=True)
+
+    assert first["written"] is True
+    assert first["version_after"] == first["version_before"] + 1
+    assert second["written"] is False
+    assert second["updated"] == 0
+    assert second["unchanged"] == 1
+    assert second["version_after"] == first["version_after"]
+
+
+def test_completion_repair_command_requires_write_flag_to_persist(home, repo) -> None:
+    _historical_record(repo, "command-record")
+    _historical_stream(home, "command-record", timestamp="2027-01-01T00:15:00Z")
+    _, version_before = ledger.load(PROJECT, repo)
+
+    preview = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "repair-completion",
+            "--project",
+            PROJECT,
+            "--checkout-path",
+            str(repo),
+        ],
+    )
+    _, version_after_preview = ledger.load(PROJECT, repo)
+    applied = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "repair-completion",
+            "--project",
+            PROJECT,
+            "--checkout-path",
+            str(repo),
+            "--write",
+        ],
+    )
+
+    preview_payload = json.loads(preview.output)
+    applied_payload = json.loads(applied.output)
+    assert preview.exit_code == applied.exit_code == 0
+    assert preview_payload["write_requested"] is False
+    assert preview_payload["written"] is False
+    assert version_after_preview == version_before
+    assert applied_payload["write_requested"] is True
+    assert applied_payload["written"] is True
+    assert ledger.runs(PROJECT, repo)[0]["completed_at"] == "2027-01-01T00:15:00Z"
 
 
 def test_an_unknown_gate_verdict_is_refused(home, repo) -> None:
