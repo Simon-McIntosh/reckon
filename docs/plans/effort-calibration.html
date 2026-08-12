@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="effort-calibration">
   <meta name="plan-title" content="Effort Calibration">
   <meta name="plan-summary" content="Replace the asserted effort letters with neutral worker-hours, then close two separate calibration loops so plan estimates and per-agent speed correct each other from recorded runs, yielding competence horizons that tell a boss how small to split.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b,b8a9934a178a4606ef89b798c7166dbf4ec27961,5ef88765c8ecb1be01fad7a2bfff257625974759">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/roadmap.py,reckon/calibration.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_crew.py,tests/test_roadmap.py,tests/test_calibration.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.93">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -250,6 +250,28 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
       </tbody>
     </table>
 
+    <h2 id="s9">§9 — Re-measure the prediction question once authored hours exist</h2>
+
+    <p><strong>Trigger: at least 10 plans carry an independently authored
+    <code>plan-effort-hours</code> and have accumulated calibration-usable runs.</strong> Until then this
+    section is deliberately not executable, and nothing here should be attempted.</p>
+
+    <p>The closing comparison returned an exact tie — 2.625391 worker-hours by both predictors over 64
+    usable records — because every plan in the sample resolved its hours through the legacy 1/2/4/8
+    fallback. Two identical predictors cannot separate. The tie therefore demonstrates that the
+    migration is lossless and says nothing about whether authored hours predict better, which is the
+    question the plan actually asked.</p>
+
+    <p>The measurement becomes possible once authoring produces hours rather than letters, which the
+    updated guidance now asks for. Re-run the same comparison at that point, on the same reconstruct-at-<code>base_sha</code>
+    method so predictions still carry no hindsight, and report the two errors and the sample size
+    whichever way it falls. A second tie, or a loss, remains a legitimate answer: the point of the
+    external check is that it can fail.</p>
+
+    <p>Do not anticipate the result by adjusting the letter weights in the meantime. They are a
+    compatibility mapping, and tuning them toward the conclusion would destroy the only independent
+    check this plan has.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="effort-unit" data-choice="neutral-worker-hours" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -290,10 +312,11 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ec-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ec-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration" data-resolved-at="2026-08-12T19:54:46+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Move effort to worker-hours and close the calibration loops</h4>
     <div class="r-fu-body"><p>Land the hours unit with lossless legacy mapping, the two separable calibration loops with scope-change exclusion and reported confidence, the derived capabilities cache with size-conditioned success curves and competence horizons that drive split decisions, and unit labelling on every surface. Close on whether hours predict remaining time better than the legacy weights, recording a negative result honestly if that is the answer.</p></div>
     <pre class="r-fu-prompt">/reckon-ship effort-calibration</pre>
+    <p class="r-fu-outcome">Shipped. All fourteen executable nodes landed: the worker-hours unit with lossless legacy mapping, three ranked completion sources with proxy records withheld from calibration, the diff boundary that records an absence rather than git stderr, hour-denominated path arithmetic, two provably separable calibration loops with scope-changed and proxy-timed runs excluded, a rebuildable capabilities cache whose changed-line counts are barred from ranking by an AST guard, competence horizons that refuse an oversized node with a split target while an absent measurement refuses nothing, the ledger repair that moved 58 records onto stream-derived completion, unit naming on every effort surface, and three corrective repairs taking the suite from 1,826/5 to 1,837/0. Nine of ten declared measures pass. The tenth — whether hours predict better than the letters — returned an exact tie at MAE 2.625391 h over 64 records because no plan yet carries authored hours, recorded as a negative result and carried as §9 behind an explicit trigger rather than tuned toward a pass. No followup: the remaining question needs data that does not exist yet, not further work.</p>
     </article>
 <article class="r-fu" data-id="f-ec-002" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration" data-resolved-at="2026-08-12T17:59:13+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Stamp completion from the run&#x27;s last event, not from promotion time</h4>
@@ -351,6 +374,9 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260812T205200" data-who="reckon-ship" data-when="2026-08-12T20:52:00Z">
     <div class="r-comment-body">Suite gate now PASSED after three corrective nodes — full suite on integrated 99583a4: 1,837 passed / 0 failed, exit 0, 54.3s, no failing test names. Repairs: promotion fixture b8a9934a178a4606ef89b798c7166dbf4ec27961 resolves its repository HEAD to a full SHA and promotes that, leaving the strict boundary untouched; non-plan validation scope 21288f82216afce3bb5ebaa1d47fbf16c0446337 strips the legacy milestone placeholder from non-plan canonical writes while a plan still refuses an em-dash and a non-plan still refuses a meaningful milestone; fleet verification 5ef88765c8ecb1be01fad7a2bfff257625974759 counts persisted tier fields directly from repository_inventory instead of reading audit warnings. The fleet root cause: effort_calibrated=false derived from a fixture's legacy plan-effort S emitted its uncalibrated warning under the broad legacy-capability-tier code, so verification mistook an effort diagnostic for a persisted tier — the defect was inferring structure from a diagnostic string, not the new field. Two coordinator errors recorded: a manifest reported commit 21288f8fdd927ed6e169968cb8f5ef70bc333411 which does not exist, caught only because git merge refused it; and the fleet node's gate command named a test file a concurrent node owned, so its lane could not go green regardless of its own work.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260812T211500" data-who="reckon-ship" data-when="2026-08-12T21:15:00Z">
+    <div class="r-comment-body">prediction-comparison landed — no commit, analysis at revision 8023dc6 with tests/test_calibration.py 9 passed / 0 failed; NEGATIVE RESULT recorded as the finding. 75 ledger records examined, 64 calibration-usable after excluding 4 scope-changed, 1 untrustworthy-completion, 5 lacking an agent configuration and 1 zero-duration. Hours-based MAE 2.625391 worker-hours; legacy-letter MAE 2.625391 worker-hours; exact tie, neither lower. The tie is by construction: all 64 usable snapshots resolved hours through the legacy 1/2/4/8 fallback because no plan in the sample carried an authored plan-effort-hours, the unit having landed in this same sprint. Two numerically identical predictors cannot separate, so the plan's closing question is unanswered by construction — while the seven-digit identity over 64 records is a clean demonstration that the migration is lossless. Each prediction was reconstructed from plan state at its run's own base_sha, so none benefits from hindsight. Per the plan's own constraint the weights were not adjusted, the comparator was not softened, and no subset was selected to manufacture a difference. Re-measurement is now §9 behind an explicit trigger of 10 plans carrying authored hours. Artifacts docs/evidence/archive/effort-calibration-landed.html#prediction</div>
 </div>
 </section>
 </main>

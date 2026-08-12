@@ -39,7 +39,7 @@
         <tr><td>Cache is rebuildable</td><td>Delete and rebuild reproduced byte-equivalent figures; nothing is authored — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>Plan read, sprint capacity, plans list and authoring guidance all name worker-hours; unit grep found 0 bare figures — <a href="#unit-surfaced">§ unit surfaced</a></td><td>pass</td></tr>
-        <tr><td>Prediction beats the letters</td><td>—</td><td>open</td></tr>
+        <tr><td>Prediction beats the letters</td><td>Exact tie at MAE 2.625391 h over 64 usable records — a recorded negative result — <a href="#prediction">§ prediction</a></td><td>negative</td></tr>
         <tr><td>Suite green</td><td>Failed at 1,826/5, repaired, then <strong>1,837 passed / 0 failed</strong> — <a href="#suite-regression">§ suite regression</a></td><td>pass</td></tr>
       </tbody>
     </table>
@@ -328,6 +328,53 @@
     <p>One honest limitation recorded by the worker: the fleet search reads explicit hours from each
     plan endpoint because discovery inventory still carries only the compatibility letter. The figure is
     correct; the path to it is less direct than it will be once inventory carries hours.</p>
+  </section>
+
+  <section id="prediction">
+    <h2>The closing gate — hours did not beat the letters, and could not have</h2>
+
+    <p>No commit; analysis only, at repository revision <code>8023dc6</code>. The full calibration suite
+    stayed green alongside it: 9 passed, 0 failed.</p>
+
+    <p>Each prediction was reconstructed from plan state as committed at the run's own
+    <code>base_sha</code> rather than from today's plan, so no prediction benefits from hindsight.
+    Hours-based remaining effort used historical <code>effort_hours</code> × (1 − historical
+    <code>impl</code>); the comparator used the historical S/M/L/XL mapping 1/2/4/8 against the same
+    remaining fraction, matching the pre-migration implementation.</p>
+
+    <table>
+      <thead><tr><th>Quantity</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Ledger records examined</td><td>75</td></tr>
+        <tr><td>Calibration-usable</td><td>64</td></tr>
+        <tr><td>Excluded — scope-changed</td><td>4</td></tr>
+        <tr><td>Excluded — untrustworthy completion</td><td>1</td></tr>
+        <tr><td>Excluded — no agent configuration</td><td>5</td></tr>
+        <tr><td>Excluded — zero duration</td><td>1</td></tr>
+        <tr><td>Hours-based MAE</td><td><strong>2.625391 worker-hours</strong></td></tr>
+        <tr><td>Legacy-letter MAE</td><td><strong>2.625391 worker-hours</strong></td></tr>
+        <tr><td>Lower</td><td>Neither — exact tie</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The tie is not a coincidence and not a measurement of the hypothesis.</strong> All 64
+    usable snapshots resolved their hours through the legacy letter fallback, because not one plan in
+    the sample carried an independently authored <code>plan-effort-hours</code> — the unit landed during
+    this same sprint, so every historical plan still resolves 1/2/4/8. Two numerically identical
+    predictors cannot separate, and the identity is what makes the result informative in a different
+    direction: it is a clean demonstration that the migration is <em>lossless</em>, since the new
+    arithmetic reproduces the old to seven digits over 64 records.</p>
+
+    <p>So the plan's closing question is <strong>unanswered by construction</strong>, and that is the
+    finding rather than a shortfall to tune away. The plan's own constraint anticipated exactly this and
+    forbids the alternative: the weights were not adjusted, the comparator was not softened, and no
+    subset was selected to manufacture a difference. Testing whether authored hours predict better
+    requires plans that carry authored hours, which is a trigger for a later re-measurement, not work
+    that can be finished now.</p>
+
+    <p>Worth noting what the exclusions cost. Eleven of 75 records were unusable, and 5 of those simply
+    lacked an agent configuration — a gap in older records rather than a defect in the current path. The
+    exclusions are reported rather than quietly dropped, which is the whole point of counting them.</p>
   </section>
 
   <section id="suite-regression">
