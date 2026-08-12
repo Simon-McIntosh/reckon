@@ -40,7 +40,7 @@
         <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>Plan read, sprint capacity, plans list and authoring guidance all name worker-hours; unit grep found 0 bare figures — <a href="#unit-surfaced">§ unit surfaced</a></td><td>pass</td></tr>
         <tr><td>Prediction beats the letters</td><td>—</td><td>open</td></tr>
-        <tr><td>Suite green</td><td>1,731 passed / 0 failed at the integrated commit — <a href="#integration-suite">§ integration suite</a></td><td>pass</td></tr>
+        <tr><td>Suite green</td><td><strong>1,826 passed / 5 FAILED</strong> at the fully integrated commit — <a href="#suite-regression">§ suite regression</a></td><td>fail</td></tr>
       </tbody>
     </table>
   </section>
@@ -330,6 +330,58 @@
     correct; the path to it is less direct than it will be once inventory carries hours.</p>
   </section>
 
+  <section id="suite-regression">
+    <h2>Gate FAILED — five integration regressions no single node's gate could see</h2>
+
+    <p>The full suite on integrated revision <code>279b6f1</code>: <strong>1,826 passed, 5 failed,
+    exit 1</strong>, 58.7 s. Every one of the fifteen nodes landed so far passed its own scoped gate,
+    and the suite still broke — which is the entire argument for keeping a separate integration gate
+    rather than trusting the sum of scoped ones. Downstream work is <strong>held</strong> per
+    <code>gates.on_fail</code>, not worked around.</p>
+
+    <table>
+      <thead><tr><th>Failing test</th><th>Cause</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>test_budget.py::test_promotion_preserves_backend_when_the_agent_block_is_absent</code></td>
+          <td>The fixture promotes the placeholder revision <code>deadbee</code>, which the new commit
+          boundary correctly refuses. The test asserts the old contract.</td>
+        </tr>
+        <tr>
+          <td><code>test_fleet_migration.py::test_fleet_run_snapshots_every_mount_and_applies_only_selected_project</code></td>
+          <td>Observed a rolled-back state where it expected verified.</td>
+        </tr>
+        <tr>
+          <td><code>test_fleet_migration.py::test_install_failure_restores_snapshot_exactly</code></td>
+          <td>Verification rejected one legacy capability before the deliberately injected installation
+          failure, so the test never reached the failure it was written to exercise.</td>
+        </tr>
+        <tr>
+          <td><code>test_fleet_migration.py::test_cli_and_commit_record_keep_ledger_machine_readable</code></td>
+          <td>A CLI result lacked the <code>after</code> key.</td>
+        </tr>
+        <tr>
+          <td><code>test_provenance.py::test_non_plan_canonical_dump_omits_neutral_plan_defaults</code></td>
+          <td>A neutral milestone value of an em-dash reached <em>plan-only</em> validation on a
+          <em>non-plan</em> canonical dump — so the tightened milestone constraint is firing where it
+          should not apply.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The five are not one fault. The first is a stale fixture asserting a contract this sprint
+    deliberately changed, and its repair is to update the fixture, not to loosen the boundary. The last
+    is a genuine defect in the tightening itself: a constraint scoped to plans is being applied to a
+    non-plan resource, which is a scoping bug rather than a validation that is too strict. The three
+    fleet-migration failures share a neighbourhood — snapshot, verification and CLI reporting around the
+    same migration path — and the likeliest common cause is a schema addition reaching a verification
+    step that enumerates known fields.</p>
+
+    <p>The verification node modified no repository file and did not rerun the suite, which is what a
+    read-only gate should do: report the failure precisely enough to scope its repair, and change
+    nothing.</p>
+  </section>
+
   <section id="ledger-repair">
     <h2>A repair pass, and what it says the ledger can become</h2>
 
@@ -374,8 +426,61 @@
 
     <p>Against the earlier finding that 59 records yielded zero usable configurations, this is the
     route out: a write pass would move roughly 58 records into the trustworthy sources that effort
-    reporting accepts. The pass is deliberately not yet run — it rewrites the same file that every
-    promotion in this session writes, so it is sequenced for a wave with no promotion in flight.</p>
+    reporting accepts.</p>
+
+    <h3>The write pass, and the measurements it unlocked</h3>
+
+    <p>Commit <code>540ccde</code>. The authorised pass repaired <strong>58 records</strong>, left 9
+    already correct, reported 1 unusable, and advanced the ledger once from version 80 to 81. A second
+    identical invocation reported <code>updated=0</code>, <code>written=false</code>, version 81 to 81 —
+    idempotent, not merely repeatable. A structural comparison proved exactly 58 records changed and
+    that only <code>completed_at</code>, <code>completed_at_source</code> and
+    <code>worker_seconds</code> changed within them.</p>
+
+    <table>
+      <thead><tr><th>Completion source</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><em>absent</em></td><td>38</td><td>1</td></tr>
+        <tr><td><code>promotion_time</code></td><td>9</td><td>0</td></tr>
+        <tr><td><code>provided</code></td><td>12</td><td>0</td></tr>
+        <tr><td><code>stream_mtime</code></td><td>9</td><td>65</td></tr>
+        <tr><td><code>terminal_event</code></td><td>0</td><td>2</td></tr>
+      </tbody>
+    </table>
+
+    <p>The one streamless record, <code>r-20260812T084627660648-suite-native</code>, was reported
+    <code>action=unusable</code> and <code>calibration_usable=false</code> and left alone — its
+    canonical byte hash <code>d49427cc…c7c25d85</code> was identical before and after, which is the
+    proof that a record without evidence was not repaired with a guess.</p>
+
+    <p><strong>What the repaired ledger then says about the letters.</strong> Before the repair,
+    <code>uniform-worker-dispatch</code> reported a mean of 252.7 minutes per node with a 405.9-minute
+    spread. After it, the per-plan means collapse into a plausible band and the totals become
+    comparable against the declared letters read as hours:</p>
+
+    <table>
+      <thead><tr><th>Plan</th><th>Declared</th><th>As hours</th><th>Measured worker-time</th><th>Runs</th></tr></thead>
+      <tbody>
+        <tr><td><code>inflight-visibility</code> (complete)</td><td>M</td><td>2.0 h</td><td>0.65 h</td><td>7</td></tr>
+        <tr><td><code>derived-gate-state</code></td><td>XL</td><td>8.0 h</td><td>2.3 h</td><td>27</td></tr>
+        <tr><td><code>effort-calibration</code> (partial)</td><td>L</td><td>4.0 h</td><td>1.2 h</td><td>13</td></tr>
+        <tr><td><code>budget-aware-dispatch</code></td><td>M</td><td>2.0 h</td><td>0.60 h</td><td>4</td></tr>
+        <tr><td><code>north-star-orientation</code> (partial)</td><td>M</td><td>2.0 h</td><td>0.27 h</td><td>3</td></tr>
+        <tr><td><code>uniform-worker-dispatch</code></td><td>L</td><td>4.0 h</td><td>7.8 h</td><td>11</td></tr>
+      </tbody>
+    </table>
+
+    <p>Read carefully, because two caveats matter more than the headline. <code>uniform-worker-dispatch</code>
+    still carries a single 413-minute run against a 1.1-minute minimum; without it the plan sits near
+    0.9 h, so that row is one outlier rather than a counter-example, and it is a candidate for the same
+    scrutiny the repair just applied. And <strong>measured worker-time is not elapsed work</strong>: it
+    counts only what a worker process spent, excluding every minute the orchestrator spent scoping,
+    reviewing, merging and recording — which in this session was a large fraction of the wall clock. So
+    the honest statement is that the legacy letters over-estimate <em>worker</em> hours by roughly
+    threefold on completed plans, not that the work was three times cheaper than believed.</p>
+
+    <p>Four runs are excluded as scope-changed, exactly as intended: three of this sprint's own widened
+    nodes plus one earlier. They are counted where a reader can see them rather than averaged away.</p>
   </section>
 
   <section id="stream-carries-no-timestamps">
