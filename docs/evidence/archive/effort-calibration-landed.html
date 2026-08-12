@@ -31,7 +31,7 @@
     <table>
       <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
       <tbody>
-        <tr><td>Migration is lossless</td><td>—</td><td>open</td></tr>
+        <tr><td>Migration is lossless</td><td>Letters map to 1/2/4/8 hours with uncalibrated plans marked, and a plan with neither field gains nothing — <a href="#hours-unit">§ hours unit</a></td><td>pass</td></tr>
         <tr><td>Loops are separable</td><td>—</td><td>open</td></tr>
         <tr><td>Scope change excluded</td><td>—</td><td>open</td></tr>
         <tr><td>Cold start terminates</td><td>—</td><td>open</td></tr>
@@ -90,6 +90,38 @@
         <tr><td>Scoped suite</td><td><code>tests/test_crew.py tests/test_ledger.py</code> — 97 passed, 0 failed, 6.4 s; 3 new tests; ruff clean</td></tr>
       </tbody>
     </table>
+  </section>
+
+  <section id="hours-unit">
+    <h2>Effort in worker-hours, with the letters mapping losslessly onto it</h2>
+
+    <p>Commit <code>2325240</code> — <code>reckon/_plan_html.py</code>,
+    <code>reckon/_schema.py</code>, <code>reckon/_store.py</code>,
+    <code>docs/_shared/plan.schema.json</code>, <code>tests/test_schema.py</code>,
+    <code>tests/test_capability.py</code>; 198 insertions, 5 deletions across 6 files. Gate
+    <strong>passed</strong>: 1,098 passed, 0 failed, 24.3 s, 7 new test functions over 10 collected
+    cases, ruff clean.</p>
+
+    <p><code>plan-effort-hours</code> validates as a positive number at quarter-hour granularity —
+    published in the regenerated schema as <code>multipleOf 0.25</code> — and
+    <code>effort_calibrated</code> joins it as read-only provenance so a resolved figure always
+    states whether it was authored or inferred. Legacy <code>effort</code> is marked deprecated
+    rather than removed, which is what makes the migration cost nothing.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Explicit hours</td><td>3.25 h round-trips; 2.75 h through the state-set operation is accepted and marked calibrated</td></tr>
+        <tr><td>Hours and a letter together</td><td>5.25 h with <code>XL</code> resolves 5.25, <code>effort_calibrated=true</code>, and reports the letter redundant</td></tr>
+        <tr><td>Letter only</td><td><code>S</code>→1.0, <code>M</code>→2.0, <code>L</code>→4.0, <code>XL</code>→8.0, <code>effort_calibrated=false</code>, reported uncalibrated</td></tr>
+        <tr><td>Neither field</td><td>Gains none of <code>effort</code>, <code>effort_hours</code>, <code>effort_calibrated</code> or <code>compatibility_warnings</code></td></tr>
+        <tr><td>Writes do not fabricate</td><td>A normal write preserves uncalibrated status instead of authoring derived hours into the document</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row is the property that keeps the unit meaningful: an inferred figure is resolved on
+    read and never written back, so the mapping stays a compatibility read rather than becoming a
+    silent re-estimate of every historical plan.</p>
   </section>
 
   <section id="stream-carries-no-timestamps">
