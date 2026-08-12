@@ -12,6 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.cli as cli
+import reckon.serve as serve
 
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -99,6 +100,13 @@ def _invoke_build(docs_dir: Path, project: str = "fixture"):
     return CliRunner().invoke(cli.main, ["build", str(docs_dir), "--project", project])
 
 
+def _loaded_jsx(html: str) -> set[str]:
+    return {
+        reference.lstrip("/")
+        for reference in re.findall(r'<script[^>]+src="([^"]+\.jsx)"', html)
+    }
+
+
 @pytest.fixture()
 def built_source_site(tmp_path):
     docs_dir = tmp_path / "docs"
@@ -138,7 +146,19 @@ def test_build_writes_relative_index_and_nojekyll(built_source_site):
     assert "_ui/glyphs.jsx" in local_references
     assert "_ui/_shared.jsx" in local_references
     assert "_ui/prompts.js" in local_references
+    assert "_ui/crew.jsx" in local_references
     assert (docs_dir / ".nojekyll").is_file()
+
+
+def test_spa_entry_points_load_the_same_jsx_files(built_source_site):
+    docs_dir, _, _ = built_source_site
+    built = _loaded_jsx((docs_dir / "index.html").read_text())
+    checked_in = _loaded_jsx((REPO_ROOT / "docs" / "index.html").read_text())
+    live = _loaded_jsx(serve._render_spa_html("fixture"))
+
+    assert "_ui/crew.jsx" in built
+    assert live == checked_in
+    assert built == checked_in
 
 
 def test_build_bakes_discovery_and_preserves_authored_project_state(

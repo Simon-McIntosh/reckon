@@ -1,5 +1,5 @@
 // Reckon shell — top bar + three-column body.
-// Top bar: brand · sp · screen tabs (Cockpit / Sprint).
+// Top bar: brand, search, view tabs and settings.
 // Body: filters · plans list · content (with two-row title bar).
 
 function parseHash() {
@@ -8,6 +8,7 @@ function parseHash() {
   if (h.startsWith("plan/")) return { view: "plan", slug: decodeURIComponent(h.slice(5)) };
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
   if (h === "graph") return { view: "graph" };
+  if (h === "crew") return { view: "crew" };
   if (h === "plans") return { view: "plan", slug: null };
   if (h === "sprints") return { view: "sprint", sprint: null };
   return { view: "cockpit" };
@@ -25,6 +26,7 @@ function useHashRoute() {
     else if (to.view === "plan") window.location.hash = `#plan/${encodeURIComponent(to.slug)}`;
     else if (to.view === "sprint") window.location.hash = `#sprint/${encodeURIComponent(to.sprint)}`;
     else if (to.view === "graph") window.location.hash = "#graph";
+    else if (to.view === "crew") window.location.hash = "#crew";
   }, []);
   return [route, nav];
 }
@@ -99,6 +101,10 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             <path d="M5 4l6 3.5M5 12l6-3.5"/>
           </svg>
           Graph
+        </button>
+        <button className={`r-glyph ${view === "crew" ? "active" : ""}`} onClick={() => onNav({ view: "crew" })} title="Crew">
+          {window.GLYPHS?.crew}
+          Crew
         </button>
       </div>
       <div className="top-r">
@@ -932,6 +938,7 @@ function App() {
     let hash = "#cockpit";
     if (isFromProject) {
       if (route.view === "graph") hash = "#graph";
+      else if (route.view === "crew") hash = "#crew";
       else if (route.view === "plan") hash = "#plans";
       else if (route.view === "sprint") hash = "#sprints";
       else hash = "#cockpit";
@@ -1014,7 +1021,7 @@ function App() {
           setDensity={setDensity}
           projects={projects}
         />
-      <div className={`r-3col ${filtersHidden ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint") ? "overview-mode" : ""}`}>
+      <div className={`r-3col ${filtersHidden ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}>
         <button
           className="r-filter-handle"
           onClick={() => setFiltersHidden(c => !c)}
@@ -1036,6 +1043,7 @@ function App() {
             {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
             {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
             {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
+            {route.view === "crew" && <CrewView />}
           </div>
         </div>
       </div>
