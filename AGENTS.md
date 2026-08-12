@@ -633,6 +633,23 @@ Legacy `tier`/`model_tier` metadata is compatibility input only. It must not
 control runtime routing and should migrate to neutral capability requirements
 when the containing resource is next edited.
 
+### Crew command surface
+
+Crew operations use one backend-agnostic CLI surface. Commands emit JSON by
+default (`--pretty` only changes formatting), and run records remain available
+to later orchestrator sessions. The live plan supplies semantic context; the
+dispatch carries only the node definition and its scope, time, evidence and
+delivery fences.
+
+| Operation | Command | Contract |
+|---|---|---|
+| Dispatch | `reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal "<one deliverable>" --done-when "<measure>" --write-path <path> --time-budget <duration> --manifest <absolute-path> --session <session>` | Validates the node, resolves flight config and atomically creates the detached worktree plus either a launched CLI run or an in-harness dispatch directive. Repeat `--write-path` for the complete exclusive scope; use `--dry-run` to validate a wave without creating anything. |
+| Attach | `reckon crew attach --run <run-id> --task <harness-task-id>` | Binds an in-harness task to the prepared run record returned by dispatch. CLI-backed runs are already bound when launched and do not use this step. |
+| Observe | `reckon crew observe --run <run-id> [--project <project>]` | Folds the event stream, manifest presence and process liveness into the durable run record, including the phase, session id and any backend budget signal. An absent budget signal remains `unknown`; it is never evidence of exhaustion. |
+| Resume | `reckon crew resume --run <run-id> --advice "<answer>"` | Answers a structured `NEEDS-HELP:` report in the same worker session so its prior context is retained. Use `--print-only` to inspect the resume invocation without launching it. |
+| Stop | `reckon crew stop --run <run-id>` | Stops a spawned run's process group and records the stopped phase. Use this for an intentional cancellation, not as a substitute for observing or recovering a quiet run. |
+| List | `reckon crew list` | Lists all live run pointers with node, plan, backend, phase, worktree and manifest path so a fresh orchestrator session can recover ownership. |
+
 ### Fleet patterns (canonical)
 
 | Situation | Pattern |
