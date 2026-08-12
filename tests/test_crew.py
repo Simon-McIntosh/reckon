@@ -104,6 +104,48 @@ def _node(**overrides) -> crew.TaskNode:
     return crew.TaskNode(**fields)
 
 
+def _set_plan_hours(repo: Path, hours: float) -> None:
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    plan.write_text(
+        plan.read_text().replace(
+            '<meta name="plan-slug" content="plan-a">',
+            '<meta name="plan-slug" content="plan-a">\n'
+            f'<meta name="plan-effort-hours" content="{hours}">',
+        )
+    )
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: set plan hours"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _capability_cache(*, horizon: float | None, speed: float = 1.0) -> dict:
+    agent = {
+        "backend": "alpha",
+        "launch": "cli",
+        "model": "some-model",
+        "effort": "high",
+        "sandbox": "worktree-full",
+    }
+    return {
+        "configurations": [
+            {
+                "key": json.dumps(agent, sort_keys=True, separators=(",", ":")),
+                "competence_horizon_hours": horizon,
+                "speed": {"mean": speed},
+            }
+        ]
+    }
+
+
 # ── The task-definition contract ────────────────────────────────────────────
 
 
@@ -455,6 +497,119 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     )
     assert record["pid"] == 4242
     assert Path(record["worktree"]).is_dir()
+
+
+def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
+    home, repo, monkeypatch
+) -> None:
+    _set_plan_hours(repo, 4.0)
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=2.5, speed=1.4),
+    )
+
+    with pytest.raises(crew.CompetenceLimit) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    payload = excinfo.value.verdict
+    assert payload == {
+        "adjusted_hours": pytest.approx(2.857143),
+        "agent_key": payload["agent_key"],
+        "allowed": False,
+        "competence_horizon_hours": 2.5,
+        "estimated_hours": 4.0,
+        "reason": "competence-horizon-exceeded",
+        "recommendation": (
+            "split into nodes no larger than 3.5 worker-hours for this agent "
+            "configuration"
+        ),
+        "speed_factor": 1.4,
+        "target_size_hours": 3.5,
+    }
+    assert "3.5 worker-hours" in str(excinfo.value)
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_records_work_below_the_selected_configuration_horizon(
+    home, repo, monkeypatch
+) -> None:
+    _set_plan_hours(repo, 1.5)
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=2.5, speed=0.9),
+    )
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *a, **k: 4242,
+    )
+
+    assert record["pid"] == 4242
+    assert record["competence"]["allowed"] is True
+    assert record["competence"]["reason"] == "within-competence-horizon"
+    assert record["competence"]["adjusted_hours"] == pytest.approx(1.666667)
+    assert record["competence"]["speed_factor"] == 0.9
+    assert record["competence"]["competence_horizon_hours"] == 2.5
+
+
+def test_configuration_without_a_measured_horizon_refuses_nothing(
+    home, repo, monkeypatch
+) -> None:
+    _set_plan_hours(repo, 100.0)
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=None, speed=0.1),
+    )
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *a, **k: 4242,
+    )
+
+    assert record["competence"]["allowed"] is True
+    assert record["competence"]["reason"] == "no-measured-horizon"
+    assert record["competence"]["estimated_hours"] == 100.0
+
+
+def test_empty_capabilities_cache_cannot_block_a_dispatch(
+    home, repo, monkeypatch
+) -> None:
+    _set_plan_hours(repo, 100.0)
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: {"configurations": []},
+    )
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *a, **k: 4242,
+    )
+
+    assert record["competence"]["allowed"] is True
+    assert record["competence"]["reason"] == "no-measured-horizon"
 
 
 def test_cli_plan_visibility_refusal_has_its_own_exit_code(
