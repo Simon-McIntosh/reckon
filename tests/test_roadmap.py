@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle
@@ -25,6 +27,8 @@ def _plan(
         "effort": effort,
         "roi": "high",
         "blocking": [],
+        "gates": [{"id": "evidence", "verdict": "passed"}],
+        "followups": [{"id": "next", "status": "open"}],
     }
 
 
@@ -199,18 +203,81 @@ def test_closed_sprint_history_does_not_duplicate_live_membership() -> None:
     assert result["pending_work"][0]["sprint"] == "current"
 
 
-def test_non_runnable_draft_is_deferred_without_becoming_a_blocker() -> None:
+def test_dispatchability_is_derived_separately_from_authorisation() -> None:
+    without_gate = _plan("without-gate")
+    without_gate["gates"] = []
+    without_followup = _plan("without-followup")
+    without_followup["followups"] = []
     result = build_roadmap(
         "sample",
-        [_plan("future", status="draft", sprint="later")],
-        [{"id": "later", "status": "planned", "items": ["future"]}],
+        [
+            _plan("authorised"),
+            _plan("awaiting-authorisation", status="draft"),
+            without_gate,
+            without_followup,
+        ],
+        [],
     )
 
-    assert result["ready_now"] == []
+    rows = {row["slug"]: row for row in result["pending_work"]}
+    assert rows["authorised"]["dispatchable"] is True
+    assert rows["authorised"]["authorised"] is True
+    assert rows["authorised"]["ready"] is True
+    assert rows["awaiting-authorisation"]["dispatchable"] is True
+    assert rows["awaiting-authorisation"]["authorised"] is False
+    assert rows["awaiting-authorisation"]["ready"] is False
+    assert rows["without-gate"]["missing_dispatchability"] == ["declared_gate"]
+    assert rows["without-followup"]["missing_dispatchability"] == ["open_followup"]
     assert result["blocked"] == []
-    assert [item["slug"] for item in result["deferred"]] == ["future"]
-    assert result["deferred"][0]["readiness"] == "deferred"
-    assert result["sprints"][0]["deferred"] == 1
+    assert {item["slug"] for item in result["deferred"]} == {
+        "awaiting-authorisation",
+        "without-gate",
+        "without-followup",
+    }
+
+
+def test_authorisation_report_lists_every_draft_with_age_and_decay_verdict() -> None:
+    today = date.today()
+    inventory = []
+    for slug, age_days in (
+        ("recent-draft", 12),
+        ("older-one", 61),
+        ("older-two", 75),
+        ("older-three", 90),
+        ("older-four", 120),
+    ):
+        plan = _plan(slug, status="draft")
+        plan["modified"] = (today - timedelta(days=age_days)).isoformat()
+        inventory.append(plan)
+    authorised = _plan("authorised")
+    authorised["modified"] = (today - timedelta(days=180)).isoformat()
+    inventory.append(authorised)
+
+    result = build_roadmap("sample", inventory, [])
+    report = result["authorisation"]
+    rows = {row["slug"]: row for row in report["authored_but_unauthorised"]}
+
+    assert report["count"] == 5
+    assert report["stale_count"] == 4
+    assert set(rows) == {
+        "recent-draft",
+        "older-one",
+        "older-two",
+        "older-three",
+        "older-four",
+    }
+    assert {slug: rows[slug]["age_days"] for slug in rows} == {
+        "recent-draft": 12,
+        "older-one": 61,
+        "older-two": 75,
+        "older-three": 90,
+        "older-four": 120,
+    }
+    assert rows["recent-draft"]["age_verdict"] == "current"
+    assert all(
+        rows[f"older-{name}"]["age_verdict"] == "stale"
+        for name in ("one", "two", "three", "four")
+    )
 
 
 def test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit() -> (

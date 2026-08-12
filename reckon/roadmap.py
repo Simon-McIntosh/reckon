@@ -12,6 +12,7 @@ from collections import defaultdict
 from typing import Any
 
 from reckon._schema import parse_plan_ref
+from reckon.doccheck import authorisation_staleness, modified_age_days
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -21,7 +22,7 @@ from reckon.lifecycle import (
 
 _EFFORT_WEIGHT = {"S": 1.0, "M": 2.0, "L": 4.0, "XL": 8.0}
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
-_RUNNABLE_STATUSES = frozenset({"pending", "active", "in-progress"})
+_AUTHORISED_STATUSES = frozenset({"pending", "active", "in-progress"})
 
 
 def _item_slug(item: Any) -> str:
@@ -46,6 +47,18 @@ def _remaining_effort(plan: dict[str, Any]) -> float:
 
 def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
+
+
+def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
+    missing: list[str] = []
+    if not any(isinstance(gate, dict) for gate in plan.get("gates") or []):
+        missing.append("declared_gate")
+    if not any(
+        isinstance(followup, dict) and followup.get("status", "open") == "open"
+        for followup in plan.get("followups") or []
+    ):
+        missing.append("open_followup")
+    return not missing, missing
 
 
 def _blocking_row(plan: dict[str, Any], ref: str) -> dict[str, Any] | None:
@@ -478,6 +491,7 @@ def build_roadmap(
     ready: list[dict[str, Any]] = []
     blocked: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
+    unauthorised: list[dict[str, Any]] = []
     for slug, plan in plans.items():
         status = _status(plan)
         if status in TERMINAL_STATUSES:
@@ -498,8 +512,11 @@ def build_roadmap(
             and not gate_blockers
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
+        dispatchable, missing_dispatchability = _dispatchability(plan)
+        authorised = status in _AUTHORISED_STATUSES
         is_ready = (
-            status in _RUNNABLE_STATUSES
+            dispatchable
+            and authorised
             and not dependency_blockers
             and not explicit_blockers
             and not gate_blockers
@@ -516,6 +533,9 @@ def build_roadmap(
             "slug": slug,
             "title": plan.get("title") or slug,
             "status": status,
+            "dispatchable": dispatchable,
+            "missing_dispatchability": missing_dispatchability,
+            "authorised": authorised,
             "effective_status": effective_status(
                 status, [*dependency_blockers, *explicit_blockers, *gate_blockers]
             ),
@@ -532,6 +552,22 @@ def build_roadmap(
             "readiness": readiness,
         }
         pending.append(row)
+        if status == "draft":
+            age_days = modified_age_days(plan.get("modified") or plan.get("last"))
+            unauthorised.append(
+                {
+                    "slug": slug,
+                    "title": plan.get("title") or slug,
+                    "status": status,
+                    "age_days": age_days,
+                    "age_verdict": authorisation_staleness(
+                        status=status,
+                        age_days=age_days,
+                    ),
+                    "dispatchable": dispatchable,
+                    "missing_dispatchability": missing_dispatchability,
+                }
+            )
         if is_ready:
             ready.append(row)
         elif is_blocked:
@@ -586,6 +622,13 @@ def build_roadmap(
     pending.sort(key=lambda row: (not row["ready"], *priority(row)))
     blocked.sort(key=priority)
     deferred.sort(key=priority)
+    unauthorised.sort(
+        key=lambda row: (
+            row["age_days"] is None,
+            -(row["age_days"] or 0),
+            row["slug"],
+        )
+    )
     immediate = [
         {
             "order": position,
@@ -671,6 +714,11 @@ def build_roadmap(
         "ready_now": ready,
         "blocked": blocked,
         "deferred": deferred,
+        "authorisation": {
+            "authored_but_unauthorised": unauthorised,
+            "count": len(unauthorised),
+            "stale_count": sum(row["age_verdict"] == "stale" for row in unauthorised),
+        },
         "immediate_roadmap": immediate,
         "critical_path": critical,
         "open_paths": open_paths,
