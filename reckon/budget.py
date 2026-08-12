@@ -41,7 +41,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-import re
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
@@ -173,29 +172,39 @@ class _RecordedReadings(dict[str, _Reading]):
         self.unattributed = tuple(unattributed)
 
 
-def _manifest_backend(
-    record: Mapping[str, Any], config: Mapping[str, Any] | None
+def _stream_evidence_backend(
+    budget_block: Mapping[str, Any], config: Mapping[str, Any] | None
 ) -> str | None:
-    """Recover one backend from an unambiguous manifest path marker.
+    """Match a normalised stream reading to its configured producer.
 
-    A durable record can carry the harness-owned delivery path without a
-    backend field. Backend names are user configuration, so matching a whole
-    path component (or its numeric harness suffix) stays provider-neutral.
-    Ambiguity is preserved rather than guessed.
+    A backend's stream interpreter writes both the headroom posture and its
+    explanation into the durable budget block. Asking each configured
+    interpreter for that same empty-reading shape recovers the producer without
+    consulting orchestration-owned paths. Multiple matches stay unattributed.
     """
-    path = str(record.get("manifest_path") or "")
-    if not path:
-        return None
-    components = Path(path).parts
-    names = [str(name) for name in ((config or {}).get("backends") or {})]
-    matches = {
-        name
-        for name in names
-        if any(
-            component == name or re.fullmatch(rf"{re.escape(name)}-[0-9]+", component)
-            for component in components
-        )
-    }
+    evidence = (
+        budget_block.get("headroom"),
+        str(budget_block.get("detail") or ""),
+    )
+    matches: set[str] = set()
+    configured = (config or {}).get("backends") or {}
+    for name, settings in configured.items():
+        if not isinstance(settings, Mapping) or settings.get("launch") != "cli":
+            continue
+        try:
+            interpreter = _backends.dialect_for(settings)
+        except _backends.BackendError:
+            continue
+        normalise = getattr(interpreter, "_budget", None)
+        if not callable(normalise):
+            continue
+        try:
+            template = normalise({})
+        except (TypeError, ValueError):
+            continue
+        signature = (template.get("headroom"), str(template.get("detail") or ""))
+        if signature == evidence:
+            matches.add(str(name))
     return next(iter(matches)) if len(matches) == 1 else None
 
 
@@ -221,13 +230,13 @@ def _record_backend(
         if candidate:
             return str(candidate), source
 
-    # A silent block carries no measurement, so path-based recovery is neither
-    # needed nor useful. Restrict the fallback to the known signals that
-    # would otherwise disappear from the budget view.
+    # A silent block carries no measurement, so evidence recovery is neither
+    # needed nor useful. Restrict the fallback to known signals that would
+    # otherwise disappear from the budget view.
     if budget_block.get("headroom") == "known":
-        recovered = _manifest_backend(record, config)
+        recovered = _stream_evidence_backend(budget_block, config)
         if recovered:
-            return recovered, "manifest-path"
+            return recovered, "budget-evidence"
     return None, "unattributed"
 
 
