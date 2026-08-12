@@ -668,7 +668,7 @@ class PlanState(BaseModel):
                 "effort_hours": (None,),
                 "effort_calibrated": (None,),
                 "effort": ("", "M"),
-                "milestone": ("",),
+                "milestone": ("", "—"),
                 "sprint": ("", None),
                 "north_star": ("", None),
                 "capability": (None,),

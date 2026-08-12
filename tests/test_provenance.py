@@ -126,11 +126,12 @@ def test_non_plan_strict_write_rejects_meaningful_plan_fields(field, value):
         state.validate_for_write()
 
 
-def test_non_plan_canonical_dump_omits_neutral_plan_defaults():
+@pytest.mark.parametrize("resource_type", ["research", "evidence"])
+def test_non_plan_canonical_dump_omits_neutral_plan_defaults(resource_type):
     state = PlanState.model_validate(
         {
             "project": "proj",
-            "type": "research",
+            "type": resource_type,
             "slug": "study",
             "title": "Study",
             "status": "reference",
