@@ -115,6 +115,8 @@ RESOURCE_TYPE_ENUM = [
 ]
 SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
 _RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_OPTIONAL_IDENTIFIER_PATTERN = r"^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$"
+_OPTIONAL_IDENTIFIER_RE = re.compile(_OPTIONAL_IDENTIFIER_PATTERN)
 
 
 def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
@@ -466,7 +468,11 @@ class PlanState(BaseModel):
         description="Deprecated compatibility input; use effort_hours",
         json_schema_extra={**_enum(EFFORT_ENUM), "deprecated": True},
     )
-    milestone: str = "—"
+    milestone: str = Field(
+        "",
+        description="Milestone identifier, or empty when unassigned",
+        json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
+    )
     sprint: str | None = None
     north_star: str | None = None
     capability: CapabilityRequest | None = None
@@ -643,6 +649,12 @@ class PlanState(BaseModel):
             errors.append(f"roi: {self.roi!r} not in {ROI_ENUM}")
         if self.type == "plan" and self.effort and self.effort not in EFFORT_ENUM:
             errors.append(f"effort: {self.effort!r} not in {EFFORT_ENUM}")
+        if self.type == "plan" and not _OPTIONAL_IDENTIFIER_RE.fullmatch(
+            self.milestone
+        ):
+            errors.append(
+                f"milestone: {self.milestone!r} must be an identifier or empty"
+            )
         if self.type == "plan" and self.capability:
             errors.extend(
                 validate_capability(self.capability.model_dump(by_alias=True))
@@ -656,7 +668,7 @@ class PlanState(BaseModel):
                 "effort_hours": (None,),
                 "effort_calibrated": (None,),
                 "effort": ("", "M"),
-                "milestone": ("", "—"),
+                "milestone": ("",),
                 "sprint": ("", None),
                 "north_star": ("", None),
                 "capability": (None,),
