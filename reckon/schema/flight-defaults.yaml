@@ -1,0 +1,45 @@
+# Shipped flight-control defaults — the bottom resolution layer.
+#
+# Ships in the wheel so a fresh install works with no configuration at all.
+# Validated against flight.yaml like every other layer, and reported as the
+# `shipped` origin in `reckon flight` provenance.
+#
+# Deliberately names no provider, no command and no model. The only backend
+# defined here is the calling harness itself, which needs none of those; a
+# host or project layer adds external backends as its own data.
+
+version: 1
+default_backend: native
+
+backends:
+  native:
+    launch: in-harness
+    sandbox: worktree-full
+    session_reuse: false
+    concurrency: 4
+    time_budget: 25m
+
+roles:
+  implement: {}
+  cleanup: {}
+  review:
+    sandbox: read-only
+  investigate:
+    sandbox: read-only
+
+gates:
+  enforce: strict
+  require_evidence: true
+  on_fail: hold
+
+fences:
+  time_budget: 25m
+  needs_help_after_failures: 2
+  manifest_required: true
+
+worktree:
+  cleanup: conservative
+
+summary:
+  reflex: what-why-how-when
+  at: [dispatch, completion, micro-plan]

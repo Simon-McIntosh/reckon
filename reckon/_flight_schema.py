@@ -1,0 +1,293 @@
+# Generated from reckon/schema/flight.yaml — do not edit.
+# Regenerate with: uv run python scripts/regen_flight_schema.py
+from __future__ import annotations
+
+import re
+import sys
+from datetime import (
+    date,
+    datetime,
+    time
+)
+from decimal import Decimal
+from enum import Enum
+from typing import (
+    Any,
+    ClassVar,
+    Literal,
+    Optional,
+    Union
+)
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer
+)
+
+
+metamodel_version = "1.11.0"
+version = "None"
+
+
+class ConfiguredBaseModel(BaseModel):
+    model_config = ConfigDict(
+        serialize_by_alias = True,
+        validate_by_name = True,
+        validate_assignment = True,
+        validate_default = True,
+        extra = "forbid",
+        arbitrary_types_allowed = True,
+        use_enum_values = True,
+        strict = False,
+    )
+
+
+
+
+
+class LinkMLMeta(RootModel):
+    root: dict[str, Any] = {}
+    model_config = ConfigDict(frozen=True)
+
+    def __getattr__(self, key:str):
+        return getattr(self.root, key)
+
+    def __getitem__(self, key:str):
+        return self.root[key]
+
+    def __setitem__(self, key:str, value):
+        self.root[key] = value
+
+    def __contains__(self, key:str) -> bool:
+        return key in self.root
+
+
+linkml_meta = None
+
+class LaunchMode(str, Enum):
+    """
+    How a worker process for a backend is started.
+    """
+    cli = "cli"
+    """
+    Spawned as an external command resolved on PATH.
+    """
+    in_harness = "in-harness"
+    """
+    Run inside the calling harness; no process is spawned.
+    """
+
+
+class SandboxMode(str, Enum):
+    """
+    The filesystem blast radius granted to a worker.
+    """
+    read_only = "read-only"
+    """
+    No writes beyond the worker's own manifest file.
+    """
+    workspace_write = "workspace-write"
+    """
+    Writable workspace. Inherited by child processes, so it breaks test runners, builds and anything spawning subprocesses.
+    """
+    worktree_full = "worktree-full"
+    """
+    Full access, bounded by a detached worktree. The worktree, not the sandbox, is the blast-radius boundary.
+    """
+
+
+class GateEnforcement(str, Enum):
+    """
+    How strictly evidence gates are applied.
+    """
+    strict = "strict"
+    """
+    A gate without its evidence stops the work it guards.
+    """
+    advisory = "advisory"
+    """
+    A missing gate is reported but does not stop work.
+    """
+    disabled = "disabled"
+    """
+    Gates are not evaluated. Spelled out rather than `off`, which YAML reads as the boolean false in both this schema and the config files it validates.
+    """
+
+
+class GateFailureAction(str, Enum):
+    """
+    What happens to downstream work when a gate fails.
+    """
+    hold = "hold"
+    """
+    Downstream work stays visibly closed.
+    """
+    warn = "warn"
+    """
+    Downstream work proceeds with a recorded warning.
+    """
+    continue_ = "continue"
+    """
+    The failure is recorded and otherwise ignored.
+    """
+
+
+class WorktreeCleanup(str, Enum):
+    """
+    How aggressively finished worktrees are removed.
+    """
+    conservative = "conservative"
+    """
+    Remove only a clean worktree whose commit is reachable.
+    """
+    force = "force"
+    """
+    Remove regardless of dirty or unmerged state.
+    """
+    never = "never"
+    """
+    Leave every worktree in place for manual triage.
+    """
+
+
+class SummaryOccasion(str, Enum):
+    """
+    A point in a worker's life at which it reports.
+    """
+    dispatch = "dispatch"
+    completion = "completion"
+    micro_plan = "micro-plan"
+
+
+
+class FlightConfig(ConfiguredBaseModel):
+    """
+    A complete flight configuration, or one layer of one.
+    """
+    version: Optional[int] = Field(default=None, description="""Schema version of this configuration document.""", ge=1)
+    default_backend: Optional[str] = Field(default=None, description="""Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.""")
+    backends: Optional[dict[str, BackendConfig]] = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
+    roles: Optional[dict[str, RoleConfig]] = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
+    gates: Optional[GateConfig] = Field(default=None)
+    fences: Optional[FenceConfig] = Field(default=None)
+    worktree: Optional[WorktreeConfig] = Field(default=None)
+    summary: Optional[SummaryConfig] = Field(default=None)
+
+
+class BackendConfig(ConfiguredBaseModel):
+    """
+    One worker backend and the routing knobs that apply to it.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    launch: Optional[LaunchMode] = Field(default=None, description="""How this backend's workers are started.""")
+    command: Optional[str] = Field(default=None, description="""Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.""")
+    auth_check: Optional[list[str]] = Field(default=None, description="""Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.""")
+    model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
+    session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
+    concurrency: Optional[int] = Field(default=None, description="""Maximum simultaneous workers this backend will run.""", ge=1)
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+
+    @field_validator('time_budget')
+    def pattern_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class RoleConfig(ConfiguredBaseModel):
+    """
+    A routing overlay for one kind of node. Every slot is optional; an unset slot inherits from the selected backend.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    backend: Optional[str] = Field(default=None, description="""Backend this role dispatches to. Absent means `default_backend`.""")
+    model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
+    session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
+    concurrency: Optional[int] = Field(default=None, description="""Maximum simultaneous workers this backend will run.""", ge=1)
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+
+    @field_validator('time_budget')
+    def pattern_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class GateConfig(ConfiguredBaseModel):
+    """
+    How evidence gates are enforced.
+    """
+    enforce: Optional[GateEnforcement] = Field(default=None)
+    require_evidence: Optional[bool] = Field(default=None, description="""Whether a gate must produce recorded evidence to be considered met.""")
+    on_fail: Optional[GateFailureAction] = Field(default=None)
+
+
+class FenceConfig(ConfiguredBaseModel):
+    """
+    Limits a worker applies to itself before asking for help.
+    """
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    needs_help_after_failures: Optional[int] = Field(default=None, description="""Consecutive failures after which a worker stops retrying and asks for help. Zero disables the fence.""", ge=0)
+    manifest_required: Optional[bool] = Field(default=None, description="""Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.""")
+
+    @field_validator('time_budget')
+    def pattern_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class WorktreeConfig(ConfiguredBaseModel):
+    """
+    Worktree lifecycle policy.
+    """
+    cleanup: Optional[WorktreeCleanup] = Field(default=None)
+
+
+class SummaryConfig(ConfiguredBaseModel):
+    """
+    When and how workers report.
+    """
+    reflex: Optional[str] = Field(default=None, description="""The reporting shape a worker follows when it summarises.""")
+    at: Optional[list[SummaryOccasion]] = Field(default=None, description="""Occasions on which a worker emits a summary.""")
+
+
+# Model rebuild
+# see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
+FlightConfig.model_rebuild()
+BackendConfig.model_rebuild()
+RoleConfig.model_rebuild()
+GateConfig.model_rebuild()
+FenceConfig.model_rebuild()
+WorktreeConfig.model_rebuild()
+SummaryConfig.model_rebuild()

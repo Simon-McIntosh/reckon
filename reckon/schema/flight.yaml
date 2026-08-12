@@ -1,0 +1,296 @@
+id: https://reckon/schema/flight
+name: reckon-flight
+title: Reckon Flight Control
+description: >-
+  The tunable surface for worker routing, gate strictness and worker fences.
+
+  This schema constrains the SHAPE of a flight configuration only. Backend
+  names, commands, model identifiers and effort levels are user data supplied
+  by a configuration file's values; the schema never enumerates them, so no
+  concrete model identifier, provider name or relative hierarchy is baked into
+  reckon or its generated artifacts.
+
+  Every slot is optional and carries no default, because this one model
+  validates a whole resolved configuration and each partial layer that
+  contributes to it. Values a fresh install starts from are a data layer of
+  their own — `flight-defaults.yaml`, validated against this schema and shipped
+  in the wheel — so that resolution can report which layer supplied each key.
+  A default living in the model instead would be indistinguishable from a key
+  nobody ever set.
+
+license: MIT
+default_prefix: flight
+default_range: string
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  flight: https://reckon/schema/flight/
+
+imports:
+  - linkml:types
+
+# ── Enumerations ────────────────────────────────────────────────────────────
+# Only structural vocabulary is closed. Anything naming a provider, a model or
+# an effort ladder stays an open string.
+
+enums:
+  LaunchMode:
+    description: How a worker process for a backend is started.
+    permissible_values:
+      cli:
+        description: Spawned as an external command resolved on PATH.
+      in-harness:
+        description: Run inside the calling harness; no process is spawned.
+
+  SandboxMode:
+    description: The filesystem blast radius granted to a worker.
+    permissible_values:
+      read-only:
+        description: No writes beyond the worker's own manifest file.
+      workspace-write:
+        description: >-
+          Writable workspace. Inherited by child processes, so it breaks test
+          runners, builds and anything spawning subprocesses.
+      worktree-full:
+        description: >-
+          Full access, bounded by a detached worktree. The worktree, not the
+          sandbox, is the blast-radius boundary.
+
+  GateEnforcement:
+    description: How strictly evidence gates are applied.
+    permissible_values:
+      strict:
+        description: A gate without its evidence stops the work it guards.
+      advisory:
+        description: A missing gate is reported but does not stop work.
+      disabled:
+        description: >-
+          Gates are not evaluated. Spelled out rather than `off`, which YAML
+          reads as the boolean false in both this schema and the config files
+          it validates.
+
+  GateFailureAction:
+    description: What happens to downstream work when a gate fails.
+    permissible_values:
+      hold:
+        description: Downstream work stays visibly closed.
+      warn:
+        description: Downstream work proceeds with a recorded warning.
+      continue:
+        description: The failure is recorded and otherwise ignored.
+
+  WorktreeCleanup:
+    description: How aggressively finished worktrees are removed.
+    permissible_values:
+      conservative:
+        description: Remove only a clean worktree whose commit is reachable.
+      force:
+        description: Remove regardless of dirty or unmerged state.
+      never:
+        description: Leave every worktree in place for manual triage.
+
+  SummaryOccasion:
+    description: A point in a worker's life at which it reports.
+    permissible_values:
+      dispatch:
+      completion:
+      micro-plan:
+
+# ── Slots ───────────────────────────────────────────────────────────────────
+
+slots:
+  version:
+    description: Schema version of this configuration document.
+    range: integer
+    minimum_value: 1
+
+  default_backend:
+    description: >-
+      Name of the backend used when a role does not select one. Must name a key
+      of `backends` once every layer has been merged; a name with no backend
+      behind it is a configuration error rather than an implicit fallback.
+
+  backends:
+    description: >-
+      Available worker backends, keyed by a name chosen by whoever writes the
+      configuration. The schema fixes no backend names.
+    range: BackendConfig
+    multivalued: true
+    inlined: true
+
+  roles:
+    description: >-
+      Per-role routing overlays, keyed by role name. A role overrides only the
+      keys it names; everything else falls through to its backend.
+    range: RoleConfig
+    multivalued: true
+    inlined: true
+
+  gates:
+    range: GateConfig
+
+  fences:
+    range: FenceConfig
+
+  worktree:
+    range: WorktreeConfig
+
+  summary:
+    range: SummaryConfig
+
+  name:
+    description: Map key for an inlined entry.
+    identifier: true
+
+  launch:
+    description: How this backend's workers are started.
+    range: LaunchMode
+
+  command:
+    description: >-
+      Executable name or path looked up on PATH for a `cli` backend. User data;
+      the schema never supplies one.
+
+  auth_check:
+    description: >-
+      Argument vector run to test whether this backend is authenticated, as an
+      exit status. Optional, and user data: it is how a provider-specific
+      credential check reaches reckon without reckon knowing any provider.
+      Availability probing reports the result and never acts on it.
+    multivalued: true
+
+  model:
+    description: >-
+      Model identifier passed to this backend. User data; free text so that no
+      provider vocabulary is encoded here.
+
+  effort:
+    description: >-
+      Reasoning-effort level passed to this backend. Free text because each
+      backend defines its own vocabulary, and because an effort ladder must not
+      be fixed by reckon.
+
+  sandbox:
+    description: Filesystem blast radius granted to workers of this backend.
+    range: SandboxMode
+
+  session_reuse:
+    description: Whether a finished worker session can be resumed rather than respawned.
+    range: boolean
+
+  concurrency:
+    description: Maximum simultaneous workers this backend will run.
+    range: integer
+    minimum_value: 1
+
+  time_budget:
+    description: >-
+      Wall-clock allowance, written as an integer followed by a unit — `s`, `m`
+      or `h`.
+    pattern: "^[0-9]+[smh]$"
+
+  backend:
+    description: Backend this role dispatches to. Absent means `default_backend`.
+
+  enforce:
+    range: GateEnforcement
+
+  require_evidence:
+    description: Whether a gate must produce recorded evidence to be considered met.
+    range: boolean
+
+  on_fail:
+    range: GateFailureAction
+
+  needs_help_after_failures:
+    description: >-
+      Consecutive failures after which a worker stops retrying and asks for
+      help. Zero disables the fence.
+    range: integer
+    minimum_value: 0
+
+  manifest_required:
+    description: >-
+      Whether a worker must write its manifest to the orchestrator-named path
+      before its node counts as delivered.
+    range: boolean
+
+  cleanup:
+    range: WorktreeCleanup
+
+  reflex:
+    description: The reporting shape a worker follows when it summarises.
+
+  at:
+    description: Occasions on which a worker emits a summary.
+    range: SummaryOccasion
+    multivalued: true
+
+# ── Classes ─────────────────────────────────────────────────────────────────
+
+classes:
+  FlightConfig:
+    tree_root: true
+    description: A complete flight configuration, or one layer of one.
+    slots:
+      - version
+      - default_backend
+      - backends
+      - roles
+      - gates
+      - fences
+      - worktree
+      - summary
+
+  BackendConfig:
+    description: One worker backend and the routing knobs that apply to it.
+    slots:
+      - name
+      - launch
+      - command
+      - auth_check
+      - model
+      - effort
+      - sandbox
+      - session_reuse
+      - concurrency
+      - time_budget
+
+  RoleConfig:
+    description: >-
+      A routing overlay for one kind of node. Every slot is optional; an unset
+      slot inherits from the selected backend.
+    slots:
+      - name
+      - backend
+      - model
+      - effort
+      - sandbox
+      - session_reuse
+      - concurrency
+      - time_budget
+
+  GateConfig:
+    description: How evidence gates are enforced.
+    slots:
+      - enforce
+      - require_evidence
+      - on_fail
+
+  FenceConfig:
+    description: Limits a worker applies to itself before asking for help.
+    slots:
+      - time_budget
+      - needs_help_after_failures
+      - manifest_required
+
+  WorktreeConfig:
+    description: Worktree lifecycle policy.
+    slots:
+      - cleanup
+
+  SummaryConfig:
+    description: When and how workers report.
+    slots:
+      - reflex
+      - at

@@ -1,0 +1,624 @@
+{
+    "$defs": {
+        "BackendConfig": {
+            "additionalProperties": false,
+            "description": "One worker backend and the routing knobs that apply to it.",
+            "properties": {
+                "auth_check": {
+                    "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "command": {
+                    "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "concurrency": {
+                    "description": "Maximum simultaneous workers this backend will run.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "launch": {
+                    "$ref": "#/$defs/LaunchMode",
+                    "description": "How this backend's workers are started."
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "BackendConfig",
+            "type": "object"
+        },
+        "BackendConfig__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One worker backend and the routing knobs that apply to it.",
+            "properties": {
+                "auth_check": {
+                    "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "command": {
+                    "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "concurrency": {
+                    "description": "Maximum simultaneous workers this backend will run.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "launch": {
+                    "$ref": "#/$defs/LaunchMode",
+                    "description": "How this backend's workers are started."
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "BackendConfig",
+            "type": "object"
+        },
+        "FenceConfig": {
+            "additionalProperties": false,
+            "description": "Limits a worker applies to itself before asking for help.",
+            "properties": {
+                "manifest_required": {
+                    "description": "Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "needs_help_after_failures": {
+                    "description": "Consecutive failures after which a worker stops retrying and asks for help. Zero disables the fence.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "FenceConfig",
+            "type": "object"
+        },
+        "FlightConfig": {
+            "additionalProperties": false,
+            "description": "A complete flight configuration, or one layer of one.",
+            "properties": {
+                "backends": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/BackendConfig__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "default_backend": {
+                    "description": "Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "fences": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/FenceConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "gates": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/GateConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "roles": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/RoleConfig__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "summary": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SummaryConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "version": {
+                    "description": "Schema version of this configuration document.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "worktree": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/WorktreeConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "title": "FlightConfig",
+            "type": "object"
+        },
+        "GateConfig": {
+            "additionalProperties": false,
+            "description": "How evidence gates are enforced.",
+            "properties": {
+                "enforce": {
+                    "$ref": "#/$defs/GateEnforcement"
+                },
+                "on_fail": {
+                    "$ref": "#/$defs/GateFailureAction"
+                },
+                "require_evidence": {
+                    "description": "Whether a gate must produce recorded evidence to be considered met.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            },
+            "title": "GateConfig",
+            "type": "object"
+        },
+        "GateEnforcement": {
+            "description": "How strictly evidence gates are applied.",
+            "enum": [
+                "strict",
+                "advisory",
+                "disabled"
+            ],
+            "title": "GateEnforcement",
+            "type": "string"
+        },
+        "GateFailureAction": {
+            "description": "What happens to downstream work when a gate fails.",
+            "enum": [
+                "hold",
+                "warn",
+                "continue"
+            ],
+            "title": "GateFailureAction",
+            "type": "string"
+        },
+        "LaunchMode": {
+            "description": "How a worker process for a backend is started.",
+            "enum": [
+                "cli",
+                "in-harness"
+            ],
+            "title": "LaunchMode",
+            "type": "string"
+        },
+        "RoleConfig": {
+            "additionalProperties": false,
+            "description": "A routing overlay for one kind of node. Every slot is optional; an unset slot inherits from the selected backend.",
+            "properties": {
+                "backend": {
+                    "description": "Backend this role dispatches to. Absent means `default_backend`.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "concurrency": {
+                    "description": "Maximum simultaneous workers this backend will run.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "RoleConfig",
+            "type": "object"
+        },
+        "RoleConfig__identifier_optional": {
+            "additionalProperties": false,
+            "description": "A routing overlay for one kind of node. Every slot is optional; an unset slot inherits from the selected backend.",
+            "properties": {
+                "backend": {
+                    "description": "Backend this role dispatches to. Absent means `default_backend`.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "concurrency": {
+                    "description": "Maximum simultaneous workers this backend will run.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "RoleConfig",
+            "type": "object"
+        },
+        "SandboxMode": {
+            "description": "The filesystem blast radius granted to a worker.",
+            "enum": [
+                "read-only",
+                "workspace-write",
+                "worktree-full"
+            ],
+            "title": "SandboxMode",
+            "type": "string"
+        },
+        "SummaryConfig": {
+            "additionalProperties": false,
+            "description": "When and how workers report.",
+            "properties": {
+                "at": {
+                    "description": "Occasions on which a worker emits a summary.",
+                    "items": {
+                        "$ref": "#/$defs/SummaryOccasion"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "reflex": {
+                    "description": "The reporting shape a worker follows when it summarises.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "SummaryConfig",
+            "type": "object"
+        },
+        "SummaryOccasion": {
+            "description": "A point in a worker's life at which it reports.",
+            "enum": [
+                "dispatch",
+                "completion",
+                "micro-plan"
+            ],
+            "title": "SummaryOccasion",
+            "type": "string"
+        },
+        "WorktreeCleanup": {
+            "description": "How aggressively finished worktrees are removed.",
+            "enum": [
+                "conservative",
+                "force",
+                "never"
+            ],
+            "title": "WorktreeCleanup",
+            "type": "string"
+        },
+        "WorktreeConfig": {
+            "additionalProperties": false,
+            "description": "Worktree lifecycle policy.",
+            "properties": {
+                "cleanup": {
+                    "$ref": "#/$defs/WorktreeCleanup"
+                }
+            },
+            "title": "WorktreeConfig",
+            "type": "object"
+        }
+    },
+    "$id": "https://reckon/schema/flight",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "additionalProperties": false,
+    "description": "A complete flight configuration, or one layer of one.",
+    "metamodel_version": "1.11.0",
+    "properties": {
+        "backends": {
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/BackendConfig__identifier_optional"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "description": "Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.",
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "default_backend": {
+            "description": "Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "fences": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/FenceConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "gates": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/GateConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "roles": {
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/RoleConfig__identifier_optional"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "description": "Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.",
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "summary": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/SummaryConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "version": {
+            "description": "Schema version of this configuration document.",
+            "minimum": 1,
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "worktree": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/WorktreeConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    },
+    "title": "reckon-flight",
+    "type": "object",
+    "version": null
+}
+

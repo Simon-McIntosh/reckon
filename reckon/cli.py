@@ -220,6 +220,56 @@ def mcp():
     mcp_main()
 
 
+@main.command()
+@click.option(
+    "--project",
+    default=None,
+    help="Include this project's flight.yaml layer in the resolution.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root to read the project layer from (for a worktree).",
+)
+@click.option(
+    "--set",
+    "overrides",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="Override layer entry as a dotted key path; repeat as needed.",
+)
+@click.option(
+    "--probe-auth",
+    is_flag=True,
+    help="Run each backend's declared auth_check and report its exit status.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def flight(project, checkout_path, overrides, probe_auth, pretty):
+    """Resolve worker routing, gate strictness and fences across all layers.
+
+    Prints one JSON object on stdout — the resolved config, the layer that
+    supplied each key, and which backends are actually available — with keys in
+    sorted order so two runs differ only where a value differs. Exits non-zero
+    only when a layer is malformed, naming the file, key path and constraint.
+    """
+    import json
+
+    from reckon.flight import FlightConfigError, flight_report, parse_overrides
+
+    try:
+        report = flight_report(
+            project,
+            overrides=parse_overrides(overrides) if overrides else None,
+            probe_auth=probe_auth,
+            checkout_path=checkout_path,
+        )
+    except FlightConfigError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(json.dumps(report, indent=2 if pretty else None, sort_keys=True))
+
+
 @main.group(name="service")
 def service():
     """Run the reckon server as a systemd user service."""
