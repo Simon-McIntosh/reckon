@@ -293,7 +293,7 @@ edit_plan(
   ops=[
     {"op": "set", "path": "status", "value": "draft"},
     {"op": "set", "path": "roi", "value": "high"},
-    {"op": "set", "path": "effort", "value": "L"},
+    {"op": "set", "path": "effort_hours", "value": 4.0},
     {"op": "set", "path": "capability", "value": {
       "version": "1.0", "class": "orchestrator",
       "requirements": {"reasoning": "deep", "verification": "strict"}
@@ -334,7 +334,7 @@ edit_plan(
   <meta name="plan-summary"   content="Fine-tune the plasma decoder on curated IMAS shots">
   <meta name="plan-status"    content="draft">
   <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="L">
+  <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -431,7 +431,7 @@ Only author fields that a view downstream consumes:
 | `plan-slug` / `docs-project` | Server keys the plan + project; discovery + cross-plan links |
 | `plan-title` / `plan-summary` | Dashboard cards, search, the fleet-prompt header |
 | `plan-status` | Lifecycle filter; kanban columns; "what's open" queries |
-| `plan-roi` / `plan-effort` | Sprint ordering, capacity planning (ROI × effort) |
+| `plan-roi` / `plan-effort-hours` | Sprint ordering and capacity planning in worker-hours |
 | `plan-milestone` / `plan-sprint` | Milestone rollup, sprint membership |
 | `plan-capability-*` | Versioned capability class and structured dispatch requirements |
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
@@ -452,7 +452,7 @@ Only author fields that a view downstream consumes:
 | `plan-slug` | filename stem | kebab-case override |
 | `plan-title` | (empty) | Title Case |
 | `plan-roi` | `mid` | `high` / `mid` / `low` |
-| `plan-effort` | `M` | `S` / `M` / `L` / `XL` |
+| `plan-effort-hours` | — | Neutral worker-hours as a positive number in quarter-hour increments (for example `2.25`) |
 | `plan-capability-version` | `1.0` | Capability contract version |
 | `plan-capability-class` | `general` | `routine` / `general` / `orchestrator` |
 | `plan-capability-reasoning` | (empty) | `standard` / `deep` |
