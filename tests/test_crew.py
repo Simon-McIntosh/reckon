@@ -124,6 +124,24 @@ def test_two_goals_joined_by_a_conjunction_are_two_nodes() -> None:
     assert "split it" in detail
 
 
+def test_conjoined_nouns_remain_one_goal_while_conjoined_actions_do_not() -> None:
+    noun_phrase_goals = (
+        "round-trip a section from parse and serialisation",
+        "derived age and a staleness verdict",
+        "sprint order and incompleteness",
+    )
+
+    for goal in noun_phrase_goals:
+        verdict = crew.validate_node(_node(goal=goal), budget_ceiling="25m")
+        assert verdict.ok, (goal, verdict.findings)
+
+    action_verdict = crew.validate_node(
+        _node(goal="add the translation module and wire the CLI"),
+        budget_ceiling="25m",
+    )
+    assert "single-goal" in action_verdict.failed_properties
+
+
 def test_a_subjective_done_when_is_not_a_measure() -> None:
     verdict = crew.validate_node(
         _node(done_when="the dispatch path is clean and robust"), budget_ceiling="25m"
@@ -133,6 +151,24 @@ def test_a_subjective_done_when_is_not_a_measure() -> None:
         f["detail"] for f in verdict.findings if f["property"] == "demonstrable"
     )
     assert "clean" in details and "robust" in details
+
+
+def test_hyphenated_subjective_term_is_not_a_bare_adjective() -> None:
+    compound_verdict = crew.validate_node(
+        _node(done_when="a machine-readable exit code 0 is emitted"),
+        budget_ceiling="25m",
+    )
+    assert compound_verdict.ok, compound_verdict.findings
+
+    bare_verdict = crew.validate_node(
+        _node(done_when="exit code 0 is readable"), budget_ceiling="25m"
+    )
+    assert "demonstrable" in bare_verdict.failed_properties
+    assert any(
+        "readable" in finding["detail"]
+        for finding in bare_verdict.findings
+        if finding["property"] == "demonstrable"
+    )
 
 
 def test_a_done_when_with_no_observable_fails_demonstrable() -> None:

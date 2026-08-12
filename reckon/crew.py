@@ -91,10 +91,37 @@ SUBJECTIVE_TERMS = (
     "correctly",
 )
 
-# A goal joining two deliverables is two nodes. The check is deliberately
-# literal: splitting a node costs one dispatch, while a worker splitting its own
-# attention costs the whole node.
-_CONJUNCTIONS = (" and ", " & ", " plus ", " then ", ";")
+# A conjunction starts a second deliverable only when it introduces another
+# action. Nouns may be conjoined inside one deliverable without splitting it.
+_DELIVERABLE_ACTIONS = frozenset(
+    {
+        "add",
+        "build",
+        "create",
+        "delete",
+        "deploy",
+        "document",
+        "fix",
+        "implement",
+        "land",
+        "migrate",
+        "publish",
+        "remove",
+        "rename",
+        "replace",
+        "resolve",
+        "run",
+        "ship",
+        "stop",
+        "update",
+        "validate",
+        "verify",
+        "wire",
+        "write",
+    }
+)
+_NOUN_OR_ACTION_CONJUNCTIONS = (" and ", " & ", " plus ")
+_DELIVERABLE_SEPARATORS = (" then ", ";")
 
 # Text that shows a done-when names something observable rather than a feeling.
 _EVIDENCE_SIGNALS = re.compile(
@@ -113,6 +140,25 @@ _DURATION = re.compile(r"^(\d+)([smh])$")
 _DURATION_SECONDS = {"s": 1, "m": 60, "h": 3600}
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _deliverable_conjunction(goal: str) -> str | None:
+    """Return the separator that introduces another deliverable, if any."""
+    lowered = f" {goal.lower()} "
+    separator = next(
+        (candidate for candidate in _DELIVERABLE_SEPARATORS if candidate in lowered),
+        None,
+    )
+    if separator:
+        return separator
+
+    for candidate in _NOUN_OR_ACTION_CONJUNCTIONS:
+        for remainder in lowered.split(candidate)[1:]:
+            first_word = re.match(r"\s*([a-z]+)", remainder)
+            if first_word and first_word.group(1) in _DELIVERABLE_ACTIONS:
+                return candidate
+    return None
+
 
 # Recognised on the first line of a worker report. A stuck worker owes a
 # decision brief, not a plea, so the four fields below are all required.
@@ -244,7 +290,7 @@ def validate_node(
     if not goal:
         fail("single-goal", "the node states no goal")
     else:
-        hit = next((c for c in _CONJUNCTIONS if c in f" {goal.lower()} "), None)
+        hit = _deliverable_conjunction(goal)
         if hit:
             fail(
                 "single-goal",
@@ -269,7 +315,7 @@ def validate_node(
         subjective = [
             term
             for term in SUBJECTIVE_TERMS
-            if re.search(rf"\b{term}\b", done_when, re.I)
+            if re.search(rf"(?<!-)\b{re.escape(term)}\b", done_when, re.I)
         ]
         if subjective:
             fail(
