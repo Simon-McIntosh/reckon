@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import effective_status, unresolved_dependencies
 
 VIEW_NAMES = frozenset({"summary", "detail", "history", "raw", "schema"})
@@ -405,10 +406,18 @@ def _state(
     resource_type = selector.type
     if resource_type == "plan":
         workflow_status = str(data.get("status") or "draft")
+        age_days = modified_age_days(data.get("modified"))
         return {
             "status": workflow_status,
             "effective_status": effective_status(workflow_status, blocking),
             "progress": float(data.get("impl", 0.0) or 0.0),
+            "age_days": age_days,
+            "staleness": lifecycle_staleness(
+                doc_type="plan",
+                status=workflow_status,
+                impl=data.get("impl"),
+                age_days=age_days,
+            ),
             "sprint": data.get("sprint") or None,
             "milestone": data.get("milestone") or None,
             "capability": data.get("capability") or {},

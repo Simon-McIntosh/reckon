@@ -37,7 +37,7 @@ import re
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -68,6 +68,8 @@ _STUB_PROSE = re.compile(r"\bSee (?:state|plan) §|^\s*TODO\b|^\s*TBD\b", re.IGN
 _PRE_LINE_LIMIT = 120
 
 SEVERITIES = ("error", "warn", "info")
+ACTIVE_PLAN_STALE_AFTER_DAYS = 30
+OPEN_RESEARCH_STALE_AFTER_DAYS = 60
 
 
 @dataclass
@@ -89,6 +91,49 @@ class LifecycleFinding:
     age_days: int
     impl: float | None
     last_modified: str
+
+
+def modified_age_days(
+    last_modified: str | None,
+    *,
+    today: date | None = None,
+) -> int | None:
+    """Return whole calendar days since an ISO-formatted modification date."""
+
+    if not last_modified:
+        return None
+    try:
+        modified = date.fromisoformat(str(last_modified)[:10])
+    except ValueError:
+        return None
+    return max(0, ((today or date.today()) - modified).days)
+
+
+def lifecycle_staleness(
+    *,
+    doc_type: str,
+    status: str,
+    impl: float | None,
+    age_days: int | None,
+) -> str:
+    """Return the advisory freshness verdict used by lifecycle auditing."""
+
+    if age_days is None:
+        return "unknown"
+    if doc_type == "research":
+        is_stale = (
+            status not in {"done", "archived"}
+            and age_days > OPEN_RESEARCH_STALE_AFTER_DAYS
+        )
+    elif doc_type == "evidence":
+        is_stale = False
+    else:
+        is_stale = (
+            status == "active"
+            and (impl or 0.0) < 1.0
+            and age_days > ACTIVE_PLAN_STALE_AFTER_DAYS
+        )
+    return "stale" if is_stale else "current"
 
 
 def _visible_text(el) -> str:
@@ -168,8 +213,15 @@ def audit_lifecycle(
             doc_type = state["type"]
             impl = state["impl"]
 
+            staleness = lifecycle_staleness(
+                doc_type=doc_type,
+                status=status,
+                impl=impl,
+                age_days=age_days,
+            )
+
             if doc_type == "research":
-                if status not in {"done", "archived"} and age_days > 60:
+                if staleness == "stale":
                     findings.append(
                         LifecycleFinding(
                             project=project_name,
@@ -184,7 +236,7 @@ def audit_lifecycle(
             if doc_type == "evidence":
                 continue
 
-            if status == "active" and (impl or 0.0) < 1.0 and age_days > 30:
+            if staleness == "stale":
                 findings.append(
                     LifecycleFinding(
                         project=project_name,
@@ -222,14 +274,10 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
 
     # (e) Required meta tags ------------------------------------------------
     present = {
-        (m.get("name") or "").lower()
-        for m in soup.find_all("meta")
-        if m.get("name")
+        (m.get("name") or "").lower() for m in soup.find_all("meta") if m.get("name")
     }
     required = (
-        _TYPED_RESOURCE_META
-        if doc_type in _TYPED_RESOURCE_TYPES
-        else _REQUIRED_META
+        _TYPED_RESOURCE_META if doc_type in _TYPED_RESOURCE_TYPES else _REQUIRED_META
     )
     for req in required:
         if req == "plan-status" and doc_type in {"research", "evidence", "doc"}:
@@ -247,7 +295,9 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
     slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()
     evidence_meta = soup.find("meta", attrs={"name": "plan-evidence-for"})
-    evidence_for = ((evidence_meta.get("content") if evidence_meta else "") or "").strip()
+    evidence_for = (
+        (evidence_meta.get("content") if evidence_meta else "") or ""
+    ).strip()
     if (doc_type == "evidence" or slug.endswith("-landed")) and not evidence_for:
         out.append(
             Finding(

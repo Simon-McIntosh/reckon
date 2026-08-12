@@ -5,12 +5,14 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
 
 import reckon._store as store_module
 import reckon.mcp as mcp_module
+from reckon.doccheck import ACTIVE_PLAN_STALE_AFTER_DAYS
 from reckon.mcp_views import (
     ResourceSelector,
     audit_view,
@@ -51,6 +53,7 @@ def _plan(
     summary: str = "A readable plan.",
     resource_type: str = "plan",
     project: str = "proj",
+    modified: str | None = None,
 ) -> Path:
     from reckon._plan_html import write_state
 
@@ -101,6 +104,8 @@ def _plan(
                 ],
             }
         )
+        if modified is not None:
+            state["modified"] = modified
     elif resource_type == "research":
         state.update({"source": "local", "source_quality": "verified"})
     elif resource_type == "evidence":
@@ -162,7 +167,36 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert result["next"]["id"] == "next"
     assert "prompt" not in result["next"]
     assert compact_size(result) <= 2048
-    assert compact_size(result) <= compact_size(raw) * 0.55
+    assert compact_size(result) <= compact_size(raw) * 0.60
+
+
+def test_plan_summary_surfaces_age_at_the_audit_staleness_boundary(setup):
+    docs_dir, project = setup
+    modified = date.today() - timedelta(days=ACTIVE_PLAN_STALE_AFTER_DAYS)
+    _plan(docs_dir, "readable", modified=modified.isoformat())
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "readable"}
+    )
+
+    assert result["state"]["age_days"] == ACTIVE_PLAN_STALE_AFTER_DAYS
+    assert result["state"]["staleness"] == "current"
+
+
+def test_stale_plan_read_remains_advisory_and_dispatchable(setup):
+    docs_dir, project = setup
+    modified = date.today() - timedelta(days=ACTIVE_PLAN_STALE_AFTER_DAYS + 1)
+    _plan(docs_dir, "readable", modified=modified.isoformat())
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "readable"}
+    )
+
+    assert result["state"]["age_days"] == ACTIVE_PLAN_STALE_AFTER_DAYS + 1
+    assert result["state"]["staleness"] == "stale"
+    assert result["state"]["effective_status"] == "active"
+    assert result["blocking"] == []
+    assert result["next"]["id"] == "next"
 
 
 def test_dependency_blocking_is_derived_and_clears_when_dependency_ships(setup):
