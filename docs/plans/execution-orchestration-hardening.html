@@ -17,8 +17,8 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-03">
-<meta name="plan-version" content="9">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="10">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -113,6 +113,11 @@ Done-when
   2. Full Reckon test suite remains green
   3. Evidence links the implementation commit, validation, errors and remaining work</pre>
     <p class="r-fu-outcome">Landed in commit 36d5bdd; both skill validators passed, 6 focused tests passed, and the full 1,181-test suite passed. Evidence: archive/execution-orchestration-hardening-sprint-delivery-landed.html</p>
+    </article>
+<article class="r-fu" data-id="f-eoh-cross-repo-node" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A node cannot be dispatched into a repository other than the one holding its plan</h4>
+    <div class="r-fu-body"><p><code>reckon crew dispatch --repo &lt;other&gt;</code> resolves the node's plan inside the dispatched repository and refuses with <code>plan-unavailable</code> when it is not there. That makes every cross-repository node undispatchable, even though the semantics are already coherent everywhere else: the plan is the semantic authority, and <code>read_plan</code>/<code>edit_plan</code> already accept <code>checkout_path</code> to separate the plan's checkout from the working one.</p><p>Measured while sweeping twelve mounted projects for a reckon-owned plan: four repositories hold work that plan authorises and none of it could be delegated, because the plan lives in reckon while the edits land in imas-efit, imas-ambix, nova and hanney. The obvious workaround is worse than the gap: pointing write paths at another checkout puts a worker outside the worktree that bounds its blast radius.</p><p>The repair is to let the plan resolve through its registered mount while the worktree still comes from <code>--repo</code>, so a cross-repository node keeps both its semantic authority and its isolation.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
     </article>
 </section>
   <section data-reckon="research" id="research" class="r-research-list">

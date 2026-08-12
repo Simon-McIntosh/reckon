@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -172,6 +172,60 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <p>The sweep never rebalances a sprint, retires a plan, or resolves a decision to make a
     finding disappear. It migrates state representation and repairs mis-wired relationships. A
     finding whose repair requires a material judgement is reported for the owning project.</p>
+
+    <h2 id="s5">§5 — The sweep, sized and stalled on a dispatch gap</h2>
+
+    <p>The sweep was scoped against a live scan rather than the plan's original figures, and the
+    inventory below is what remains. It is recorded here so the next session inherits the survey
+    instead of repeating it.</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th>Work</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon</code></td><td>8 persisted sprint-item statuses in the project
+        index</td><td>dispatched — the only part of the sweep whose edits land in the same
+        repository as this plan</td></tr>
+        <tr><td><code>imas-efit</code></td><td>11 documents persisting <code>blocked</code>, and 16
+        error-level wiring findings of which 8 are mechanical: research inputs wired as hard
+        prerequisites across three plans, which the scan itself says to move to
+        <code>informs</code></td><td>undispatchable</td></tr>
+        <tr><td><code>imas-ambix</code></td><td>36 persisted sprint-item statuses in the project
+        index</td><td>undispatchable</td></tr>
+        <tr><td><code>nova</code></td><td>1 document persisting <code>blocked</code>, 2 persisted
+        item statuses</td><td>undispatchable, and separately not quiet — eight concurrent runs were
+        writing that project's state</td></tr>
+        <tr><td><code>hanney</code></td><td>1 research input wired as a hard
+        prerequisite</td><td>undispatchable</td></tr>
+      </tbody>
+    </table>
+
+    <p>The obstacle is not the work. <code>reckon crew dispatch --repo &lt;other&gt;</code> resolves
+    the node's plan inside the repository it is dispatched into and refuses with
+    <code>plan-unavailable</code>, so a node serving a plan in one repository cannot edit another —
+    which is every part of this sweep but the first row. The fallback of aiming write paths at a
+    foreign checkout is worse than the gap, because it puts a worker outside the worktree that
+    bounds its blast radius. The capability belongs to the orchestration plan and is recorded there;
+    the <code>sweep-complete</code> gate stays closed until it lands.</p>
+
+    <p>Of the sixteen error-level findings in <code>imas-efit</code>, only the eight
+    <code>non-executable-hard-dependency</code> edges are in this plan's remit. The remaining eight —
+    two dependency cycles, three inactive dependencies on superseded or archived plans, and three
+    sprint-order inversions — need material judgement or a sprint rebalance, both of which §4
+    forbids the sweep from doing. They are residue to report to their owning project, not work to
+    guess at.</p>
+
+    <h2 id="s6">§6 — Migrating an authored table has no op</h2>
+
+    <p>Both the worker migrating the routing plans and this session's own edit of this document hit
+    the same wall: <code>edit_plan</code> can declare a gate and record its verdict, but nothing
+    removes the prose table those gates replace. Text mode refuses to touch
+    <code>data-reckon</code> regions and the gate ops only append, so the migration step that the
+    plan calls its dogfood is the one step with no sanctioned path — every migration so far has gone
+    through raw HTML editing inside a worktree, announced as a bypass.</p>
+
+    <p>This is the plan's own mechanism, so it belongs here rather than in a followup. The gate ops
+    need a companion that retires the authored prose a gate section supersedes, so migrating a
+    document is a state write like every other.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
