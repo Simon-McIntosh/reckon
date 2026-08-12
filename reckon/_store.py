@@ -1262,6 +1262,58 @@ _OP_DISPATCH = {
     "move": _apply_move,
 }
 
+# A plan reaching one of these has landed, so its writeback owes an answer about
+# what comes next.
+_LANDED_STATUSES = frozenset({"shipped", "done"})
+
+# How a followup outcome says the chain deliberately ends here. Recognised in
+# text because that is the form the skills already write.
+_CHAIN_CLOSED_MARKERS = ("no followup", "no follow-up", "no-followup")
+
+
+def _chain_closed(text: Any) -> bool:
+    """Whether an outcome explicitly records that the chain ends here."""
+    lowered = str(text or "").lower()
+    return any(marker in lowered for marker in _CHAIN_CLOSED_MARKERS)
+
+
+def _validate_continuation(working: dict, ops: list[dict]) -> None:
+    """Refuse a plan landing that names neither a next step nor an end.
+
+    Work must not end without naming what comes next, and until now that rule
+    was carried by discipline alone — which is how a plan lands, tells nobody,
+    and the next session rediscovers the state from the code. A landing is a
+    batch that resolves a followup or sets a terminal status; it is accepted only
+    when an open followup still carries the chain, or some followup outcome says
+    in words that the chain closes here. Anything else would leave the chain
+    dangling silently, which is the failure this exists to make loud.
+    """
+    resolved = [
+        op
+        for op in ops
+        if op.get("op") == "resolve" and op.get("target") == "followups"
+    ]
+    landed = any(
+        op.get("op") == "set"
+        and op.get("path") == "status"
+        and str(op.get("value", "")).lower() in _LANDED_STATUSES
+        for op in ops
+    )
+    if not resolved and not landed:
+        return
+    followups = [f for f in (working.get("followups") or []) if isinstance(f, dict)]
+    if any(str(f.get("status", "")).lower() == "open" for f in followups):
+        return
+    if any(_chain_closed(op.get("outcome")) for op in resolved):
+        return
+    if any(_chain_closed(f.get("outcome")) for f in followups):
+        return
+    raise OpError(
+        "plan landing leaves no continuation: append a followup whose prompt is "
+        "the next '/reckon-ship <slug> [§N]' invocation, or resolve with an "
+        "outcome recording that the chain closes (e.g. 'done — no followup')"
+    )
+
 
 def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
     """Apply ``ops`` IN ORDER to the working DICT in place.
@@ -1282,6 +1334,8 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
         if handler is None:
             raise OpError(f"op #{n}: unknown verb {verb!r}")
         handler(working, op, is_index, warnings)
+    if not is_index and str(working.get("type", "plan") or "plan") == "plan":
+        _validate_continuation(working, ops)
     return warnings
 
 

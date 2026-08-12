@@ -91,10 +91,12 @@ resolve target
 └─ sprint → roadmap + all plans/research/evidence → enrich DAG → coordinate waves
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
-→ create detached worktree per delegated task
-→ dispatch independent ready nodes in parallel
+→ check every node against the seven-property contract (§3b)
+→ reckon crew dispatch each ready node — branch only on the returned launch kind
+→ emit the dispatch summary, naming the gate that closes the wave
 → audit worker manifests/commits/tests → orchestrator merges
-→ record plan/evidence/sprint outcomes
+→ emit the completion summary, WHY carrying the gate evidence
+→ record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
 ```
 
@@ -278,7 +280,75 @@ List **exclusive write paths** per item. If two items share a file, serialise th
 
 **Never dispatch two workers that write the same file.**
 
+### 3b. Pre-dispatch checklist — a node is well-formed BEFORE it is sent
+
+**A worker that thrashes is almost always executing a malformed task.** Check
+well-formedness before dispatch, not after; that leaves the escape hatch handling
+only the genuine residual. A node that fails is reshaped or split — never
+dispatched in the hope that the worker will work it out.
+
+All seven must hold:
+
+- [ ] **Single goal** — one deliverable. Joined with "and" means two nodes.
+- [ ] **Fully specified** — every input is in the live plan or in the fences;
+      nothing requires the worker to infer intent.
+- [ ] **Demonstrable** — done-when is a *measure* that emits evidence: a named
+      test, a recorded command output, a number against a stated bound. A
+      subjective adjective ("clean", "robust", "better") fails.
+- [ ] **Closed** — no decision from outside the node is needed; a
+      required-but-unlocked decision means a decision node precedes it.
+- [ ] **Scoped** — exclusive write paths enumerated, none shared with a
+      concurrent node.
+- [ ] **Bounded** — fits the resolved time budget. If it cannot, split it; a
+      budget is not a target to overrun.
+- [ ] **Independently verifiable** — auditable from the manifest, `git show
+      --stat` and the gate evidence, without reading the implementation.
+
+`reckon crew dispatch` enforces the same seven and exits 2 naming every failing
+property. Check a whole wave before any of it goes out:
+
+```bash
+reckon crew dispatch --project P --plan L --section §N --role implement \
+  --node <id> --goal "<one deliverable>" --done-when "<measure>" \
+  --write-path <path> --session <session> --dry-run
+```
+
+The full contract, the manifest shape and the escape hatch are in
+`references/worker-protocol.md` — read it before composing any dispatch.
+
 ### 4. Dispatch workers
+
+Pre-flight the routing surface once per session with `reckon flight --project P`:
+it reports the resolved config, which layer supplied each value, and which
+backends are actually available.
+
+**One dispatch instruction covers every backend.** State what the node is;
+reckon resolves how it runs. Which harness, at what model, effort and sandbox
+tier, comes from flight config — so this skill names none of them, and a
+per-task deviation is an override on the same call rather than a different call:
+
+```bash
+reckon crew dispatch --project P --plan L --section §N --role implement \
+  --node <id> --goal "<one deliverable>" --done-when "<measure>" \
+  --write-path <path> --peer <other-node>=<their-paths> \
+  --time-budget 25m --session <session> [--set backends.<name>.effort=high]
+```
+
+**Branch once, on the returned `launch` kind, and never on anything else:**
+
+| `launch` | What reckon did | What you do |
+|---|---|---|
+| `cli` | created the worktree, spawned the worker, wrote the run record | background the call, yield, then `reckon crew observe --run <id>` |
+| `in-harness` | prepared the worktree, manifest path and fences, returned a directive | dispatch your own delegation primitive against the directive, then `reckon crew attach --run <id> --task <task-id>` |
+
+Adding a harness never adds a third case. Do not read backend flags into a
+prompt: per-backend translation is compiled code, which is what makes drift
+between execution paths impossible to express.
+
+`reckon crew observe --run <id>` folds the worker's stream, manifest presence and
+process liveness back into its record — phase, captured session id, and whatever
+budget signal the backend emitted, which may legitimately read `unknown`. **Never
+read an absent budget signal as exhaustion.**
 
 The following table applies to plan mode. In sprint mode, delegate every ready
 node under the coordinator-only contract, including one-item and cross-cutting
@@ -295,7 +365,8 @@ coordinator the implementation owner.
 Apply the model, effort, and concurrency routing stated by the current user
 prompt. If it is not specified, the coordinator chooses it explicitly for each
 node from the available runtime workers and records the choice in the dispatch
-prompt. Reckon does not infer a relative tier from the coordinator model.
+prompt — as a `--set` override on the dispatch call, so the choice is data rather
+than prose. Reckon does not infer a relative tier from the coordinator model.
 Worker prompts reference the live plan and carry only the portable runtime
 safety contract; §05 followups remain one-line session invocations.
 
@@ -303,6 +374,53 @@ Use background mode when the runtime supports it. The current user prompt or
 coordinator sets an explicit concurrency cap before dispatch from the available
 slots, dependency wave, and file-scope conflicts. Size each ready wave to that
 cap, launch the wave together, then wait for all results before integration.
+
+### 4b. The gate fence — a wave does not open through a closed gate
+
+**Authored here and nowhere else.** Read the plan's declared evidence-gate table
+before opening a wave, and **refuse to open the next wave until the gate's
+measure has produced evidence.** A gate is a measure to demonstrate, not a
+threshold to tune around: when it fails, downstream work stays visibly closed and
+the negative result stays on the page.
+
+- Name the gate that closes the current wave in the dispatch summary's `WHEN`
+  axis, so it is stated before the work starts rather than after.
+- At completion, the `WHY` axis carries that gate's evidence — quantitatively.
+- A gate whose evidence cannot be produced is a `NEEDS-HELP:` report or a
+  recorded negative result. It is never a wave that proceeds anyway.
+- `gates.enforce` and `gates.on_fail` in flight config tune strictness; they do
+  not license skipping a gate whose measure simply was not run.
+
+### 4c. The summary reflex — what, why, how, when
+
+Dispatches are silent by design and workers report in their own idiom, so the
+orchestrator owes the lead a readable account at three occasions: **at dispatch,
+at completion, and when micro-planning the next step.** One habit, not three
+formats. Four lines, one per axis, at most two lines each, restating nothing the
+plan already says.
+
+```text
+Dispatching wave 2 — 3 workers
+WHAT   §3 dispatch primitive (impl-a) · §4 observation (impl-b) · §5 docs (impl-c)
+WHY    §3 unblocks §4 and §5; all three read the §2 contract; no shared files
+HOW    detached worktrees, scopes below, manifests on disk
+WHEN   ~20 min each; gate g-end-to-end closes the wave — §6 stays shut until it passes
+
+Wave 2 complete — 3/3 landed, gate g-end-to-end PASSED
+WHAT   dispatch primitive + observation + docs (1a2b3c4, 5d6e7f8, 9a0b1c2)
+WHY    gate evidence: node landed in its worktree, manifest on disk, 28 tests green
+HOW    all scoped clean on git show --stat; no out-of-scope paths
+WHEN   next §6 — ready, nothing blocks it
+```
+
+`WHAT` names nodes and artifacts. `WHY` gives the causal reason this wave runs
+now — **and at completion it carries the gate evidence.** `HOW` carries runtime
+and isolation facts only. `WHEN` gives a duration estimate and names the gate
+that closes the wave.
+
+That one discipline is why the format earns its place: it forces every wave
+report to be quantitative, and makes a wave that cannot state its gate evidence
+visibly incomplete rather than plausibly done.
 
 ### 5. Verify every worker — MANDATORY
 
@@ -331,6 +449,17 @@ prompt required, then ask it to write the deliverable to the named path and
 reply with the path only. Redispatch is the last step, not the first — a
 duplicate run of a node that already succeeded burns a worker slot and, with
 write scope, risks a conflicting second commit.
+
+**A report opening `NEEDS-HELP:` is not a failure — it is a decision brief, and
+answering it is cheaper than any alternative.** It carries four fields: `tried:`,
+`options:`, `leaning:`, `cost-if-wrong:`. Answer it yourself by default; escalate
+only genuinely user-owned decisions such as scope trade-offs and irreversible
+choices. Then resume the **same** session, because the advice only makes sense to
+a worker that still remembers what it tried:
+
+```bash
+reckon crew resume --run <run-id> --advice "<the answer>"
+```
 
 If an agent genuinely FAILS or produces incomplete work:
 - In plan mode, repair inline or dispatch a corrective agent
@@ -441,6 +570,33 @@ edit_plan(
 
 Note: `impl` is a settable scalar — the server does NOT compute it automatically. You MUST set it.
 
+### 7b. Continuation closes at THREE altitudes, not one
+
+**Work never ends without naming what comes next** — and the chain has three ends,
+not one. Close all three; a chain that closes only at plan level leaves the other
+two dangling.
+
+| Altitude | What it owes | How |
+|---|---|---|
+| **Worker** | candidate follow-ons it was fenced out of | the manifest's `follow_ons` field; fold each into the current wave or write it as a plan followup |
+| **Plan landing** | the next one-line invocation, or an explicit end | the `resolve` + `append` pair above |
+| **Sprint close** | the sprints this one lets us start | `roadmap(project)` → each sprint row's `feeds_sprints` and `unblocks`, derived from the dependency graph |
+
+A worker's out-of-scope discovery has nowhere to go but prose, where it is lost.
+`crew.followup_ops_from_manifest(manifest, slug=…, section=…)` turns each
+candidate into an append op with the canonical invocation line, so it reaches plan
+state without anyone retyping guidance.
+
+**The plan altitude is enforced at the write boundary.** A writeback that lands a
+plan — one that resolves a followup or sets a terminal status — is **refused**
+unless an open followup still carries the chain or a resolved outcome records in
+words that the chain closes (`"done — no followup"`). Do not work around the
+refusal: it is telling you the session was about to end silently.
+
+Report the sprint altitude at close from `feeds_sprints` rather than from memory:
+it is derived, so it cannot go stale the way a written list would, and a sprint
+that feeds nothing says so instead of staying silent.
+
 ### 8. Final validation — eat the dog food
 
 Before declaring the overall plan done:
@@ -528,6 +684,12 @@ handoff.
 
 ## Delegation, runtime routing, integration, and cleanup
 
+`references/worker-protocol.md` owns everything true of a worker regardless of
+backend — the seven-property contract, the four fences, the manifest shape, the
+recovery ladder and the escape hatch. Read it before composing any dispatch.
+(`references/worker-backends.md` is maintainer documentation of the translation
+internals; an orchestrator never needs it.)
+
 For any delegated plan work, and always for sprint mode, read
 `references/sprint-orchestration.md` completely. It owns:
 
@@ -545,6 +707,8 @@ after integration.
 
 ## Cross-references
 
+- `references/worker-protocol.md` — the task contract, fences, manifest, escape hatch.
+- `references/worker-backends.md` — maintainer notes on launch translation (not agent-facing).
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
 - `reckon-create/SKILL.md` — first-time plan scaffolding and §05 invocation.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.

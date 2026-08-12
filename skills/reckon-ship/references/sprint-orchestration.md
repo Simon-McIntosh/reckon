@@ -3,6 +3,11 @@
 Read this file completely for sprint execution or whenever `reckon-ship`
 delegates plan work.
 
+`worker-protocol.md` is its companion and is not repeated here: it owns the
+seven-property task contract, the four fences, the manifest shape, the recovery
+ladder and the escape hatch — everything true of a worker regardless of which
+backend runs it. This file owns what the *orchestrator* does around that.
+
 ## Contents
 
 1. Target resolution
@@ -277,6 +282,12 @@ the pause-first, reported, context-budgeted exception in section 3.
 
 ## 6. Worker dispatch contract
 
+`reckon crew dispatch` composes this contract, the four fences and the escape
+hatch into the worker's prompt and writes it beside the run record, so a
+configured backend needs none of it typed out. Compose it by hand only for a
+delegation reckon did not prepare; when both exist, they must say the same thing,
+and the composed prompt is the copy to change.
+
 Embed this contract in every delegated prompt:
 
 ```text
@@ -378,6 +389,12 @@ After all executable nodes:
 - record blocked/deferred nodes explicitly;
 - write a sprint summary with plan and evidence links by editing the named
   sprint with its current resource version;
+- **report the sprints this one feeds**, taken from the closing sprint's
+  `feeds_sprints` and `unblocks` in the `roadmap` response. Both are derived from
+  the dependency graph, so they cannot go stale the way a written list would, and
+  a sprint that feeds nothing says so rather than staying silent. This is the
+  sprint end of the three-altitude continuation rule; the worker and plan ends are
+  the manifest's `follow_ons` and the refused-without-continuation writeback;
 - set that sprint resource to done only when all non-deferred nodes are complete.
 
 ## 9. Cleanup and recovery

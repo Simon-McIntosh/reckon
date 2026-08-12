@@ -99,11 +99,11 @@ def test_set_scalar(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "draft"})
     r = mcp_module._edit_plan(
-        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+        project, "plan-a", [{"op": "set", "path": "status", "value": "active"}], 0
     )
     assert r["ok"] is True
     data, _ = _store_module.read_plan(project, "plan-a")
-    assert data["status"] == "shipped"
+    assert data["status"] == "active"
 
 
 def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):
@@ -673,7 +673,17 @@ def test_resolve_followup(setup):
                     "written_by": "smc",
                     "written_at": "2026-01-01",
                     "prompt": "Done-when: z",
-                }
+                },
+                # A second open followup carries the chain, so resolving f1 is a
+                # landing that still names what comes next.
+                {
+                    "id": "f2",
+                    "title": "next",
+                    "body": "y",
+                    "written_by": "smc",
+                    "written_at": "2026-01-01",
+                    "prompt": "/reckon-ship plan-a §3",
+                },
             ],
         },
     )
@@ -1059,14 +1069,14 @@ def test_multiple_ops_applied_in_order(setup):
                 "item": {"title": "Q?", "choices": ["a", "b"], "choice": ""},
             },
             {"op": "lock", "key": "d1", "choice": "a", "rationale": "r", "by": "smc"},
-            {"op": "set", "path": "status", "value": "shipped"},
+            {"op": "set", "path": "status", "value": "active"},
         ],
         0,
     )
     assert r["ok"] is True
     data, ver = _store_module.read_plan(project, "plan-a")
     assert data["decisions"]["d1"]["choice"] == "a"
-    assert data["status"] == "shipped"
+    assert data["status"] == "active"
     assert ver == 1  # one version bump for the whole batch
 
 
@@ -1265,7 +1275,7 @@ def test_edit_plan_checkout_path_writes_to_worktree_html(setup, worktree):
     r = mcp_module._edit_plan(
         project,
         "plan-a",
-        [{"op": "set", "path": "status", "value": "shipped"}],
+        [{"op": "set", "path": "status", "value": "active"}],
         0,
         checkout_path=str(worktree),
     )
@@ -1275,7 +1285,7 @@ def test_edit_plan_checkout_path_writes_to_worktree_html(setup, worktree):
 
     # Worktree copy changed; MAIN copy is UNTOUCHED.
     wt_data, _ = _store_module.read_plan(project, "plan-a", str(worktree))
-    assert wt_data["status"] == "shipped"
+    assert wt_data["status"] == "active"
     main_data, main_ver = _store_module.read_plan(project, "plan-a")
     assert main_data["status"] == "draft"
     assert main_ver == 0
@@ -1341,13 +1351,13 @@ def test_edit_plan_no_checkout_path_uses_mounts(setup, worktree):
     _make_plan_html(worktree / "docs", "plan-a", {"version": 0, "status": "draft"})
 
     r = mcp_module._edit_plan(
-        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+        project, "plan-a", [{"op": "set", "path": "status", "value": "active"}], 0
     )
     assert r["ok"] is True
     assert r["path"] == str((docs_dir / "plan-a.html").resolve())
 
     main_data, _ = _store_module.read_plan(project, "plan-a")
-    assert main_data["status"] == "shipped"
+    assert main_data["status"] == "active"
     wt_data, _ = _store_module.read_plan(project, "plan-a", str(worktree))
     assert wt_data["status"] == "draft"  # worktree untouched
 

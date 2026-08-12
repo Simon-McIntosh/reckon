@@ -125,6 +125,59 @@ def _sprint_membership(
     return dict(membership), order
 
 
+def _sprint_of(
+    slug: str, plan: dict[str, Any], membership: dict[str, list[str]]
+) -> list[str]:
+    """Return the sprint ids a plan belongs to, by membership or declaration."""
+    assigned = list(membership.get(slug) or [])
+    declared = str(plan.get("sprint") or "")
+    if declared and declared not in assigned:
+        assigned.append(declared)
+    return assigned
+
+
+def _downstream_sprints(
+    all_plans: dict[str, dict[str, Any]],
+    membership: dict[str, list[str]],
+) -> dict[str, dict[str, Any]]:
+    """Derive, per sprint, the sprints its plans unblock.
+
+    A sprint close owes an answer to "what does this let us start?", and the
+    dependency graph already knows: a plan depending on one of this sprint's
+    plans is downstream work, and the sprint holding it is a sprint this one
+    feeds. Deriving it means the answer cannot go stale the way a written list
+    would, and a sprint that feeds nothing says so rather than staying silent.
+    """
+    edges: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for slug, plan in sorted(all_plans.items()):
+        owning_project = str(plan.get("project") or "")
+        for ref in plan.get("depends_on") or []:
+            parsed = parse_plan_ref(ref)
+            if parsed is None or parsed.is_external(owning_project):
+                continue
+            prerequisite = all_plans.get(parsed.slug)
+            if prerequisite is None:
+                continue
+            upstream_sprints = _sprint_of(parsed.slug, prerequisite, membership)
+            downstream_sprints = _sprint_of(slug, plan, membership)
+            for upstream in upstream_sprints:
+                for downstream in downstream_sprints:
+                    if downstream == upstream:
+                        continue
+                    edges[upstream].append(
+                        {"plan": slug, "sprint": downstream, "via": parsed.slug}
+                    )
+    return {
+        sprint_id: {
+            "feeds_sprints": sorted({row["sprint"] for row in rows}),
+            "unblocks": sorted(
+                rows, key=lambda row: (row["sprint"], row["plan"], row["via"])
+            ),
+        }
+        for sprint_id, rows in edges.items()
+    }
+
+
 def _scope_slugs(
     plans: dict[str, dict[str, Any]],
     membership: dict[str, list[str]],
@@ -535,6 +588,7 @@ def build_roadmap(
         for position, row in enumerate(ready, start=1)
     ]
 
+    downstream = _downstream_sprints(all_plans, membership)
     sprint_rows: list[dict[str, Any]] = []
     for position, sprint in enumerate(sprints, start=1):
         sprint_name = str(sprint.get("id") or "")
@@ -561,6 +615,10 @@ def build_roadmap(
                 "ready": sum(row.get("sprint") == sprint_name for row in ready),
                 "blocked": sum(row.get("sprint") == sprint_name for row in blocked),
                 "deferred": sum(row.get("sprint") == sprint_name for row in deferred),
+                "feeds_sprints": downstream.get(sprint_name, {}).get(
+                    "feeds_sprints", []
+                ),
+                "unblocks": downstream.get(sprint_name, {}).get("unblocks", []),
             }
         )
 

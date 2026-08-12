@@ -270,6 +270,336 @@ def flight(project, checkout_path, overrides, probe_auth, pretty):
     click.echo(json.dumps(report, indent=2 if pretty else None, sort_keys=True))
 
 
+@main.group(name="crew")
+def crew():
+    """Dispatch and observe workers through one backend-agnostic call.
+
+    These are agent-callable primitives rather than a human interface: output is
+    JSON on stdout, each call is atomic, nothing is interactive, and exit codes
+    are branchable — 0 succeeded, 1 the configuration or request is wrong, 2 the
+    node is not dispatchable and names which property it failed.
+    """
+
+
+def _crew_modules():
+    """Import the crew and flight helpers on demand."""
+    from reckon import crew as crew_module
+    from reckon import flight as flight_module
+
+    return crew_module, flight_module
+
+
+def _emit(payload, pretty: bool) -> None:
+    """Print one JSON document, sorted so two runs diff only on real change."""
+    click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
+
+
+def _resolved_flight(flight_module, project, checkout_path, overrides):
+    """Resolve flight config for a dispatch, prompt overrides winning."""
+    try:
+        return flight_module.resolve(
+            project,
+            overrides=flight_module.parse_overrides(overrides) if overrides else None,
+            checkout_path=checkout_path,
+        ).config
+    except flight_module.FlightConfigError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+def _repo_root(repo) -> Path:
+    """Resolve the repository root a dispatch cuts its worktree from."""
+    import subprocess
+
+    if repo:
+        return Path(repo).resolve()
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise click.ClickException(
+            "not inside a git repository; pass --repo with the repository root"
+        )
+    return Path(result.stdout.strip()).resolve()
+
+
+def _peer_scopes(values) -> dict:
+    """Parse repeated ``name=path[,path]`` peer scope declarations."""
+    peers: dict[str, list[str]] = {}
+    for value in values:
+        name, sep, paths = value.partition("=")
+        if not sep or not name.strip():
+            raise click.ClickException(
+                f"--peer {value!r} must be written as name=path[,path]"
+            )
+        peers[name.strip()] = [part.strip() for part in paths.split(",") if part.strip()]
+    return peers
+
+
+@crew.command(name="dispatch")
+@click.option("--project", required=True, help="Project owning the plan.")
+@click.option("--plan", "plan_slug", required=True, help="Plan slug the node serves.")
+@click.option("--section", default="", help="Plan section the node implements.")
+@click.option("--role", default="implement", show_default=True, help="Routing role.")
+@click.option("--node", "node_id", required=True, help="Stable node id.")
+@click.option("--goal", default="", help="The one deliverable this node produces.")
+@click.option("--done-when", default="", help="The measure that emits evidence.")
+@click.option(
+    "--write-path",
+    "write_paths",
+    multiple=True,
+    help="Exclusive write path; repeat for each.",
+)
+@click.option(
+    "--peer",
+    "peers",
+    multiple=True,
+    metavar="NAME=PATHS",
+    help="Concurrent node and its paths, for the shared-file check.",
+)
+@click.option(
+    "--requires-decision",
+    "required_decisions",
+    multiple=True,
+    help="Decision key this node needs locked first.",
+)
+@click.option(
+    "--locked-decision",
+    "locked_decisions",
+    multiple=True,
+    help="Decision key already locked in the plan.",
+)
+@click.option("--time-budget", default="", help="Wall-clock allowance, e.g. 25m.")
+@click.option("--manifest", default="", help="Manifest path the worker must write.")
+@click.option("--session", required=True, help="Opaque session id grouping worktrees.")
+@click.option("--base", default="HEAD", show_default=True, help="Worktree base ref.")
+@click.option(
+    "--repo",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repository root (default: the enclosing repository).",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root to read the project flight layer from.",
+)
+@click.option(
+    "--set",
+    "overrides",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="Flight override for this task; always wins over config layers.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate and resolve only: no worktree, no process, no record.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_dispatch(
+    project,
+    plan_slug,
+    section,
+    role,
+    node_id,
+    goal,
+    done_when,
+    write_paths,
+    peers,
+    required_decisions,
+    locked_decisions,
+    time_budget,
+    manifest,
+    session,
+    base,
+    repo,
+    checkout_path,
+    overrides,
+    dry_run,
+    pretty,
+):
+    """Validate a node, resolve routing, and launch or prepare its worker.
+
+    One instruction covers every backend. Which harness runs, at what model,
+    effort and sandbox tier, is resolved from flight config — so this command
+    names none of them, and the caller branches only on the returned
+    ``launch`` kind.
+    """
+    crew_module, flight_module = _crew_modules()
+    config = _resolved_flight(flight_module, project, checkout_path, overrides)
+
+    node = crew_module.TaskNode(
+        id=node_id,
+        goal=goal,
+        plan=plan_slug,
+        section=section,
+        role=role,
+        done_when=done_when,
+        write_paths=list(write_paths),
+        time_budget=time_budget,
+        manifest_path=manifest,
+        requires_decisions=list(required_decisions),
+        peer_scopes=_peer_scopes(peers),
+    )
+
+    if dry_run:
+        try:
+            resolution = crew_module.plan_dispatch(
+                node=node,
+                config=config,
+                locked_decisions=locked_decisions,
+                peer_scopes=node.peer_scopes,
+            )
+        except crew_module.CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit(
+            {"ok": resolution.validation.ok, "dry_run": True, **resolution.as_dict()},
+            pretty,
+        )
+        raise click.exceptions.Exit(0 if resolution.validation.ok else 2)
+
+    try:
+        record = crew_module.dispatch(
+            node=node,
+            project=project,
+            repo=_repo_root(repo),
+            config=config,
+            session=session,
+            base=base,
+            locked_decisions=locked_decisions,
+            peer_scopes=node.peer_scopes,
+        )
+    except crew_module.CrewError as exc:
+        if str(exc).startswith("node is not dispatchable"):
+            _emit({"ok": False, "error": "not-dispatchable", "detail": str(exc)}, pretty)
+            raise click.exceptions.Exit(2) from exc
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **record}, pretty)
+
+
+@crew.command(name="attach")
+@click.option("--run", "run_id", required=True, help="Run id returned by dispatch.")
+@click.option("--task", required=True, help="The harness's own task identifier.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_attach(run_id, task, pretty):
+    """Bind an in-harness dispatch to its prepared run record."""
+    crew_module, _ = _crew_modules()
+    try:
+        record = crew_module.attach(run_id, task)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **record}, pretty)
+
+
+@crew.command(name="observe")
+@click.option("--run", "run_id", required=True, help="Run id to read from disk.")
+@click.option("--project", default=None, help="Project whose flight layer applies.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_observe(run_id, project, pretty):
+    """Fold a run's stream, manifest and liveness back into its record.
+
+    Reports the phase, the captured session id and whatever budget signal the
+    backend emitted — which may legitimately read ``unknown``. Absence of a
+    signal is never reported as exhaustion.
+    """
+    crew_module, flight_module = _crew_modules()
+    config = None
+    if project:
+        config = _resolved_flight(flight_module, project, None, ())
+    try:
+        record = crew_module.observe(run_id, config=config)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **record}, pretty)
+
+
+@crew.command(name="list")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_list(pretty):
+    """List every live run pointer, so a fresh session can pick them up."""
+    crew_module, _ = _crew_modules()
+    runs = [
+        {
+            "run_id": record.get("run_id"),
+            "node": (record.get("node") or {}).get("id"),
+            "project": record.get("project"),
+            "plan": (record.get("node") or {}).get("plan"),
+            "backend": record.get("backend"),
+            "launch": record.get("launch"),
+            "phase": record.get("phase"),
+            "worktree": record.get("worktree"),
+            "manifest_path": record.get("manifest_path"),
+        }
+        for record in crew_module.list_live()
+    ]
+    _emit({"ok": True, "runs": runs}, pretty)
+
+
+@crew.command(name="resume")
+@click.option("--run", "run_id", required=True, help="Run id to answer.")
+@click.option("--advice", required=True, help="The orchestrator's answer.")
+@click.option(
+    "--print-only",
+    is_flag=True,
+    help="Show the resume invocation without running it.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_resume(run_id, advice, print_only, pretty):
+    """Answer a stuck worker in the SAME session it got stuck in.
+
+    Advice only makes sense to a worker that still remembers what it tried, so
+    the resumed turn carries the prior context rather than restating it.
+    """
+    crew_module, _ = _crew_modules()
+    try:
+        plan = crew_module.resume_plan(run_id, advice)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    payload = {"ok": True, "run_id": run_id, **plan.as_dict()}
+    if print_only:
+        _emit(payload, pretty)
+        return
+    record = crew_module.read_pointer(run_id)
+    directory = crew_module.run_dir(run_id)
+    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
+    advice_path = directory / f"resume-{turn}-advice.txt"
+    advice_path.write_text(advice + "\n")
+    log_path = directory / f"resume-{turn}.jsonl"
+    stderr_path = directory / f"resume-{turn}.stderr.log"
+    pid = crew_module._spawn(
+        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+    )
+    record.update(
+        {
+            "pid": pid,
+            "phase": "working",
+            "resumed_turn": turn,
+            "log_path": str(log_path),
+            "stderr_path": str(stderr_path),
+        }
+    )
+    crew_module._write_json(crew_module.pointer_path(run_id), record)
+    payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
+    _emit(payload, pretty)
+
+
+@crew.command(name="stop")
+@click.option("--run", "run_id", required=True, help="Run id to stop.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_stop(run_id, pretty):
+    """Stop a spawned run's process group and record that it was stopped."""
+    crew_module, _ = _crew_modules()
+    try:
+        record = crew_module.terminate(run_id)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **record}, pretty)
+
+
 @main.group(name="service")
 def service():
     """Run the reckon server as a systemd user service."""
