@@ -66,6 +66,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from reckon.lifecycle import TERMINAL_STATUSES
+
 
 class VersionConflict(Exception):
     """Raised when expected_version doesn't match the file's current version."""
@@ -1445,12 +1447,24 @@ def _followup_is_open(followup: dict[str, Any]) -> bool:
     return _entry_is_open(followup)
 
 
+def _plan_is_in_progress(state: dict[str, Any]) -> bool:
+    """Whether lifecycle state already names ongoing work."""
+    status = str(state.get("status", "draft") or "draft").strip().lower()
+    try:
+        implementation = float(state.get("impl", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return False
+    return status not in TERMINAL_STATUSES and implementation < 1.0
+
+
 def continuation_present(state: dict[str, Any]) -> bool:
     """Whether a plan's state names what comes next, or says nothing does.
 
     One definition shared by both write paths, so the ops writer and the HTTP
     patch writer cannot disagree about what a closed chain looks like.
     """
+    if _plan_is_in_progress(state):
+        return True
     followups = [f for f in (state.get("followups") or []) if isinstance(f, dict)]
     if any(_followup_is_open(f) for f in followups):
         return True
