@@ -110,6 +110,39 @@ def modified_age_days(
     return max(0, ((today or date.today()) - modified).days)
 
 
+def derived_plan_age(
+    last_modified: str | None,
+    *,
+    created_at: int | float | str | None = None,
+    fallback_path: Path | None = None,
+    today: date | None = None,
+) -> tuple[int | None, str]:
+    """Return plan age and the semantic or filesystem source used to derive it."""
+
+    age_days = modified_age_days(last_modified, today=today)
+    if age_days is not None:
+        return age_days, "plan-modified"
+
+    reference_day = today or date.today()
+    if created_at not in (None, ""):
+        try:
+            created_day = datetime.fromtimestamp(float(created_at)).date()
+        except (OSError, OverflowError, TypeError, ValueError):
+            created_day = None
+        if created_day is not None:
+            return max(0, (reference_day - created_day).days), "file-created"
+
+    if fallback_path is not None:
+        try:
+            modified_day = datetime.fromtimestamp(fallback_path.stat().st_mtime).date()
+        except (OSError, OverflowError, ValueError):
+            modified_day = None
+        if modified_day is not None:
+            return max(0, (reference_day - modified_day).days), "file-mtime"
+
+    return None, "unknown"
+
+
 def lifecycle_staleness(
     *,
     doc_type: str,

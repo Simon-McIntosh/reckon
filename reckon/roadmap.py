@@ -12,7 +12,7 @@ from collections import defaultdict
 from typing import Any
 
 from reckon._schema import parse_plan_ref
-from reckon.doccheck import authorisation_staleness, modified_age_days
+from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -61,6 +61,39 @@ def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
     ):
         missing.append("open_followup")
     return not missing, missing
+
+
+def _authorisation_age(
+    project: str,
+    plan: dict[str, Any],
+) -> tuple[int | None, str]:
+    recorded_age = derived_plan_age(
+        plan.get("modified") or plan.get("last"),
+        created_at=plan.get("created"),
+    )
+    if recorded_age[0] is not None:
+        return recorded_age
+
+    fallback_path = None
+    docs_dir = _load_mounts().get(project)
+    if docs_dir is not None:
+        from reckon.resources import resolve_resource
+
+        try:
+            resource = resolve_resource(
+                docs_dir,
+                project,
+                str(plan.get("slug") or ""),
+                "plan",
+            )
+        except (OSError, ValueError):
+            resource = None
+        if resource is not None:
+            fallback_path = resource.path
+    return derived_plan_age(
+        plan.get("modified") or plan.get("last"),
+        fallback_path=fallback_path,
+    )
 
 
 def _blocking_row(plan: dict[str, Any], ref: str) -> dict[str, Any] | None:
@@ -555,13 +588,14 @@ def build_roadmap(
         }
         pending.append(row)
         if status == "draft":
-            age_days = modified_age_days(plan.get("modified") or plan.get("last"))
+            age_days, age_source = _authorisation_age(project, plan)
             unauthorised.append(
                 {
                     "slug": slug,
                     "title": plan.get("title") or slug,
                     "status": status,
                     "age_days": age_days,
+                    "age_source": age_source,
                     "age_verdict": authorisation_staleness(
                         status=status,
                         age_days=age_days,
