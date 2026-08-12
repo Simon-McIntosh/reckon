@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -188,16 +189,77 @@ def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> 
     assert stored["budget"]["tokens"]["output_tokens"] == 5
 
 
-def test_promotion_names_wall_clock_fallback_for_untimestamped_stream(
+def test_promotion_uses_stream_mtime_for_untimestamped_stream(
     home, repo, monkeypatch
 ) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
-    promotion_time = "2027-02-03T04:05:06Z"
-    monkeypatch.setattr(crew, "_utc_now", lambda: promotion_time)
+    stream_time = datetime(2027, 2, 3, 4, 5, 6, tzinfo=timezone.utc)
+    os.utime(record["log_path"], (stream_time.timestamp(), stream_time.timestamp()))
 
     stored = crew.complete(record["run_id"], gate="passed")["record"]
 
-    assert stored["completed_at"] == promotion_time
+    assert stored["completed_at"] == "2027-02-03T04:05:06Z"
+    assert stored["completed_at_source"] == "stream_mtime"
+
+
+def test_promotion_prefers_event_time_over_stream_mtime(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    events = [
+        json.loads(line) for line in Path(record["log_path"]).read_text().splitlines()
+    ]
+    events[-1]["timestamp"] = "2027-01-02T03:04:05Z"
+    Path(record["log_path"]).write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    later = datetime(2028, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(record["log_path"], (later, later))
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == "2027-01-02T03:04:05Z"
+    assert stored["completed_at_source"] == "terminal_event"
+
+
+def test_promotion_uses_newest_resume_stream_mtime(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    directory = Path(record["log_path"]).parent
+    resume = directory / "resume-1.jsonl"
+    resume.write_text(Path(record["log_path"]).read_text())
+    first = datetime(2027, 1, 1, tzinfo=timezone.utc).timestamp()
+    second = datetime(2027, 1, 2, tzinfo=timezone.utc).timestamp()
+    os.utime(record["log_path"], (first, first))
+    os.utime(resume, (second, second))
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == "2027-01-02T00:00:00Z"
+    assert stored["completed_at_source"] == "stream_mtime"
+
+
+def test_promotion_uses_original_stream_when_it_has_newest_mtime(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    directory = Path(record["log_path"]).parent
+    resume = directory / "resume-1.jsonl"
+    resume.write_text(Path(record["log_path"]).read_text())
+    earlier = datetime(2027, 1, 1, tzinfo=timezone.utc).timestamp()
+    later = datetime(2027, 1, 2, tzinfo=timezone.utc).timestamp()
+    os.utime(resume, (earlier, earlier))
+    os.utime(record["log_path"], (later, later))
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == "2027-01-02T00:00:00Z"
+    assert stored["completed_at_source"] == "stream_mtime"
+
+
+def test_promotion_falls_back_when_no_stream_survives(home, repo, monkeypatch) -> None:
+    record = _dispatch(repo)
+    Path(record["log_path"]).unlink(missing_ok=True)
+    monkeypatch.setattr(crew, "_utc_now", lambda: "2027-02-03T04:05:06Z")
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == "2027-02-03T04:05:06Z"
     assert stored["completed_at_source"] == "promotion_time"
 
 
@@ -515,6 +577,7 @@ def test_measured_worker_time_is_reported_against_declared_effort(home, repo) ->
                 plan="plan-a",
                 gate="passed",
                 worker_seconds=seconds,
+                completed_at_source="terminal_event",
             ),
             root=repo,
         )
@@ -542,7 +605,11 @@ def test_a_scope_changed_run_is_excluded_from_the_measured_columns(home, repo) -
     ledger.append_run(
         PROJECT,
         ledger.build_record(
-            run_id="r-honest", plan="plan-a", gate="passed", worker_seconds=600
+            run_id="r-honest",
+            plan="plan-a",
+            gate="passed",
+            worker_seconds=600,
+            completed_at_source="terminal_event",
         ),
         root=repo,
     )
@@ -554,6 +621,7 @@ def test_a_scope_changed_run_is_excluded_from_the_measured_columns(home, repo) -
             gate="passed",
             worker_seconds=6000,
             scope_changed=True,
+            completed_at_source="terminal_event",
         ),
         root=repo,
     )
@@ -564,6 +632,39 @@ def test_a_scope_changed_run_is_excluded_from_the_measured_columns(home, repo) -
     assert report["plans"][0]["runs"] == 1
     assert report["plans"][0]["mean_minutes"] == 10.0
     assert report["plans"][0]["excluded_scope_changed"] == 1
+
+
+def test_promotion_time_is_reported_as_unusable_for_calibration(home, repo) -> None:
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-stream",
+            plan="plan-a",
+            gate="passed",
+            worker_seconds=600,
+            completed_at_source="stream_mtime",
+        ),
+        root=repo,
+    )
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-promotion",
+            plan="plan-a",
+            gate="passed",
+            worker_seconds=6000,
+            completed_at_source="promotion_time",
+        ),
+        root=repo,
+    )
+
+    report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    row = report["plans"][0]
+
+    assert report["excluded_unusable_completion"] == 1
+    assert row["excluded_unusable_completion"] == 1
+    assert row["runs"] == 1
+    assert row["mean_minutes"] == 10.0
 
 
 def test_declared_effort_is_read_from_the_plans_themselves(home, repo) -> None:
@@ -586,7 +687,11 @@ def test_the_summary_rolls_up_gates_roster_and_measured_effort(home, repo) -> No
     ledger.append_run(
         PROJECT,
         ledger.build_record(
-            run_id="r-pass", plan="plan-a", gate="passed", worker_seconds=600
+            run_id="r-pass",
+            plan="plan-a",
+            gate="passed",
+            worker_seconds=600,
+            completed_at_source="terminal_event",
         ),
         root=repo,
     )

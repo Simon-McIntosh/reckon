@@ -1395,39 +1395,51 @@ def _elapsed_seconds(start: Any, end: Any) -> int | None:
 
 def _terminal_stream_data(
     record: Mapping[str, Any],
-) -> tuple[str | None, dict[str, Any]]:
-    """Return the last valid event time and the terminal stream's budget."""
+) -> tuple[str | None, str | None, dict[str, Any]]:
+    """Resolve completion from events, then stream mtimes, across all turns."""
     budget = dict(record.get("budget") or {})
     if record.get("launch") != "cli":
-        return None, budget
+        return None, None, budget
 
     backend_name = str(record.get("backend") or "")
     backend = _backend_settings(record, None)
-    observation = _backends.observe_log(
-        backend_name=backend_name,
-        backend=backend,
-        log_path=record.get("log_path", ""),
-    )
-    if not observation.terminal:
-        return None, budget
-
-    budget = dict(observation.budget)
     path = Path(str(record.get("log_path") or ""))
-    if not path.is_file():
-        return None, budget
-    with path.open(encoding="utf-8", errors="replace") as handle:
-        events, _malformed = _backends.parse_events(handle)
-    for event in reversed(events):
-        timestamp = event.get("timestamp")
-        if not isinstance(timestamp, str) or not timestamp.strip():
-            continue
-        try:
-            parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if parsed.tzinfo is not None:
-            return timestamp, budget
-    return None, budget
+    paths = [path, *sorted(path.parent.glob("resume-*.jsonl"))]
+    paths = [candidate for candidate in paths if candidate.is_file()]
+    if not paths:
+        return None, None, budget
+
+    timestamps: list[tuple[datetime, str]] = []
+    for candidate in paths:
+        observation = _backends.observe_log(
+            backend_name=backend_name,
+            backend=backend,
+            log_path=candidate,
+        )
+        if observation.terminal:
+            budget = dict(observation.budget)
+        with candidate.open(encoding="utf-8", errors="replace") as handle:
+            events, _malformed = _backends.parse_events(handle)
+        for event in events:
+            timestamp = event.get("timestamp")
+            if not isinstance(timestamp, str) or not timestamp.strip():
+                continue
+            try:
+                parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if parsed.tzinfo is not None:
+                timestamps.append((parsed, timestamp))
+    if timestamps:
+        return max(timestamps, key=lambda item: item[0])[1], "terminal_event", budget
+
+    newest = max(candidate.stat().st_mtime for candidate in paths)
+    completed = (
+        datetime.fromtimestamp(newest, tz=timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+    return completed, "stream_mtime", budget
 
 
 def complete(
@@ -1449,19 +1461,20 @@ def complete(
     pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
     reverse order would lose the record outright.
 
-    Worker-time is measured from dispatch to the stream's last timestamped
-    event. Promotion time is an explicit fallback for streams without one.
+    Worker-time is measured from dispatch to the newest event timestamp across
+    the run's streams, then their newest last-write time. Promotion time is an
+    explicit fallback when no stream survives.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
-    terminal_time, terminal_budget = _terminal_stream_data(record)
+    terminal_time, terminal_source, terminal_budget = _terminal_stream_data(record)
     if completed_at:
         finished = completed_at
         completion_source = "provided"
     elif terminal_time:
         finished = terminal_time
-        completion_source = "terminal_event"
+        completion_source = terminal_source or "terminal_event"
     else:
         finished = _utc_now()
         completion_source = "promotion_time"
