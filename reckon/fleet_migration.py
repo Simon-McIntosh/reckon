@@ -693,23 +693,21 @@ def _verify_repository(stage_root: Path, project: str) -> dict[str, Any]:
         for finding in audit.get("findings", [])
         if finding.get("severity") == "error"
     ]
-    legacy_capability = [
-        finding
-        for finding in audit.get("findings", [])
-        if finding.get("code") == "legacy-capability-tier"
+    legacy_capability_count = repository_inventory(docs_dir, project)[
+        "legacy_capabilities"
     ]
     if (
         document_findings
         or audit.get("violations")
         or audit_errors
-        or legacy_capability
+        or legacy_capability_count
     ):
         raise FleetMigrationError(
             "verification failed: "
             f"document_errors={len(document_findings)}, "
             f"schema_violations={len(audit.get('violations', []))}, "
             f"audit_errors={len(audit_errors)}, "
-            f"legacy_capabilities={len(legacy_capability)}; "
+            f"legacy_capabilities={legacy_capability_count}; "
             f"documents={document_findings[:5]!r}"
         )
     summary = _read_plan(

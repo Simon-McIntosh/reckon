@@ -166,6 +166,7 @@ def test_fleet_run_snapshots_every_mount_and_applies_only_selected_project(tmp_p
     assert rows["first"]["before"]["legacy_capabilities"] == 3
     assert rows["first"]["after"]["layout"] == {"typed": 2, "legacy": 0}
     assert rows["first"]["after"]["legacy_capabilities"] == 0
+    assert rows["first"]["result"]["verification"]["legacy_capabilities"] == 0
     with zipfile.ZipFile(rows["second"]["snapshot"]["path"]) as archive:
         assert "manifest.json" in archive.namelist()
         assert "contents/work.html" in archive.namelist()
@@ -175,6 +176,7 @@ def test_fleet_run_snapshots_every_mount_and_applies_only_selected_project(tmp_p
     assert migrated.relative_path.as_posix() == "plans/work.html"
     assert not (first_docs / "work.html").exists()
     state = _plan_html.read_state(migrated.path.read_text())
+    assert state["effort_calibrated"] is False
     assert state["capability"]["class"] == "general"
     assert "tier" not in state
     assert state["followups"][0]["capability"]["class"] == "routine"
