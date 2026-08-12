@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-impl" content="1.0">
 </head>
 <body>
@@ -100,6 +100,11 @@
     <h4 class="r-fu-title">Dispatch the work the ledger unblocked</h4>
     <div class="r-fu-body"><p>The ledger and its roster are in place, so the three plans that depended on it are now executable. <code>budget-aware-dispatch</code> is the nearest: it reads the same run records and the budget signal already captured on every pointer. <code>inflight-visibility</code> and <code>effort-calibration</code> follow, the latter owning the unit migration this plan deliberately left alone.</p><p>First real measurement note: reckon's own ledger is empty until nodes are dispatched and promoted through <code>reckon crew</code>, so the effort spread stays unreported until then.</p></div>
     <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    </article>
+<article class="r-fu" data-id="f-crl-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship crew-run-ledger" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make post-completion continuity structural, not dependent on remembering a flag</h4>
+    <div class="r-fu-body"><p>A followup on landed work should reach the worker that did it, but promotion deletes the live pointer and its <code>session_id</code> with it. The session survives only where <code>capture_session</code> recorded it — the roster entry in committed <code>crew.json</code> — so a node dispatched without <code>--member</code> can never be continued after it lands, and the loss is silent at the moment it matters.</p><p>The reckon-ship skill now states the routing rule (a needs-help brief resumes its live run, a followup within a landed node's scope returns to its roster member, new scope is a new node) and tells orchestrators to dispatch as a member by default. That binds discipline, not the tool. Close the gap in code: either have dispatch attach a default roster member when none is named, or have <code>crew complete</code> retain the run's session against its member before deleting the pointer. Measure it with a test that completes a run and then resumes its session.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-run-ledger</pre>
     </article>
 </section>
 
