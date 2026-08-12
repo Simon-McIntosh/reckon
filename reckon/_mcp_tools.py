@@ -59,6 +59,12 @@ class AuditArgs(BaseModel):
     limit: int | None = Field(None, ge=1)
 
 
+class CrewArgs(BaseModel):
+    project: str
+    view: Literal["summary", "flight", "live", "ledger"] = "summary"
+    checkout_path: str | None = None
+
+
 class WriteResult(BaseModel):
     ok: bool = True
     project: str

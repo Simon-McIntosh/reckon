@@ -6,7 +6,7 @@ Repo-agnostic agile planning system. Four surfaces share one repo and one venv:
 |---|---|---|
 | **reckon server** | `reckon serve` (`reckon service` to run it as a daemon) | HTTP backend on `:8765` — serves the SPA, serves shared CSS/JSX, brokers versioned writes to plan HTML semantic elements |
 | **reckon MCP** | `reckon mcp` | MCP stdio transport — same writes as the server, callable from Claude Code / Cursor / any MCP client |
-| **reckon crew** | `reckon crew dispatch` (`observe`, `resume`, `attach`, `list`, and `stop` manage the run) | Backend-agnostic worker dispatch — validates the node contract, resolves flight config, creates its detached worktree, and returns JSON describing the spawned run or in-harness directive |
+| **reckon crew** | `reckon crew dispatch` (`observe`, `resume`, `attach`, `list`, `stop`, `complete`, `recover`, `member`, `ledger`) | Backend-agnostic worker dispatch — validates the node contract, resolves flight config, creates its detached worktree, returns JSON describing the spawned run or in-harness directive, and promotes each finished run into the owning repository's committed ledger |
 | **reckon SPA** | (static) | React SPA under `docs/` — three-column layout (filters · plans · content), Cmd-K palette, plan reading + radial-fan graph, sprint kanban, critical-path graph tab, prompt generation |
 
 The Python distribution is named `reckon-plans`; the import package and
@@ -26,6 +26,8 @@ uv run reckon crew dispatch --project sample --plan plan-alpha --section s3 \
   --manifest /tmp/docs-readme-manifest.md --session example
 uv run reckon crew observe --run <run-id> --project sample
 uv run reckon crew attach --run <run-id> --task <harness-task-id>  # in-harness runs only
+uv run reckon crew complete --run <run-id> --gate passed --commit <sha>
+uv run reckon crew recover    # what an interrupted orchestrator left behind
 uv run reckon build docs      # portable static site under docs/
 uv run reckon migrate-layout docs --check  # collision-safe migration preview
 ```
@@ -36,6 +38,16 @@ one JSON document whose `launch` field tells the caller whether a process was
 spawned or an in-harness task must be launched and bound with `attach`. Use the
 returned run id with `observe`; if a worker reports `NEEDS-HELP:`, answer it in
 the same session with `resume` rather than dispatching a replacement.
+
+A run has two homes over its life. In flight it is a pointer under reckon's
+config home — pid, worktree, log, phase — which churns every few seconds and is
+never committed. `complete` promotes the finished record into the owning
+repository's ledger at `docs/state/<project>/crew.json`, committed beside
+`index.json` and version-paired the same way, then deletes the pointer — in that
+order, so an interruption leaves a recoverable pointer rather than a lost
+record. `recover` classifies whatever is left: running, completed-but-unpromoted
+(with its manifest path), or abandoned. It repairs the record only; it never
+force-removes a worktree.
 
 ## Running the server as a service
 
@@ -191,9 +203,9 @@ After `uv sync`, register in `~/.claude/mcp.json`:
 ```
 
 Then any MCP client can call `reckon.read_plan(project, slug)`,
-`reckon.edit_plan(...)`, and `reckon.audit(project)`. The MCP transport writes
-to the same semantic HTML elements as `reckon serve` — they are two faces of
-one backend.
+`reckon.edit_plan(...)`, `reckon.roadmap(project)`, `reckon.audit(project)`, and
+`reckon.crew(project, view=...)`. The MCP transport writes to the same semantic
+HTML elements as `reckon serve` — they are two faces of one backend.
 
 Typed reads are progressive. A resource selector defaults to a concise human
 summary; explicit views reveal current detail, paginated history, lossless

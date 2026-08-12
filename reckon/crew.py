@@ -25,6 +25,13 @@ backend emits is captured from the first dispatch onward, and a backend that
 reports no headroom yields ``headroom: "unknown"`` rather than a guess. Acting
 on the signal belongs to later work; having the history does not.
 
+A run's record moves between two homes over its life. In flight it is a pointer
+under the config home — pid, worktree, log, phase — which is worthless once the
+run ends and is never committed. On completion :func:`complete` promotes it into
+the owning repository's committed ledger (:mod:`reckon.ledger`) and deletes the
+pointer, in that order, so an interruption leaves a recoverable pointer rather
+than a lost record. :func:`recover` is what recovers it.
+
 Atomicity is a contract of :func:`dispatch`: it performs the whole operation —
 validate, resolve, worktree, prompt, launch, record — or it undoes what it did
 and performs none of it. A half-dispatched node leaves an orphaned worktree
@@ -45,7 +52,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import _backends
+from reckon import _backends, ledger
 from reckon._store import _config_home
 
 # The seven properties of the task-definition contract, in the order a reader of
@@ -689,6 +696,7 @@ def dispatch(
     base: str = "HEAD",
     locked_decisions: Iterable[str] = (),
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
+    member: str = "",
     launcher=None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
@@ -698,6 +706,11 @@ def dispatch(
     be spawned by reckon at all, so everything a worker needs is prepared and
     returned as a directive the calling harness dispatches itself, binding its
     task back with :func:`attach`.
+
+    Naming a roster ``member`` routes the node into that member's long-lived
+    session when the backend reuses sessions, so a repository's team accumulates
+    context across nodes instead of rebuilding it every dispatch. A member whose
+    session is still null gets one captured on its first run.
 
     Either way the operation is atomic: a failure after the worktree exists
     removes it and writes no pointer, so no orphan is left holding write scope.
@@ -725,6 +738,22 @@ def dispatch(
     directory = run_dir(run_id)
     fences = config.get("fences") or {}
     peers = node.peer_scopes
+
+    roster_member = None
+    if member:
+        roster_member = ledger.member(project, member, root=repo_root)
+        if roster_member is None:
+            raise CrewError(
+                f"project {project!r} has no crew member {member!r}; register it "
+                "with `reckon crew member add` before dispatching to it"
+            )
+    reuse_session = (
+        str(roster_member.get("session_id"))
+        if roster_member
+        and roster_member.get("session_id")
+        and backend.get("session_reuse")
+        else None
+    )
 
     worktree = _create_worktree(repo_root, session, node.id, base)
     directory.mkdir(parents=True, exist_ok=True)
@@ -755,6 +784,17 @@ def dispatch(
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
             "session_reuse": bool(backend.get("session_reuse")),
+            "member": member,
+            # The configuration that actually ran the node, recorded now because
+            # a later config layer change makes it unreconstructable — and
+            # without it a measured duration cannot be attributed to anything.
+            "agent": {
+                "backend": backend_name,
+                "launch": launch_kind,
+                "model": backend.get("model"),
+                "effort": backend.get("effort"),
+                "sandbox": backend.get("sandbox"),
+            },
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
@@ -766,7 +806,7 @@ def dispatch(
             "peer_scopes": {name: sorted(paths) for name, paths in peers.items()},
             "created_at": _utc_now(),
             "phase": "starting",
-            "session_id": None,
+            "session_id": reuse_session,
             "task": None,
             "pid": None,
             "argv": None,
@@ -781,6 +821,7 @@ def dispatch(
                 prompt=prompt,
                 worktree=worktree["path"],
                 final_message_path=str(final_path),
+                resume_session=reuse_session,
             )
             spawn = launcher or _spawn
             pid = spawn(
@@ -924,8 +965,36 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     elif record.get("task") and record["manifest_present"]:
         record["phase"] = "complete"
 
+    capture = _capture_member_session(record)
+    if capture is not None:
+        record["session_capture"] = capture
+
     _write_json(pointer_path(run_id), record)
     return record
+
+
+def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Persist a run's session id onto its roster member, if it has one.
+
+    Observation is where a backend's session id first becomes knowable, so it is
+    also where the roster learns it — waiting for completion would leave a second
+    node dispatched in the meantime unable to reach the same session.
+    """
+    member = record.get("member")
+    session_id = record.get("session_id")
+    if not member or not session_id:
+        return None
+    try:
+        return ledger.capture_session(
+            str(record.get("project") or ""),
+            str(member),
+            str(session_id),
+            root=record.get("repo"),
+        )
+    except (ledger.LedgerError, OSError) as exc:
+        # The record being promoted carries the session id anyway, so a roster
+        # write that cannot happen must not fail the promotion around it.
+        return {"captured": False, "member": None, "detail": str(exc)}
 
 
 def _backend_settings(
@@ -997,6 +1066,263 @@ def terminate(run_id: str) -> dict[str, Any]:
     record["stopped_at"] = _utc_now()
     _write_json(pointer_path(run_id), record)
     return record
+
+
+# ── Promotion: the transient record becomes committed evidence ──────────────
+
+
+def scoped_diff_stat(
+    *,
+    cwd: str | Path,
+    base: str,
+    head: str = "HEAD",
+    paths: Iterable[str] = (),
+) -> dict[str, Any]:
+    """Count the lines a run changed inside its own write scope.
+
+    Measured against the node's exclusive paths rather than the whole diff, so
+    the number describes the node rather than whatever else the branch carried.
+    A failure to measure is reported as a detail rather than raised: an
+    unmeasurable diff must not block a record from being promoted, or the run is
+    lost to keep one field tidy.
+    """
+    if not base:
+        return {"detail": "no base sha recorded, so no scoped diff could be taken"}
+    argv = ["git", "diff", "--numstat", f"{base}..{head}"]
+    if paths:
+        argv += ["--", *[str(path) for path in paths]]
+    result = subprocess.run(
+        argv, cwd=str(cwd), capture_output=True, text=True, check=False
+    )
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip() or "git diff failed"
+        return {"detail": detail.splitlines()[0][:200]}
+    added = removed = files = 0
+    for line in result.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        files += 1
+        # A binary file reports "-" for both counts; it changed, but no lines did.
+        added += int(parts[0]) if parts[0].isdigit() else 0
+        removed += int(parts[1]) if parts[1].isdigit() else 0
+    return {"added": added, "removed": removed, "files": files}
+
+
+def _elapsed_seconds(start: Any, end: Any) -> int | None:
+    """Return whole seconds between two ISO-8601 stamps, or None."""
+    try:
+        first = datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+        last = datetime.fromisoformat(str(end).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return max(0, int((last - first).total_seconds()))
+
+
+def complete(
+    run_id: str,
+    *,
+    gate: str,
+    commits: Iterable[str] = (),
+    outcome: str = "",
+    tests_added: int | None = None,
+    scope_changed: bool = False,
+    changed_lines: Mapping[str, Any] | None = None,
+    completed_at: str = "",
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Promote a finished run into the owning repository's committed ledger.
+
+    The ledger append happens first and the pointer is deleted second. That
+    order is the whole recovery story: an interruption between the two leaves a
+    pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
+    reverse order would lose the record outright.
+
+    Worker-time is measured from dispatch to completion. Pass ``completed_at``
+    to use an observed terminal event instead, when the orchestrator promoted
+    the run some time after the worker finished.
+    """
+    record = read_pointer(run_id)
+    project = str(record.get("project") or "")
+    node = record.get("node") or {}
+    finished = completed_at or _utc_now()
+    ledger_root = root if root is not None else record.get("repo")
+
+    commit_list = [str(sha) for sha in commits if str(sha).strip()]
+    if changed_lines is None:
+        worktree = Path(str(record.get("worktree") or ""))
+        tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+        changed_lines = scoped_diff_stat(
+            cwd=tree,
+            base=str(record.get("base_sha") or ""),
+            head=commit_list[-1] if commit_list else "HEAD",
+            paths=node.get("write_paths") or (),
+        )
+
+    run = ledger.build_record(
+        run_id=run_id,
+        plan=str(node.get("plan") or ""),
+        section=str(node.get("section") or ""),
+        node=str(node.get("id") or ""),
+        role=str(record.get("role") or ""),
+        member_id=str(record.get("member") or ""),
+        agent=record.get("agent") or {},
+        dispatched_at=str(record.get("created_at") or ""),
+        completed_at=finished,
+        worker_seconds=_elapsed_seconds(record.get("created_at"), finished),
+        time_budget=str(node.get("time_budget") or ""),
+        base_sha=str(record.get("base_sha") or ""),
+        commits=commit_list,
+        changed_lines=changed_lines,
+        tests_added=tests_added,
+        gate=gate,
+        outcome=outcome,
+        manifest_path=str(record.get("manifest_path") or ""),
+        scope_changed=scope_changed,
+        session_id=record.get("session_id"),
+    )
+    written = ledger.append_run(project, run, root=ledger_root)
+
+    # The session id lives only in the pointer until it reaches the roster, so
+    # it has to be captured before the pointer goes.
+    capture = _capture_member_session(record)
+    pointer_path(run_id).unlink(missing_ok=True)
+    return {
+        "run_id": run_id,
+        "project": project,
+        "ledger_path": written["path"],
+        "ledger_version": written["version"],
+        "pointer_removed": not pointer_path(run_id).exists(),
+        "record": run,
+        "session_capture": capture,
+    }
+
+
+# ── Recovery: what an interrupted orchestrator left behind ───────────────────
+
+# What a live pointer can be once nobody is watching it. Three, because those
+# are the three distinguishable states: still working, finished but never
+# promoted, or dead with nothing delivered.
+RECOVERY_CLASSES = ("running", "completed_unpromoted", "abandoned")
+
+# How long a log may go quiet before its freshness is reported as stale. Only
+# ever reported beside the classification — a slow worker is not a dead one.
+LOG_STALE_AFTER_SECONDS = 900
+
+
+def classify_pointer(
+    record: Mapping[str, Any],
+    *,
+    stale_after_seconds: int = LOG_STALE_AFTER_SECONDS,
+) -> dict[str, Any]:
+    """Classify one live pointer, without touching it.
+
+    Pure and read-only, so the same judgement serves an MCP read and
+    :func:`recover`. Liveness comes from the process table and delivery from the
+    manifest on disk, because a stream that stops without a terminal event reads
+    as working forever and would otherwise hide a dead worker.
+    """
+    run_id = str(record.get("run_id") or "")
+    phase = str(record.get("phase") or "")
+    manifest = Path(str(record.get("manifest_path") or ""))
+    manifest_present = manifest.is_file()
+    alive = record.get("process_alive")
+    if alive is None and record.get("pid"):
+        alive = process_alive(record.get("pid"))
+    log = Path(str(record.get("log_path") or ""))
+    age = None
+    if log.is_file():
+        age = max(0, int(_utc_seconds() - log.stat().st_mtime))
+    terminal = phase in ("complete", "failed")
+
+    if manifest_present or terminal:
+        classification = "completed_unpromoted"
+        detail = (
+            "the run finished and its record is still a pointer; promoting it "
+            "moves it into the repository ledger"
+        )
+        action = f"reckon crew complete --run {run_id} --gate <verdict> --commit <sha>"
+    elif alive is True:
+        classification = "running"
+        detail = "the process is alive"
+        action = f"reckon crew observe --run {run_id}"
+    elif alive is False:
+        classification = "abandoned"
+        detail = (
+            "the process is gone with no terminal event and no manifest; nothing "
+            "was delivered"
+        )
+        action = (
+            f"read {record.get('stderr_path')}; the worktree at "
+            f"{record.get('worktree')} is left in place for review and is never "
+            "force-removed"
+        )
+    else:
+        classification = "running"
+        detail = (
+            "an in-harness run: liveness belongs to the calling harness, so it "
+            "is reported as running until a manifest appears"
+        )
+        action = f"reckon crew observe --run {run_id}"
+
+    return {
+        "run_id": run_id,
+        "project": record.get("project"),
+        "plan": (record.get("node") or {}).get("plan"),
+        "node": (record.get("node") or {}).get("id"),
+        "classification": classification,
+        "phase": phase,
+        "process_alive": alive,
+        "manifest_present": manifest_present,
+        "manifest_path": str(manifest) if str(manifest) != "." else "",
+        "log_age_seconds": age,
+        "log_fresh": None if age is None else age <= stale_after_seconds,
+        "worktree": record.get("worktree"),
+        "detail": detail,
+        "next_action": action,
+    }
+
+
+def _utc_seconds() -> float:
+    """Current time as epoch seconds, matching a file mtime's clock."""
+    return datetime.now(tz=timezone.utc).timestamp()
+
+
+def recover(
+    *,
+    project: str | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Classify every live pointer, repairing the record and nothing else.
+
+    Each pointer is re-observed first, so the classification rests on the
+    current stream and process table rather than on whatever the last writer
+    believed. What gets repaired is the *record*: no worktree is removed, no
+    process is signalled, and no run is promoted on this command's initiative —
+    a completed-but-unpromoted run is reported with its manifest path so the
+    orchestrator can promote it deliberately.
+    """
+    reports = []
+    for pointer in list_live():
+        if project and str(pointer.get("project") or "") != project:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        observed: Mapping[str, Any] = pointer
+        unreadable = ""
+        if run_id:
+            try:
+                observed = observe(run_id, config=config)
+            except CrewError as exc:
+                unreadable = str(exc)
+        report = classify_pointer(observed)
+        if unreadable:
+            report["detail"] = f"{report['detail']} (stream unreadable — {unreadable})"
+        reports.append(report)
+    counts = {
+        name: sum(1 for item in reports if item["classification"] == name)
+        for name in RECOVERY_CLASSES
+    }
+    return {"runs": reports, "counts": counts, "classes": list(RECOVERY_CLASSES)}
 
 
 # ── Worker reports ──────────────────────────────────────────────────────────

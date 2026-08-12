@@ -2423,6 +2423,78 @@ def _roadmap(
         }
 
 
+def _crew(
+    project: str,
+    view: str = "summary",
+    checkout_path: str | None = None,
+) -> dict[str, Any]:
+    """Read crew state: resolved routing, live runs, the ledger, or a summary.
+
+    Read-only, and deliberately one tool over four views rather than four tools.
+    ``ledger`` and ``summary`` read the project's committed run records —
+    ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
+    the never-committed pointers of runs still in flight, each carrying the
+    classification :func:`reckon.crew.recover` would give it; ``flight`` reports
+    the resolved routing config with the layer that supplied every value.
+
+    ``checkout_path`` follows the same worktree-routing contract as
+    ``read_plan``: with it, the ledger and the routing project layer resolve
+    inside that checkout instead of the registered main one.
+    """
+    from reckon import crew as crew_module
+    from reckon import flight as flight_module
+    from reckon import ledger as ledger_module
+
+    if view not in ("summary", "flight", "live", "ledger"):
+        return {
+            "ok": False,
+            "error": "invalid_view",
+            "detail": "view must be summary, flight, live or ledger",
+        }
+    try:
+        if view == "flight":
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **flight_module.flight_report(project, checkout_path=checkout_path),
+            }
+        if view == "live":
+            runs = [
+                crew_module.classify_pointer(record)
+                for record in crew_module.list_live()
+                if str(record.get("project") or "") == project
+            ]
+            return {"ok": True, "project": project, "view": view, "runs": runs}
+        if view == "ledger":
+            data, version = ledger_module.load(project, checkout_path)
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                "version": version,
+                "path": str(ledger_module.ledger_path(project, checkout_path)),
+                **data,
+            }
+        return {
+            "ok": True,
+            "project": project,
+            "view": view,
+            **ledger_module.summary(project, root=checkout_path),
+        }
+    except (
+        ledger_module.LedgerError,
+        crew_module.CrewError,
+        flight_module.FlightConfigError,
+    ) as exc:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "project": project,
+            "detail": str(exc),
+        }
+
+
 def _written_path(
     project: str,
     slug: str,
@@ -2828,19 +2900,20 @@ def _audit(
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit. The granular
-# _funcs below remain for tests/internal use but are intentionally NOT
+# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew. The
+# granular _funcs below remain for tests/internal use but are intentionally NOT
 # registered (collapsed per the schema-and-tooling plan); full removal is a
 # later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
 # list_sprints/list_followups/list_questions) via its discovery + with_schema
 # modes; edit_plan folds the granular mutators via its set/append/resolve/lock/
-# move + create ops.
+# move + create ops; crew folds run state over four views and writes nothing.
 
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
     edit_plan_tool = mcp.tool(name="_edit_plan")(_edit_plan_tool)
     roadmap_tool = mcp.tool()(_roadmap)
     audit_tool = mcp.tool()(_audit)
+    crew_tool = mcp.tool()(_crew)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────

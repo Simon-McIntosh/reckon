@@ -373,6 +373,11 @@ def _peer_scopes(values) -> dict:
 )
 @click.option("--time-budget", default="", help="Wall-clock allowance, e.g. 25m.")
 @click.option("--manifest", default="", help="Manifest path the worker must write.")
+@click.option(
+    "--member",
+    default="",
+    help="Roster member to run this node, reusing its long-lived session.",
+)
 @click.option("--session", required=True, help="Opaque session id grouping worktrees.")
 @click.option("--base", default="HEAD", show_default=True, help="Worktree base ref.")
 @click.option(
@@ -414,6 +419,7 @@ def crew_dispatch(
     locked_decisions,
     time_budget,
     manifest,
+    member,
     session,
     base,
     repo,
@@ -472,6 +478,7 @@ def crew_dispatch(
             base=base,
             locked_decisions=locked_decisions,
             peer_scopes=node.peer_scopes,
+            member=member,
         )
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
@@ -598,6 +605,192 @@ def crew_stop(run_id, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **record}, pretty)
+
+
+def _ledger_module():
+    """Import the ledger helpers on demand."""
+    from reckon import ledger as ledger_module
+
+    return ledger_module
+
+
+@crew.command(name="complete")
+@click.option("--run", "run_id", required=True, help="Run id to promote.")
+@click.option(
+    "--gate",
+    required=True,
+    help="Gate verdict: passed, failed or not-run.",
+)
+@click.option(
+    "--commit",
+    "commits",
+    multiple=True,
+    help="Commit the run landed; repeat for each.",
+)
+@click.option("--outcome", default="", help="One line on what the run produced.")
+@click.option(
+    "--tests-added",
+    type=int,
+    default=None,
+    help="Tests this run added, for later calibration.",
+)
+@click.option(
+    "--scope-changed",
+    is_flag=True,
+    help="The node's scope was widened mid-flight, so it measures neither the "
+    "estimate nor the worker and is excluded from calibration.",
+)
+@click.option(
+    "--completed-at",
+    default="",
+    help="Observed completion stamp, when promotion happens later.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose ledger receives the record (default: the run's own).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_complete(
+    run_id,
+    gate,
+    commits,
+    outcome,
+    tests_added,
+    scope_changed,
+    completed_at,
+    checkout_path,
+    pretty,
+):
+    """Promote a finished run into the owning repository's committed ledger.
+
+    The ledger append happens before the pointer is deleted, so an interruption
+    between them leaves a recoverable pointer rather than a lost record.
+    """
+    crew_module, _ = _crew_modules()
+    ledger_module = _ledger_module()
+    try:
+        result = crew_module.complete(
+            run_id,
+            gate=gate,
+            commits=commits,
+            outcome=outcome,
+            tests_added=tests_added,
+            scope_changed=scope_changed,
+            completed_at=completed_at,
+            root=checkout_path,
+        )
+    except (crew_module.CrewError, ledger_module.LedgerError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
+
+
+@crew.command(name="recover")
+@click.option("--project", default=None, help="Limit to one project's runs.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_recover(project, pretty):
+    """Classify every live pointer an interrupted orchestrator left behind.
+
+    Reports running, completed-but-unpromoted (with its manifest path) and
+    abandoned runs. It repairs the record only: no worktree is removed, no
+    process is signalled, and nothing is promoted on its own initiative.
+    """
+    crew_module, flight_module = _crew_modules()
+    config = None
+    if project:
+        config = _resolved_flight(flight_module, project, None, ())
+    _emit({"ok": True, **crew_module.recover(project=project, config=config)}, pretty)
+
+
+@crew.group(name="member")
+def crew_member():
+    """The project's committed team roster."""
+
+
+@crew_member.command(name="add")
+@click.option("--project", required=True, help="Project owning the roster.")
+@click.option("--member", "member_id", required=True, help="Stable member id.")
+@click.option("--harness", required=True, help="Backend this member dispatches to.")
+@click.option("--role", default="implement", show_default=True, help="Routing role.")
+@click.option(
+    "--session",
+    default="",
+    help="Existing session id; omit so the first run captures one.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose roster is written (default: the registered checkout).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_member_add(project, member_id, harness, role, session, checkout_path, pretty):
+    """Register a member, or update one already on the roster."""
+    ledger_module = _ledger_module()
+    try:
+        entry = ledger_module.register_member(
+            project,
+            member_id,
+            harness=harness,
+            role=role,
+            session_id=session or None,
+            root=checkout_path,
+        )
+    except ledger_module.LedgerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, "project": project, "member": entry}, pretty)
+
+
+@crew_member.command(name="list")
+@click.option("--project", required=True, help="Project owning the roster.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose roster is read (default: the registered checkout).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_member_list(project, checkout_path, pretty):
+    """List the project's roster, with the session each member reuses."""
+    ledger_module = _ledger_module()
+    try:
+        roster = ledger_module.members(project, checkout_path)
+    except ledger_module.LedgerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, "project": project, "members": roster}, pretty)
+
+
+@crew.command(name="ledger")
+@click.option("--project", required=True, help="Project whose ledger is read.")
+@click.option(
+    "--view",
+    type=click.Choice(["summary", "records"]),
+    default="summary",
+    show_default=True,
+    help="Rolled-up measures, or every completed record.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root whose ledger is read (default: the registered checkout).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_ledger(project, view, checkout_path, pretty):
+    """Read the committed record of how this project's plans were implemented."""
+    ledger_module = _ledger_module()
+    try:
+        if view == "records":
+            payload = {
+                "runs": ledger_module.runs(project, checkout_path),
+                "members": ledger_module.members(project, checkout_path),
+            }
+        else:
+            payload = ledger_module.summary(project, root=checkout_path)
+    except ledger_module.LedgerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, "project": project, **payload}, pretty)
 
 
 @main.group(name="service")

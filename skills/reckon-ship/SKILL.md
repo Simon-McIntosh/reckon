@@ -95,6 +95,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → reckon crew dispatch each ready node — branch only on the returned launch kind
 → emit the dispatch summary, naming the gate that closes the wave
 → audit worker manifests/commits/tests → orchestrator merges
+→ reckon crew complete each run — the record becomes committed evidence
 → emit the completion summary, WHY carrying the gate evidence
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
@@ -341,6 +342,10 @@ reckon crew dispatch --project P --plan L --section §N --role implement \
 | `cli` | created the worktree, spawned the worker, wrote the run record | background the call, yield, then `reckon crew observe --run <id>` |
 | `in-harness` | prepared the worktree, manifest path and fences, returned a directive | dispatch your own delegation primitive against the directive, then `reckon crew attach --run <id> --task <task-id>` |
 
+A fresh session that inherited runs it did not dispatch starts with `reckon crew
+recover`, not with a redispatch: it classifies every live pointer as running,
+completed-but-unpromoted, or abandoned, and names the next action for each.
+
 Adding a harness never adds a third case. Do not read backend flags into a
 prompt: per-backend translation is compiled code, which is what makes drift
 between execution paths impossible to express.
@@ -442,6 +447,12 @@ For each completed agent:
    and audit its compact result manifest
 5. Confirm the worker returned commit, test, artifact, and evidence inputs.
    The orchestrator writes plan/index state after integration.
+6. Promote the run: `reckon crew complete --run <id> --gate <verdict> --commit
+   <sha> [--tests-added N] [--scope-changed]`. This is the moment the transient
+   pointer becomes committed evidence in the repository's ledger, and the last
+   moment `--tests-added` and `--scope-changed` can still be stated — a
+   scope-changed node measures neither the estimate nor the worker, so saying so
+   keeps it out of calibration instead of averaging it in.
 
 An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then any test logs or artifacts its

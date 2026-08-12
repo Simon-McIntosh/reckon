@@ -164,6 +164,30 @@ None of these fields are written by the worker. They exist so the orchestrator
 can recover a run without reading the worker's own output — the run record
 answers "where is it and is it alive," the manifest answers "what did it do."
 
+### The record's second home
+
+Every field above is worthless once the run ends, and all of it churns while the
+run is alive, so the pointer lives under the crew home and is never committed.
+The finished record is the opposite: durable evidence of how a plan was
+implemented, which belongs with the plan. `reckon crew complete --run <id> --gate
+<verdict> --commit <sha>` moves it — appending to the owning repository's
+`docs/state/<project>/crew.json` first and deleting the pointer second, so an
+interruption between the two leaves a recoverable pointer rather than a lost
+record.
+
+Promotion is also the only moment some measurements can still be taken, so state
+them on the call: `--tests-added` and, when the node's scope was widened
+mid-flight, `--scope-changed` — a scope-changed run measures neither the estimate
+nor the worker and is excluded from calibration rather than averaged in. The
+wall-clock, the agent configuration that ran the node, and the scoped diff's
+changed lines are captured for you.
+
+`reckon crew recover` is what a fresh session runs before assuming anything: it
+classifies every remaining pointer as **running**, **completed-but-unpromoted**
+(reporting the manifest path to promote from), or **abandoned**, and names the
+next action for each. It repairs the record only — no worktree is force-removed,
+no process is signalled, and nothing is promoted on its initiative.
+
 ## 7. The escape hatch
 
 A vague "I'm stuck" wastes as much time as confused thrashing. A worker that
