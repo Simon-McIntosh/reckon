@@ -1,4 +1,4 @@
-// v6 Sprint view — cleaned up.
+// Sprint view — one focused execution surface.
 // One clear goal block, a switcher, a kanban with drag-drop hover feedback.
 // No "what is a sprint" explainer, no past-sprints accordion.
 
@@ -46,6 +46,12 @@ function Sprint({ sprintId, onNav }) {
   const [dragOver, setDragOver] = useState(null);
   const STATUS_TO_COL = { pending: "todo", draft: "todo", active: "doing", blocked: "doing", in_progress: "doing", shipped: "done", done: "done" };
   const COL_TO_STATUS = { todo: "pending", doing: "active", done: "shipped" };
+  const gateSummary = (gates) => {
+    const rows = gates || [];
+    if (rows.length === 0) return "—";
+    const passed = rows.filter(g => g.passed || g.verdict === "passed").length;
+    return `${passed}/${rows.length} passed`;
+  };
 
   const cols = useMemo(() => {
     const g = { todo: [], doing: [], done: [] };
@@ -149,6 +155,10 @@ function Sprint({ sprintId, onNav }) {
                   <span>{p.ms}</span>
                   {(p.dec_open || 0) > 0 && <><span>·</span><span style={{ color: "var(--warn)" }}>D {p.dec_open}</span></>}
                   {(p.blockers || 0) > 0 && <><span>·</span><span style={{ color: "var(--bad)" }}>! {p.blockers}</span></>}
+                </div>
+                <div className="row r-gate-column">
+                  <span>Gates</span>
+                  <span>{gateSummary(p.gates)}</span>
                 </div>
               </a>
             ))}

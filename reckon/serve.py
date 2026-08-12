@@ -375,6 +375,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         # The SPA fetches a doc's full state (decisions, followups, …) from
         # GET /plan/<project>/<slug> when it opens that doc.
         rec = _plan_html.parse_meta(html_file)
+        gates = _read_gates(html_file)
         slug = resource.slug
         artifact_type = resource.type
         item = {
@@ -428,6 +429,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "impl": rec["impl"],
                     "dec_open": rec["dec_open"],
                     "blockers": rec["blockers"],
+                    "gates": gates,
                     "depends_on": rec.get("depends_on", []),
                     "blocks": rec.get("blocks", []),
                 }
@@ -509,6 +511,18 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     }
     _DISC_CACHE[cache_key] = (sig, result)
     return result
+
+
+def _read_gates(path: Path) -> list[dict]:
+    """Read gate state only for documents declaring the semantic section."""
+
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    if 'data-reckon="gates"' not in text and "data-reckon='gates'" not in text:
+        return []
+    return list(_plan_html.read_state(text).get("gates") or [])
 
 
 def _has_external_dependencies(inventory: list[dict], project: str) -> bool:
