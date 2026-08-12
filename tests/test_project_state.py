@@ -335,6 +335,106 @@ def test_project_scope_rejects_malformed_routes(migrated):
         )
 
 
+def test_project_north_stars_round_trip_and_compose(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+    north_stars = [
+        {
+            "id": "reliable-delivery",
+            "name": "Reliable delivery",
+            "statement": "Every accepted change is reproducible and observable.",
+            "href": "/sample/research/delivery-strategy",
+        },
+        {
+            "id": "clear-direction",
+            "name": "Clear direction",
+            "statement": "Every material plan states what durable outcome it serves.",
+        },
+    ]
+
+    new_version = write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "north_stars": north_stars},
+        version,
+    )
+
+    stored, stored_version = read_resource(docs, "sample", "project", "project")
+    assert new_version == stored_version == version + 1
+    assert stored["north_stars"] == north_stars
+    assert compose_project_state(docs, "sample")["north_stars"] == north_stars
+
+
+@pytest.mark.parametrize("missing", ["id", "name", "statement"])
+def test_project_north_star_requires_identity_name_and_statement(migrated, missing):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+    north_star = {
+        "id": "reliable-delivery",
+        "name": "Reliable delivery",
+        "statement": "Every accepted change is reproducible and observable.",
+    }
+    north_star.pop(missing)
+
+    with pytest.raises(ValueError, match=missing):
+        write_resource(
+            docs,
+            "sample",
+            "project",
+            "project",
+            {**project, "north_stars": [north_star]},
+            version,
+        )
+
+
+def test_project_north_star_advisory_cap_warns_without_blocking_write(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+    north_stars = [
+        {
+            "id": f"direction-{index}",
+            "name": f"Direction {index}",
+            "statement": f"Winning outcome {index} remains visible.",
+        }
+        for index in range(6)
+    ]
+
+    new_version = write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "north_stars": north_stars},
+        version,
+    )
+
+    assert new_version == version + 1
+    assert (
+        len(read_resource(docs, "sample", "project", "project")[0]["north_stars"]) == 6
+    )
+    assert audit_project_state(docs, "sample") == [
+        {
+            "code": "north-star-advisory-cap-exceeded",
+            "severity": "warning",
+            "message": "project declares 6 north-stars; the advisory cap is 5",
+        }
+    ]
+
+
+def test_project_without_north_stars_reads_unchanged(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    assert "north_stars" not in project
+    assert "north_stars" not in compose_project_state(docs, "sample")
+    assert read_resource(docs, "sample", "project", "project") == (
+        project,
+        version,
+    )
+
+
 def test_migration_rerun_verifies_and_changed_source_rejects(migrated):
     docs, index, _ = migrated
     rerun = migrate_project_state(docs, "sample")
