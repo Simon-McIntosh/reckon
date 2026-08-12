@@ -32,9 +32,9 @@
       <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
       <tbody>
         <tr><td>Migration is lossless</td><td>Letters map to 1/2/4/8 hours with uncalibrated plans marked, and a plan with neither field gains nothing — <a href="#hours-unit">§ hours unit</a></td><td>pass</td></tr>
-        <tr><td>Loops are separable</td><td>—</td><td>open</td></tr>
-        <tr><td>Scope change excluded</td><td>—</td><td>open</td></tr>
-        <tr><td>Cold start terminates</td><td>—</td><td>open</td></tr>
+        <tr><td>Loops are separable</td><td>2.0× agent moves only its factor; 2.0× plan moves only its estimate — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
+        <tr><td>Scope change excluded</td><td>A 200 h scope-changed outlier and a 50 h proxy-timed one are both withheld — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
+        <tr><td>Cold start terminates</td><td>Eight noisy observations converge to 3.009 h and factor 2.003 — <a href="#calibration-loops">§ calibration loops</a></td><td>pass</td></tr>
         <tr><td>Horizon drives splitting</td><td>—</td><td>open</td></tr>
         <tr><td>Cache is rebuildable</td><td>—</td><td>open</td></tr>
         <tr><td>Lines are unrankable</td><td>—</td><td>open</td></tr>
@@ -149,6 +149,63 @@
     <p>The last row is the property that keeps the unit meaningful: an inferred figure is resolved on
     read and never written back, so the mapping stays a compatibility read rather than becoming a
     silent re-estimate of every historical plan.</p>
+  </section>
+
+  <section id="hours-arithmetic">
+    <h2>Paths report durations, not scores</h2>
+
+    <p>Commit <code>07fb21b</code> — <code>reckon/roadmap.py</code>,
+    <code>tests/test_roadmap.py</code>; 188 insertions, 21 deletions across 2 files. Gate
+    <strong>passed</strong>: 29 passed, 0 failed, 4 new tests.</p>
+
+    <p>The roadmap response now names its unit — <code>unit=worker-hours</code> — and carries
+    per-plan <code>effort_hours</code> and <code>remaining_effort_hours</code> with
+    <code>length_hours</code> on critical and open paths. Naming the unit in the payload is the point:
+    an unlabelled number invites the reader to assume the old doubling scale.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Explicit hours win</td><td>5.0 h overrides a legacy <code>XL</code> and yields 3.75 h remaining at 25% implementation</td></tr>
+        <tr><td>Letter-only</td><td><code>L</code> maps to 4.0 h and the plan is reported uncalibrated</td></tr>
+        <tr><td>Path totals</td><td>Equal the sum of per-plan <code>remaining_effort_hours</code> within a tested 0.25 h tolerance</td></tr>
+        <tr><td>Uncalibrated visible</td><td><code>uncalibrated_count</code> and <code>uncalibrated_plans</code> reported beside the totals</td></tr>
+        <tr><td>Completed plans</td><td>Zero-remaining plans excluded from the actionable uncalibrated count</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row keeps the count honest: a finished plan that was never estimated in hours is not
+    work anyone can act on, so counting it would inflate the figure that is supposed to say how much
+    re-estimating is left.</p>
+  </section>
+
+  <section id="calibration-loops">
+    <h2>Two loops that do not contaminate each other</h2>
+
+    <p>Commit <code>b93cfcd</code> — <code>reckon/calibration.py</code>,
+    <code>tests/test_calibration.py</code>; 364 insertions across 2 new files. Gate
+    <strong>passed</strong>: 9 passed, 0 failed, 9 new tests, ruff clean.</p>
+
+    <p>Separability is asserted in both directions rather than assumed, which is what the plan warned
+    would quietly break if built naively:</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Slow agent, sound estimates</td><td>An agent at exactly 2.0× declared hours across three plans resolves to factor 2.0 while all three plan estimates stay identical</td></tr>
+        <tr><td>Underestimated plan, baseline agent</td><td>Four 4.0 h runs against a 2.0 h plan resolve the plan to 4.0 h while the factor stays exactly <code>CalibrationFigure(value=1.0, confidence=1.0, samples=20)</code></td></tr>
+        <tr><td>Scope-changed run</td><td>A 200.0 h outlier is excluded from both loops, leaving the usable 2.0 figure and reporting one exclusion in its category</td></tr>
+        <tr><td>Proxy-timed run</td><td>A 50.0 h <code>promotion_time</code> outlier is excluded the same way</td></tr>
+        <tr><td>Cold start</td><td>From empty history, eight noisy observations converge to 3.009 h (confidence 0.764, 8 samples) and factor 2.003 (confidence 0.775, 8 samples) — both within 0.05 of their synthetic targets, without oscillating</td></tr>
+        <tr><td>Missing data</td><td>Missing counterparts and invalid durations are excluded explicitly rather than guessed</td></tr>
+      </tbody>
+    </table>
+
+    <p>The two outlier rows are what make the earlier repairs pay off. A 200-hour scope-changed run and
+    a 50-hour proxy-timed run are exactly the shapes this sprint's own ledger produced, and both are
+    now withheld by construction rather than by anyone remembering to filter them. Confidence travels
+    with each figure, so an agent with eight samples cannot present its number with the authority of
+    one with eighty.</p>
   </section>
 
   <section id="stream-carries-no-timestamps">

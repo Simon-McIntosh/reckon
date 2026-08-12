@@ -73,6 +73,36 @@
     recorded as partial rather than passed.</p>
   </section>
 
+  <section id="recovery-classification">
+    <h2>Recovery reads the manifest instead of inferring delivery from a turn ending</h2>
+
+    <p>Commit <code>e2fb788</code> — <code>reckon/crew.py</code>, <code>tests/test_crew.py</code>;
+    193 insertions, 14 deletions across 2 files. Gate <strong>passed</strong>: 72 passed, 0 failed,
+    4.5 s, 6 new tests, ruff clean.</p>
+
+    <p>The vocabulary grew from three classes to five — <code>running</code>,
+    <code>completed_unpromoted</code>, <code>blocked</code>, <code>failed</code>,
+    <code>abandoned</code> — because three could not express the states that were actually occurring.
+    <code>status: complete</code> is now the only manifest status that produces promote advice.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Terminal phase, no manifest</td><td>Classifies <code>abandoned</code>, and the next action names <code>stderr.log</code> — the one file a failed launch writes its reason to</td></tr>
+        <tr><td>Manifest says blocked</td><td>Classifies <code>blocked</code>; no promote advice</td></tr>
+        <tr><td>Manifest says failed</td><td>Classifies <code>failed</code>; no promote advice</td></tr>
+        <tr><td>Manifest says complete</td><td>The only status producing <code>crew complete</code> advice, with the manifest's own commits reflected in it</td></tr>
+        <tr><td>Both readers agree</td><td>The MCP crew live view and CLI <code>crew recover</code> returned identical classification, <code>manifest_status</code> and <code>next_action</code> for the same pointer</td></tr>
+        <tr><td>No fabricated promotion</td><td>Direct, MCP and recovery paths all classify a terminal run with no manifest and no commits as <code>abandoned</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The last row closes the specific hazard that produced this section: an orchestrator following
+    the old advice would have written a success with a nonexistent commit into the committed ledger,
+    which later calibration reads as ground truth. The defect was found by hitting it, on the run whose
+    launch the read-only sandbox rejected.</p>
+  </section>
+
   <section id="milestone-shape">
     <h2>A milestone is an identifier or nothing</h2>
 
