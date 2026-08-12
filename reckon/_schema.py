@@ -452,6 +452,7 @@ class PlanState(BaseModel):
     effort: str = Field("M", json_schema_extra=_enum(EFFORT_ENUM))
     milestone: str = "—"
     sprint: str | None = None
+    north_star: str | None = None
     capability: CapabilityRequest | None = None
     tier: str = Field(
         "",
@@ -500,6 +501,10 @@ class PlanState(BaseModel):
     impl: float = 0.0  # progress fraction, server-written
     version: int = 0  # optimistic-concurrency counter, server-owned
     compatibility_warnings: list[str] = Field(
+        default_factory=list,
+        json_schema_extra={"readOnly": True},
+    )
+    validation_diagnostics: list[dict[str, str]] = Field(
         default_factory=list,
         json_schema_extra={"readOnly": True},
     )
@@ -576,6 +581,7 @@ class PlanState(BaseModel):
                 "effort",
                 "milestone",
                 "sprint",
+                "north_star",
                 "capability",
                 "tier",
                 "depends_on",
@@ -632,6 +638,7 @@ class PlanState(BaseModel):
                 "effort": ("", "M"),
                 "milestone": ("", "—"),
                 "sprint": ("", None),
+                "north_star": ("", None),
                 "capability": (None,),
                 "impl": (0, 0.0, None),
                 "depends_on": ([],),

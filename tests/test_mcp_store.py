@@ -79,6 +79,25 @@ def _make_plan_html(
     return path
 
 
+def _declare_north_stars(docs_dir: Path, project: str, *ids: str) -> None:
+    state_dir = docs_dir / "state" / project
+    state_dir.mkdir(parents=True, exist_ok=True)
+    envelope = {
+        "project": project,
+        "data": {
+            "north_stars": [
+                {
+                    "id": north_star_id,
+                    "name": north_star_id.replace("-", " ").title(),
+                    "statement": f"{north_star_id} remains the durable direction.",
+                }
+                for north_star_id in ids
+            ]
+        },
+    }
+    (state_dir / "index.json").write_text(json.dumps(envelope), encoding="utf-8")
+
+
 # ── read_plan ──────────────────────────────────────────────────────────────
 
 
@@ -109,6 +128,22 @@ def test_read_plan_html_island(setup):
     assert data["title"] == "My Plan"
 
 
+def test_read_plan_parses_declared_north_star(setup):
+    docs_dir, _, project = setup
+    _declare_north_stars(docs_dir, project, "reliable-delivery")
+    _make_plan_html(
+        docs_dir,
+        "oriented-plan",
+        {"slug": "oriented-plan", "north_star": "reliable-delivery", "version": 0},
+    )
+
+    data, version = _store_module.read_plan(project, "oriented-plan")
+
+    assert version == 0
+    assert data["north_star"] == "reliable-delivery"
+    assert "validation_diagnostics" not in data
+
+
 # ── write_plan round-trip ──────────────────────────────────────────────────
 
 
@@ -132,6 +167,74 @@ def test_write_plan_roundtrip(setup):
     assert data["version"] == 1
     # No JSON-envelope version key in semantic HTML state.
     assert "_version" not in data
+
+
+def test_write_plan_round_trips_north_star(setup):
+    docs_dir, _, project = setup
+    _declare_north_stars(docs_dir, project, "clear-direction")
+    _make_plan_html(docs_dir, "oriented-plan", {"slug": "oriented-plan", "version": 0})
+
+    new_version = _store_module.write_plan(
+        project,
+        "oriented-plan",
+        {"slug": "oriented-plan", "north_star": "clear-direction"},
+        expected_version=0,
+    )
+
+    data, version = _store_module.read_plan(project, "oriented-plan")
+    assert new_version == version == 1
+    assert data["north_star"] == "clear-direction"
+    assert 'name="plan-north-star" content="clear-direction"' in (
+        docs_dir / "oriented-plan.html"
+    ).read_text(encoding="utf-8")
+
+
+def test_undeclared_north_star_warns_without_refusing_write(setup):
+    docs_dir, _, project = setup
+    _declare_north_stars(docs_dir, project, "clear-direction")
+    _make_plan_html(docs_dir, "oriented-plan", {"slug": "oriented-plan", "version": 0})
+
+    new_version = _store_module.write_plan(
+        project,
+        "oriented-plan",
+        {"slug": "oriented-plan", "north_star": "missing-direction"},
+        expected_version=0,
+    )
+
+    data, version = _store_module.read_plan(project, "oriented-plan")
+    assert new_version == version == 1
+    assert data["north_star"] == "missing-direction"
+    assert data["validation_diagnostics"] == [
+        {
+            "code": "undeclared-north-star",
+            "severity": "warning",
+            "message": (
+                "plan north-star 'missing-direction' is not declared by project "
+                "'test-proj'"
+            ),
+        }
+    ]
+
+
+def test_plan_without_north_star_is_unchanged_by_noop_write(setup):
+    docs_dir, _, project = setup
+    plan_file = _make_plan_html(
+        docs_dir,
+        "unoriented-plan",
+        {"slug": "unoriented-plan", "status": "active", "version": 0},
+    )
+    before = plan_file.read_bytes()
+    data, version = _store_module.read_plan(project, "unoriented-plan")
+
+    new_version = _store_module.write_plan(
+        project, "unoriented-plan", data, expected_version=version
+    )
+
+    reread, reread_version = _store_module.read_plan(project, "unoriented-plan")
+    assert new_version == reread_version == version == 0
+    assert "north_star" not in reread
+    assert "validation_diagnostics" not in reread
+    assert plan_file.read_bytes() == before
 
 
 def test_write_plan_requires_type_for_duplicate_leaf(setup):
