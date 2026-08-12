@@ -188,9 +188,7 @@ def parse_duration(value: str) -> int:
     """Return a duration in seconds, or raise naming the accepted form."""
     match = _DURATION.match(str(value).strip())
     if not match:
-        raise CrewError(
-            f"duration {value!r} must be an integer followed by s, m or h"
-        )
+        raise CrewError(f"duration {value!r} must be an integer followed by s, m or h")
     return int(match.group(1)) * _DURATION_SECONDS[match.group(2)]
 
 
@@ -240,7 +238,9 @@ def validate_node(
         fail("demonstrable", "no done-when measure is stated")
     else:
         subjective = [
-            term for term in SUBJECTIVE_TERMS if re.search(rf"\b{term}\b", done_when, re.I)
+            term
+            for term in SUBJECTIVE_TERMS
+            if re.search(rf"\b{term}\b", done_when, re.I)
         ]
         if subjective:
             fail(
@@ -354,7 +354,10 @@ def resolve_role(config: Mapping[str, Any], role: str) -> tuple[str, dict[str, A
 
 def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) -> str:
     """Return the time budget a node is held to: backend first, fence second."""
-    for candidate in (backend.get("time_budget"), (config.get("fences") or {}).get("time_budget")):
+    for candidate in (
+        backend.get("time_budget"),
+        (config.get("fences") or {}).get("time_budget"),
+    ):
         if candidate:
             return str(candidate)
     return ""
@@ -385,7 +388,9 @@ def pointer_path(run_id: str) -> Path:
 
 def _utc_now() -> str:
     return (
-        datetime.now(tz=timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        datetime.now(tz=timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -475,7 +480,10 @@ def compose_prompt(
     """
     peers = peer_scopes or {}
     peer_lines = (
-        "\n".join(f"  {name} → {', '.join(sorted(paths))}" for name, paths in sorted(peers.items()))
+        "\n".join(
+            f"  {name} → {', '.join(sorted(paths))}"
+            for name, paths in sorted(peers.items())
+        )
         or "  none"
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
@@ -547,7 +555,9 @@ still unmet. Asking costs one turn; thrashing costs the node.
 # ── Dispatch ────────────────────────────────────────────────────────────────
 
 
-def _create_worktree(repo: Path, session: str, worker: str, base: str) -> dict[str, Any]:
+def _create_worktree(
+    repo: Path, session: str, worker: str, base: str
+) -> dict[str, Any]:
     """Create a detached worktree through the fleet script, or raise."""
     script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
     if not script.is_file():
@@ -652,7 +662,9 @@ def plan_dispatch(
     node.manifest_path = node.manifest_path or str(
         run_dir(resolved_run_id) / "manifest.md"
     )
-    node.peer_scopes = {name: list(paths) for name, paths in (peer_scopes or {}).items()}
+    node.peer_scopes = {
+        name: list(paths) for name, paths in (peer_scopes or {}).items()
+    }
     verdict = validate_node(
         node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
     )
@@ -771,8 +783,15 @@ def dispatch(
                 final_message_path=str(final_path),
             )
             spawn = launcher or _spawn
-            pid = spawn(plan, log_path=log_path, stderr_path=stderr_path, prompt_path=prompt_path)
-            record.update({"pid": pid, "argv": list(plan.argv), "dialect": plan.dialect})
+            pid = spawn(
+                plan,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=prompt_path,
+            )
+            record.update(
+                {"pid": pid, "argv": list(plan.argv), "dialect": plan.dialect}
+            )
         else:
             record["directive"] = {
                 "attach_with": f"reckon crew attach --run {run_id} --task <task-id>",
@@ -888,11 +907,20 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         final_file = Path(record.get("final_message_path") or "")
         if not record["final_message"] and final_file.is_file():
             record["final_message"] = final_file.read_text().strip() or None
-        if data["phase"] == "working" and record["process_alive"] is False:
+        if (
+            data["phase"] in ("starting", "working")
+            and record["process_alive"] is False
+        ):
             # A dead process with no terminal event is a recoverable orphan, not
             # a finished run; saying so is what stops it being read as complete.
+            # An empty log counts: a launch that failed on its arguments exits
+            # before writing an event, and reporting that as "starting" would
+            # leave it waiting forever for a worker that never began.
             record["phase"] = "orphaned"
-            record["detail"] = "process exited without a terminal event in its log"
+            record["detail"] = (
+                "process exited without a terminal event in its log; "
+                f"check {record.get('stderr_path')}"
+            )
     elif record.get("task") and record["manifest_present"]:
         record["phase"] = "complete"
 
@@ -1037,7 +1065,9 @@ def parse_needs_help(text: str) -> dict[str, Any]:
     current: str | None = None
     for line in lines:
         stripped = line.strip()
-        match = re.match(r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$", stripped, re.I)
+        match = re.match(
+            r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$", stripped, re.I
+        )
         if match:
             current = match.group(1).lower()
             fields[current] = match.group(2).strip()
@@ -1140,7 +1170,9 @@ def validate_summary(text: str, *, occasion: str) -> dict[str, Any]:
                 axes[current].append(match.group(2).strip())
         elif current and line:
             axes[current].append(line)
-    findings = [f"axis {axis} is missing" for axis in SUMMARY_AXES if not axes.get(axis)]
+    findings = [
+        f"axis {axis} is missing" for axis in SUMMARY_AXES if not axes.get(axis)
+    ]
     findings += [
         f"axis {axis} runs to {len(lines)} lines; at most two"
         for axis, lines in sorted(axes.items())
@@ -1153,4 +1185,8 @@ def validate_summary(text: str, *, occasion: str) -> dict[str, Any]:
                 "completion WHY carries no quantitative gate evidence; state the "
                 "measure and its value"
             )
-    return {"ok": not findings, "axes": {k: list(v) for k, v in sorted(axes.items())}, "findings": findings}
+    return {
+        "ok": not findings,
+        "axes": {k: list(v) for k, v in sorted(axes.items())},
+        "findings": findings,
+    }

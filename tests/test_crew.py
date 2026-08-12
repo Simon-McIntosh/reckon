@@ -55,7 +55,11 @@ def repo(tmp_path):
     root = tmp_path / "repo"
     (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
     source = (
-        Path(__file__).parents[1] / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "scripts"
+        / "worktree_fleet.py"
     )
     (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
         source.read_text()
@@ -102,7 +106,9 @@ def test_two_goals_joined_by_a_conjunction_are_two_nodes() -> None:
         _node(goal="add the translation module and wire the CLI"), budget_ceiling="25m"
     )
     assert "single-goal" in verdict.failed_properties
-    detail = next(f["detail"] for f in verdict.findings if f["property"] == "single-goal")
+    detail = next(
+        f["detail"] for f in verdict.findings if f["property"] == "single-goal"
+    )
     assert "split it" in detail
 
 
@@ -118,7 +124,9 @@ def test_a_subjective_done_when_is_not_a_measure() -> None:
 
 
 def test_a_done_when_with_no_observable_fails_demonstrable() -> None:
-    verdict = crew.validate_node(done_when_node := _node(done_when="it works"), budget_ceiling="25m")
+    verdict = crew.validate_node(
+        done_when_node := _node(done_when="it works"), budget_ceiling="25m"
+    )
     assert done_when_node.done_when == "it works"
     assert "demonstrable" in verdict.failed_properties
 
@@ -157,7 +165,9 @@ def test_a_budget_over_the_fence_must_be_split_not_overrun() -> None:
 
 
 def test_a_malformed_budget_names_the_accepted_form() -> None:
-    verdict = crew.validate_node(_node(time_budget="half an hour"), budget_ceiling="25m")
+    verdict = crew.validate_node(
+        _node(time_budget="half an hour"), budget_ceiling="25m"
+    )
     assert "bounded" in verdict.failed_properties
 
 
@@ -191,9 +201,13 @@ def test_every_failure_is_reported_in_one_pass() -> None:
     verdict = crew.validate_node(
         crew.TaskNode(id="n", goal="", plan="", done_when=""), budget_ceiling="25m"
     )
-    assert {"single-goal", "fully-specified", "demonstrable", "scoped", "bounded"} <= set(
-        verdict.failed_properties
-    )
+    assert {
+        "single-goal",
+        "fully-specified",
+        "demonstrable",
+        "scoped",
+        "bounded",
+    } <= set(verdict.failed_properties)
 
 
 def test_the_contract_has_exactly_seven_properties() -> None:
@@ -298,7 +312,11 @@ def test_dispatch_refuses_a_malformed_node_and_creates_nothing(home, repo) -> No
     assert "not dispatchable" in str(excinfo.value)
     assert crew.list_live() == []
     listed = subprocess.run(
-        ["git", "worktree", "list"], cwd=repo, capture_output=True, text=True, check=True
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "node-a" not in listed.stdout
 
@@ -319,7 +337,11 @@ def test_a_failed_launch_leaves_no_worktree_holding_write_scope(home, repo) -> N
             launcher=exploding_launcher,
         )
     listed = subprocess.run(
-        ["git", "worktree", "list"], cwd=repo, capture_output=True, text=True, check=True
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "node-a" not in listed.stdout
     assert crew.list_live() == []
@@ -412,7 +434,10 @@ def test_observe_folds_the_stream_into_the_record(home, repo) -> None:
     assert observed["budget"]["headroom"] == "unknown"
     assert observed["manifest_present"] is False
     # Written back, so the next reader does not have to re-derive it.
-    assert json.loads(crew.pointer_path(record["run_id"]).read_text())["phase"] == "complete"
+    assert (
+        json.loads(crew.pointer_path(record["run_id"]).read_text())["phase"]
+        == "complete"
+    )
 
 
 def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> None:
@@ -422,7 +447,10 @@ def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> 
         repo=repo,
         config={
             **CONFIG,
-            "backends": {**CONFIG["backends"], "alpha": {**CONFIG["backends"]["alpha"], "command": "claude"}},
+            "backends": {
+                **CONFIG["backends"],
+                "alpha": {**CONFIG["backends"]["alpha"], "command": "claude"},
+            },
         },
         session="sess",
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: 0,
@@ -434,7 +462,9 @@ def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> 
     assert observed["budget"]["resets_at"] == "2026-09-01T00:00:00Z"
 
 
-def test_observe_sees_the_manifest_that_is_the_real_delivery(home, repo, tmp_path) -> None:
+def test_observe_sees_the_manifest_that_is_the_real_delivery(
+    home, repo, tmp_path
+) -> None:
     manifest = tmp_path / "node-a-manifest.md"
     record = _dispatched(home, repo, "codex-turn.jsonl", manifest_path=str(manifest))
     manifest.write_text("node: node-a\nstatus: complete\n")
@@ -455,6 +485,21 @@ def test_a_dead_process_with_no_terminal_event_is_an_orphan(home, repo) -> None:
     assert "without a terminal event" in observed["detail"]
 
 
+def test_a_launch_that_never_started_is_an_orphan_not_a_pending_run(home, repo) -> None:
+    """An empty log plus a dead process means the worker never began.
+
+    A launch rejected on its arguments exits before writing an event; reporting
+    that as still starting would leave the orchestrator waiting forever.
+    """
+    record = _dispatched(home, repo)
+    pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
+    pointer["pid"] = 999999999
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    observed = crew.observe(record["run_id"])
+    assert observed["phase"] == "orphaned"
+    assert record["stderr_path"] in observed["detail"]
+
+
 def test_a_run_stays_observable_without_its_config_layer(home, repo) -> None:
     """The recorded argv holds the command, so a config change cannot orphan it."""
     record = _dispatched(home, repo, "codex-turn.jsonl")
@@ -471,7 +516,8 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     record = _dispatched(home, repo, "codex-turn.jsonl")
     crew.observe(record["run_id"])
     plan = crew.resume_plan(record["run_id"], "take the second option")
-    assert plan.argv[1:4] == ["exec", "resume", "019ff509-8a60-7723-94fd-65942a6d8faa"]
+    subcommand = plan.argv.index("resume")
+    assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
     assert plan.stdin_text == "take the second option"
 
 
@@ -608,9 +654,7 @@ def test_a_manifest_without_one_reports_no_escape_hatch() -> None:
 
 def test_a_workers_candidate_follow_on_becomes_a_plan_followup() -> None:
     """Work a worker was fenced out of otherwise has nowhere to go but prose."""
-    ops = crew.followup_ops_from_manifest(
-        MANIFEST, slug="plan-a", section="§3"
-    )
+    ops = crew.followup_ops_from_manifest(MANIFEST, slug="plan-a", section="§3")
     assert len(ops) == 2
     for op in ops:
         assert op["op"] == "append"
@@ -650,16 +694,16 @@ WHEN   next the escape-hatch round-trip; nothing blocks it
 
 def test_a_dispatch_summary_needs_all_four_axes() -> None:
     assert crew.validate_summary(DISPATCH_SUMMARY, occasion="dispatch")["ok"] is True
-    missing = crew.validate_summary(
-        "WHAT a thing\nWHY because\n", occasion="dispatch"
-    )
+    missing = crew.validate_summary("WHAT a thing\nWHY because\n", occasion="dispatch")
     assert missing["ok"] is False
     assert "axis HOW is missing" in missing["findings"]
 
 
 def test_a_completion_summary_must_carry_the_gate_evidence() -> None:
     """The discipline that makes the format earn its place."""
-    assert crew.validate_summary(COMPLETION_SUMMARY, occasion="completion")["ok"] is True
+    assert (
+        crew.validate_summary(COMPLETION_SUMMARY, occasion="completion")["ok"] is True
+    )
     vague = COMPLETION_SUMMARY.replace(
         "WHY    gate evidence: 28 backend tests green, all 4 recorded fixtures parsed",
         "WHY    gate evidence: the tests look good",

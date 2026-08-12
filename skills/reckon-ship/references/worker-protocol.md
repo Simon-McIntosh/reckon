@@ -156,7 +156,7 @@ reads this record first, before assuming a silent worker has failed.
 | `log_path` | The machine-readable event stream (`stream.jsonl`) a backend writes as it runs; `observe` derives `phase` and `budget` from this file, not from asking the worker. |
 | `manifest_path` | The absolute path the worker must write its manifest to — copied from the node's own fence (§1, §2) so the pointer and the dispatch agree on where delivery lands. |
 | `phase` | `starting` until the first event arrives, then whatever the backend's stream reports; a stream that stops without a terminal event reads as still working rather than failed, because only the process table can tell the difference. |
-| `session_id` | The backend's resumable session identifier, captured once known; this is what makes `reckon crew resume --run <run-id> --advice ...` (§6) continue the *same* session rather than starting a fresh one that has to rebuild context from nothing (§7). |
+| `session_id` | The backend's resumable session identifier, captured once known; this is what makes `reckon crew resume --run <run-id> --advice ...` (§7) continue the *same* session rather than starting a fresh one that has to rebuild context from nothing. |
 | `budget` | The backend's reported usage/headroom, or an explicit unknown-reason placeholder when a dialect reports no headroom signal at all — silence is never read as exhaustion. |
 | `pid` | The spawned process id for a CLI-launch worker, or `None` for a delegated launch that has no process of its own; `process_alive(pid)` is how a dead worker is told apart from a slow one. |
 

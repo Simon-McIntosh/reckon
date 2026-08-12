@@ -81,7 +81,9 @@ def test_model_and_effort_reach_each_backend_in_its_own_form() -> None:
         prompt="p",
         worktree="/wt",
     )
-    assert ["-m", "some-model"] == codex.argv[codex.argv.index("-m") : codex.argv.index("-m") + 2]
+    assert ["-m", "some-model"] == codex.argv[
+        codex.argv.index("-m") : codex.argv.index("-m") + 2
+    ]
     assert "model_reasoning_effort=high" in codex.argv
     assert "--model" in claude.argv and "some-model" in claude.argv
     assert ["--effort", "high"] == claude.argv[
@@ -126,16 +128,47 @@ def test_worktree_is_where_the_worker_runs() -> None:
 
 def test_resume_carries_the_session_id_in_each_dialect() -> None:
     codex = _backends.launch_plan(
-        backend_name="b", backend=CODEX, prompt="advice", worktree="/wt", resume_session="S"
+        backend_name="b",
+        backend=CODEX,
+        prompt="advice",
+        worktree="/wt",
+        resume_session="S",
     )
     claude = _backends.launch_plan(
-        backend_name="b", backend=CLAUDE, prompt="advice", worktree="/wt", resume_session="S"
+        backend_name="b",
+        backend=CLAUDE,
+        prompt="advice",
+        worktree="/wt",
+        resume_session="S",
     )
-    assert codex.argv[1:4] == ["exec", "resume", "S"]
+    assert codex.argv[codex.argv.index("resume") + 1] == "S"
     assert ["--resume", "S"] == claude.argv[
         claude.argv.index("--resume") : claude.argv.index("--resume") + 2
     ]
     assert codex.resumed_session == "S"
+
+
+def test_resume_options_precede_the_subcommand_that_rejects_them() -> None:
+    """Measured against the live harness: it refuses a working directory after
+    `resume`, whose only arguments are a session id and a prompt."""
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=dict(CODEX, model="some-model", effort="high"),
+        prompt="advice",
+        worktree="/wt",
+        final_message_path="/wt/final.txt",
+        resume_session="S",
+    )
+    subcommand = plan.argv.index("resume")
+    for option in (
+        "-C",
+        "-m",
+        "-o",
+        "-c",
+        "--dangerously-bypass-approvals-and-sandbox",
+    ):
+        assert plan.argv.index(option) < subcommand, option
+    assert plan.argv[subcommand + 1 :] == ["S", "-"]
 
 
 def test_in_harness_backend_cannot_be_spawned() -> None:
@@ -222,9 +255,7 @@ def test_failed_turn_reads_failed_and_says_why(backend, fixture) -> None:
 def test_partial_stream_reads_as_working_not_finished() -> None:
     """Mid-run the log has no terminal event, and that is not a failure."""
     lines = _lines("codex-turn.jsonl")[:2]
-    observation = _backends.observe_stream(
-        backend_name="b", backend=CODEX, lines=lines
-    )
+    observation = _backends.observe_stream(backend_name="b", backend=CODEX, lines=lines)
     assert observation.phase == "working"
     assert observation.terminal is False
     assert observation.session_id
@@ -233,9 +264,7 @@ def test_partial_stream_reads_as_working_not_finished() -> None:
 def test_half_written_line_is_counted_not_raised() -> None:
     """A JSON line still being written is normal while a worker runs."""
     lines = _lines("codex-turn.jsonl") + ['{"type": "turn.start']
-    observation = _backends.observe_stream(
-        backend_name="b", backend=CODEX, lines=lines
-    )
+    observation = _backends.observe_stream(backend_name="b", backend=CODEX, lines=lines)
     assert observation.malformed_lines == 1
     assert observation.phase == "complete"
 
@@ -284,7 +313,10 @@ def test_absence_of_a_signal_is_never_read_as_exhaustion() -> None:
 
 
 def test_known_headroom_answers_the_exhaustion_question() -> None:
-    assert _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget) is False
+    assert (
+        _backends.budget_exhausted(_observe(CLAUDE, "claude-turn.jsonl").budget)
+        is False
+    )
     spent = dict(_backends.unknown_budget(""), headroom="known", utilisation_pct=100.0)
     assert _backends.budget_exhausted(spent) is True
 

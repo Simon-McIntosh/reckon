@@ -55,12 +55,18 @@ def _followup(ident: str, *, status: str = "open", outcome: str = "") -> dict:
     }
     if status == "resolved":
         item.update(
-            {"resolved_at": "2026-08-12T00:00:00Z", "resolved_by": "smc", "outcome": outcome}
+            {
+                "resolved_at": "2026-08-12T00:00:00Z",
+                "resolved_by": "smc",
+                "outcome": outcome,
+            }
         )
     return item
 
 
-def _plan_html(docs_dir: Path, slug: str, state: dict, artifact_type: str = "plan") -> Path:
+def _plan_html(
+    docs_dir: Path, slug: str, state: dict, artifact_type: str = "plan"
+) -> Path:
     from reckon._plan_html import write_state
 
     base = dict(state)

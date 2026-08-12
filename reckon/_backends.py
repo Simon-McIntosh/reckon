@@ -216,10 +216,7 @@ class _CodexDialect(Dialect):
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
-        argv = [command, "exec"]
-        if resume_session:
-            argv += ["resume", resume_session]
-        argv += ["--json", "-C", worktree]
+        argv = [command, "exec", "--json", "-C", worktree]
         argv += self._sandbox_flags(backend.get("sandbox"))
         model = backend.get("model")
         if model:
@@ -229,6 +226,12 @@ class _CodexDialect(Dialect):
             argv += ["-c", f"model_reasoning_effort={effort}"]
         if final_message_path:
             argv += ["-o", final_message_path]
+        if resume_session:
+            # Every option above belongs to `exec`, not to its `resume`
+            # subcommand, so they must precede it. Passing the working directory
+            # after `resume` is rejected outright — the subcommand takes only a
+            # session id and a prompt.
+            argv += ["resume", resume_session]
         # Trailing "-" is how this harness is told the prompt arrives on stdin.
         argv.append("-")
         return argv
@@ -392,7 +395,9 @@ def _assistant_text(event: Mapping[str, Any]) -> str | None:
     parts = [
         str(block.get("text"))
         for block in blocks
-        if isinstance(block, Mapping) and block.get("type") == "text" and block.get("text")
+        if isinstance(block, Mapping)
+        and block.get("type") == "text"
+        and block.get("text")
     ]
     return "\n".join(parts) or None
 
@@ -460,8 +465,7 @@ def dialect_for(backend: Mapping[str, Any]) -> Dialect:
     if dialect is None:
         known = ", ".join(known_dialects())
         raise BackendError(
-            f"no launch translation for command '{stem}'; "
-            f"reckon can translate: {known}"
+            f"no launch translation for command '{stem}'; reckon can translate: {known}"
         )
     return dialect
 
