@@ -33,8 +33,8 @@
         <tr><td>Optional everywhere</td><td>A project omitting the collection composes without gaining the key — <a href="#project-state">§ project state</a></td><td>pass</td></tr>
         <tr><td>Dangling reference caught</td><td>An undeclared id returns a non-fatal diagnostic naming it, and the write still succeeds — <a href="#plan-label">§ plan label</a></td><td>pass</td></tr>
         <tr><td>Suite green</td><td>Full suite 1,731 passed / 0 failed at the integrated commit — <a href="#plan-label">§ plan label</a></td><td>pass</td></tr>
-        <tr><td>Declared and rendered</td><td>—</td><td>open</td></tr>
-        <tr><td>Plans point at them</td><td>—</td><td>open</td></tr>
+        <tr><td>Declared and rendered</td><td>Cockpit band renders each declaration in order with statement and live count; screenshot figure still outstanding — <a href="#prominence">§ prominence</a></td><td>partial</td></tr>
+        <tr><td>Plans point at them</td><td>Badge and single-select facet proven; labelling reckon's own plans is the remaining node — <a href="#prominence">§ prominence</a></td><td>partial</td></tr>
         <tr><td>Orientation rollup</td><td>Per-direction plans, completion and remaining effort, with unoriented at info and undeclared at error — <a href="#orientation-rollup">§ orientation rollup</a></td><td>pass</td></tr>
       </tbody>
     </table>
@@ -102,6 +102,44 @@
     any change to the typed plan model invalidates the committed
     <code>docs/_shared/plan.schema.json</code>, so a node touching the model must own the generated
     file too or it cannot reach a green combined lane.</p>
+  </section>
+
+  <section id="prominence">
+    <h2>Directions reach the client, and the surfaces that show them</h2>
+
+    <p>Commit <code>9ded8c0</code> — <code>docs/ui/shell.jsx</code>,
+    <code>docs/ui/state-loader.js</code>, <code>reckon/serve.py</code>,
+    <code>tests/test_build.py</code>, <code>tests/test_crew_routes.py</code>; 174 insertions,
+    3 deletions across 5 files. Gate <strong>passed</strong>: 14 passed, 0 failed, 4.3 s, 16 new
+    assertions; <code>reckon build</code> exit 0; ruff clean. Scope was widened mid-flight, so this run
+    is excluded from calibration.</p>
+
+    <p><strong>The node's first act was to refuse to write.</strong> Given the cockpit, home and plan
+    components, it audited instead and reported that the deliverable was unreachable from them: the
+    served state carried no declarations and inventory rows carried no label, so no component could
+    render either. It cited <code>shell.jsx:1042</code> rendering <code>CockpitBody</code> rather than
+    the assigned <code>Cockpit</code>, <code>shell.jsx:134-256</code> and <code>:950-977</code> owning
+    the plan-list facets and filtering, <code>serve.py:529-584</code> and <code>:598-607</code> omitting
+    the fields, and <code>state-loader.js</code> assembling <code>window.STATE</code> without them —
+    then left the worktree clean at its base commit. That audit was worth more than a partial
+    implementation would have been.</p>
+
+    <table>
+      <thead><tr><th>Surface</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Served state</td><td>Discovery and state routes both returned the declaration and the inventory alignment</td></tr>
+        <tr><td>Cockpit band</td><td>Renders every declaration in declaration order with its statement and its live-work count</td></tr>
+        <tr><td>Live count basis</td><td>Counted over pending, active, in-progress and blocked plans — work in flight, not work finished</td></tr>
+        <tr><td>Plan badge</td><td>Title and plan-list rows name the resolved direction</td></tr>
+        <tr><td>Filter</td><td>One facet selects exactly one id</td></tr>
+        <tr><td>Optional everywhere</td><td>Zero declarations omit the band and the facet; zero labels omit both badges</td></tr>
+        <tr><td>No entry-point drift</td><td>11 checked-in = 11 served = 11 built JSX scripts</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two measures stay partial rather than passing. The declared-and-rendered gate asks for a banked
+    screenshot, which needs the restarted server. The plans-point-at-them gate asks for all seven
+    S7–S9 plans to carry a resolving label, which is the adoption node's work, not this one's.</p>
   </section>
 
   <section id="orientation-rollup">
