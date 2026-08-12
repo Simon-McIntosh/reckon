@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="budget-aware-dispatch-landed">
+  <meta name="plan-title" content="Budget-aware dispatch — landed evidence">
+  <meta name="plan-summary" content="A wave now checks each backend's reported headroom before it opens, and holds rather than burning itself into a spent quota. Ten declared measures produced evidence, including a held wave that scheduled and fired its own resumption. The open investigation is answered positively: the backend believed to publish no headroom does publish it, on a different transport.">
+  <meta name="plan-evidence-for" content="reckon:budget-aware-dispatch">
+  <meta name="plan-verifies" content="reckon:budget-aware-dispatch#s2,reckon:budget-aware-dispatch#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; git worktrees; one live account-limit read against a real backend, everything else replayed from recorded streams — no worker harness spawned">
+  <meta name="plan-commits" content="6a0e3c9">
+  <meta name="plan-artifacts" content="reckon/budget.py,reckon/_backends.py,reckon/crew.py,reckon/ledger.py,reckon/cli.py,reckon/mcp.py,reckon/schema/flight.yaml,tests/test_budget.py,tests/fixtures/backends/codex-account-limits.jsonl,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/orchestrator-harness/">
+  <title>Budget-aware dispatch — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Budget-aware dispatch — landed evidence</h1>
+    <p class="plan-summary">A pre-flight reads what earlier runs already recorded and decides, per
+    backend, whether a wave may open. Holding costs nothing and creates nothing; a backend that
+    publishes no headroom is never held. Ten declared measures produced evidence, 29 new tests cover
+    them, and the suite is green at 1,657. Two results are worth reading before the rest: the
+    investigation the plan left open is answered <em>positively</em>, and a held wave scheduled its
+    own resumption and fired.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Headroom parsed where it exists</td><td>Recovered twice from real sources: a recorded
+        run stream yields <code>headroom: known</code> with utilisation and reset time, and a
+        <em>live</em> read of a second backend's account surface returned utilisation 0.0% resetting
+        2026-08-19T06:07:08Z — <a href="#reading">§ reading</a></td><td>pass</td></tr>
+        <tr><td>Unknown is honest and non-blocking</td><td>A backend recording no headroom reads
+        <code>unknown</code> and the wave opens; the verdict says why. Four tests assert an opening
+        wave and none asserts a hold from silence — <a href="#unknown">§ unknown</a></td><td>pass</td></tr>
+        <tr><td>Exhaustion holds the wave</td><td>A recorded 100.0% holds the dispatch before any
+        worktree exists: no live pointer, no worktree named for the node in
+        <code>git worktree list</code>, and the node still validates as dispatchable —
+        <a href="#hold">§ hold</a></td><td>pass</td></tr>
+        <tr><td>Holds are per-backend</td><td>With one backend at 100.0% held, a node routed to the
+        other dispatched and got its worktree in the same session —
+        <a href="#hold">§ hold</a></td><td>pass</td></tr>
+        <tr><td>Reserve protects the escape hatch</td><td>At 97.0% against a 100% ceiling and a
+        5-point reserve, a dispatch is held at the 95.0% effective ceiling while a resume is not;
+        a resume is still held at 100.0% — <a href="#reserve">§ reserve</a></td><td>pass</td></tr>
+        <tr><td>Pre-flight is free</td><td>With <code>subprocess.Popen</code> and
+        <code>subprocess.run</code> both replaced by an assertion failure, the pre-flight still
+        returns its hold — it reads only the ledger and the live pointers —
+        <a href="#free">§ free</a></td><td>pass</td></tr>
+        <tr><td>Harness capability quarantined</td><td>A regex over every <code>skills/**.md</code>
+        outside <code>orchestrator-harness/</code> finds no harness-local primitive; two host files
+        exist and each states all four capabilities, including the ones it lacks —
+        <a href="#quarantine">§ quarantine</a></td><td>pass</td></tr>
+        <tr><td>Resume actually fires</td><td>A hold reporting a 79 s wait scheduled its own
+        resumption through the host's self-scheduling primitive; it fired, and the resumed pre-flight
+        returned clear — <a href="#resume">§ resume</a></td><td>pass</td></tr>
+        <tr><td>Investigation answered</td><td>Answered positively, which the plan did not expect:
+        the account surface answers <code>account/rateLimits/read</code> with used percentages and
+        reset times, by a read that runs no model — <a href="#investigation">§ investigation</a></td><td>pass</td></tr>
+        <tr><td>Suite green</td><td>1,657 pass, 29 of them new; lint clean; the generated schema
+        artifacts regenerate byte-identically — <a href="#suite">§ suite</a></td><td>pass</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="reserve">
+    <h2>The two ceilings, and why there are two</h2>
+
+    <p>One utilisation axis carries the whole policy. A fresh dispatch stops at the ceiling
+    <em>less</em> the reserve; answering a worker that stopped and asked for help may spend the
+    reserve, because that is the expenditure it was withheld for. Spending the last of a quota on a
+    new node instead strands the wave in its worst state — work in flight, and nothing left to
+    unblock it with.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 168" width="100%" style="max-width:640px" role="img"
+           aria-label="A utilisation axis from 0 to 100 percent. Below 95 percent both a dispatch and a resume proceed. Between 95 and 100 percent, the reserved band, a dispatch is held but a resume proceeds. At 100 percent both are held. A backend reporting no headroom sits off the axis and is never held.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M40 64 L600 64"/>
+          <path d="M40 58 L40 70"/>
+          <path d="M572 58 L572 70"/>
+          <path d="M600 58 L600 70"/>
+        </g>
+        <g fill="none" stroke="#3b82c4" stroke-width="1">
+          <path d="M572 44 L600 44"/>
+          <path d="M572 40 L572 48"/>
+          <path d="M600 40 L600 48"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="40" y="86" text-anchor="middle">0%</text>
+          <text x="572" y="86" text-anchor="middle">95%</text>
+          <text x="600" y="86" text-anchor="middle">100%</text>
+          <text x="586" y="34" text-anchor="middle" fill="#3b82c4">reserved</text>
+          <text x="300" y="58" text-anchor="middle">dispatch proceeds · resume proceeds</text>
+          <text x="40" y="118">95–100%</text>
+          <text x="140" y="118">dispatch held · resume proceeds — the escape hatch stays answerable</text>
+          <text x="40" y="136">at 100%</text>
+          <text x="140" y="136">both held; the hold reports the reset that lifts it</text>
+          <text x="40" y="158">no signal</text>
+          <text x="140" y="158">off the axis entirely — never held, because silence is not exhaustion</text>
+        </g>
+      </svg>
+      <figcaption>The ceiling and the reserve are flight-config values, resolved per layer like any
+      other. The shipped layer sets the ceiling at full utilisation, so only a backend that actually
+      reported being spent holds a wave.</figcaption>
+    </figure>
+
+    <p>Measured: at 97.0% the dispatch verdict reports
+    <code>effective_ceiling_pct: 95.0</code> against <code>ceiling_pct: 100.0</code> and holds, while
+    the resume verdict reports <code>effective_ceiling_pct: 100.0</code> and does not. At 100.0% both
+    hold.</p>
+  </section>
+
+  <section id="reading">
+    <h2>What is read, and why a call is not made</h2>
+
+    <p>The pre-flight reads the budget block that runs already recorded, from both homes a run's
+    record occupies: the live pointers of runs still in flight, and the committed ledger for runs
+    that finished. A completed record now carries that block, because promotion deletes the pointer
+    that held it.</p>
+
+    <p>Two selection rules do the real work, and both were chosen against a failure:</p>
+
+    <ul>
+      <li><strong>A known reading outranks any silence, however recent.</strong> An observation
+      carrying no headroom carries no information, so taking "most recent" at face value would let
+      one silent run erase a real exhaustion and open the wave the mechanism exists to hold. Measured:
+      with a 99.0% record followed one second later by a silent one, the reader returns 99.0%.</li>
+      <li><strong>A window that has reset expires.</strong> The figure described a window; once that
+      window rolls over it describes nothing, and it degrades to unknown — which never holds.
+      Without this, a single exhausted record would hold a project forever. Measured: the same
+      100.0% record with a reset 60 s in the past reports <code>expired: true</code>,
+      <code>headroom: unknown</code>, and the wave opens.</li>
+    </ul>
+
+    <p>Headroom is recovered from both backends, from real sources rather than hand-written
+    fixtures:</p>
+
+    <table>
+      <thead><tr><th>Source</th><th>Transport</th><th>Recovered</th></tr></thead>
+      <tbody>
+        <tr><td>A recorded worker run stream</td><td>the machine-readable event stream a worker
+        already writes</td><td><code>headroom: known</code>, utilisation and reset time, from the
+        stream's rate-limit event</td></tr>
+        <tr><td>A live account-limit read</td><td>the backend's own account surface, over a line
+        protocol</td><td><code>utilisation_pct: 0.0</code>, <code>resets_at:
+        2026-08-19T06:07:08Z</code>, <code>headroom: known</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The second row is a live result, run end-to-end through
+    <code>_backends.probe_budget</code> against a real backend. It costs no worker budget: the read
+    runs no model.</p>
+  </section>
+
+  <section id="investigation">
+    <h2>The investigation, answered positively</h2>
+
+    <p>The plan recorded one backend as publishing per-turn token usage, no headroom, and no query
+    command for it — while its interactive display shows rolling and weekly limits, so the
+    information had to exist somewhere. The plan asked whether the app-server path exposes it, and
+    allowed a negative answer as a valid outcome.</p>
+
+    <p><strong>It is positive.</strong> The app server's protocol schema declares an
+    <code>account/rateLimits/read</code> request whose answer carries a rate-limit snapshot: per
+    metered window, a used percentage and a reset timestamp — the same two facts the other backend
+    publishes on its stream. A live exchange returned them.</p>
+
+    <p>So the asymmetry the plan describes is in the <em>stream</em>, not in the harness. Two
+    mechanics make it a probe rather than a command whose output is read, and both were learned by
+    the live attempt failing first:</p>
+
+    <ul>
+      <li>the server rejects requests until a handshake has been answered, so the exchange is a
+      sequence, not one call;</li>
+      <li>it exits the moment its input closes, so a plain <code>command &lt; requests</code>
+      redirect returns nothing at all — stdin has to stay open for the life of the exchange, and the
+      reply is read on a thread because unrelated notifications arrive interleaved with it.</li>
+    </ul>
+
+    <p>What this does <em>not</em> do is overturn the locked decision that the pre-flight reads the
+    ledger rather than making a call. That decision's rationale — a probe spends the very resource it
+    is measuring, most often when it is scarcest — is untouched by a read that runs no model, and §2
+    of the plan already sanctioned using a genuine status surface where one exists. So the ledger
+    stays the base case and the surface is opt-in per backend
+    (<code>budget_check: true</code>), which keeps the free path free: with no backend asking for it,
+    the pre-flight spawns nothing.</p>
+
+    <p>One consequence is worth recording because it inverts an expectation: on the two hosts
+    measured, the harness that <em>cannot</em> schedule its own resumption is the one that
+    <em>can</em> see its own headroom, and vice versa. Neither host is simply better instrumented
+    than the other.</p>
+  </section>
+
+  <section id="hold">
+    <h2>A hold creates nothing, fails nothing, and is per-backend</h2>
+
+    <p>A held dispatch raises before the worktree is cut, which is the ordering that matters: a hold
+    that had already created a worktree would leave write scope claimed by a node nobody is running.
+    After a held dispatch, <code>crew.list_live()</code> is empty, no worktree named for the node
+    appears in <code>git worktree list</code>, and the node still passes all seven properties of the
+    task contract — it was never malformed, only waiting.</p>
+
+    <p>The distinction is carried into the command surface as its own exit code, because a caller
+    that cannot tell a hold from a malformed node either rewrites work that was fine or abandons work
+    that was only waiting:</p>
+
+    <table>
+      <thead><tr><th>Exit</th><th>Meaning</th><th>What the caller does</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>succeeded</td><td>proceed</td></tr>
+        <tr><td>1</td><td>the configuration or request is wrong</td><td>fix the call</td></tr>
+        <tr><td>2</td><td>the node is not dispatchable, naming each failing property</td><td>reshape
+        or split the node</td></tr>
+        <tr><td>3</td><td>held on budget, naming the backend, its utilisation and its reset</td><td>leave
+        the node exactly as it is; retry after the reset</td></tr>
+      </tbody>
+    </table>
+
+    <p>Per-backend is not a refinement but the reason budget state is tracked per backend at all.
+    Measured: with one backend recorded at 100.0% and another at 10.0%, the report returned
+    <code>held_backends: ["alpha"]</code> and <code>clear_backends: ["beta"]</code>, and a node routed
+    to the clear one dispatched and got its worktree in the same session.</p>
+  </section>
+
+  <section id="unknown">
+    <h2>Silence is never read as exhaustion</h2>
+
+    <p>The fail-safe direction is deliberately one-way. A false hold is invisible and stalls
+    everything, while the failure it would prevent — a rejected call — is cheap and announces itself.
+    So an unknown backend's verdict reads <em>"headroom is unknown, and absence of a signal is never
+    read as exhaustion"</em> and the wave opens.</p>
+
+    <p>Three separate paths reach unknown and all of them open the wave: a backend whose recorded
+    block carries no headroom, a project with no records at all, and a backend whose measured window
+    has since reset. A fourth is the instrument itself — every failure path of the account-limit read
+    returns an unknown block naming the reason rather than raising, because an instrument that fails
+    must not become a hold.</p>
+  </section>
+
+  <section id="free">
+    <h2>Free, asserted rather than asserted about</h2>
+
+    <p>"Costs nothing" is the kind of claim that decays silently, so it is pinned by making any
+    spawned process a test failure: with both <code>subprocess.Popen</code> and
+    <code>subprocess.run</code> replaced by an assertion, the pre-flight still returns its hold. The
+    only reads are the ledger file and the live pointers.</p>
+
+    <p>The opt-in surface is pinned from both sides too: with no backend setting
+    <code>budget_check</code>, the injected probe runner is never called; with one backend setting
+    it, it is called exactly once, for that backend.</p>
+  </section>
+
+  <section id="quarantine">
+    <h2>The host harness is quarantined, and says what it cannot do</h2>
+
+    <p>Whether an orchestrator can schedule its own resumption depends entirely on the harness it is
+    running inside. Naming that primitive in the skill or in a process reference would couple the
+    whole skill to one host, which is the portability a single skill exists to preserve — so it lives
+    in <code>references/orchestrator-harness/&lt;harness&gt;.md</code>, mirroring the worker-backend
+    files, and a test enforces the boundary rather than trusting reviewer attention.</p>
+
+    <p>Two files exist, and each states all four capabilities — including the ones it lacks, because
+    an omission reads as "not investigated" rather than "absent":</p>
+
+    <table>
+      <thead><tr><th>Capability</th><th>First host</th><th>Second host</th></tr></thead>
+      <tbody>
+        <tr><td>Background dispatch</td><td>yes</td><td>partly — nothing binds a detached process to
+        the session</td></tr>
+        <tr><td>Wake on completion</td><td>yes</td><td>no</td></tr>
+        <tr><td>Self-scheduling</td><td>yes, three forms</td><td>no — needs an external trigger</td></tr>
+        <tr><td>Budget visibility to itself</td><td>no</td><td>yes — its account surface answers a
+        limits read</td></tr>
+      </tbody>
+    </table>
+
+    <p>The second file earns its place by being nearly the complement of the first. An orchestrator
+    that assumed one host's capabilities on the other would either wait forever for a wake-up that
+    never comes, or dispatch into a quota it could have measured.</p>
+  </section>
+
+  <section id="resume">
+    <h2>A held wave resumed itself</h2>
+
+    <p>Run end-to-end against a spent quota with a deliberately short window, so the whole cycle
+    could be observed rather than argued about. The pre-flight held, reported the wait, the
+    resumption was scheduled through the host's own primitive, it fired, and the resumed pre-flight
+    returned clear.</p>
+
+    <pre>held    15:32:26Z  preflight exit 3  utilisation 100.0% ≥ 95.0% effective ceiling
+                   resets_at 2026-08-12T15:33:56Z   resume_after_seconds 79
+scheduled 15:32:51Z  wait 85s, through the host's own self-scheduling primitive
+fired     15:34:17Z  elapsed 86s
+resumed            preflight exit 0  held false  clear [metered, native]
+                   "the measured window reset at 2026-08-12T15:33:56Z, so the
+                    recorded utilisation no longer describes it"</pre>
+
+    <p>The resumed verdict is worth reading closely: the wave reopened because the recorded figure
+    <em>expired</em>, not because a fresh measurement said there was headroom. That is the honest
+    answer — the window rolled over, so the old figure describes nothing, and the next run will
+    measure the new one. It is also what stops one exhausted record holding a project forever.</p>
+
+    <p>Nothing about the mechanism is harness-specific except the scheduling step: reckon computes
+    <em>when</em> — <code>resume_after_seconds</code> and <code>resume_at</code>, both derived from
+    the backend's own reported reset — and the host reference documents <em>how</em>. Where no such
+    capability exists, the orchestrator reports the reset and stops: degraded, not broken, and never
+    a reason to dispatch into the quota anyway.</p>
+  </section>
+
+  <section id="suite">
+    <h2>Suite and generated artifacts</h2>
+
+    <p>1,657 tests pass, 29 of them new: 21 on the hold decision and its command surface, 4 on the
+    threshold policy resolving through the config layers, 3 on the quarantine boundary, and 1 on the
+    read tool's new view. Lint is clean. The Pydantic model and JSON Schema derived from the LinkML
+    source regenerate byte-identically, so the three new threshold slots and the new summary occasion
+    are not hand-edits waiting to drift.</p>
+
+    <p>One pre-existing test changed rather than being added to: it asserted the read tool named four
+    views, and there are now five.</p>
+  </section>
+</main>
+</body>
+</html>

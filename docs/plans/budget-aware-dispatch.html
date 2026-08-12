@@ -4,22 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="budget-aware-dispatch">
-  <meta name="plan-title"     content="Budget-aware Dispatch">
-  <meta name="plan-summary"   content="Read each backend's budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="M">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="budget-aware-dispatch">
+  <meta name="plan-title" content="Budget-aware Dispatch">
+  <meta name="plan-summary" content="Read each backend&#x27;s budget headroom before a wave, hold instead of burning a wave into an exhausted quota, and let the orchestrator schedule its own resume through a quarantined harness-local capability.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-tool-autonomy" content="autonomous">
-  <meta name="plan-sprint"    content="S8">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S8">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="crew-run-ledger">
   <title>Budget-aware Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -65,109 +68,41 @@
     dispatch, and recorded exhaustion always does.</strong> Guessing exhaustion from silence would
     make the whole system refuse to work for the wrong reason.</p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§2 — Deliverables</h2>
+      </header>
+      <p class="landed-summary">
+        Built <code>reckon/budget.py</code> plus <code>reckon crew preflight</code>, the hold in
+        <code>crew.dispatch</code>/<code>resume_plan</code>, three thresholds in flight config, a
+        <code>budget</code> view on the read tool, and two quarantined
+        <code>references/orchestrator-harness/</code> files. Ten declared measures produced
+        evidence and passed; 29 new tests, suite green at 1,657. A held wave scheduled its own
+        resumption and fired: 86 s elapsed, resumed pre-flight clear.
+        Full record: <a href="/reckon/evidence/archive/budget-aware-dispatch-landed#reading">§2 landed</a>
+        (commit <code>6a0e3c9</code>).
+      </p>
+    </section>
 
-    <p><strong>A budget reader per backend.</strong> Parse whatever the backend emits into one
-    shape — utilisation where known, reset time where known, cumulative spend where that is all
-    there is, and an explicit unknown otherwise. Read it from the run records the ledger already
-    keeps rather than by making a fresh call, so a pre-flight costs no tokens. Where a backend
-    offers a genuine status command, use it; where it does not, say so in the shape instead of
-    inventing a number.</p>
-
-    <p><strong>The pre-flight hold.</strong> Before opening a wave, resolve each participating
-    backend's budget state and compare it against the policy thresholds in flight config. A wave
-    that would exceed them is <em>held</em>, not failed — nodes stay ready, worktrees are not
-    created, and the hold records which backend, what utilisation, and when it resets. Independent
-    ready nodes on a different backend continue, which is the whole reason budget state is
-    per-backend rather than global.</p>
-
-    <p><strong>Policy in flight config.</strong> Extend the config surface with the thresholds
-    that decide a hold — the utilisation ceiling above which a wave will not open, whether an
-    overage state counts as exhausted, and how much headroom to reserve so an escape-hatch
-    resumption can still be answered. That last one matters: spending the final tokens on a fresh
-    dispatch leaves nothing to answer a worker that stops and asks for help, which strands the
-    wave in the worst possible state.</p>
-
-    <p><strong>Self-scheduled resume, quarantined.</strong> When a wave is held on a reset
-    timestamp, the orchestrator should be able to schedule its own resumption at that time rather
-    than requiring a human to come back. Whether it can depends entirely on the host harness — the
-    current one offers both a self-scheduling primitive and a recurring re-invocation command, and
-    another may offer neither.</p>
-
-    <p>This is the mirror of the worker-backend problem and takes the mirror solution:
-    <code>references/orchestrator-harness/&lt;harness&gt;.md</code>, one file per host harness,
-    documenting its background-dispatch, wake-on-completion, self-scheduling and budget-visibility
-    capabilities. The same ownership test applies — a sentence that does not turn on a
-    harness-local capability is misfiled and belongs in the process spine. Without this quarantine
-    the skill silently acquires a dependency on one harness, which breaks the portability the
-    single-skill decision was made to preserve.</p>
-
-    <p><strong>Report the hold as a first-class outcome.</strong> A held wave is reported with the
-    same four-axis summary a dispatched one gets, because a hold is a decision the lead needs to
-    see: what is held, why, how it will resume, and when. A hold that looks like silence is
-    indistinguishable from a crashed orchestrator.</p>
-
-    <h2 id="gates">§3 — Evidence gates</h2>
-
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Headroom parsed where it exists</td>
-          <td>A recorded budget state from the backend that emits rate-limit data, showing
-          utilisation and reset time recovered from a real run's stream — not a fixture.</td>
-        </tr>
-        <tr>
-          <td>Unknown is honest and non-blocking</td>
-          <td>A budget state reading <code>unknown</code> for the backend with no headroom signal,
-          and a test proving a wave still opens on it. No test may show absence treated as
-          exhaustion.</td>
-        </tr>
-        <tr>
-          <td>Exhaustion holds the wave</td>
-          <td>A simulated exhausted state holds a wave with no worktree created, records the
-          backend, utilisation and reset time, and leaves the nodes ready rather than failed.</td>
-        </tr>
-        <tr>
-          <td>Holds are per-backend</td>
-          <td>With one backend held, independent ready nodes on another dispatch normally in the
-          same session.</td>
-        </tr>
-        <tr>
-          <td>Reserve protects the escape hatch</td>
-          <td>A test proving the configured reserve prevents a dispatch that would leave
-          insufficient headroom to answer a <code>NEEDS-HELP:</code> report and resume its
-          session.</td>
-        </tr>
-        <tr>
-          <td>Pre-flight is free</td>
-          <td>The pre-flight consumes no backend tokens — asserted by showing it reads only ledger
-          records and any genuine status command, with the token cost of a hold decision
-          recorded as zero.</td>
-        </tr>
-        <tr>
-          <td>Harness capability quarantined</td>
-          <td>A grep proving no harness-local command or self-scheduling primitive appears in
-          <code>SKILL.md</code> or the process references — only in
-          <code>orchestrator-harness/</code>. A second harness file exists, even if it only records
-          which capabilities are absent.</td>
-        </tr>
-        <tr>
-          <td>Resume actually fires</td>
-          <td>A held wave schedules its own resumption and demonstrably resumes, with the elapsed
-          time and the resumed wave's outcome recorded.</td>
-        </tr>
-        <tr>
-          <td>Investigation answered</td>
-          <td>A recorded finding on whether the headroom-less backend exposes limits off its
-          non-interactive path. A negative answer is a valid outcome and closes the question.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
+    <section id="gates" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§3 — Evidence gates</h2>
+      </header>
+      <p class="landed-summary">
+        All ten declared measures produced evidence and passed: headroom recovered from a recorded
+        run stream <em>and</em> a live account read (0.0%, resets 2026-08-19T06:07:08Z); unknown
+        opens the wave on four paths; 100.0% holds with no worktree and the node still dispatchable;
+        one backend held while the other dispatched; 97.0% holds a dispatch at the 95.0% effective
+        ceiling but not a resume; the pre-flight returns its hold with both subprocess entry points
+        replaced by an assertion; the quarantine grep is clean across two host files; a held wave
+        resumed itself in 86 s; and the investigation is answered <strong>positively</strong> — the
+        backend thought to publish no headroom does publish it, by a read that runs no model.
+        Full record: <a href="/reckon/evidence/archive/budget-aware-dispatch-landed#gates">§3 landed</a>
+        (commit <code>6a0e3c9</code>).
+      </p>
+    </section>
 
     <h2 id="s4">§4 — Constraints</h2>
 
@@ -180,42 +115,48 @@
     reset time for a human instead — degraded, not broken.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="unknown-headroom-posture" data-choice="unknown-never-blocks" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How is unobservable budget headroom treated?</p>
-        <p class="r-dec-ctx">One CLI backend publishes structured headroom; the other publishes only token counts and has no query command for limits.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="unknown-never-blocks">Unknown never blocks; only recorded exhaustion holds a wave</button>
-          <button class="r-opt" data-value="unknown-blocks">Treat unknown as exhausted and require an explicit override</button>
-        </p>
-        <p class="r-dec-rat">Inferring exhaustion from silence would make the system refuse to work for the wrong reason, on the backend that happens to publish less. Fail-safe here means erring toward dispatching, because the reactive failure — a rejected call — is cheap and self-announcing, while a false hold is invisible and stalls everything.</p>
-      </div>
-      <div class="r-dec" data-key="budget-read-source" data-choice="ledger-not-fresh-call" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Does the pre-flight make a call to learn budget state?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="ledger-not-fresh-call">Read the budget signal recorded on prior runs in the ledger</button>
-          <button class="r-opt" data-value="probe-call">Make a cheap probe call before each wave</button>
-        </p>
-        <p class="r-dec-rat">A probe spends the very resource it is measuring, and does so most often exactly when headroom is scarcest. The ledger already captures what each backend emits, so the pre-flight is free and gets more accurate as history accumulates.</p>
-      </div>
-      <div class="r-dec" data-key="harness-capability-location" data-choice="orchestrator-harness-reference" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Where do harness-local capabilities such as self-scheduling live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="orchestrator-harness-reference">A per-harness orchestrator reference, mirroring the worker-backend files</button>
-          <button class="r-opt" data-value="inline-in-skill">Directly in the skill, since one harness is in use today</button>
-        </p>
-        <p class="r-dec-rat">Naming a harness-local command in the process spine silently couples the skill to one host and breaks the portability the single-skill decision exists to preserve. The worker side already solved this by quarantining launch mechanics per backend; the orchestrator side takes the identical shape, and the same grep-able ownership test applies.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="unknown-headroom-posture" data-choice="unknown-never-blocks" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">How is unobservable budget headroom treated?</p>
+    <p class="r-dec-ctx">One CLI backend publishes structured headroom; the other publishes only token counts and has no query command for limits.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="unknown-never-blocks">Unknown never blocks; only recorded exhaustion holds a wave</button>
+      <button class="r-opt" data-value="unknown-blocks">Treat unknown as exhausted and require an explicit override</button>
+      </p>
+    <p class="r-dec-rat">Inferring exhaustion from silence would make the system refuse to work for the wrong reason, on the backend that happens to publish less. Fail-safe here means erring toward dispatching, because the reactive failure — a rejected call — is cheap and self-announcing, while a false hold is invisible and stalls everything.</p>
+    </div>
+<div class="r-dec" data-key="budget-read-source" data-choice="ledger-not-fresh-call" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Does the pre-flight make a call to learn budget state?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="ledger-not-fresh-call">Read the budget signal recorded on prior runs in the ledger</button>
+      <button class="r-opt" data-value="probe-call">Make a cheap probe call before each wave</button>
+      </p>
+    <p class="r-dec-rat">A probe spends the very resource it is measuring, and does so most often exactly when headroom is scarcest. The ledger already captures what each backend emits, so the pre-flight is free and gets more accurate as history accumulates.</p>
+    </div>
+<div class="r-dec" data-key="harness-capability-location" data-choice="orchestrator-harness-reference" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Where do harness-local capabilities such as self-scheduling live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="orchestrator-harness-reference">A per-harness orchestrator reference, mirroring the worker-backend files</button>
+      <button class="r-opt" data-value="inline-in-skill">Directly in the skill, since one harness is in use today</button>
+      </p>
+    <p class="r-dec-rat">Naming a harness-local command in the process spine silently couples the skill to one host and breaks the portability the single-skill decision exists to preserve. The worker side already solved this by quarantining launch mechanics per backend; the orchestrator side takes the identical shape, and the same grep-able ownership test applies.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-bad-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch">
-        <h4 class="r-fu-title">Hold waves on exhausted budget and resume without a human</h4>
-        <div class="r-fu-body"><p>Land the per-backend budget reader over ledger records, the free pre-flight hold with per-backend granularity and an escape-hatch reserve, the policy thresholds in flight config, and the quarantined orchestrator-harness reference carrying self-scheduled resume. Answer the open question of whether the headroom-less backend exposes limits off its non-interactive path.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bad-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="2026-08-12T15:38:09+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Hold waves on exhausted budget and resume without a human</h4>
+    <div class="r-fu-body"><p>Land the per-backend budget reader over ledger records, the free pre-flight hold with per-backend granularity and an escape-hatch reserve, the policy thresholds in flight config, and the quarantined orchestrator-harness reference carrying self-scheduled resume. Answer the open question of whether the headroom-less backend exposes limits off its non-interactive path.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    <p class="r-fu-outcome">Landed — commit 6a0e3c9. Per-backend budget reader over the ledger and live pointers, the free pre-flight hold with per-backend granularity and a 5-point escape-hatch reserve, three thresholds in flight config, and two quarantined orchestrator-harness references. All ten gates passed: 100.0% holds a dispatch with no worktree created and the node still dispatchable; 97.0% holds a dispatch at the 95.0% effective ceiling but not a resume; unknown never holds; the pre-flight returns its hold with both subprocess entry points replaced by an assertion; a held wave scheduled its own resumption and fired in 86 s, resuming clear. 29 new tests, suite green at 1,657. The open investigation is answered POSITIVELY: the backend believed to publish no headroom answers an account-limits read over its app server, giving used percentage and reset time by a call that runs no model — so the asymmetry is in the run stream, not the harness. That is now an opt-in per-backend reader (budget_check), leaving the ledger as the free base case and the locked decision intact.</p>
+    </article>
+<article class="r-fu" data-id="f-bad-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship budget-aware-dispatch" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Record held waves so a hold is visible to calibration</h4>
+    <div class="r-fu-body"><p>A hold currently leaves no trace in the committed ledger: it creates no run, so nothing records that a wave was held, on which backend, for how long, or whether the scheduled resumption fired. That makes the one measurement the mechanism generates — how much wall-clock holding actually costs, against how much a burned wave would have — unavailable to any later reader, and it is exactly the class of measurement that cannot be reconstructed after the fact.</p><p>Out of scope for the five deliverables that just landed, hence additive rather than unfinished. Sizing note for whoever picks it up: the shape is a hold record beside the run records, not a run record with a held flag, since a hold has no worktree, no commit and no gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship budget-aware-dispatch</pre>
+    </article>
+</section>
 
   </main>
 </body>
