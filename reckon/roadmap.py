@@ -45,6 +45,40 @@ def _remaining_effort(plan: dict[str, Any]) -> float:
     return round(weight * (1.0 - _progress(plan)), 3)
 
 
+def _north_star_rows(
+    plans: dict[str, dict[str, Any]],
+    declarations: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Roll up the plans aligned with each declared durable direction."""
+
+    rows: list[dict[str, Any]] = []
+    for declaration in declarations:
+        north_star_id = str(declaration.get("id") or "").strip()
+        if not north_star_id:
+            continue
+        aligned = [
+            plan
+            for plan in plans.values()
+            if str(plan.get("north_star") or "").strip() == north_star_id
+        ]
+        completed = sum(_status(plan) in COMPLETED_STATUSES for plan in aligned)
+        row = dict(declaration)
+        row.update(
+            {
+                "plans": len(aligned),
+                "completed": completed,
+                "lifecycle_completion_pct": (
+                    round(100 * completed / len(aligned), 1) if aligned else 0.0
+                ),
+                "remaining_effort": round(
+                    sum(_remaining_effort(plan) for plan in aligned), 3
+                ),
+            }
+        )
+        rows.append(row)
+    return rows
+
+
 def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
 
@@ -291,11 +325,41 @@ def build_roadmap(
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
+    north_stars = [
+        dict(item)
+        for item in (project_manifest or {}).get("north_stars", [])
+        if isinstance(item, dict) and str(item.get("id") or "").strip()
+    ]
+    declared_north_stars = {str(item["id"]).strip() for item in north_stars}
 
     for slug, plan in plans.items():
         status = _status(plan)
         if status in TERMINAL_STATUSES:
             continue
+        if declared_north_stars:
+            north_star = str(plan.get("north_star") or "").strip()
+            if north_star and north_star not in declared_north_stars:
+                findings.append(
+                    _finding(
+                        "undeclared-north-star",
+                        "error",
+                        (
+                            f"{slug}: north-star {north_star!r} is not declared "
+                            f"by project {project!r}"
+                        ),
+                        slug=slug,
+                        extra={"north_star": north_star},
+                    )
+                )
+            elif not north_star and status in _AUTHORISED_STATUSES:
+                findings.append(
+                    _finding(
+                        "unoriented-plan",
+                        "info",
+                        f"{slug}: live actionable work declares no north-star",
+                        slug=slug,
+                    )
+                )
         if status == "blocked" and not (plan.get("blocking") or []):
             findings.append(
                 _finding(
@@ -745,6 +809,7 @@ def build_roadmap(
                 "Validate plan ownership against project scope and repository instructions before creation or relocation."
             ),
         },
+        "north_stars": _north_star_rows(plans, north_stars),
         "sprints": sprint_rows,
         "pending_work": pending,
         "ready_now": ready,
