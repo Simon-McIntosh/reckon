@@ -39,6 +39,43 @@ MAX_ERROR_COLLECTION_ITEMS = 25
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
+def in_flight_by_plan(
+    project: str,
+    pointers: list[dict[str, Any]] | None = None,
+) -> dict[str, list[dict[str, str]]]:
+    """Group the live runs for one project by their target plan."""
+
+    if pointers is None:
+        from reckon import crew
+
+        try:
+            pointers = crew.list_live()
+        except OSError:
+            pointers = []
+
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, dict) or pointer.get("project") != project:
+            continue
+        node = pointer.get("node")
+        if not isinstance(node, dict):
+            continue
+        plan = str(node.get("plan") or "").strip()
+        if not plan:
+            continue
+        grouped.setdefault(plan, []).append(
+            {
+                "run_id": str(pointer.get("run_id") or ""),
+                "member": str(pointer.get("member") or ""),
+                "section": str(node.get("section") or ""),
+                "started_at": str(pointer.get("created_at") or ""),
+            }
+        )
+    for runs in grouped.values():
+        runs.sort(key=lambda run: run["run_id"])
+    return grouped
+
+
 class ViewRequestError(ValueError):
     """A stable, agent-readable request error."""
 
@@ -621,6 +658,21 @@ def _response_schema(
             "view": {"const": view},
         },
     }
+    if selector.type == "plan" and view != "schema":
+        common["properties"]["in_flight"] = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["run_id", "member", "section", "started_at"],
+                "properties": {
+                    "run_id": {"type": "string"},
+                    "member": {"type": "string"},
+                    "section": {"type": "string"},
+                    "started_at": {"type": "string"},
+                },
+            },
+        }
     if view in {"summary", "detail"}:
         common["required"] += [
             "title",
@@ -753,55 +805,63 @@ def resource_view(
 
     selected = normalize_view(view)
     dependencies = deps or []
+    result: dict[str, Any]
     if selected == "summary":
-        return _summary(
+        result = _summary(
             selector,
             version,
             data,
             deps=dependencies,
             include_prompts=include_prompts,
         )
-    if selected == "detail":
-        return _detail(
+    elif selected == "detail":
+        result = _detail(
             selector,
             version,
             data,
             deps=dependencies,
             include_prompts=include_prompts,
         )
-    if selected == "history":
+    elif selected == "history":
         page, pagination = paginate(
             _history_records(selector, data, include_prompts=include_prompts),
             cursor=cursor,
             limit=limit,
         )
-        return {
+        result = {
             "resource": selector.as_dict(),
             "version": version,
             "view": "history",
             "records": page,
             "pagination": pagination,
         }
-    if selected == "raw":
-        return {
+    elif selected == "raw":
+        result = {
             "resource": selector.as_dict(),
             "version": version,
             "view": "raw",
             "data": data,
         }
-    return {
-        "resource": selector.as_dict(),
-        "version": version,
-        "view": "schema",
-        "schema_version": RESPONSE_SCHEMA_VERSION,
-        "response_schema": _response_schema(
-            selector, selected, context=response_context
-        ),
-        "response_schemas": _response_schemas(selector, context=response_context),
-        "storage_schema": storage_schema or {},
-        "op_vocab": op_vocab or {},
-        "dos_donts": dos_donts or {},
-    }
+    else:
+        return {
+            "resource": selector.as_dict(),
+            "version": version,
+            "view": "schema",
+            "schema_version": RESPONSE_SCHEMA_VERSION,
+            "response_schema": _response_schema(
+                selector, selected, context=response_context
+            ),
+            "response_schemas": _response_schemas(selector, context=response_context),
+            "storage_schema": storage_schema or {},
+            "op_vocab": op_vocab or {},
+            "dos_donts": dos_donts or {},
+        }
+
+    if selector.type == "plan" and not selector.archived:
+        runs = in_flight_by_plan(selector.project).get(selector.id)
+        if runs:
+            result["in_flight"] = runs
+    return result
 
 
 def discovery_view(
