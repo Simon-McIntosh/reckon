@@ -250,12 +250,20 @@ def test_a_later_silence_does_not_erase_a_recorded_exhaustion(home, repo) -> Non
 def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) -> None:
     """The pointer's routing identity survives independently of agent metadata."""
     run_id = "r-promoted"
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
     crew._write_json(
         crew.pointer_path(run_id),
         {
             "run_id": run_id,
             "project": "proj",
             "repo": str(repo),
+            "worktree": str(repo),
             "node": {
                 "id": "signal-reader",
                 "plan": "plan-a",
@@ -277,7 +285,7 @@ def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) 
     promoted = crew.complete(
         run_id,
         gate="passed",
-        commits=["deadbee"],
+        commits=[revision],
         changed_lines={"added": 0, "removed": 0, "files": 0},
     )
     readings = budget.latest_recorded("proj", root=repo)
@@ -286,6 +294,7 @@ def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) 
 
     assert promoted["record"]["agent"] == {}
     assert promoted["record"]["backend"] == "beta"
+    assert promoted["record"]["commits"] == [revision]
     assert readings["beta"].budget["utilisation_pct"] == 71.0
     assert readings["beta"].attribution == "record"
     assert state["headroom"] == "known"
