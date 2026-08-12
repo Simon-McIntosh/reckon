@@ -47,11 +47,18 @@
     and the <code>gates</code>, <code>fences</code>, <code>worktree</code> and
     <code>summary</code> blocks. Generate and <em>commit</em> both
     <code>reckon/_flight_schema.py</code> (Pydantic) and
-    <code>docs/_shared/flight.schema.json</code> (JSON Schema export), following the idiom
-    already used by <code>nova</code>: the toolchain is an optional extra
-    (<code>schema = ["linkml&gt;=1.9"]</code>), the generated files are committed, and
-    reading a config at runtime requires none of it. Runtime gains exactly one dependency,
-    <code>pyyaml</code>.</p>
+    <code>docs/_shared/flight.schema.json</code> (JSON Schema export). The generated files are
+    committed so reading a config at runtime requires none of the toolchain, and runtime gains
+    exactly one dependency, <code>pyyaml</code>.</p>
+
+    <p>Place the generator in the <strong>dev dependency group</strong>, not an optional extra.
+    The reason is mechanical: <code>uv run</code> auto-installs dev groups with no flag, so
+    regenerating the schema is a bare command with nothing to remember, while an extra requires
+    an incantation a dispatched worker can miss. That matters because the failure mode of a
+    missed extra is not an error — it is a worker hand-editing the generated file and silently
+    desynchronising it from its source. Runtime weight decides the rest: the full generator adds
+    62 packages to a 30-package closure, tripling the install of a service that runs continuously
+    for a generator that runs a few times a year.</p>
 
     <p><strong>Four-layer resolution.</strong> Implement resolution in precedence order —
     shipped model defaults, then <code>~/.config/reckon/flight.yaml</code>, then
@@ -145,10 +152,12 @@
         <p class="r-dec-q">How is the flight config schema authored and validated?</p>
         <p class="r-dec-ctx">Reckon already has a Pydantic + published-JSON-Schema stack for plan state. Adding a second schema system needs justification.</p>
         <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="linkml-optional-extra">LinkML source, generated Pydantic + JSON Schema committed, toolchain an optional extra</button>
+          <button class="r-opt chosen" data-value="linkml-dev-group">LinkML source, generated Pydantic + JSON Schema committed, toolchain in the dev dependency group</button>
+          <button class="r-opt" data-value="linkml-optional-extra">Same, but the toolchain is an optional extra</button>
+          <button class="r-opt" data-value="linkml-runtime-dep">LinkML as a full runtime dependency</button>
           <button class="r-opt" data-value="pydantic-only">Hand-written Pydantic model, JSON Schema exported from it</button>
         </p>
-        <p class="r-dec-rat">LinkML is the established house pattern — nova, helix and imas-codex all declare it, and nova's optional-extra-with-committed-artifacts idiom means runtime needs none of the toolchain. Consistency with sibling projects outweighs adding one authoring-time dependency.</p>
+        <p class="r-dec-rat">LinkML is the established house pattern — nova, helix and imas-codex all declare it. The dev group is chosen over nova's optional extra because uv auto-installs dev groups with no flag, so regeneration needs no incantation a dispatched worker could miss; the failure mode of a missed extra is a silently hand-edited generated file. A full runtime dependency was rejected on measured weight: it adds 62 packages to a 30-package closure, tripling the install of a continuously-running service for a generator invoked a few times a year.</p>
       </div>
       <div class="r-dec" data-key="config-location" data-choice="config-home-yaml" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
         <p class="r-dec-q">Where does host-level flight config live?</p>

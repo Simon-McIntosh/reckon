@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="effort-calibration">
+  <meta name="plan-title"     content="Effort Calibration">
+  <meta name="plan-summary"   content="Replace the asserted effort letters with neutral worker-hours, then close two separate calibration loops so plan estimates and per-agent speed correct each other from recorded runs, yielding competence horizons that tell a boss how small to split.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="L">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S9">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-depends-on" content="crew-run-ledger">
+  <title>Effort Calibration | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this exists</h2>
+
+    <p>Effort is currently a letter mapped to a weight — a doubling series consumed only for
+    critical-path arithmetic. That gives it internal consistency and no external meaning: nothing
+    ties a letter to anything observable, so two authors can size the same work four levels apart
+    and no check will notice. Every downstream number built on it — remaining effort, critical
+    path length, sprint capacity — inherits that ungroundedness.</p>
+
+    <p>A worker fleet changes what is possible, because dispatching work generates the missing
+    measurement for free. Every completed run records when it started and when it finished, so
+    effort can be stated in a unit that is checkable against reality and corrected by it.</p>
+
+    <p>The unit is <strong>neutral worker-hours</strong>: the expected wall-clock a capable worker
+    takes. Deliberately not anchored to any model tier — a tier-anchored unit would put a routing
+    claim into plan state, which repository policy forbids, and its meaning would drift silently as
+    capability improves, rebasing every historical estimate. Improvement instead appears where it
+    belongs, as a rising per-agent speed factor, leaving the size of the work unchanged.</p>
+
+    <h2 id="s2">§2 — The unit, and a nearly free migration</h2>
+
+    <p>Read the existing weights as hours and they are already plausible: with a worker burst
+    budgeted around twenty-five minutes, <code>S</code> is roughly two bursts, <code>M</code> four,
+    <code>XL</code> sixteen. So the letters map to <code>1.0</code>, <code>2.0</code>,
+    <code>4.0</code>, <code>8.0</code> hours as legacy defaults and no plan needs re-estimating by
+    hand.</p>
+
+    <p>Add <code>plan-effort-hours</code> as a float with quarter-hour granularity. Where both it
+    and a legacy letter are present, the explicit hours win and the letter is reported as
+    redundant. Where only a letter is present, the mapping supplies the value and the plan is
+    listed as uncalibrated so it can be revisited once real data exists. Critical-path and
+    remaining-effort arithmetic switch to hours, which finally makes their output a duration rather
+    than a unitless score.</p>
+
+    <h2 id="s3">§3 — Two calibration loops, never one</h2>
+
+    <p>This is the part that quietly breaks if built naively. Predicted-versus-actual mixes three
+    error sources: the estimate was wrong, the worker was faster or slower than baseline, or the
+    scope changed. Feeding actuals straight back into a plan's estimate bakes agent speed into the
+    plan's size, and the number stops answering "how big is this work".</p>
+
+    <p>So the loops are separate and each feeds the other:</p>
+
+    <pre>plan estimate   ←  actual_hours ÷ agent_speed_factor        (normalised, per plan)
+agent speed     ←  aggregate of actual_hours ÷ predicted    (across many runs)</pre>
+
+    <p>Scope change is the third source and must be excluded rather than absorbed: a run whose
+    node scope was widened mid-flight is marked and withheld from both loops, because it measures
+    neither the estimate nor the worker.</p>
+
+    <p>Cold start is a real circularity — with both unknown, neither is identifiable. Resolve it by
+    convention: a newly configured agent begins at a speed factor of one, estimates are authored as
+    normal, and the two co-calibrate as runs accumulate. Report the confidence in each figure
+    alongside it, because an agent with three runs and an agent with eighty should not present the
+    same number with the same authority.</p>
+
+    <h2 id="s4">§4 — Capabilities, and the competence horizon</h2>
+
+    <p>Per agent configuration — the pairing of a concrete worker and an effort level — accumulate
+    success rate, speed factor, and the distribution behind each rather than only the mean. A boss
+    selecting a worker needs the tail as much as the average, because a node that fails at the
+    ninetieth percentile costs a redispatch and a wasted worktree.</p>
+
+    <p><strong>Condition success rate on task size.</strong> A scalar success rate is nearly
+    useless for routing because every agent succeeds on trivial work. Success rate as a function of
+    estimated hours is the useful object, and the size at which it crosses a configured threshold
+    is that configuration's <strong>competence horizon</strong>. That number closes the dispatch
+    problem with a measurement instead of a judgement: a boss compares the node's estimate, divided
+    by the agent's speed factor, against the horizon, and splits when it exceeds it.</p>
+
+    <pre>node 4.0h  ÷  speed 1.4  =  2.9h   vs  horizon 2.5h   →  SPLIT
+node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
+
+    <p><strong>The capabilities record is a derived cache, not an authored file.</strong> It is
+    computed from the run ledgers every mounted project already commits, cached under reckon's
+    config home, and rebuildable with a single command. Authoring it would store computable state,
+    which is the very thing <code>derived-gate-state</code> exists to remove; a cache is an
+    artifact and may be deleted at any time without loss.</p>
+
+    <p><strong>Record lines-changed, but never rank on it.</strong> Changed-line counts come free
+    from the scoped diff each run already reports, and are a weak covariate for duration — worth
+    having as a feature. They must not become a tracked agent metric: ranking workers by lines
+    produces a gradient toward verbose code, and the measure would corrupt the behaviour it claims
+    to observe. Tests added and gate outcomes are the honest quality signals; lines are descriptive
+    only, and the schema should make that non-negotiable rather than leaving it to discipline.</p>
+
+    <h2 id="s5">§5 — Surfacing</h2>
+
+    <p>State the unit wherever effort appears, because an unlabelled number invites the reader to
+    assume the old scale. Plan reads carry estimated hours, hours spent, and remaining hours derived
+    from implementation fraction; the roadmap reports paths in hours; the SPA shows estimate against
+    spend; sprint capacity becomes an hours total that can be compared against real availability.
+    Skills state the unit in their effort guidance so an authoring agent produces hours rather than
+    a letter.</p>
+
+    <h2 id="gates">§6 — Evidence gates</h2>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Migration is lossless</td>
+          <td>Every existing plan across mounted projects resolves an hours value, letters mapping
+          to 1/2/4/8, with uncalibrated plans listed. No plan loses its effort value; recorded
+          before-and-after counts.</td>
+        </tr>
+        <tr>
+          <td>Loops are separable</td>
+          <td>A test in which a slow agent completes a correctly-estimated plan: the agent's speed
+          factor moves and the plan's estimate does not. Its mirror, where an underestimated plan
+          run by a baseline agent moves the estimate and not the factor.</td>
+        </tr>
+        <tr>
+          <td>Scope change excluded</td>
+          <td>A run marked as scope-changed is withheld from both loops, asserted by test on the
+          resulting figures.</td>
+        </tr>
+        <tr>
+          <td>Cold start terminates</td>
+          <td>From a fresh capabilities cache, both figures converge over a recorded synthetic run
+          sequence rather than oscillating, and confidence is reported beside each.</td>
+        </tr>
+        <tr>
+          <td>Horizon drives splitting</td>
+          <td>A node whose estimate divided by speed exceeds the horizon is refused for that agent
+          with a split recommendation naming the target size; one below it dispatches. Both paths
+          recorded from a real dispatch.</td>
+        </tr>
+        <tr>
+          <td>Cache is rebuildable</td>
+          <td>Deleting the capabilities cache and rebuilding from ledgers reproduces identical
+          figures. A test proves nothing is authored into it.</td>
+        </tr>
+        <tr>
+          <td>Lines are unrankable</td>
+          <td>Changed-line counts appear on run records and in no ranking, ordering, or selection
+          path. Asserted by test, not by convention.</td>
+        </tr>
+        <tr>
+          <td>Unit stated everywhere</td>
+          <td>Every surface reporting effort names the unit — plan read, roadmap, SPA, sprint
+          capacity, skill guidance. A grep finds no bare effort number without its unit.</td>
+        </tr>
+        <tr>
+          <td>Prediction beats the letters</td>
+          <td>Against the runs accumulated by this point, hours-based remaining-effort predicts
+          actual remaining time better than the legacy letter weights. State the comparison and the
+          sample size. A negative result is a legitimate outcome and must be recorded, not
+          buried.</td>
+        </tr>
+        <tr>
+          <td>Suite green</td>
+          <td>Full reckon suite passes; new-test count recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s7">§7 — Constraints</h2>
+
+    <p>No concrete model identifier or provider name enters plan state, the schema or this plan's
+    prose. A capabilities record keys on an agent configuration whose identity is user data in a
+    cache, never a constant in source.</p>
+
+    <p>The final gate can fail honestly. If hours-based prediction does not beat the letter weights
+    on the available sample, that is a finding about sample size or about the unit, and it is
+    recorded as a negative result. Do not tune the weights until the comparison passes — that would
+    fit the measure to the conclusion and destroy the only external check this plan has.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="effort-unit" data-choice="neutral-worker-hours" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">What unit expresses plan effort?</p>
+        <p class="r-dec-ctx">The proposal was minutes of a frontier model's time, which is directly intuitive and anchored to the best available worker.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="neutral-worker-hours">Neutral worker-hours; per-agent speed held separately in the capabilities cache</button>
+          <button class="r-opt" data-value="frontier-minutes">Minutes of a frontier model's time</button>
+          <button class="r-opt" data-value="hours-vs-reference">Hours against a named reference agent configuration</button>
+        </p>
+        <p class="r-dec-rat">A tier-anchored unit puts a routing claim into plan state, which policy forbids, and its meaning drifts as capability improves — silently rebasing every historical estimate the way a version number in a symbol name rots. Neutral hours keep the size of the work stable and let improvement appear as a rising speed factor, which is also the figure a boss actually needs for routing. A named reference adds a re-baselining obligation for no gain over that.</p>
+      </div>
+      <div class="r-dec" data-key="calibration-topology" data-choice="two-separate-loops" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">How do actuals feed back into estimates?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="two-separate-loops">Two loops — normalised actuals update the plan estimate, aggregate ratios update agent speed</button>
+          <button class="r-opt" data-value="single-loop">One loop feeding actuals directly into the plan estimate</button>
+        </p>
+        <p class="r-dec-rat">A single loop conflates estimate error with agent speed, so a slow worker permanently inflates the recorded size of the work and the number stops meaning what it claims. Separating them costs one division and keeps both figures interpretable; scope-changed runs are excluded from both because they measure neither.</p>
+      </div>
+      <div class="r-dec" data-key="capabilities-storage" data-choice="derived-cache" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">Is the agent capabilities record authored or derived?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="derived-cache">Derived from the committed run ledgers and cached, rebuildable on demand</button>
+          <button class="r-opt" data-value="authored-file">An authored file maintained alongside configuration</button>
+        </p>
+        <p class="r-dec-rat">Authoring it would store computable state, the exact defect class being removed elsewhere in this sprint set, and a hand-maintained performance record decays the moment anyone forgets to update it. A cache carries no authority, may be deleted without loss, and is verifiable by rebuilding to identical figures.</p>
+      </div>
+      <div class="r-dec" data-key="lines-changed-role" data-choice="descriptive-never-ranked" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+        <p class="r-dec-q">What role do changed-line counts play?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="descriptive-never-ranked">Recorded as a covariate; barred from any ranking or selection path</button>
+          <button class="r-opt" data-value="tracked-metric">Tracked as an agent performance metric alongside speed and success</button>
+        </p>
+        <p class="r-dec-rat">Ranking workers by lines changed creates a gradient toward verbose code, corrupting the behaviour the measure claims to observe. The counts are free from the scoped diff and weakly informative for duration, so they are worth recording — but the bar against ranking is enforced by test rather than left to discipline, because incentive pressure erodes conventions.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-ec-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship effort-calibration">
+        <h4 class="r-fu-title">Move effort to worker-hours and close the calibration loops</h4>
+        <div class="r-fu-body"><p>Land the hours unit with lossless legacy mapping, the two separable calibration loops with scope-change exclusion and reported confidence, the derived capabilities cache with size-conditioned success curves and competence horizons that drive split decisions, and unit labelling on every surface. Close on whether hours predict remaining time better than the legacy weights, recording a negative result honestly if that is the answer.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship effort-calibration</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

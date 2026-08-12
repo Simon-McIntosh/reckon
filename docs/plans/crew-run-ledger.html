@@ -71,17 +71,16 @@
     and every escape-hatch resumption reach the same long-lived session. Members are per
     project so a repository's team is committed with its plans.</p>
 
-    <p><strong>Ground the effort scale.</strong> Effort is currently a relative weight —
-    <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code> mapped to a doubling series
-    consumed only for critical-path weighting. That gives it arithmetic meaning and no empirical
-    meaning: nothing ties a letter to an observable, so the labels are asserted rather than
-    measured, and a plan sized <code>L</code> by one author may cost a quarter of another's. The
-    ledger is what makes this falsifiable, because every completed run records when it was
-    dispatched and when it finished. Report measured worker-time per plan against its declared
-    effort, so the scale can be <em>calibrated</em> from history instead of redefined by opinion.
-    Do not change the weights in this plan — gather the evidence first and record the observed
-    distribution, including how wide the spread within each letter turns out to be. A scale whose
-    letters overlap heavily is telling you something, and that finding is a legitimate outcome.</p>
+    <p><strong>Record what makes effort measurable later.</strong> Effort is currently an asserted
+    letter with no external referent, and the ledger is what makes it falsifiable — but only if the
+    right fields are captured from the first run. Record per node: dispatch and completion
+    timestamps, the agent configuration that ran it, changed-line counts from the scoped diff, tests
+    added, the gate outcome, and an explicit flag when a node's scope was widened mid-flight. That
+    last field is the one easy to omit and impossible to reconstruct: a scope-changed run measures
+    neither the estimate nor the worker, so it must be excluded from calibration rather than
+    silently averaged in. Report measured worker-time per plan against its declared effort so the
+    spread is visible. Do not change the effort weights here — <code>effort-calibration</code> owns
+    the unit migration and the calibration loops; this plan owns capturing the data they need.</p>
 
     <p><strong>The read tool.</strong> One new MCP tool, <code>crew(project,
     view="flight"|"live"|"ledger"|"summary")</code>, read-only, holding the MCP surface at
@@ -128,10 +127,11 @@
           registered main checkout's. Verified against a real worktree.</td>
         </tr>
         <tr>
-          <td>Effort scale measured</td>
-          <td>Measured worker-time per completed plan reported against its declared effort letter,
-          with the observed spread inside each letter stated. A finding that the letters overlap is
-          a valid result and must be recorded, not smoothed.</td>
+          <td>Calibration inputs captured</td>
+          <td>A completed run record carrying dispatch and completion timestamps, agent
+          configuration, changed lines, tests added, gate outcome, and the scope-changed flag, with
+          a test proving that flag is settable and defaults false. Measured worker-time per completed
+          plan reported against its declared effort with the observed spread stated.</td>
         </tr>
         <tr>
           <td>Suite green</td>

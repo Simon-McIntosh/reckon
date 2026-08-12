@@ -8,7 +8,7 @@
   <meta name="plan-slug"     content="agent-fleet-orchestration">
   <meta name="plan-title"    content="Agent Fleet Orchestration — architecture">
   <meta name="plan-summary"  content="Architecture for orchestrating external coding-harness workers from reckon: one uniform dispatch surface, a layered flight-control config, repo-owned run ledgers, and gates that derive blocked state.">
-  <meta name="plan-informs"  content="flight-control-config,uniform-worker-dispatch,crew-run-ledger,derived-gate-state,budget-aware-dispatch,inflight-visibility,north-star-orientation">
+  <meta name="plan-informs"  content="flight-control-config,uniform-worker-dispatch,crew-run-ledger,derived-gate-state,budget-aware-dispatch,inflight-visibility,north-star-orientation,effort-calibration">
   <meta name="plan-owner"    content="Simon McIntosh">
   <title>Agent Fleet Orchestration — architecture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -479,7 +479,7 @@ WHEN   next §6 north-star — ready, nothing blocks it</pre>
 
     <h2 id="s11">§11 — Delivery shape</h2>
 
-    <p>Seven plans across three sprints, each sprint closed by one evidence gate. The
+    <p>Eight plans across three sprints, each sprint closed by one evidence gate. The
     sequencing is deliberate: the first sprint is built conventionally so that the
     <em>second and third are executed by the worker team it creates</em>, which dog-foods the
     whole mechanism on real work rather than a rehearsal.</p>
@@ -494,14 +494,30 @@ WHEN   next §6 north-star — ready, nothing blocks it</pre>
     altitude, ending without either a next invocation or an explicit no-followup outcome is a
     failure.</p>
 
-    <p>Two measurement questions are answered by the ledger rather than by definition. The effort
-    scale is currently a relative doubling series consumed only for critical-path weighting, with
-    nothing tying a letter to an observable — so it is asserted, not measured. Because every
-    completed run records its dispatch and completion times, effort becomes <em>calibratable</em>
-    from history, and a finding that the letters overlap heavily is itself a legitimate result.
-    Staleness is the mirror case: detection already exists in the audit command, but never reaches
-    the agent doing the work, so a worker can begin on a plan idle for months with no signal that
-    its assumptions may have expired.</p>
+    <p>Two measurement questions are answered by the ledger rather than by definition. Staleness is
+    the simpler one: detection already exists in the audit command but never reaches the agent doing
+    the work, so a worker can begin on a plan idle for months with no signal that its assumptions
+    may have expired.</p>
+
+    <p>Effort is the deeper one. The scale is a relative doubling series consumed only for
+    critical-path weighting, with nothing tying a letter to an observable — asserted, not measured,
+    and every number built on it inherits that. Dispatching work supplies the missing measurement
+    for free, so effort moves to <strong>neutral worker-hours</strong>: the expected wall-clock a
+    capable worker takes, deliberately not anchored to a model tier, since a tier-anchored unit
+    would put a routing claim into plan state and would drift silently as capability improved,
+    rebasing every historical estimate. Improvement appears instead as a rising per-agent speed
+    factor, leaving the size of the work unchanged. Read as hours the existing weights are already
+    plausible, so the migration costs no re-estimation.</p>
+
+    <p>Feeding actuals back requires <strong>two separate loops</strong>, and this is where a naive
+    build fails. Predicted-versus-actual mixes estimate error, agent speed and scope change; a
+    single loop bakes worker slowness into the recorded size of the work and the number stops
+    meaning what it claims. So normalised actuals update the plan estimate while aggregate ratios
+    update agent speed, and a scope-changed run is excluded from both because it measures neither.
+    The payoff is a figure that closes the dispatch problem with a measurement: success rate
+    conditioned on task size gives each agent configuration a <strong>competence horizon</strong> —
+    the size beyond which it starts failing — so a boss computes whether to split rather than
+    judging it.</p>
 
     <table>
       <thead><tr><th>Sprint</th><th>Plans</th><th>Built by</th><th>Closing gate</th></tr></thead>
@@ -520,9 +536,9 @@ WHEN   next §6 north-star — ready, nothing blocks it</pre>
         </tr>
         <tr>
           <td><code>S9</code> — observation surface</td>
-          <td><code>inflight-visibility</code>, <code>north-star-orientation</code></td>
+          <td><code>inflight-visibility</code>, <code>north-star-orientation</code>, <code>effort-calibration</code></td>
           <td>codex team</td>
-          <td>a live run is visible in the SPA and through MCP; north-stars render with plans pointing at them; <code>roadmap("*")</code> returns a usable summary</td>
+          <td>a live run is visible in the SPA and through MCP; north-stars render with plans pointing at them; <code>roadmap("*")</code> returns a usable summary; effort reads in worker-hours with both calibration loops proven separable and competence horizons driving split decisions</td>
         </tr>
       </tbody>
     </table>
