@@ -1,4 +1,4 @@
-// v6 Sprint view — cleaned up.
+// Sprint view — one focused execution surface.
 // One clear goal block, a switcher, a kanban with drag-drop hover feedback.
 // No "what is a sprint" explainer, no past-sprints accordion.
 
