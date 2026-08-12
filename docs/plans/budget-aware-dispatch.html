@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-impl" content="0.86">
 </head>
 <body>
@@ -141,6 +141,16 @@
           <td>The existing ledger becomes readable</td>
           <td>The two unattributed known readings in this repository's ledger resolve to a backend
           through the reader, without editing the committed records by hand.</td>
+        </tr>
+        <tr>
+          <td>Attribution never depends on where the orchestrator ran</td>
+          <td>A recovered attribution is derived from evidence the producing backend left — its
+          recorded stream, its argv, or a field written at promotion — never from the delivery
+          path. Shown by a test in which the same reading, reached through a path naming a
+          different harness, still attributes to the backend that produced it. A path component
+          can carry the host's own runtime directory name, so matching on it tracks the
+          orchestrator's environment rather than the signal's origin, and is right only by
+          coincidence.</td>
         </tr>
         <tr>
           <td>Unattributable stays distinct from unrecorded</td>
