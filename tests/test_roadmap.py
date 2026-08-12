@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
+from reckon.serve import _derive_lifecycle
 
 
 def _plan(
@@ -209,3 +211,51 @@ def test_non_runnable_draft_is_deferred_without_becoming_a_blocker() -> None:
     assert [item["slug"] for item in result["deferred"]] == ["future"]
     assert result["deferred"][0]["readiness"] == "deferred"
     assert result["sprints"][0]["deferred"] == 1
+
+
+def test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit() -> (
+    None
+):
+    plan = _plan("measured-work")
+    plan["gates"] = [
+        {
+            "id": "coverage",
+            "section": "evaluation",
+            "gated_sections": ["deployment", "release"],
+            "status": "closed",
+            "measure": "Coverage threshold",
+            "verdict": "failed",
+            "evidence": "/sample/evidence/coverage",
+        }
+    ]
+    sprint = [{"id": "current", "status": "active", "items": ["measured-work"]}]
+
+    typed_blocking = _blocking(plan, [])
+    discovered, _hydrated = _derive_lifecycle("sample", [plan], sprint)
+    roadmap = build_roadmap("sample", discovered, sprint)
+
+    expected_sections = ["deployment", "release"]
+    assert typed_blocking[0]["gated_sections"] == expected_sections
+    assert discovered[0]["blocking"][0]["gated_sections"] == expected_sections
+    assert discovered[0]["effective_status"] == "blocked"
+    assert (
+        roadmap["blocked"][0]["gate_blockers"][0]["gated_sections"] == expected_sections
+    )
+    assert roadmap["blocked"][0]["effective_status"] == "blocked"
+    assert roadmap["ready_now"] == []
+
+    workflow_status = plan["status"]
+    plan["gates"][0]["verdict"] = "passed"
+
+    typed_blocking = _blocking(plan, [])
+    discovered, _hydrated = _derive_lifecycle("sample", [plan], sprint)
+    roadmap = build_roadmap("sample", discovered, sprint)
+
+    assert plan["status"] == workflow_status == "active"
+    assert typed_blocking == []
+    assert discovered[0]["blocking"] == []
+    assert discovered[0]["effective_status"] == "active"
+    assert roadmap["blocked"] == []
+    assert roadmap["ready_now"][0]["slug"] == "measured-work"
+    assert roadmap["ready_now"][0]["gate_blockers"] == []
+    assert roadmap["ready_now"][0]["effective_status"] == "active"

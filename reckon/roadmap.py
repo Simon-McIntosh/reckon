@@ -12,7 +12,12 @@ from collections import defaultdict
 from typing import Any
 
 from reckon._schema import parse_plan_ref
-from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+from reckon.lifecycle import (
+    COMPLETED_STATUSES,
+    TERMINAL_STATUSES,
+    effective_status,
+    unpassed_gate_blockers,
+)
 
 _EFFORT_WEIGHT = {"S": 1.0, "M": 2.0, "L": 4.0, "XL": 8.0}
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
@@ -223,11 +228,7 @@ def build_roadmap(
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
     all_plans: dict[str, dict[str, Any]] = {}
     for raw in inventory:
-        if (
-            not isinstance(raw, dict)
-            or not raw.get("slug")
-            or raw.get("archived")
-        ):
+        if not isinstance(raw, dict) or not raw.get("slug") or raw.get("archived"):
             continue
         item = dict(raw)
         item.setdefault("project", project)
@@ -489,23 +490,35 @@ def build_roadmap(
             for row in plan.get("blocking") or []
             if isinstance(row, dict) and row.get("kind") == "explicit"
         ]
-        if status == "blocked" and not explicit_blockers and not dependency_blockers:
+        gate_blockers = unpassed_gate_blockers(plan.get("gates") or [])
+        if (
+            status == "blocked"
+            and not explicit_blockers
+            and not dependency_blockers
+            and not gate_blockers
+        ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         is_ready = (
             status in _RUNNABLE_STATUSES
             and not dependency_blockers
             and not explicit_blockers
+            and not gate_blockers
             and slug not in cycle_members
         )
         is_blocked = bool(
-            dependency_blockers or explicit_blockers or slug in cycle_members
+            dependency_blockers
+            or explicit_blockers
+            or gate_blockers
+            or slug in cycle_members
         )
         readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
         row = {
             "slug": slug,
             "title": plan.get("title") or slug,
             "status": status,
-            "effective_status": plan.get("effective_status") or status,
+            "effective_status": effective_status(
+                status, [*dependency_blockers, *explicit_blockers, *gate_blockers]
+            ),
             "sprint": plan.get("sprint") or (membership.get(slug) or [None])[0],
             "roi": plan.get("roi") or "mid",
             "effort": plan.get("effort") or "M",
@@ -513,6 +526,7 @@ def build_roadmap(
             "remaining_effort": _remaining_effort(plan),
             "depends_on": dependency_rows.get(slug, []),
             "explicit_blockers": explicit_blockers,
+            "gate_blockers": gate_blockers,
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,

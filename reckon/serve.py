@@ -48,7 +48,11 @@ from urllib.parse import unquote, urlsplit
 
 from reckon import _plan_html
 from reckon._store import _config_home, _mounts_path, _state_root
-from reckon.lifecycle import effective_status, unresolved_dependencies
+from reckon.lifecycle import (
+    effective_status,
+    unresolved_dependencies,
+    unpassed_gate_blockers,
+)
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
@@ -611,6 +615,7 @@ def _derive_lifecycle(
                 explicit_by_slug.get(str(plan.get("slug")), [])
             )
         )
+        blocking.extend(unpassed_gate_blockers(plan.get("gates") or []))
         workflow_status = str(plan.get("status") or "draft")
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = effective_status(workflow_status, blocking)

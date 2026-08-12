@@ -32,6 +32,26 @@ def unresolved_dependencies(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+def unpassed_gate_blockers(gates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project gates without a passing verdict into blocker rows."""
+
+    return [
+        {
+            "kind": "gate",
+            "id": str(gate.get("id") or ""),
+            "section": str(gate.get("section") or ""),
+            "gated_sections": list(gate.get("gated_sections") or []),
+            "status": str(gate.get("status") or ""),
+            "measure": str(gate.get("measure") or ""),
+            "verdict": str(gate.get("verdict") or ""),
+            "evidence": str(gate.get("evidence") or ""),
+        }
+        for gate in gates
+        if isinstance(gate, dict)
+        and str(gate.get("verdict") or "").strip().lower() != "passed"
+    ]
+
+
 def effective_status(
     workflow_status: str | None,
     blocking: list[dict[str, Any]],
