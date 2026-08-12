@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="flight-control-config-landed">
+  <meta name="plan-title" content="Flight control config — landed evidence">
+  <meta name="plan-summary" content="Four-layer routing config with per-key provenance, generated-and-committed schema artifacts, and a JSON-first CLI. All seven declared gates produced evidence.">
+  <meta name="plan-evidence-for" content="reckon:flight-control-config">
+  <meta name="plan-verifies" content="reckon:flight-control-config#s2,reckon:flight-control-config#gates">
+  <meta name="plan-recorded-at" content="2026-08-12">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; LinkML 1.9 in the dev dependency group">
+  <meta name="plan-commits" content="98257f477af5d894227d7475da914ec4ad61f5d6">
+  <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,reckon/cli.py,scripts/regen_flight_schema.py,tests/test_flight.py,~/.config/reckon/flight.yaml">
+  <title>Flight control config — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Flight control config — landed evidence</h1>
+    <p class="plan-summary">Worker routing, gate strictness and worker fences now resolve from four
+    layered YAML sources through one schema-validated command, and every resolved value reports the
+    layer it came from. Seven declared measures, seven pieces of evidence, no negative results.</p>
+  </header>
+
+  <section id="gates">
+    <h2>Declared measures and what each produced</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Schema round-trip</td><td>Both committed artifacts regenerate byte-identically from the LinkML source — <a href="#schema">§ schema</a></td><td>pass</td></tr>
+        <tr><td>Layer precedence</td><td>Project override of one backend key leaves five sibling keys standing — <a href="#resolution">§ resolution</a></td><td>pass</td></tr>
+        <tr><td>Provenance</td><td>36 resolved keys, each attributed; all four layers visible in one run — <a href="#provenance">§ provenance</a></td><td>pass</td></tr>
+        <tr><td>Malformed config fails loudly</td><td>Invalid enum, unknown key, out-of-range and bad duration each name file, key path and constraint — <a href="#failures">§ failures</a></td><td>pass</td></tr>
+        <tr><td>Availability</td><td>Both CLI backends located on PATH; missing-binary report recorded — <a href="#availability">§ availability</a></td><td>pass</td></tr>
+        <tr><td>Machine contract</td><td>Single-line sorted JSON, byte-identical across runs, exit 0 valid / 1 invalid — <a href="#contract">§ contract</a></td><td>pass</td></tr>
+        <tr><td>Suite green</td><td>1,495 tests pass, 35 of them new — <a href="#suite">§ suite</a></td><td>pass</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="resolution">
+    <h2>Four layers, merged per key</h2>
+
+    <p>Resolution runs shipped &rarr; host &rarr; project &rarr; override, merging mappings
+    recursively and replacing everything else. The property that matters is that a layer overriding
+    one key of one backend leaves that backend's other keys standing, so a project does not restate
+    a backend to change its model.</p>
+
+    <figure>
+      <svg viewBox="0 0 700 210" width="100%" style="max-width:700px" role="img"
+           aria-label="Four configuration keys resolving independently: worktree.cleanup is supplied by the shipped layer, backends.codex.model by the host layer, backends.codex.effort by the project layer over a shadowed host value, and gates.enforce by the override layer over shadowed shipped and host values.">
+        <g font-family="system-ui,sans-serif" font-size="11" fill="currentColor" opacity="0.75">
+          <text x="250" y="34" text-anchor="middle">shipped</text>
+          <text x="345" y="34" text-anchor="middle">host</text>
+          <text x="440" y="34" text-anchor="middle">project</text>
+          <text x="535" y="34" text-anchor="middle">override</text>
+          <text x="640" y="34" text-anchor="middle">resolved</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1" opacity="0.18">
+          <path d="M250 46 L250 196"/>
+          <path d="M345 46 L345 196"/>
+          <path d="M440 46 L440 196"/>
+          <path d="M535 46 L535 196"/>
+          <path d="M600 46 L600 196"/>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1" opacity="0.25">
+          <path d="M240 68 L594 68"/>
+          <path d="M240 104 L594 104"/>
+          <path d="M240 140 L594 140"/>
+          <path d="M240 176 L594 176"/>
+        </g>
+
+        <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" fill="currentColor">
+          <text x="8" y="72">worktree.cleanup</text>
+          <text x="8" y="108">backends.codex.model</text>
+          <text x="8" y="144">backends.codex.effort</text>
+          <text x="8" y="180">gates.enforce</text>
+        </g>
+
+        <!-- shadowed values: set by a layer, superseded by a higher one -->
+        <g stroke="currentColor" fill="none" stroke-width="1" opacity="0.45">
+          <circle cx="345" cy="140" r="4"/>
+          <circle cx="250" cy="176" r="4"/>
+          <circle cx="345" cy="176" r="4"/>
+          <path d="M349 140 L436 140" stroke-dasharray="2 3"/>
+          <path d="M254 176 L341 176" stroke-dasharray="2 3"/>
+          <path d="M349 176 L531 176" stroke-dasharray="2 3"/>
+        </g>
+
+        <!-- winning values travel to the resolved column -->
+        <g stroke="#3b82c4" fill="#3b82c4" stroke-width="1.4">
+          <circle cx="250" cy="68" r="4"/>
+          <circle cx="345" cy="104" r="4"/>
+          <circle cx="440" cy="140" r="4"/>
+          <circle cx="535" cy="176" r="4"/>
+          <path d="M254 68 L596 68" fill="none"/>
+          <path d="M349 104 L596 104" fill="none"/>
+          <path d="M444 140 L596 140" fill="none"/>
+          <path d="M539 176 L596 176" fill="none"/>
+          <path d="M591 64 L599 68 L591 72 Z" stroke="none"/>
+          <path d="M591 100 L599 104 L591 108 Z" stroke="none"/>
+          <path d="M591 136 L599 140 L591 144 Z" stroke="none"/>
+          <path d="M591 172 L599 176 L591 180 Z" stroke="none"/>
+        </g>
+
+        <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" fill="currentColor">
+          <text x="608" y="72">conservative</text>
+          <text x="608" y="108">gpt-5.6-sol</text>
+          <text x="608" y="144">medium</text>
+          <text x="608" y="180">advisory</text>
+        </g>
+      </svg>
+      <figcaption>Every key resolves on its own track. A filled dot supplies the resolved value; a
+      hollow dot is a value that layer set and a higher one shadowed. Because the tracks are
+      independent, changing <code>backends.codex.effort</code> in the project layer costs nothing
+      from <code>backends.codex.model</code> beside it.</figcaption>
+    </figure>
+
+    <p>The deep-merge measure was exercised against a host layer defining a backend with five keys
+    and a project layer overriding one of them:</p>
+
+    <pre>host:    backends.alpha = {launch: cli, command: alpha-cli, model: some-model,
+                            effort: high, concurrency: 3}
+project: backends.alpha = {model: other-model}
+
+resolved backends.alpha:
+  model       = other-model    (project)
+  command     = alpha-cli      (host)      <- survives
+  effort      = high           (host)      <- survives
+  concurrency = 3              (host)      <- survives
+  launch      = cli            (host)      <- survives
+gates.enforce = strict         (shipped)   <- untouched layer still contributes</pre>
+
+    <p>Adding a backend in a higher layer also leaves the shipped one in place, so the in-harness
+    backend is always available as a degradation target. Lists replace rather than accumulate:
+    <code>summary.at</code> is one choice, not a set to append to.</p>
+  </section>
+
+  <section id="provenance">
+    <h2>Per-key provenance across a deliberate three-layer setup</h2>
+
+    <p>A temporary project layer was written to
+    <code>docs/state/reckon/flight.yaml</code> setting <code>backends.codex.effort</code>,
+    <code>backends.claude.concurrency</code> and <code>gates.on_fail</code>, over the real host
+    config and the shipped defaults, then removed. <code>reckon flight --project reckon</code>
+    attributed all 36 resolved keys, with every layer represented:</p>
+
+    <pre>  project  backends.codex.effort                  = medium
+     host  backends.codex.model                   = gpt-5.6-sol
+     host  backends.codex.concurrency             = 3
+  project  backends.claude.concurrency            = 1
+     host  backends.claude.effort                 = medium
+     host  backends.native.concurrency            = 4
+  project  gates.on_fail                          = warn
+     host  gates.enforce                          = strict
+  shipped  summary.reflex                         = what-why-how-when
+  shipped  fences.needs_help_after_failures       = 2
+  shipped  worktree.cleanup                       = conservative
+  shipped  roles.implement                        = {}
+
+keys with an origin: 36 | layers: shipped=present host=present project=present override=absent</pre>
+
+    <p>A test asserts that no leaf of the resolved config is missing from the provenance map, so the
+    attribution cannot silently fall behind a schema addition.</p>
+  </section>
+
+  <section id="schema">
+    <h2>Generated artifacts match their source</h2>
+
+    <p><code>reckon/schema/flight.yaml</code> is the LinkML model. Two artifacts are generated from
+    it and committed: <code>reckon/_flight_schema.py</code>, the Pydantic validator reckon imports at
+    runtime, and <code>docs/_shared/flight.schema.json</code>, served live at
+    <code>/_shared/flight.schema.json</code> (HTTP 200 confirmed) so a
+    <code>yaml-language-server</code> header gives editor completion while tuning. Two tests
+    regenerate both and compare; both matched byte-for-byte.</p>
+
+    <p>The generators live in the dev dependency group, where <code>uv run</code> installs them with
+    no flag to forget, and <code>uv run python scripts/regen_flight_schema.py</code> rewrites both
+    artifacts. The generated module is excluded from lint for the same reason it is generated: a
+    lint fix applied by hand is exactly the drift the round-trip measure exists to catch.</p>
+
+    <p>The runtime claim was checked against a built wheel rather than asserted. A clean environment
+    installed from the wheel alone resolves configuration with none of the toolchain present:</p>
+
+    <table>
+      <thead><tr><th>Environment</th><th>Installed packages</th><th>LinkML present</th><th><code>reckon flight</code></th></tr></thead>
+      <tbody>
+        <tr><td>Wheel only</td><td>32</td><td>no</td><td>resolves; 20 attributed keys from shipped defaults</td></tr>
+        <tr><td>Development, dev group installed</td><td>104</td><td>yes</td><td>resolves; regeneration available</td></tr>
+      </tbody>
+    </table>
+
+    <p>That is the measurement behind the toolchain decision: authoring weight is 72 packages on top
+    of a 32-package runtime, carried only by developers who regenerate the schema. The wheel also
+    carries <code>reckon/schema/flight-defaults.yaml</code>, confirmed present in the built archive,
+    so a fresh install works with no configuration at all.</p>
+  </section>
+
+  <section id="failures">
+    <h2>A malformed layer stops, and says why</h2>
+
+    <p>Every failure names the file, the key path inside it and the violated constraint. No path
+    through resolution falls back to defaults on a bad value — misconfigured routing that looks like
+    it worked is the failure this rules out.</p>
+
+    <pre>$ reckon flight --set gates.enforce=aggressive
+Error: &lt;override&gt;: gates.enforce: Input should be 'strict', 'advisory' or 'disabled'   [exit 1]
+
+$ reckon flight --set gates.enfoce=strict
+Error: &lt;override&gt;: gates.enfoce: Extra inputs are not permitted                        [exit 1]
+
+$ RECKON_FLIGHT_CONFIG=bad.yaml reckon flight
+Error: bad.yaml: backends.codex.concurrency: Input should be greater than or equal to 1 [exit 1]</pre>
+
+    <p>Tests additionally cover an unparseable YAML layer, a duration that does not match the
+    schema's pattern, a <code>default_backend</code> naming a backend no layer defines, and a role
+    dispatching to an undefined backend. The last two are whole-config rules: they can only be judged
+    after every layer has merged, so they are checked there rather than per layer.</p>
+
+    <p>One rejection is worth naming because it is a trap rather than a typo. <code>gates: {enforce:
+    off}</code> parses as the boolean false in YAML, not the string <code>off</code>, so the schema
+    spells the value <code>disabled</code> and the boolean is rejected with the enum message above.
+    The same coercion silently renamed the value inside the generated Python enum during
+    implementation, which is how it was found.</p>
+  </section>
+
+  <section id="availability">
+    <h2>Backend availability, reported and not acted on</h2>
+
+    <pre>codex   command_found=true   /home/ITER/mcintos/.npm/packages/bin/codex
+claude  command_found=true   /home/ITER/mcintos/.local/bin/claude
+native  command_found=true   in-harness backend needs no external command
+
+# with the command pointed at a binary that is not installed:
+codex   command_found=false  command_path=null
+        detail="'codex-not-installed' is not on PATH"</pre>
+
+    <p>A missing backend stays in the resolved config and is reported as missing; nothing reroutes
+    silently, because silent rerouting hides exactly the misconfiguration this reports. The caller
+    decides whether to degrade to the in-harness backend.</p>
+
+    <p>Authentication cannot be checked without provider-specific knowledge, which the constraints
+    forbid reckon from holding. A backend may therefore declare an <code>auth_check</code> argument
+    vector — user data, like its command — whose exit status is reported. Because running it spawns a
+    process, it runs only under <code>--probe-auth</code>; otherwise authentication is reported as
+    unprobed rather than guessed. No <code>auth_check</code> is configured on this host, so the
+    recorded report shows the unprobed state.</p>
+  </section>
+
+  <section id="contract">
+    <h2>The machine contract</h2>
+
+    <pre>$ reckon flight            -> exit 0, one line of JSON
+$ reckon flight            -> byte-identical to the previous run
+top-level keys sorted      = True   (availability, config, layers, project, provenance)
+config keys sorted         = True
+--pretty                   = the same document, indented
+invalid config             -> exit 1, message names file / key path / constraint</pre>
+
+    <p>Sorted keys at every level are what make the output diffable: two runs differ only where a
+    value differs. <code>--set dotted.key=value</code> feeds the override layer, parsing values as
+    YAML scalars so <code>concurrency=3</code> is an integer rather than a string the schema would
+    reject.</p>
+  </section>
+
+  <section id="host-config">
+    <h2>The host config (not committed)</h2>
+
+    <p><code>~/.config/reckon/flight.yaml</code> is user data and is recorded here rather than in the
+    repository. It states only what it changes from the shipped defaults, which is the discipline the
+    deep merge exists to enable:</p>
+
+    <pre># yaml-language-server: $schema=http://127.0.0.1:8765/_shared/flight.schema.json
+version: 1
+default_backend: codex
+
+backends:
+  codex:
+    launch: cli
+    command: codex
+    model: gpt-5.6-sol
+    effort: high
+    sandbox: worktree-full
+    session_reuse: true
+    concurrency: 3
+    time_budget: 25m
+
+  claude:
+    launch: cli
+    command: claude
+    model: claude-sonnet-5
+    effort: medium
+    sandbox: worktree-full
+    session_reuse: true
+    concurrency: 3
+    time_budget: 25m
+
+  native:
+    launch: in-harness
+    concurrency: 4
+    time_budget: 25m
+    session_reuse: false
+
+roles:
+  review:
+    sandbox: read-only
+  investigate:
+    sandbox: read-only
+
+gates:
+  enforce: strict
+  require_evidence: true
+  on_fail: hold</pre>
+
+    <p><code>fences</code>, <code>worktree</code> and <code>summary</code> are absent because the
+    host agrees with the shipped values for all of them; they resolve with a <code>shipped</code>
+    origin, visible in the provenance output above.</p>
+  </section>
+
+  <section id="divergences">
+    <h2>Where the implementation departs from the design sketch</h2>
+
+    <p>Three departures, each forced by something the sketch could not have known, and each recorded
+    because a later reader will otherwise assume the sketch was implemented literally.</p>
+
+    <table>
+      <thead><tr><th>Design sketch</th><th>Implemented</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Shipped defaults live in the generated model</td>
+          <td>Shipped defaults are a validated data layer, <code>reckon/schema/flight-defaults.yaml</code>, in the wheel</td>
+          <td>Per-key provenance is the deliverable that makes the surface debuggable, and a value coming from a Pydantic field default is indistinguishable from a key nobody set. A real layer keeps the two apart. The LinkML generator also emits syntactically invalid Python for a default whose enum value contains a hyphen, and cannot clear an inherited default on a partial overlay class — both would have needed hand edits to the generated file.</td>
+        </tr>
+        <tr>
+          <td><code>gates.enforce: off</code></td>
+          <td><code>gates.enforce: disabled</code></td>
+          <td>YAML reads <code>off</code> as the boolean false, in the schema and in every config file it validates.</td>
+        </tr>
+        <tr>
+          <td>Report whether a backend &ldquo;appears authenticated&rdquo;</td>
+          <td>Report the exit status of a backend's own declared <code>auth_check</code>, under an explicit flag</td>
+          <td>Any built-in authentication probe would encode provider-specific knowledge in reckon source, which the constraints forbid. Putting the check in the config's values keeps that knowledge in user data.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The schema names no backend, command, model identifier or effort ladder; a test asserts the
+    shipped layer defines only the in-harness backend and that the published JSON Schema fixes no
+    backend key. Effort is deliberately free text rather than an enum, because each backend defines
+    its own vocabulary and a closed list would encode a hierarchy.</p>
+  </section>
+
+  <section id="suite">
+    <h2>Suite</h2>
+
+    <pre>$ uv run pytest -q
+1495 passed in 42.00s
+
+$ uv run pytest tests/test_flight.py -q
+35 passed
+
+$ uv run ruff check reckon/ tests/ scripts/
+All checks passed!</pre>
+
+    <p>35 new tests, no failures, no skips — the two round-trip tests skip only where the LinkML
+    generators are absent, and both ran here. Commit
+    <code>98257f477af5d894227d7475da914ec4ad61f5d6</code>.</p>
+  </section>
+</main>
+</body>
+</html>

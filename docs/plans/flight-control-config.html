@@ -4,21 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="flight-control-config">
-  <meta name="plan-title"     content="Flight Control Config">
-  <meta name="plan-summary"   content="One layered, schema-validated YAML surface that tunes worker routing, gate strictness and fences for the whole ship, resolved by a machine-readable CLI.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="M">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="flight-control-config">
+  <meta name="plan-title" content="Flight Control Config">
+  <meta name="plan-summary" content="One layered, schema-validated YAML surface that tunes worker routing, gate strictness and fences for the whole ship, resolved by a machine-readable CLI.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="M">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S7">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S7">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Flight Control Config | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-12">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -37,103 +40,46 @@
     <a href="/reckon/research/agent-fleet-orchestration#s4">Agent Fleet Orchestration §4</a>.
     Read it before implementing; do not restate it here.</p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
+    <p>Three departures from that sketch were forced during implementation and are recorded, with
+    their reasons, in
+    <a href="/reckon/evidence/archive/flight-control-config-landed#divergences">the landed
+    evidence</a>: shipped defaults became a validated data layer rather than generated model field
+    defaults, <code>gates.enforce: off</code> became <code>disabled</code> because YAML reads the
+    former as a boolean, and authentication probing runs a backend's own declared check rather than
+    anything reckon knows about a provider.</p>
 
-    <p><strong>The LinkML source and its committed artifacts.</strong> Author
-    <code>reckon/schema/flight.yaml</code> as the LinkML model covering
-    <code>default_backend</code>, per-backend <code>launch</code>/<code>command</code>/
-    <code>model</code>/<code>effort</code>/<code>sandbox</code>/<code>session_reuse</code>/
-    <code>concurrency</code>/<code>time_budget</code>, the <code>roles</code> map,
-    and the <code>gates</code>, <code>fences</code>, <code>worktree</code> and
-    <code>summary</code> blocks. Generate and <em>commit</em> both
-    <code>reckon/_flight_schema.py</code> (Pydantic) and
-    <code>docs/_shared/flight.schema.json</code> (JSON Schema export). The generated files are
-    committed so reading a config at runtime requires none of the toolchain, and runtime gains
-    exactly one dependency, <code>pyyaml</code>.</p>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§2 — Deliverables</h2>
+      </header>
+      <p class="landed-summary">
+        Shipped the LinkML source <code>reckon/schema/flight.yaml</code> with both generated
+        artifacts committed, four-layer deep-merge resolution with per-key provenance in
+        <code>reckon/flight.py</code>, PATH and declared-<code>auth_check</code> availability
+        probing, and <code>reckon flight</code> as a sorted-JSON primitive. A wheel-only install
+        resolves configuration in 32 packages with no generator toolchain; the dev group adds 72
+        for regeneration. The host config is recorded in the evidence rather than committed.
+        Full record: <a href="/reckon/evidence/archive/flight-control-config-landed#resolution">landed evidence</a>
+        (commit <code>98257f4</code>).
+      </p>
+    </section>
 
-    <p>Place the generator in the <strong>dev dependency group</strong>, not an optional extra.
-    The reason is mechanical: <code>uv run</code> auto-installs dev groups with no flag, so
-    regenerating the schema is a bare command with nothing to remember, while an extra requires
-    an incantation a dispatched worker can miss. That matters because the failure mode of a
-    missed extra is not an error — it is a worker hand-editing the generated file and silently
-    desynchronising it from its source. Runtime weight decides the rest: the full generator adds
-    62 packages to a 30-package closure, tripling the install of a service that runs continuously
-    for a generator that runs a few times a year.</p>
-
-    <p><strong>Four-layer resolution.</strong> Implement resolution in precedence order —
-    shipped model defaults, then <code>~/.config/reckon/flight.yaml</code>, then
-    <code>&lt;repo&gt;/docs/state/&lt;project&gt;/flight.yaml</code>, then explicit overrides
-    supplied by the caller. Merging is per-key deep merge, not whole-block replacement, so a
-    project overriding one backend's model does not have to restate the rest of that
-    backend. A malformed layer is a hard error naming the file, the key path and the
-    violated constraint — never a silent fallback to defaults.</p>
-
-    <p><strong>Backend availability probing.</strong> For each configured backend of
-    <code>launch: cli</code>, report whether its <code>command</code> resolves on
-    <code>PATH</code> and whether it appears authenticated. Availability is reported, never
-    acted on silently; the caller decides whether to degrade to <code>native</code>.</p>
-
-    <p><strong>The <code>reckon flight</code> command.</strong> An agent-callable primitive:
-    JSON on stdout by default, <code>--pretty</code> for humans, <code>--project X</code> to
-    include the project layer, deterministic key ordering, and a non-zero exit only on a
-    config error. Output carries the resolved config, the per-key provenance of which layer
-    supplied each value, and the availability report. Provenance is what makes the surface
-    debuggable — a resolved value with no visible origin is untunable.</p>
-
-    <p><strong>A committed host config.</strong> Write the initial
-    <code>~/.config/reckon/flight.yaml</code> with the values agreed in the design —
-    <code>default_backend: codex</code>, codex at <code>gpt-5.6-sol</code> and effort
-    <code>high</code>, claude at effort <code>medium</code>, <code>native</code> as the
-    in-harness backend, read-only sandbox for <code>review</code> and
-    <code>investigate</code> roles, <code>gates.enforce: strict</code>. It is not committed
-    to the repository — record its content in this plan's evidence instead.</p>
-
-    <h2 id="gates">§3 — Evidence gates</h2>
-
-    <p>These are measures to demonstrate, not thresholds to tune around. The sprint does not
-    advance through a gate that has not produced its evidence.</p>
-
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Schema round-trip</td>
-          <td>The committed Pydantic model and JSON Schema are both regenerable from
-          <code>reckon/schema/flight.yaml</code> with no diff, proving the committed
-          artifacts are not hand-edited drift.</td>
-        </tr>
-        <tr>
-          <td>Layer precedence</td>
-          <td>A test asserting all four layers, in which a project layer overriding one
-          backend key leaves that backend's other keys at their host or shipped values —
-          deep merge, not replacement.</td>
-        </tr>
-        <tr>
-          <td>Provenance</td>
-          <td><code>reckon flight --project reckon</code> reports, for every resolved key,
-          which layer supplied it. Spot-checked against a deliberately three-layer setup.</td>
-        </tr>
-        <tr>
-          <td>Malformed config fails loudly</td>
-          <td>A test proving an invalid enum and an unknown key each raise an error naming
-          file, key path and constraint. No test may show a silent fallback to defaults.</td>
-        </tr>
-        <tr>
-          <td>Availability</td>
-          <td>Recorded output showing <code>codex</code> and <code>claude</code> detected on
-          <code>PATH</code>, and the report a missing binary produces.</td>
-        </tr>
-        <tr>
-          <td>Machine contract</td>
-          <td>Default stdout parses as JSON with a stable key order; exit code is 0 on a
-          valid config and non-zero on an invalid one.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>The full reckon test suite passes, with the new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
+    <section id="gates" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-12</span>
+        <h2>§3 — Evidence gates</h2>
+      </header>
+      <p class="landed-summary">
+        All seven measures produced evidence and passed: schema round-trip byte-identical for both
+        artifacts; a one-key project override left five sibling keys standing; 36 resolved keys each
+        attributed across all four layers; invalid enum, unknown key, out-of-range and bad duration
+        each named file, key path and constraint with no fallback; both CLI backends located on
+        <code>PATH</code> plus the missing-binary report; single-line sorted JSON byte-identical
+        across runs, exit 0 valid / 1 invalid; 1,495 tests pass, 35 of them new.
+        Full record: <a href="/reckon/evidence/archive/flight-control-config-landed#gates">landed evidence</a>.
+      </p>
+    </section>
 
     <h2 id="s4">§4 — Constraints</h2>
 
@@ -147,36 +93,42 @@
     a <code>[tool.reckon]</code> section would resolve only from a source checkout.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="schema-toolchain" data-choice="linkml-optional-extra" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">How is the flight config schema authored and validated?</p>
-        <p class="r-dec-ctx">Reckon already has a Pydantic + published-JSON-Schema stack for plan state. Adding a second schema system needs justification.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="linkml-dev-group">LinkML source, generated Pydantic + JSON Schema committed, toolchain in the dev dependency group</button>
-          <button class="r-opt" data-value="linkml-optional-extra">Same, but the toolchain is an optional extra</button>
-          <button class="r-opt" data-value="linkml-runtime-dep">LinkML as a full runtime dependency</button>
-          <button class="r-opt" data-value="pydantic-only">Hand-written Pydantic model, JSON Schema exported from it</button>
-        </p>
-        <p class="r-dec-rat">LinkML is the established house pattern — nova, helix and imas-codex all declare it. The dev group is chosen over nova's optional extra because uv auto-installs dev groups with no flag, so regeneration needs no incantation a dispatched worker could miss; the failure mode of a missed extra is a silently hand-edited generated file. A full runtime dependency was rejected on measured weight: it adds 62 packages to a 30-package closure, tripling the install of a continuously-running service for a generator invoked a few times a year.</p>
-      </div>
-      <div class="r-dec" data-key="config-location" data-choice="config-home-yaml" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
-        <p class="r-dec-q">Where does host-level flight config live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="config-home-yaml">~/.config/reckon/flight.yaml, beside mounts.json</button>
-          <button class="r-opt" data-value="pyproject-tool-section">A [tool.reckon] section in pyproject.toml</button>
-        </p>
-        <p class="r-dec-rat">pyproject.toml is not shipped in the wheel, so it resolves only from a source checkout and would break reckon build and wheel installs. It also conflates build metadata with runtime routing. Host config belongs with host config.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="schema-toolchain" data-choice="linkml-dev-group" data-by="reckon-ship" data-when="2026-08-12T07:59:37+00:00">
+    <p class="r-dec-q">How is the flight config schema authored and validated?</p>
+    <p class="r-dec-ctx">Reckon already has a Pydantic + published-JSON-Schema stack for plan state. Adding a second schema system needs justification.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="linkml-dev-group">LinkML source, generated Pydantic + JSON Schema committed, toolchain in the dev dependency group</button>
+      <button class="r-opt" data-value="linkml-optional-extra">Same, but the toolchain is an optional extra</button>
+      <button class="r-opt" data-value="linkml-runtime-dep">LinkML as a full runtime dependency</button>
+      <button class="r-opt" data-value="pydantic-only">Hand-written Pydantic model, JSON Schema exported from it</button>
+      </p>
+    <p class="r-dec-rat">Repairs a stored choice that contradicted its own chosen option, its rationale and the plan prose, all three of which say dev dependency group. Implemented as recorded: linkml&gt;=1.9 sits in [dependency-groups] dev, uv run installs it with no flag, and `uv run python scripts/regen_flight_schema.py` rewrites both committed artifacts. Measured on the built wheel — a runtime install is 32 packages with no LinkML and still resolves configuration; the dev environment is 104.</p>
+    </div>
+<div class="r-dec" data-key="config-location" data-choice="config-home-yaml" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
+    <p class="r-dec-q">Where does host-level flight config live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="config-home-yaml">~/.config/reckon/flight.yaml, beside mounts.json</button>
+      <button class="r-opt" data-value="pyproject-tool-section">A [tool.reckon] section in pyproject.toml</button>
+      </p>
+    <p class="r-dec-rat">pyproject.toml is not shipped in the wheel, so it resolves only from a source checkout and would break reckon build and wheel installs. It also conflates build metadata with runtime routing. Host config belongs with host config.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-fcc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship flight-control-config">
-        <h4 class="r-fu-title">Build the flight-control config surface</h4>
-        <div class="r-fu-body"><p>Author the LinkML model, generate and commit the Pydantic and JSON-Schema artifacts, implement four-layer deep-merge resolution with per-key provenance, add backend availability probing, and ship <code>reckon flight</code> as a JSON-first agent primitive. Bank each evidence gate before closing.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship flight-control-config</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fcc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship flight-control-config" data-resolved-at="2026-08-12T07:59:37+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Build the flight-control config surface</h4>
+    <div class="r-fu-body"><p>Author the LinkML model, generate and commit the Pydantic and JSON-Schema artifacts, implement four-layer deep-merge resolution with per-key provenance, add backend availability probing, and ship <code>reckon flight</code> as a JSON-first agent primitive. Bank each evidence gate before closing.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship flight-control-config</pre>
+    <p class="r-fu-outcome">§2 and §3 landed — commit 98257f4. LinkML source plus both generated artifacts committed and round-trip verified byte-identically; four-layer deep merge with per-key provenance (36 keys attributed across all four layers); malformed layers raise naming file, key path and constraint with no fallback; PATH and declared-auth_check availability probing; `reckon flight` emits single-line sorted JSON, byte-identical across runs, exit 0 valid / 1 invalid. All seven declared gates produced evidence and passed. 1,495 tests pass, 35 new. Host config recorded in the evidence rather than committed.</p>
+    </article>
+<article class="r-fu" data-id="f-fcc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship uniform-worker-dispatch" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Route worker dispatch through the resolved flight config</h4>
+    <div class="r-fu-body"><p>The flight surface now resolves and reports routing, but nothing consumes it yet. Uniform worker dispatch is unblocked and is what turns a resolved backend, role overlay, sandbox and concurrency into an actual dispatched worker. Note that role overlays currently resolve as data only — collapsing a role onto its backend is dispatch's job, not the config's.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship uniform-worker-dispatch</pre>
+    </article>
+</section>
 
   </main>
 </body>
