@@ -73,6 +73,27 @@
     recorded as partial rather than passed.</p>
   </section>
 
+  <section id="inflight-bands">
+    <h2>A plan and a sprint show which of their own work is in flight</h2>
+
+    <p>Commit <code>3f7c6d3</code> — <code>docs/ui/plan.jsx</code>, <code>docs/ui/sprint.jsx</code>,
+    <code>tests/test_build.py</code>; 139 insertions, 16 deletions across 3 files. Gate
+    <strong>passed</strong>: 15 passed, 0 failed, 2.7 s, 1 new test function with 9 assertions;
+    <code>reckon build</code> exit 0.</p>
+
+    <p>Both views poll the project-scoped crew route every 3 seconds and persist nothing. A plan
+    filters the response to runs whose plan equals its slug and renders one accessible band listing each
+    run id, member and section; a sprint groups runs by plan slug and badges each matching card with an
+    accessible label counting the runs and a title naming their members and sections. No match renders
+    no band and no badge — the surfaces are silent when nothing is in flight rather than showing an
+    empty container.</p>
+
+    <p>This is the question the lead actually asks. Not "what is the crew doing", which the watcher tab
+    answers, but "is <em>this</em> being worked" — asked while already looking at the plan. The
+    three-entry-point drift test stayed active and passed, so the new components are registered
+    consistently across the live renderer, the static build and the checked-in index.</p>
+  </section>
+
   <section id="inflight-read-tools">
     <h2>The tools agents already call now say a node is taken</h2>
 
