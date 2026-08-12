@@ -167,6 +167,47 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     assert changed == [f"?? docs/state/{PROJECT}/crew.json"]
 
 
+def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    events = [
+        json.loads(line)
+        for line in Path(record["log_path"]).read_text().splitlines()
+    ]
+    terminal_time = "2027-01-02T03:04:05Z"
+    events[-1]["timestamp"] = terminal_time
+    Path(record["log_path"]).write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == terminal_time
+    assert stored["completed_at_source"] == "terminal_event"
+    assert stored["budget"]["tokens"]["input_tokens"] == 29253
+    assert stored["budget"]["tokens"]["output_tokens"] == 5
+
+
+def test_promotion_names_wall_clock_fallback_for_untimestamped_stream(
+    home, repo, monkeypatch
+) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    promotion_time = "2027-02-03T04:05:06Z"
+    monkeypatch.setattr(crew, "_utc_now", lambda: promotion_time)
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["completed_at"] == promotion_time
+    assert stored["completed_at_source"] == "promotion_time"
+
+
+def test_every_completed_record_names_its_completion_time_source() -> None:
+    stored = ledger.build_record(run_id="r-source", plan="plan-a", gate="passed")
+
+    assert "completed_at_source" in ledger.RECORD_FIELDS
+    assert set(ledger.RECORD_FIELDS) <= set(stored)
+    assert stored["completed_at_source"] == "promotion_time"
+
+
 def test_an_unknown_gate_verdict_is_refused(home, repo) -> None:
     record = _dispatch(repo)
     with pytest.raises(ledger.LedgerError) as excinfo:
