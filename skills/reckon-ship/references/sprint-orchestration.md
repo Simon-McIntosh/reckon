@@ -282,49 +282,55 @@ The sprint coordinator does not execute a node inline merely because it is
 single-item, cross-cutting, or has no immediately advertised worker. Follow
 the pause-first, reported, context-budgeted exception in section 3.
 
+### Where worktrees live, and why it is not a per-node decision
+
+`worktree_fleet.py` places a session's worktrees beside the repository — under
+`<repo-parent>/.reckon-worktrees/<repo>-<digest>/<session>` — so a checkout
+inherits exactly the repository's own visibility. Override the location with
+`RECKON_WORKTREE_ROOT`; the runtime temporary directory is still recognised as a
+legacy root, so sessions created before this default stay inspectable and
+removable.
+
+**The default matters because a worktree is only useful where the work runs.** A
+runtime temporary directory is usually node-local memory: a batch scheduler, a
+remote executor, or a second machine mounts the repository's filesystem but not
+that, so a node submitting a job cannot reach its own checkout and nothing it does
+inside the worktree fixes it. Memory-backed checkouts also draw on the same pool as
+the processes reading them, so a wide fleet competes with its own test runs.
+
+Two things the placement does not solve, and which stay per-node decisions:
+
+- **Caches and scratch belong on node-local storage**, not beside the repository.
+  Shared filesystems are slow for small-file churn and some do not implement the
+  atomic no-clobber rename that content-addressed caches rely on. Point `TMPDIR`
+  and any artifact cache at local disk while the checkout stays shared.
+- **A measurement that must name its tree needs a checkout frozen at one revision**
+  for the whole run. Session worktrees are already detached at a fixed base; the
+  hazard is a node measuring the *primary* checkout, which advances whenever the
+  coordinator pushes. A long run against a moving checkout cannot attribute its
+  result however cleanly it finishes.
+
 ### Infrastructure a worker cannot provide itself
 
 **A worker blocked on the shape of its own workspace is a coordinator failure, not
 a node failure.** Provisioning worktrees, checkouts and execution locations is
-coordinator work (section 3), so when a node's goal needs a workspace the default
-detached worktree cannot supply, the worker asks and the coordinator provides it —
-the same turn, not as a followup, and never as a reason to abandon the node.
+coordinator work (section 3), so when a node needs something the default worktree
+does not supply, the worker asks and the coordinator provides it — the same turn,
+not as a followup, and never as a reason to abandon the node.
 
-The case that recurs: **a batch scheduler cannot see a runtime-local worktree.**
-Default worktrees are created under a runtime directory that is node-local
-(`/run/user/...` is tmpfs private to the login node), so any node whose work runs
-through SLURM, a remote executor, or a second machine cannot reach its own
-checkout. Nothing the worker does inside that worktree fixes it.
+Requests in this class: a checkout on storage a particular executor can reach, a
+longer budget for work that genuinely cannot be split, a reservation, a dataset
+staged where the job can read it. Grant them as a scope extension — the worker
+still commits in its own detached worktree, and an execution location is not a
+second write scope. Clean up anything provisioned with the session, on the same
+reachability terms as any other worktree.
 
-The coordinator provisions a **persistent, compute-visible, frozen** checkout on
-shared storage and names it in the dispatch:
-
-```bash
-git worktree add --detach "$HOME/<project>-compute/<session>" "$(git rev-parse HEAD)"
-```
-
-Three properties, each load-bearing:
-
-- **Compute-visible** — on shared storage every execution host mounts, not the
-  login node's runtime tmpfs.
-- **Frozen at one SHA** — pinned explicitly, never the mutable primary checkout.
-  A long measurement taken against a checkout that advances mid-run cannot name the
-  tree it measured, however cleanly it finishes.
-- **Persistent** — it outlives the node, so a run that exceeds one worker's budget
-  is resumed rather than restarted.
-
-Grant it as a scope extension: the worker still commits in its own detached
-worktree and the compute checkout is an execution location, not a second write
-scope. Clean it up with the session, on the same reachability terms as any other
-worktree.
-
-Other requests in the same class — a larger time budget for work that genuinely
-cannot be split, a reservation, a dataset staged where the job can read it — are
-answered the same way. **The test is whether the obstacle is inside the node's
-control.** If it is not, supply the resource; do not ask the worker to shrink the
-work until it fits, because a measurement resized to fit a budget measures the
-budget. A node that reduces its own grid, sample or cohort to finish inside a
-fence has silently changed what it was asked to demonstrate.
+**The test is whether the obstacle is inside the node's control.** If it is not,
+supply the resource; never ask the worker to shrink the work until it fits,
+because a measurement resized to fit a budget measures the budget. A node that
+quietly reduces its own grid, sample or cohort to finish inside a fence has
+changed what it was asked to demonstrate, and its manifest will report success
+against work nobody commissioned.
 
 ## 6. Worker dispatch contract
 

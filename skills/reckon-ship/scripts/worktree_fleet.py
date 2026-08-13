@@ -50,15 +50,48 @@ def safe_token(label: str, value: str) -> str:
     return value
 
 
-def session_root(repo: Path, session: str) -> Path:
+def worktree_roots(repo: Path) -> list[Path]:
+    """Return this repository's worktree roots, preferred first.
+
+    A worktree has to be reachable from wherever the node's work actually runs.
+    Batch schedulers and remote hosts mount the repository's own filesystem but
+    not the submitting machine's runtime temporary directory, which is typically
+    node-local memory: a worktree created there is invisible to every job the
+    node submits, and nothing the worker does inside it can fix that. The
+    default therefore sits beside the repository and inherits exactly its
+    visibility. Placing it there also keeps checkouts off memory-backed storage,
+    where concurrent worktrees draw on the same pool as the processes reading
+    them.
+
+    ``RECKON_WORKTREE_ROOT`` overrides the location for a host that wants
+    checkouts elsewhere. The runtime temporary directory is retained as a legacy
+    root so sessions created under the previous default stay inspectable and
+    removable rather than being stranded by this change.
+    """
     git_dir = Path(run("git", "rev-parse", "--absolute-git-dir", cwd=repo))
     digest = hashlib.sha256(str(git_dir.resolve()).encode()).hexdigest()[:12]
-    return (
-        Path(tempfile.gettempdir())
-        / "reckon-worktrees"
-        / f"{repo.name}-{digest}"
-        / safe_token("session", session)
+    stem = f"{repo.name}-{digest}"
+    override = os.environ.get("RECKON_WORKTREE_ROOT")
+    preferred = (
+        Path(override).expanduser().resolve()
+        if override
+        else repo.parent / ".reckon-worktrees"
     )
+    roots = [preferred / stem]
+    legacy = Path(tempfile.gettempdir()) / "reckon-worktrees" / stem
+    if legacy != roots[0]:
+        roots.append(legacy)
+    return roots
+
+
+def session_root(repo: Path, session: str) -> Path:
+    return worktree_roots(repo)[0] / safe_token("session", session)
+
+
+def session_roots(repo: Path, session: str) -> list[Path]:
+    """Every root a session's worktrees may occupy, preferred first."""
+    token = safe_token("session", session)
+    return [root / token for root in worktree_roots(repo)]
 
 
 def registered_worktrees(repo: Path) -> set[Path]:
@@ -191,9 +224,9 @@ def inspect_worktree(
 
 def cleanup_session(args: argparse.Namespace) -> dict[str, object]:
     repo = repository_root(args.repo)
-    root = session_root(repo, args.session)
+    roots = session_roots(repo, args.session)
     registered = registered_worktrees(repo)
-    paths = sorted(path for path in registered if path.parent == root)
+    paths = sorted(path for path in registered if path.parent in set(roots))
     claims = live_worktree_claims()
     reports = [
         inspect_worktree(
@@ -216,8 +249,9 @@ def cleanup_session(args: argparse.Namespace) -> dict[str, object]:
     for path in paths:
         run("git", "worktree", "remove", str(path), cwd=repo)
     run("git", "worktree", "prune", cwd=repo)
-    if root.exists():
-        root.rmdir()
+    for root in roots:
+        if root.is_dir() and not any(root.iterdir()):
+            root.rmdir()
     return {
         "ok": True,
         "action": "cleanup-session",
@@ -230,8 +264,8 @@ def cleanup_session(args: argparse.Namespace) -> dict[str, object]:
 
 def inspect_session(args: argparse.Namespace) -> dict[str, object]:
     repo = repository_root(args.repo)
-    root = session_root(repo, args.session)
-    paths = sorted(path for path in registered_worktrees(repo) if path.parent == root)
+    roots = set(session_roots(repo, args.session))
+    paths = sorted(path for path in registered_worktrees(repo) if path.parent in roots)
     claims = live_worktree_claims()
     return {
         "ok": True,
