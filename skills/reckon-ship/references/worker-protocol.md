@@ -235,7 +235,18 @@ brief is visible rather than merely unhelpful.
 - the necessary change extends beyond the exclusive write scope;
 - the gate's required evidence cannot be produced with the available tools or
   data;
-- the time budget is spent with the gate still closed.
+- the time budget is spent with the gate still closed;
+- **the work needs a workspace or resource the node was not given** — a
+  compute-visible checkout a batch scheduler can reach, a longer budget for work
+  that cannot be split, a staged dataset. Ask for it; the coordinator provisions
+  infrastructure and will supply it in the same turn.
+
+**Never shrink the measurement to fit the fence.** Reducing a grid, a sample, a
+cohort or a resolution so the node finishes inside its budget changes what the node
+demonstrates, and it does so invisibly — the manifest reports success against work
+nobody asked for. Report the shortfall and request the resource instead. Partial
+coverage honestly named ("3 of 6 shots, the rest not attempted") is a result;
+full coverage at a quietly reduced fidelity is not.
 
 The orchestrator answers it itself by default, escalates only genuinely
 user-owned decisions such as scope trade-offs and irreversible choices, and

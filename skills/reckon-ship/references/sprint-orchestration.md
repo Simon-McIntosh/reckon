@@ -282,6 +282,50 @@ The sprint coordinator does not execute a node inline merely because it is
 single-item, cross-cutting, or has no immediately advertised worker. Follow
 the pause-first, reported, context-budgeted exception in section 3.
 
+### Infrastructure a worker cannot provide itself
+
+**A worker blocked on the shape of its own workspace is a coordinator failure, not
+a node failure.** Provisioning worktrees, checkouts and execution locations is
+coordinator work (section 3), so when a node's goal needs a workspace the default
+detached worktree cannot supply, the worker asks and the coordinator provides it —
+the same turn, not as a followup, and never as a reason to abandon the node.
+
+The case that recurs: **a batch scheduler cannot see a runtime-local worktree.**
+Default worktrees are created under a runtime directory that is node-local
+(`/run/user/...` is tmpfs private to the login node), so any node whose work runs
+through SLURM, a remote executor, or a second machine cannot reach its own
+checkout. Nothing the worker does inside that worktree fixes it.
+
+The coordinator provisions a **persistent, compute-visible, frozen** checkout on
+shared storage and names it in the dispatch:
+
+```bash
+git worktree add --detach "$HOME/<project>-compute/<session>" "$(git rev-parse HEAD)"
+```
+
+Three properties, each load-bearing:
+
+- **Compute-visible** — on shared storage every execution host mounts, not the
+  login node's runtime tmpfs.
+- **Frozen at one SHA** — pinned explicitly, never the mutable primary checkout.
+  A long measurement taken against a checkout that advances mid-run cannot name the
+  tree it measured, however cleanly it finishes.
+- **Persistent** — it outlives the node, so a run that exceeds one worker's budget
+  is resumed rather than restarted.
+
+Grant it as a scope extension: the worker still commits in its own detached
+worktree and the compute checkout is an execution location, not a second write
+scope. Clean it up with the session, on the same reachability terms as any other
+worktree.
+
+Other requests in the same class — a larger time budget for work that genuinely
+cannot be split, a reservation, a dataset staged where the job can read it — are
+answered the same way. **The test is whether the obstacle is inside the node's
+control.** If it is not, supply the resource; do not ask the worker to shrink the
+work until it fits, because a measurement resized to fit a budget measures the
+budget. A node that reduces its own grid, sample or cohort to finish inside a
+fence has silently changed what it was asked to demonstrate.
+
 ## 6. Worker dispatch contract
 
 `reckon crew dispatch` composes this contract, the four fences and the escape
