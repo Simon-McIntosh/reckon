@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-state-integrity-landed">
+  <meta name="plan-title" content="Crew State Integrity — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the crew-state-integrity plan: commits, gate measures, tests and negative findings per landed node.">
+  <meta name="plan-evidence-for" content="crew-state-integrity">
+  <meta name="plan-verifies" content="crew-state-integrity#s2">
+  <title>Crew State Integrity — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Crew State Integrity — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="envelope-write-safety">Envelope write safety (locked writes, corrupt refusal, retry backoff)</h2>
+    <p>
+      Commit <code>22074d2ab1ba978d86050496b853a85ea88c9c58</code> (2026-08-16, worker codex-a,
+      479&nbsp;s, 217 insertions / 27 deletions over <code>reckon/_store.py</code>,
+      <code>reckon/ledger.py</code>, <code>tests/test_store_concurrency.py</code>,
+      <code>tests/test_ledger.py</code>).
+    </p>
+    <ul>
+      <li><strong>Locked, writer-unique envelope writes.</strong> JSON envelope writers hold a
+        path-keyed exclusive lock across the whole read-compare-write cycle and each writer uses
+        its own temporary file. Measure: two simultaneous <code>append_run</code> writers against
+        one ledger landed with consecutive versions 1 and 2; eight simultaneous racers all landed,
+        versions 1 through 8.</li>
+      <li><strong>Corrupt-file refusal (decision <code>corrupt-ledger-policy</code> = refuse).</strong>
+        An unparseable or structurally invalid envelope now raises
+        <code>CorruptEnvelopeError</code> naming the file, the parse failure, and the recovery
+        (fix the conflict markers or restore from git). Measure: the demonstrated
+        conflicted-ledger-then-promote scenario refuses and leaves both the corrupt ledger bytes
+        and the live pointer intact, instead of loading as empty and overwriting history. Absent
+        files still start fresh at version 0.</li>
+      <li><strong>Retry backoff.</strong> <code>append_run</code> and <code>record_hold_checks</code>
+        retry with jittered exponential backoff capped at 50&nbsp;ms, 12 attempts by default
+        (previously 5 immediate attempts).</li>
+    </ul>
+    <p>
+      Tests: 4 added; focused run 78 passed; full suite 1869 passed, 0 failed (88&nbsp;s). Logs:
+      <code>~/.config/reckon/crew/runs/r-20260816T204725505930-envelope-write-safety/logs/</code>.
+    </p>
+
+  </main>
+</body>
+</html>

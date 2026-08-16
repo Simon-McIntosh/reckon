@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-lifecycle-safety-landed">
+  <meta name="plan-title" content="Dispatch Lifecycle Safety — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the dispatch-lifecycle-safety plan: commits, gate measures, tests and negative findings per landed node.">
+  <meta name="plan-evidence-for" content="dispatch-lifecycle-safety">
+  <meta name="plan-verifies" content="dispatch-lifecycle-safety#s2">
+  <title>Dispatch Lifecycle Safety — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Dispatch Lifecycle Safety — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="dispatch-guards">Dispatch guards (member-collision refusal, transactional rollback)</h2>
+    <p>
+      Commit <code>c193f19559caee1c5249614e02b85fe50c24de10</code> (2026-08-16, worker codex-b,
+      509&nbsp;s, 144 insertions / 3 deletions over <code>reckon/crew.py</code>,
+      <code>tests/test_crew.py</code>; merged as <code>ff5bd3c</code>).
+    </p>
+    <ul>
+      <li><strong>Member-collision guard.</strong> <code>dispatch()</code> now raises
+        <code>MemberInFlight</code> — carrying the member id and the existing run id — before any
+        worktree is created, when the requested roster member already holds a pointer in a
+        non-terminal phase. Terminal phases (<code>complete</code>, <code>failed</code>,
+        <code>stopped</code>) do not trigger the guard. Measure: the double-dispatch scenario
+        refuses and names the in-flight run instead of silently orphaning the second node.</li>
+      <li><strong>Transactional rollback.</strong> Run-directory creation moved inside the dispatch
+        rollback scope; a post-spawn failure signals the spawned process group before removing the
+        worktree. Measure: an injected post-spawn pointer-write failure left 0 running processes,
+        0 run directories, 0 pointers and 0 worktrees.</li>
+    </ul>
+    <p>
+      Tests: 2 focused regressions added; full suite 1867 passed, 0 failed (91&nbsp;s) in the
+      worker's tree. Log:
+      <code>~/.config/reckon/crew/runs/r-20260816T204727513038-dispatch-guards/full-suite-final.log</code>.
+    </p>
+
+  </main>
+</body>
+</html>

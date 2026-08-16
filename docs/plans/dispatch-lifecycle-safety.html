@@ -4,21 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="dispatch-lifecycle-safety">
-  <meta name="plan-title"     content="Dispatch Lifecycle Safety">
-  <meta name="plan-summary"   content="Close the run-lifecycle defects that lose or mismanage workers: member-collision refusal at dispatch, complete rollback on failed launches, phase truth across stop/observe/recover, pid identity before signalling, resume stream handling, and honest liveness on the MCP live view.">
-  <meta name="plan-status"    content="pending">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="dispatch-lifecycle-safety">
+  <meta name="plan-title" content="Dispatch Lifecycle Safety">
+  <meta name="plan-summary" content="Close the run-lifecycle defects that lose or mismanage workers: member-collision refusal at dispatch, complete rollback on failed launches, phase truth across stop/observe/recover, pid identity before signalling, resume stream handling, and honest liveness on the MCP live view.">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S10">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S10">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Dispatch Lifecycle Safety | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-16">
+<meta name="plan-commits" content="c193f19559caee1c5249614e02b85fe50c24de10">
+<meta name="plan-artifacts" content="docs/evidence/archive/dispatch-lifecycle-safety-landed.html#dispatch-guards">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -65,16 +70,19 @@
     shows as non-running on the live view without an intervening observe.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-dls-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-08-16">
-        <h4 class="r-fu-title">Implement the lifecycle guards</h4>
-        <div class="r-fu-body"><p>All seven deliverables in §2. The member-collision guard lands first — it is one consult of existing data and removes the silent-node-loss failure mode.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship dispatch-lifecycle-safety</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dls-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement the lifecycle guards</h4>
+    <div class="r-fu-body"><p>All seven deliverables in §2. The member-collision guard lands first — it is one consult of existing data and removes the silent-node-loss failure mode.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship dispatch-lifecycle-safety</pre>
+    </article>
+</section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260816T2101-dg" data-who="reckon-ship" data-when="2026-08-16T21:01:00Z">
+    <div class="r-comment-body">dispatch-guards landed — commit c193f19 (merge ff5bd3c); gate passed; measures: double-dispatch to a busy member refuses with MemberInFlight naming the in-flight run before any worktree is created (terminal phases exempt); injected post-spawn pointer-write failure left 0 processes, 0 run dirs, 0 pointers, 0 worktrees; 2 tests added, full suite 1867 passed. Evidence: docs/evidence/archive/dispatch-lifecycle-safety-landed.html#dispatch-guards</div>
+</div>
+</section>
+</main>
 </body>
 </html>

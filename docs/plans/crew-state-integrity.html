@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="crew-state-integrity">
   <meta name="plan-title" content="Crew State Integrity">
   <meta name="plan-summary" content="Make the committed run ledger and the live run pointers safe under concurrent writers and corrupt input: locked atomic envelope writes, corrupt-file refusal, duplicate-promotion recovery, and a discard command.">
-  <meta name="plan-status" content="pending">
+  <meta name="plan-status" content="in-progress">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,7 +20,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-16">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="22074d2ab1ba978d86050496b853a85ea88c9c58">
+<meta name="plan-artifacts" content="docs/evidence/archive/crew-state-integrity-landed.html#envelope-write-safety">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -88,6 +91,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260816T2057-ews" data-who="reckon-ship" data-when="2026-08-16T20:57:00Z">
+    <div class="r-comment-body">envelope-write-safety landed — commit 22074d2; gate passed; measures: two simultaneous append_run writers landed consecutive versions 1,2 and eight racers landed 1–8; conflicted ledger now refuses via CorruptEnvelopeError naming file+recovery instead of resetting history; jittered backoff (12 attempts, 50ms cap) on append_run/record_hold_checks; 4 tests added, focused 78 passed, full suite 1869 passed. Evidence: docs/evidence/archive/crew-state-integrity-landed.html#envelope-write-safety</div>
+</div>
+</section>
+</main>
 </body>
 </html>
