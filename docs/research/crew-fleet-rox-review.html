@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="reckon">
+  <meta name="reckon-type"   content="doc">
+  <meta name="plan-slug"     content="crew-fleet-rox-review">
+  <meta name="plan-title"    content="Crew Fleet Return-on-Experience Review">
+  <meta name="plan-summary"  content="Multi-repo usage review of the crew fleet-dispatch framework: 259 runs across four repositories in five days, what the ledgers prove, the defects found in the dispatch/ledger/budget code, the real caps on worker throughput, and the follow-on work map.">
+  <meta name="plan-status"   content="active">
+  <meta name="plan-informs"  content="crew-state-integrity,dispatch-lifecycle-safety,run-measurement-truth,gate-signal-repair,fleet-throughput-contract,crew-workspace-hygiene">
+  <title>Crew Fleet Return-on-Experience Review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Scope and method</h2>
+    <p>
+      This review measures the integrated fleet-dispatch framework — Claude orchestrator sessions
+      driving Codex CLI workers through <code>reckon crew</code> into detached git worktrees — across
+      every repository that has used it, and audits the framework code itself. Four evidence
+      streams were combined: (1) the four committed run ledgers
+      (<code>docs/state/&lt;project&gt;/crew.json</code> in reckon, imas-ambix, nova and imas-codex —
+      259 completed runs, 2026-08-12 → 08-16); (2) a full read of the crew engine
+      (<code>crew.py</code>, <code>ledger.py</code>, <code>_backends.py</code>, <code>budget.py</code>,
+      <code>flight.py</code>, <code>calibration.py</code>, <code>capabilities.py</code>,
+      <code>agent_context.py</code>, the crew half of <code>cli.py</code> and their tests); (3) the
+      orchestration contract (<code>reckon-ship</code> SKILL.md plus its references); and (4) the
+      live on-disk state — flight config layers, live run pointers, worktree roots and the
+      capabilities cache. Two runs were live during the review (nova, imas-codex); their ledgers
+      are still growing, so their figures are floors.
+    </p>
+
+    <h2 id="s2">§2 — Return on experience: the numbers</h2>
+    <table>
+      <thead><tr><th></th><th>reckon</th><th>imas-ambix</th><th>nova</th><th>imas-codex</th><th>combined</th></tr></thead>
+      <tbody>
+        <tr><td>completed runs</td><td>80</td><td>45</td><td>116</td><td>18</td><td><strong>259</strong></td></tr>
+        <tr><td>plans covered</td><td>8</td><td>3</td><td>18</td><td>3</td><td>32</td></tr>
+        <tr><td>gate pass rate</td><td>88.8%</td><td>91.1%</td><td>89.7%</td><td>100%</td><td><strong>90.3%</strong></td></tr>
+        <tr><td>lines added</td><td>9,145</td><td>45,877</td><td>53,565</td><td>not recorded</td><td>108,587</td></tr>
+        <tr><td>tests added</td><td>227</td><td>89</td><td>330</td><td>33</td><td>679</td></tr>
+        <tr><td>commits</td><td>70</td><td>43</td><td>108</td><td>7</td><td>228</td></tr>
+        <tr><td>median wall minutes / run</td><td>5.4</td><td>17.6</td><td>13.3</td><td>8.6</td><td>9.8</td></tr>
+        <tr><td>median budget consumption</td><td>21%</td><td>23%</td><td>45%</td><td>34%</td><td><strong>32%</strong></td></tr>
+        <tr><td>stall-corrected worker-hours</td><td>7.7</td><td>20.6</td><td>35.1</td><td>2.8</td><td>66.2</td></tr>
+        <tr><td>mean concurrency while active</td><td>2.02</td><td>1.22</td><td>1.90</td><td>1.97</td><td><strong>2.26</strong></td></tr>
+        <tr><td>peak concurrency</td><td>5</td><td>3</td><td>9</td><td>3</td><td>13 (global, 08-12 17:34)</td></tr>
+        <tr><td>scope-change rate</td><td>5.0%</td><td>11.1%</td><td>4.3%</td><td>0%</td><td>5.4%</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Token economics (correct per-session totals — the per-run counters are session-cumulative,
+      see §8): <strong>1.78 billion input tokens, 96.9% of them cache reads, and 5.4 million output
+      tokens</strong> across 68 worker sessions, for 108k added lines and 679 tests. The cache-read
+      fraction is what roster session reuse buys and is the framework's standout economic result.
+      Median authored throughput is stable at <strong>16–24 changed lines per worker-minute</strong>
+      across three unrelated codebases — the most reproducible number in the dataset and the right
+      basis for effort estimation.
+    </p>
+    <figure>
+      <img src="/reckon/figures/crew-fleet-rox-review/fleet-activity.png" alt="Stacked timeline of concurrent crew workers across four projects, 2026-08-12 to 08-16" style="max-width:100%">
+      <figcaption>Concurrent workers over the five active days, stacked by project (intervals capped
+      at 3× budget so stalled streams do not paint phantom activity). The fleet is bursty: short
+      waves of 2–6 workers, one 13-wide global peak on 08-12, and long fully-idle gaps. 48% of busy
+      time runs at concurrency 1.</figcaption>
+    </figure>
+    <figure>
+      <img src="/reckon/figures/crew-fleet-rox-review/run-economics.png" alt="Budget consumption histogram, per-project wall-time distributions with stalls marked, and gate outcomes per project" style="max-width:100%">
+      <figcaption>Run economics. Left: the median run uses a third of its declared time budget;
+      three-quarters finish under half — budgets are 2–4× oversized. Middle: wall-time
+      distributions; open rings are the nine stalled runs (&gt;3× budget) that alone account for 64
+      of the 130 recorded wall-hours. Right: gate outcomes — the ~90% pass rate is stable across
+      four unrelated codebases.</figcaption>
+    </figure>
+    <p>
+      <strong>Verdict.</strong> The framework works and is improving with each adopting project:
+      imas-codex, onboarded in a single afternoon, achieved 100% gate pass, 100% outcome coverage,
+      zero stalls, zero over-budget runs, a clean roster and a 96.5% cache-read fraction from a
+      standing start. But the honest sustained parallelism is <strong>2.26 workers</strong>, not
+      the 13 the peak suggests, and the gap is structural, not accidental: the orchestration
+      contract's wave barrier (dispatch a wave, wait for the slowest member) idles roughly 45% of
+      purchased worker-time, and nothing refills a finished worker's slot.
+    </p>
+
+    <h2 id="s3">§3 — What works: do not touch</h2>
+    <ul>
+      <li>Zero duplicate run ids in 259 records; one-commit-per-run discipline holds wherever code is written.</li>
+      <li>The ~90% gate pass rate is a property of the dispatch discipline (single deliverable, measurable done-when, exclusive write scope), stable across four codebases.</li>
+      <li>Roster session reuse delivers a 96.9% cache-read fraction; reckon's best members carry 17–20 runs on one session.</li>
+      <li>The worktree isolation model: no cross-worker file collision appears anywhere in four ledgers.</li>
+      <li>The budget design principle "absence of a signal is never read as exhaustion" holds in code (<code>budget.py:486-491</code>) — no path turns unknown headroom into a hold.</li>
+      <li>Codex CLI workers are the well-supported path (resume, stop, liveness, session continuity, off-stream headroom probe); the asymmetry many would expect is reversed — in-harness native workers are the degraded ones.</li>
+    </ul>
+
+    <h2 id="s4">§4 — Defect inventory</h2>
+    <p>
+      Twenty-plus defects were verified against code paths; two were demonstrated by execution.
+      Ranked by severity within each cluster; each row names the follow-on plan that owns the fix.
+    </p>
+    <h3>State-store integrity (plan: crew-state-integrity)</h3>
+    <table>
+      <thead><tr><th>Defect</th><th>Location</th><th>Failure</th></tr></thead>
+      <tbody>
+        <tr><td>A corrupt or merge-conflicted <code>crew.json</code> silently resets the ledger to empty; the next promotion overwrites all history (demonstrated)</td><td><code>ledger.py:118-136</code>, <code>_store.py:226-231</code></td><td><code>JSONDecodeError</code> is swallowed to <code>({}, 0)</code>, indistinguishable from "no ledger yet"; version check passes at 0. Conflict markers from concurrent orchestrators are the realistic trigger.</td></tr>
+        <tr><td>Concurrent promotions lose run records</td><td><code>_store.py:239-269</code></td><td>Read–compare–write with no lock and a fixed temp-file name shared by all writers; two simultaneous <code>crew complete</code> calls can publish one writer's content under the other's version bump. The retry loop only fires on version-check failure — exactly the interleaving that doesn't happen.</td></tr>
+        <tr><td>A duplicate promotion leaves a live pointer no command can remove</td><td><code>crew.py:1665-1670</code></td><td><code>append_run</code> raises before the pointer unlink; thereafter <code>complete</code> always raises and <code>recover</code> advises a promotion that cannot succeed. No discard command exists.</td></tr>
+        <tr><td>Live pointers are read-modify-written with no concurrency control</td><td><code>crew.py:533-539, 1275-1351, 1449-1461</code></td><td>observe/attach/stop/resume interleavings silently drop fields (e.g. a task binding); fixed temp name allows mixed-content publishes.</td></tr>
+      </tbody>
+    </table>
+    <h3>Dispatch and run lifecycle (plan: dispatch-lifecycle-safety)</h3>
+    <table>
+      <thead><tr><th>Defect</th><th>Location</th><th>Failure</th></tr></thead>
+      <tbody>
+        <tr><td>Two concurrent nodes on one roster member kill each other, and dispatch never checks</td><td><code>crew.py:1116-1130</code></td><td>The second <code>codex exec resume</code> dies at launch with no stream and no manifest, phase <code>orphaned</code> — a silently lost node. <code>list_live()</code> has the data; nothing consults it. The highest-value one-line guard in this review.</td></tr>
+        <tr><td>A failed dispatch rolls back the worktree but leaves the spawned worker running</td><td><code>crew.py:1204-1232</code></td><td>Pointer-write failure after spawn: detached worker burns quota in a deleted cwd, invisible to list/recover/stop.</td></tr>
+        <tr><td>Run-directory creation sits outside the rollback</td><td><code>crew.py:1132-1134</code></td><td>A failed <code>mkdir</code> orphans a registered worktree that blocks the node id from redispatch.</td></tr>
+        <tr><td>One malformed reset timestamp crashes observe, complete and recover (demonstrated)</td><td><code>_backends.py:191-201</code></td><td><code>datetime.fromtimestamp</code> unguarded: a millisecond-epoch <code>resetsAt</code> makes a finished run unpromotable and takes down recovery for every live run.</td></tr>
+        <tr><td><code>crew stop</code> is erased by the next observe; recover then calls the run abandoned</td><td><code>crew.py:1322, 1734-1790</code></td><td>The intentional-cancellation distinction does not survive one observation.</td></tr>
+        <tr><td><code>killpg</code> on a possibly-recycled pid; <code>process_alive</code> returns True on <code>PermissionError</code></td><td><code>crew.py:1454, 584-585</code></td><td>A long-abandoned pointer can signal an unrelated process group.</td></tr>
+        <tr><td>Resume orphans the original stream and breaks measurement</td><td><code>cli.py:718-731</code>, <code>crew.py:1546</code></td><td><code>log_path</code> is overwritten per resume, so <code>stream.jsonl</code> drops out of completion measurement; lexicographic resume ordering misorders from the tenth resume; the first pid becomes unreachable by <code>crew stop</code>.</td></tr>
+        <tr><td>The MCP live view trusts stored liveness</td><td><code>crew.py:1727-1729</code>, <code>mcp.py:2510-2516</code></td><td>A worker that dies without a manifest reports <code>running</code> indefinitely on the surface the skill tells orchestrators to poll.</td></tr>
+        <tr><td>Naive <code>--completed-at</code> timestamp crashes promotion (demonstrated)</td><td><code>crew.py:1525-1532</code></td><td>Aware-minus-naive <code>TypeError</code> outside the guard that its sibling in <code>ledger.py:445-455</code> has.</td></tr>
+      </tbody>
+    </table>
+    <h3>Measurement (plan: run-measurement-truth)</h3>
+    <table>
+      <thead><tr><th>Defect</th><th>Evidence</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td><code>worker_seconds</code> is orchestrator wall-clock, with <code>completed_at</code> inferred from stream mtime in 249/259 runs</td><td>9 stalled runs contribute 64 of 130 recorded hours (worst: 26.7 h against a 45 m budget)</td><td>Every derived quantity — lines/minute, effort calibration, the live competence gate's speed factor 20.93 — is built on a corrupted clock.</td></tr>
+        <tr><td>Per-run token counters are session-cumulative</td><td>Monotone non-decreasing across all 33 multi-run sessions; naive summing over-reports 4.2× globally (8.0× in reckon)</td><td>No per-run cost attribution is currently possible from the ledger.</td></tr>
+        <tr><td>Three modules disagree on which completion sources are usable</td><td><code>ledger.py:755-758</code>, <code>capabilities.py:150-154</code>, <code>calibration.py:77-78</code>; <code>complete()</code> writes a third value <code>provided</code></td><td>Runs promoted with an explicit stamp silently drop out of the effort report and horizon derivation; the live capabilities cache excluded 63 of ~80 reckon runs.</td></tr>
+        <tr><td><code>outcome</code> empty on 86% of runs and on 21 of 25 non-passing ones</td><td>imas-ambix and nova 100% empty; imas-codex proves 100% coverage is achievable</td><td>The ledger records that six consecutive nova nodes burned on one section without recording why.</td></tr>
+        <tr><td><code>changed_lines</code> regressed to absent in the newest project; 12 older reckon records store git error strings</td><td>imas-codex 0/18 recorded; reckon strings like <code>fatal: bad revision '…none'</code></td><td>Throughput measurement is silently partial.</td></tr>
+        <tr><td>248 of 259 manifests point into <code>/run/user</code> tmpfs</td><td>ledger <code>manifest_path</code> fields</td><td>The documented recovery order (manifest → logs → message) loses its first two rungs on reboot.</td></tr>
+        <tr><td>Identifier drift: sections <code>§N</code> vs <code>s6</code> vs empty; a nova node name reused across two runs</td><td>imas-codex 13/18 empty section</td><td>Cross-project rollups fail; retry lineage is untrackable.</td></tr>
+      </tbody>
+    </table>
+    <h3>Admission gates (plan: gate-signal-repair)</h3>
+    <table>
+      <thead><tr><th>Defect</th><th>Location</th><th>Failure</th></tr></thead>
+      <tbody>
+        <tr><td>The competence gate compares estimated hours against a horizon after dividing by a speed factor in the wrong units, and reads plan-level hours for node-level decisions</td><td><code>crew.py:881-948</code>, <code>capabilities.py:156-227</code></td><td>Live cache: horizon 4.0 h × speed 20.93 → refuses only above ~84 estimated hours (21× looser than named); the advice ("split into nodes no larger than 83.7 worker-hours") cannot be satisfied by any input the caller controls. The two calibration modules also define "speed" in opposite directions — wiring one into the other flips the gate from 21× loose to 21× strict.</td></tr>
+        <tr><td>The capabilities cache never refreshes and no CLI rebuilds it</td><td><code>capabilities.py:252-261</code></td><td>Written 08-12 recording ledger versions 77/46/0/0; real ledgers now 95/197/38/59. First dispatch after a cache wipe synchronously scans every mounted repo.</td></tr>
+        <tr><td>A content-free "known" headroom block outranks a real measurement</td><td><code>_backends.py:528-541</code>, <code>budget.py:334-345</code></td><td>An empty <code>rate_limit_info</code> mapping claims <code>known</code> and displaces an older genuine 99% reading — the exact failure the module docstring claims to prevent. The window identity (<code>rateLimitType</code>) is also dropped, so a monthly reading ≥95% would hold every claude dispatch until month-end with no fresher signal able to arrive.</td></tr>
+        <tr><td>CLI resume ignores flight config entirely</td><td><code>cli.py:695</code></td><td><code>resume_plan</code> gets <code>config=None</code> → permissive fallback policy; a project's ceiling and exhausted-statuses are silently ignored on every resume.</td></tr>
+        <tr><td>A ledger bookkeeping failure aborts the dispatch it was recording</td><td><code>crew.py:470-481</code></td><td>Contradicts the stated principle that a pre-flight must never be stopped by its own instrument.</td></tr>
+        <tr><td>A competence refusal is reported as a configuration error</td><td><code>cli.py:610-616</code></td><td>Structured verdict discarded; exit 1 instead of a typed hold; <code>--dry-run</code> skips the check entirely, so a validated wave can still refuse at real dispatch.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — The real caps on background workers</h2>
+    <p>
+      The question "do we have artificial caps?" has a precise answer: <strong>nothing in the code
+      caps the number of concurrent workers.</strong> The caps that exist are of three kinds:
+    </p>
+    <table>
+      <thead><tr><th>Cap</th><th>Value</th><th>Kind</th><th>Reality</th></tr></thead>
+      <tbody>
+        <tr><td><code>backends.*.concurrency</code></td><td>codex 3, claude 3, native 4 (host <code>~/.config/reckon/flight.yaml</code>)</td><td>Dead config</td><td>Declared in the schema, shipped defaults and host layer — <strong>no runtime code reads it</strong>. Raising it changes nothing; it should be wired to a dispatch admission check or deleted.</td></tr>
+        <tr><td>Roster size + session reuse</td><td>9 members (reckon), 10 (imas-codex), 41 (nova)</td><td>De-facto hard cap</td><td>A member is a serial worker; the real parallelism ceiling for session-reusing backends is however many members are registered — enforced by nothing but prose (see the collision defect above). Dispatching without <code>--member</code> has no ceiling at all.</td></tr>
+        <tr><td>Wave barrier</td><td>"launch the wave together, then wait for all results"</td><td>Contract prose</td><td>The most expensive artificial serialization: max-of-wave wait vs mean run time idles ~45% of worker-time at 3-wide. Rolling slot refill costs no safety property — the safety-critical rule is only that a <em>dependent</em> wave must not build on unverified work.</td></tr>
+        <tr><td>Landing freeze</td><td>"Nothing else may be promoted, merged, dispatched, or opened before this write"</td><td>Contract prose</td><td>Safety-critical in its promote/merge half; artificially blocks unrelated dispatches on an <code>edit_plan</code> round-trip in the rest.</td></tr>
+        <tr><td><code>time_budget</code></td><td>25m on all three backends (host layer); fence default 25m</td><td>Hard refusal at dispatch</td><td>The backend <em>default</em> doubles as its <em>ceiling</em>: no node on this machine can declare more than 25m without a config edit, contradicting the contract's promise of longer budgets for unsplittable work. Meanwhile <strong>nothing enforces the budget at runtime</strong> — no watchdog, no timer — so the fleet's worst run ran 26.7 h against 45 m, undetected.</td></tr>
+        <tr><td>Wave-size guidance</td><td>"2–8", "3–8", "at most three" (three documents, three numbers)</td><td>Advisory prose</td><td>Never enforced; "at most three for compiled work" is unsupported by any argument and is the strictest number in the corpus.</td></tr>
+        <tr><td>Budget ceiling</td><td>dispatch holds at 95% (ceiling 100 − reserve 5)</td><td>Real, but blind for codex</td><td>Codex has never reported headroom in 253 runs (its stream carries tokens only) and its off-stream probe (<code>codex app-server</code> account read, verified working) runs only with <code>budget_check: true</code>, which no layer sets. <strong>No hold has ever been recorded in any project.</strong> Only claude can be held, and only when a run happens to emit a rate-limit event.</td></tr>
+        <tr><td>Competence horizon</td><td>derived; currently refuses above ~84 estimated hours</td><td>Real but broken</td><td>Undocumented in any skill file; unit-mismatched (§4); inert today because only 1 of 24 reckon plans declares effort hours.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>To push more work through workers</strong>, the binding order is: fix the
+      member-collision guard and ledger write races first (they are what a wider fleet will trip),
+      then replace the wave barrier with rolling refill and narrow the landing freeze, then raise
+      per-role time budgets to measured values (p75 of actual wall time per role, not a uniform
+      25m) with a real runtime watchdog, and register more roster members per backend. Forced
+      parallelism is not a risk in the current design — there is no mechanism that creates
+      parallelism at all beyond what plan prose exposes; the DAG only ever restricts.
+    </p>
+
+    <h2 id="s6">§6 — Orchestrator context economy</h2>
+    <p>
+      The contract makes the orchestrator read ~24k tokens of skill/reference preamble before the
+      first dispatch, then spend ~15–18k tokens per delivered node (dispatch echo, per-run observe
+      polls, manifest read, merge audit, a mandatory full-plan raw read before every state write,
+      evidence and evergreen edits, completion). An eight-node plan costs ≈180k orchestrator
+      tokens — this is the context flooding to engineer away. The four highest-payoff compressions,
+      none of which loses a safety property:
+    </p>
+    <ul>
+      <li><strong>A version-only read view</strong> (or server-side version re-read in <code>edit_plan</code>): the mandatory raw read exists only to fetch <code>version</code> and discards 3–6k tokens of plan state per landing.</li>
+      <li><strong>Poll the fleet, not the run:</strong> <code>crew(view="live")</code> costs ~800 tokens for the whole fleet vs 1.4k per run per <code>observe</code>; the skill prescribes both in different sections and should prescribe only the former (after the live view re-checks liveness).</li>
+      <li><strong>Stop mandating reference files the engine already compiled in:</strong> <code>compose_prompt</code> emits the parallel-safety rules, manifest keys, fences and help protocol verbatim; two reference files exist to let an orchestrator hand-compose what reckon composes for it.</li>
+      <li><strong>Delegate evidence authoring:</strong> the cumulative evidence record is a single-file exclusive write scope — a textbook worker node the contract currently assigns to the orchestrator.</li>
+    </ul>
+
+    <h2 id="s7">§7 — Parameters in force (host: this workstation)</h2>
+    <table>
+      <thead><tr><th>Parameter</th><th>Value</th><th>Source</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td><code>default_backend</code></td><td>codex</td><td>host flight.yaml</td><td>All four roles route to codex; <code>native</code> is defined but unreachable without an explicit role override.</td></tr>
+        <tr><td><code>backends.codex</code></td><td>gpt-5.6-sol, effort high, cli, worktree-full, session_reuse</td><td>host</td><td>253 of 259 runs identical — the ledger supports no comparative routing claim.</td></tr>
+        <tr><td><code>backends.*.time_budget</code></td><td>25m</td><td>host</td><td>Default doubles as ceiling; see §5.</td></tr>
+        <tr><td><code>budget.utilisation_ceiling_pct</code> / <code>resume_reserve_pct</code></td><td>100 / 5</td><td>shipped</td><td>Effective dispatch ceiling 95%; resume may spend the reserve — but CLI resume currently ignores the policy entirely (§4).</td></tr>
+        <tr><td><code>backends.*.budget_check</code></td><td>unset</td><td>—</td><td>The most consequential unset knob: the only way codex ever reports headroom. Cost when enabled: one <code>codex app-server</code> probe (≤20 s) per preflight and per dispatch; a probe-once-per-wave shape is not expressible today.</td></tr>
+        <tr><td><code>fences.needs_help_after_failures</code></td><td>2</td><td>shipped</td><td>Prompt text only; nothing enforces it.</td></tr>
+        <tr><td><code>LOG_STALE_AFTER_SECONDS</code></td><td>900 (hard-coded)</td><td><code>crew.py:1697</code></td><td>Freshness label only; never acted on.</td></tr>
+        <tr><td>probe timeouts</td><td>20 s / 10 s / 5 s (hard-coded)</td><td><code>_backends.py</code>, <code>flight.py</code></td><td>Probes only, never workers.</td></tr>
+        <tr><td>ledger write retries</td><td>5 attempts, no backoff</td><td><code>ledger.py:349,588</code></td><td>A wide simultaneous-completion wave can exhaust this.</td></tr>
+        <tr><td>capabilities <code>success_threshold</code> / <code>bin_width_hours</code></td><td>0.8 / 1.0 (hard-coded)</td><td><code>capabilities.py:129</code></td><td>Feed the competence horizon; no CLI reaches them.</td></tr>
+        <tr><td>project-doc byte budget</td><td>32768 (codex host config raises to 131072)</td><td><code>agent_context.py:13</code></td><td>No config source at all for the claude agent — the same 42 KB AGENTS.md passes codex and fails claude today.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s8">§8 — Operational findings beyond the code</h2>
+    <ul>
+      <li><strong>Workspace accumulation:</strong> 27 leftover worktrees totalling <strong>12 GB</strong> under <code>~/Code/.reckon-worktrees/</code> (including a suspicious nested <code>reckon-worktrees/reckon-worktrees</code> directory), plus 270 run-stream directories (129 MB) under <code>~/.config/reckon/crew/runs/</code>. Conservative cleanup never garbage-collects and no <code>crew</code> command owns removal.</li>
+      <li><strong>Live-pointer hygiene:</strong> all live pointers observed during this review sat at phase <code>starting</code> — orchestrators are not folding observations back; one nova pointer had a dead pid and a completed replacement run, uncollected for hours. <code>recover</code> classifies these correctly but nothing reaps them.</li>
+      <li><strong>Dispatch prerequisite drift:</strong> <code>_create_worktree</code> requires a vendored <code>skills/reckon-ship/scripts/worktree_fleet.py</code> per repo; present in nova/imas-ambix, missing in imas-efit — undocumented, and the failure will present as a broken dispatch.</li>
+      <li><strong>Roster metadata drift:</strong> 10 of nova's 41 members declare <code>harness: claude</code> while all 25 of their runs recorded codex; 12 of 69 members fleet-wide have never captured a session.</li>
+      <li><strong>Config-home documentation:</strong> the real config home is <code>~/.config/reckon/</code> (mounts, flight, crew state, cache); repo AGENTS.md still names <code>~/docs-server/</code> as current with the rename "tracked" — stale and actively misleading during this review.</li>
+      <li><strong>Sprint hygiene in this repo:</strong> two sprints flagged active simultaneously (S5 and S9, <code>active_sprint_id</code>=S5); S7 contains only shipped plans yet reads planned; one shipped plan is unscheduled. In imas-ambix the crew runs map to a sprint dated to start the day after its last run completed. Ledger↔sprint rollups cannot work until membership and dating are repaired.</li>
+      <li><strong>Framework self-harm, two recorded cases:</strong> a read-only review sandbox rejected its own launch before any work; a coordinator <code>cleanup-session</code> deleted a worktree under a live run. Cleanup must consult live pointers first.</li>
+    </ul>
+
+    <h2 id="s9">§9 — Follow-on work map</h2>
+    <p>
+      Six plans, organized in two sprints. Correctness first: the state-integrity and lifecycle
+      defects are what a wider fleet will trip immediately, so they gate the throughput work.
+    </p>
+    <table>
+      <thead><tr><th>Sprint</th><th>Plan</th><th>Owns</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3">S10 — crew correctness</td><td><code>crew-state-integrity</code></td><td>Ledger and pointer storage safety: locked/atomic envelope writes, corrupt-file refusal, duplicate-promotion recovery, a discard command, retry backoff.</td></tr>
+        <tr><td><code>dispatch-lifecycle-safety</code></td><td>Member-collision guard, spawn rollback kill, run-dir rollback, stop/observe/recover phase truth, pid identity, resume stream handling, timestamp guards, live-view liveness.</td></tr>
+        <tr><td><code>run-measurement-truth</code></td><td>Worker time from stream events with stall exclusion, per-run token deltas, one completion-source vocabulary, mandatory outcomes on non-pass, durable manifests, changed-lines everywhere, identifier normalization.</td></tr>
+        <tr><td rowspan="3">S11 — fleet throughput</td><td><code>gate-signal-repair</code></td><td>Competence gate units + cache + CLI + exit codes; budget signal truth (content-free known, window identity, resume policy, codex budget_check with a probe-once-per-wave shape).</td></tr>
+        <tr><td><code>fleet-throughput-contract</code></td><td>Rolling wave refill, narrowed landing freeze, per-role measured time budgets + runtime watchdog, wire-or-delete concurrency config, roles for test/doc workers, fleet polling + version-only reads, skill/CLI reconciliation.</td></tr>
+        <tr><td><code>crew-workspace-hygiene</code></td><td>A garbage-collection surface: integrated-worktree removal, run-dir retention, dead-pointer reaping, live-pointer-aware cleanup, per-repo prerequisite checks.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Related existing threads left where they are: the cross-repository dispatch gap stays on
+      <code>execution-orchestration-hardening</code> (<code>f-eoh-cross-repo-node</code>); the
+      user-gated server restart stays on <code>inflight-visibility</code>; the sprint-hygiene
+      repairs in §8 belong to the sprint owner, not to these plans.
+    </p>
+
+  </main>
+</body>
+</html>

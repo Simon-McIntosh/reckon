@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="fleet-throughput-contract">
+  <meta name="plan-title"     content="Fleet Throughput Contract">
+  <meta name="plan-summary"   content="Raise sustained worker throughput without forcing parallelism: rolling wave refill in the orchestration contract, a narrowed landing freeze, measured per-role time budgets with a runtime watchdog, wired-or-deleted concurrency config, cheap fleet polling and version-only reads, and skill/CLI reconciliation.">
+  <meta name="plan-status"    content="pending">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S11">
+  <meta name="plan-depends-on" content="crew-state-integrity,dispatch-lifecycle-safety">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Fleet Throughput Contract | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why</h2>
+    <p>
+      Measured across 259 runs the fleet sustains 2.26 concurrent workers against a 13-wide peak,
+      and roughly 45% of purchased worker-time idles at the contract's wave barrier
+      (<a href="/reckon/research/crew-fleet-rox-review.html">fleet review §2/§5/§6</a>). None of the
+      serialization is in code: it comes from the reckon-ship contract's wave-and-wait shape, the
+      over-broad landing freeze, a uniform 25m time ceiling, and per-run polling that makes wide
+      fleets expensive in orchestrator context. This plan raises throughput by removing artificial
+      serialization only — the DAG and file-scope disjointness still decide what may run together,
+      so no parallelism is forced that plans do not expose. Depends on crew-state-integrity and
+      dispatch-lifecycle-safety: a wider fleet is exactly what trips the ledger races and the
+      member-collision loss.
+    </p>
+
+    <h2 id="s2">§2 — Contract changes (reckon-ship SKILL.md + references)</h2>
+    <p><strong>Rolling refill replaces the wave barrier.</strong> A finished, verified worker's slot
+    refills immediately with the next ready node; the barrier survives only where a dependent node
+    consumes an unverified predecessor. Done when the skill's wave section describes slot refill,
+    and the safety rule is restated as "no dependent node builds on unverified work".</p>
+    <p><strong>Narrowed landing freeze.</strong> The landing beat's inviolable half stays (the plan
+    write may not be skipped, nothing merges or promotes before it); dispatching an unrelated ready
+    node no longer waits on another node's plan write. Done when the hard rule's wording separates
+    the two.</p>
+    <p><strong>One wave-size vocabulary.</strong> The three inconsistent fleet-size bands (2–8, 3–8,
+    at-most-three) collapse to one advisory table in one file, explicitly marked advisory, with the
+    member roster named as the real ceiling. Done when the other copies reference rather than
+    restate it.</p>
+    <p><strong>Preamble diet.</strong> Reference files whose content the engine already injects via
+    <code>compose_prompt</code> are gated behind "only when hand-composing"; the mandatory-read set
+    shrinks accordingly. Done when the per-session fixed read is measured under half its current
+    ~24k tokens.</p>
+
+    <h2 id="s3">§3 — Time budgets that mean something</h2>
+    <p><strong>Per-role defaults from measurement.</strong> Set role-level time budgets near the
+    measured p75 of actual role wall time (review/investigate are far shorter than implement)
+    instead of one 25m for everything; separate the default from the ceiling so a node may declare
+    a larger budget up to the fence without a host config edit. Done when a 45m implement node
+    dispatches against defaults while a review node defaults smaller.</p>
+    <p><strong>Runtime watchdog.</strong> The budget becomes a deadline signal, not a dead letter:
+    the live classification flags budget-overrun runs, and an opt-in enforcement (grace multiple,
+    then stop with phase recorded) exists for orchestrators that want it. Done when a synthetic
+    overrun is flagged within one poll and the opt-in stop leaves a truthful phase.</p>
+    <p><strong>Concurrency config wired or deleted.</strong> <code>backends.*.concurrency</code>
+    either becomes a dispatch admission check (refuse when live runs on that backend reach it) or
+    leaves the schema; declared-but-dead config is worse than either. Done when the flight schema,
+    provenance and docs agree with the runtime behaviour.</p>
+
+    <h2 id="s4">§4 — Cheap observation and state writes</h2>
+    <p><strong>Fleet polling.</strong> The contract prescribes one polling surface — the MCP
+    <code>crew(view="live")</code> (honest liveness lands in dispatch-lifecycle-safety) — and drops
+    the per-run observe loop; <code>crew list</code> gains project/phase filters; the ledger records
+    view gains plan/since/limit filters. Done when an eight-worker wave is monitorable in one call
+    per beat.</p>
+    <p><strong>Version-only read.</strong> A minimal read shape (or server-side version re-check in
+    <code>edit_plan</code>) removes the 3–6k-token raw read whose only consumed field is
+    <code>version</code>. Done when a landing's state write costs one small call.</p>
+    <p><strong>Roles for the workers the contract already mandates.</strong> Test and doc workers
+    get configured roles (or the contract stops mandating role names the CLI refuses). Done when
+    every worker type in the skill dispatches without a role error.</p>
+
+    <h2 id="s5">§5 — Skill/CLI reconciliation sweep</h2>
+    <p>Fold the review's contract-gap list into one pass: stale classifier prose (the manifest
+    IS read now), the missing <code>budget</code> view in the skill's read table and the stale
+    MCP view literal, manifest-path guidance unified on the durable default, the member-collision
+    paragraph updated once the guard lands, in-harness caveats on resume/stop/continuity, the
+    undocumented vendored-script prerequisite (present-check at dispatch with a clear error), and
+    the config-home rename reflected in the repo AGENTS.md. Done when a fresh orchestrator can
+    follow the skill against the current CLI without hitting a documented-but-absent or
+    absent-but-required step.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="concurrency-config-fate" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Wire backends.*.concurrency as a dispatch admission check, or delete it from the schema?</p>
+        <p class="r-dec-ctx">Wiring gives a real per-backend cap tunable per host/project; deleting keeps admission purely roster-driven and the config surface smaller. The status quo — declared and ignored — misleads every reader.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="wire">wire as admission check</button>
+          <button class="r-opt" data-value="delete">delete from schema</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-ftc-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="orchestrator"
+               data-written-by="reckon-create" data-written-at="2026-08-16">
+        <h4 class="r-fu-title">Raise sustained throughput: contract, budgets, observation</h4>
+        <div class="r-fu-body"><p>§2–§5 deliverables, gated on crew-state-integrity and dispatch-lifecycle-safety landing first. §2 (contract text) and §4 (tooling) are independently dispatchable sections.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship fleet-throughput-contract</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

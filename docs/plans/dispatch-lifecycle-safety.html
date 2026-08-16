@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="dispatch-lifecycle-safety">
+  <meta name="plan-title"     content="Dispatch Lifecycle Safety">
+  <meta name="plan-summary"   content="Close the run-lifecycle defects that lose or mismanage workers: member-collision refusal at dispatch, complete rollback on failed launches, phase truth across stop/observe/recover, pid identity before signalling, resume stream handling, and honest liveness on the MCP live view.">
+  <meta name="plan-status"    content="pending">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S10">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Dispatch Lifecycle Safety | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why</h2>
+    <p>
+      A run's lifecycle — dispatch, spawn, observe, stop, resume, recover — has verified defects at
+      each transition (<a href="/reckon/research/crew-fleet-rox-review.html">fleet review §4</a>).
+      The costliest is silent: dispatching a second node to a roster member whose session is still
+      held by a live run kills the newcomer with no stream, no manifest and a phase that reads
+      <code>orphaned</code>. Since the roster is the fleet's de-facto concurrency ceiling, this
+      defect is exactly what a wider fleet trips first.
+    </p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+    <p><strong>Member-collision guard.</strong> <code>dispatch()</code> consults
+    <code>list_live()</code> and refuses (typed error naming the in-flight run) when the requested
+    member has a pointer in a non-terminal phase. Done when the double-dispatch scenario refuses
+    instead of silently orphaning, under test.</p>
+    <p><strong>Complete dispatch rollback.</strong> Move the run-directory <code>mkdir</code>
+    inside the rollback scope, and on any post-spawn failure signal the spawned process group
+    before removing its worktree. Done when a forced pointer-write failure leaves no worktree, no
+    directory and no running process.</p>
+    <p><strong>Phase truth.</strong> <code>observe</code> preserves an intentional
+    <code>stopped</code> phase; in-harness manifests are classified by their recorded status rather
+    than mere existence, so observe/list agree with recover. Done when stop → observe → recover
+    round-trips as stopped.</p>
+    <p><strong>Signal safety.</strong> Before <code>killpg</code>, verify pid identity (process
+    start-time or cmdline) and treat <code>PermissionError</code> in <code>process_alive</code> as
+    not-ours rather than alive. Done when a recycled-pid fixture is refused.</p>
+    <p><strong>Resume correctness.</strong> Resume must not overwrite <code>log_path</code>;
+    completion measurement reads <code>stream.jsonl</code> plus resume streams in numeric order
+    (matching <code>ledger._run_streams</code>), and resume refuses while the previous process is
+    alive. Done when a resumed run's completion measures the full stream set and the tenth resume
+    orders correctly.</p>
+    <p><strong>Timestamp guards.</strong> <code>_epoch_to_iso</code> tolerates millisecond epochs
+    and out-of-range values (returning a null reading, never raising through observe, complete,
+    recover or the budget probe); <code>complete --completed-at</code> accepts naive timestamps by
+    assuming UTC, matching the guard already in <code>ledger._worker_seconds</code>. Done when the
+    two demonstrated crashes are regression tests.</p>
+    <p><strong>Honest live view.</strong> <code>classify_pointer</code> (and therefore the MCP
+    <code>crew(view="live")</code> surface the skill tells orchestrators to poll) re-checks process
+    liveness when a pid is present instead of trusting the stored flag. Done when a killed worker
+    shows as non-running on the live view without an intervening observe.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-dls-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-08-16">
+        <h4 class="r-fu-title">Implement the lifecycle guards</h4>
+        <div class="r-fu-body"><p>All seven deliverables in §2. The member-collision guard lands first — it is one consult of existing data and removes the silent-node-loss failure mode.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship dispatch-lifecycle-safety</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

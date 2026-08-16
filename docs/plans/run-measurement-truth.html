@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="run-measurement-truth">
+  <meta name="plan-title"     content="Run Measurement Truth">
+  <meta name="plan-summary"   content="Make the ledger's recorded numbers mean what they say: worker time from stream events with stall exclusion, per-run token deltas, one completion-source vocabulary, mandatory outcomes on non-passing gates, durable manifests, diff stats everywhere, and normalized identifiers.">
+  <meta name="plan-status"    content="pending">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S10">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Run Measurement Truth | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why</h2>
+    <p>
+      The ledger exists to calibrate effort and route work, but three of its measurement systems
+      record the wrong quantity (<a href="/reckon/research/crew-fleet-rox-review.html">fleet review
+      §4/§8</a>): <code>worker_seconds</code> is orchestrator wall-clock inferred from stream file
+      mtime (nine stalled runs contribute 64 of 130 recorded hours), the per-run token counters are
+      session-cumulative (summing over-reports 4.2×), and 86% of runs — including 21 of 25
+      non-passing ones — carry no outcome text. Everything downstream (effort calibration, the
+      competence horizon, sprint capacity planning) consumes these numbers, so their repair gates
+      the gate-signal work.
+    </p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+    <p><strong>Worker time from the stream, not the clock.</strong> Derive duration from first-to-last
+    stream event timestamps; record wall duration separately; flag a run <code>stalled</code> when
+    wall exceeds a small multiple of its budget so aggregations can exclude it rather than average
+    it in. Done when the 26.7-hour lockfile run's record distinguishes 45 minutes of work from a
+    day of idle stream.</p>
+    <p><strong>Per-run token deltas.</strong> On promotion, difference the session-cumulative
+    counters against the previous run on the same session (keep the cumulative figures too,
+    labelled). Done when summing per-run deltas over a multi-run session equals the session total.</p>
+    <p><strong>One completion-source vocabulary.</strong> <code>ledger.effort_report</code>,
+    <code>capabilities.derive_capabilities</code> and <code>calibration._observation</code> accept
+    the same set, including <code>provided</code> (an explicit stamp is a good stamp); exclusion
+    reasons are reported identically everywhere. Done when a run promoted with
+    <code>--completed-at</code> appears in all three consumers.</p>
+    <p><strong>Outcome discipline.</strong> <code>crew complete</code> refuses an empty
+    <code>--outcome</code> when the gate is not <code>passed</code>. Done when the refusal has a
+    test and the message says what to write.</p>
+    <p><strong>Durable delivery by default.</strong> Auto-filled manifest paths already land in the
+    durable run directory; make the dispatch surface warn when a caller-named manifest points into
+    a tmpfs mount (248 of 259 recorded manifests do), and document the durable default as the
+    recommended shape. Done when a tmpfs manifest path draws a warning naming the durable
+    alternative.</p>
+    <p><strong>Diff stats everywhere.</strong> <code>changed_lines</code> is recorded for every run
+    with commits (the newest project records none), computed from recorded SHAs — never from a log
+    path or a placeholder string; unresolvable inputs record a typed absence, not a git error
+    string. Done when the twelve corrupted historical shapes are impossible to re-create.</p>
+    <p><strong>Identifier normalization.</strong> Section identifiers normalize at write time (one
+    canonical form); a redispatched node id gains a recorded lineage marker so retries are
+    trackable. Done when cross-project section rollups see one vocabulary.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-rmt-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-08-16">
+        <h4 class="r-fu-title">Repair the measurement pipeline</h4>
+        <div class="r-fu-body"><p>All seven deliverables in §2. Historical records stay as they are — the fix is prospective; the effort report may add a schema-version guard when reading old shapes.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship run-measurement-truth</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

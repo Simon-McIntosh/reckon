@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="gate-signal-repair">
+  <meta name="plan-title"     content="Gate Signal Repair">
+  <meta name="plan-summary"   content="Make both dispatch admission gates truthful: fix the competence gate's unit mismatch, stale cache and hidden verdicts, and give the budget gate a real codex headroom signal plus honest handling of empty and windowed readings.">
+  <meta name="plan-status"    content="pending">
+  <meta name="plan-roi"       content="mid">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S11">
+  <meta name="plan-depends-on" content="run-measurement-truth">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Gate Signal Repair | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why</h2>
+    <p>
+      Dispatch has two admission gates and neither currently tells the truth
+      (<a href="/reckon/research/crew-fleet-rox-review.html">fleet review §4/§5</a>). The budget
+      gate has never held a wave in 259 runs because codex — the backend doing nearly all the work —
+      publishes no headroom on its stream, and its working off-stream probe is disabled by an unset
+      flag. The competence gate divides estimated hours by a speed factor measured in the wrong
+      units, judges every node by its whole plan's estimate, reads a cache frozen since the fleet's
+      second day, and reports its refusals as configuration errors with the structured verdict
+      discarded. Depends on run-measurement-truth: the calibration inputs must be true before the
+      gate derived from them can be.
+    </p>
+
+    <h2 id="s2">§2 — Competence gate</h2>
+    <p><strong>Units.</strong> One definition of speed (document its direction), applied so the
+    compared quantities share units; node-level estimates come from the node (a dispatch-surface
+    hours input), falling back to plan hours only with an explicit provenance label. Done when the
+    gate's refusal threshold equals the horizon it names, under test with both calibration
+    directions.</p>
+    <p><strong>Cache lifecycle.</strong> Staleness check against recorded ledger versions, a CLI to
+    rebuild and inspect (<code>reckon capabilities</code> or a crew subcommand), and rebuilds off
+    the dispatch path. Done when a ledger append invalidates, and first dispatch never triggers a
+    synchronous all-repo scan.</p>
+    <p><strong>Verdict surfacing.</strong> A competence refusal exits with its own documented code
+    and the structured verdict (including target size) in the payload, mirroring the budget hold;
+    <code>--dry-run</code> runs the same check so wave validation and real dispatch agree. Done when
+    the CLI help enumerates it and dry-run parity has a test.</p>
+
+    <h2 id="s3">§3 — Budget gate</h2>
+    <p><strong>Honest readings.</strong> A headroom block claims <code>known</code> only with a
+    numeric utilisation (an empty rate-limit mapping is a silence, not a measurement); the window
+    identity (rate-limit type/period) is retained so a monthly reading cannot silently pin a
+    five-hour decision; the stream-evidence attribution fallback is updated in the same change since
+    it keys on the current lax signature. Done when an empty-known block no longer displaces a real
+    reading, under test.</p>
+    <p><strong>Codex headroom.</strong> Enable the account-limits probe path for codex
+    (<code>budget_check</code>), with a probe-once-per-wave shape: <code>_budget_verdict</code>
+    accepts a caller-supplied state so preflight probes once and the wave's dispatches reuse it
+    instead of paying a ≤20 s probe each. Done when a codex preflight reports numeric utilisation on
+    this workstation and a wave of three dispatches runs one probe.</p>
+    <p><strong>Policy reaches every path.</strong> CLI resume resolves flight config like observe
+    does (ceiling, reserve and exhausted-statuses apply); a ledger bookkeeping failure while
+    recording a budget check degrades to a warning in the payload instead of aborting the dispatch
+    whose budget was fine. Done when both have tests.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="codex-budget-check-default" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Should the codex account-limits probe be on by default once the once-per-wave shape exists?</p>
+        <p class="r-dec-ctx">On: the pre-flight finally guards the backend doing all the work, at one ≤20 s probe per wave. Off: zero dispatch latency, but the budget gate stays structurally blind for codex and the flag must be set per host.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="on-by-default">on by default (shipped layer)</button>
+          <button class="r-opt" data-value="host-opt-in">host opt-in, documented loudly</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-gsr-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-08-16">
+        <h4 class="r-fu-title">Repair both admission gates</h4>
+        <div class="r-fu-body"><p>§2 and §3 deliverables. Wait for run-measurement-truth to land first — the horizon must be re-derived from corrected worker-time and completion sources.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship gate-signal-repair</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>

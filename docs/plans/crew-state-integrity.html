@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="crew-state-integrity">
+  <meta name="plan-title"     content="Crew State Integrity">
+  <meta name="plan-summary"   content="Make the committed run ledger and the live run pointers safe under concurrent writers and corrupt input: locked atomic envelope writes, corrupt-file refusal, duplicate-promotion recovery, and a discard command.">
+  <meta name="plan-status"    content="pending">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S10">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Crew State Integrity | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why</h2>
+    <p>
+      The crew ledger (<code>docs/state/&lt;project&gt;/crew.json</code>) is appended to by every
+      orchestrator session on this workstation, and the live pointers under
+      <code>&lt;config-home&gt;/crew/live/</code> are mutated by observe, attach, stop and resume —
+      yet neither store has any concurrency control beyond an optimistic version integer whose
+      check-and-write is itself racy. The <a href="/reckon/research/crew-fleet-rox-review.html">fleet
+      review</a> demonstrated by execution that a merge-conflicted ledger silently loads as empty at
+      version 0 and the next promotion overwrites the whole run history. Pushing more concurrent
+      work through workers makes every one of these windows wider, so this plan gates the
+      throughput work.
+    </p>
+
+    <h2 id="s2">§2 — Deliverables</h2>
+    <p><strong>Envelope write safety.</strong> In <code>_store._write_json_envelope</code>: take an
+    exclusive lock (or equivalent atomic compare-and-swap) around the read-compare-write cycle, and
+    give the temp file a writer-unique name so two writers can never share one. Done when a test
+    drives two processes (or two threads with the lock scope exercised for real) through
+    simultaneous <code>append_run</code> calls against one ledger and both records land with
+    consecutive versions.</p>
+    <p><strong>Corrupt-file refusal.</strong> <code>_load_json_envelope</code> must distinguish
+    absent (start fresh at version 0) from unparseable (raise a typed error naming the file and the
+    parse failure). <code>ledger.load</code> and every writer refuse to write over an unreadable
+    ledger; the error message names the recovery (fix the conflict markers, or restore from git).
+    Done when the demonstrated scenario — conflicted ledger, then <code>crew complete</code> —
+    refuses instead of resetting history, with a regression test.</p>
+    <p><strong>Duplicate-promotion recovery.</strong> When <code>append_run</code> finds the run id
+    already in the ledger, <code>complete()</code> treats promotion as already done and proceeds to
+    unlink the pointer instead of raising forever. Add <code>reckon crew discard --run &lt;id&gt;</code>
+    for the general stuck-pointer case: it removes a live pointer without promoting, refuses while
+    the recorded pid is alive, and prints what it removed. Done when a ledgered-but-pointered run is
+    clearable by both paths under test.</p>
+    <p><strong>Pointer write discipline.</strong> Route every pointer mutation (attach, observe,
+    stop, resume) through one read-modify-write helper with per-pointer locking and unique temp
+    names, so interleaved observers cannot resurrect stale state or publish mixed content. Done when
+    an interleaved attach/observe test preserves the task binding.</p>
+    <p><strong>Retry behaviour.</strong> Version-conflict retries in <code>append_run</code> and
+    <code>record_hold_checks</code> get small jittered backoff so a simultaneous-completion wave
+    does not exhaust five immediate attempts. Done when the retry test covers contention beyond
+    five racers.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="corrupt-ledger-policy" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What should a writer do when the committed ledger is unparseable?</p>
+        <p class="r-dec-ctx">Refusal is safest but blocks promotion until a human repairs the file; quarantine (move aside, start fresh, surface loudly) keeps the fleet moving but risks the aside copy being forgotten.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="refuse">refuse all writes until repaired</button>
+          <button class="r-opt" data-value="quarantine">quarantine and continue, loud warning</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-csi-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-08-16">
+        <h4 class="r-fu-title">Implement ledger and pointer write safety</h4>
+        <div class="r-fu-body"><p>All five deliverables in §2; the corrupt-ledger reset and the shared-temp-name race have demonstrated reproductions in the fleet review to turn into regression tests first.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship crew-state-integrity</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
