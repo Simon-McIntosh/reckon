@@ -72,6 +72,30 @@
       <code>~/.config/reckon/crew/runs/r-20260816T211233341959-observe-truth/full-suite.log</code>.
     </p>
 
+    <h2 id="resume-correctness">Resume correctness (stream preservation, refuse-while-alive, timestamp guards)</h2>
+    <p>
+      Commit <code>9cc6fff7973aa13b5ee1205a0b399af92a517272</code> (2026-08-16, worker codex-b,
+      368&nbsp;s, 139 insertions / 13 deletions over <code>reckon/_backends.py</code>,
+      <code>reckon/crew.py</code>, <code>reckon/ledger.py</code> and three test files;
+      fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>Resume stream handling.</strong> <code>record_resumption</code> preserves the
+        pointer's original <code>stream.jsonl</code> path; crew completion and ledger repair both
+        order streams as <code>stream.jsonl</code>, <code>resume-1</code>, <code>resume-2</code>,
+        … <code>resume-10</code> numerically, and the full stream set is measured at completion.
+        Resume refuses while the previous process is alive.</li>
+      <li><strong>Timestamp guards.</strong> Millisecond and out-of-range reset epochs produce a
+        null reading instead of raising through observe, complete, recover or the budget probe;
+        a naive <code>complete --completed-at</code> is stored as UTC and yields a non-null worker
+        duration, matching the guard in <code>ledger._worker_seconds</code>. Both demonstrated
+        crashes are regression tests.</li>
+    </ul>
+    <p>
+      Tests: 5 added; full suite 1886 passed, 0 failed (74&nbsp;s). Log:
+      <code>~/.config/reckon/crew/runs/r-20260816T212015471178-resume-correctness/full-suite.log</code>.
+    </p>
+
   </main>
 </body>
 </html>

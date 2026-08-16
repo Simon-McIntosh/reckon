@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="dispatch-lifecycle-safety">
   <meta name="plan-title" content="Dispatch Lifecycle Safety">
   <meta name="plan-summary" content="Close the run-lifecycle defects that lose or mismanage workers: member-collision refusal at dispatch, complete rollback on failed launches, phase truth across stop/observe/recover, pid identity before signalling, resume stream handling, and honest liveness on the MCP live view.">
-  <meta name="plan-status" content="in-progress">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,10 +20,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-16">
-<meta name="plan-commits" content="c193f19559caee1c5249614e02b85fe50c24de10,421be971e70b2371eb6331d0b396ba68cd78928d">
-<meta name="plan-artifacts" content="docs/evidence/archive/dispatch-lifecycle-safety-landed.html#dispatch-guards,docs/evidence/archive/dispatch-lifecycle-safety-landed.html#observe-truth">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="2">
+<meta name="plan-commits" content="c193f19559caee1c5249614e02b85fe50c24de10,421be971e70b2371eb6331d0b396ba68cd78928d,9cc6fff7973aa13b5ee1205a0b399af92a517272">
+<meta name="plan-artifacts" content="docs/evidence/archive/dispatch-lifecycle-safety-landed.html#dispatch-guards,docs/evidence/archive/dispatch-lifecycle-safety-landed.html#observe-truth,docs/evidence/archive/dispatch-lifecycle-safety-landed.html#resume-correctness">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -38,43 +38,31 @@
       defect is exactly what a wider fleet trips first.
     </p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
-    <p><strong>Member-collision guard.</strong> <code>dispatch()</code> consults
-    <code>list_live()</code> and refuses (typed error naming the in-flight run) when the requested
-    member has a pointer in a non-terminal phase. Done when the double-dispatch scenario refuses
-    instead of silently orphaning, under test.</p>
-    <p><strong>Complete dispatch rollback.</strong> Move the run-directory <code>mkdir</code>
-    inside the rollback scope, and on any post-spawn failure signal the spawned process group
-    before removing its worktree. Done when a forced pointer-write failure leaves no worktree, no
-    directory and no running process.</p>
-    <p><strong>Phase truth.</strong> <code>observe</code> preserves an intentional
-    <code>stopped</code> phase; in-harness manifests are classified by their recorded status rather
-    than mere existence, so observe/list agree with recover. Done when stop → observe → recover
-    round-trips as stopped.</p>
-    <p><strong>Signal safety.</strong> Before <code>killpg</code>, verify pid identity (process
-    start-time or cmdline) and treat <code>PermissionError</code> in <code>process_alive</code> as
-    not-ours rather than alive. Done when a recycled-pid fixture is refused.</p>
-    <p><strong>Resume correctness.</strong> Resume must not overwrite <code>log_path</code>;
-    completion measurement reads <code>stream.jsonl</code> plus resume streams in numeric order
-    (matching <code>ledger._run_streams</code>), and resume refuses while the previous process is
-    alive. Done when a resumed run's completion measures the full stream set and the tenth resume
-    orders correctly.</p>
-    <p><strong>Timestamp guards.</strong> <code>_epoch_to_iso</code> tolerates millisecond epochs
-    and out-of-range values (returning a null reading, never raising through observe, complete,
-    recover or the budget probe); <code>complete --completed-at</code> accepts naive timestamps by
-    assuming UTC, matching the guard already in <code>ledger._worker_seconds</code>. Done when the
-    two demonstrated crashes are regression tests.</p>
-    <p><strong>Honest live view.</strong> <code>classify_pointer</code> (and therefore the MCP
-    <code>crew(view="live")</code> surface the skill tells orchestrators to poll) re-checks process
-    liveness when a pid is present instead of trusting the stored flag. Done when a killed worker
-    shows as non-running on the live view without an intervening observe.</p>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-16</span>
+        <h2>§2 — Deliverables</h2>
+      </header>
+      <p class="landed-summary">
+        All seven deliverables landed in commits <code>c193f19</code>, <code>421be97</code> and
+        <code>9cc6fff</code>: double-dispatch to a busy member refuses with
+        <code>MemberInFlight</code>, failed dispatches roll back to zero
+        processes/dirs/pointers/worktrees, stop→observe→recover round-trips as stopped, manifests
+        classify by recorded status, killpg verifies pid identity, the live view re-checks
+        liveness, resume preserves and numerically orders streams, and both demonstrated timestamp
+        crashes are regressions. 13 tests added; full suite 1886 passed, 0 failed on the
+        integrated tree. Full record:
+        <a href="/reckon/evidence/archive/dispatch-lifecycle-safety-landed.html">landed record</a>.
+      </p>
+    </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-dls-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dls-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="2026-08-16T21:27:39+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Implement the lifecycle guards</h4>
     <div class="r-fu-body"><p>All seven deliverables in §2. The member-collision guard lands first — it is one consult of existing data and removes the silent-node-loss failure mode.</p></div>
     <pre class="r-fu-prompt">/reckon-ship dispatch-lifecycle-safety</pre>
+    <p class="r-fu-outcome">All seven §2 deliverables landed and demonstrated under test across commits c193f19, 421be97 and 9cc6fff: member-collision refusal, transactional dispatch rollback, stopped-phase truth, manifest-status classification, pid-identity signal safety, honest live-view liveness, resume stream correctness and the two timestamp-crash regressions. Sprint gate measures all produced. done — no followup</p>
     </article>
 </section>
 
@@ -84,6 +72,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260816T2126-ot" data-who="reckon-ship" data-when="2026-08-16T21:26:00Z">
     <div class="r-comment-body">observe-truth landed — commit 421be97; gate passed; measures: stop→observe→recover round-trips as stopped; in-harness blocked/failed manifests keep their recorded status; killpg refuses a changed pid identity (start ticks recorded at dispatch/resume) and process_alive treats PermissionError as not-ours; live view re-checks liveness so a killed worker reads abandoned without an observe; 6 tests added, full suite 1881 passed. Evidence: docs/evidence/archive/dispatch-lifecycle-safety-landed.html#observe-truth</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260816T2133-rc" data-who="reckon-ship" data-when="2026-08-16T21:33:00Z">
+    <div class="r-comment-body">resume-correctness landed — commit 9cc6fff; gate passed; measures: original stream.jsonl preserved and resume streams ordered numerically through the tenth resume with the full set measured at completion; resume refuses while the prior pid is alive; millisecond/out-of-range reset epochs yield null readings and naive --completed-at promotes as UTC (both demonstrated crashes now regressions); 5 tests added, full suite 1886 passed. Evidence: docs/evidence/archive/dispatch-lifecycle-safety-landed.html#resume-correctness</div>
 </div>
 </section>
 </main>
