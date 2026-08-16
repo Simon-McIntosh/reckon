@@ -45,6 +45,7 @@ def _run(
     gate: str = "passed",
     effort: str = "high",
     changed_lines: dict | None = None,
+    completed_at_source: str = "stream_mtime",
 ) -> None:
     ledger.append_run(
         root.name,
@@ -54,7 +55,7 @@ def _run(
             gate=gate,
             agent={"backend": "worker", "model": "concrete", "effort": effort},
             worker_seconds=int(actual_hours * 3600),
-            completed_at_source="stream_mtime",
+            completed_at_source=completed_at_source,
             changed_lines=changed_lines,
         ),
         root=root,
@@ -235,6 +236,24 @@ def test_scope_changed_and_proxy_completion_records_are_excluded(tmp_path) -> No
     assert record["configurations"][0]["runs"] == 1
     assert record["excluded"] == {
         "scope_changed": 1,
+        "stalled": 0,
         "unusable_completion": 1,
         "invalid": 0,
     }
+
+
+def test_explicit_completion_time_is_usable_for_capabilities(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(
+        root,
+        "explicit",
+        "work",
+        1.0,
+        completed_at_source="provided",
+    )
+
+    record = _derive(root)
+
+    assert record["configurations"][0]["runs"] == 1
+    assert record["excluded"]["unusable_completion"] == 0

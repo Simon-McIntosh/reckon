@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from statistics import fmean, pstdev
 from typing import Any
 
+from reckon import ledger
+
 
 @dataclass(frozen=True)
 class CalibrationFigure:
@@ -72,10 +74,9 @@ def _figures(values: Mapping[str, Any]) -> dict[str, CalibrationFigure]:
 def _observation(
     run: Mapping[str, Any],
 ) -> tuple[str, str, float] | str:
-    if bool(run.get("scope_changed")):
-        return "scope_changed"
-    if str(run.get("completed_at_source") or "") == "promotion_time":
-        return "unusable_completion"
+    exclusion = ledger.measurement_exclusion_reason(run)
+    if exclusion:
+        return exclusion
     plan = str(run.get("plan") or "").strip()
     agent = agent_configuration_key(run)
     try:
@@ -116,6 +117,7 @@ def _eligible_runs(
     included: list[tuple[str, str, float]] = []
     excluded = {
         "scope_changed": 0,
+        "stalled": 0,
         "unusable_completion": 0,
         "invalid_measurement": 0,
         "missing_counterpart": 0,

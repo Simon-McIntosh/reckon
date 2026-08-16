@@ -136,7 +136,12 @@ def derive_capabilities(
         raise ValueError("bin_width_hours must be positive")
 
     observations_by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    excluded = {"scope_changed": 0, "unusable_completion": 0, "invalid": 0}
+    excluded = {
+        "scope_changed": 0,
+        "stalled": 0,
+        "unusable_completion": 0,
+        "invalid": 0,
+    }
     source_versions: dict[str, int] = {}
     for project, raw_docs in sorted(mounted_docs.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
@@ -144,14 +149,9 @@ def derive_capabilities(
         data, version = ledger.load(str(project), root=docs_dir.parent)
         source_versions[str(project)] = version
         for run in data["runs"]:
-            if run.get("scope_changed"):
-                excluded["scope_changed"] += 1
-                continue
-            if str(run.get("completed_at_source") or "") not in {
-                "terminal_event",
-                "stream_mtime",
-            }:
-                excluded["unusable_completion"] += 1
+            exclusion = ledger.measurement_exclusion_reason(run)
+            if exclusion:
+                excluded[exclusion] += 1
                 continue
             plan = str(run.get("plan") or "")
             agent_key = agent_configuration_key(run)

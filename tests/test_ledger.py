@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _store, crew, ledger
+from reckon import _store, calibration, capabilities, crew, ledger
 from reckon.cli import main as cli_main
 
 
@@ -531,7 +531,8 @@ def test_completion_repair_leaves_missing_stream_record_unusable(home, repo) -> 
     assert report["written"] is False
     assert after == before
     assert version_after == version_before
-    assert effort["excluded_unusable_completion"] == 1
+    assert effort["excluded_unusable_completion"] == 0
+    assert effort["plans"][0]["runs"] == 1
 
 
 def test_completion_repair_reports_updated_unchanged_and_unusable_rows(
@@ -652,6 +653,42 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
     assert stored["worker_seconds_source"] == "unavailable"
     assert stored["wall_seconds"] is not None
     assert ledger._worker_seconds("2027-01-01T01:00:00", "2027-01-01T02:00:00") == 3600
+
+
+def test_explicit_promotion_stamp_reaches_every_duration_consumer(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["created_at"] = "2027-01-01T01:45:00Z"
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    plan.parent.mkdir(parents=True)
+    plan.write_text(
+        '<meta name="docs-project" content="proj">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="plan-a">'
+        '<meta name="plan-effort-hours" content="1.0">'
+    )
+
+    stored = crew.complete(
+        record["run_id"],
+        gate="passed",
+        completed_at="2027-01-01T02:00:00Z",
+    )["record"]
+    effort = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    derived = capabilities.derive_capabilities({PROJECT: repo / "docs"})
+    observation = calibration._observation(stored)
+
+    assert stored["completed_at_source"] == "provided"
+    assert stored["worker_seconds"] == 900
+    assert effort["plans"][0]["runs"] == 1
+    assert effort["excluded"] == {
+        "scope_changed": 0,
+        "stalled": 0,
+        "unusable_completion": 0,
+    }
+    assert derived["configurations"][0]["runs"] == 1
+    assert derived["excluded"]["unusable_completion"] == 0
+    assert observation == ("plan-a", calibration.agent_configuration_key(stored), 0.25)
 
 
 # ── Nothing transient is committed ──────────────────────────────────────────
@@ -1092,6 +1129,26 @@ def test_promotion_time_is_reported_as_unusable_for_calibration(home, repo) -> N
     assert row["excluded_unusable_completion"] == 1
     assert row["runs"] == 1
     assert row["mean_minutes"] == 10.0
+
+
+def test_explicit_completion_time_is_usable_for_effort(home, repo) -> None:
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-explicit",
+            plan="plan-a",
+            gate="passed",
+            worker_seconds=900,
+            completed_at_source="provided",
+        ),
+        root=repo,
+    )
+
+    report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+
+    assert report["plans"][0]["runs"] == 1
+    assert report["plans"][0]["measured_minutes"] == 15.0
+    assert report["excluded_unusable_completion"] == 0
 
 
 def test_declared_effort_is_read_from_the_plans_themselves(home, repo) -> None:

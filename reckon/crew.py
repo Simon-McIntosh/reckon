@@ -272,6 +272,11 @@ class TaskNode:
         }
 
 
+def normalize_section(value: str) -> str:
+    """Return the canonical spelling for a numbered plan section."""
+    return ledger.normalize_section(value)
+
+
 @dataclass
 class NodeValidation:
     """The verdict on one node, naming every property it failed."""
@@ -1043,6 +1048,7 @@ class DispatchPlan:
     node: TaskNode
     budget_ceiling: str
     validation: NodeValidation
+    warnings: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -1053,7 +1059,32 @@ class DispatchPlan:
             "time_budget": self.node.time_budget,
             "validation": self.validation.as_dict(),
             "write_paths": list(self.node.write_paths),
+            "warnings": list(self.warnings),
         }
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    target = Path(path).expanduser().resolve()
+    best: tuple[int, str] | None = None
+    try:
+        lines = Path("/proc/self/mountinfo").read_text().splitlines()
+    except OSError:
+        return False
+    for line in lines:
+        fields, separator, trailing = line.partition(" - ")
+        if not separator:
+            continue
+        parts = fields.split()
+        trailing_parts = trailing.split()
+        if len(parts) < 5 or not trailing_parts:
+            continue
+        mount = Path(parts[4].replace("\\040", " ")).resolve()
+        if target == mount or target.is_relative_to(mount):
+            candidate = (len(mount.parts), trailing_parts[0])
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+    return bool(best and best[1] in {"tmpfs", "ramfs"})
 
 
 def plan_dispatch(
@@ -1084,10 +1115,17 @@ def plan_dispatch(
         )
     budget_ceiling = resolved_time_budget(config, backend)
     node.time_budget = node.time_budget or budget_ceiling
+    node.section = normalize_section(node.section)
     resolved_run_id = run_id or new_run_id(node.id)
-    node.manifest_path = node.manifest_path or str(
-        run_dir(resolved_run_id) / "manifest.md"
-    )
+    durable_manifest = str(run_dir(resolved_run_id) / "manifest.md")
+    caller_manifest = bool(node.manifest_path)
+    node.manifest_path = node.manifest_path or durable_manifest
+    warnings = []
+    if caller_manifest and _path_is_tmpfs(node.manifest_path):
+        warnings.append(
+            f"manifest path {node.manifest_path!r} is on tmpfs; use the durable "
+            f"default {durable_manifest!r} so delivery survives session cleanup"
+        )
     node.peer_scopes = {
         name: list(paths) for name, paths in (peer_scopes or {}).items()
     }
@@ -1104,6 +1142,7 @@ def plan_dispatch(
         node=node,
         budget_ceiling=budget_ceiling,
         validation=verdict,
+        warnings=warnings,
     )
 
 
@@ -1213,6 +1252,22 @@ def dispatch(
         and backend.get("session_reuse")
         else None
     )
+    prior_node_runs = [
+        item
+        for item in ledger.runs(project, root=repo_root)
+        if str(item.get("node") or "") == node.id
+    ]
+    lineage = None
+    if prior_node_runs:
+        previous = prior_node_runs[-1]
+        previous_lineage = previous.get("lineage") or {}
+        lineage = {
+            "kind": "redispatch",
+            "attempt": len(prior_node_runs) + 1,
+            "root_run_id": previous_lineage.get("root_run_id")
+            or str(prior_node_runs[0].get("run_id") or ""),
+            "previous_run_id": str(previous.get("run_id") or ""),
+        }
 
     worktree = _create_worktree(repo_root, session, node.id, base)
     spawned_pid: int | None = None
@@ -1276,6 +1331,8 @@ def dispatch(
             "argv": None,
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
+            "warnings": list(resolution.warnings),
+            "lineage": lineage,
         }
 
         if launch_kind == "cli":
@@ -1780,6 +1837,18 @@ def complete(
     root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
+    verdict = str(gate).strip().lower()
+    if verdict not in ledger.GATE_VERDICTS:
+        raise ledger.LedgerError(
+            f"gate verdict {gate!r} is not one of "
+            f"{', '.join(ledger.GATE_VERDICTS)}; a gate whose evidence could "
+            "not be produced is 'not-run'"
+        )
+    if verdict != "passed" and not str(outcome).strip():
+        raise CrewError(
+            "a non-passing gate requires --outcome; write what failed or why "
+            "the evidence could not be produced"
+        )
     with _pointer_lock(run_id):
         return _complete_locked(
             run_id,
@@ -1922,6 +1991,7 @@ def _complete_locked(
         scope_changed=scope_changed,
         session_id=session_id,
         budget=measured_budget,
+        lineage=record.get("lineage"),
     )
     already_promoted = False
     try:

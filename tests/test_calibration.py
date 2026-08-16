@@ -95,6 +95,21 @@ def test_promotion_time_run_is_withheld_from_both_loops() -> None:
     assert effort.excluded["unusable_completion"] == 1
 
 
+def test_explicit_completion_time_is_usable_for_calibration() -> None:
+    run = _run("work", "worker", 2.0, completed_at_source="provided")
+
+    speed = calibrate_agent_speeds([run], plan_estimates={"work": 1.0})
+    effort = calibrate_plan_estimates(
+        [run],
+        plan_estimates={"work": 1.0},
+        agent_speed_factors={"worker": 1.0},
+    )
+
+    assert speed.included_runs == effort.included_runs == 1
+    assert speed.excluded["unusable_completion"] == 0
+    assert effort.excluded["unusable_completion"] == 0
+
+
 def test_missing_counterpart_is_reported_instead_of_assumed() -> None:
     speed = calibrate_agent_speeds(
         [_run("unknown", "worker", 3.0)], plan_estimates={"known": 1.0}

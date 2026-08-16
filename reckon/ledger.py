@@ -58,6 +58,8 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+USABLE_COMPLETION_SOURCES = frozenset({"terminal_event", "stream_mtime", "provided"})
+
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 _MAX_RETRY_DELAY_SECONDS = 0.05
@@ -91,11 +93,19 @@ RECORD_FIELDS = (
     "scope_changed",
     "session_id",
     "budget",
+    "lineage",
 )
 
 
 class LedgerError(Exception):
     """A ledger read or write cannot proceed, and the message says why."""
+
+
+def normalize_section(value: Any) -> str:
+    """Return the canonical spelling for a numbered plan section."""
+    section = re.sub(r"\s+", " ", str(value or "").strip())
+    match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
+    return f"§{match.group(1)}" if match else section
 
 
 def _utc_now() -> str:
@@ -316,6 +326,7 @@ def build_record(
     scope_changed: bool = False,
     session_id: str | None = None,
     budget: Mapping[str, Any] | None = None,
+    lineage: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict."""
     verdict = str(gate).strip().lower()
@@ -327,7 +338,7 @@ def build_record(
     return {
         "run_id": str(run_id),
         "plan": str(plan),
-        "section": str(section),
+        "section": normalize_section(section),
         "node": str(node),
         "role": str(role),
         "member": str(member_id),
@@ -359,7 +370,19 @@ def build_record(
         # and a pre-flight that has to make a call to learn headroom spends the
         # very resource it is measuring — most often when it is scarcest.
         "budget": dict(budget or {}),
+        "lineage": None if lineage is None else dict(lineage),
     }
+
+
+def measurement_exclusion_reason(record: Mapping[str, Any]) -> str | None:
+    """Name why a run cannot feed duration consumers, if it cannot."""
+    if record.get("scope_changed"):
+        return "scope_changed"
+    if record.get("stalled"):
+        return "stalled"
+    if str(record.get("completed_at_source") or "") not in USABLE_COMPLETION_SOURCES:
+        return "unusable_completion"
+    return None
 
 
 def per_run_budget(
@@ -817,20 +840,15 @@ def effort_report(
                 "durations": [],
             },
         )
-        if record.get("scope_changed"):
-            row["excluded_scope_changed"] += 1
-            excluded_scope_changed += 1
-            continue
-        if record.get("stalled"):
-            row["excluded_stalled"] += 1
-            excluded_stalled += 1
-            continue
-        if record.get("completed_at_source") not in {
-            "terminal_event",
-            "stream_mtime",
-        }:
-            row["excluded_unusable_completion"] += 1
-            excluded_unusable_completion += 1
+        exclusion = measurement_exclusion_reason(record)
+        if exclusion:
+            row[f"excluded_{exclusion}"] += 1
+            if exclusion == "scope_changed":
+                excluded_scope_changed += 1
+            elif exclusion == "stalled":
+                excluded_stalled += 1
+            else:
+                excluded_unusable_completion += 1
             continue
         minutes = _minutes(record.get("worker_seconds"))
         if minutes is None:
@@ -880,6 +898,11 @@ def effort_report(
     return {
         "plans": plans,
         "by_effort": buckets,
+        "excluded": {
+            "scope_changed": excluded_scope_changed,
+            "stalled": excluded_stalled,
+            "unusable_completion": excluded_unusable_completion,
+        },
         "excluded_scope_changed": excluded_scope_changed,
         "excluded_stalled": excluded_stalled,
         "excluded_unusable_completion": excluded_unusable_completion,

@@ -368,6 +368,31 @@ def test_the_resolution_fills_the_defaults_a_dispatch_would_fill(home) -> None:
     assert resolution.launch == "cli"
 
 
+@pytest.mark.parametrize("spelling", ["3", "s3", "#s3", "section 3", "§ 3"])
+def test_numbered_section_spellings_normalize_at_dispatch(home, spelling) -> None:
+    resolution = crew.plan_dispatch(
+        node=_node(section=spelling),
+        config=CONFIG,
+    )
+
+    assert resolution.node.section == "§3"
+
+
+def test_tmpfs_manifest_warning_names_the_durable_default(home) -> None:
+    requested = "/dev/shm/caller-manifest.md"
+    resolution = crew.plan_dispatch(
+        node=_node(manifest_path=requested),
+        config=CONFIG,
+    )
+
+    assert resolution.node.manifest_path == requested
+    assert len(resolution.warnings) == 1
+    assert "tmpfs" in resolution.warnings[0]
+    assert (
+        str(crew.run_dir(resolution.run_id) / "manifest.md") in resolution.warnings[0]
+    )
+
+
 def test_dry_run_payload_reports_the_resolved_write_paths(
     home, repo, monkeypatch
 ) -> None:
@@ -1440,13 +1465,55 @@ def test_promotion_without_a_commit_records_absent_changed_lines(home, repo) -> 
     assert stored["changed_lines"] is None
 
 
+@pytest.mark.parametrize("gate", ["failed", "not-run"])
+def test_non_passing_promotion_requires_a_diagnostic_outcome(home, repo, gate) -> None:
+    record = _dispatched(home, repo)
+
+    with pytest.raises(crew.CrewError, match="--outcome.*what failed"):
+        crew.complete(record["run_id"], gate=gate)
+
+    assert crew.pointer_path(record["run_id"]).exists()
+
+
+def test_redispatched_node_records_its_run_lineage(home, repo) -> None:
+    first = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="first",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    crew.complete(first["run_id"], gate="passed")
+
+    second = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="second",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    expected = {
+        "kind": "redispatch",
+        "attempt": 2,
+        "root_run_id": first["run_id"],
+        "previous_run_id": first["run_id"],
+    }
+    assert second["lineage"] == expected
+    assert (
+        crew.complete(second["run_id"], gate="passed")["record"]["lineage"] == expected
+    )
+
+
 def test_unresolvable_commit_records_a_typed_diff_absence(home, repo) -> None:
     record = _dispatched(home, repo)
     revision = "not-a-revision"
 
-    stored = crew.complete(
-        record["run_id"], gate="passed", commits=[revision]
-    )["record"]
+    stored = crew.complete(record["run_id"], gate="passed", commits=[revision])[
+        "record"
+    ]
 
     assert stored["commits"] == [revision]
     assert stored["changed_lines"] == {
