@@ -62,6 +62,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import tempfile
+import fcntl
+import hashlib
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -77,6 +81,18 @@ class VersionConflict(Exception):
         self.current = current
         self.current_data = current_data
         super().__init__(f"version conflict: expected {expected}, got {current}")
+
+
+class CorruptEnvelopeError(Exception):
+    """Raised when an existing JSON envelope cannot be read safely."""
+
+    def __init__(self, path: Path, failure: str) -> None:
+        self.path = path
+        self.failure = failure
+        super().__init__(
+            f"cannot read JSON envelope {path}: {failure}; fix any conflict markers "
+            "or restore the file from git before retrying"
+        )
 
 
 # ── Path helpers ───────────────────────────────────────────────────────────
@@ -214,25 +230,45 @@ def _resolve_html_file(
 # ── JSON-backed helpers (index / project slugs) ────────────────────────────
 
 
+@contextmanager
+def _json_envelope_lock(path: Path):
+    """Serialise the version check and replacement for one JSON envelope."""
+    identity = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
+    lock_path = _config_home() / "locks" / "envelopes" / f"{identity}.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def _load_json_envelope(path: Path) -> tuple[dict, int]:
     """Load the JSON envelope from disk.
 
     Returns:
         (data_dict, current_version) — data_dict is the "data" sub-object;
-        current_version is data._version (0 if file absent or unparseable).
+        current_version is data._version (0 only when the file is absent).
+
+    Raises:
+        CorruptEnvelopeError: The file exists but is not a valid envelope.
     """
     if not path.exists():
         return {}, 0
     try:
         envelope = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}, 0
+    except json.JSONDecodeError as exc:
+        raise CorruptEnvelopeError(path, str(exc)) from exc
     if not isinstance(envelope, dict):
-        return {}, 0
+        raise CorruptEnvelopeError(path, "top-level value is not an object")
     data = envelope.get("data", {})
     if not isinstance(data, dict):
-        data = {}
-    version = int(data.get("_version", 0))
+        raise CorruptEnvelopeError(path, "data value is not an object")
+    try:
+        version = int(data.get("_version", 0))
+    except (TypeError, ValueError) as exc:
+        raise CorruptEnvelopeError(path, "data._version is not an integer") from exc
     return data, version
 
 
@@ -249,25 +285,42 @@ def _write_json_envelope(
     """
     from datetime import datetime
 
-    cur_data, cur_version = _load_json_envelope(path)
-    if expected_version != cur_version:
-        raise VersionConflict(expected_version, cur_version, cur_data)
-
-    new_data = dict(data)
-    new_data.pop("_version", None)
-    new_data["_version"] = cur_version + 1
-
-    envelope = {
-        "updated": datetime.now().isoformat(timespec="seconds"),
-        "project": project,
-        "doc": slug,
-        "data": new_data,
-    }
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(envelope, indent=2) + "\n")
-    tmp.replace(path)
-    return new_data["_version"]
+    with _json_envelope_lock(path):
+        cur_data, cur_version = _load_json_envelope(path)
+        if expected_version != cur_version:
+            raise VersionConflict(expected_version, cur_version, cur_data)
+
+        new_data = dict(data)
+        new_data.pop("_version", None)
+        new_data["_version"] = cur_version + 1
+
+        envelope = {
+            "updated": datetime.now().isoformat(timespec="seconds"),
+            "project": project,
+            "doc": slug,
+            "data": new_data,
+        }
+        tmp: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                tmp = Path(handle.name)
+                json.dump(envelope, handle, indent=2)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            tmp.replace(path)
+        finally:
+            if tmp is not None:
+                tmp.unlink(missing_ok=True)
+        return new_data["_version"]
 
 
 # ── HTML-state helpers ────────────────────────────────────────────────────
@@ -491,7 +544,7 @@ def read_plan(
     Defaults to the mounts-registered / config-home (main) checkout.
 
     Returns:
-        (data, version) — returns ({}, 0) if absent/unparseable.
+        (data, version) — returns ({}, 0) if absent and refuses corrupt input.
     """
     from reckon.project_state import (
         RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,

@@ -611,6 +611,50 @@ def test_two_interleaved_promotions_both_survive(home, repo, monkeypatch) -> Non
     assert len(calls) > 1, "the interleaved write must have forced a retry"
 
 
+def test_promotion_refuses_a_merge_conflicted_ledger(home, repo) -> None:
+    record = _dispatch(repo)
+    _deliver(record)
+    path = ledger.ledger_path(PROJECT, repo)
+    conflicted = b'<<<<<<< HEAD\n{"data": {"runs": []}}\n=======\n{}\n>>>>>>> branch\n'
+    path.write_bytes(conflicted)
+
+    with pytest.raises(_store.CorruptEnvelopeError) as excinfo:
+        crew.complete(record["run_id"], gate="passed", root=repo)
+
+    message = str(excinfo.value)
+    assert str(path) in message
+    assert "fix any conflict markers" in message
+    assert "restore the file from git" in message
+    assert path.read_bytes() == conflicted
+    assert crew.pointer_path(record["run_id"]).exists()
+
+
+def test_hold_check_backs_off_after_a_version_conflict(home, repo, monkeypatch) -> None:
+    real_write = ledger.write
+    writes = 0
+    backoffs: list[int] = []
+
+    def conflicting_write(project, data, expected_version, root=None):
+        nonlocal writes
+        writes += 1
+        if writes == 1:
+            raise ledger.LedgerError("concurrent write")
+        return real_write(project, data, expected_version, root)
+
+    monkeypatch.setattr(ledger, "write", conflicting_write)
+    monkeypatch.setattr(ledger, "_retry_backoff", backoffs.append)
+
+    result = ledger.record_hold_checks(
+        PROJECT,
+        [{"backend": "alpha", "held": True}],
+        checked_at="2026-08-16T20:00:00Z",
+        root=repo,
+    )
+
+    assert result["version"] == 1
+    assert backoffs == [0]
+
+
 def test_promoting_the_same_run_twice_is_refused(home, repo) -> None:
     """A double promotion double-counts every measurement it carries."""
     record = ledger.build_record(run_id="r-one", plan="plan-a", gate="passed")

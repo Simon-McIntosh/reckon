@@ -35,7 +35,9 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import json
+import random
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -56,6 +58,8 @@ LEDGER_SLUG = "crew"
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+_MAX_RETRY_DELAY_SECONDS = 0.05
 
 # Fields every completed record carries. Named here so a test can assert the
 # calibration inputs exist rather than trusting each writer to remember them.
@@ -96,6 +100,12 @@ def _utc_now() -> str:
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
+
+
+def _retry_backoff(attempt: int) -> None:
+    """Yield to competing ledger writers with a small jittered delay."""
+    ceiling = min(_MAX_RETRY_DELAY_SECONDS, 0.002 * (2**attempt))
+    time.sleep(random.uniform(ceiling / 2, ceiling))
 
 
 # ── Location and raw access ─────────────────────────────────────────────────
@@ -346,7 +356,7 @@ def append_run(
     record: Mapping[str, Any],
     *,
     root: str | Path | None = None,
-    attempts: int = 5,
+    attempts: int = 12,
 ) -> dict[str, Any]:
     """Append one completed run, retrying when a concurrent write intervenes.
 
@@ -376,6 +386,7 @@ def append_run(
             new_version = write(project, data, version, root)
         except LedgerError as exc:
             last = exc
+            _retry_backoff(_attempt)
             continue
         return {
             "path": str(ledger_path(project, root)),
@@ -585,7 +596,7 @@ def record_hold_checks(
     *,
     checked_at: str,
     root: str | Path | None = None,
-    attempts: int = 5,
+    attempts: int = 12,
 ) -> dict[str, Any]:
     """Open, deduplicate or close budget holds from one pre-flight.
 
@@ -660,6 +671,7 @@ def record_hold_checks(
             new_version = write(project, data, version, root)
         except LedgerError as exc:
             last = exc
+            _retry_backoff(_attempt)
             continue
         return {
             "path": str(ledger_path(project, root)),
