@@ -596,6 +596,7 @@ def compose_prompt(
     node: TaskNode,
     project: str,
     worktree: str,
+    working_directory: str,
     manifest_path: str,
     time_budget: str,
     needs_help_after_failures: int,
@@ -617,6 +618,13 @@ def compose_prompt(
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
     section = f" {node.section}" if node.section else ""
+    delivery_directory_note = ""
+    if Path(working_directory) != Path(worktree):
+        delivery_directory_note = f"""
+RUNTIME FILESYSTEM
+  The working directory is the delivery directory {working_directory}.
+  The repository at the assigned worktree path {worktree} is read-only.
+"""
     return f"""You are a worker on one node. Read the live plan first; it is the
 semantic authority for context, decisions, evidence inputs and constraints.
 
@@ -624,6 +632,7 @@ NODE     {node.id}
 GOAL     {node.goal}
 PLAN     {project}:{node.plan}{section}
 ROLE     {node.role}
+{delivery_directory_note}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}
@@ -1123,10 +1132,18 @@ def dispatch(
     worktree = _create_worktree(repo_root, session, node.id, base)
     directory.mkdir(parents=True, exist_ok=True)
     try:
+        working_directory = worktree["path"]
+        if launch_kind == "cli":
+            working_directory = _backends.launch_working_directory(
+                backend=backend,
+                worktree=worktree["path"],
+                manifest_path=node.manifest_path,
+            )
         prompt = compose_prompt(
             node=node,
             project=project,
             worktree=worktree["path"],
+            working_directory=working_directory,
             manifest_path=node.manifest_path,
             time_budget=node.time_budget,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
@@ -1180,6 +1197,7 @@ def dispatch(
                 backend=backend,
                 prompt=prompt,
                 worktree=worktree["path"],
+                manifest_path=node.manifest_path,
                 final_message_path=str(final_path),
                 resume_session=reuse_session,
             )
@@ -1421,6 +1439,7 @@ def resume_plan(
         backend=backend,
         prompt=advice,
         worktree=str(record.get("worktree") or "."),
+        manifest_path=str(record.get("manifest_path") or ""),
         resume_session=str(session_id),
     )
 

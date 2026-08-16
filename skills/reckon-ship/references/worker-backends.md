@@ -51,7 +51,10 @@ sandbox tier. Tier mapping is per-dialect: the `worktree-full` tier resolves to
 whatever that harness calls "no sandbox", because a filesystem sandbox is
 inherited by child processes and breaks the test runners a worker's gate depends
 on; the worktree is the boundary instead. A restrained tier resolves to whatever
-that harness offers — a sandbox mode in one, a permission mode in another.
+that harness offers — a sandbox mode in one, a permission mode in another. For
+the filesystem-sandbox dialect, read-only work translates to workspace-write
+with the manifest directory as the working directory. That leaves the delivery
+surface writable without making the assigned repository writable.
 
 Two argument details are load-bearing and were both learned by a failed probe:
 
@@ -60,9 +63,12 @@ Two argument details are load-bearing and were both learned by a failed probe:
   harness then reports that no input was provided while the prompt sits in its
   argument list. One dialect additionally needs a trailing marker to say the
   prompt is on stdin.
-- **A working directory must be a git repository.** One harness refuses to run in
-  a directory it does not consider trusted, and being a repository is what earns
-  that trust. Worktrees satisfy it; a bare temp directory does not.
+- **The working directory is part of the sandbox boundary.** Full-access and
+  workspace-write nodes run in their worktree. Read-only nodes using the
+  filesystem-sandbox dialect run in the manifest directory instead, so only the
+  delivery surface and system temporary directory gain write access. The
+  translated launch explicitly permits that delivery directory to be outside a
+  repository; delivery locations do not need repository metadata.
 
 **Session capture.** The resumable id, taken from the stream's own start event.
 This is what lets a worker's session outlive its workspace, and it is what the
