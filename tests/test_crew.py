@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -486,6 +487,48 @@ def test_dispatch_refuses_a_plan_absent_from_the_base(home, repo) -> None:
     _assert_no_dispatch_artifacts(repo)
 
 
+def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) -> None:
+    ledger_member = "worker-a"
+    crew.ledger.register_member(
+        "proj", ledger_member, harness="codex", root=repo
+    )
+    first = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        member=ledger_member,
+        launcher=lambda *a, **k: 4242,
+    )
+
+    with pytest.raises(crew.MemberInFlight) as excinfo:
+        crew.dispatch(
+            node=_node(id="node-b", manifest_path="/tmp/node-b-manifest.md"),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            member=ledger_member,
+            launcher=lambda *a, **k: pytest.fail("the member must not be launched"),
+        )
+
+    assert excinfo.value.member == ledger_member
+    assert excinfo.value.run_id == first["run_id"]
+    assert ledger_member in str(excinfo.value)
+    assert first["run_id"] in str(excinfo.value)
+    assert crew.list_live() == [first]
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "node-a" in listed.stdout
+    assert "node-b" not in listed.stdout
+
+
 def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     record = crew.dispatch(
         node=_node(),
@@ -756,6 +799,69 @@ def test_a_failed_launch_leaves_no_worktree_holding_write_scope(home, repo) -> N
     )
     assert "node-a" not in listed.stdout
     assert crew.list_live() == []
+
+
+def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts(
+    home, repo, monkeypatch
+) -> None:
+    run_id = "r-pointer-write-failure"
+    spawned: dict[str, subprocess.Popen] = {}
+    events: list[str] = []
+    original_signal = crew._signal_process_group
+    original_remove = crew._remove_worktree
+    original_write = crew._write_json
+
+    monkeypatch.setattr(crew, "new_run_id", lambda node_id, now=None: run_id)
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=plan.cwd,
+            start_new_session=True,
+        )
+        spawned["process"] = process
+        return process.pid
+
+    def fail_pointer_write(path, payload):
+        if path == crew.pointer_path(run_id):
+            raise OSError("forced pointer write failure")
+        return original_write(path, payload)
+
+    def record_signal(pid):
+        events.append("signal")
+        original_signal(pid)
+
+    def record_remove(root, path):
+        events.append("remove")
+        original_remove(root, path)
+
+    monkeypatch.setattr(crew, "_write_json", fail_pointer_write)
+    monkeypatch.setattr(crew, "_signal_process_group", record_signal)
+    monkeypatch.setattr(crew, "_remove_worktree", record_remove)
+
+    with pytest.raises(OSError, match="forced pointer write failure"):
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=launcher,
+        )
+
+    process = spawned["process"]
+    try:
+        process.wait(timeout=5)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+
+    assert events[:2] == ["signal", "remove"]
+    assert process.returncode is not None
+    assert not crew.run_dir(run_id).exists()
+    assert not crew.pointer_path(run_id).exists()
+    _assert_no_dispatch_artifacts(repo)
 
 
 def test_an_in_harness_dispatch_returns_a_directive_to_bind(home, repo) -> None:

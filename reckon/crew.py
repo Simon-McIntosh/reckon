@@ -74,6 +74,8 @@ NODE_PROPERTIES = (
 # semantic authority; a copied brief becomes a second source of truth.
 FENCES = ("scope", "time", "evidence", "delivery")
 
+_TERMINAL_RUN_PHASES = frozenset({"complete", "failed", "stopped"})
+
 # A done-when built from one of these is an opinion, not a measure. The fix is
 # to name what would be observed instead.
 SUBJECTIVE_TERMS = (
@@ -177,6 +179,17 @@ CHAIN_CLOSED_MARKERS = ("no followup", "no follow-up", "no-followup")
 
 class CrewError(Exception):
     """A dispatch cannot proceed, and the message says what to fix."""
+
+
+class MemberInFlight(CrewError):
+    """A roster member already owns a live, non-terminal run."""
+
+    def __init__(self, member: str, run_id: str) -> None:
+        self.member = member
+        self.run_id = run_id
+        super().__init__(
+            f"crew member {member!r} already holds in-flight run {run_id!r}"
+        )
 
 
 class BudgetHold(CrewError):
@@ -742,6 +755,14 @@ def _remove_worktree(repo: Path, path: str) -> None:
     )
 
 
+def _signal_process_group(pid: int) -> None:
+    """Ask a spawned worker and every child it started to terminate."""
+    try:
+        os.killpg(os.getpgid(pid), signal.SIGTERM)
+    except (OSError, TypeError, ValueError):
+        pass
+
+
 def _base_commit(repo: Path, base: str) -> str:
     """Resolve a worktree base to a commit without accepting option-like refs."""
     result = subprocess.run(
@@ -1121,6 +1142,13 @@ def dispatch(
                 f"project {project!r} has no crew member {member!r}; register it "
                 "with `reckon crew member add` before dispatching to it"
             )
+        for pointer in list_live():
+            if (
+                pointer.get("project") == project
+                and pointer.get("member") == member
+                and pointer.get("phase") not in _TERMINAL_RUN_PHASES
+            ):
+                raise MemberInFlight(member, str(pointer.get("run_id") or "unknown"))
     reuse_session = (
         str(roster_member.get("session_id"))
         if roster_member
@@ -1130,8 +1158,9 @@ def dispatch(
     )
 
     worktree = _create_worktree(repo_root, session, node.id, base)
-    directory.mkdir(parents=True, exist_ok=True)
+    spawned_pid: int | None = None
     try:
+        directory.mkdir(parents=True, exist_ok=True)
         working_directory = worktree["path"]
         if launch_kind == "cli":
             working_directory = _backends.launch_working_directory(
@@ -1202,14 +1231,18 @@ def dispatch(
                 resume_session=reuse_session,
             )
             spawn = launcher or _spawn
-            pid = spawn(
+            spawned_pid = spawn(
                 plan,
                 log_path=log_path,
                 stderr_path=stderr_path,
                 prompt_path=prompt_path,
             )
             record.update(
-                {"pid": pid, "argv": list(plan.argv), "dialect": plan.dialect}
+                {
+                    "pid": spawned_pid,
+                    "argv": list(plan.argv),
+                    "dialect": plan.dialect,
+                }
             )
         else:
             record["directive"] = {
@@ -1226,6 +1259,8 @@ def dispatch(
 
         _write_json(pointer_path(run_id), record)
     except Exception:
+        if spawned_pid is not None:
+            _signal_process_group(spawned_pid)
         _remove_worktree(repo_root, worktree["path"])
         shutil.rmtree(directory, ignore_errors=True)
         pointer_path(run_id).unlink(missing_ok=True)
