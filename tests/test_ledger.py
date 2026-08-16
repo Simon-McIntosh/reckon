@@ -270,6 +270,7 @@ def test_stream_duration_is_separate_from_stalled_wall_time(home, repo) -> None:
     stored = crew.complete(record["run_id"], gate="passed")["record"]
 
     assert stored["worker_seconds"] == 45 * 60
+    assert stored["worker_seconds_source"] == "stream_events"
     assert stored["wall_seconds"] == 26 * 3600 + 42 * 60
     assert stored["stalled"] is True
     report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
@@ -324,11 +325,41 @@ def test_promotion_uses_stream_mtime_for_untimestamped_stream(
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     stream_time = datetime(2027, 2, 3, 4, 5, 6, tzinfo=timezone.utc)
     os.utime(record["log_path"], (stream_time.timestamp(), stream_time.timestamp()))
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["created_at"] = "2027-02-03T04:00:06Z"
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
 
     stored = crew.complete(record["run_id"], gate="passed")["record"]
 
     assert stored["completed_at"] == "2027-02-03T04:05:06Z"
     assert stored["completed_at_source"] == "stream_mtime"
+    assert stored["worker_seconds"] == stored["wall_seconds"] == 300
+    assert stored["worker_seconds_source"] == "wall_fallback"
+    assert stored["stalled"] is False
+    report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    assert report["plans"][0]["runs"] == 1
+    assert report["plans"][0]["measured_minutes"] == 5.0
+
+
+def test_stalled_untimestamped_stream_records_typed_duration_absence(
+    home, repo
+) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    stream_time = datetime(2027, 2, 3, 4, 5, 6, tzinfo=timezone.utc)
+    os.utime(record["log_path"], (stream_time.timestamp(), stream_time.timestamp()))
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["created_at"] = "2027-02-03T03:00:00Z"
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["worker_seconds"] is None
+    assert stored["worker_seconds_source"] == "stalled"
+    assert stored["wall_seconds"] == 3906
+    assert stored["stalled"] is True
+    report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    assert report["excluded_stalled"] == 1
+    assert report["plans"][0]["runs"] == 0
 
 
 def test_promotion_prefers_event_time_over_stream_mtime(home, repo) -> None:
@@ -434,8 +465,10 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
     stored = ledger.build_record(run_id="r-source", plan="plan-a", gate="passed")
 
     assert "completed_at_source" in ledger.RECORD_FIELDS
+    assert "worker_seconds_source" in ledger.RECORD_FIELDS
     assert set(ledger.RECORD_FIELDS) <= set(stored)
     assert stored["completed_at_source"] == "promotion_time"
+    assert stored["worker_seconds_source"] == "unavailable"
 
 
 def test_completion_repair_reports_event_time_without_writing(home, repo) -> None:
@@ -616,6 +649,7 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
     assert result.exit_code == 0
     assert stored["completed_at"] == "2027-01-01T02:00:00Z"
     assert stored["worker_seconds"] is None
+    assert stored["worker_seconds_source"] == "unavailable"
     assert stored["wall_seconds"] is not None
     assert ledger._worker_seconds("2027-01-01T01:00:00", "2027-01-01T02:00:00") == 3600
 
@@ -902,7 +936,8 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
         "sandbox": "worktree-full",
     }
     assert stored["dispatched_at"] and stored["completed_at"]
-    assert stored["worker_seconds"] is None
+    assert stored["worker_seconds"] == stored["wall_seconds"]
+    assert stored["worker_seconds_source"] == "wall_fallback"
     assert stored["wall_seconds"] is not None
     assert stored["stalled"] is False
     assert stored["time_budget"] == "20m"

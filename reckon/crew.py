@@ -1813,9 +1813,10 @@ def _complete_locked(
     pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
     reverse order would lose the record outright.
 
-    Worker-time spans the first and last timestamped stream events. Wall time is
-    recorded separately, and promotion time remains an explicit completion
-    fallback when no stream survives.
+    Worker-time spans the first and last timestamped stream events. A healthy
+    timestamp-less stream falls back to wall duration with an explicit source;
+    a stalled run keeps that duration absent. Promotion time remains an
+    explicit completion fallback when no stream survives.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
@@ -1880,6 +1881,17 @@ def _complete_locked(
     )
     measured_budget = ledger.per_run_budget(stream.budget, previous)
     wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
+    stalled = _wall_exceeded_budget(wall_seconds, node.get("time_budget"))
+    worker_seconds = stream.worker_seconds
+    if worker_seconds is not None:
+        worker_seconds_source = "stream_events"
+    elif stream.completion_source == "stream_mtime" and stalled:
+        worker_seconds_source = "stalled"
+    elif stream.completion_source == "stream_mtime" and wall_seconds is not None:
+        worker_seconds = wall_seconds
+        worker_seconds_source = "wall_fallback"
+    else:
+        worker_seconds_source = "unavailable"
 
     run = ledger.build_record(
         run_id=run_id,
@@ -1895,9 +1907,10 @@ def _complete_locked(
         dispatched_at=str(record.get("created_at") or ""),
         completed_at=finished,
         completed_at_source=completion_source,
-        worker_seconds=stream.worker_seconds,
+        worker_seconds=worker_seconds,
+        worker_seconds_source=worker_seconds_source,
         wall_seconds=wall_seconds,
-        stalled=_wall_exceeded_budget(wall_seconds, node.get("time_budget")),
+        stalled=stalled,
         time_budget=str(node.get("time_budget") or ""),
         base_sha=str(record.get("base_sha") or ""),
         commits=commit_list,
