@@ -710,7 +710,6 @@ def crew_resume(run_id, advice, print_only, pretty):
     if print_only:
         _emit(payload, pretty)
         return
-    record = crew_module.read_pointer(run_id)
     directory = crew_module.run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1
     advice_path = directory / f"resume-{turn}-advice.txt"
@@ -720,16 +719,13 @@ def crew_resume(run_id, advice, print_only, pretty):
     pid = crew_module._spawn(
         plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
     )
-    record.update(
-        {
-            "pid": pid,
-            "phase": "working",
-            "resumed_turn": turn,
-            "log_path": str(log_path),
-            "stderr_path": str(stderr_path),
-        }
+    crew_module.record_resumption(
+        run_id,
+        pid=pid,
+        turn=turn,
+        log_path=log_path,
+        stderr_path=stderr_path,
     )
-    crew_module._write_json(crew_module.pointer_path(run_id), record)
     payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
     _emit(payload, pretty)
 
@@ -745,6 +741,19 @@ def crew_stop(run_id, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **record}, pretty)
+
+
+@crew.command(name="discard")
+@click.option("--run", "run_id", required=True, help="Run id to discard.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_discard(run_id, pretty):
+    """Remove a non-running live pointer without promoting it."""
+    crew_module, _ = _crew_modules()
+    try:
+        result = crew_module.discard(run_id)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
 
 
 def _ledger_module():

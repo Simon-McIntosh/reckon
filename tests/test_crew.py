@@ -9,15 +9,18 @@ reaches a network.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, ledger
 
 
 CONFIG = {
@@ -921,6 +924,59 @@ def test_attach_on_an_unknown_run_names_where_it_looked(home) -> None:
     assert "r-nope" in str(excinfo.value)
 
 
+def test_interleaved_attach_and_observe_preserve_the_task_binding(
+    home, repo, monkeypatch
+) -> None:
+    record = crew.dispatch(
+        node=_node(role="inline"),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+    )
+    observation_waiting = threading.Event()
+    release_observation = threading.Event()
+    attach_waiting = threading.Event()
+    thread_role = threading.local()
+    real_write = crew._write_json
+    real_lock = crew._pointer_lock
+    delayed = False
+
+    def delayed_observation(path, payload):
+        nonlocal delayed
+        if (
+            path == crew.pointer_path(record["run_id"])
+            and payload.get("observed_at")
+            and not delayed
+        ):
+            delayed = True
+            observation_waiting.set()
+            assert release_observation.wait(timeout=5)
+        return real_write(path, payload)
+
+    def tracked_lock(run_id):
+        if getattr(thread_role, "name", None) == "attach":
+            attach_waiting.set()
+        return real_lock(run_id)
+
+    def attach_worker():
+        thread_role.name = "attach"
+        return crew.attach(record["run_id"], "task-77")
+
+    monkeypatch.setattr(crew, "_write_json", delayed_observation)
+    monkeypatch.setattr(crew, "_pointer_lock", tracked_lock)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        observed = pool.submit(crew.observe, record["run_id"])
+        assert observation_waiting.wait(timeout=5)
+        attached = pool.submit(attach_worker)
+        assert attach_waiting.wait(timeout=5)
+        release_observation.set()
+        observed.result(timeout=5)
+        attached.result(timeout=5)
+
+    assert crew.read_pointer(record["run_id"])["task"] == "task-77"
+
+
 # ── Observation ─────────────────────────────────────────────────────────────
 
 
@@ -1241,6 +1297,50 @@ def test_promotion_refuses_an_unresolvable_commit_value(home, repo) -> None:
 
     with pytest.raises(crew.CrewError, match=revision):
         crew.complete(record["run_id"], gate="passed", commits=[revision])
+
+    assert crew.pointer_path(record["run_id"]).is_file()
+
+
+def test_complete_clears_a_pointer_when_the_run_is_already_ledgered(home, repo) -> None:
+    record = _dispatched(home, repo)
+    first = crew.complete(record["run_id"], gate="passed")
+    crew._write_json(crew.pointer_path(record["run_id"]), record)
+
+    recovered = crew.complete(record["run_id"], gate="passed")
+
+    assert first["already_promoted"] is False
+    assert recovered["already_promoted"] is True
+    assert recovered["pointer_removed"] is True
+    assert len(ledger.runs("proj", repo)) == 1
+
+
+def test_discard_prints_and_removes_a_ledgered_pointer_without_promoting(
+    home, repo
+) -> None:
+    record = _dispatched(home, repo)
+    crew.complete(record["run_id"], gate="passed")
+    crew._write_json(crew.pointer_path(record["run_id"]), record)
+
+    command = CliRunner().invoke(
+        cli_module.main, ["crew", "discard", "--run", record["run_id"]]
+    )
+    payload = json.loads(command.output)
+
+    assert command.exit_code == 0
+    assert payload["pointer_removed"] is True
+    assert payload["removed"]["run_id"] == record["run_id"]
+    assert not crew.pointer_path(record["run_id"]).exists()
+    assert len(ledger.runs("proj", repo)) == 1
+
+
+def test_discard_refuses_while_the_recorded_pid_is_alive(home, repo) -> None:
+    record = _dispatched(home, repo)
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["pid"] = os.getpid()
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+
+    with pytest.raises(crew.CrewError, match="recorded pid .* is alive"):
+        crew.discard(record["run_id"])
 
     assert crew.pointer_path(record["run_id"]).is_file()
 

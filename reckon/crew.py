@@ -40,6 +40,7 @@ holding write scope, which is the one failure that costs another worker's work.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import math
 import os
@@ -48,10 +49,12 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, _plan_html, capabilities, ledger
 from reckon._store import _config_home
@@ -546,9 +549,48 @@ def new_run_id(node_id: str, *, now: datetime | None = None) -> str:
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    tmp.replace(path)
+    tmp: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp = Path(handle.name)
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp.replace(path)
+    finally:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+
+
+@contextmanager
+def _pointer_lock(run_id: str):
+    """Serialise every read-modify-write cycle for one live pointer."""
+    path = crew_home() / "locks" / f"{run_id}.lock"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _mutate_pointer(
+    run_id: str, mutation: Callable[[dict[str, Any]], dict[str, Any]]
+) -> dict[str, Any]:
+    """Apply one pointer mutation while holding its per-run lock."""
+    with _pointer_lock(run_id):
+        record = mutation(read_pointer(run_id))
+        _write_json(pointer_path(run_id), record)
+        return record
 
 
 def read_pointer(run_id: str) -> dict[str, Any]:
@@ -1307,24 +1349,26 @@ def attach(run_id: str, task: str) -> dict[str, Any]:
     binding is what makes an in-harness run observable on the same surface as a
     spawned one.
     """
-    record = read_pointer(run_id)
-    if record.get("launch") != "in-harness":
-        raise CrewError(
-            f"run {run_id!r} is a {record.get('launch')!r} launch; attach binds "
-            "an in-harness task, and a spawned run already has its pid"
-        )
-    if record.get("task"):
-        raise CrewError(
-            f"run {run_id!r} is already attached to task {record['task']!r}; "
-            "a second binding would hide which worker holds the write scope"
-        )
-    if not str(task).strip():
-        raise CrewError("attach requires a non-empty task identifier")
-    record["task"] = str(task).strip()
-    record["attached_at"] = _utc_now()
-    record["phase"] = "working"
-    _write_json(pointer_path(run_id), record)
-    return record
+
+    def bind(record: dict[str, Any]) -> dict[str, Any]:
+        if record.get("launch") != "in-harness":
+            raise CrewError(
+                f"run {run_id!r} is a {record.get('launch')!r} launch; attach binds "
+                "an in-harness task, and a spawned run already has its pid"
+            )
+        if record.get("task"):
+            raise CrewError(
+                f"run {run_id!r} is already attached to task {record['task']!r}; "
+                "a second binding would hide which worker holds the write scope"
+            )
+        if not str(task).strip():
+            raise CrewError("attach requires a non-empty task identifier")
+        record["task"] = str(task).strip()
+        record["attached_at"] = _utc_now()
+        record["phase"] = "working"
+        return record
+
+    return _mutate_pointer(run_id, bind)
 
 
 def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -1335,55 +1379,54 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     it reports is recoverable from disk, so a fresh session can observe a run it
     did not dispatch.
     """
-    record = read_pointer(run_id)
-    backend_name = str(record.get("backend") or "")
-    manifest = Path(record.get("manifest_path") or "")
-    record["manifest_present"] = manifest.is_file()
-    record["process_alive"] = process_alive(record.get("pid"))
-    record["observed_at"] = _utc_now()
 
-    if record.get("launch") == "cli":
-        backend = _backend_settings(record, config)
-        observation = _backends.observe_log(
-            backend_name=backend_name,
-            backend=backend,
-            log_path=record.get("log_path", ""),
-        )
-        data = observation.as_dict()
-        record["budget"] = data["budget"]
-        record["events"] = data["events"]
-        record["exit_status"] = data["exit_status"]
-        record["final_message"] = data["final_message"]
-        record["phase"] = data["phase"]
-        record["session_id"] = data["session_id"] or record.get("session_id")
-        if data["detail"]:
-            record["detail"] = data["detail"]
-        final_file = Path(record.get("final_message_path") or "")
-        if not record["final_message"] and final_file.is_file():
-            record["final_message"] = final_file.read_text().strip() or None
-        if (
-            data["phase"] in ("starting", "working")
-            and record["process_alive"] is False
-        ):
-            # A dead process with no terminal event is a recoverable orphan, not
-            # a finished run; saying so is what stops it being read as complete.
-            # An empty log counts: a launch that failed on its arguments exits
-            # before writing an event, and reporting that as "starting" would
-            # leave it waiting forever for a worker that never began.
-            record["phase"] = "orphaned"
-            record["detail"] = (
-                "process exited without a terminal event in its log; "
-                f"check {record.get('stderr_path')}"
+    def fold(record: dict[str, Any]) -> dict[str, Any]:
+        backend_name = str(record.get("backend") or "")
+        manifest = Path(record.get("manifest_path") or "")
+        record["manifest_present"] = manifest.is_file()
+        record["process_alive"] = process_alive(record.get("pid"))
+        record["observed_at"] = _utc_now()
+
+        if record.get("launch") == "cli":
+            backend = _backend_settings(record, config)
+            observation = _backends.observe_log(
+                backend_name=backend_name,
+                backend=backend,
+                log_path=record.get("log_path", ""),
             )
-    elif record.get("task") and record["manifest_present"]:
-        record["phase"] = "complete"
+            data = observation.as_dict()
+            record["budget"] = data["budget"]
+            record["events"] = data["events"]
+            record["exit_status"] = data["exit_status"]
+            record["final_message"] = data["final_message"]
+            record["phase"] = data["phase"]
+            record["session_id"] = data["session_id"] or record.get("session_id")
+            if data["detail"]:
+                record["detail"] = data["detail"]
+            final_file = Path(record.get("final_message_path") or "")
+            if not record["final_message"] and final_file.is_file():
+                record["final_message"] = final_file.read_text().strip() or None
+            if (
+                data["phase"] in ("starting", "working")
+                and record["process_alive"] is False
+            ):
+                # A dead process with no terminal event is a recoverable orphan,
+                # not a finished run. An empty log counts because argument
+                # failures can exit before the first event is written.
+                record["phase"] = "orphaned"
+                record["detail"] = (
+                    "process exited without a terminal event in its log; "
+                    f"check {record.get('stderr_path')}"
+                )
+        elif record.get("task") and record["manifest_present"]:
+            record["phase"] = "complete"
 
-    capture = _capture_member_session(record)
-    if capture is not None:
-        record["session_capture"] = capture
+        capture = _capture_member_session(record)
+        if capture is not None:
+            record["session_capture"] = capture
+        return record
 
-    _write_json(pointer_path(run_id), record)
-    return record
+    return _mutate_pointer(run_id, fold)
 
 
 def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -1481,20 +1524,47 @@ def resume_plan(
 
 def terminate(run_id: str) -> dict[str, Any]:
     """Signal a spawned run's process group to stop, and record that."""
-    record = read_pointer(run_id)
-    pid = record.get("pid")
-    if not pid:
-        raise CrewError(f"run {run_id!r} has no process to stop")
-    try:
-        os.killpg(os.getpgid(int(pid)), signal.SIGTERM)
-    except (ProcessLookupError, PermissionError, OSError) as exc:
-        record["detail"] = f"could not signal pid {pid} — {exc}"
-    else:
-        record["detail"] = f"SIGTERM sent to process group of pid {pid}"
-    record["phase"] = "stopped"
-    record["stopped_at"] = _utc_now()
-    _write_json(pointer_path(run_id), record)
-    return record
+
+    def stop(record: dict[str, Any]) -> dict[str, Any]:
+        pid = record.get("pid")
+        if not pid:
+            raise CrewError(f"run {run_id!r} has no process to stop")
+        try:
+            os.killpg(os.getpgid(int(pid)), signal.SIGTERM)
+        except (ProcessLookupError, PermissionError, OSError) as exc:
+            record["detail"] = f"could not signal pid {pid} — {exc}"
+        else:
+            record["detail"] = f"SIGTERM sent to process group of pid {pid}"
+        record["phase"] = "stopped"
+        record["stopped_at"] = _utc_now()
+        return record
+
+    return _mutate_pointer(run_id, stop)
+
+
+def record_resumption(
+    run_id: str,
+    *,
+    pid: int,
+    turn: int,
+    log_path: str | Path,
+    stderr_path: str | Path,
+) -> dict[str, Any]:
+    """Record a launched resumption without overwriting newer observations."""
+
+    def resume(record: dict[str, Any]) -> dict[str, Any]:
+        record.update(
+            {
+                "pid": pid,
+                "phase": "working",
+                "resumed_turn": turn,
+                "log_path": str(log_path),
+                "stderr_path": str(stderr_path),
+            }
+        )
+        return record
+
+    return _mutate_pointer(run_id, resume)
 
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
@@ -1628,6 +1698,33 @@ def complete(
     completed_at: str = "",
     root: str | Path | None = None,
 ) -> dict[str, Any]:
+    """Promote a run, or finish cleanup when its record already landed."""
+    with _pointer_lock(run_id):
+        return _complete_locked(
+            run_id,
+            gate=gate,
+            commits=commits,
+            outcome=outcome,
+            tests_added=tests_added,
+            scope_changed=scope_changed,
+            changed_lines=changed_lines,
+            completed_at=completed_at,
+            root=root,
+        )
+
+
+def _complete_locked(
+    run_id: str,
+    *,
+    gate: str,
+    commits: Iterable[str] = (),
+    outcome: str = "",
+    tests_added: int | None = None,
+    scope_changed: bool = False,
+    changed_lines: Mapping[str, Any] | None = None,
+    completed_at: str = "",
+    root: str | Path | None = None,
+) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
     The ledger append happens first and the pointer is deleted second. That
@@ -1642,6 +1739,31 @@ def complete(
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
+    ledger_root = root if root is not None else record.get("repo")
+    ledger_data, ledger_version = ledger.load(project, root=ledger_root)
+    existing = next(
+        (
+            item
+            for item in ledger_data["runs"]
+            if str(item.get("run_id") or "") == run_id
+        ),
+        None,
+    )
+    if existing is not None:
+        capture = _capture_member_session(record)
+        path = pointer_path(run_id)
+        path.unlink(missing_ok=True)
+        return {
+            "run_id": run_id,
+            "project": project,
+            "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+            "ledger_version": ledger_version,
+            "pointer_removed": not path.exists(),
+            "record": dict(existing),
+            "already_promoted": True,
+            "session_capture": capture,
+        }
+
     terminal_time, terminal_source, terminal_budget = _terminal_stream_data(record)
     if completed_at:
         finished = completed_at
@@ -1652,8 +1774,6 @@ def complete(
     else:
         finished = _utc_now()
         completion_source = "promotion_time"
-    ledger_root = root if root is not None else record.get("repo")
-
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
@@ -1697,7 +1817,30 @@ def complete(
         session_id=record.get("session_id"),
         budget=terminal_budget,
     )
-    written = ledger.append_run(project, run, root=ledger_root)
+    already_promoted = False
+    try:
+        written = ledger.append_run(project, run, root=ledger_root)
+    except ledger.LedgerError:
+        # Another completion can land after the read above. Treat only an
+        # observed matching record as success; every other ledger error is
+        # still a refusal.
+        refreshed, ledger_version = ledger.load(project, root=ledger_root)
+        existing = next(
+            (
+                item
+                for item in refreshed["runs"]
+                if str(item.get("run_id") or "") == run_id
+            ),
+            None,
+        )
+        if existing is None:
+            raise
+        already_promoted = True
+        written = {
+            "path": str(ledger.ledger_path(project, ledger_root)),
+            "version": ledger_version,
+            "run": dict(existing),
+        }
 
     # The session id lives only in the pointer until it reaches the roster, so
     # it has to be captured before the pointer goes.
@@ -1709,9 +1852,29 @@ def complete(
         "ledger_path": written["path"],
         "ledger_version": written["version"],
         "pointer_removed": not pointer_path(run_id).exists(),
-        "record": run,
+        "record": written["run"],
+        "already_promoted": already_promoted,
         "session_capture": capture,
     }
+
+
+def discard(run_id: str) -> dict[str, Any]:
+    """Remove a stopped or abandoned pointer without promoting it."""
+    with _pointer_lock(run_id):
+        record = read_pointer(run_id)
+        pid = record.get("pid")
+        if process_alive(pid) is True:
+            raise CrewError(
+                f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
+            )
+        path = pointer_path(run_id)
+        path.unlink()
+        return {
+            "run_id": run_id,
+            "pointer_path": str(path),
+            "pointer_removed": not path.exists(),
+            "removed": record,
+        }
 
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
