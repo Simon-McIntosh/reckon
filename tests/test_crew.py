@@ -492,9 +492,7 @@ def test_dispatch_refuses_a_plan_absent_from_the_base(home, repo) -> None:
 
 def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) -> None:
     ledger_member = "worker-a"
-    crew.ledger.register_member(
-        "proj", ledger_member, harness="codex", root=repo
-    )
+    crew.ledger.register_member("proj", ledger_member, harness="codex", root=repo)
     first = crew.dispatch(
         node=_node(),
         project="proj",
@@ -830,9 +828,9 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
             raise OSError("forced pointer write failure")
         return original_write(path, payload)
 
-    def record_signal(pid):
+    def record_signal(pid, expected_start_time):
         events.append("signal")
-        original_signal(pid)
+        original_signal(pid, expected_start_time)
 
     def record_remove(root, path):
         events.append("remove")
@@ -1042,6 +1040,147 @@ def test_observe_sees_the_manifest_that_is_the_real_delivery(
     record = _dispatched(home, repo, "codex-turn.jsonl", manifest_path=str(manifest))
     manifest.write_text("node: node-a\nstatus: complete\n")
     assert crew.observe(record["run_id"])["manifest_present"] is True
+
+
+def test_stop_observe_and_recover_preserve_the_stopped_state(home, repo) -> None:
+    spawned: dict[str, subprocess.Popen] = {}
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=plan.cwd,
+            start_new_session=True,
+        )
+        spawned["process"] = process
+        return process.pid
+
+    record = crew.dispatch(
+        node=_node(manifest_path=str(home / "stopped-manifest.md")),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=launcher,
+    )
+    process = spawned["process"]
+    try:
+        assert record["pid_start_time"]
+        assert crew.terminate(record["run_id"])["phase"] == "stopped"
+        process.wait(timeout=5)
+        assert crew.observe(record["run_id"])["phase"] == "stopped"
+        recovered = crew.recover()
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+
+    assert recovered["counts"]["stopped"] == 1
+    assert recovered["runs"][0]["phase"] == "stopped"
+    assert recovered["runs"][0]["classification"] == "stopped"
+
+
+@pytest.mark.parametrize("status", ["blocked", "failed"])
+def test_in_harness_observation_uses_the_manifest_status(home, repo, status) -> None:
+    manifest = home / f"{status}-manifest.md"
+    record = crew.dispatch(
+        node=_node(role="inline", manifest_path=str(manifest)),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+    )
+    crew.attach(record["run_id"], "task-1")
+    _deliver_manifest(record, status, blockers="delivery cannot continue")
+
+    observed = crew.observe(record["run_id"])
+    recovered = crew.recover()["runs"][0]
+
+    assert observed["phase"] == status
+    assert recovered["phase"] == status
+    assert recovered["classification"] == status
+
+
+def test_recycled_pid_is_refused_before_signalling(home, repo, monkeypatch) -> None:
+    spawned: dict[str, subprocess.Popen] = {}
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=plan.cwd,
+            start_new_session=True,
+        )
+        spawned["process"] = process
+        return process.pid
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=launcher,
+    )
+    process = spawned["process"]
+    signalled: list[tuple[int, int]] = []
+    monkeypatch.setattr(crew, "_process_start_time", lambda pid: "different-start")
+    monkeypatch.setattr(
+        crew.os,
+        "killpg",
+        lambda process_group, sig: signalled.append((process_group, sig)),
+    )
+    try:
+        with pytest.raises(crew.CrewError, match="process identity changed"):
+            crew.terminate(record["run_id"])
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+    assert signalled == []
+    assert crew.read_pointer(record["run_id"])["phase"] == "starting"
+
+
+def test_live_view_rechecks_a_killed_worker_without_observation(home, repo) -> None:
+    from reckon import mcp
+
+    spawned: dict[str, subprocess.Popen] = {}
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=plan.cwd,
+            start_new_session=True,
+        )
+        spawned["process"] = process
+        return process.pid
+
+    record = crew.dispatch(
+        node=_node(manifest_path=str(home / "killed-manifest.md")),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=launcher,
+    )
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["process_alive"] = True
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    process = spawned["process"]
+    process.terminate()
+    process.wait(timeout=5)
+
+    row = mcp._crew("proj", view="live")["runs"][0]
+
+    assert row["process_alive"] is False
+    assert row["classification"] == "abandoned"
+
+
+def test_permission_denied_process_is_not_owned(monkeypatch) -> None:
+    def deny_signal(pid, sig):
+        raise PermissionError("not owned")
+
+    monkeypatch.setattr(crew.os, "kill", deny_signal)
+
+    assert crew.process_alive(12345) is False
 
 
 def test_a_dead_process_with_no_terminal_event_is_an_orphan(home, repo) -> None:

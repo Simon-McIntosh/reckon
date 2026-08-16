@@ -637,10 +637,21 @@ def process_alive(pid: Any) -> bool | None:
     except ProcessLookupError:
         return False
     except PermissionError:
-        return True
+        return False
     except (TypeError, ValueError):
         return None
     return True
+
+
+def _process_start_time(pid: Any) -> str | None:
+    """Read the kernel start tick that distinguishes reused process ids."""
+    try:
+        value = int(pid)
+        stat = Path(f"/proc/{value}/stat").read_text()
+    except (OSError, TypeError, ValueError):
+        return None
+    fields = stat[stat.rfind(")") + 2 :].split()
+    return fields[19] if len(fields) > 19 else None
 
 
 # ── Prompt composition ──────────────────────────────────────────────────────
@@ -797,12 +808,15 @@ def _remove_worktree(repo: Path, path: str) -> None:
     )
 
 
-def _signal_process_group(pid: int) -> None:
-    """Ask a spawned worker and every child it started to terminate."""
-    try:
-        os.killpg(os.getpgid(pid), signal.SIGTERM)
-    except (OSError, TypeError, ValueError):
-        pass
+def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
+    """Signal a worker only while its pid still names the spawned process."""
+    actual_start_time = _process_start_time(pid)
+    if not expected_start_time or actual_start_time != expected_start_time:
+        raise CrewError(
+            f"refusing to signal pid {pid}: process identity changed "
+            f"from {expected_start_time!r} to {actual_start_time!r}"
+        )
+    os.killpg(os.getpgid(pid), signal.SIGTERM)
 
 
 def _base_commit(repo: Path, base: str) -> str:
@@ -1201,6 +1215,7 @@ def dispatch(
 
     worktree = _create_worktree(repo_root, session, node.id, base)
     spawned_pid: int | None = None
+    spawned_start_time: str | None = None
     try:
         directory.mkdir(parents=True, exist_ok=True)
         working_directory = worktree["path"]
@@ -1279,9 +1294,11 @@ def dispatch(
                 stderr_path=stderr_path,
                 prompt_path=prompt_path,
             )
+            spawned_start_time = _process_start_time(spawned_pid)
             record.update(
                 {
                     "pid": spawned_pid,
+                    "pid_start_time": spawned_start_time,
                     "argv": list(plan.argv),
                     "dialect": plan.dialect,
                 }
@@ -1302,7 +1319,10 @@ def dispatch(
         _write_json(pointer_path(run_id), record)
     except Exception:
         if spawned_pid is not None:
-            _signal_process_group(spawned_pid)
+            try:
+                _signal_process_group(spawned_pid, spawned_start_time)
+            except (CrewError, OSError):
+                pass
         _remove_worktree(repo_root, worktree["path"])
         shutil.rmtree(directory, ignore_errors=True)
         pointer_path(run_id).unlink(missing_ok=True)
@@ -1386,6 +1406,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["manifest_present"] = manifest.is_file()
         record["process_alive"] = process_alive(record.get("pid"))
         record["observed_at"] = _utc_now()
+        stopped = record.get("phase") == "stopped"
 
         if record.get("launch") == "cli":
             backend = _backend_settings(record, config)
@@ -1399,7 +1420,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["events"] = data["events"]
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
-            record["phase"] = data["phase"]
+            record["phase"] = "stopped" if stopped else data["phase"]
             record["session_id"] = data["session_id"] or record.get("session_id")
             if data["detail"]:
                 record["detail"] = data["detail"]
@@ -1407,7 +1428,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             if not record["final_message"] and final_file.is_file():
                 record["final_message"] = final_file.read_text().strip() or None
             if (
-                data["phase"] in ("starting", "working")
+                not stopped
+                and data["phase"] in ("starting", "working")
                 and record["process_alive"] is False
             ):
                 # A dead process with no terminal event is a recoverable orphan,
@@ -1418,8 +1440,12 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                     "process exited without a terminal event in its log; "
                     f"check {record.get('stderr_path')}"
                 )
-        elif record.get("task") and record["manifest_present"]:
-            record["phase"] = "complete"
+        elif record.get("task") and record["manifest_present"] and not stopped:
+            manifest_status = str(
+                parse_manifest(manifest.read_text()).get("status") or ""
+            ).strip()
+            if manifest_status:
+                record["phase"] = manifest_status
 
         capture = _capture_member_session(record)
         if capture is not None:
@@ -1530,7 +1556,7 @@ def terminate(run_id: str) -> dict[str, Any]:
         if not pid:
             raise CrewError(f"run {run_id!r} has no process to stop")
         try:
-            os.killpg(os.getpgid(int(pid)), signal.SIGTERM)
+            _signal_process_group(int(pid), record.get("pid_start_time"))
         except (ProcessLookupError, PermissionError, OSError) as exc:
             record["detail"] = f"could not signal pid {pid} — {exc}"
         else:
@@ -1556,6 +1582,7 @@ def record_resumption(
         record.update(
             {
                 "pid": pid,
+                "pid_start_time": _process_start_time(pid),
                 "phase": "working",
                 "resumed_turn": turn,
                 "log_path": str(log_path),
@@ -1884,6 +1911,7 @@ def discard(run_id: str) -> dict[str, Any]:
 # completed delivery that is eligible for promotion.
 RECOVERY_CLASSES = (
     "running",
+    "stopped",
     "completed_unpromoted",
     "blocked",
     "failed",
@@ -1922,9 +1950,11 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    alive = record.get("process_alive")
-    if alive is None and record.get("pid"):
-        alive = process_alive(record.get("pid"))
+    alive = (
+        process_alive(record.get("pid"))
+        if record.get("pid")
+        else record.get("process_alive")
+    )
     log = Path(str(record.get("log_path") or ""))
     age = None
     if log.is_file():
@@ -1954,6 +1984,12 @@ def classify_pointer(
         action = (
             f"read {manifest} and launch log {record.get('stderr_path')}; "
             "repair or redispatch the run"
+        )
+    elif phase == "stopped":
+        classification = "stopped"
+        detail = "the run was intentionally stopped"
+        action = (
+            f"inspect the worktree at {record.get('worktree')} and discard when safe"
         )
     elif terminal:
         classification = "abandoned"
@@ -2053,7 +2089,7 @@ def recover(
         name: sum(1 for item in reports if item["classification"] == name)
         for name in ("running", "completed_unpromoted", "abandoned")
     }
-    for name in ("blocked", "failed"):
+    for name in ("stopped", "blocked", "failed"):
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count
