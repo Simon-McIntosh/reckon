@@ -48,6 +48,30 @@
       <code>~/.config/reckon/crew/runs/r-20260816T204727513038-dispatch-guards/full-suite-final.log</code>.
     </p>
 
+    <h2 id="observe-truth">Observe truth (stopped-phase preservation, pid identity, honest live view)</h2>
+    <p>
+      Commit <code>421be971e70b2371eb6331d0b396ba68cd78928d</code> (2026-08-16, worker codex-b,
+      367&nbsp;s, 197 insertions / 22 deletions over <code>reckon/crew.py</code>,
+      <code>tests/test_crew.py</code>; fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>Phase truth.</strong> stop → observe → recover round-trips as
+        <code>stopped</code> (phase and classification, count 1); in-harness <code>blocked</code>
+        and <code>failed</code> manifests retain their recorded status instead of classifying as
+        <code>complete</code> by mere existence.</li>
+      <li><strong>Signal safety.</strong> Dispatch and resumption record process start ticks;
+        <code>killpg</code> refuses a changed pid identity before signalling;
+        <code>process_alive</code> returns false on <code>PermissionError</code> instead of
+        treating not-ours as alive.</li>
+      <li><strong>Honest live view.</strong> Live-pointer classification re-checks every present
+        pid: a killed worker with a stale <code>process_alive=true</code> flag reports
+        <code>false</code> and classifies <code>abandoned</code> with no intervening observe.</li>
+    </ul>
+    <p>
+      Tests: 6 added (7 focused cases); full suite 1881 passed, 0 failed (69&nbsp;s). Log:
+      <code>~/.config/reckon/crew/runs/r-20260816T211233341959-observe-truth/full-suite.log</code>.
+    </p>
+
   </main>
 </body>
 </html>
