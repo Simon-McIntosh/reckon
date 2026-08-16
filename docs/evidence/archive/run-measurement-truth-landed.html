@@ -63,6 +63,34 @@
       restores it.
     </p>
 
+    <h2 id="duration-fallback">Duration fallback (labelled worker-duration sources for timestamp-less streams)</h2>
+    <p>
+      Corrective node for the negative finding above. Commit
+      <code>2b1acae2997a7057a101c78adc163034d7b12cbd</code> (2026-08-16, worker codex-c,
+      549&nbsp;s, 58 insertions / 6 deletions over <code>reckon/crew.py</code>,
+      <code>reckon/ledger.py</code>, <code>tests/test_ledger.py</code>; fast-forwarded).
+    </p>
+    <ul>
+      <li>Every completed record now carries <code>worker_seconds_source</code>:
+        <code>stream_events</code> (timestamped streams, first-to-last),
+        <code>wall_fallback</code> (timestamp-less stream within budget), or
+        <code>stalled</code> (typed absence, excluded from aggregation).</li>
+      <li>Measures, on the real codex type/item event shape: an unstalled 300&nbsp;s
+        timestamp-less run records <code>worker_seconds=wall_seconds=300</code>
+        (<code>wall_fallback</code>) and appears in <code>effort_report</code> at
+        5.0 measured minutes; the same shape at 3906&nbsp;s against a 20&nbsp;m budget records a
+        typed absence with <code>stalled=true</code> and <code>excluded_stalled=1</code>;
+        a timestamped 2700&nbsp;s stream still measures 2700 independently of its 96120&nbsp;s
+        wall.</li>
+      <li>The fix demonstrated itself at promotion: this run's own ledger record reads
+        <code>worker_seconds=549, source=wall_fallback</code> where the previous node's had
+        been null.</li>
+    </ul>
+    <p>
+      Tests: 2 added; focused 144 passed; full suite 1890 passed, 0 failed. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260816T215111162417-duration-fallback/logs/</code>.
+    </p>
+
   </main>
 </body>
 </html>

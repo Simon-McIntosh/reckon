@@ -19,11 +19,11 @@
   <title>Run Measurement Truth | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-16">
-<meta name="plan-commits" content="fe1497ffa354a45bb3177e712c876da222c327eb">
-<meta name="plan-artifacts" content="docs/evidence/archive/run-measurement-truth-landed.html#stream-measures">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-08-17">
+<meta name="plan-commits" content="fe1497ffa354a45bb3177e712c876da222c327eb,2b1acae2997a7057a101c78adc163034d7b12cbd">
+<meta name="plan-artifacts" content="docs/evidence/archive/run-measurement-truth-landed.html#stream-measures,docs/evidence/archive/run-measurement-truth-landed.html#duration-fallback">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -82,6 +82,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260816T2152-sm" data-who="reckon-ship" data-when="2026-08-16T21:52:00Z">
     <div class="r-comment-body">stream-measures landed — commit fe1497f; gate passed; measures: 2700s stream inside 96120s wall records both durations with stalled=true and aggregation exclusion; per-run token/cost deltas sum to session cumulatives (100+50=150, 10+5=15, 1.25+0.75=2.0); changed_lines SHA-derived with typed absence for unresolvable inputs; 3 tests added, full suite 1889 passed. NEGATIVE FINDING: real codex streams carry no event timestamps, so a healthy 1221s run promoted with worker_seconds=null — corrective node duration-fallback dispatched (wall-duration fallback for unstalled timestamp-less runs). Evidence: docs/evidence/archive/run-measurement-truth-landed.html#stream-measures</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260816T2209-df" data-who="reckon-ship" data-when="2026-08-16T22:09:00Z">
+    <div class="r-comment-body">duration-fallback landed — commit 2b1acae; gate passed; measures: real codex event shape without timestamps records worker_seconds=wall_seconds with source wall_fallback and reaches effort_report (5.0 min fixture); stalled timestamp-less runs record typed absence and excluded_stalled=1; timestamped streams unchanged (2700s measured against 96120s wall); the fix's own promotion recorded worker_seconds=549 source=wall_fallback where the prior node's was null; 2 tests added, full suite 1890 passed. Evidence: docs/evidence/archive/run-measurement-truth-landed.html#duration-fallback</div>
 </div>
 </section>
 </main>
