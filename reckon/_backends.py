@@ -226,10 +226,21 @@ class Dialect:
         command: str,
         backend: Mapping[str, Any],
         worktree: str,
+        working_directory: str,
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
         raise NotImplementedError
+
+    def working_directory(
+        self,
+        *,
+        backend: Mapping[str, Any],
+        worktree: str,
+        manifest_path: str | None,
+    ) -> str:
+        """Return the process directory for this dialect and sandbox tier."""
+        return worktree
 
     def observe(self, events: Iterable[Mapping[str, Any]]) -> Observation:
         raise NotImplementedError
@@ -262,10 +273,11 @@ class _CodexDialect(Dialect):
         command: str,
         backend: Mapping[str, Any],
         worktree: str,
+        working_directory: str,
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
-        argv = [command, "exec", "--json", "-C", worktree]
+        argv = [command, "exec", "--json", "-C", working_directory]
         argv += self._sandbox_flags(backend.get("sandbox"))
         model = backend.get("model")
         if model:
@@ -285,6 +297,28 @@ class _CodexDialect(Dialect):
         argv.append("-")
         return argv
 
+    def working_directory(
+        self,
+        *,
+        backend: Mapping[str, Any],
+        worktree: str,
+        manifest_path: str | None,
+    ) -> str:
+        if backend.get("sandbox") != READ_ONLY:
+            return worktree
+        if not manifest_path:
+            raise BackendError(
+                "the read-only sandbox tier needs an absolute manifest path so "
+                "its delivery directory can be the writable workspace"
+            )
+        delivery = Path(manifest_path)
+        if not delivery.is_absolute():
+            raise BackendError(
+                "the read-only sandbox tier needs an absolute manifest path; "
+                f"got {manifest_path!r}"
+            )
+        return str(delivery.parent)
+
     def _sandbox_flags(self, tier: str | None) -> list[str]:
         if tier == WORKTREE_FULL:
             # The worktree is the blast-radius boundary, so the process itself
@@ -292,7 +326,7 @@ class _CodexDialect(Dialect):
             # breaks the test runners and builds a worker's gate depends on.
             return ["--dangerously-bypass-approvals-and-sandbox"]
         if tier == READ_ONLY:
-            return ["--sandbox", READ_ONLY]
+            return ["--sandbox", WORKSPACE_WRITE, "--skip-git-repo-check"]
         if tier == WORKSPACE_WRITE:
             return ["--sandbox", WORKSPACE_WRITE]
         return ["--sandbox", READ_ONLY]
@@ -415,6 +449,7 @@ class _ClaudeDialect(Dialect):
         command: str,
         backend: Mapping[str, Any],
         worktree: str,
+        working_directory: str,
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
@@ -601,6 +636,7 @@ def launch_plan(
     backend: Mapping[str, Any],
     prompt: str,
     worktree: str | Path,
+    manifest_path: str | Path | None = None,
     final_message_path: str | Path | None = None,
     resume_session: str | None = None,
 ) -> LaunchPlan:
@@ -619,11 +655,18 @@ def launch_plan(
         )
     dialect = dialect_for(backend)
     worktree_path = str(Path(worktree))
+    manifest = None if manifest_path is None else str(Path(manifest_path))
+    working_directory = dialect.working_directory(
+        backend=backend,
+        worktree=worktree_path,
+        manifest_path=manifest,
+    )
     final_path = None if final_message_path is None else str(Path(final_message_path))
     argv = dialect.argv(
         command=str(backend["command"]),
         backend=backend,
         worktree=worktree_path,
+        working_directory=working_directory,
         final_message_path=final_path,
         resume_session=resume_session,
     )
@@ -631,10 +674,26 @@ def launch_plan(
         backend=backend_name,
         dialect=dialect.name,
         argv=argv,
-        cwd=worktree_path,
+        cwd=working_directory,
         stdin_text=prompt if dialect.stdin_prompt else "",
         final_message_path=final_path,
         resumed_session=resume_session,
+    )
+
+
+def launch_working_directory(
+    *,
+    backend: Mapping[str, Any],
+    worktree: str | Path,
+    manifest_path: str | Path | None = None,
+) -> str:
+    """Resolve the process directory without constructing a launch plan."""
+    dialect = dialect_for(backend)
+    manifest = None if manifest_path is None else str(Path(manifest_path))
+    return dialect.working_directory(
+        backend=backend,
+        worktree=str(Path(worktree)),
+        manifest_path=manifest,
     )
 
 

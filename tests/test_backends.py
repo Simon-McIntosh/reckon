@@ -56,16 +56,125 @@ def test_worktree_full_runs_unsandboxed(backend, expected) -> None:
 @pytest.mark.parametrize(
     "backend,expected",
     [
-        (dict(CODEX, sandbox="read-only"), ["--sandbox", "read-only"]),
+        (dict(CODEX, sandbox="read-only"), ["--sandbox", "workspace-write"]),
         (dict(CLAUDE, sandbox="read-only"), ["--permission-mode", "plan"]),
     ],
 )
 def test_read_only_tier_withholds_writes(backend, expected) -> None:
     plan = _backends.launch_plan(
-        backend_name="b", backend=backend, prompt="p", worktree="/wt"
+        backend_name="b",
+        backend=backend,
+        prompt="p",
+        worktree="/wt",
+        manifest_path="/delivery/manifest.md",
     )
     assert expected[0] in plan.argv
     assert plan.argv[plan.argv.index(expected[0]) + 1] == expected[1]
+
+
+def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> None:
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=dict(CODEX, sandbox="read-only"),
+        prompt="p",
+        worktree="/wt",
+        manifest_path="/delivery/manifest.md",
+    )
+    assert plan.argv == [
+        "codex",
+        "exec",
+        "--json",
+        "-C",
+        "/delivery",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "-",
+    ]
+    assert plan.cwd == "/delivery"
+
+
+def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=dict(CODEX, sandbox="read-only"),
+        prompt="advice",
+        worktree="/wt",
+        manifest_path="/redelivery/manifest.md",
+        resume_session="S",
+    )
+    assert plan.argv == [
+        "codex",
+        "exec",
+        "--json",
+        "-C",
+        "/redelivery",
+        "--sandbox",
+        "workspace-write",
+        "--skip-git-repo-check",
+        "resume",
+        "S",
+        "-",
+    ]
+    assert plan.cwd == "/redelivery"
+
+
+@pytest.mark.parametrize(
+    "sandbox,expected",
+    [
+        (
+            "worktree-full",
+            [
+                "codex",
+                "exec",
+                "--json",
+                "-C",
+                "/wt",
+                "--dangerously-bypass-approvals-and-sandbox",
+                "-",
+            ],
+        ),
+        (
+            "workspace-write",
+            [
+                "codex",
+                "exec",
+                "--json",
+                "-C",
+                "/wt",
+                "--sandbox",
+                "workspace-write",
+                "-",
+            ],
+        ),
+    ],
+)
+def test_codex_write_tiers_keep_their_argv_and_worktree(sandbox, expected) -> None:
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=dict(CODEX, sandbox=sandbox),
+        prompt="p",
+        worktree="/wt",
+        manifest_path="/delivery/manifest.md",
+    )
+    assert plan.argv == expected
+    assert plan.cwd == "/wt"
+
+
+def test_read_only_codex_requires_an_absolute_manifest_path() -> None:
+    backend = dict(CODEX, sandbox="read-only")
+    with pytest.raises(_backends.BackendError, match="absolute manifest path"):
+        _backends.launch_plan(
+            backend_name="b", backend=backend, prompt="p", worktree="/wt"
+        )
+    with pytest.raises(_backends.BackendError, match="absolute manifest path"):
+        _backends.launch_plan(
+            backend_name="b",
+            backend=backend,
+            prompt="p",
+            worktree="/wt",
+            manifest_path="manifest.md",
+        )
 
 
 def test_model_and_effort_reach_each_backend_in_its_own_form() -> None:

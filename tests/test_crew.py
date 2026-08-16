@@ -95,7 +95,7 @@ def _node(**overrides) -> crew.TaskNode:
         "goal": "record the launch matrix for one backend",
         "plan": "plan-a",
         "section": "§3",
-        "done_when": "uv run pytest tests/test_backends.py reports 28 passed",
+        "done_when": "uv run pytest tests/test_backends.py reports 34 passed",
         "write_paths": ["reckon/_backends.py"],
         "time_budget": "20m",
         "manifest_path": "/tmp/node-a-manifest.md",
@@ -681,6 +681,35 @@ def test_dispatch_launches_a_cli_backend_and_records_the_run(home, repo) -> None
     assert json.loads(crew.pointer_path(record["run_id"]).read_text()) == record
 
 
+def test_read_only_dispatch_runs_in_delivery_directory_and_explains_scope(
+    home, repo
+) -> None:
+    launched: dict = {}
+    manifest = home / "review-manifest.md"
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        launched["plan"] = plan
+        return 4242
+
+    record = crew.dispatch(
+        node=_node(role="review", manifest_path=str(manifest)),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=launcher,
+    )
+    plan = launched["plan"]
+    assert plan.cwd == str(home)
+    assert plan.argv[plan.argv.index("-C") + 1] == str(home)
+    assert plan.argv[plan.argv.index("--sandbox") + 1] == "workspace-write"
+    assert "--skip-git-repo-check" in plan.argv
+    prompt = Path(record["prompt_path"]).read_text()
+    assert f"working directory is the delivery directory {home}" in prompt
+    assert f"repository at the assigned worktree path {record['worktree']}" in prompt
+    assert "is read-only" in prompt
+
+
 def test_dispatch_refuses_a_malformed_node_and_creates_nothing(home, repo) -> None:
     with pytest.raises(crew.CrewError) as excinfo:
         crew.dispatch(
@@ -1024,6 +1053,23 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     subcommand = plan.argv.index("resume")
     assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
     assert plan.stdin_text == "take the second option"
+
+
+def test_read_only_resume_reuses_the_manifest_delivery_directory(home, repo) -> None:
+    manifest = home / "review-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        role="review",
+        manifest_path=str(manifest),
+    )
+    crew.observe(record["run_id"])
+    plan = crew.resume_plan(record["run_id"], "write the redelivery")
+    assert plan.cwd == str(home)
+    assert plan.argv[plan.argv.index("-C") + 1] == str(home)
+    assert plan.argv[plan.argv.index("--sandbox") + 1] == "workspace-write"
+    assert "--skip-git-repo-check" in plan.argv
 
 
 def test_resume_before_a_session_id_exists_says_to_observe_first(home, repo) -> None:

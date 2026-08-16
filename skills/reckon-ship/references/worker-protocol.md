@@ -144,8 +144,12 @@ Binding on every worker, and embedded verbatim in every dispatch prompt:
 Workers default to full access bounded by their detached worktree. A filesystem
 sandbox is inherited by child processes and breaks test runners, builds and
 anything spawning subprocesses — so the worktree is the blast-radius boundary
-instead, and the reviewed read-only tier is a per-node runtime choice for work
-that does not build.
+instead. For dialects with a filesystem sandbox, the reviewed read-only tier
+runs from the delivery directory under workspace-write: the manifest and other
+delivery files remain writable while the repository at the assigned worktree
+path remains read-only. This guarantees that the sandbox never blocks the
+manifest itself. A node that must execute builds or test runs still belongs in
+worktree-full, because caches outside the delivery directory remain read-only.
 
 ## 6. The live run record
 
