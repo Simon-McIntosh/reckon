@@ -91,6 +91,38 @@
       <code>~/.config/reckon/crew/runs/r-20260816T215111162417-duration-fallback/logs/</code>.
     </p>
 
+    <h2 id="vocabulary-discipline">Vocabulary discipline (one completion-source set, outcome refusal, durable manifests, canonical identifiers)</h2>
+    <p>
+      Commit <code>0d9751754770bb7c1e8cb46ae609643ecbd27f57</code> (2026-08-17, worker codex-c,
+      818&nbsp;s, 290 insertions / 37 deletions over <code>reckon/ledger.py</code>,
+      <code>reckon/capabilities.py</code>, <code>reckon/calibration.py</code>,
+      <code>reckon/crew.py</code> and four test files; fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>One completion-source vocabulary.</strong> <code>effort_report</code>,
+        <code>derive_capabilities</code> and <code>calibration._observation</code> share the
+        usable set <code>terminal_event</code>, <code>stream_mtime</code>, <code>provided</code>,
+        with exclusions centralized in <code>ledger.measurement_exclusion_reason</code>. Measure:
+        a run promoted with <code>--completed-at</code> (<code>provided</code>) appears in all
+        three consumers with <code>unusable_completion=0</code>.</li>
+      <li><strong>Outcome discipline.</strong> <code>failed</code> and <code>not-run</code>
+        promotions with an empty <code>--outcome</code> refuse before any pointer mutation, and
+        the message instructs the caller to write what failed or why evidence could not be
+        produced.</li>
+      <li><strong>Durable delivery.</strong> A caller-named tmpfs manifest (<code>/dev/shm</code>
+        fixture) draws exactly one warning naming the durable run-directory manifest as the
+        alternative.</li>
+      <li><strong>Identifier normalization and lineage.</strong> Five spellings of the same
+        section value normalize to one canonical form at write time; a redispatched node id
+        records <code>attempt=2</code> with previous and root run ids, persisting into the
+        completed ledger record.</li>
+    </ul>
+    <p>
+      Tests: 13 added; focused 176 passed; full suite 1903 passed, 0 failed; ruff clean on all
+      eight changed paths. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260816T220217750008-vocabulary-discipline/logs/</code>.
+    </p>
+
   </main>
 </body>
 </html>

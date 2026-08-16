@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="run-measurement-truth">
   <meta name="plan-title" content="Run Measurement Truth">
   <meta name="plan-summary" content="Make the ledger&#x27;s recorded numbers mean what they say: worker time from stream events with stall exclusion, per-run token deltas, one completion-source vocabulary, mandatory outcomes on non-passing gates, durable manifests, diff stats everywhere, and normalized identifiers.">
-  <meta name="plan-status" content="in-progress">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,10 +20,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-commits" content="fe1497ffa354a45bb3177e712c876da222c327eb,2b1acae2997a7057a101c78adc163034d7b12cbd">
-<meta name="plan-artifacts" content="docs/evidence/archive/run-measurement-truth-landed.html#stream-measures,docs/evidence/archive/run-measurement-truth-landed.html#duration-fallback">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="2">
+<meta name="plan-commits" content="fe1497ffa354a45bb3177e712c876da222c327eb,2b1acae2997a7057a101c78adc163034d7b12cbd,0d9751754770bb7c1e8cb46ae609643ecbd27f57">
+<meta name="plan-artifacts" content="docs/evidence/archive/run-measurement-truth-landed.html#stream-measures,docs/evidence/archive/run-measurement-truth-landed.html#duration-fallback,docs/evidence/archive/run-measurement-truth-landed.html#vocabulary-discipline">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -40,42 +40,31 @@
       the gate-signal work.
     </p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
-    <p><strong>Worker time from the stream, not the clock.</strong> Derive duration from first-to-last
-    stream event timestamps; record wall duration separately; flag a run <code>stalled</code> when
-    wall exceeds a small multiple of its budget so aggregations can exclude it rather than average
-    it in. Done when the 26.7-hour lockfile run's record distinguishes 45 minutes of work from a
-    day of idle stream.</p>
-    <p><strong>Per-run token deltas.</strong> On promotion, difference the session-cumulative
-    counters against the previous run on the same session (keep the cumulative figures too,
-    labelled). Done when summing per-run deltas over a multi-run session equals the session total.</p>
-    <p><strong>One completion-source vocabulary.</strong> <code>ledger.effort_report</code>,
-    <code>capabilities.derive_capabilities</code> and <code>calibration._observation</code> accept
-    the same set, including <code>provided</code> (an explicit stamp is a good stamp); exclusion
-    reasons are reported identically everywhere. Done when a run promoted with
-    <code>--completed-at</code> appears in all three consumers.</p>
-    <p><strong>Outcome discipline.</strong> <code>crew complete</code> refuses an empty
-    <code>--outcome</code> when the gate is not <code>passed</code>. Done when the refusal has a
-    test and the message says what to write.</p>
-    <p><strong>Durable delivery by default.</strong> Auto-filled manifest paths already land in the
-    durable run directory; make the dispatch surface warn when a caller-named manifest points into
-    a tmpfs mount (248 of 259 recorded manifests do), and document the durable default as the
-    recommended shape. Done when a tmpfs manifest path draws a warning naming the durable
-    alternative.</p>
-    <p><strong>Diff stats everywhere.</strong> <code>changed_lines</code> is recorded for every run
-    with commits (the newest project records none), computed from recorded SHAs — never from a log
-    path or a placeholder string; unresolvable inputs record a typed absence, not a git error
-    string. Done when the twelve corrupted historical shapes are impossible to re-create.</p>
-    <p><strong>Identifier normalization.</strong> Section identifiers normalize at write time (one
-    canonical form); a redispatched node id gains a recorded lineage marker so retries are
-    trackable. Done when cross-project section rollups see one vocabulary.</p>
+    <section id="s2" class="section-landed">
+      <header>
+        <span class="badge badge-shipped">✓ landed 2026-08-17</span>
+        <h2>§2 — Deliverables</h2>
+      </header>
+      <p class="landed-summary">
+        All seven deliverables landed in commits <code>fe1497f</code>, <code>2b1acae</code> and
+        <code>0d97517</code>: stream-derived durations with stall exclusion and a labelled
+        <code>worker_seconds_source</code> (wall fallback for healthy timestamp-less streams —
+        a negative finding turned corrective node), per-run token/cost deltas that sum to session
+        cumulatives, one completion-source vocabulary including <code>provided</code>, refusal of
+        empty outcomes on non-passing gates, tmpfs-manifest warnings, typed SHA-derived
+        changed-lines, canonical section identifiers and redispatch lineage. 18 tests added; full
+        suite 1903 passed, 0 failed on the integrated tree. Full record:
+        <a href="/reckon/evidence/archive/run-measurement-truth-landed.html">landed record</a>.
+      </p>
+    </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rmt-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rmt-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="2026-08-16T22:17:20+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Repair the measurement pipeline</h4>
     <div class="r-fu-body"><p>All seven deliverables in §2. Historical records stay as they are — the fix is prospective; the effort report may add a schema-version guard when reading old shapes.</p></div>
     <pre class="r-fu-prompt">/reckon-ship run-measurement-truth</pre>
+    <p class="r-fu-outcome">All seven §2 deliverables landed across commits fe1497f, 2b1acae and 0d97517, plus a corrective labelled duration-fallback for the timestamp-less-stream finding: stream-derived durations with stall exclusion and labelled sources, per-run token/cost deltas summing to session cumulatives, one completion-source vocabulary with provided, outcome refusal on non-pass, tmpfs manifest warnings, typed changed-lines, canonical section identifiers and redispatch lineage. Historical records untouched (prospective fix as planned). Sprint gate measures all produced. done — no followup</p>
     </article>
 </section>
 
@@ -85,6 +74,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260816T2209-df" data-who="reckon-ship" data-when="2026-08-16T22:09:00Z">
     <div class="r-comment-body">duration-fallback landed — commit 2b1acae; gate passed; measures: real codex event shape without timestamps records worker_seconds=wall_seconds with source wall_fallback and reaches effort_report (5.0 min fixture); stalled timestamp-less runs record typed absence and excluded_stalled=1; timestamped streams unchanged (2700s measured against 96120s wall); the fix's own promotion recorded worker_seconds=549 source=wall_fallback where the prior node's was null; 2 tests added, full suite 1890 passed. Evidence: docs/evidence/archive/run-measurement-truth-landed.html#duration-fallback</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260816T2226-vd" data-who="reckon-ship" data-when="2026-08-16T22:26:00Z">
+    <div class="r-comment-body">vocabulary-discipline landed — commit 0d97517; gate passed; measures: a provided-stamp promotion reaches effort_report, derive_capabilities and calibration alike (unusable_completion=0, exclusions centralized in ledger.measurement_exclusion_reason); failed/not-run promotions refuse an empty --outcome before pointer mutation; tmpfs caller manifests draw one warning naming the durable run-dir manifest; five section spellings normalize to one canonical form and redispatch records attempt/previous/root lineage into the ledger; 13 tests added, full suite 1903 passed, ruff clean. Evidence: docs/evidence/archive/run-measurement-truth-landed.html#vocabulary-discipline</div>
 </div>
 </section>
 </main>
