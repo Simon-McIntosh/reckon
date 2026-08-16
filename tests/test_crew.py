@@ -1356,6 +1356,16 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     assert plan.stdin_text == "take the second option"
 
 
+def test_resume_refuses_while_the_previous_process_is_alive(home, repo) -> None:
+    record = _dispatched(home, repo, "codex-turn.jsonl")
+    observed = crew.observe(record["run_id"])
+    observed["pid"] = os.getpid()
+    crew._write_json(crew.pointer_path(record["run_id"]), observed)
+
+    with pytest.raises(crew.CrewError, match="still has a live process"):
+        crew.resume_plan(record["run_id"], "continue")
+
+
 def test_read_only_resume_reuses_the_manifest_delivery_directory(home, repo) -> None:
     manifest = home / "review-manifest.md"
     record = _dispatched(

@@ -279,6 +279,44 @@ def test_promotion_uses_newest_resume_stream_mtime(home, repo) -> None:
     assert stored["completed_at_source"] == "stream_mtime"
 
 
+def test_resumed_promotion_keeps_the_original_stream_and_orders_turns(
+    home, repo
+) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    original = Path(record["log_path"])
+    directory = original.parent
+    streams = {
+        1: directory / "resume-1.jsonl",
+        2: directory / "resume-2.jsonl",
+        10: directory / "resume-10.jsonl",
+    }
+    for turn, path in streams.items():
+        path.write_text(original.read_text())
+        instant = datetime(2027, 1, turn + 1, tzinfo=timezone.utc).timestamp()
+        os.utime(path, (instant, instant))
+    initial = datetime(2027, 1, 1, tzinfo=timezone.utc).timestamp()
+    os.utime(original, (initial, initial))
+
+    crew.record_resumption(
+        record["run_id"],
+        pid=999999999,
+        turn=10,
+        log_path=streams[10],
+        stderr_path=directory / "resume-10.stderr.log",
+    )
+    pointer = crew.read_pointer(record["run_id"])
+    crew_paths = crew._run_streams(original)
+    ledger_paths = ledger._run_streams(record["run_id"], crew.crew_home() / "runs")
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    expected = ["stream.jsonl", "resume-1.jsonl", "resume-2.jsonl", "resume-10.jsonl"]
+    assert pointer["log_path"] == str(original)
+    assert [path.name for path in crew_paths] == expected
+    assert [path.name for path in ledger_paths] == expected
+    assert stored["completed_at"] == "2027-01-11T00:00:00Z"
+    assert stored["completed_at_source"] == "stream_mtime"
+
+
 def test_promotion_uses_original_stream_when_it_has_newest_mtime(home, repo) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     directory = Path(record["log_path"]).parent
@@ -468,6 +506,31 @@ def test_an_unknown_gate_verdict_is_refused(home, repo) -> None:
         crew.complete(record["run_id"], gate="looks fine")
     assert "not-run" in str(excinfo.value)
     assert crew.pointer_path(record["run_id"]).exists()
+
+
+def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -> None:
+    record = _dispatch(repo)
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            record["run_id"],
+            "--gate",
+            "passed",
+            "--completed-at",
+            "2027-01-01T02:00:00",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    stored = payload["record"]
+    assert result.exit_code == 0
+    assert stored["completed_at"] == "2027-01-01T02:00:00Z"
+    assert stored["worker_seconds"] is not None
+    assert ledger._worker_seconds("2027-01-01T01:00:00", "2027-01-01T02:00:00") == 3600
 
 
 # ── Nothing transient is committed ──────────────────────────────────────────

@@ -8,6 +8,7 @@ was elided and why.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -396,6 +397,20 @@ def test_one_backend_reports_headroom_with_a_reset_time() -> None:
     assert budget["resets_at"] == "2026-09-01T00:00:00Z"
     assert budget["threshold_status"] == "allowed_warning"
     assert budget["cost_usd"] is not None
+
+
+@pytest.mark.parametrize("reset_epoch", [1_788_220_800_000, 1e100])
+def test_invalid_reset_epoch_returns_a_null_reading(reset_epoch) -> None:
+    lines = _lines("claude-turn.jsonl")
+    event = json.loads(lines[2])
+    event["rate_limit_info"]["resetsAt"] = reset_epoch
+    lines[2] = json.dumps(event)
+
+    observation = _backends.observe_stream(
+        backend_name="b", backend=CLAUDE, lines=lines
+    )
+
+    assert observation.budget["resets_at"] is None
 
 
 def test_the_other_backend_reports_tokens_and_no_headroom() -> None:

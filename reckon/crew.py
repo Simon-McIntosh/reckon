@@ -1521,6 +1521,10 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    if process_alive(record.get("pid")) is True:
+        raise CrewError(
+            f"run {run_id!r} still has a live process; observe or stop it before resuming"
+        )
     session_id = record.get("session_id")
     if not session_id:
         raise CrewError(
@@ -1585,7 +1589,6 @@ def record_resumption(
                 "pid_start_time": _process_start_time(pid),
                 "phase": "working",
                 "resumed_turn": turn,
-                "log_path": str(log_path),
                 "stderr_path": str(stderr_path),
             }
         )
@@ -1661,7 +1664,30 @@ def _elapsed_seconds(start: Any, end: Any) -> int | None:
         last = datetime.fromisoformat(str(end).replace("Z", "+00:00"))
     except (TypeError, ValueError):
         return None
+    if first.tzinfo is None:
+        first = first.replace(tzinfo=timezone.utc)
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
     return max(0, int((last - first).total_seconds()))
+
+
+def _assume_utc_if_naive(value: str) -> str:
+    """Attach UTC to a completion stamp that carries no timezone."""
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return value
+    if parsed.tzinfo is not None:
+        return value
+    return parsed.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _run_streams(path: Path) -> list[Path]:
+    """Return the original stream followed by resumes in numeric turn order."""
+    resumes = sorted(
+        path.parent.glob("resume-*.jsonl"), key=ledger._resume_stream_order
+    )
+    return [candidate for candidate in (path, *resumes) if candidate.is_file()]
 
 
 def _terminal_stream_data(
@@ -1675,8 +1701,7 @@ def _terminal_stream_data(
     backend_name = str(record.get("backend") or "")
     backend = _backend_settings(record, None)
     path = Path(str(record.get("log_path") or ""))
-    paths = [path, *sorted(path.parent.glob("resume-*.jsonl"))]
-    paths = [candidate for candidate in paths if candidate.is_file()]
+    paths = _run_streams(path)
     if not paths:
         return None, None, budget
 
@@ -1793,7 +1818,7 @@ def _complete_locked(
 
     terminal_time, terminal_source, terminal_budget = _terminal_stream_data(record)
     if completed_at:
-        finished = completed_at
+        finished = _assume_utc_if_naive(completed_at)
         completion_source = "provided"
     elif terminal_time:
         finished = terminal_time

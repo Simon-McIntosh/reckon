@@ -194,11 +194,14 @@ def _epoch_to_iso(value: Any) -> str | None:
         seconds = float(value)
     except (TypeError, ValueError):
         return None
-    return (
-        datetime.fromtimestamp(seconds, tz=timezone.utc)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
+    try:
+        return (
+            datetime.fromtimestamp(seconds, tz=timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
+    except (OverflowError, OSError, ValueError):
+        return None
 
 
 # ── Dialects ────────────────────────────────────────────────────────────────

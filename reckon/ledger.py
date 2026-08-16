@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import random
 import re
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -405,11 +406,18 @@ def runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     return load(project, root)[0]["runs"]
 
 
+def _resume_stream_order(path: Path) -> tuple[int, str]:
+    """Order numbered resume streams by turn rather than filename text."""
+    match = re.fullmatch(r"resume-(\d+)\.jsonl", path.name)
+    return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
+
+
 def _run_streams(run_id: str, streams_root: Path) -> list[Path]:
     """Return every surviving stream for one run in stable path order."""
 
     directory = streams_root / run_id
-    candidates = [directory / "stream.jsonl", *sorted(directory.glob("resume-*.jsonl"))]
+    resumes = sorted(directory.glob("resume-*.jsonl"), key=_resume_stream_order)
+    candidates = [directory / "stream.jsonl", *resumes]
     return [path for path in candidates if path.is_file()]
 
 
@@ -454,15 +462,17 @@ def _stream_completion(paths: list[Path]) -> tuple[str, str]:
 
 
 def _worker_seconds(dispatched_at: Any, completed_at: Any) -> int | None:
-    """Return whole non-negative seconds between two aware timestamps."""
+    """Return elapsed seconds, treating timestamps without an offset as UTC."""
 
     try:
         start = datetime.fromisoformat(str(dispatched_at).replace("Z", "+00:00"))
         finish = datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
     except (TypeError, ValueError):
         return None
-    if start.tzinfo is None or finish.tzinfo is None:
-        return None
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if finish.tzinfo is None:
+        finish = finish.replace(tzinfo=timezone.utc)
     return max(0, int((finish - start).total_seconds()))
 
 
