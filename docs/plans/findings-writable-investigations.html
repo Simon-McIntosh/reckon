@@ -4,20 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="findings-writable-investigations">
-  <meta name="plan-title"     content="Findings-Writable Investigations">
-  <meta name="plan-summary"   content="The read-only sandbox tier rejects the manifest write itself, so every investigation node finishes its research and then cannot deliver; translate the tier so the delivery directory is writable while the repository stays read-only.">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort"    content="S">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="findings-writable-investigations">
+  <meta name="plan-title" content="Findings-Writable Investigations">
+  <meta name="plan-summary" content="The read-only sandbox tier rejects the manifest write itself, so every investigation node finishes its research and then cannot deliver; translate the tier so the delivery directory is writable while the repository stays read-only.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort" content="S">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Findings-Writable Investigations | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-16">
+<meta name="plan-commits" content="16100cc">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,39 +68,35 @@
     remain read-only.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="writable-surface" data-choice="delivery-cwd"
-           data-by="Simon McIntosh" data-when="2026-08-16T13:30:00+00:00">
-        <p class="r-dec-q">How does a read-only worker get a writable delivery path?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="delivery-cwd">workspace-write with cwd = delivery directory</button>
-          <button class="r-opt" data-value="writable-roots">keep cwd = worktree, add delivery dir to writable_roots</button>
-        </p>
-        <p class="r-dec-rat">Owner directive 2026-08-16: investigation sessions must be able to
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="writable-surface" data-choice="delivery-cwd" data-by="Simon McIntosh" data-when="2026-08-16T13:30:00+00:00">
+    <p class="r-dec-q">How does a read-only worker get a writable delivery path?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="delivery-cwd">workspace-write with cwd = delivery directory</button>
+      <button class="r-opt" data-value="writable-roots">keep cwd = worktree, add delivery dir to writable_roots</button>
+      </p>
+    <p class="r-dec-rat">Owner directive 2026-08-16: investigation sessions must be able to
         write their findings. Under workspace-write the cwd subtree is writable, so keeping the
         worktree as cwd would make the whole repository checkout writable and surrender the
         guarantee the tier exists for; pointing cwd at the delivery directory keeps the
         repository read-only in effect while the delivery contract holds. The alternative is
         recorded because it is the smaller diff, and rejected because it trades away the
         property being protected.</p>
-      </div>
-    </section>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-fwi-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-capability-verification="strict"
-               data-written-by="reckon-create" data-written-at="2026-08-16"
-               data-recommends-skill="/reckon-ship findings-writable-investigations §2">
-        <h4 class="r-fu-title">Implement the delivery-cwd translation with pinned launch tests</h4>
-        <div class="r-fu-body"><p>The one implementation rung: thread the delivery directory
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fwi-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="/reckon-ship findings-writable-investigations §2" data-resolved-at="2026-08-16T13:09:53+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Implement the delivery-cwd translation with pinned launch tests</h4>
+    <div class="r-fu-body"><p>The one implementation rung: thread the delivery directory
         into the codex argv builder, translate the read-only tier per §2, pin the launch and
         resume behaviour per §3, and update the worker-protocol note so the process document
         matches the mechanism.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship findings-writable-investigations §2</pre>
-      </article>
-    </section>
+    <pre class="r-fu-prompt">/reckon-ship findings-writable-investigations §2</pre>
+    <p class="r-fu-outcome">done — no followup. Commit 16100cc (merged): the codex read-only tier launches with -C set to the manifest path's parent, --sandbox workspace-write, and --skip-git-repo-check since the delivery directory is not a repository; the cwd derives from the existing dispatch record so no new state was invented; the composed prompt states the arrangement; fresh and resume launches share the rule so a resumed read-only worker can write its redelivery; worktree-full and workspace-write argv are pinned byte-for-byte unchanged by tests. Focused lane 112 passed / 0 failed; full reckon suite 1,854 passed / 0 failed. The worker-protocol note now documents guaranteed manifest delivery and keeps the caveat that build/test nodes belong in worktree-full because caches outside the delivery directory stay read-only.</p>
+    </article>
+</section>
   </main>
 </body>
 </html>
