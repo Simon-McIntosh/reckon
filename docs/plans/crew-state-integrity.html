@@ -4,21 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="crew-state-integrity">
-  <meta name="plan-title"     content="Crew State Integrity">
-  <meta name="plan-summary"   content="Make the committed run ledger and the live run pointers safe under concurrent writers and corrupt input: locked atomic envelope writes, corrupt-file refusal, duplicate-promotion recovery, and a discard command.">
-  <meta name="plan-status"    content="pending">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-state-integrity">
+  <meta name="plan-title" content="Crew State Integrity">
+  <meta name="plan-summary" content="Make the committed run ledger and the live run pointers safe under concurrent writers and corrupt input: locked atomic envelope writes, corrupt-file refusal, duplicate-promotion recovery, and a discard command.">
+  <meta name="plan-status" content="pending">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S10">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S10">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Crew State Integrity | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-16">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -65,28 +67,26 @@
     five racers.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="corrupt-ledger-policy" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What should a writer do when the committed ledger is unparseable?</p>
-        <p class="r-dec-ctx">Refusal is safest but blocks promotion until a human repairs the file; quarantine (move aside, start fresh, surface loudly) keeps the fleet moving but risks the aside copy being forgotten.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="refuse">refuse all writes until repaired</button>
-          <button class="r-opt" data-value="quarantine">quarantine and continue, loud warning</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="corrupt-ledger-policy" data-choice="refuse" data-by="reckon-ship" data-when="2026-08-16T20:46:04+00:00">
+    <p class="r-dec-q">What should a writer do when the committed ledger is unparseable?</p>
+    <p class="r-dec-ctx">Refusal is safest but blocks promotion until a human repairs the file; quarantine (move aside, start fresh, surface loudly) keeps the fleet moving but risks the aside copy being forgotten.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse">refuse all writes until repaired</button>
+      <button class="r-opt" data-value="quarantine">quarantine and continue, loud warning</button>
+      </p>
+    <p class="r-dec-rat">The plan&#x27;s own §2 deliverable prose commits to refusal (&#x27;ledger.load and every writer refuse to write over an unreadable ledger; the error message names the recovery&#x27;), and the sprint item&#x27;s done-when is &#x27;a corrupt ledger refuses instead of resetting&#x27;. Quarantine would contradict both. Refusal is recoverable in one human step (fix conflict markers or restore from git) and the error message is required to name that step.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-csi-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-08-16">
-        <h4 class="r-fu-title">Implement ledger and pointer write safety</h4>
-        <div class="r-fu-body"><p>All five deliverables in §2; the corrupt-ledger reset and the shared-temp-name race have demonstrated reproductions in the fleet review to turn into regression tests first.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship crew-state-integrity</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-csi-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement ledger and pointer write safety</h4>
+    <div class="r-fu-body"><p>All five deliverables in §2; the corrupt-ledger reset and the shared-temp-name race have demonstrated reproductions in the fleet review to turn into regression tests first.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-state-integrity</pre>
+    </article>
+</section>
 
   </main>
 </body>
