@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="findings-writable-investigations">
+  <meta name="plan-title"     content="Findings-Writable Investigations">
+  <meta name="plan-summary"   content="The read-only sandbox tier rejects the manifest write itself, so every investigation node finishes its research and then cannot deliver; translate the tier so the delivery directory is writable while the repository stays read-only.">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort"    content="S">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Findings-Writable Investigations | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The read-only tier contradicts the delivery contract</h2>
+    <p>The durable-delivery fence requires every worker to write its manifest to a named file —
+    the file is the delivery, the message is a convenience. The <code>read-only</code> sandbox
+    tier, resolved for the investigate and review roles, translates to a codex launch whose
+    sandbox is process-wide: it rejects writes to the manifest path, the findings file, the UV
+    cache and <code>/tmp</code> alike. The two contracts compose into a guarantee that every
+    read-only node fails to deliver.</p>
+    <p>Measured on 2026-08-16 in the nova project: two investigation nodes completed their
+    research in full, attempted the single patch containing their deliverables, were rejected
+    with <code>patch rejected: writing is blocked by read-only sandbox</code>, and died as
+    NEEDS-HELP with the findings stranded in their final messages. Each cost one resume to
+    recover, and the rejected patch body is not retained in the stream, so message re-emission
+    was the only verbatim recovery. This plan is dispatched for immediate execution in the same
+    session that authored it, not scheduled into a sprint.</p>
+
+    <h2 id="s2">§2 — Fix: the delivery directory becomes the writable workspace</h2>
+    <p>For the codex dialect, translate the <code>read-only</code> tier to
+    <code>--sandbox workspace-write</code> with the process working directory set to the run's
+    <strong>delivery directory</strong> — the manifest path's parent — instead of the worktree.
+    Under workspace-write, the cwd subtree and the system temp directory are writable and
+    everything else remains readable, so the repository worktree stays effectively read-only
+    while the manifest, findings files and named logs land normally. The dispatch prompt already
+    names the assigned worktree as an absolute path, so reading the repository is unaffected;
+    the composed prompt additionally states plainly that the working directory is the delivery
+    directory and the repository is read-only.</p>
+    <p>The launch currently passes the worktree as <code>-C</code> unconditionally
+    (<code>reckon/_backends.py:268</code>) and maps tiers in <code>_sandbox_flags</code>
+    (<code>:290-298</code>); the delivery directory must therefore be threaded from the dispatch
+    record into the argv builder. The run record already carries <code>manifest_path</code>, so
+    no new state is invented.</p>
+
+    <h2 id="s3">§3 — Tests and the process note</h2>
+    <p>Unit tests pin the translation: the read-only tier yields workspace-write with cwd equal
+    to the manifest directory; the worktree-full and workspace-write tiers are byte-for-byte
+    unchanged; resume launches inherit the same cwd rule so a resumed read-only worker can still
+    write its redelivery. The worker-protocol note that currently reads "the reviewed read-only
+    tier is a per-node runtime choice for work that does not build" gains the delivery guarantee:
+    read-only never blocks the manifest, and a read-only node that must execute code (builds,
+    test runs) still belongs in worktree-full because caches outside the delivery directory
+    remain read-only.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="writable-surface" data-choice="delivery-cwd"
+           data-by="Simon McIntosh" data-when="2026-08-16T13:30:00+00:00">
+        <p class="r-dec-q">How does a read-only worker get a writable delivery path?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="delivery-cwd">workspace-write with cwd = delivery directory</button>
+          <button class="r-opt" data-value="writable-roots">keep cwd = worktree, add delivery dir to writable_roots</button>
+        </p>
+        <p class="r-dec-rat">Owner directive 2026-08-16: investigation sessions must be able to
+        write their findings. Under workspace-write the cwd subtree is writable, so keeping the
+        worktree as cwd would make the whole repository checkout writable and surrender the
+        guarantee the tier exists for; pointing cwd at the delivery directory keeps the
+        repository read-only in effect while the delivery contract holds. The alternative is
+        recorded because it is the smaller diff, and rejected because it trades away the
+        property being protected.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-fwi-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-capability-verification="strict"
+               data-written-by="reckon-create" data-written-at="2026-08-16"
+               data-recommends-skill="/reckon-ship findings-writable-investigations §2">
+        <h4 class="r-fu-title">Implement the delivery-cwd translation with pinned launch tests</h4>
+        <div class="r-fu-body"><p>The one implementation rung: thread the delivery directory
+        into the codex argv builder, translate the read-only tier per §2, pin the launch and
+        resume behaviour per §3, and update the worker-protocol note so the process document
+        matches the mechanism.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship findings-writable-investigations §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
