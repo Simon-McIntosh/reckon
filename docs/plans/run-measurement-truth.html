@@ -4,21 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="run-measurement-truth">
-  <meta name="plan-title"     content="Run Measurement Truth">
-  <meta name="plan-summary"   content="Make the ledger's recorded numbers mean what they say: worker time from stream events with stall exclusion, per-run token deltas, one completion-source vocabulary, mandatory outcomes on non-passing gates, durable manifests, diff stats everywhere, and normalized identifiers.">
-  <meta name="plan-status"    content="pending">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="run-measurement-truth">
+  <meta name="plan-title" content="Run Measurement Truth">
+  <meta name="plan-summary" content="Make the ledger&#x27;s recorded numbers mean what they say: worker time from stream events with stall exclusion, per-run token deltas, one completion-source vocabulary, mandatory outcomes on non-passing gates, durable manifests, diff stats everywhere, and normalized identifiers.">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S10">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S10">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Run Measurement Truth | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-16">
+<meta name="plan-commits" content="fe1497ffa354a45bb3177e712c876da222c327eb">
+<meta name="plan-artifacts" content="docs/evidence/archive/run-measurement-truth-landed.html#stream-measures">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -66,16 +71,19 @@
     trackable. Done when cross-project section rollups see one vocabulary.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-rmt-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-08-16">
-        <h4 class="r-fu-title">Repair the measurement pipeline</h4>
-        <div class="r-fu-body"><p>All seven deliverables in §2. Historical records stay as they are — the fix is prospective; the effort report may add a schema-version guard when reading old shapes.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship run-measurement-truth</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rmt-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair the measurement pipeline</h4>
+    <div class="r-fu-body"><p>All seven deliverables in §2. Historical records stay as they are — the fix is prospective; the effort report may add a schema-version guard when reading old shapes.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship run-measurement-truth</pre>
+    </article>
+</section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260816T2152-sm" data-who="reckon-ship" data-when="2026-08-16T21:52:00Z">
+    <div class="r-comment-body">stream-measures landed — commit fe1497f; gate passed; measures: 2700s stream inside 96120s wall records both durations with stalled=true and aggregation exclusion; per-run token/cost deltas sum to session cumulatives (100+50=150, 10+5=15, 1.25+0.75=2.0); changed_lines SHA-derived with typed absence for unresolvable inputs; 3 tests added, full suite 1889 passed. NEGATIVE FINDING: real codex streams carry no event timestamps, so a healthy 1221s run promoted with worker_seconds=null — corrective node duration-fallback dispatched (wall-duration fallback for unstalled timestamp-less runs). Evidence: docs/evidence/archive/run-measurement-truth-landed.html#stream-measures</div>
+</div>
+</section>
+</main>
 </body>
 </html>

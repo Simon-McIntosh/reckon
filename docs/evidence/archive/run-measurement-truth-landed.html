@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="run-measurement-truth-landed">
+  <meta name="plan-title" content="Run Measurement Truth — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the run-measurement-truth plan: commits, gate measures, tests and negative findings per landed node.">
+  <meta name="plan-evidence-for" content="run-measurement-truth">
+  <meta name="plan-verifies" content="run-measurement-truth#s2">
+  <title>Run Measurement Truth — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Run Measurement Truth — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="stream-measures">Stream measures (stream-derived duration, token deltas, typed diff stats)</h2>
+    <p>
+      Commit <code>fe1497ffa354a45bb3177e712c876da222c327eb</code> (2026-08-16, worker codex-c,
+      wall 1221&nbsp;s, 254 insertions / 60 deletions over <code>reckon/crew.py</code>,
+      <code>reckon/ledger.py</code> and two test files; fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>Duration truth.</strong> Completed records carry <code>worker_seconds</code>
+        derived from first-to-last timestamped stream events, a separate <code>wall_seconds</code>,
+        and a <code>stalled</code> boolean at a 2× time-budget boundary; <code>effort_report</code>
+        counts and excludes stalled records. Measure: a 2700&nbsp;s stream inside a 96120&nbsp;s
+        wall records both figures with <code>stalled=true</code> and is excluded from
+        aggregation.</li>
+      <li><strong>Per-run token deltas.</strong> Promotion differences the session-cumulative
+        counters against the previous run on the same session, retaining
+        <code>&lt;counter&gt;_cumulative</code>; the same treatment applies to
+        <code>cost_usd</code>. Measure: deltas 100+50 sum to the cumulative 150 (input),
+        10+5 to 15 (output), 1.25+0.75 to 2.0 (cost).</li>
+      <li><strong>Typed diff stats.</strong> Every commit-bearing promotion recomputes
+        <code>changed_lines</code> from <code>base_sha</code> through the last recorded commit
+        within declared write paths; unresolvable revisions record
+        <code>{available:false, reason:unresolvable_revision}</code>, other failures
+        <code>{available:false, reason:diff_unavailable}</code> — never git stderr or
+        placeholders.</li>
+    </ul>
+    <p>
+      Tests: 3 added, 2 boundary assertions strengthened; full suite 1889 passed, 0 failed;
+      initial run had 1 failure, repaired in-node before commit. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260816T212844387456-stream-measures/</code>.
+    </p>
+    <p>
+      <strong>Negative finding.</strong> Real codex stream events carry no timestamps
+      (<code>thread.started</code> / <code>item.completed</code> objects only), so the first
+      promotion after this landing recorded <code>worker_seconds: null</code> for a healthy
+      1221&nbsp;s run — the duration signal calibration consumes would go dark for every
+      timestamp-less backend. Corrective node <a href="#duration-fallback">duration-fallback</a>
+      restores it.
+    </p>
+
+  </main>
+</body>
+</html>
