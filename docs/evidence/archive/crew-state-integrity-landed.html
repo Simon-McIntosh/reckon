@@ -53,6 +53,32 @@
       <code>~/.config/reckon/crew/runs/r-20260816T204725505930-envelope-write-safety/logs/</code>.
     </p>
 
+    <h2 id="pointer-lifecycle-recovery">Pointer lifecycle recovery (duplicate promotion, discard, locked pointer writes)</h2>
+    <p>
+      Commit <code>bcc11e2b1d469fd3d798cbc152c6d5f4a0719c2a</code> (2026-08-16, worker codex-a,
+      578&nbsp;s, 368 insertions / 96 deletions over <code>reckon/crew.py</code>,
+      <code>reckon/cli.py</code>, <code>tests/test_crew.py</code>; fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>Duplicate-promotion recovery.</strong> <code>complete()</code> detects an existing
+        ledger record for the run id, reports <code>already_promoted=true</code>, and removes the
+        surviving pointer without duplicating the ledger record. Measure: a ledgered-but-pointered
+        run is clearable instead of raising forever.</li>
+      <li><strong><code>reckon crew discard</code>.</strong> Removes a live pointer without
+        promoting, prints the removed record and pointer path, leaves the ledger unchanged, and
+        refuses while the recorded pid is alive.</li>
+      <li><strong>Pointer write discipline.</strong> attach, observe, stop, resume recording,
+        completion and discard all coordinate through a per-run pointer lock and publish through
+        writer-unique temporary files. Measure: a forced observe-before-attach interleaving
+        preserved the task binding.</li>
+    </ul>
+    <p>
+      Tests: 4 added; focused run 84 passed (9&nbsp;s); full suite 1875 passed, 0 failed
+      (81&nbsp;s) on the tree that already contained both earlier landings — this run is the
+      integrated-suite evidence for the plan gate. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260816T205950003711-pointer-lifecycle-recovery/logs/</code>.
+    </p>
+
   </main>
 </body>
 </html>
