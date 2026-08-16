@@ -1440,14 +1440,21 @@ def test_promotion_without_a_commit_records_absent_changed_lines(home, repo) -> 
     assert stored["changed_lines"] is None
 
 
-def test_promotion_refuses_an_unresolvable_commit_value(home, repo) -> None:
+def test_unresolvable_commit_records_a_typed_diff_absence(home, repo) -> None:
     record = _dispatched(home, repo)
     revision = "not-a-revision"
 
-    with pytest.raises(crew.CrewError, match=revision):
-        crew.complete(record["run_id"], gate="passed", commits=[revision])
+    stored = crew.complete(
+        record["run_id"], gate="passed", commits=[revision]
+    )["record"]
 
-    assert crew.pointer_path(record["run_id"]).is_file()
+    assert stored["commits"] == [revision]
+    assert stored["changed_lines"] == {
+        "available": False,
+        "reason": "unresolvable_revision",
+    }
+    assert "fatal:" not in json.dumps(stored["changed_lines"])
+    assert not crew.pointer_path(record["run_id"]).exists()
 
 
 def test_complete_clears_a_pointer_when_the_run_is_already_ledgered(home, repo) -> None:
@@ -1504,7 +1511,10 @@ def test_outside_repository_scope_records_absent_changed_lines(
 
     stored = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])["record"]
 
-    assert stored["changed_lines"] is None
+    assert stored["changed_lines"] == {
+        "available": False,
+        "reason": "diff_unavailable",
+    }
 
 
 # ── Worker reports ──────────────────────────────────────────────────────────

@@ -123,6 +123,28 @@ def _deliver(record: dict, *, status: str = "complete") -> None:
     manifest.write_text(f"node: {record['node']['id']}\nstatus: {status}\n")
 
 
+def _timestamp_stream(
+    record: dict,
+    *,
+    first: str,
+    last: str,
+    input_tokens: int = 100,
+    output_tokens: int = 10,
+    session_id: str = SESSION_ID,
+) -> None:
+    events = [
+        json.loads(line) for line in Path(record["log_path"]).read_text().splitlines()
+    ]
+    events[0]["thread_id"] = session_id
+    events[0]["timestamp"] = first
+    events[-1]["timestamp"] = last
+    events[-1]["usage"]["input_tokens"] = input_tokens
+    events[-1]["usage"]["output_tokens"] = output_tokens
+    Path(record["log_path"]).write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+
+
 def _kill(record: dict) -> None:
     """Point the pointer at a pid that cannot be running."""
     pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
@@ -230,6 +252,70 @@ def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> 
     assert stored["completed_at_source"] == "terminal_event"
     assert stored["budget"]["tokens"]["input_tokens"] == 29253
     assert stored["budget"]["tokens"]["output_tokens"] == 5
+    assert stored["budget"]["tokens"]["input_tokens_cumulative"] == 29253
+    assert stored["budget"]["tokens"]["output_tokens_cumulative"] == 5
+
+
+def test_stream_duration_is_separate_from_stalled_wall_time(home, repo) -> None:
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+    _timestamp_stream(
+        record,
+        first="2027-01-02T01:57:00Z",
+        last="2027-01-02T02:42:00Z",
+    )
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["created_at"] = "2027-01-01T00:00:00Z"
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["worker_seconds"] == 45 * 60
+    assert stored["wall_seconds"] == 26 * 3600 + 42 * 60
+    assert stored["stalled"] is True
+    report = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
+    assert report["excluded_stalled"] == 1
+    assert report["plans"][0]["runs"] == 0
+
+
+def test_session_cumulative_tokens_become_summable_run_deltas(home, repo) -> None:
+    first = _dispatch(
+        repo, fixture="codex-turn.jsonl", node_kwargs={"id": "token-first"}
+    )
+    _timestamp_stream(
+        first,
+        first="2027-01-01T00:00:00Z",
+        last="2027-01-01T00:01:00Z",
+        input_tokens=100,
+        output_tokens=10,
+    )
+    first_stored = crew.complete(first["run_id"], gate="passed")["record"]
+
+    second = _dispatch(
+        repo, fixture="codex-turn.jsonl", node_kwargs={"id": "token-second"}
+    )
+    _timestamp_stream(
+        second,
+        first="2027-01-01T00:02:00Z",
+        last="2027-01-01T00:03:00Z",
+        input_tokens=150,
+        output_tokens=15,
+    )
+    second_stored = crew.complete(second["run_id"], gate="passed")["record"]
+
+    session_runs = [first_stored, second_stored]
+    assert sum(run["budget"]["tokens"]["input_tokens"] for run in session_runs) == 150
+    assert sum(run["budget"]["tokens"]["output_tokens"] for run in session_runs) == 15
+    assert second_stored["budget"]["tokens"]["input_tokens"] == 50
+    assert second_stored["budget"]["tokens"]["input_tokens_cumulative"] == 150
+
+
+def test_session_cumulative_cost_is_labelled_and_differenced() -> None:
+    first = ledger.per_run_budget({"cost_usd": 1.25})
+    previous = {"budget": first}
+    second = ledger.per_run_budget({"cost_usd": 2.0}, previous)
+
+    assert first == {"cost_usd": 1.25, "cost_usd_cumulative": 1.25}
+    assert second == {"cost_usd": 0.75, "cost_usd_cumulative": 2.0}
 
 
 def test_promotion_uses_stream_mtime_for_untimestamped_stream(
@@ -529,7 +615,8 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
     stored = payload["record"]
     assert result.exit_code == 0
     assert stored["completed_at"] == "2027-01-01T02:00:00Z"
-    assert stored["worker_seconds"] is not None
+    assert stored["worker_seconds"] is None
+    assert stored["wall_seconds"] is not None
     assert ledger._worker_seconds("2027-01-01T01:00:00", "2027-01-01T02:00:00") == 3600
 
 
@@ -815,7 +902,9 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
         "sandbox": "worktree-full",
     }
     assert stored["dispatched_at"] and stored["completed_at"]
-    assert stored["worker_seconds"] is not None
+    assert stored["worker_seconds"] is None
+    assert stored["wall_seconds"] is not None
+    assert stored["stalled"] is False
     assert stored["time_budget"] == "20m"
     assert stored["tests_added"] == 9
     assert stored["gate"] == "passed"
@@ -861,7 +950,12 @@ def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
         text=True,
     ).stdout.strip()
 
-    stored = crew.complete(record["run_id"], gate="passed", commits=[commit])["record"]
+    stored = crew.complete(
+        record["run_id"],
+        gate="passed",
+        commits=[commit],
+        changed_lines={"detail": "not a measurement"},
+    )["record"]
 
     assert stored["changed_lines"] == {"added": 1, "removed": 0, "files": 1}
 

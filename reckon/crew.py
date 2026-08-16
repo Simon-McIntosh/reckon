@@ -145,6 +145,7 @@ _UNSPECIFIED = re.compile(
 
 _DURATION = re.compile(r"^(\d+)([smh])$")
 _DURATION_SECONDS = {"s": 1, "m": 60, "h": 3600}
+STALL_BUDGET_MULTIPLE = 2
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -1606,7 +1607,7 @@ def scoped_diff_stat(
     base: str,
     head: str = "HEAD",
     paths: Iterable[str] = (),
-) -> dict[str, int] | None:
+) -> dict[str, Any]:
     """Count the lines a run changed inside its own write scope.
 
     Measured against the node's exclusive paths rather than the whole diff, so
@@ -1615,31 +1616,9 @@ def scoped_diff_stat(
     measurements and must never enter the durable numeric field.
     """
     if not base:
-        return None
-    argv = ["git", "diff", "--numstat", f"{base}..{head}"]
-    if paths:
-        argv += ["--", *[str(path) for path in paths]]
-    result = subprocess.run(
-        argv, cwd=str(cwd), capture_output=True, text=True, check=False
-    )
-    if result.returncode:
-        return None
-    added = removed = files = 0
-    for line in result.stdout.splitlines():
-        parts = line.split("\t")
-        if len(parts) < 3:
-            continue
-        files += 1
-        # A binary file reports "-" for both counts; it changed, but no lines did.
-        added += int(parts[0]) if parts[0].isdigit() else 0
-        removed += int(parts[1]) if parts[1].isdigit() else 0
-    return {"added": added, "removed": removed, "files": files}
-
-
-def _require_resolvable_commits(cwd: Path, commits: Iterable[str]) -> None:
-    """Refuse commit values that Git cannot resolve to a commit object."""
-    for revision in commits:
-        result = subprocess.run(
+        return {"available": False, "reason": "missing_base"}
+    for revision in (base, head):
+        resolved = subprocess.run(
             [
                 "git",
                 "rev-parse",
@@ -1653,8 +1632,26 @@ def _require_resolvable_commits(cwd: Path, commits: Iterable[str]) -> None:
             text=True,
             check=False,
         )
-        if result.returncode:
-            raise CrewError(f"commit {revision!r} is not a resolvable revision")
+        if resolved.returncode:
+            return {"available": False, "reason": "unresolvable_revision"}
+    argv = ["git", "diff", "--numstat", f"{base}..{head}"]
+    if paths:
+        argv += ["--", *[str(path) for path in paths]]
+    result = subprocess.run(
+        argv, cwd=str(cwd), capture_output=True, text=True, check=False
+    )
+    if result.returncode:
+        return {"available": False, "reason": "diff_unavailable"}
+    added = removed = files = 0
+    for line in result.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        files += 1
+        # A binary file reports "-" for both counts; it changed, but no lines did.
+        added += int(parts[0]) if parts[0].isdigit() else 0
+        removed += int(parts[1]) if parts[1].isdigit() else 0
+    return {"added": added, "removed": removed, "files": files}
 
 
 def _elapsed_seconds(start: Any, end: Any) -> int | None:
@@ -1682,6 +1679,17 @@ def _assume_utc_if_naive(value: str) -> str:
     return parsed.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _wall_exceeded_budget(wall_seconds: int | None, time_budget: Any) -> bool:
+    """Flag wall time beyond the bounded multiple used to identify stalls."""
+    if wall_seconds is None:
+        return False
+    try:
+        budget_seconds = parse_duration(str(time_budget))
+    except CrewError:
+        return False
+    return wall_seconds > STALL_BUDGET_MULTIPLE * budget_seconds
+
+
 def _run_streams(path: Path) -> list[Path]:
     """Return the original stream followed by resumes in numeric turn order."""
     resumes = sorted(
@@ -1690,22 +1698,34 @@ def _run_streams(path: Path) -> list[Path]:
     return [candidate for candidate in (path, *resumes) if candidate.is_file()]
 
 
+@dataclass(frozen=True)
+class StreamMeasures:
+    """Measurements recoverable from a run's ordered event streams."""
+
+    completed_at: str | None
+    completion_source: str | None
+    worker_seconds: int | None
+    budget: dict[str, Any]
+    session_id: str | None
+
+
 def _terminal_stream_data(
     record: Mapping[str, Any],
-) -> tuple[str | None, str | None, dict[str, Any]]:
+) -> StreamMeasures:
     """Resolve completion from events, then stream mtimes, across all turns."""
     budget = dict(record.get("budget") or {})
     if record.get("launch") != "cli":
-        return None, None, budget
+        return StreamMeasures(None, None, None, budget, None)
 
     backend_name = str(record.get("backend") or "")
     backend = _backend_settings(record, None)
     path = Path(str(record.get("log_path") or ""))
     paths = _run_streams(path)
     if not paths:
-        return None, None, budget
+        return StreamMeasures(None, None, None, budget, None)
 
     timestamps: list[tuple[datetime, str]] = []
+    session_id = None
     for candidate in paths:
         observation = _backends.observe_log(
             backend_name=backend_name,
@@ -1714,6 +1734,7 @@ def _terminal_stream_data(
         )
         if observation.terminal:
             budget = dict(observation.budget)
+        session_id = observation.session_id or session_id
         with candidate.open(encoding="utf-8", errors="replace") as handle:
             events, _malformed = _backends.parse_events(handle)
         for event in events:
@@ -1727,7 +1748,15 @@ def _terminal_stream_data(
             if parsed.tzinfo is not None:
                 timestamps.append((parsed, timestamp))
     if timestamps:
-        return max(timestamps, key=lambda item: item[0])[1], "terminal_event", budget
+        first = min(timestamps, key=lambda item: item[0])
+        last = max(timestamps, key=lambda item: item[0])
+        return StreamMeasures(
+            last[1],
+            "terminal_event",
+            max(0, int((last[0] - first[0]).total_seconds())),
+            budget,
+            session_id,
+        )
 
     newest = max(candidate.stat().st_mtime for candidate in paths)
     completed = (
@@ -1735,7 +1764,7 @@ def _terminal_stream_data(
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
-    return completed, "stream_mtime", budget
+    return StreamMeasures(completed, "stream_mtime", None, budget, session_id)
 
 
 def complete(
@@ -1784,9 +1813,9 @@ def _complete_locked(
     pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
     reverse order would lose the record outright.
 
-    Worker-time is measured from dispatch to the newest event timestamp across
-    the run's streams, then their newest last-write time. Promotion time is an
-    explicit fallback when no stream survives.
+    Worker-time spans the first and last timestamped stream events. Wall time is
+    recorded separately, and promotion time remains an explicit completion
+    fallback when no stream survives.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
@@ -1816,31 +1845,41 @@ def _complete_locked(
             "session_capture": capture,
         }
 
-    terminal_time, terminal_source, terminal_budget = _terminal_stream_data(record)
+    stream = _terminal_stream_data(record)
     if completed_at:
         finished = _assume_utc_if_naive(completed_at)
         completion_source = "provided"
-    elif terminal_time:
-        finished = terminal_time
-        completion_source = terminal_source or "terminal_event"
+    elif stream.completed_at:
+        finished = stream.completed_at
+        completion_source = stream.completion_source or "terminal_event"
     else:
         finished = _utc_now()
         completion_source = "promotion_time"
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-    _require_resolvable_commits(tree, commit_list)
-    if changed_lines is None:
-        changed_lines = (
-            scoped_diff_stat(
-                cwd=tree,
-                base=str(record.get("base_sha") or ""),
-                head=commit_list[-1],
-                paths=node.get("write_paths") or (),
-            )
-            if commit_list
-            else None
+    changed_lines = (
+        scoped_diff_stat(
+            cwd=tree,
+            base=str(record.get("base_sha") or ""),
+            head=commit_list[-1],
+            paths=node.get("write_paths") or (),
         )
+        if commit_list
+        else None
+    )
+
+    session_id = record.get("session_id") or stream.session_id
+    previous = next(
+        (
+            item
+            for item in reversed(ledger_data["runs"])
+            if session_id and item.get("session_id") == session_id
+        ),
+        None,
+    )
+    measured_budget = ledger.per_run_budget(stream.budget, previous)
+    wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
 
     run = ledger.build_record(
         run_id=run_id,
@@ -1856,7 +1895,9 @@ def _complete_locked(
         dispatched_at=str(record.get("created_at") or ""),
         completed_at=finished,
         completed_at_source=completion_source,
-        worker_seconds=_elapsed_seconds(record.get("created_at"), finished),
+        worker_seconds=stream.worker_seconds,
+        wall_seconds=wall_seconds,
+        stalled=_wall_exceeded_budget(wall_seconds, node.get("time_budget")),
         time_budget=str(node.get("time_budget") or ""),
         base_sha=str(record.get("base_sha") or ""),
         commits=commit_list,
@@ -1866,8 +1907,8 @@ def _complete_locked(
         outcome=outcome,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
-        session_id=record.get("session_id"),
-        budget=terminal_budget,
+        session_id=session_id,
+        budget=measured_budget,
     )
     already_promoted = False
     try:

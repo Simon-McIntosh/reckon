@@ -77,6 +77,8 @@ RECORD_FIELDS = (
     "completed_at",
     "completed_at_source",
     "worker_seconds",
+    "wall_seconds",
+    "stalled",
     "time_budget",
     "base_sha",
     "commits",
@@ -300,6 +302,8 @@ def build_record(
     completed_at: str = "",
     completed_at_source: str = "promotion_time",
     worker_seconds: int | None = None,
+    wall_seconds: int | None = None,
+    stalled: bool = False,
     time_budget: str = "",
     base_sha: str = "",
     commits: Iterable[str] = (),
@@ -334,6 +338,8 @@ def build_record(
         "completed_at": str(completed_at) or _utc_now(),
         "completed_at_source": str(completed_at_source) or "promotion_time",
         "worker_seconds": None if worker_seconds is None else int(worker_seconds),
+        "wall_seconds": None if wall_seconds is None else int(wall_seconds),
+        "stalled": bool(stalled),
         "time_budget": str(time_budget),
         "base_sha": str(base_sha),
         "commits": [str(sha) for sha in commits if str(sha).strip()],
@@ -350,6 +356,41 @@ def build_record(
         # very resource it is measuring — most often when it is scarcest.
         "budget": dict(budget or {}),
     }
+
+
+def per_run_budget(
+    cumulative: Mapping[str, Any],
+    previous: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Label cumulative counters and expose their non-negative run deltas."""
+    result = dict(cumulative)
+    prior_budget = dict((previous or {}).get("budget") or {})
+    current_tokens = dict(result.get("tokens") or {})
+    prior_tokens = dict(prior_budget.get("tokens") or {})
+    measured_tokens: dict[str, Any] = {}
+    for name, value in current_tokens.items():
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            measured_tokens[name] = value
+            continue
+        cumulative_name = f"{name}_cumulative"
+        prior_value = prior_tokens.get(cumulative_name, prior_tokens.get(name, 0))
+        if not isinstance(prior_value, (int, float)) or isinstance(prior_value, bool):
+            prior_value = 0
+        measured_tokens[name] = max(0, value - prior_value)
+        measured_tokens[cumulative_name] = value
+    if current_tokens:
+        result["tokens"] = measured_tokens
+
+    cost = result.get("cost_usd")
+    if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+        prior_cost = prior_budget.get(
+            "cost_usd_cumulative", prior_budget.get("cost_usd", 0)
+        )
+        if not isinstance(prior_cost, (int, float)) or isinstance(prior_cost, bool):
+            prior_cost = 0
+        result["cost_usd"] = max(0.0, cost - prior_cost)
+        result["cost_usd_cumulative"] = cost
+    return result
 
 
 def append_run(
@@ -755,6 +796,7 @@ def effort_report(
     letters = {str(k): str(v) for k, v in declared.items()}
     by_plan: dict[str, dict[str, Any]] = {}
     excluded_scope_changed = 0
+    excluded_stalled = 0
     excluded_unusable_completion = 0
     for record in runs(project, root):
         plan = str(record.get("plan") or "")
@@ -765,6 +807,7 @@ def effort_report(
                 "declared_effort": letters.get(plan, ""),
                 "runs": 0,
                 "excluded_scope_changed": 0,
+                "excluded_stalled": 0,
                 "excluded_unusable_completion": 0,
                 "measured_minutes": 0.0,
                 "durations": [],
@@ -773,6 +816,10 @@ def effort_report(
         if record.get("scope_changed"):
             row["excluded_scope_changed"] += 1
             excluded_scope_changed += 1
+            continue
+        if record.get("stalled"):
+            row["excluded_stalled"] += 1
+            excluded_stalled += 1
             continue
         if record.get("completed_at_source") not in {
             "terminal_event",
@@ -830,11 +877,13 @@ def effort_report(
         "plans": plans,
         "by_effort": buckets,
         "excluded_scope_changed": excluded_scope_changed,
+        "excluded_stalled": excluded_stalled,
         "excluded_unusable_completion": excluded_unusable_completion,
         "note": (
             "A run whose scope was widened mid-flight measures neither the "
-            "estimate nor the worker, and a run completed at promotion time "
-            "has no surviving stream boundary. Both are excluded from the "
+            "estimate nor the worker, a stalled run measures idle wall time, "
+            "and a run completed at promotion time has no surviving stream "
+            "boundary. All are excluded from the "
             "measured columns and counted separately."
         ),
     }
