@@ -222,6 +222,7 @@ class RoleConfig(ConfiguredBaseModel):
     backend: Optional[str] = Field(default=None, description="""Backend this role dispatches to. Absent means `default_backend`.""")
     model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    execution_capable: Optional[bool] = Field(default=None, description="""Whether this role runs commands that can write build, test, cache or product state inside its detached worktree.""")
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")

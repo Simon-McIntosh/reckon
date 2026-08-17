@@ -133,19 +133,24 @@ def test_shipped_defaults_validate_against_the_schema():
 def test_shipped_roles_resolve_every_worker_kind_named_by_the_contract():
     resolved = resolve(host_path=Path("/nonexistent/flight.yaml"))
     expected = {
-        "implement",
-        "review",
-        "cleanup",
-        "investigate",
-        "test",
-        "documentation",
+        "implement": True,
+        "review": False,
+        "cleanup": True,
+        "investigate": False,
+        "test": True,
+        "documentation": True,
     }
 
-    assert set(resolved.config["roles"]) == expected
-    for role in expected:
+    assert set(resolved.config["roles"]) == set(expected)
+    for role, execution_capable in expected.items():
         backend_name, backend = crew.resolve_role(resolved.config, role)
         assert backend_name == "native"
         assert backend["launch"] == "in-harness"
+        assert backend["execution_capable"] is execution_capable
+        if execution_capable:
+            assert backend["sandbox"] == "worktree-full"
+        if backend["sandbox"] == "read-only":
+            assert execution_capable is False
 
 
 def test_shipped_layer_names_no_provider_command_or_model():
@@ -429,6 +434,20 @@ def test_role_naming_an_undefined_backend_is_an_error(layers):
     with pytest.raises(FlightConfigError) as excinfo:
         resolve_files(layers)
     assert excinfo.value.key_path == "roles.review.backend"
+
+
+def test_execution_capability_rejects_a_read_only_sandbox(layers):
+    write(
+        layers["host"],
+        "roles:\n"
+        "  executor:\n"
+        "    execution_capable: true\n"
+        "    sandbox: read-only\n",
+    )
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    assert excinfo.value.key_path == "roles.executor.sandbox"
+    assert "permits worktree writes" in excinfo.value.constraint
 
 
 def test_gates_off_spelled_as_a_yaml_boolean_is_rejected(layers):

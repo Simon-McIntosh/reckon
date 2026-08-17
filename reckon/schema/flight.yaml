@@ -182,6 +182,12 @@ slots:
     description: Filesystem blast radius granted to workers of this backend.
     range: SandboxMode
 
+  execution_capable:
+    description: >-
+      Whether this role runs commands that can write build, test, cache or
+      product state inside its detached worktree.
+    range: boolean
+
   session_reuse:
     description: Whether a finished worker session can be resumed rather than respawned.
     range: boolean
@@ -323,6 +329,7 @@ classes:
       - backend
       - model
       - effort
+      - execution_capable
       - sandbox
       - session_reuse
       - time_budget

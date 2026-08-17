@@ -280,14 +280,33 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
     for role_name, role in (config.get("roles") or {}).items():
         if not isinstance(role, Mapping):
             continue
-        backend = role.get("backend")
-        if backend and backend not in backends:
+        backend_name = role.get("backend") or default_backend
+        if backend_name and backend_name not in backends:
             known = ", ".join(sorted(backends)) or "none"
             raise FlightConfigError(
                 sources,
                 f"roles.{role_name}.backend",
-                f"names backend '{backend}', which no layer defines "
+                f"names backend '{backend_name}', which no layer defines "
                 f"(defined backends: {known})",
+            )
+        backend = backends.get(backend_name) if backend_name else None
+        if not isinstance(backend, Mapping):
+            continue
+        sandbox = role.get("sandbox") or backend.get("sandbox")
+        execution_capable = role.get("execution_capable")
+        if execution_capable is True and sandbox in {None, "read-only"}:
+            raise FlightConfigError(
+                sources,
+                f"roles.{role_name}.sandbox",
+                "an execution-capable role requires a sandbox that permits "
+                "worktree writes",
+            )
+        if sandbox == "read-only" and execution_capable is not False:
+            raise FlightConfigError(
+                sources,
+                f"roles.{role_name}.execution_capable",
+                "a read-only sandbox is reserved for roles explicitly declared "
+                "non-execution-capable",
             )
 
 
