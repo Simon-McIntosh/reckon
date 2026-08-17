@@ -105,6 +105,58 @@
       <code>~/.config/reckon/crew/runs/r-20260817T161942885073-w4-verify/</code>.
     </p>
 
+    <h2 id="budgets">Time budgets (measured per-role defaults, overrun watchdog, retired concurrency key)</h2>
+    <p>
+      Commit <code>d5d3c35</code> (2026-08-17, worker codex-d, 311 insertions / 70 deletions over
+      <code>reckon/schema/flight.yaml</code> and its two generated artifacts,
+      <code>reckon/flight.py</code>, <code>reckon/crew.py</code>,
+      <code>reckon/schema/flight-defaults.yaml</code> and two test files; merged at
+      <code>fa14abc</code>). Scope was widened mid-flight, so the run is recorded
+      <code>scope_changed</code> and excluded from effort calibration.
+    </p>
+    <p>
+      <strong>Defaults derived from the committed ledger</strong>, with the provenance of each
+      figure stated rather than implied:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Measured p75</th><th>Sample</th><th>Shipped default</th><th>Basis</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>implement</td><td>457.0 s (7.62 m)</td><td>n=79</td><td>8 m</td><td>measured, rounded up</td></tr>
+        <tr><td>review</td><td>189.3 s (3.15 m)</td><td>n=10</td><td>4 m</td><td>measured, rounded up</td></tr>
+        <tr><td>cleanup</td><td>906.5 s (15.11 m)</td><td>n=2</td><td>25 m</td><td>documented fallback — sample too thin to claim derivation</td></tr>
+        <tr><td>investigate</td><td>—</td><td>n=0</td><td>4 m</td><td>documented review-class fallback</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Ceiling separated from default.</strong> The hard ceiling resolves independently
+        at 60 m, so a 45 m implement node dispatches against defaults with no host config edit.</li>
+      <li><strong>Watchdog.</strong> Live classification exposes declared budget, elapsed time,
+        overrun state and overrun seconds in one poll; opt-in enforcement stops an overdue CLI
+        process only past the configured 1.5× grace multiple and records
+        <code>phase=stopped</code> truthfully. Disabled by default.</li>
+      <li><strong>Concurrency key retired</strong> per the locked decision: absent from the source
+        schema, the generated model, the public JSON schema, resolved config and provenance. A
+        legacy host value is stripped before validation and surfaced as a warning while dispatch
+        stays valid — demonstrated on this workstation's own host config, which still carries
+        <code>concurrency: 3</code> and resolves without error.</li>
+    </ul>
+    <p>
+      Tests: 4 added; focused suites 186 passed, 0 failed; ruff clean; schema regeneration exit 0.
+      Logs: <code>~/.config/reckon/crew/runs/r-20260817T161940557547-ftc-budgets/</code>.
+    </p>
+    <p>
+      <strong>Negative finding: an exclusive scope can be exclusive and still insufficient.</strong>
+      The node was first dispatched owning the generated <code>reckon/_flight_schema.py</code> but
+      not its source <code>reckon/schema/flight.yaml</code> nor the published
+      <code>docs/_shared/flight.schema.json</code>. It stopped without writing anything rather than
+      hand-edit a generated artifact, and was correct to: the repository enforces regeneration
+      parity under test. The scoped pre-dispatch property checks that no two nodes share a path, not
+      that the named paths can carry the goal — so only the coordinator can catch this, and a
+      generated file must never be scoped without its source.
+    </p>
+
   </main>
 </body>
 </html>

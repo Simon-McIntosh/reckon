@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="7">
-<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779">
+<meta name="plan-version" content="9">
+<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779,d5d3c351374d905389dcc400d25523109e25e22a">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-impl" content="0.8">
 </head>
 <body>
   <main class="plan-doc">
@@ -55,20 +55,18 @@
       Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#contract">§2 landed</a>.
     </p>
 
-    <h2 id="s3">§3 — Time budgets that mean something</h2>
-    <p><strong>Per-role defaults from measurement.</strong> Set role-level time budgets near the
-    measured p75 of actual role wall time (review/investigate are far shorter than implement)
-    instead of one 25m for everything; separate the default from the ceiling so a node may declare
-    a larger budget up to the fence without a host config edit. Done when a 45m implement node
-    dispatches against defaults while a review node defaults smaller.</p>
-    <p><strong>Runtime watchdog.</strong> The budget becomes a deadline signal, not a dead letter:
-    the live classification flags budget-overrun runs, and an opt-in enforcement (grace multiple,
-    then stop with phase recorded) exists for orchestrators that want it. Done when a synthetic
-    overrun is flagged within one poll and the opt-in stop leaves a truthful phase.</p>
-    <p><strong>Concurrency config wired or deleted.</strong> <code>backends.*.concurrency</code>
-    either becomes a dispatch admission check (refuse when live runs on that backend reach it) or
-    leaves the schema; declared-but-dead config is worse than either. Done when the flight schema,
-    provenance and docs agree with the runtime behaviour.</p>
+    <h2 id="s3">§3 — Time budgets that mean something <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Time budgets now come from measurement (commit <code>d5d3c35</code>): implement 8 m and
+      review 4 m derived from ledger p75 (457 s / n=79 and 189 s / n=10), with cleanup and
+      investigate kept as documented fallbacks because n=2 and n=0 cannot carry a derived default.
+      The 60 m ceiling resolves independently, so a 45 m implement node needs no host edit. Overrun
+      state is exposed in one poll with opt-in enforcement past a 1.5× grace recording
+      <code>phase=stopped</code>. The retired <code>concurrency</code> key is gone from schema,
+      model, published JSON and provenance, with a legacy host value stripped and warned — proven
+      against this workstation's own config. 186 focused tests green.
+      Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#budgets">§3 landed</a>.
+    </p>
 
     <h2 id="s4">§4 — Cheap observation and state writes</h2>
     <p><strong>Fleet polling.</strong> The contract prescribes one polling surface — the MCP
@@ -127,6 +125,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260817-ftc-reconcile" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">ftc-reconcile landed - commit 372c243; gate passed; measure: 5 new tests mechanically pin 6 MCP crew views, 14 instructed CLI command paths with flags, 6 dispatch exit outcomes, 3 refusal remedies and lifecycle guidance; 38 contract tests green; swept items each recorded with file and line; wall 596 s; evidence: fleet-throughput-contract-landed#reconcile. Section s5 closed.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260817-ftc-budgets" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">ftc-budgets landed - commit d5d3c35; gate passed; measure: defaults from ledger p75 - implement 457 s n=79 to 8 m, review 189 s n=10 to 4 m, cleanup n=2 kept as documented 25 m fallback, investigate documented 4 m fallback; ceiling resolves independently at 60 m so a 45 m implement node needs no host edit; overrun state exposed in one poll with opt-in stop past a 1.5x grace recording phase=stopped; concurrency key absent from schema/model/JSON/provenance with legacy host value stripped and warned (proven on this host's own config); 186 focused tests green, 4 added; wall 743 s, scope_changed so calibration-excluded; evidence: fleet-throughput-contract-landed#budgets. Section s3 closed.</div>
 </div>
 </section>
 </main>
