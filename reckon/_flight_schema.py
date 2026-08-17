@@ -198,7 +198,6 @@ class BackendConfig(ConfiguredBaseModel):
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
     budget_check: Optional[bool] = Field(default=None, description="""Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.""")
-    concurrency: Optional[int] = Field(default=None, description="""Maximum simultaneous workers this backend will run.""", ge=1)
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
 
     @field_validator('time_budget')
@@ -225,7 +224,6 @@ class RoleConfig(ConfiguredBaseModel):
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
-    concurrency: Optional[int] = Field(default=None, description="""Maximum simultaneous workers this backend will run.""", ge=1)
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
 
     @field_validator('time_budget')
@@ -267,6 +265,8 @@ class FenceConfig(ConfiguredBaseModel):
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
     needs_help_after_failures: Optional[int] = Field(default=None, description="""Consecutive failures after which a worker stops retrying and asks for help. Zero disables the fence.""", ge=0)
     manifest_required: Optional[bool] = Field(default=None, description="""Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.""")
+    enforce_budget_watchdog: Optional[bool] = Field(default=None, description="""Whether observation stops a live CLI worker after its declared time budget multiplied by the configured grace. Off by default; classification always reports the overrun without mutating the run.""")
+    budget_grace_multiple: Optional[float] = Field(default=None, description="""Multiple of a run's declared time budget allowed before opt-in watchdog enforcement stops it. Values below one would stop before the declared allowance elapsed.""", ge=1)
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):

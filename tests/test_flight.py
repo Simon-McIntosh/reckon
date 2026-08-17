@@ -26,6 +26,8 @@ import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
+from reckon import crew
+from reckon._flight_schema import BackendConfig
 from reckon.flight import (
     FlightConfigError,
     deep_merge,
@@ -157,17 +159,17 @@ def test_four_layers_resolve_in_precedence_order(layers):
     """Each layer overrides the one below it, override winning outright."""
     write(
         layers["host"],
-        "default_backend: alpha\nbackends:\n  alpha:\n    launch: cli\n    command: alpha-cli\n    concurrency: 2\n",
+        "default_backend: alpha\nbackends:\n  alpha:\n    launch: cli\n    command: alpha-cli\n    model: base\n",
     )
-    write(layers["project"], "backends:\n  alpha:\n    concurrency: 5\n")
+    write(layers["project"], "backends:\n  alpha:\n    model: project\n")
 
     resolved = resolve_files(layers)
-    assert resolved.config["backends"]["alpha"]["concurrency"] == 5
+    assert resolved.config["backends"]["alpha"]["model"] == "project"
 
     overridden = resolve_files(
-        layers, overrides={"backends": {"alpha": {"concurrency": 9}}}
+        layers, overrides={"backends": {"alpha": {"model": "override"}}}
     )
-    assert overridden.config["backends"]["alpha"]["concurrency"] == 9
+    assert overridden.config["backends"]["alpha"]["model"] == "override"
 
 
 def test_project_override_of_one_key_leaves_sibling_keys_standing(layers):
@@ -181,7 +183,7 @@ def test_project_override_of_one_key_leaves_sibling_keys_standing(layers):
         "    command: alpha-cli\n"
         "    model: some-model\n"
         "    effort: high\n"
-        "    concurrency: 3\n",
+        "    time_budget: 12m\n",
     )
     write(layers["project"], "backends:\n  alpha:\n    model: other-model\n")
 
@@ -190,7 +192,7 @@ def test_project_override_of_one_key_leaves_sibling_keys_standing(layers):
     # Every sibling key survives the override.
     assert backend["command"] == "alpha-cli"
     assert backend["effort"] == "high"
-    assert backend["concurrency"] == 3
+    assert backend["time_budget"] == "12m"
     assert backend["launch"] == "cli"
     # And keys the host layer never mentioned still come from shipped defaults.
     assert resolve_files(layers).config["gates"]["enforce"] == "strict"
@@ -280,16 +282,16 @@ def test_every_resolved_key_reports_its_originating_layer(layers):
         "  alpha:\n"
         "    launch: cli\n"
         "    command: alpha-cli\n"
-        "    concurrency: 2\n",
+        "    model: host-model\n",
     )
-    write(layers["project"], "backends:\n  alpha:\n    concurrency: 5\n")
+    write(layers["project"], "backends:\n  alpha:\n    model: project-model\n")
     resolved = resolve_files(layers, overrides={"gates": {"enforce": "advisory"}})
 
     assert resolved.origin("backends.alpha.command") == "host"
-    assert resolved.origin("backends.alpha.concurrency") == "project"
+    assert resolved.origin("backends.alpha.model") == "project"
     assert resolved.origin("gates.enforce") == "override"
     assert resolved.origin("gates.on_fail") == "shipped"
-    assert resolved.origin("backends.native.concurrency") == "shipped"
+    assert resolved.origin("roles.implement.time_budget") == "shipped"
 
 
 def test_provenance_covers_every_leaf_of_the_resolved_config(layers):
@@ -343,14 +345,41 @@ def test_malformed_layer_never_falls_back_to_defaults(layers):
 
 
 def test_out_of_range_value_is_rejected(layers):
-    """Concurrency below one would silently stall a fleet."""
+    """A grace below one would stop a worker before its allowance elapsed."""
     write(
         layers["host"],
-        "backends:\n  alpha:\n    launch: cli\n    command: a\n    concurrency: 0\n",
+        "fences:\n  budget_grace_multiple: 0.5\n",
     )
     with pytest.raises(FlightConfigError) as excinfo:
         resolve_files(layers)
-    assert excinfo.value.key_path == "backends.alpha.concurrency"
+    assert excinfo.value.key_path == "fences.budget_grace_multiple"
+
+
+def test_retired_backend_concurrency_is_ignored_with_a_runtime_warning(layers):
+    write(layers["host"], "backends:\n  native:\n    concurrency: 9\n")
+
+    resolved = resolve_files(layers)
+    resolution = crew.plan_dispatch(
+        node=crew.TaskNode(
+            id="compatibility-reader",
+            goal="read a compatible host configuration",
+            plan="plan-a",
+            done_when=(
+                "uv run pytest tests/test_flight.py reports 0 failures and the "
+                "resolved warning names the retired declaration"
+            ),
+            write_paths=["reckon/flight.py"],
+        ),
+        config=resolved.config,
+    )
+
+    assert "concurrency" not in BackendConfig.model_fields
+    assert "concurrency" not in resolved.config["backends"]["native"]
+    assert resolved.origin("backends.native.concurrency") is None
+    assert len(resolved.warnings) == 1
+    assert "retired and was ignored" in resolved.warnings[0]
+    assert resolution.validation.ok
+    assert resolution.warnings == resolved.warnings
 
 
 def test_malformed_time_budget_is_rejected(layers):
@@ -472,7 +501,15 @@ def test_default_stdout_parses_as_json_and_exits_zero():
     result = run_cli()
     assert result.exit_code == 0
     payload = json.loads(result.output)
-    assert set(payload) == {"availability", "config", "layers", "project", "provenance"}
+    assert set(payload) == {
+        "availability",
+        "config",
+        "layers",
+        "project",
+        "provenance",
+        "warnings",
+    }
+    assert payload["warnings"] == []
 
 
 def test_key_order_is_stable_across_runs():
@@ -505,10 +542,10 @@ def test_override_flag_reaches_the_override_layer():
 
 def test_overrides_parse_as_yaml_scalars():
     parsed = parse_overrides(
-        ["backends.alpha.concurrency=3", "gates.require_evidence=false"]
+        ["roles.review.session_reuse=true", "gates.require_evidence=false"]
     )
     assert parsed == {
-        "backends": {"alpha": {"concurrency": 3}},
+        "roles": {"review": {"session_reuse": True}},
         "gates": {"require_evidence": False},
     }
 

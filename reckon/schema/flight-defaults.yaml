@@ -16,16 +16,23 @@ backends:
     launch: in-harness
     sandbox: worktree-full
     session_reuse: false
-    concurrency: 4
-    time_budget: 25m
 
 roles:
-  implement: {}
-  cleanup: {}
+  # Committed ledger p75: 457s across 79 usable implement runs, rounded up.
+  implement:
+    time_budget: 8m
+  # Only two usable cleanup runs exist (p75 906.5s), so retain the conservative
+  # fallback until the role has enough observations to derive a stable default.
+  cleanup:
+    time_budget: 25m
   review:
     sandbox: read-only
+    # Committed ledger p75: 189.25s across 10 usable review runs, rounded up.
+    time_budget: 4m
   investigate:
     sandbox: read-only
+    # No usable investigate sample yet; use the measured review-class fallback.
+    time_budget: 4m
 
 gates:
   enforce: strict
@@ -41,9 +48,12 @@ budget:
   exhausted_statuses: []
 
 fences:
-  time_budget: 25m
+  # A role's time_budget is its default; this is the independent hard ceiling.
+  time_budget: 60m
   needs_help_after_failures: 2
   manifest_required: true
+  enforce_budget_watchdog: false
+  budget_grace_multiple: 1.5
 
 worktree:
   cleanup: conservative

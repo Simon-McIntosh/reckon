@@ -225,11 +225,6 @@ slots:
       test.
     multivalued: true
 
-  concurrency:
-    description: Maximum simultaneous workers this backend will run.
-    range: integer
-    minimum_value: 1
-
   time_budget:
     description: >-
       Wall-clock allowance, written as an integer followed by a unit — `s`, `m`
@@ -261,6 +256,21 @@ slots:
       Whether a worker must write its manifest to the orchestrator-named path
       before its node counts as delivered.
     range: boolean
+
+  enforce_budget_watchdog:
+    description: >-
+      Whether observation stops a live CLI worker after its declared time
+      budget multiplied by the configured grace. Off by default; classification
+      always reports the overrun without mutating the run.
+    range: boolean
+
+  budget_grace_multiple:
+    description: >-
+      Multiple of a run's declared time budget allowed before opt-in watchdog
+      enforcement stops it. Values below one would stop before the declared
+      allowance elapsed.
+    range: float
+    minimum_value: 1
 
   cleanup:
     range: WorktreeCleanup
@@ -302,7 +312,6 @@ classes:
       - sandbox
       - session_reuse
       - budget_check
-      - concurrency
       - time_budget
 
   RoleConfig:
@@ -316,7 +325,6 @@ classes:
       - effort
       - sandbox
       - session_reuse
-      - concurrency
       - time_budget
 
   GateConfig:
@@ -342,6 +350,8 @@ classes:
       - time_budget
       - needs_help_after_failures
       - manifest_required
+      - enforce_budget_watchdog
+      - budget_grace_multiple
 
   WorktreeConfig:
     description: Worktree lifecycle policy.

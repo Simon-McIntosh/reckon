@@ -28,14 +28,6 @@
                         "null"
                     ]
                 },
-                "concurrency": {
-                    "description": "Maximum simultaneous workers this backend will run.",
-                    "minimum": 1,
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
                 "effort": {
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
@@ -109,14 +101,6 @@
                     "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
                     "type": [
                         "string",
-                        "null"
-                    ]
-                },
-                "concurrency": {
-                    "description": "Maximum simultaneous workers this backend will run.",
-                    "minimum": 1,
-                    "type": [
-                        "integer",
                         "null"
                     ]
                 },
@@ -206,6 +190,21 @@
             "additionalProperties": false,
             "description": "Limits a worker applies to itself before asking for help.",
             "properties": {
+                "budget_grace_multiple": {
+                    "description": "Multiple of a run's declared time budget allowed before opt-in watchdog enforcement stops it. Values below one would stop before the declared allowance elapsed.",
+                    "minimum": 1,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "enforce_budget_watchdog": {
+                    "description": "Whether observation stops a live CLI worker after its declared time budget multiplied by the configured grace. Off by default; classification always reports the overrun without mutating the run.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "manifest_required": {
                     "description": "Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.",
                     "type": [
@@ -401,14 +400,6 @@
                         "null"
                     ]
                 },
-                "concurrency": {
-                    "description": "Maximum simultaneous workers this backend will run.",
-                    "minimum": 1,
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
                 "effort": {
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
@@ -461,14 +452,6 @@
                     "description": "Backend this role dispatches to. Absent means `default_backend`.",
                     "type": [
                         "string",
-                        "null"
-                    ]
-                },
-                "concurrency": {
-                    "description": "Maximum simultaneous workers this backend will run.",
-                    "minimum": 1,
-                    "type": [
-                        "integer",
                         "null"
                     ]
                 },

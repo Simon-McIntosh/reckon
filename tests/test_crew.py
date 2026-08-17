@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -355,6 +356,28 @@ def test_the_budget_ceiling_prefers_the_backend_over_the_fence() -> None:
     _, backend = crew.resolve_role(config, "implement")
     assert crew.resolved_time_budget(config, backend) == "25m"
     assert crew.resolved_time_budget(config, {}) == "10m"
+
+
+def test_measured_role_defaults_are_separate_from_the_time_ceiling(home) -> None:
+    from reckon import flight
+
+    resolved = flight.resolve(host_path=Path("/nonexistent/flight.yaml"))
+    implement = crew.plan_dispatch(node=_node(time_budget=""), config=resolved.config)
+    review = crew.plan_dispatch(
+        node=_node(id="review-node", role="review", time_budget=""),
+        config=resolved.config,
+    )
+    declared = crew.plan_dispatch(
+        node=_node(id="long-node", time_budget="45m"), config=resolved.config
+    )
+
+    assert implement.node.time_budget == "8m"
+    assert review.node.time_budget == "4m"
+    assert resolved.origin("roles.implement.time_budget") == "shipped"
+    assert resolved.origin("roles.review.time_budget") == "shipped"
+    assert declared.node.time_budget == "45m"
+    assert declared.budget_ceiling == "60m"
+    assert declared.validation.ok
 
 
 def test_the_resolution_fills_the_defaults_a_dispatch_would_fill(home) -> None:
@@ -1462,6 +1485,70 @@ def test_no_reader_promotes_a_run_without_commit_or_manifest(home, repo) -> None
 def test_liveness_is_reported_not_inferred() -> None:
     assert crew.process_alive(None) is None
     assert crew.process_alive(999999999) is False
+
+
+def test_live_classification_flags_a_budget_overrun_in_one_poll() -> None:
+    started = datetime(2026, 8, 17, 12, 0, tzinfo=timezone.utc)
+    record = {
+        "run_id": "r-overrun",
+        "created_at": started.isoformat(),
+        "node": {"id": "slow-node", "plan": "plan-a", "time_budget": "10m"},
+        "phase": "working",
+        "process_alive": True,
+    }
+
+    row = crew.classify_pointer(
+        record, now_seconds=(started + timedelta(seconds=601)).timestamp()
+    )
+
+    assert row["classification"] == "running"
+    assert row["budget_seconds"] == 600
+    assert row["elapsed_seconds"] == 601
+    assert row["budget_overrun"] is True
+    assert row["budget_overrun_seconds"] == 1
+
+
+def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
+    home, monkeypatch
+) -> None:
+    started = datetime.now(tz=timezone.utc) - timedelta(seconds=21)
+    run_id = "r-watchdog"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "launch": "cli",
+            "backend": "alpha",
+            "argv": ["codex"],
+            "pid": 4242,
+            "pid_start_time": "start",
+            "phase": "working",
+            "created_at": started.isoformat(),
+            "node": {"id": "slow-node", "plan": "plan-a", "time_budget": "10s"},
+            "manifest_path": str(home / "absent-manifest.md"),
+            "log_path": str(home / "absent-stream.jsonl"),
+        },
+    )
+    signalled = []
+    monkeypatch.setattr(crew, "process_alive", lambda pid: True)
+    monkeypatch.setattr(
+        crew, "_signal_process_group", lambda pid, started_at: signalled.append(pid)
+    )
+    config = {
+        "fences": {
+            "enforce_budget_watchdog": True,
+            "budget_grace_multiple": 2.0,
+        }
+    }
+
+    observed = crew.observe(run_id, config=config)
+    row = crew.classify_pointer(observed)
+
+    assert signalled == [4242]
+    assert observed["watchdog_enforced"] is True
+    assert observed["phase"] == "stopped"
+    assert row["classification"] == "stopped"
 
 
 def test_resume_answers_in_the_same_session(home, repo) -> None:
