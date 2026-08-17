@@ -294,6 +294,31 @@ def flight(project, checkout_path, overrides, probe_auth, pretty):
     click.echo(json.dumps(report, indent=2 if pretty else None, sort_keys=True))
 
 
+@main.command(name="capabilities")
+@click.option(
+    "--rebuild",
+    is_flag=True,
+    help="Rebuild the disposable cache from all mounted committed ledgers.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def capabilities_command(rebuild, pretty):
+    """Inspect cache freshness, or explicitly rebuild it off dispatch."""
+
+    from reckon import capabilities as capabilities_module
+
+    if rebuild:
+        record = capabilities_module.rebuild_capabilities()
+        payload = {
+            "rebuilt": True,
+            "path": str(capabilities_module.capabilities_path()),
+            "ledger_versions": record.get("ledger_versions", {}),
+            "configurations": len(record.get("configurations") or []),
+        }
+    else:
+        payload = {"rebuilt": False, **capabilities_module.inspect_capabilities()}
+    _emit(payload, pretty)
+
+
 @main.group(name="crew")
 def crew():
     """Dispatch and observe workers through one backend-agnostic call.
@@ -303,7 +328,8 @@ def crew():
     are branchable — 0 succeeded, 1 the configuration or request is wrong, 2 the
     node is not dispatchable and names which property it failed, 3 the wave is
     held on budget and names the backend, the utilisation and when it resets, 4
-    the named plan section is unavailable at the worktree base ref.
+    the named plan section is unavailable at the worktree base ref, 5 the
+    selected worker configuration has a typed competence refusal.
     """
 
 
@@ -470,6 +496,12 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     help="Decision key already locked in the plan.",
 )
 @click.option("--time-budget", default="", help="Wall-clock allowance, e.g. 25m.")
+@click.option(
+    "--estimated-hours",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Neutral worker-hours for this node; otherwise the plan estimate is labelled as fallback.",
+)
 @click.option("--manifest", default="", help="Manifest path the worker must write.")
 @click.option(
     "--member",
@@ -516,6 +548,7 @@ def crew_dispatch(
     required_decisions,
     locked_decisions,
     time_budget,
+    estimated_hours,
     manifest,
     member,
     session,
@@ -545,6 +578,7 @@ def crew_dispatch(
         done_when=done_when,
         write_paths=list(write_paths),
         time_budget=time_budget,
+        estimated_hours=estimated_hours,
         manifest_path=manifest,
         requires_decisions=list(required_decisions),
         peer_scopes=_peer_scopes(peers),
@@ -567,8 +601,25 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
+        except crew_module.CompetenceLimit as exc:
+            _emit(
+                {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+                pretty,
+            )
+            raise click.exceptions.Exit(5) from exc
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
+        if resolution.competence and not resolution.competence["allowed"]:
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "competence-refusal",
+                    "competence": resolution.competence,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(5)
         _emit(
             {"ok": resolution.validation.ok, "dry_run": True, **resolution.as_dict()},
             pretty,
@@ -607,6 +658,12 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(3) from exc
+    except crew_module.CompetenceLimit as exc:
+        _emit(
+            {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+            pretty,
+        )
+        raise click.exceptions.Exit(5) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(

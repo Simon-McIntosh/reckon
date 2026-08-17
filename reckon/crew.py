@@ -254,6 +254,7 @@ class TaskNode:
     write_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
     manifest_path: str = ""
+    estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
 
@@ -264,6 +265,7 @@ class TaskNode:
             "goal": self.goal,
             "id": self.id,
             "manifest_path": self.manifest_path,
+            "estimated_hours": self.estimated_hours,
             "plan": self.plan,
             "requires_decisions": list(self.requires_decisions),
             "role": self.role,
@@ -939,10 +941,7 @@ def garbage_collect(
         if apply:
             with _pointer_lock(run_id):
                 current = read_pointer(run_id)
-                if (
-                    run_id in ledgered
-                    and process_alive(current.get("pid")) is False
-                ):
+                if run_id in ledgered and process_alive(current.get("pid")) is False:
                     pointer_path(run_id).unlink()
                     report["removed"] = True
         pointer_reports.append(report)
@@ -955,7 +954,9 @@ def garbage_collect(
         for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
             if directory.name not in ledgered or directory.name in live_ids:
                 continue
-            modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=timezone.utc)
+            modified = datetime.fromtimestamp(
+                directory.stat().st_mtime, tz=timezone.utc
+            )
             if modified > cutoff:
                 continue
             report = {
@@ -1177,8 +1178,17 @@ def _agent_configuration(
     }
 
 
-def _plan_estimated_hours(repo: Path, project: str, node: TaskNode) -> float | None:
-    """Read the node's neutral-hours estimate from its owning plan."""
+def _estimated_hours(
+    repo: Path, project: str, node: TaskNode
+) -> tuple[float | None, str]:
+    """Return neutral hours and whether the node or plan supplied them."""
+
+    try:
+        node_hours = float(node.estimated_hours)
+    except (TypeError, ValueError):
+        node_hours = 0.0
+    if math.isfinite(node_hours) and node_hours > 0:
+        return node_hours, "node"
 
     from reckon.resources import resolve_resource
 
@@ -1186,13 +1196,17 @@ def _plan_estimated_hours(repo: Path, project: str, node: TaskNode) -> float | N
         repo / "docs", project, node.plan, "plan", include_archived=False
     )
     if resource is None:
-        return None
+        return None, "unavailable"
     value = _plan_html.parse_meta(resource.path).get("effort_hours")
     try:
         hours = float(value)
     except (TypeError, ValueError):
-        return None
-    return hours if math.isfinite(hours) and hours > 0 else None
+        return None, "unavailable"
+    return (
+        (hours, "plan-fallback")
+        if math.isfinite(hours) and hours > 0
+        else (None, "unavailable")
+    )
 
 
 def _competence_verdict(
@@ -1201,14 +1215,17 @@ def _competence_verdict(
     project: str,
     repo: Path,
 ) -> dict[str, Any]:
-    """Compare plan size with the selected configuration's measured horizon."""
+    """Compare a neutral node estimate with a neutral-size success horizon."""
 
     agent = _agent_configuration(
         resolution.backend, resolution.launch, resolution.backend_settings
     )
     key = agent_configuration_key({"agent": agent})
-    estimated_hours = _plan_estimated_hours(repo, project, resolution.node)
+    estimated_hours, estimate_provenance = _estimated_hours(
+        repo, project, resolution.node
+    )
     cache = capabilities.load_capabilities()
+    cache_status = capabilities.project_cache_status(cache, project, root=repo)
     configuration = next(
         (
             item
@@ -1227,8 +1244,13 @@ def _competence_verdict(
         "allowed": True,
         "agent_key": key,
         "estimated_hours": estimated_hours,
+        "estimate_provenance": estimate_provenance,
+        "cache_status": cache_status,
         "reason": "no-measured-horizon",
     }
+    if cache_status == "stale":
+        verdict["reason"] = "stale-capability-cache"
+        return verdict
     if not math.isfinite(horizon_hours) or horizon_hours <= 0:
         return verdict
     if estimated_hours is None:
@@ -1243,17 +1265,20 @@ def _competence_verdict(
     if not math.isfinite(speed_factor) or speed_factor <= 0:
         speed_factor = 1.0
 
-    adjusted_hours = estimated_hours / speed_factor
-    target_size = horizon_hours * speed_factor
+    # Both the node estimate and horizon are neutral estimated hours.  Speed is
+    # descriptive here: applying it to only one side recreates the unit defect.
+    target_size = horizon_hours
     verdict.update(
         {
-            "allowed": adjusted_hours <= horizon_hours,
-            "adjusted_hours": round(adjusted_hours, 6),
+            "allowed": estimated_hours <= horizon_hours,
+            "compared_hours": round(estimated_hours, 6),
+            "comparison_unit": "neutral-estimate-hours",
             "competence_horizon_hours": round(horizon_hours, 6),
             "reason": "within-competence-horizon"
-            if adjusted_hours <= horizon_hours
+            if estimated_hours <= horizon_hours
             else "competence-horizon-exceeded",
             "speed_factor": round(speed_factor, 6),
+            "speed_direction": "neutral-estimate-hours-per-actual-worker-hour",
             "target_size_hours": round(target_size, 6),
         }
     )
@@ -1283,9 +1308,10 @@ class DispatchPlan:
     budget_ceiling: str
     validation: NodeValidation
     warnings: list[str] = field(default_factory=list)
+    competence: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "backend": self.backend,
             "launch": self.launch,
             "node": self.node.as_dict(),
@@ -1295,6 +1321,9 @@ class DispatchPlan:
             "write_paths": list(self.node.write_paths),
             "warnings": list(self.warnings),
         }
+        if self.competence is not None:
+            payload["competence"] = dict(self.competence)
+        return payload
 
 
 def _path_is_tmpfs(path: str | Path) -> bool:
@@ -1368,7 +1397,7 @@ def plan_dispatch(
     )
     if verdict.ok and repo is not None:
         require_plan_section_visible(node=node, project=project, repo=repo, base=base)
-    return DispatchPlan(
+    resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
         launch=str(launch_kind),
@@ -1378,6 +1407,11 @@ def plan_dispatch(
         validation=verdict,
         warnings=warnings,
     )
+    if verdict.ok and repo is not None:
+        resolution.competence = _competence_verdict(
+            resolution=resolution, project=project, repo=Path(repo).resolve()
+        )
+    return resolution
 
 
 def dispatch(
@@ -1441,10 +1475,8 @@ def dispatch(
             )
         )
 
-    competence = _competence_verdict(
-        resolution=resolution,
-        project=project,
-        repo=repo_root,
+    competence = resolution.competence or _competence_verdict(
+        resolution=resolution, project=project, repo=repo_root
     )
     if not competence["allowed"]:
         raise CompetenceLimit(competence)

@@ -137,10 +137,11 @@ def calibrate_agent_speeds(
     plan_estimates: Mapping[str, Any],
     agent_speed_factors: Mapping[str, Any] | None = None,
 ) -> CalibrationResult:
-    """Update duration factors while keeping every plan estimate unchanged.
+    """Update speed factors while keeping every plan estimate unchanged.
 
-    A factor above one means the configuration took longer than the neutral
-    estimate; a factor below one means it completed the work faster.
+    Speed is neutral estimated hours per actual worker-hour.  A factor above
+    one is faster; a factor below one is slower.  This direction is shared by
+    the capability cache and every consumer of calibrated speed.
     """
 
     estimates = _figures(plan_estimates)
@@ -153,7 +154,7 @@ def calibrate_agent_speeds(
         if estimate is None:
             excluded["missing_counterpart"] += 1
             continue
-        samples[agent].append(actual_hours / estimate.value)
+        samples[agent].append(estimate.value / actual_hours)
         included += 1
     for agent, values in samples.items():
         factors[agent] = _aggregate(values)
@@ -178,7 +179,7 @@ def calibrate_plan_estimates(
         if factor is None:
             excluded["missing_counterpart"] += 1
             continue
-        samples[plan].append(actual_hours / factor.value)
+        samples[plan].append(actual_hours * factor.value)
         included += 1
     for plan, values in samples.items():
         estimates[plan] = _aggregate(values)

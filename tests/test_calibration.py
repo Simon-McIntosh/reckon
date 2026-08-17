@@ -27,7 +27,7 @@ def _run(
     }
 
 
-def test_slow_agent_updates_only_its_duration_factor() -> None:
+def test_slow_agent_updates_only_its_speed_factor() -> None:
     estimates = {"alpha": 1.0, "beta": 2.0, "gamma": 4.0}
     runs = [
         _run("alpha", "slow", 2.0),
@@ -38,7 +38,7 @@ def test_slow_agent_updates_only_its_duration_factor() -> None:
     result = calibrate_agent_speeds(runs, plan_estimates=estimates)
 
     assert {key: item.value for key, item in result.plan_estimates.items()} == estimates
-    assert result.agent_speed_factors["slow"].value == 2.0
+    assert result.agent_speed_factors["slow"].value == 0.5
     assert result.agent_speed_factors["slow"].samples == 3
 
 
@@ -69,7 +69,7 @@ def test_scope_changed_run_is_withheld_from_both_loops() -> None:
         agent_speed_factors={"worker": 1.0},
     )
 
-    assert speed.agent_speed_factors["worker"].value == 2.0
+    assert speed.agent_speed_factors["worker"].value == 0.5
     assert effort.plan_estimates["work"].value == 2.0
     assert speed.excluded["scope_changed"] == 1
     assert effort.excluded["scope_changed"] == 1
@@ -89,7 +89,7 @@ def test_promotion_time_run_is_withheld_from_both_loops() -> None:
         agent_speed_factors={"worker": 1.0},
     )
 
-    assert speed.agent_speed_factors["worker"].value == 2.0
+    assert speed.agent_speed_factors["worker"].value == 0.5
     assert effort.plan_estimates["work"].value == 2.0
     assert speed.excluded["unusable_completion"] == 1
     assert effort.excluded["unusable_completion"] == 1
@@ -134,7 +134,7 @@ def test_confidence_reports_sample_depth_beside_each_figure() -> None:
         plan_estimates={"work": 1.0},
     ).agent_speed_factors["worker"]
 
-    assert one.value == many.value == 2.0
+    assert one.value == many.value == 0.5
     assert one.samples == 1
     assert many.samples == 8
     assert 0.0 < one.confidence < many.confidence < 1.0
@@ -163,9 +163,9 @@ def test_noisy_sequence_converges_without_oscillation_from_empty_history() -> No
         speed_values.append(speed_result.agent_speed_factors["slower"].value)
 
     assert plan_values[-1] == pytest.approx(3.0, abs=0.05)
-    assert speed_values[-1] == pytest.approx(2.0, abs=0.05)
+    assert speed_values[-1] == pytest.approx(0.5, abs=0.05)
     assert abs(plan_values[-1] - 3.0) <= abs(plan_values[0] - 3.0)
-    assert abs(speed_values[-1] - 2.0) <= abs(speed_values[0] - 2.0)
+    assert abs(speed_values[-1] - 0.5) <= abs(speed_values[0] - 0.5)
     assert plan_result.plan_estimates["target"].confidence > 0.5
     assert speed_result.agent_speed_factors["slower"].confidence > 0.5
 

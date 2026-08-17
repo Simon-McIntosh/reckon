@@ -590,20 +590,24 @@ def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
 
     payload = excinfo.value.verdict
     assert payload == {
-        "adjusted_hours": pytest.approx(2.857143),
         "agent_key": payload["agent_key"],
         "allowed": False,
+        "cache_status": "untracked",
+        "compared_hours": 4.0,
+        "comparison_unit": "neutral-estimate-hours",
         "competence_horizon_hours": 2.5,
+        "estimate_provenance": "plan-fallback",
         "estimated_hours": 4.0,
         "reason": "competence-horizon-exceeded",
         "recommendation": (
-            "split into nodes no larger than 3.5 worker-hours for this agent "
+            "split into nodes no larger than 2.5 worker-hours for this agent "
             "configuration"
         ),
+        "speed_direction": "neutral-estimate-hours-per-actual-worker-hour",
         "speed_factor": 1.4,
-        "target_size_hours": 3.5,
+        "target_size_hours": 2.5,
     }
-    assert "3.5 worker-hours" in str(excinfo.value)
+    assert "2.5 worker-hours" in str(excinfo.value)
     _assert_no_dispatch_artifacts(repo)
 
 
@@ -628,10 +632,80 @@ def test_dispatch_records_work_below_the_selected_configuration_horizon(
 
     assert record["pid"] == 4242
     assert record["competence"]["allowed"] is True
+    assert record["competence"]["cache_status"] == "untracked"
     assert record["competence"]["reason"] == "within-competence-horizon"
-    assert record["competence"]["adjusted_hours"] == pytest.approx(1.666667)
+    assert record["competence"]["compared_hours"] == 1.5
     assert record["competence"]["speed_factor"] == 0.9
     assert record["competence"]["competence_horizon_hours"] == 2.5
+
+
+@pytest.mark.parametrize("speed", [0.5, 2.0])
+def test_competence_threshold_is_the_named_horizon_in_both_speed_directions(
+    home, repo, monkeypatch, speed
+) -> None:
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=2.5, speed=speed),
+    )
+    resolution = crew.plan_dispatch(
+        node=_node(estimated_hours=2.6),
+        config=CONFIG,
+        project="proj",
+        repo=repo,
+    )
+
+    assert resolution.competence["allowed"] is False
+    assert resolution.competence["target_size_hours"] == 2.5
+    assert resolution.competence["estimate_provenance"] == "node"
+
+
+def test_cli_competence_refusal_has_typed_dry_run_parity(
+    home, repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(
+        crew.capabilities,
+        "load_capabilities",
+        lambda: _capability_cache(horizon=2.5, speed=2.0),
+    )
+    arguments = [
+        "crew",
+        "dispatch",
+        "--project",
+        "proj",
+        "--plan",
+        "plan-a",
+        "--section",
+        "§3",
+        "--node",
+        "node-a",
+        "--goal",
+        "record the launch matrix for one backend",
+        "--done-when",
+        "uv run pytest tests/test_crew.py reports 0 failures",
+        "--write-path",
+        "reckon/crew.py",
+        "--estimated-hours",
+        "4",
+        "--session",
+        "sess",
+        "--repo",
+        str(repo),
+    ]
+
+    real = CliRunner().invoke(cli_module.main, arguments)
+    dry = CliRunner().invoke(cli_module.main, [*arguments, "--dry-run"])
+    real_payload = json.loads(real.output)
+    dry_payload = json.loads(dry.output)
+
+    assert real.exit_code == dry.exit_code == 5
+    assert real_payload["error"] == dry_payload["error"] == "competence-refusal"
+    assert real_payload["competence"] == dry_payload["competence"]
+    assert real_payload["competence"]["target_size_hours"] == 2.5
+    assert real_payload["competence"]["estimate_provenance"] == "node"
+    help_text = CliRunner().invoke(cli_module.main, ["crew", "--help"]).output
+    assert "5 the selected worker configuration" in " ".join(help_text.split())
 
 
 def test_configuration_without_a_measured_horizon_refuses_nothing(

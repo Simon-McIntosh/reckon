@@ -184,6 +184,8 @@ def derive_capabilities(
             observations_by_agent[key],
             key=lambda item: (item["estimated_hours"], item["project"], item["run_id"]),
         )
+        # Speed direction is neutral estimated hours per actual worker-hour:
+        # above one is faster and below one is slower.
         speed_values = [
             item["estimated_hours"] / item["actual_hours"] for item in observations
         ]
@@ -250,12 +252,67 @@ def rebuild_capabilities(
 
 
 def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
-    """Read the cache, rebuilding it from mounted ledgers when absent."""
+    """Read the disposable cache without scanning ledgers or rebuilding it."""
 
     target = Path(path) if path is not None else capabilities_path()
     if not target.is_file():
-        return rebuild_capabilities(path=target)
+        return {
+            "source": "committed_run_ledgers",
+            "ledger_versions": {},
+            "configurations": [],
+            "cache_status": "missing",
+        }
     data = json.loads(target.read_text())
     if not isinstance(data, dict):
         raise ValueError(f"capabilities cache {target} does not hold an object")
     return data
+
+
+def inspect_capabilities(
+    *,
+    mounted_docs: Mapping[str, str | Path] | None = None,
+    path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Report cache freshness against current ledger versions.
+
+    This is intentionally an explicit inspection operation.  Dispatch only
+    reads the cache, so a cold cache never turns first dispatch into an
+    all-repository synchronous scan.
+    """
+
+    mounts = mounted_docs if mounted_docs is not None else _mounted_docs()
+    cached = load_capabilities(path)
+    cached_versions = cached.get("ledger_versions")
+    if not isinstance(cached_versions, Mapping):
+        cached_versions = {}
+    current_versions: dict[str, int] = {}
+    for project, raw_docs in sorted(mounts.items()):
+        docs_dir = Path(raw_docs).expanduser().resolve()
+        _data, version = ledger.load(str(project), root=docs_dir.parent)
+        current_versions[str(project)] = version
+    changed = sorted(
+        project
+        for project in set(current_versions) | set(cached_versions)
+        if current_versions.get(project) != cached_versions.get(project)
+    )
+    return {
+        "path": str(Path(path) if path is not None else capabilities_path()),
+        "exists": (Path(path) if path is not None else capabilities_path()).is_file(),
+        "stale": bool(changed),
+        "changed_projects": changed,
+        "cached_ledger_versions": dict(cached_versions),
+        "current_ledger_versions": current_versions,
+        "configurations": len(cached.get("configurations") or []),
+    }
+
+
+def project_cache_status(
+    cache: Mapping[str, Any], project: str, *, root: str | Path
+) -> str:
+    """Check one project's cache key without scanning any other repository."""
+
+    versions = cache.get("ledger_versions")
+    if not isinstance(versions, Mapping) or project not in versions:
+        return "untracked"
+    _data, current = ledger.load(project, root=root)
+    return "fresh" if versions.get(project) == current else "stale"

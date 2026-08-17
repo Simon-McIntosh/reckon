@@ -5,8 +5,9 @@ import json
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import capabilities, ledger
+from reckon import capabilities, cli as cli_module, ledger
 
 
 @pytest.fixture()
@@ -207,6 +208,43 @@ def test_cache_contains_only_directly_rederived_values(home, tmp_path) -> None:
     direct = capabilities.derive_capabilities(mounts)
 
     assert json.loads(capabilities.capabilities_path().read_text()) == direct == cached
+
+
+def test_ledger_version_invalidates_cache_without_dispatch_rebuild(
+    home, tmp_path, monkeypatch
+) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(root, "one", "work", 1.0)
+    mounts = {root.name: root / "docs"}
+    cached = capabilities.rebuild_capabilities(mounted_docs=mounts)
+
+    assert capabilities.inspect_capabilities(mounted_docs=mounts)["stale"] is False
+    _run(root, "two", "work", 1.0)
+    inspection = capabilities.inspect_capabilities(mounted_docs=mounts)
+
+    assert inspection["stale"] is True
+    assert inspection["changed_projects"] == [root.name]
+    assert capabilities.project_cache_status(cached, root.name, root=root) == "stale"
+    capabilities.capabilities_path().unlink()
+    monkeypatch.setattr(
+        capabilities,
+        "rebuild_capabilities",
+        lambda **kwargs: pytest.fail("cache reads must not rebuild synchronously"),
+    )
+    assert capabilities.load_capabilities()["cache_status"] == "missing"
+
+
+def test_capabilities_cli_inspects_and_rebuilds_off_dispatch(home) -> None:
+    inspected = CliRunner().invoke(cli_module.main, ["capabilities"])
+    rebuilt = CliRunner().invoke(cli_module.main, ["capabilities", "--rebuild"])
+
+    assert inspected.exit_code == rebuilt.exit_code == 0
+    assert json.loads(inspected.output)["rebuilt"] is False
+    payload = json.loads(rebuilt.output)
+    assert payload["rebuilt"] is True
+    assert payload["configurations"] == 0
+    assert capabilities.capabilities_path().is_file()
 
 
 def test_scope_changed_and_proxy_completion_records_are_excluded(tmp_path) -> None:
