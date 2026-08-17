@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="crew-workspace-hygiene">
   <meta name="plan-title" content="Crew Workspace Hygiene">
   <meta name="plan-summary" content="Give the crew surface a garbage-collection story: integrated-worktree removal, run-directory retention, dead-pointer reaping, and cleanup that consults live pointers before touching anything — then reclaim the measured 12 GB backlog.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,10 +20,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="039dfaa">
 <meta name="plan-artifacts" content="docs/evidence/archive/crew-workspace-hygiene-landed.html">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -40,31 +40,26 @@
       inverse failure, cleanup without a liveness consult.
     </p>
 
-    <h2 id="s2">§2 — Deliverables</h2>
-    <p><strong>A crew-surface GC command.</strong> <code>reckon crew gc</code> (dry-run by default)
-    that removes worktrees whose HEAD is an ancestor of the primary branch (integrated), reports
-    dirty or unintegrated trees without touching them, prunes run directories past a retention
-    window once their run is promoted, and reaps live pointers whose pid is dead and whose node has
-    a completed ledger record. Done when a dry run against the current backlog itemizes the 12 GB
-    correctly and the real run reclaims only the integrated/promoted subset.</p>
-    <p><strong>Live-pointer consult before removal.</strong> Every removal path — the new GC and the
-    vendored <code>cleanup-session</code> — refuses a worktree referenced by a live pointer in a
-    non-terminal phase. Done when the recorded worktree-deleted-under-a-live-run scenario refuses
-    under test.</p>
-    <p><strong>Root anomaly.</strong> Explain and remove the nested
-    <code>reckon-worktrees/reckon-worktrees</code> directory (likely a transitional artifact of the
-    worktree-placement fix); add a guard so the root cannot nest. Done when the root contains only
-    per-repo families.</p>
-    <p><strong>Per-repo prerequisite check.</strong> Dispatch verifies the vendored fleet script
-    exists in the target repo and fails with a message naming the fix (it is absent in imas-efit
-    today). Done when the missing-script failure is a one-line actionable error.</p>
+    <h2 id="s2">§2 — Deliverables <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Shipped <code>reckon crew gc</code>, dry-run by default, with disjoint
+      integrated/dirty/unintegrated/live-referenced classification, a live-pointer refusal on every
+      removal path including the vendored <code>cleanup-session</code>, a root nesting guard, and a
+      one-line vendored-script dispatch error (commit <code>039dfaa</code>, 113 tests green).
+      Dry-run itemized 35 worktrees / 109.007&nbsp;GiB — the §1 baseline of 27 / 12&nbsp;GB had
+      drifted — then the reviewed apply reclaimed 5 integrated unclaimed trees (2.563&nbsp;GiB) and
+      the nested root, leaving 0 integrated candidates. The 17 unintegrated nova trees
+      (~94&nbsp;GiB) are peer work gc correctly refuses.
+      Full record: <a href="/reckon/evidence/archive/crew-workspace-hygiene-landed">§2 landed</a>.
+    </p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-cwh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cwh-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="2026-08-17T16:03:53+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Build crew gc and clear the backlog</h4>
     <div class="r-fu-body"><p>All four §2 deliverables. The backlog clearance runs only after the GC's dry-run report has been reviewed — several worktrees may hold unintegrated work, and live runs from other sessions must never be touched.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-workspace-hygiene</pre>
+    <p class="r-fu-outcome">done - no followup. All four §2 deliverables demonstrated: crew gc dry-run-first with disjoint classification, live-pointer refusal on every removal path (gc and cleanup-session), root nesting guard plus removal of the nested root, and a one-line vendored-script dispatch error (commit 039dfaa, 113 tests green). Backlog reviewed then cleared: 5 trees / 2.563 GiB reclaimed with 0 integrated candidates remaining; the 17 unintegrated nova trees (~94 GiB) are peer-owned work gc correctly refuses, and run-directory retention finds 0 candidates because the fleet is younger than the 30-day window. Evidence: docs/evidence/archive/crew-workspace-hygiene-landed.html.</p>
     </article>
 </section>
 
@@ -74,6 +69,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260817-cwh-gc-dryrun" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">cwh-gc-dryrun landed - no commit (operational); gate passed; measure: itemized 35 worktrees / 109.007 GiB (baseline 27 / 12 GB; mass is 17 unintegrated nova trees at ~7 GiB each, refused), 9 integrated eligible, 9 live-referenced, 0 dirty, 337 run dirs with 0 retention candidates at 30 days, 0 trees touched; wall 1042 s; evidence: crew-workspace-hygiene-landed#gc-dryrun. Clearance node remains, scoped after coordinator review.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260817-cwh-gc-clear" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">cwh-gc-clear landed - no commit (operational); gate passed; measure: 5 integrated unclaimed trees removed, 2.563 GiB reclaimed, nested root removed, post-apply integrated candidates 0 in both families, ambix/codex untouched (no apply invoked); 17 unintegrated nova trees (~94 GiB) correctly refused; wall 500 s; evidence: crew-workspace-hygiene-landed#gc-clear. Negative finding recorded: a literal identical-inventory gate is unmeasurable on a shared workstation and was re-grounded on absence-of-invocation evidence.</div>
 </div>
 </section>
 </main>

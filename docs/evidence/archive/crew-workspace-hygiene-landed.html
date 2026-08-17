@@ -73,6 +73,42 @@
         is not a registered worktree.</li>
     </ul>
 
+    <h2 id="gc-clear">Backlog clearance (reviewed apply over the reckon and nova families)</h2>
+    <p>
+      Operational node, no commit (2026-08-17, worker codex-a, wall 500&nbsp;s). Report:
+      <code>~/.config/reckon/crew/runs/r-20260817T144658048376-cwh-gc-clear/clearance-report.md</code>
+      with per-family apply and post-apply payloads beside it.
+    </p>
+    <ul>
+      <li><strong>Reclaimed.</strong> 5 integrated unclaimed worktrees removed —
+        <code>2,751,980,032</code> bytes (2.563&nbsp;GiB): reckon's <code>cwh-gc-dryrun</code> and
+        <code>gsr-competence</code>, nova's <code>efit-dataset-census</code>,
+        <code>extraction-kernels</code> and <code>transport-env</code> (the last two having
+        transitioned from live-referenced to integrated-unclaimed before the command's own
+        per-tree recheck — the recheck working as designed). Follow-up dry runs report
+        0 integrated candidates in both families.</li>
+      <li><strong>Correctly refused.</strong> 17 unintegrated nova trees (~94&nbsp;GiB) and the
+        remaining live-referenced trees were left in place. The dominant share of the backlog is
+        peer work that garbage collection must not touch, so the reclaimable fraction is small by
+        design rather than by omission.</li>
+      <li><strong>Root anomaly closed.</strong> The nested
+        <code>reckon-worktrees/reckon-worktrees</code> directory is removed; the guard landed with
+        the GC surface prevents it recurring.</li>
+      <li><strong>Preservation demonstrated by absence.</strong> No apply was invoked for
+        imas-ambix or imas-codex and the per-tree removal list names only reckon and nova paths.
+        Both families did change concurrently during the window — an ambix worktree advanced its
+        HEAD, the codex primary advanced under peer merges, and two codex trees were removed by
+        their own session's cleanup after integration — none attributable to this node.</li>
+    </ul>
+    <p>
+      <strong>Negative finding: a literal identical-inventory measure is unmeasurable on a shared
+      workstation.</strong> The node first reported <code>blocked</code> because its done-when asked
+      for byte-identical before/after inventories of the control families, which peer sessions
+      mutate continuously. The gate was re-grounded on evidence the node actually owns — the
+      absence of any apply invocation for those families — and future clearance nodes should assert
+      what they did not invoke rather than what did not change around them.
+    </p>
+
   </main>
 </body>
 </html>
