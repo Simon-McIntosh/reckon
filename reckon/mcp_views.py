@@ -15,7 +15,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 
-VIEW_NAMES = frozenset({"summary", "detail", "history", "raw", "schema"})
+VIEW_NAMES = frozenset({"summary", "detail", "history", "version", "raw", "schema"})
 RESOURCE_TYPES = frozenset(
     {
         "plan",
@@ -694,7 +694,7 @@ def _response_schema(
             "view": {"const": view},
         },
     }
-    if selector.type == "plan" and view != "schema":
+    if selector.type == "plan" and view not in {"schema", "version"}:
         common["properties"]["in_flight"] = {
             "type": "array",
             "items": {
@@ -789,6 +789,8 @@ def _response_schema(
                 "pagination": pagination,
             }
         )
+    elif view == "version":
+        pass
     elif view == "raw":
         common["required"].append("data")
         common["properties"]["data"] = {}
@@ -816,9 +818,9 @@ def _response_schema(
 def _response_schemas(
     selector: ResourceSelector, *, context: str
 ) -> dict[str, dict[str, Any]]:
-    views = ("summary", "detail", "raw", "schema")
+    views = ("summary", "detail", "version", "raw", "schema")
     if context != "audit":
-        views = ("summary", "detail", "history", "raw", "schema")
+        views = ("summary", "detail", "history", "version", "raw", "schema")
     return {view: _response_schema(selector, view, context=context) for view in views}
 
 
@@ -871,6 +873,12 @@ def resource_view(
             "records": page,
             "pagination": pagination,
         }
+    elif selected == "version":
+        result = {
+            "resource": selector.as_dict(),
+            "version": version,
+            "view": "version",
+        }
     elif selected == "raw":
         result = {
             "resource": selector.as_dict(),
@@ -893,7 +901,11 @@ def resource_view(
             "dos_donts": dos_donts or {},
         }
 
-    if selector.type == "plan" and not selector.archived:
+    if (
+        selector.type == "plan"
+        and not selector.archived
+        and selected not in {"version", "schema"}
+    ):
         runs = in_flight_by_plan(selector.project).get(selector.id)
         if runs:
             result["in_flight"] = runs

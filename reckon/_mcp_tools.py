@@ -14,7 +14,7 @@ class ReadPlanArgs(BaseModel):
         None, description="Typed selector with project, type, id, and optional archived"
     )
     view: str | None = Field(
-        None, description="summary, detail, history, raw, or schema"
+        None, description="summary, detail, history, version, raw, or schema"
     )
     with_schema: bool = False
     checkout_path: str | None = None
@@ -61,8 +61,13 @@ class AuditArgs(BaseModel):
 
 class CrewArgs(BaseModel):
     project: str
-    view: Literal["summary", "flight", "live", "ledger"] = "summary"
+    view: Literal["summary", "flight", "live", "records", "ledger", "budget"] = (
+        "summary"
+    )
     checkout_path: str | None = None
+    plan: str | None = None
+    since: str | None = None
+    limit: int | None = Field(None, ge=1)
 
 
 class WriteResult(BaseModel):

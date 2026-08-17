@@ -206,7 +206,8 @@ def _read_plan(
           → a progressive typed response. ``summary`` is the default and keeps
             identity, version, human state, blockers/open decisions, and the next
             action compact. ``detail`` adds current metadata and unresolved
-            workflow, ``history`` paginates prior workflow, ``raw`` returns the
+            workflow, ``history`` paginates prior workflow, ``version`` returns
+            only typed identity and the concurrency token, ``raw`` returns the
             lossless storage state, and ``schema`` describes the response plus
             the selected resource's storage schema. Full followup prompts require
             ``view="detail", include_prompts=True``.
@@ -559,7 +560,7 @@ def _read_plan_view(
                 f"{selector.type} resources do not have archived typed identities.",
             )
 
-        if selector.type == "project" and selected_view != "raw":
+        if selector.type == "project" and selected_view not in {"raw", "version"}:
             raw_discovery = _read_plan(
                 project=selector.project,
                 checkout_path=checkout_path,
@@ -2464,11 +2465,14 @@ def _crew(
     project: str,
     view: str = "summary",
     checkout_path: str | None = None,
+    plan: str | None = None,
+    since: str | None = None,
+    limit: int | None = None,
 ) -> dict[str, Any]:
     """Read crew state: routing, budget headroom, live runs, or the ledger.
 
     Read-only, and deliberately one tool over five views rather than five tools.
-    ``ledger`` and ``summary`` read the project's committed run records —
+    ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
     classification :func:`reckon.crew.recover` would give it; ``flight`` reports
@@ -2486,11 +2490,11 @@ def _crew(
     from reckon import flight as flight_module
     from reckon import ledger as ledger_module
 
-    if view not in ("summary", "flight", "live", "ledger", "budget"):
+    if view not in ("summary", "flight", "live", "records", "ledger", "budget"):
         return {
             "ok": False,
             "error": "invalid_view",
-            "detail": "view must be summary, flight, live, ledger or budget",
+            "detail": ("view must be summary, flight, live, records, ledger or budget"),
         }
     try:
         if view == "budget":
@@ -2523,6 +2527,22 @@ def _crew(
                 "version": version,
                 "path": str(ledger_module.ledger_path(project, checkout_path)),
                 **data,
+            }
+        if view == "records":
+            runs, version = ledger_module.read_records(
+                project,
+                checkout_path,
+                plan=plan,
+                since=since,
+                limit=limit,
+            )
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                "version": version,
+                "path": str(ledger_module.ledger_path(project, checkout_path)),
+                "runs": runs,
             }
         return {
             "ok": True,

@@ -469,9 +469,68 @@ def append_run(
     )
 
 
-def runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
-    """Return every completed run record, in promotion order."""
-    return load(project, root)[0]["runs"]
+def runs(
+    project: str,
+    root: str | Path | None = None,
+    *,
+    plan: str | None = None,
+    since: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Return selected completed runs in promotion order.
+
+    ``since`` is an inclusive completion-time boundary. Records without a
+    usable completion timestamp cannot satisfy that filter. ``limit`` selects
+    the most recently promoted matching records while preserving their stored
+    order.
+    """
+    records, _version = read_records(
+        project,
+        root,
+        plan=plan,
+        since=since,
+        limit=limit,
+    )
+    return records
+
+
+def read_records(
+    project: str,
+    root: str | Path | None = None,
+    *,
+    plan: str | None = None,
+    since: str | None = None,
+    limit: int | None = None,
+) -> tuple[list[dict[str, Any]], int]:
+    """Read selected completed runs and their ledger version once."""
+    data, version = load(project, root)
+    records = list(data["runs"])
+    selected_plan = str(plan or "").strip()
+    if selected_plan:
+        records = [
+            record
+            for record in records
+            if str(record.get("plan") or "") == selected_plan
+        ]
+    if since is not None:
+        boundary = _parse_timestamp(since, "since")
+        filtered: list[dict[str, Any]] = []
+        for record in records:
+            completed_at = record.get("completed_at")
+            if not completed_at:
+                continue
+            try:
+                completion = _parse_timestamp(completed_at, "completed_at")
+            except LedgerError:
+                continue
+            if completion >= boundary:
+                filtered.append(record)
+        records = filtered
+    if limit is not None:
+        if isinstance(limit, bool) or limit < 1:
+            raise LedgerError("record limit must be a positive integer")
+        records = records[-limit:]
+    return records, version
 
 
 def _resume_stream_order(path: Path) -> tuple[int, str]:
@@ -643,13 +702,18 @@ def repair_completion(
 # ── Budget holds ────────────────────────────────────────────────────────────
 
 
-def _parse_utc(value: Any) -> datetime:
-    """Parse one ledger timestamp and normalise it to an aware instant."""
+def _parse_timestamp(value: Any, label: str) -> datetime:
+    """Parse one labelled ledger timestamp as an aware instant."""
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except (TypeError, ValueError) as exc:
-        raise LedgerError(f"hold check time {value!r} is not ISO-8601") from exc
+        raise LedgerError(f"{label} {value!r} is not ISO-8601") from exc
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _parse_utc(value: Any) -> datetime:
+    """Parse one hold-check timestamp and normalise it to an aware instant."""
+    return _parse_timestamp(value, "hold check time")
 
 
 def _hold_id(
