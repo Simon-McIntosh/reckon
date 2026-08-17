@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="fleet-throughput-contract">
-  <meta name="plan-title"     content="Fleet Throughput Contract">
-  <meta name="plan-summary"   content="Raise sustained worker throughput without forcing parallelism: rolling wave refill in the orchestration contract, a narrowed landing freeze, measured per-role time budgets with a runtime watchdog, wired-or-deleted concurrency config, cheap fleet polling and version-only reads, and skill/CLI reconciliation.">
-  <meta name="plan-status"    content="pending">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="fleet-throughput-contract">
+  <meta name="plan-title" content="Fleet Throughput Contract">
+  <meta name="plan-summary" content="Raise sustained worker throughput without forcing parallelism: rolling wave refill in the orchestration contract, a narrowed landing freeze, measured per-role time budgets with a runtime watchdog, wired-or-deleted concurrency config, cheap fleet polling and version-only reads, and skill/CLI reconciliation.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S11">
+  <meta name="plan-sprint" content="S11">
   <meta name="plan-depends-on" content="crew-state-integrity,dispatch-lifecycle-safety">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Fleet Throughput Contract | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-17">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,28 +98,26 @@
     absent-but-required step.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="concurrency-config-fate" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Wire backends.*.concurrency as a dispatch admission check, or delete it from the schema?</p>
-        <p class="r-dec-ctx">Wiring gives a real per-backend cap tunable per host/project; deleting keeps admission purely roster-driven and the config surface smaller. The status quo — declared and ignored — misleads every reader.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="wire">wire as admission check</button>
-          <button class="r-opt" data-value="delete">delete from schema</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="concurrency-config-fate" data-choice="delete" data-by="Simon McIntosh" data-when="2026-08-17T13:58:58+00:00">
+    <p class="r-dec-q">Wire backends.*.concurrency as a dispatch admission check, or delete it from the schema?</p>
+    <p class="r-dec-ctx">Wiring gives a real per-backend cap tunable per host/project; deleting keeps admission purely roster-driven and the config surface smaller. The status quo — declared and ignored — misleads every reader.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="wire">wire as admission check</button>
+      <button class="r-opt chosen" data-value="delete">delete from schema</button>
+      </p>
+    <p class="r-dec-rat">Lead decision 2026-08-17: admission stays roster-driven — the member roster already bounds real concurrency, so a per-backend numeric cap duplicates it; removing the declared-but-dead key is cheaper and more truthful than wiring an admission check the current fleet scale does not need.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-ftc-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-written-by="reckon-create" data-written-at="2026-08-16">
-        <h4 class="r-fu-title">Raise sustained throughput: contract, budgets, observation</h4>
-        <div class="r-fu-body"><p>§2–§5 deliverables, gated on crew-state-integrity and dispatch-lifecycle-safety landing first. §2 (contract text) and §4 (tooling) are independently dispatchable sections.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship fleet-throughput-contract</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ftc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Raise sustained throughput: contract, budgets, observation</h4>
+    <div class="r-fu-body"><p>§2–§5 deliverables, gated on crew-state-integrity and dispatch-lifecycle-safety landing first. §2 (contract text) and §4 (tooling) are independently dispatchable sections.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship fleet-throughput-contract</pre>
+    </article>
+</section>
 
   </main>
 </body>

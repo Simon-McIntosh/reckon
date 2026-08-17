@@ -4,22 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="gate-signal-repair">
-  <meta name="plan-title"     content="Gate Signal Repair">
-  <meta name="plan-summary"   content="Make both dispatch admission gates truthful: fix the competence gate's unit mismatch, stale cache and hidden verdicts, and give the budget gate a real codex headroom signal plus honest handling of empty and windowed readings.">
-  <meta name="plan-status"    content="pending">
-  <meta name="plan-roi"       content="mid">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="gate-signal-repair">
+  <meta name="plan-title" content="Gate Signal Repair">
+  <meta name="plan-summary" content="Make both dispatch admission gates truthful: fix the competence gate&#x27;s unit mismatch, stale cache and hidden verdicts, and give the budget gate a real codex headroom signal plus honest handling of empty and windowed readings.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S11">
+  <meta name="plan-sprint" content="S11">
   <meta name="plan-depends-on" content="run-measurement-truth">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Gate Signal Repair | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-17">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -70,28 +72,26 @@
     whose budget was fine. Done when both have tests.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="codex-budget-check-default" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Should the codex account-limits probe be on by default once the once-per-wave shape exists?</p>
-        <p class="r-dec-ctx">On: the pre-flight finally guards the backend doing all the work, at one ≤20 s probe per wave. Off: zero dispatch latency, but the budget gate stays structurally blind for codex and the flag must be set per host.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="on-by-default">on by default (shipped layer)</button>
-          <button class="r-opt" data-value="host-opt-in">host opt-in, documented loudly</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="codex-budget-check-default" data-choice="host-opt-in" data-by="Simon McIntosh" data-when="2026-08-17T13:59:00+00:00">
+    <p class="r-dec-q">Should the codex account-limits probe be on by default once the once-per-wave shape exists?</p>
+    <p class="r-dec-ctx">On: the pre-flight finally guards the backend doing all the work, at one ≤20 s probe per wave. Off: zero dispatch latency, but the budget gate stays structurally blind for codex and the flag must be set per host.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="on-by-default">on by default (shipped layer)</button>
+      <button class="r-opt chosen" data-value="host-opt-in">host opt-in, documented loudly</button>
+      </p>
+    <p class="r-dec-rat">Lead decision 2026-08-17: this workstation runs codex on a 20x weekly subscription and does not approach limits, so the shipped default stays zero-latency; the probe path ships working with the once-per-wave shape and is enabled per host via budget_check, documented loudly.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-gsr-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-08-16">
-        <h4 class="r-fu-title">Repair both admission gates</h4>
-        <div class="r-fu-body"><p>§2 and §3 deliverables. Wait for run-measurement-truth to land first — the horizon must be re-derived from corrected worker-time and completion sources.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship gate-signal-repair</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-gsr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair both admission gates</h4>
+    <div class="r-fu-body"><p>§2 and §3 deliverables. Wait for run-measurement-truth to land first — the horizon must be re-derived from corrected worker-time and completion sources.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship gate-signal-repair</pre>
+    </article>
+</section>
 
   </main>
 </body>
