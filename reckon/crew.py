@@ -41,6 +41,7 @@ holding write scope, which is the one failure that costs another worker's work.
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -52,7 +53,7 @@ import sys
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
@@ -629,6 +630,27 @@ def list_live() -> list[dict[str, Any]]:
     return records
 
 
+def _pointer_claims_worktree(record: Mapping[str, Any]) -> bool:
+    """Return whether a pointer must keep its worktree untouched."""
+    phase = str(record.get("phase") or "")
+    if phase in _TERMINAL_RUN_PHASES:
+        return False
+    if phase:
+        return True
+    return process_alive(record.get("pid")) is not False
+
+
+def _live_worktree_claims() -> dict[Path, list[str]]:
+    claims: dict[Path, list[str]] = {}
+    for record in list_live():
+        worktree = record.get("worktree")
+        if not worktree or not _pointer_claims_worktree(record):
+            continue
+        path = Path(str(worktree)).resolve()
+        claims.setdefault(path, []).append(str(record.get("run_id") or "unknown"))
+    return claims
+
+
 def process_alive(pid: Any) -> bool | None:
     """Report whether a pid is still running; None when there is no pid.
 
@@ -765,13 +787,219 @@ still unmet. Asking costs one turn; thrashing costs the node.
 # ── Dispatch ────────────────────────────────────────────────────────────────
 
 
+def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if check and result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise CrewError(f"git {' '.join(args)} failed: {detail}")
+    return result
+
+
+def _workspace_roots(repo: Path) -> list[Path]:
+    git_dir = Path(_git(repo, "rev-parse", "--absolute-git-dir").stdout.strip())
+    digest = hashlib.sha256(str(git_dir.resolve()).encode()).hexdigest()[:12]
+    stem = f"{repo.name}-{digest}"
+    override = os.environ.get("RECKON_WORKTREE_ROOT")
+    preferred = (
+        Path(override).expanduser().resolve()
+        if override
+        else repo.parent / ".reckon-worktrees"
+    )
+    if sum(part.lstrip(".") == "reckon-worktrees" for part in preferred.parts) > 1:
+        raise CrewError(
+            "refusing to nest another reckon-worktrees root; dispatch from the "
+            "owning checkout or set RECKON_WORKTREE_ROOT outside the current root"
+        )
+    legacy = Path(tempfile.gettempdir()) / "reckon-worktrees" / stem
+    roots = [preferred / stem]
+    if legacy != roots[0]:
+        roots.append(legacy)
+    return roots
+
+
+def _registered_worktrees(repo: Path) -> list[Path]:
+    return [
+        Path(line.removeprefix("worktree ")).resolve()
+        for line in _git(repo, "worktree", "list", "--porcelain").stdout.splitlines()
+        if line.startswith("worktree ")
+    ]
+
+
+def _inspect_workspace(
+    repo: Path,
+    path: Path,
+    integrated_into: str,
+    claimed_by: Iterable[str],
+) -> dict[str, Any]:
+    dirty = _git(path, "status", "--porcelain").stdout.splitlines()
+    head = _git(path, "rev-parse", "HEAD").stdout.strip()
+    reachable = (
+        _git(
+            repo,
+            "merge-base",
+            "--is-ancestor",
+            head,
+            integrated_into,
+            check=False,
+        ).returncode
+        == 0
+    )
+    claims = sorted(claimed_by)
+    if claims:
+        classification = "live-referenced"
+    elif dirty:
+        classification = "dirty"
+    elif reachable:
+        classification = "integrated"
+    else:
+        classification = "unintegrated"
+    return {
+        "path": str(path),
+        "head": head,
+        "classification": classification,
+        "dirty": dirty,
+        "integrated_into": integrated_into,
+        "claimed_by_live_runs": claims,
+    }
+
+
+def _ledgered_run_ids(repo: Path, project: str | None) -> set[str]:
+    projects = [project] if project else []
+    if not projects:
+        state_root = repo / "docs" / "state"
+        if state_root.is_dir():
+            projects = [path.name for path in state_root.iterdir() if path.is_dir()]
+    result: set[str] = set()
+    for name in projects:
+        for record in ledger.runs(str(name), root=repo):
+            run_id = str(record.get("run_id") or "")
+            if run_id:
+                result.add(run_id)
+    return result
+
+
+def garbage_collect(
+    *,
+    repo: str | Path,
+    project: str | None = None,
+    integrated_into: str = "HEAD",
+    retention_days: int = 30,
+    apply: bool = False,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Inspect or remove disposable workspaces and promoted transient state."""
+    if retention_days < 0:
+        raise CrewError("retention days cannot be negative")
+    repo_root = Path(repo).resolve()
+    _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
+    roots = _workspace_roots(repo_root)
+    claims = _live_worktree_claims()
+    candidates = [
+        path
+        for path in _registered_worktrees(repo_root)
+        if path != repo_root and any(path.is_relative_to(root) for root in roots)
+    ]
+    worktrees = [
+        _inspect_workspace(
+            repo_root,
+            path,
+            integrated_into,
+            claims.get(path.resolve(), ()),
+        )
+        for path in sorted(candidates)
+    ]
+    removed: list[str] = []
+    if apply:
+        for item in worktrees:
+            if item["classification"] != "integrated":
+                continue
+            path = Path(item["path"])
+            current_claims = _live_worktree_claims().get(path.resolve(), [])
+            if current_claims:
+                item["classification"] = "live-referenced"
+                item["claimed_by_live_runs"] = sorted(current_claims)
+                continue
+            _git(repo_root, "worktree", "remove", str(path))
+            removed.append(str(path))
+        _git(repo_root, "worktree", "prune")
+
+    ledgered = _ledgered_run_ids(repo_root, project)
+    pointer_reports: list[dict[str, Any]] = []
+    for record in list_live():
+        run_id = str(record.get("run_id") or "")
+        if run_id not in ledgered or process_alive(record.get("pid")) is not False:
+            continue
+        report = {"run_id": run_id, "action": "reap", "removed": False}
+        if apply:
+            with _pointer_lock(run_id):
+                current = read_pointer(run_id)
+                if (
+                    run_id in ledgered
+                    and process_alive(current.get("pid")) is False
+                ):
+                    pointer_path(run_id).unlink()
+                    report["removed"] = True
+        pointer_reports.append(report)
+
+    cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
+    live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    run_reports: list[dict[str, Any]] = []
+    runs_root = crew_home() / "runs"
+    if runs_root.is_dir():
+        for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+            if directory.name not in ledgered or directory.name in live_ids:
+                continue
+            modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=timezone.utc)
+            if modified > cutoff:
+                continue
+            report = {
+                "run_id": directory.name,
+                "path": str(directory),
+                "action": "prune",
+                "removed": False,
+            }
+            if apply:
+                if any(
+                    str(record.get("run_id") or "") == directory.name
+                    for record in list_live()
+                ):
+                    continue
+                shutil.rmtree(directory)
+                report["removed"] = True
+            run_reports.append(report)
+
+    counts = {
+        name: sum(item["classification"] == name for item in worktrees)
+        for name in ("integrated", "dirty", "unintegrated", "live-referenced")
+    }
+    return {
+        "dry_run": not apply,
+        "repo": str(repo_root),
+        "integrated_into": integrated_into,
+        "counts": counts,
+        "worktrees": worktrees,
+        "removed_worktrees": removed,
+        "pointers": pointer_reports,
+        "run_directories": run_reports,
+    }
+
+
 def _create_worktree(
     repo: Path, session: str, worker: str, base: str
 ) -> dict[str, Any]:
     """Create a detached worktree through the fleet script, or raise."""
     script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
     if not script.is_file():
-        raise CrewError(f"worktree fleet script is missing: {script}")
+        raise CrewError(
+            f"worktree fleet script is missing: {script}; run `reckon sync` "
+            "for this repository to install it"
+        )
     result = subprocess.run(
         [
             sys.executable,
@@ -802,6 +1030,12 @@ def _create_worktree(
 
 def _remove_worktree(repo: Path, path: str) -> None:
     """Undo a worktree created for a dispatch that then failed."""
+    claims = _live_worktree_claims().get(Path(path).resolve(), [])
+    if claims:
+        raise CrewError(
+            f"refusing to remove worktree {path}: claimed by live runs "
+            f"{', '.join(sorted(claims))}"
+        )
     subprocess.run(
         ["git", "worktree", "remove", "--force", path],
         cwd=str(repo),
@@ -1182,6 +1416,13 @@ def dispatch(
     removes it and writes no pointer, so no orphan is left holding write scope.
     """
     repo_root = Path(repo).resolve()
+    script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    if not script.is_file():
+        raise CrewError(
+            f"worktree fleet script is missing: {script}; run `reckon sync` "
+            "for this repository to install it"
+        )
+    _workspace_roots(repo_root)
     resolution = plan_dispatch(
         node=node,
         config=config,

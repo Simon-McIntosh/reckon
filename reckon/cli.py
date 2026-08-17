@@ -675,6 +675,53 @@ def crew_list(pretty):
     _emit({"ok": True, "runs": runs}, pretty)
 
 
+@crew.command(name="gc")
+@click.option(
+    "--repo",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repository whose managed worktrees are inspected.",
+)
+@click.option(
+    "--project",
+    default=None,
+    help="Project ledger used for transient run cleanup; all local ledgers by default.",
+)
+@click.option(
+    "--integrated-into",
+    default="HEAD",
+    show_default=True,
+    help="Revision that must contain a worktree commit before removal.",
+)
+@click.option(
+    "--retention-days",
+    type=click.IntRange(min=0),
+    default=30,
+    show_default=True,
+    help="Keep promoted run directories for at least this many days.",
+)
+@click.option(
+    "--apply",
+    is_flag=True,
+    help="Perform eligible removals; omission reports the exact dry run.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_gc(repo, project, integrated_into, retention_days, apply, pretty):
+    """Report disposable crew workspaces, applying removals only on request."""
+    crew_module, _ = _crew_modules()
+    try:
+        report = crew_module.garbage_collect(
+            repo=_repo_root(repo),
+            project=project,
+            integrated_into=integrated_into,
+            retention_days=retention_days,
+            apply=apply,
+        )
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
+
+
 @crew.command(name="resume")
 @click.option("--run", "run_id", required=True, help="Run id to answer.")
 @click.option("--advice", required=True, help="The orchestrator's answer.")

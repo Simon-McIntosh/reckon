@@ -801,6 +801,25 @@ def test_dispatch_refuses_a_malformed_node_and_creates_nothing(home, repo) -> No
     assert "node-a" not in listed.stdout
 
 
+def test_dispatch_names_sync_when_the_vendored_worktree_script_is_missing(
+    home, repo
+) -> None:
+    script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    script.unlink()
+
+    with pytest.raises(crew.CrewError, match=r"worktree fleet script.*reckon sync"):
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *args, **kwargs: 1,
+        )
+
+    assert crew.list_live() == []
+
+
 def test_a_failed_launch_leaves_no_worktree_holding_write_scope(home, repo) -> None:
     """Atomicity matters most here: an orphan worktree owns another's scope."""
 

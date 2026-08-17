@@ -77,6 +77,14 @@ def worktree_roots(repo: Path) -> list[Path]:
         if override
         else repo.parent / ".reckon-worktrees"
     )
+    worktree_markers = sum(
+        part.lstrip(".") == "reckon-worktrees" for part in preferred.parts
+    )
+    if worktree_markers > 1:
+        raise FleetError(
+            "refusing to nest another reckon-worktrees root; dispatch from the "
+            "owning checkout or set RECKON_WORKTREE_ROOT outside the current root"
+        )
     roots = [preferred / stem]
     legacy = Path(tempfile.gettempdir()) / "reckon-worktrees" / stem
     if legacy != roots[0]:
@@ -147,8 +155,11 @@ def process_alive(pid: object) -> bool | None:
 
 def pointer_is_running(pointer: dict[str, object]) -> bool:
     """Apply the cleanup-relevant subset of live-run classification."""
-    if str(pointer.get("phase") or "") in ("complete", "failed"):
+    phase = str(pointer.get("phase") or "")
+    if phase in ("complete", "failed", "stopped"):
         return False
+    if phase:
+        return True
     alive = (
         process_alive(pointer["pid"])
         if pointer.get("pid")
@@ -247,6 +258,12 @@ def cleanup_session(args: argparse.Namespace) -> dict[str, object]:
     if unsafe:
         raise FleetError(f"cleanup refused; unsafe worktrees: {json.dumps(unsafe)}")
     for path in paths:
+        current_claims = live_worktree_claims().get(path.resolve(), [])
+        if current_claims:
+            raise FleetError(
+                "cleanup refused; worktree gained a live claim: "
+                f"{path} by {', '.join(sorted(current_claims))}"
+            )
         run("git", "worktree", "remove", str(path), cwd=repo)
     run("git", "worktree", "prune", cwd=repo)
     for root in roots:

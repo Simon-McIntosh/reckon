@@ -175,7 +175,8 @@ def test_cleanup_refuses_a_worktree_claimed_by_a_running_pointer(
         home,
         "run-active",
         worktree,
-        process_alive=True,
+        phase="working",
+        pid=999999999,
     )
 
     refused = cleanup(repo, "live-claim")
@@ -351,3 +352,23 @@ def test_rejects_unsafe_session_token(tmp_path: Path) -> None:
     )
     assert result.returncode == 2
     assert "session must match" in result.stdout
+
+
+def test_create_refuses_to_nest_a_second_worktree_root(tmp_path: Path) -> None:
+    nested_parent = tmp_path / ".reckon-worktrees" / "existing" / "session"
+    nested_parent.mkdir(parents=True)
+    repo = repository(nested_parent)
+
+    result = command(
+        repo,
+        "create",
+        "--repo",
+        str(repo),
+        "--session",
+        "nested",
+        "--worker",
+        "worker-c",
+    )
+
+    assert result.returncode == 2
+    assert "refusing to nest another reckon-worktrees root" in result.stdout
