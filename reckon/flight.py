@@ -82,10 +82,19 @@ class ResolvedFlight:
     config: dict[str, Any]
     provenance: dict[str, str]
     layers: list[LayerSource] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def origin(self, key_path: str) -> str | None:
         """Return the layer that supplied ``key_path``, or None if unset."""
         return self.provenance.get(key_path)
+
+
+class ResolvedConfig(dict[str, Any]):
+    """Resolved values carrying compatibility warnings for runtime callers."""
+
+    def __init__(self, values: Mapping[str, Any], *, warnings: Iterable[str] = ()):
+        super().__init__(values)
+        self.warnings = tuple(warnings)
 
 
 # ── Paths ───────────────────────────────────────────────────────────────────
@@ -213,6 +222,26 @@ def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
             rebuilt[key] = value
         out[map_name] = rebuilt
     return out
+
+
+def _ignore_removed_backend_keys(
+    data: Mapping[str, Any], source: str | Path
+) -> tuple[dict[str, Any], list[str]]:
+    """Drop retired backend declarations while reporting each compatibility read."""
+    migrated = copy.deepcopy(dict(data))
+    warnings: list[str] = []
+    backends = migrated.get("backends")
+    if not isinstance(backends, Mapping):
+        return migrated, warnings
+    for name, settings in backends.items():
+        if not isinstance(settings, dict) or "concurrency" not in settings:
+            continue
+        settings.pop("concurrency")
+        warnings.append(
+            f"{source}: backends.{name}.concurrency is retired and was ignored; "
+            "the crew roster is the concurrency authority"
+        )
+    return migrated, warnings
 
 
 def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
@@ -346,6 +375,7 @@ def resolve(
     provenance: dict[str, str] = {}
     layers: list[LayerSource] = []
     contributing: list[str] = []
+    warnings: list[str] = []
 
     for name, path, inline in candidates:
         if inline is not None:
@@ -367,6 +397,8 @@ def resolve(
         )
         if not present:
             continue
+        data, compatibility_warnings = _ignore_removed_backend_keys(data, source)
+        warnings.extend(compatibility_warnings)
         validate_layer(data, source)
         merged = deep_merge(merged, data)
         _record_provenance(data, name, provenance)
@@ -379,9 +411,10 @@ def resolve(
 
     _validate_resolved(merged, " + ".join(contributing))
     return ResolvedFlight(
-        config=_sorted(merged),
+        config=ResolvedConfig(_sorted(merged), warnings=warnings),
         provenance=dict(sorted(provenance.items())),
         layers=layers,
+        warnings=warnings,
     )
 
 
@@ -485,14 +518,15 @@ def flight_report(
         ],
         "project": project,
         "provenance": resolved.provenance,
+        "warnings": list(resolved.warnings),
     }
 
 
 def parse_overrides(pairs: Iterable[str]) -> dict[str, Any]:
     """Turn ``dotted.key=value`` strings into a nested override layer.
 
-    Values are parsed as YAML scalars so that ``concurrency=3`` is an integer
-    and ``session_reuse=true`` a boolean — the schema would reject the strings.
+    Values are parsed as YAML scalars so that ``session_reuse=true`` is a
+    boolean rather than a string the schema would reject.
     """
     yaml = _require_yaml()
     overrides: dict[str, Any] = {}

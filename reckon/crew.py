@@ -511,7 +511,7 @@ def _budget_verdict(
 
 
 def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) -> str:
-    """Return the time budget a node is held to: backend first, fence second."""
+    """Return a node's default time budget: role overlay first, fence fallback."""
     for candidate in (
         backend.get("time_budget"),
         (config.get("fences") or {}).get("time_budget"),
@@ -519,6 +519,11 @@ def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) 
         if candidate:
             return str(candidate)
     return ""
+
+
+def resolved_time_ceiling(config: Mapping[str, Any]) -> str:
+    """Return the independent hard ceiling for an explicitly declared budget."""
+    return str((config.get("fences") or {}).get("time_budget") or "")
 
 
 # ── Run records ─────────────────────────────────────────────────────────────
@@ -1380,14 +1385,15 @@ def plan_dispatch(
             f"backend {backend_name!r} declares launch {launch_kind!r}; "
             "expected 'cli' or 'in-harness'"
         )
-    budget_ceiling = resolved_time_budget(config, backend)
-    node.time_budget = node.time_budget or budget_ceiling
+    default_budget = resolved_time_budget(config, backend)
+    budget_ceiling = resolved_time_ceiling(config)
+    node.time_budget = node.time_budget or default_budget
     node.section = normalize_section(node.section)
     resolved_run_id = run_id or new_run_id(node.id)
     durable_manifest = str(run_dir(resolved_run_id) / "manifest.md")
     caller_manifest = bool(node.manifest_path)
     node.manifest_path = node.manifest_path or durable_manifest
-    warnings = []
+    warnings = list(getattr(config, "warnings", ()))
     if caller_manifest and _path_is_tmpfs(node.manifest_path):
         warnings.append(
             f"manifest path {node.manifest_path!r} is on tmpfs; use the durable "
@@ -1785,6 +1791,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             ).strip()
             if manifest_status:
                 record["phase"] = manifest_status
+
+        _apply_budget_watchdog(record, config)
 
         capture = _capture_member_session(record)
         if capture is not None:
@@ -2353,10 +2361,80 @@ RECOVERY_CLASSES = (
 LOG_STALE_AFTER_SECONDS = 900
 
 
+def _budget_timing(
+    record: Mapping[str, Any], *, now_seconds: float | None = None
+) -> dict[str, Any]:
+    """Measure one live run against its declared allowance without mutating it."""
+    node = record.get("node") or {}
+    try:
+        budget_seconds = parse_duration(str(node.get("time_budget") or ""))
+        started = datetime.fromisoformat(
+            str(record.get("created_at") or "").replace("Z", "+00:00")
+        )
+    except (CrewError, TypeError, ValueError):
+        return {
+            "budget_seconds": None,
+            "elapsed_seconds": None,
+            "budget_overrun": False,
+            "budget_overrun_seconds": 0,
+        }
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    elapsed = max(0, int(moment - started.timestamp()))
+    overrun = max(0, elapsed - budget_seconds)
+    return {
+        "budget_seconds": budget_seconds,
+        "elapsed_seconds": elapsed,
+        "budget_overrun": overrun > 0,
+        "budget_overrun_seconds": overrun,
+    }
+
+
+def _apply_budget_watchdog(
+    record: dict[str, Any], config: Mapping[str, Any] | None
+) -> None:
+    """Record deadline posture and optionally stop an over-grace CLI worker."""
+    timing = _budget_timing(record)
+    record.update(timing)
+    fences = (config or {}).get("fences") or {}
+    if not fences.get("enforce_budget_watchdog"):
+        return
+    budget_seconds = timing["budget_seconds"]
+    elapsed_seconds = timing["elapsed_seconds"]
+    try:
+        grace = float(fences.get("budget_grace_multiple", 1.0))
+    except (TypeError, ValueError):
+        return
+    if (
+        budget_seconds is None
+        or elapsed_seconds is None
+        or elapsed_seconds <= budget_seconds * grace
+        or record.get("launch") != "cli"
+        or record.get("phase") in _TERMINAL_RUN_PHASES
+        or record.get("process_alive") is not True
+    ):
+        return
+    pid = record.get("pid")
+    try:
+        _signal_process_group(int(pid), record.get("pid_start_time"))
+    except (CrewError, ProcessLookupError, PermissionError, OSError, TypeError, ValueError) as exc:
+        record["watchdog_detail"] = f"budget watchdog could not stop pid {pid}: {exc}"
+        return
+    record["phase"] = "stopped"
+    record["stopped_at"] = _utc_now()
+    record["watchdog_enforced"] = True
+    record["detail"] = (
+        f"budget watchdog stopped pid {pid} after {elapsed_seconds}s "
+        f"against {budget_seconds}s with {grace:g}x grace"
+    )
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
     stale_after_seconds: int = LOG_STALE_AFTER_SECONDS,
+    now_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Classify one live pointer, without touching it.
 
@@ -2460,6 +2538,7 @@ def classify_pointer(
         )
         action = f"reckon crew observe --run {run_id}"
 
+    timing = _budget_timing(record, now_seconds=now_seconds)
     return {
         "run_id": run_id,
         "project": record.get("project"),
@@ -2474,6 +2553,7 @@ def classify_pointer(
         "manifest_commits": manifest_commits,
         "log_age_seconds": age,
         "log_fresh": None if age is None else age <= stale_after_seconds,
+        **timing,
         "worktree": record.get("worktree"),
         "detail": detail,
         "next_action": action,
