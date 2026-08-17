@@ -105,6 +105,28 @@
       <code>~/.config/reckon/crew/runs/r-20260817T161942885073-w4-verify/</code>.
     </p>
 
+    <h2 id="roles">Filterable runs and complete role routing</h2>
+    <p>
+      Commit <code>864fc0c</code> (2026-08-17, worker codex-c, wall 325&nbsp;s,
+      86 insertions / 7 deletions over <code>reckon/cli.py</code>, <code>reckon/crew.py</code>,
+      <code>reckon/schema/flight-defaults.yaml</code> and two test files; fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>Filters.</strong> <code>crew list</code> takes <code>--project</code> and
+        <code>--phase</code> through the shared live-pointer read. Measured over three pointers:
+        project-only returns 2, phase-only returns 2, and the two combined return exactly 1.
+        Unfiltered listing stays the default.</li>
+      <li><strong>Every mandated worker type now dispatches.</strong> The shipped role set is
+        cleanup, documentation, implement, investigate, review and test — all six resolve without a
+        role error, with test/investigate/review read-only and cleanup/documentation/implement at
+        worktree-full. The contract previously instructed test and documentation workers the CLI
+        would have refused.</li>
+    </ul>
+    <p>
+      Tests: 5 added; focused suites 189 passed, 0 failed; ruff clean. Role resolution recorded at
+      <code>~/.config/reckon/crew/runs/r-20260817T163347537041-ftc-roles/resolved-roles.json</code>.
+    </p>
+
     <h2 id="budgets">Time budgets (measured per-role defaults, overrun watchdog, retired concurrency key)</h2>
     <p>
       Commit <code>d5d3c35</code> (2026-08-17, worker codex-d, 311 insertions / 70 deletions over

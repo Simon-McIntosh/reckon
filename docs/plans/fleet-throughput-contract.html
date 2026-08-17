@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="9">
-<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779,d5d3c351374d905389dcc400d25523109e25e22a">
+<meta name="plan-version" content="11">
+<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779,d5d3c351374d905389dcc400d25523109e25e22a,864fc0c1a9185686f56fd4e5d3f69a75872e1687">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -68,18 +68,17 @@
       Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#budgets">§3 landed</a>.
     </p>
 
-    <h2 id="s4">§4 — Cheap observation and state writes</h2>
-    <p><strong>Fleet polling.</strong> The contract prescribes one polling surface — the MCP
-    <code>crew(view="live")</code> (honest liveness lands in dispatch-lifecycle-safety) — and drops
-    the per-run observe loop; <code>crew list</code> gains project/phase filters; the ledger records
-    view gains plan/since/limit filters. Done when an eight-worker wave is monitorable in one call
-    per beat.</p>
-    <p><strong>Version-only read.</strong> A minimal read shape (or server-side version re-check in
-    <code>edit_plan</code>) removes the 3–6k-token raw read whose only consumed field is
-    <code>version</code>. Done when a landing's state write costs one small call.</p>
-    <p><strong>Roles for the workers the contract already mandates.</strong> Test and doc workers
-    get configured roles (or the contract stops mandating role names the CLI refuses). Done when
-    every worker type in the skill dispatches without a role error.</p>
+    <h2 id="s4">§4 — Cheap observation and state writes <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Observation and state writes are now cheap (commits <code>43ebf37</code>,
+      <code>864fc0c</code>): the ledger records view filters plan/since/limit, <code>crew list</code>
+      takes <code>--project</code> and <code>--phase</code> (project-only 2 of 3, phase-only 2 of 3,
+      combined exactly 1 over a three-pointer fixture), and the version-only typed read costs
+      126 B against the 2,542 B raw read — 95% smaller — so a landing write no longer pays for
+      state it does not consume. All six roles the contract instructs now resolve, test and
+      documentation included.
+      Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#mcp-obs">§4 landed</a>.
+    </p>
 
     <h2 id="s5">§5 — Skill/CLI reconciliation sweep <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
     <p class="landed-summary">
@@ -122,6 +121,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260817-ftc-mcp-obs" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">ftc-mcp-obs landed - commit 43ebf37; gate passed; measure: version-only read 126 B vs 2,542 B raw (95.04% smaller), ledger records view filters plan/since/limit under test, 224 focused tests green, 4 added; wall 434 s; evidence: fleet-throughput-contract-landed#mcp-obs. Section s4 stays open: crew list project/phase filters and test/doc worker roles remain in the crew-code node.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260817-ftc-roles" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">ftc-roles landed - commit 864fc0c; gate passed; measure: crew list --project and --phase filter the shared live read (project-only 2 of 3, phase-only 2 of 3, combined exactly 1); all six shipped roles resolve without error - cleanup, documentation, implement, investigate, review, test - with test/investigate/review read-only; 189 focused tests green, 5 added; wall 325 s; evidence: fleet-throughput-contract-landed#roles. Section s4 closed; plan complete pending the final suite gate.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260817-ftc-reconcile" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">ftc-reconcile landed - commit 372c243; gate passed; measure: 5 new tests mechanically pin 6 MCP crew views, 14 instructed CLI command paths with flags, 6 dispatch exit outcomes, 3 refusal remedies and lifecycle guidance; 38 contract tests green; swept items each recorded with file and line; wall 596 s; evidence: fleet-throughput-contract-landed#reconcile. Section s5 closed.</div>
