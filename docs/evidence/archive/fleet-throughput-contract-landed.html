@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="fleet-throughput-contract-landed">
+  <meta name="plan-title" content="Fleet Throughput Contract — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the fleet-throughput-contract plan: commits, gate measures, tests, and measured payload/read figures per landed node.">
+  <meta name="plan-evidence-for" content="fleet-throughput-contract">
+  <meta name="plan-verifies" content="fleet-throughput-contract#s2">
+  <title>Fleet Throughput Contract — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Fleet Throughput Contract — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="contract">Contract changes (rolling refill, narrowed freeze, one fleet-size table, preamble diet)</h2>
+    <p>
+      Commit <code>36e668a</code> (2026-08-17, worker codex-b, wall 562&nbsp;s,
+      134 insertions / 60 deletions over <code>skills/reckon-ship/SKILL.md</code>, two reference
+      files and <code>tests/test_skill_contracts.py</code>; merged at <code>0bb4fa5</code>).
+    </p>
+    <ul>
+      <li><strong>Rolling refill.</strong> A finished, verified worker's slot refills immediately
+        from the ready queue; the safety rule "no dependent node builds on unverified work"
+        occurs exactly once in the skill, and dependent work still waits for verified integrated
+        predecessors.</li>
+      <li><strong>Narrowed landing freeze.</strong> Promotion and merge stay blocked until the
+        mandatory plan write; dispatching an unrelated ready node explicitly no longer waits.</li>
+      <li><strong>One fleet-size vocabulary.</strong> Exactly one Items/Strategy table remains
+        across the contract files, marked advisory, naming the free distinct-member roster as the
+        real ceiling.</li>
+      <li><strong>Preamble diet.</strong> Both engine-injected references are gated behind
+        "only when hand-composing"; the fixed mandatory read set measured 1 file, 8,197 words,
+        ≈10,930 tokens — under the 12k gate and less than half the prior ~24k.</li>
+    </ul>
+    <p>
+      Tests: 4 contract tests added; <code>tests/test_skill_contracts.py</code> 33 passed,
+      0 failed. Wave-1 integration gate: full suite 1915 passed, 0 failed at
+      <code>35d4cf3</code>. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260817T140138256599-ftc-contract/</code>.
+    </p>
+
+    <h2 id="mcp-obs">Cheap observation reads (ledger record filters, version-only plan read)</h2>
+    <p>
+      Commit <code>43ebf37</code> (2026-08-17, worker codex-c, wall 434&nbsp;s,
+      578 insertions / 152 deletions over <code>reckon/ledger.py</code>, <code>reckon/mcp.py</code>,
+      <code>reckon/mcp_views.py</code>, <code>reckon/_mcp_tools.py</code> and four test files;
+      merged at <code>35d4cf3</code>).
+    </p>
+    <ul>
+      <li><strong>Ledger record filters.</strong> <code>crew view=records</code> reads the ledger
+        once and filters completed runs by exact plan, inclusive <code>completed_at</code> since
+        boundary, then most-recent promotion limit, preserving stored order; legacy
+        <code>view=ledger</code> unchanged.</li>
+      <li><strong>Version-only read.</strong> Typed <code>read_plan view=version</code> returns
+        only resource identity, version, and view. Measured on the live fixture: 126 bytes versus
+        the 2,542-byte raw read — a 95.04% reduction; a landing test writes at that
+        <code>expected_version</code> with no raw read.</li>
+    </ul>
+    <p>
+      Tests: 4 added; focused suites 190 + 34 passed, 0 failed; ruff clean. Wave-1 integration
+      gate: full suite 1915 passed, 0 failed at <code>35d4cf3</code>. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260817T140140956251-ftc-mcp-obs/</code>.
+    </p>
+
+  </main>
+</body>
+</html>

@@ -22,7 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8">
+<meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -41,23 +44,16 @@
       member-collision loss.
     </p>
 
-    <h2 id="s2">§2 — Contract changes (reckon-ship SKILL.md + references)</h2>
-    <p><strong>Rolling refill replaces the wave barrier.</strong> A finished, verified worker's slot
-    refills immediately with the next ready node; the barrier survives only where a dependent node
-    consumes an unverified predecessor. Done when the skill's wave section describes slot refill,
-    and the safety rule is restated as "no dependent node builds on unverified work".</p>
-    <p><strong>Narrowed landing freeze.</strong> The landing beat's inviolable half stays (the plan
-    write may not be skipped, nothing merges or promotes before it); dispatching an unrelated ready
-    node no longer waits on another node's plan write. Done when the hard rule's wording separates
-    the two.</p>
-    <p><strong>One wave-size vocabulary.</strong> The three inconsistent fleet-size bands (2–8, 3–8,
-    at-most-three) collapse to one advisory table in one file, explicitly marked advisory, with the
-    member roster named as the real ceiling. Done when the other copies reference rather than
-    restate it.</p>
-    <p><strong>Preamble diet.</strong> Reference files whose content the engine already injects via
-    <code>compose_prompt</code> are gated behind "only when hand-composing"; the mandatory-read set
-    shrinks accordingly. Done when the per-session fixed read is measured under half its current
-    ~24k tokens.</p>
+    <h2 id="s2">§2 — Contract changes (reckon-ship SKILL.md + references) <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Rewrote the ship contract for rolling slot refill (commit <code>36e668a</code>): free slots
+      refill from the ready queue under the rule "no dependent node builds on unverified work";
+      the landing freeze narrows to promotion/merge while unrelated dispatch proceeds; one advisory
+      fleet-size table remains with the roster as the real ceiling; engine-injected references are
+      gated behind hand-composing. Mandatory per-session read measured 10,930 tokens (from ~24k);
+      33 contract tests green.
+      Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#contract">§2 landed</a>.
+    </p>
 
     <h2 id="s3">§3 — Time budgets that mean something</h2>
     <p><strong>Per-role defaults from measurement.</strong> Set role-level time budgets near the
@@ -119,6 +115,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260817-ftc-contract" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">ftc-contract landed - commit 36e668a; gate passed; measure: mandatory per-session read set 10,930 tokens (gate &lt;12k, prior ~24k), 33 contract tests green, 4 added; rolling refill + narrowed landing freeze + single advisory fleet-size table + hand-composing gate; wall 562 s; evidence: fleet-throughput-contract-landed#contract. Section s2 closed.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260817-ftc-mcp-obs" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">ftc-mcp-obs landed - commit 43ebf37; gate passed; measure: version-only read 126 B vs 2,542 B raw (95.04% smaller), ledger records view filters plan/since/limit under test, 224 focused tests green, 4 added; wall 434 s; evidence: fleet-throughput-contract-landed#mcp-obs. Section s4 stays open: crew list project/phase filters and test/doc worker roles remain in the crew-code node.</div>
+</div>
+</section>
+</main>
 </body>
 </html>

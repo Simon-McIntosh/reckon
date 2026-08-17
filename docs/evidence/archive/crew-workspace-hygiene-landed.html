@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-workspace-hygiene-landed">
+  <meta name="plan-title" content="Crew Workspace Hygiene — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the crew-workspace-hygiene plan: commits, gate measures, tests, and the backlog reclaim figures per landed node.">
+  <meta name="plan-evidence-for" content="crew-workspace-hygiene">
+  <meta name="plan-verifies" content="crew-workspace-hygiene#s2">
+  <title>Crew Workspace Hygiene — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Crew Workspace Hygiene — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="gc-impl">GC surface (crew gc, live-pointer consult, nesting guard, vendored-script check)</h2>
+    <p>
+      Commit <code>039dfaa</code> (2026-08-17, worker codex-a, wall 430&nbsp;s,
+      481 insertions / 4 deletions over <code>reckon/crew.py</code>, <code>reckon/cli.py</code>,
+      <code>skills/reckon-ship/scripts/worktree_fleet.py</code> and three test files;
+      fast-forwarded).
+    </p>
+    <ul>
+      <li><strong>crew gc, dry-run by default.</strong> Classifies managed worktrees into
+        disjoint integrated / dirty / unintegrated / live-referenced counts without mutation;
+        <code>--apply</code> removes only clean integrated trees and rechecks live claims
+        immediately before each removal.</li>
+      <li><strong>Live-pointer consult on every removal path.</strong> A pointer in a
+        non-terminal phase refuses both <code>crew gc</code> and the vendored
+        <code>cleanup-session</code>, even when its recorded pid is gone — the recorded
+        worktree-deleted-under-a-live-run scenario now refuses under test.</li>
+      <li><strong>Root nesting guard.</strong> Dispatch rejects a second
+        <code>reckon-worktrees</code> level under the worktree root.</li>
+      <li><strong>Vendored-script check.</strong> Dispatch into a repo missing the vendored
+        fleet script fails with a one-line error naming <code>reckon sync</code> as the fix.</li>
+    </ul>
+    <p>
+      Tests: 4 added, 1 cleanup regression strengthened; assigned suites 113 passed, 0 failed;
+      ruff clean on all six changed paths. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260817T140135508200-cwh-gc-impl/</code>.
+    </p>
+
+  </main>
+</body>
+</html>
