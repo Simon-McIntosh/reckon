@@ -396,7 +396,16 @@ def test_one_backend_reports_headroom_with_a_reset_time() -> None:
     assert budget["utilisation_pct"] == pytest.approx(1.02)
     assert budget["resets_at"] == "2026-09-01T00:00:00Z"
     assert budget["threshold_status"] == "allowed_warning"
+    assert budget["rate_limit_type"] == "overage"
     assert budget["cost_usd"] is not None
+
+
+def test_an_empty_rate_limit_mapping_is_not_a_measurement() -> None:
+    budget = _backends.dialect_for(CLAUDE)._budget({})
+
+    assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert "no numeric utilisation" in budget["detail"]
 
 
 @pytest.mark.parametrize("reset_epoch", [1_788_220_800_000, 1e100])

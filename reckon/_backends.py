@@ -162,6 +162,8 @@ def unknown_budget(reason: str) -> dict[str, Any]:
     return {
         "headroom": "unknown",
         "utilisation_pct": None,
+        "rate_limit_type": None,
+        "rate_limit_period_minutes": None,
         "resets_at": None,
         "threshold_status": None,
         "surpassed_threshold": None,
@@ -420,19 +422,24 @@ class _CodexDialect(Dialect):
         if not isinstance(snapshot, Mapping):
             return unknown_budget("account-limit answer carried no rate limits")
         windows = [
-            window
+            (key, window)
             for key in ("primary", "secondary")
             if isinstance(window := snapshot.get(key), Mapping)
             and isinstance(window.get("usedPercent"), (int, float))
+            and not isinstance(window.get("usedPercent"), bool)
         ]
         if not windows:
             return unknown_budget("account limits reported no metered window")
-        binding = max(windows, key=lambda window: float(window["usedPercent"]))
+        window_type, binding = max(
+            windows, key=lambda item: float(item[1]["usedPercent"])
+        )
         budget = unknown_budget("")
         budget.update(
             {
                 "headroom": "known",
                 "utilisation_pct": float(binding["usedPercent"]),
+                "rate_limit_type": window_type,
+                "rate_limit_period_minutes": binding.get("windowDurationMins"),
                 "resets_at": _epoch_to_iso(binding.get("resetsAt")),
                 "threshold_status": snapshot.get("rateLimitReachedType"),
                 "detail": "backend's account surface reports utilisation and reset time",
@@ -530,11 +537,16 @@ class _ClaudeDialect(Dialect):
         """
         if not isinstance(info, Mapping):
             return unknown_budget("rate-limit event carried no information")
+        utilisation = info.get("utilization")
+        if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
+            return unknown_budget("rate-limit event carried no numeric utilisation")
         budget = unknown_budget("")
         budget.update(
             {
                 "headroom": "known",
-                "utilisation_pct": info.get("utilization"),
+                "utilisation_pct": float(utilisation),
+                "rate_limit_type": info.get("rateLimitType"),
+                "rate_limit_period_minutes": info.get("windowDurationMins"),
                 "resets_at": _epoch_to_iso(info.get("resetsAt")),
                 "threshold_status": info.get("status"),
                 "surpassed_threshold": info.get("surpassedThreshold"),

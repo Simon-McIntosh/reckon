@@ -794,9 +794,16 @@ def crew_resume(run_id, advice, print_only, pretty):
     Advice only makes sense to a worker that still remembers what it tried, so
     the resumed turn carries the prior context rather than restating it.
     """
-    crew_module, _ = _crew_modules()
+    crew_module, flight_module = _crew_modules()
     try:
-        plan = crew_module.resume_plan(run_id, advice)
+        record = crew_module.read_pointer(run_id)
+        project = str(record.get("project") or "")
+        config = (
+            _resolved_flight(flight_module, project, record.get("repo"), ())
+            if project
+            else None
+        )
+        plan = crew_module.resume_plan(run_id, advice, config=config)
     except crew_module.BudgetHold as exc:
         _emit(
             {
