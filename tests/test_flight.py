@@ -130,6 +130,24 @@ def test_shipped_defaults_validate_against_the_schema():
     assert resolved.config["default_backend"] in resolved.config["backends"]
 
 
+def test_shipped_roles_resolve_every_worker_kind_named_by_the_contract():
+    resolved = resolve(host_path=Path("/nonexistent/flight.yaml"))
+    expected = {
+        "implement",
+        "review",
+        "cleanup",
+        "investigate",
+        "test",
+        "documentation",
+    }
+
+    assert set(resolved.config["roles"]) == expected
+    for role in expected:
+        backend_name, backend = crew.resolve_role(resolved.config, role)
+        assert backend_name == "native"
+        assert backend["launch"] == "in-harness"
+
+
 def test_shipped_layer_names_no_provider_command_or_model():
     """Provider names, commands and model identifiers stay out of the package.
 

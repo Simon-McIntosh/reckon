@@ -711,9 +711,11 @@ def crew_observe(run_id, project, pretty):
 
 
 @crew.command(name="list")
+@click.option("--project", default=None, help="Return runs for one project only.")
+@click.option("--phase", default=None, help="Return runs in one phase only.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_list(pretty):
-    """List every live run pointer, so a fresh session can pick them up."""
+def crew_list(project, phase, pretty):
+    """List matching live run pointers, so a fresh session can pick them up."""
     crew_module, _ = _crew_modules()
     runs = [
         {
@@ -727,7 +729,7 @@ def crew_list(pretty):
             "worktree": record.get("worktree"),
             "manifest_path": record.get("manifest_path"),
         }
-        for record in crew_module.list_live()
+        for record in crew_module.list_live(project=project, phase=phase)
     ]
     _emit({"ok": True, "runs": runs}, pretty)
 

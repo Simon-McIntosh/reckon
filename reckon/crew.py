@@ -625,8 +625,10 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     return data
 
 
-def list_live() -> list[dict[str, Any]]:
-    """Return every live pointer, newest run id last."""
+def list_live(
+    *, project: str | None = None, phase: str | None = None
+) -> list[dict[str, Any]]:
+    """Return matching live pointers, newest run id last."""
     directory = live_dir()
     if not directory.is_dir():
         return []
@@ -636,8 +638,13 @@ def list_live() -> list[dict[str, Any]]:
             data = json.loads(path.read_text())
         except ValueError:
             continue
-        if isinstance(data, dict):
-            records.append(data)
+        if not isinstance(data, dict):
+            continue
+        if project is not None and str(data.get("project") or "") != project:
+            continue
+        if phase is not None and str(data.get("phase") or "") != phase:
+            continue
+        records.append(data)
     return records
 
 
