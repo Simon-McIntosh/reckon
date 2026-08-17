@@ -51,6 +51,28 @@
       <code>~/.config/reckon/crew/runs/r-20260817T140135508200-cwh-gc-impl/</code>.
     </p>
 
+    <h2 id="gc-dryrun">Backlog dry-run (itemization of the full worktree root and run directories)</h2>
+    <p>
+      Operational node, no commit (2026-08-17, worker codex-a, wall 1042&nbsp;s; 4/4 repo-family
+      gc commands exited 0; before/after <code>git worktree list</code> proved 0 trees touched).
+      Report: <code>~/.config/reckon/crew/runs/r-20260817T142255561525-cwh-gc-dryrun/crew-gc-dryrun-report.md</code>
+      (+ machine-readable JSON and per-tree byte measures).
+    </p>
+    <ul>
+      <li><strong>Backlog drift since the plan baseline.</strong> 35 worktrees / 109.007&nbsp;GiB
+        now, versus the recorded 27 / 12&nbsp;GB; 337 run directories / 159.9&nbsp;MiB versus
+        270 / 129&nbsp;MB. The mass is dominated by 17 unintegrated nova trees at ~7&nbsp;GiB
+        each — work gc correctly refuses.</li>
+      <li><strong>Classification.</strong> integrated=9, unintegrated=17, live-referenced=9,
+        dirty=0; 12 live pointers classified across four projects.</li>
+      <li><strong>Negative findings.</strong> Run-directory retention finds 0 candidates at the
+        default 30-day window (the fleet is 5 days old), so run-dir pruning reclaims nothing yet.
+        Most integrated-eligible trees belong to concurrently active same-day sessions in
+        imas-ambix and imas-codex; 7 new worktrees arrived during the measurement itself. The
+        nested <code>reckon-worktrees</code> root persists with one empty family descendant and
+        is not a registered worktree.</li>
+    </ul>
+
   </main>
 </body>
 </html>

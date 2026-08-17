@@ -21,7 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-commits" content="c7a372effb012310fb3b741a68c518b0f0ba1ca6">
+<meta name="plan-artifacts" content="docs/evidence/archive/gate-signal-repair-landed.html">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -39,20 +42,16 @@
       gate derived from them can be.
     </p>
 
-    <h2 id="s2">§2 — Competence gate</h2>
-    <p><strong>Units.</strong> One definition of speed (document its direction), applied so the
-    compared quantities share units; node-level estimates come from the node (a dispatch-surface
-    hours input), falling back to plan hours only with an explicit provenance label. Done when the
-    gate's refusal threshold equals the horizon it names, under test with both calibration
-    directions.</p>
-    <p><strong>Cache lifecycle.</strong> Staleness check against recorded ledger versions, a CLI to
-    rebuild and inspect (<code>reckon capabilities</code> or a crew subcommand), and rebuilds off
-    the dispatch path. Done when a ledger append invalidates, and first dispatch never triggers a
-    synchronous all-repo scan.</p>
-    <p><strong>Verdict surfacing.</strong> A competence refusal exits with its own documented code
-    and the structured verdict (including target size) in the payload, mirroring the budget hold;
-    <code>--dry-run</code> runs the same check so wave validation and real dispatch agree. Done when
-    the CLI help enumerates it and dry-run parity has a test.</p>
+    <h2 id="s2">§2 — Competence gate <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Made the competence gate truthful (commit <code>c7a372e</code>): speed defined once as
+      neutral estimated hours per actual worker-hour, node-level estimates with provenance labels,
+      a ledger-keyed cache lifecycle with <code>reckon capabilities --rebuild</code> off the
+      dispatch path, and refusals as documented exit 5 carrying the structured verdict with
+      dry-run parity. Threshold equals its named horizon under both calibration directions;
+      152 focused tests green, 5 added.
+      Full record: <a href="/reckon/evidence/archive/gate-signal-repair-landed#competence">§2 landed</a>.
+    </p>
 
     <h2 id="s3">§3 — Budget gate</h2>
     <p><strong>Honest readings.</strong> A headroom block claims <code>known</code> only with a
@@ -93,6 +92,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260817-gsr-competence" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">gsr-competence landed - commit c7a372e; gate passed; measure: refusal threshold equals its named horizon under speed factors 0.5 and 2.0, ledger append invalidates cache, no synchronous rebuild on dispatch, refusal is documented exit 5 with dry-run parity; 152 focused tests green, 5 added; wall 448 s; evidence: gate-signal-repair-landed#competence. Section s2 closed.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
