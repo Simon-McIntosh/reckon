@@ -179,6 +179,48 @@
       generated file must never be scoped without its source.
     </p>
 
+    <h2 id="role-sandbox">Sandbox tier follows execution capability</h2>
+    <p>
+      Commit <code>9747555</code> (2026-08-17, worker codex-c, wall 343&nbsp;s, 82 insertions /
+      13 deletions over <code>reckon/schema/flight.yaml</code> and its two generated artifacts,
+      <code>reckon/flight.py</code>, <code>reckon/schema/flight-defaults.yaml</code> and
+      <code>tests/test_flight.py</code>; fast-forwarded).
+    </p>
+    <p>
+      <strong>Found by using the role the previous node had just added.</strong> The final suite gate
+      was dispatched under the new <code>test</code> role and could not run: the role resolved
+      read-only, so <code>uv</code> had no writable cache and no network to resolve build
+      requirements, and pytest collected 0 tests. The gate was recorded <code>not-run</code> with
+      that reason rather than passed or failed — an absence of evidence is neither.
+    </p>
+    <table>
+      <thead><tr><th>Role</th><th>Execution capable</th><th>Sandbox before</th><th>Sandbox after</th></tr></thead>
+      <tbody>
+        <tr><td>test</td><td>yes</td><td>read-only</td><td>worktree-full</td></tr>
+        <tr><td>cleanup</td><td>yes</td><td>worktree-full</td><td>worktree-full</td></tr>
+        <tr><td>documentation</td><td>yes</td><td>worktree-full</td><td>worktree-full</td></tr>
+        <tr><td>implement</td><td>yes</td><td>worktree-full</td><td>worktree-full</td></tr>
+        <tr><td>investigate</td><td>no</td><td>read-only</td><td>read-only</td></tr>
+        <tr><td>review</td><td>no</td><td>read-only</td><td>read-only</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Enforcement follows a declared capability, not a role-name allowlist.</strong>
+        Resolution now rejects any execution-capable role lacking worktree-write permission and
+        reserves read-only for roles explicitly declared non-executing. An arbitrary role named
+        <code>executor</code> proves the rule generalises, so a future execution-capable role cannot
+        be shipped read-only.</li>
+      <li>Tests: 1 invariant test added and the six-role contract test strengthened; focused suites
+        190 passed, 0 failed; ruff clean; schemas regenerate byte-identically (41,628 bytes of
+        generated artifacts from an 11,905-byte source).</li>
+    </ul>
+    <p>
+      <strong>Why the §5 parity test did not catch it.</strong> That test asserts every role the
+      contract instructs <em>resolves</em>, which this role did. Resolving and being able to do the
+      work are different properties, and only the second one matters to a worker — which is why the
+      new invariant is written against capability rather than against the list of names.
+    </p>
+
   </main>
 </body>
 </html>
