@@ -176,7 +176,7 @@ def test_ship_skill_authors_the_gate_fence_rule_alone() -> None:
     skill_root = ROOT / "skills"
     ship = normalized((skill_root / "reckon-ship" / "SKILL.md").read_text())
     assert "Authored here and nowhere else" in ship
-    assert "refuse to open the next wave until the gate's measure has produced" in ship
+    assert "refuse to dispatch work behind the gate until its measure has produced" in ship
     others = [
         path
         for path in skill_root.rglob("SKILL.md")
@@ -320,6 +320,52 @@ def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
     assert "Immediately after EACH `reckon crew complete`" in ship
     assert "Immediately after each `reckon crew complete`" in reference
     assert "Do not promote another run" in reference
+    assert "dispatching an unrelated ready node is outside this freeze" in reference.lower()
+    assert "dispatching an unrelated ready node is outside this freeze" in ship.lower()
+
+
+def test_ship_refills_free_slots_without_crossing_unverified_dependencies() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert "refill each slot as soon as its finished node is verified" in ship
+    assert "no dependent node builds on unverified work" in ship
+    assert "Do not wait for the slowest active node" in ship
+    assert "independent refill may start" in reference
+
+
+def test_ship_has_one_advisory_fleet_size_table() -> None:
+    root = ROOT / "skills" / "reckon-ship"
+    texts = {path: path.read_text() for path in root.rglob("*.md")}
+    tables = [path for path, text in texts.items() if "| Items | Strategy |" in text]
+
+    assert tables == [root / "SKILL.md"]
+    ship = texts[root / "SKILL.md"]
+    reference = texts[root / "references" / "sprint-orchestration.md"]
+    assert "Advisory fleet-size guide" in ship
+    assert "This table is advisory" in ship
+    assert "roster of free, distinct members is the real ceiling" in normalized(
+        ship.lower()
+    )
+    assert "single advisory fleet-size table in `../SKILL.md`" in reference
+
+
+def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
+    root = ROOT / "skills" / "reckon-ship"
+    ship = (root / "SKILL.md").read_text()
+    references = [
+        (root / "references" / "sprint-orchestration.md").read_text(),
+        (root / "references" / "worker-protocol.md").read_text(),
+    ]
+
+    assert all("only when hand-composing" in text for text in references)
+    assert "only when hand-composing" in ship
+    estimated_tokens = (len(ship.split()) * 4 + 2) // 3
+    assert estimated_tokens < 12_000
 
 
 def test_ship_advances_implementation_for_every_node_landing() -> None:
@@ -377,7 +423,7 @@ def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
     )
 
 
-def test_ship_retriages_followups_after_every_wave_until_dry() -> None:
+def test_ship_retriages_followups_after_every_landing_until_dry() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -387,7 +433,7 @@ def test_ship_retriages_followups_after_every_wave_until_dry() -> None:
 
     for text in (ship, reference):
         assert "re-triage" in text.lower()
-        assert "after every wave" in text
+        assert "after every landing beat" in text
         assert "complete pass finds nothing foldable" in text
         assert "fixed pass count" in text
 
