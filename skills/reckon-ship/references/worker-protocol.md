@@ -1,5 +1,8 @@
 # Worker protocol
 
+Read this reference only when hand-composing a delegation Reckon did not prepare;
+the generated dispatch already carries this binding protocol.
+
 Everything true of a worker regardless of which backend runs it: what makes a
 node dispatchable, the four fences a dispatch carries, the manifest it returns,
 and how it asks for help instead of thrashing.

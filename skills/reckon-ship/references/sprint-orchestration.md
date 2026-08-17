@@ -1,9 +1,10 @@
 # Sprint orchestration reference
 
-Read this file completely before any `reckon-ship` dispatch. Both targets delegate
-every node, so everything here binds a single-plan coordinator exactly as it binds
-a sprint one; only target resolution and sprint writeback are sprint-specific.
-Where the text says "sprint coordinator", read "coordinator".
+Read this file only when hand-composing a delegation Reckon did not prepare. The
+engine-generated dispatch already carries the binding worker contract. Both
+targets delegate every node, so everything here binds a single-plan coordinator
+exactly as it binds a sprint one; only target resolution and sprint writeback are
+sprint-specific. Where the text says "sprint coordinator", read "coordinator".
 
 `worker-protocol.md` is its companion and is not repeated here: it owns the
 seven-property task contract, the four fences, the manifest shape, the recovery
@@ -72,7 +73,7 @@ Before dispatch:
    deliverables. Otherwise use one node per plan.
 7. Add dependency edges from section sequencing, shared files,
    decisions, and explicit triggers.
-8. Topologically sort the enriched section/file graph into ready waves. A new
+8. Topologically sort the enriched section/file graph into a ready queue. A new
    cycle is a blocker; report the exact cycle instead of breaking it
    heuristically.
 
@@ -130,7 +131,7 @@ is allowed only after reporting all of the following before implementation:
 - the checkpoint from which a fresh coordinator can resume.
 
 Maintain a compact coordinator checkpoint after DAG creation and after every
-wave: node statuses and edges, scope ownership, worker/worktree ids, commit
+landing beat: node statuses and edges, scope ownership, worker/worktree ids, commit
 SHAs, integration state, plan versions, and next ready nodes. Reserve
 coordinator context for integration, state writeback, cleanup, and reporting;
 when that reserve is threatened, delegate missing analysis or pause instead of
@@ -210,6 +211,9 @@ they do not select a model.
 Set an explicit concurrency cap in the current prompt or coordinator checkpoint
 before dispatch. Derive it from available slots, dependency independence, file
 scope conflicts, and operational limits; Reckon defines no fixed default.
+Use the single advisory fleet-size table in `../SKILL.md`; do not restate it in
+this reference. The roster of free, distinct members is the real ceiling for
+session-reusing workers.
 
 Runtime routing is prompt-owned:
 
@@ -264,8 +268,9 @@ python skills/reckon-ship/scripts/worktree_fleet.py create \
 
 Detached worktrees avoid shared working-tree contamination and do not require
 workers to create or switch branches. Create every worktree from the same
-verified primary-branch base unless a dependency wave has already integrated;
-later waves start from the newly integrated primary HEAD.
+verified primary-branch base. A dependent node starts only from a revision that
+contains its verified, integrated predecessors. An independent refill may start
+from the current verified primary HEAD without waiting for unrelated active work.
 
 Workers:
 
@@ -392,7 +397,7 @@ drifting between workers and sessions.
 
 ## 7. Orchestrator integration
 
-Integrate one completed wave at a time:
+Integrate each verified completion as it becomes available:
 
 1. Verify the worker worktree is clean.
 2. Inspect the commit and exact changed paths.
@@ -405,9 +410,9 @@ Integrate one completed wave at a time:
    resolution requires product/source/test edits or implementation judgment,
    dispatch a corrective integration worker. Preserve both independent intents;
    never discard one worker wholesale to make a conflict disappear.
-7. Dispatch test workers for integration tests after each merge and the
-   broader gate after the wave; audit their manifests.
-8. Push the primary branch after each coherent integrated wave.
+7. Dispatch test workers for integration tests after each merge and broader
+   tests at their dependency gates; audit their manifests.
+8. Push the primary branch after each coherent integration.
 
 If a worker edited out-of-scope paths, do not merge it blindly. Ask the worker
 to split/rework the commit or dispatch a corrective worker in a new worktree.
@@ -418,8 +423,9 @@ branch and continue only independent ready nodes.
 
 Each verified node has one landing beat: the orchestrator runs `reckon crew
 complete`, then immediately writes that node to the plan. Do not promote another
-run, merge another commit, dispatch more work, or open the next wave between
-those operations. Workers return outcome data in their manifests and never
+run or merge another commit between those operations. The plan write is
+mandatory, but dispatching an unrelated ready node is outside this freeze and
+may refill a free slot. Workers return outcome data in their manifests and never
 write shared plan or index state.
 
 Immediately after each `reckon crew complete`, the orchestrator:
@@ -447,10 +453,10 @@ Immediately after each `reckon crew complete`, the orchestrator:
    derived from plan HTML and must never be persisted in the sprint.
 7. Appends a cross-plan followup when needed, or records `done — no followup`.
 
-### Followup drain at every wave boundary
+### Followup drain at every landing beat
 
-The coordinator re-triages open followups after every wave, together with the
-manifest `follow_ons` generated by that wave. Manifest `follow_ons` enter the
+The coordinator re-triages open followups after every landing beat, together
+with the landed manifest's `follow_ons`. Manifest `follow_ons` enter the
 same triage loop as open plan followups. Folding into the current orchestration
 is the default; an entry may stay open only under one of these exemptions:
 
@@ -467,7 +473,7 @@ inconvenience, and ordinary unfinished work are not exemptions.
 
 Fold eligible entries into sections and DAG nodes, execute the newly ready
 nodes, then re-read the plan because their landings may have created more
-followups. The loop runs after every wave and terminates only when a complete
+followups. The loop runs after every landing beat and terminates only when a complete
 pass finds nothing foldable; never use a fixed pass count or the original DAG's
 end as the stopping condition. Do not set a plan to `shipped` or `done` while a
 foldable followup is open. An exempt followup may remain open only when its

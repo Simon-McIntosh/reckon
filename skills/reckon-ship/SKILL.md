@@ -25,7 +25,7 @@ There are two execution targets:
 - **Sprint target:** `/reckon-ship S1` executes the current project's sprint;
   `/reckon-ship <project>:S1` selects a project explicitly. It reads every
   sprint plan, transitive dependencies, linked research, and prior evidence,
-  then coordinates ready dependency waves. Use `plan:<slug>` or `sprint:<id>`
+  then coordinates a rolling queue of ready nodes. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
 
 On a single-plan target without a section, you MUST:
@@ -35,10 +35,11 @@ On a single-plan target without a section, you MUST:
 4. Promote each landed node and write its plan state in the same beat, then continue
 5. Stop only when all implementable sections are done OR you hit a hard prerequisite blocker
 
-On a sprint target, read `references/sprint-orchestration.md` completely before
-dispatch. The sprint invocation authorises the listed plans and their actionable
+The sprint invocation authorises the listed plans and their actionable
 same-project prerequisites; it does not broaden authority to unrelated projects,
-external systems, destructive actions, or new outward-facing effects.
+external systems, destructive actions, or new outward-facing effects. Reckon
+composes the dispatch contract; consult `references/sprint-orchestration.md`
+only when hand-composing a delegation Reckon did not prepare.
 
 Use `roadmap(project, sprint=<id>)` as the canonical plan-level graph. Do not
 rebuild plan dependency order from repeated discovery calls. Add section-level
@@ -65,8 +66,8 @@ node is where inline is cheapest to rationalise and costs the most: the work
 lands in coordinator context that then cannot review it, no worktree bounds the
 blast radius, no manifest records what happened, and the run never reaches the
 ledger — so the node is invisible to calibration and to the next session. A
-single well-formed node dispatches in one call. Node count changes the shape of a
-wave, never whether there is one.
+single well-formed node dispatches in one call. Node count changes the active
+fleet, never whether a node is delegated.
 
 Inline fallback is exceptional and is a reported event, not a judgement call: use
 it only when no capable worker or slot exists, say so and context-budget it
@@ -101,7 +102,7 @@ same member. Work that widens the scope is a new node — dispatching it into an
 old session hides a scope change inside a session that was fenced for something
 else, and a scope change is exactly what `--scope-changed` exists to record.
 
-**A member is a serial worker, so size a wave in members, not in nodes.** The
+**A member is a serial worker, so size the active fleet in members, not in nodes.** The
 session that makes continuity possible is a single-writer resource: a second run
 resuming a session that still holds the writer lock dies at launch, and it dies
 *quietly* — no stream, no manifest, and a phase that reads `orphaned` rather than
@@ -145,7 +146,7 @@ settles implementation choices only inside the already-authorised scope.
 ```text
 resolve target
 ├─ plan → roadmap + full plan → classify sections → delegate in dependency order
-└─ sprint → roadmap + all plans/research/evidence → enrich DAG → coordinate waves
+└─ sprint → roadmap + all plans/research/evidence → enrich DAG → run ready queue
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
 → check every node against the seven-property contract (§3b)
@@ -198,13 +199,16 @@ structured state (decisions, followups). Do not implement items marked
 4. **Coordinators delegate every executable node, on both targets.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both targets are coordinator-only, never the default for small work.
 5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
 6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
-7. **The portable dispatch contract is mandatory.** Read and embed the contract in `references/sprint-orchestration.md`.
+7. **The portable dispatch contract is mandatory.** `reckon crew dispatch`
+   composes it. Read and embed the reference contract only when hand-composing a
+   delegation Reckon did not prepare.
 8. **Update the plan at every node landing.** Immediately after EACH
    `reckon crew complete`, the orchestrator updates the cumulative evidence and
    calls `edit_plan` once with the node's commit, gate measure, artifacts, and
-   advanced `impl`. Nothing else may be promoted, merged, dispatched, or opened
-   before this write. Collapse the evergreen section only when its final node
-   lands; never wait for section closure to record earlier nodes.
+   advanced `impl`. Nothing else may be promoted or merged before this write.
+   Dispatch of an unrelated ready node may continue; it does not wait on this
+   plan-write beat. Collapse the evergreen section only when its final node lands;
+   never wait for section closure to record earlier nodes.
 9. **One cumulative evidence record and a followup are required.** Default to
    `docs/evidence/archive/<slug>-landed.html`, carrying
    `reckon-type=evidence` and `plan-evidence-for=<slug>`, with one stable anchor
@@ -222,7 +226,7 @@ structured state (decisions, followups). Do not implement items marked
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
 15. **Drain foldable followups before closure.** Re-triage open followups after
-    every wave, route that wave's manifest `follow_ons` through the same loop,
+    every landing beat, route that node's manifest `follow_ons` through the same loop,
     and repeat until a complete pass finds nothing foldable. Never set a plan
     to `shipped` or `done` while a foldable followup is open.
 
@@ -275,8 +279,8 @@ Wait for the user's response before doing anything else. If the user authorizes 
 2. Call `roadmap(project)` and match the argument against exact sprint ids.
 3. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as sprint
    a sprint target. Treat `plan:<slug>` or every other slug as a single-plan target.
-4. If a sprint target, read `references/sprint-orchestration.md` completely and
-   follow it. Do not continue with the plan-only preflight below.
+4. If a sprint target, resolve the sprint and use the same coordinator workflow
+   over its complete graph. Do not continue with the plan-only preflight below.
 
 ### 1. Plan pre-flight — read the FULL plan
 
@@ -373,7 +377,7 @@ All seven must hold:
       --stat` and the gate evidence, without reading the implementation.
 
 `reckon crew dispatch` enforces the same seven and exits 2 naming every failing
-property. Check a whole wave before any of it goes out:
+property. Check every node before it enters the ready queue:
 
 ```bash
 reckon crew dispatch --project P --plan L --section §N --role implement \
@@ -381,8 +385,9 @@ reckon crew dispatch --project P --plan L --section §N --role implement \
   --write-path <path> --session <session> --dry-run
 ```
 
-The full contract, the manifest shape and the escape hatch are in
-`references/worker-protocol.md` — read it before composing any dispatch.
+The engine supplies the full contract, manifest shape, and escape hatch. Read
+`references/worker-protocol.md` only when hand-composing a delegation Reckon did
+not prepare.
 
 ### 4. Dispatch workers
 
@@ -485,10 +490,15 @@ the manifest's own `status` and `blockers` before acting on any next-action
 advice, and never promote a run whose manifest says `blocked` or `failed` as
 though it passed.
 
-**The table shapes the wave; it never decides whether to delegate.** That is
+### Advisory fleet-size guide
+
+**This table is advisory.** It shapes the active fleet; it never decides whether
+to delegate. That is
 already settled for both targets — every ready node goes to an appropriately
 capable worker, one-item and cross-cutting nodes included, rather than making the
-coordinator the implementation owner.
+coordinator the implementation owner. The roster of free, distinct members is
+the real ceiling for session-reusing workers; available slots, dependency
+independence, file scopes, gates, budgets, and runtime limits may lower it.
 
 | Items | Strategy |
 |---|---|
@@ -507,17 +517,21 @@ safety contract; §05 followups remain one-line session invocations.
 
 Use background mode when the runtime supports it. The current user prompt or
 coordinator sets an explicit concurrency cap before dispatch from the available
-slots, dependency wave, and file-scope conflicts. Size each ready wave to that
-cap, launch the wave together, then wait for all results before integration.
+slots, ready nodes, member roster, and file-scope conflicts. Fill available slots
+to that cap, then refill each slot as soon as its finished node is verified and a
+ready independent node exists. Do not wait for the slowest active node. The safety
+rule is: **no dependent node builds on unverified work**. A dependent waits for
+its predecessor's verification, integration, and landing beat; unrelated ready
+work does not.
 
-### 4b. The gate fence — a wave does not open through a closed gate
+### 4b. The gate fence — work does not cross a closed gate
 
 **Authored here and nowhere else.** Read computed gate state for the plan through
 `read_plan` and `roadmap`: use the returned `blocking` and `gate_blockers` rather
 than reconstructing gate verdicts from prose. Read the resolved `gates.enforce`
 setting through `crew(project, view="flight")`; strict enforcement refuses a
 closed gate, while advisory enforcement records a warning. Under strict
-enforcement, **refuse to open the next wave until the gate's measure has produced
+enforcement, **refuse to dispatch work behind the gate until its measure has produced
 evidence.** A gate is a measure to demonstrate, not a threshold to tune around:
 when it fails, downstream work stays visibly closed and the negative result stays
 on the page.
@@ -530,7 +544,7 @@ on the page.
 - `gates.enforce` and `gates.on_fail` in flight config tune strictness; they do
   not license skipping a gate whose measure simply was not run.
 
-### 4c. The budget fence — a wave does not open into a spent quota
+### 4c. The budget fence — a ready slot does not open into a spent quota
 
 **Authored here and nowhere else.** Before opening a wave, run the pre-flight and
 **refuse to open it on a backend whose headroom is spent:**
@@ -582,7 +596,8 @@ Dispatches are silent by design and workers report in their own idiom, so the
 orchestrator owes the lead a readable account at four occasions: **at dispatch,
 at completion, when a wave is held, and when micro-planning the next step.** One
 habit, not four formats. Four lines, one per axis, at most two lines each,
-restating nothing the plan already says.
+restating nothing the plan already says. Here a wave is a reporting snapshot of
+the active fleet, never a wait-for-everyone barrier.
 
 ```text
 Dispatching wave 2 — 3 workers
@@ -615,8 +630,9 @@ visibly incomplete rather than plausibly done.
 
 ### 5. Verify every worker — MANDATORY
 
-Do not proceed to the next dependency wave until every worker in the current
-wave has been verified.
+Verify each finished worker before integrating its result or releasing dependent
+work. Independent active workers do not form a barrier: no dependent node builds
+on unverified work, while any free slot may refill from the ready queue.
 
 **Give every worker a manifest path in its prompt and read the file, not the
 message.** A background worker can finish its work and still end its turn
@@ -639,10 +655,11 @@ For each completed agent:
    scope-changed node measures neither the estimate nor the worker, so saying so
    keeps it out of calibration instead of averaging it in.
 7. **In the same landing beat, perform the plan write in §7.** Immediately after
-   `reckon crew complete`, and before another promotion, merge, dispatch, or wave
-   transition, the orchestrator writes this node's commit, gate verdict and
+   `reckon crew complete`, and before another promotion or merge, the orchestrator
+   writes this node's commit, gate verdict and
    quantitative measure, artifacts, and new `impl` together. Workers still only
-   return outcome data; they never write shared plan state.
+   return outcome data; they never write shared plan state. Dispatching an
+   unrelated ready node is outside this freeze and may refill a free slot.
 
 An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then any test logs or artifacts its
@@ -821,11 +838,11 @@ Report the sprint altitude at close from `feeds_sprints` rather than from memory
 it is derived, so it cannot go stale the way a written list would, and a sprint
 that feeds nothing says so instead of staying silent.
 
-### 7c. Followup drain — re-triage after every wave until dry
+### 7c. Followup drain — re-triage after every landing beat until dry
 
 **A followup generated during execution is triage input for the current run,
-not a handoff by default.** After every wave, collect the selected plan's open
-followups and every manifest `follow_ons` entry returned by that wave into one
+not a handoff by default.** After every landing beat, collect the selected plan's
+open followups and the landed manifest's `follow_ons` entries into one
 triage queue. Manifest `follow_ons` enter the same triage loop as open plan
 followups; their origin changes the evidence trail, not their disposal.
 
@@ -847,7 +864,7 @@ ordinary unfinished work.
 
 After folding and executing the added nodes, re-read open followups before
 testing for completion: landing that work may have generated more. Re-triage
-after every wave and terminate only when a complete pass finds nothing
+after every landing beat and terminate only when a complete pass finds nothing
 foldable. A fixed pass count, the end of the original DAG, or an empty
 `follow_ons` field from one manifest is not the termination condition.
 
@@ -945,14 +962,16 @@ handoff.
 
 ## Delegation, runtime routing, integration, and cleanup
 
-`references/worker-protocol.md` owns everything true of a worker regardless of
+`references/worker-protocol.md` records everything true of a worker regardless of
 backend — the seven-property contract, the four fences, the manifest shape, the
-recovery ladder and the escape hatch. Read it before composing any dispatch.
+recovery ladder and the escape hatch. The engine injects that content; read the
+reference only when hand-composing a delegation Reckon did not prepare.
 (`references/worker-backends.md` is maintainer documentation of the translation
 internals; an orchestrator never needs it.)
 
-Every node is delegated on both targets, so read
-`references/sprint-orchestration.md` completely before any dispatch. It owns:
+Every node is delegated on both targets. The skill carries the fixed session
+contract; use `references/sprint-orchestration.md` only when hand-composing. It
+expands on:
 
 - prompt-owned runtime model, effort, and concurrency routing;
 - skill and reasoning-effort selection;
