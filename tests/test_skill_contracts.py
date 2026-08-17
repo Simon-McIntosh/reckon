@@ -1,5 +1,9 @@
 import re
 from pathlib import Path
+from typing import get_args
+
+from reckon._mcp_tools import CrewArgs
+from reckon.cli import main
 
 
 ROOT = Path(__file__).parents[1]
@@ -504,3 +508,140 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
     assert 'mode="text"' in edit
     assert "old_html must occur exactly once" not in edit
     assert "requires exactly one match" in edit
+
+
+def _command_at(path: tuple[str, ...]):
+    command = main
+    for part in path:
+        commands = getattr(command, "commands", {})
+        assert part in commands, f"missing CLI command: {' '.join(path)}"
+        command = commands[part]
+    return command
+
+
+def test_ship_crew_views_match_the_typed_mcp_surface() -> None:
+    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    documented = set(re.findall(r'crew\(project, view="([a-z]+)"\)', ship))
+    annotation = CrewArgs.model_fields["view"].annotation
+    assert documented == set(get_args(annotation))
+
+
+def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    expected = {
+        ("crew", "attach"): {"--run", "--task"},
+        ("crew", "complete"): {
+            "--run",
+            "--gate",
+            "--commit",
+            "--tests-added",
+            "--scope-changed",
+        },
+        ("crew", "dispatch"): {
+            "--project",
+            "--plan",
+            "--section",
+            "--role",
+            "--node",
+            "--goal",
+            "--done-when",
+            "--write-path",
+            "--peer",
+            "--time-budget",
+            "--session",
+            "--set",
+            "--dry-run",
+            "--member",
+            "--manifest",
+        },
+        ("crew", "list"): set(),
+        ("crew", "member", "add"): set(),
+        ("crew", "member", "list"): {"--project"},
+        ("crew", "observe"): {"--run"},
+        ("crew", "preflight"): {"--project", "--role"},
+        ("crew", "recover"): set(),
+        ("crew", "resume"): {"--run", "--advice"},
+        ("crew", "stop"): set(),
+        ("flight",): {"--project"},
+        ("audit-doc",): set(),
+        ("sync",): set(),
+    }
+    named = {
+        tuple(match.split())
+        for match in re.findall(
+            r"\breckon ((?:crew (?:member )?[a-z-]+)|flight|audit-doc|sync)\b",
+            ship,
+        )
+    }
+    assert named == set(expected)
+    for path, required_flags in expected.items():
+        command = _command_at(path)
+        registered_flags = {
+            option
+            for parameter in command.params
+            for option in getattr(parameter, "opts", ())
+        }
+        assert required_flags <= registered_flags, " ".join(path)
+        for flag in required_flags:
+            assert flag in ship
+
+
+def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
+    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    documented = {
+        name: int(code)
+        for name, code in re.findall(r"\| `([a-z-]+)` \| ([0-9]) \|", ship)
+    }
+    assert documented == {
+        "success": 0,
+        "request-error": 1,
+        "not-dispatchable": 2,
+        "budget-hold": 3,
+        "plan-unavailable": 4,
+        "competence-refusal": 5,
+    }
+    source = (ROOT / "reckon" / "cli.py").read_text()
+    assert "0 succeeded, 1 the configuration or request is wrong" in source
+    for error, code in documented.items():
+        if error in {"success", "request-error"}:
+            continue
+        assert re.search(
+            rf'"error": "{error}"[\s\S]{{0,350}}Exit\({code}\)', source
+        ), error
+
+
+def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
+    ship = normalized(
+        (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    ).lower()
+    crew_source = (ROOT / "reckon" / "crew.py").read_text()
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    assert "worktree_fleet.py" in ship
+    assert "reckon sync docs/" in ship
+    assert "commit the plan before dispatching" in ship
+    assert "a goal containing `;` is not one deliverable" in ship
+    assert "every node needs at least one `--write-path`" in ship
+    assert '" then ", ";"' in crew_source
+    assert "no exclusive write path is enumerated" in crew_source
+    assert "commit the plan before dispatching" in crew_source
+    assert "<config-home>/crew/runs/<run-id>/manifest.md" in reference
+    assert "<scratchpad>/<node-id>-manifest.md" not in reference
+
+
+def test_ship_run_lifecycle_guidance_matches_launch_ownership() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    protocol = normalized(
+        (ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md")
+        .read_text()
+    )
+    assert "non-terminal live pointer" in ship
+    assert "in-flight run" in ship
+    assert "An in-harness run has no spawned process" in ship
+    assert "through the attached harness task/session" in protocol
+    assert "Until the classifier reads manifests" not in ship
+    assert "The live classifier reads the manifest's recorded status" in ship

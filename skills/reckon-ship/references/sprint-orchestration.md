@@ -165,14 +165,18 @@ looks failed when it is not. Re-asking often produces another bare idle signal,
 and redispatching repeats work that already succeeded.
 
 So do not depend on the message channel. **Every dispatched worker writes its
-manifest to a file the orchestrator names in the dispatch prompt, then replies
-with that path plus a short summary.** Assign one path per node:
+manifest to the absolute path in the dispatch prompt, then replies with that
+path plus a short summary.** Normal `reckon crew dispatch` calls omit
+`--manifest`: the engine assigns the durable default below and returns it in the
+run contract:
 
 ```text
-<scratchpad>/<node-id>-manifest.md
+<config-home>/crew/runs/<run-id>/manifest.md
 ```
 
-The orchestrator reads the file; the reply is a convenience, not the delivery.
+Use `--manifest <absolute-durable-path>` only for an intentional override. Do
+not place it under `/run/user`, another tmpfs scratchpad, or the worker's own
+worktree. The orchestrator reads the file; the reply is a convenience, not the delivery.
 This costs the worker one write and removes the failure mode entirely.
 
 Detect and recover in this order, and do not redispatch first:
@@ -194,8 +198,8 @@ write scope it risks a conflicting second commit.
 
 Prompt-side rules that make this work:
 
-- Name the manifest path explicitly. For a read-only node, state that it is the
-  **only** file the worker may write.
+- Preserve the engine-returned manifest path explicitly in the prompt. For a
+  read-only node, state that it is the **only** file the worker may write.
 - Tell the worker its final message is the return value, and that a long
   deliverable belongs in the file with the reply reduced to the path.
 - Require every long-running command to redirect to a named on-disk log, so
@@ -372,7 +376,7 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
 10. Stop and report unexpected dirty files, missing authority, or unsafe scope.
 
 MANIFEST PATH (write this file before finishing):
-  <scratchpad>/<node-id>-manifest.md
+  <config-home>/crew/runs/<run-id>/manifest.md
 
 ASSIGNED WORKTREE:
   <absolute path>

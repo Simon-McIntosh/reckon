@@ -83,7 +83,8 @@ the next piece of work *is*, not by whichever worker is convenient:
 
 | Next work | Goes to | How |
 |---|---|---|
-| A `NEEDS-HELP:` brief from a live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
+| A `NEEDS-HELP:` brief from a CLI-launched live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
+| A `NEEDS-HELP:` brief from an in-harness run | that attached harness task/session | answer it through the host harness; CLI resume cannot launch it |
 | A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
 | New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
 
@@ -102,21 +103,13 @@ same member. Work that widens the scope is a new node — dispatching it into an
 old session hides a scope change inside a session that was fenced for something
 else, and a scope change is exactly what `--scope-changed` exists to record.
 
-**A member is a serial worker, so size the active fleet in members, not in nodes.** The
-session that makes continuity possible is a single-writer resource: a second run
-resuming a session that still holds the writer lock dies at launch, and it dies
-*quietly* — no stream, no manifest, and a phase that reads `orphaned` rather than
-`failed`, because an empty stream cannot say why it is empty. Two rules follow.
-Never give two concurrent nodes the same member — a three-node wave needs three
-members, and `reckon crew member list` is how you check before dispatching, not
-after. And let a member's previous run release before reusing it: back-to-back
-dispatch onto a just-finished member is the same collision with a narrower
-window. When a member is busy and the work cannot wait, dispatch without
-`--member` and accept a fresh session — losing continuity beats losing the node.
-
-When a run reads `orphaned` with a zero-length stream, read `stderr.log` in its
-run directory before concluding anything. A launch that never started writes its
-reason there and nowhere else.
+**A member is a serial worker, so size the active fleet in members, not in nodes.**
+Before creating a worktree, dispatch refuses a member that already owns a
+non-terminal live pointer. The typed refusal names both the member and the
+in-flight run. Observe or recover that run, finish or intentionally stop it, and
+promote its result before reusing the member. Use a distinct roster member for
+independent concurrent work; do not hide a continuation inside an unmembered
+fresh session merely to bypass the guard.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
@@ -385,6 +378,34 @@ reckon crew dispatch --project P --plan L --section §N --role implement \
   --write-path <path> --session <session> --dry-run
 ```
 
+The repository must contain
+`skills/reckon-ship/scripts/worktree_fleet.py` before dispatch can create an
+isolated worktree. If it is absent, run `reckon sync docs/` from the repository
+root and retry; the command refuses before creating a run.
+
+Dispatch uses these process exit codes. Treat a refusal as an instruction to
+repair the request, not as a worker failure:
+
+| Result | Exit | Remedy |
+|---|---:|---|
+| `success` | 0 | Continue with the returned launch contract. |
+| `request-error` | 1 | Correct malformed options or configuration and retry. |
+| `not-dispatchable` | 2 | Repair the node contract named in `validation`. |
+| `budget-hold` | 3 | Keep the node ready and retry after the reported reset. |
+| `plan-unavailable` | 4 | Commit the plan before dispatching so its named section exists identically at the base revision. |
+| `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
+
+Three node-contract refusals are easy to mistake for infrastructure failures:
+
+- A dirty plan HTML file cannot supply base-revision authority. Commit the plan
+  before dispatching; `plan-unavailable` names the missing or changed section.
+- A goal containing `;` is not one deliverable. Rewrite it as one outcome; use
+  the DAG for sequential work. Action-bearing `and`, `&`, or `plus` clauses are
+  refused for the same reason.
+- Every node needs at least one `--write-path`. For verification, cleanup, or
+  other work with no tracked repository output, name the on-disk report, log, or
+  artifact path that constitutes its exclusive delivery scope.
+
 The engine supplies the full contract, manifest shape, and escape hatch. Read
 `references/worker-protocol.md` only when hand-composing a delegation Reckon did
 not prepare.
@@ -414,6 +435,12 @@ reckon crew dispatch --project P --plan L --section §N --role implement \
 | `cli` | created the worktree, spawned the worker, wrote the run record | background the call, yield, then `reckon crew observe --run <id>` |
 | `in-harness` | prepared the worktree, manifest path and fences, returned a directive | dispatch your own delegation primitive against the directive, then `reckon crew attach --run <id> --task <task-id>` |
 
+A CLI process can be resumed or stopped with `reckon crew resume` and `reckon
+crew stop`. An in-harness run has no spawned process for those commands: continue,
+answer, or cancel it through the attached harness task/session. Roster continuity
+for an in-harness run likewise belongs to that host session; the CLI only records
+the attachment and its observations.
+
 A fresh session that inherited runs it did not dispatch starts with `reckon crew
 recover`, not with a redispatch: it classifies every live pointer as running,
 completed-but-unpromoted, or abandoned, and names the next action for each.
@@ -441,6 +468,8 @@ crew(project, view="live")      every run in flight: node, plan, phase, process_
 crew(project, view="ledger")    committed run records
 crew(project, view="summary")   roster, gate outcomes, measured time against declared effort
 crew(project, view="flight")    resolved routing, and which layer supplied each value
+crew(project, view="records")   lossless committed run records for detailed audit
+crew(project, view="budget")    backend headroom, hold state, reset time, and dispatch ceiling
 ```
 
 `view="live"` answers "are my background workers alive, and where are they" for
@@ -483,12 +512,11 @@ waits forever when its run died before writing anything — which is exactly wha
 session-lock collision does, and the wait is silent, so the lost node looks like a
 slow one.
 
-Until the classifier reads manifests, **`completed_unpromoted` means "a manifest
-exists", not "the work succeeded"** — a blocked node carries that classification
-and a `next_action` telling you to promote it with a commit it never made. Read
-the manifest's own `status` and `blockers` before acting on any next-action
-advice, and never promote a run whose manifest says `blocked` or `failed` as
-though it passed.
+The live classifier reads the manifest's recorded status. `complete` becomes
+`completed_unpromoted`; `blocked` and `failed` retain those classifications;
+missing or unusable terminal manifests become `abandoned`. Still read the
+manifest's evidence before promotion: classification distinguishes outcomes but
+does not prove the gate.
 
 ### Advisory fleet-size guide
 
@@ -634,8 +662,10 @@ Verify each finished worker before integrating its result or releasing dependent
 work. Independent active workers do not form a barrier: no dependent node builds
 on unverified work, while any free slot may refill from the ready queue.
 
-**Give every worker a manifest path in its prompt and read the file, not the
-message.** A background worker can finish its work and still end its turn
+**Read the manifest path returned by dispatch, not just the message.** Dispatch
+defaults it to the durable run directory under the Reckon config home; omit
+`--manifest` unless an absolute durable override is required. A background worker
+can finish its work and still end its turn
 without delivering a report — the runtime signals it idle and the node looks
 failed when it is not. Requiring the manifest on disk removes the failure mode;
 see "Durable delivery" in `references/sprint-orchestration.md`.

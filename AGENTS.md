@@ -202,7 +202,7 @@ there are no per-plan sidecar JSON files.
 
 **Project-level config in index.json.** `docs/state/<project>/index.json`
 holds sprints, milestones, `active_sprint_id`, and timeline — not
-per-plan state. `reckon-sync` symlinks `~/docs-server/state/<project>`
+per-plan state. `reckon-sync` symlinks `<config-home>/state/<project>`
 to `<repo>/docs/state/<project>` so the server can write this file
 back to the repo.
 
@@ -261,9 +261,9 @@ live plan state. Repo-specific branch policy belongs in that repo's own
 The HTTP server is `reckon serve` (the `reckon` Python package) — **one**
 process listening on `127.0.0.1:8765`. It runs as a **systemd user service**
 managed by `reckon service`, not by hand and not inside a terminal
-multiplexer. Config + state live under reckon's config home (currently
-`~/docs-server/` — a legacy name; the rename to `~/.config/reckon/` is
-tracked in the `reckon-schema-and-tooling` plan).
+multiplexer. Config + state live under reckon's config home. The preferred XDG
+location is `~/.config/reckon/`; an existing `~/docs-server/` remains a legacy
+fallback only when the XDG directory is absent.
 
 | Intent | Command |
 |---|---|
@@ -320,7 +320,7 @@ auditing, and run state keep their distinct read-only contracts:
 | `edit_plan` | The one validated write, selected by `mode`. `mode="state"` applies an ordered `ops` list to a working copy, schema-validates it, then writes atomically; verbs are `set` / `append` / `resolve` / `lock` / `move`, and `create=True` scaffolds a plan. `mode="text"` performs one version-safe exact `old_html` → `new_html` replacement for prose, tables, figures, or section bodies and refuses structured state changes. |
 | `roadmap` | Read-only DAG scan: all pending work, distinct ready/blocked/deferred sets, lifecycle and stored implementation percentages, sprint order, weighted critical/open paths, and wiring findings. `project="*"` returns a portfolio. |
 | `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
-| `crew` | Read-only run state over five views. `view="ledger"` and `view="summary"` read the project's committed run records (roster, gate outcomes, measured worker-time against declared effort); `view="live"` reads the never-committed pointers of runs still in flight, each with the classification `reckon crew recover` would give it; `view="flight"` reports resolved routing config with the layer that supplied every value; `view="budget"` reports per-backend headroom and whether a wave may open, read from what earlier runs recorded so it spends nothing. Accepts `checkout_path`. Writes are the CLI's (`reckon crew …`) — this tool never mutates. |
+| `crew` | Read-only run state over six views. `view="ledger"` and `view="summary"` read committed roster and outcome summaries; `view="records"` returns the lossless committed records; `view="live"` reads the never-committed pointers of runs still in flight, each with the classification `reckon crew recover` would give it; `view="flight"` reports resolved routing config with the layer that supplied every value; `view="budget"` reports per-backend headroom and whether a wave may open, read from what earlier runs recorded so it spends nothing. Accepts `checkout_path`. Writes are the CLI's (`reckon crew …`) — this tool never mutates. |
 
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
 for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
@@ -661,27 +661,23 @@ delivery fences.
 | Operation | Command | Contract |
 |---|---|---|
 | Pre-flight | `reckon crew preflight --project <project> [--role <role>] [--backend <name>] [--purpose dispatch\|resume]` | Decides per backend whether a wave may open, from the budget signal earlier runs already recorded — so it spends none of the resource it measures. Exits 3 when any backend is held, naming its utilisation and reset time; a backend reporting no headroom is never held. A `dispatch` keeps back `budget.resume_reserve_pct` so a stuck worker can still be answered; a `resume` may spend it. |
-| Dispatch | `reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal "<one deliverable>" --done-when "<measure>" --write-path <path> --time-budget <duration> --manifest <absolute-path> --session <session>` | Validates the node, resolves flight config and atomically creates the detached worktree plus either a launched CLI run or an in-harness dispatch directive. Runs the same budget check first and exits 3 with a `hold` payload rather than opening a wave into a spent quota — held, not failed: nothing is created and the node stays ready. Repeat `--write-path` for the complete exclusive scope; use `--dry-run` to validate a wave without creating anything. Add `--member <id>` to run the node as a roster member, reusing that member's long-lived session. |
+| Dispatch | `reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal "<one deliverable>" --done-when "<measure>" --write-path <path> --time-budget <duration> --session <session> [--manifest <absolute-durable-path>]` | Validates the node, resolves flight config and atomically creates the detached worktree plus either a launched CLI run or an in-harness dispatch directive. The manifest defaults to `<config-home>/crew/runs/<run-id>/manifest.md`. Dispatch exits 0 on success, 1 for a malformed request, 2 when the node is not dispatchable, 3 for a budget hold, 4 when the named plan section is unavailable at the base revision, and 5 for a capability refusal. Repeat `--write-path` for the complete exclusive scope; use `--dry-run` to validate a call. Add `--member <id>` to reuse a roster session; a non-terminal live pointer for that member is refused before worktree creation and names the owning run. |
 | Attach | `reckon crew attach --run <run-id> --task <harness-task-id>` | Binds an in-harness task to the prepared run record returned by dispatch. CLI-backed runs are already bound when launched and do not use this step. |
 | Observe | `reckon crew observe --run <run-id> [--project <project>]` | Folds the event stream, manifest presence and process liveness into the durable run record, including the phase, session id and any backend budget signal. An absent budget signal remains `unknown`; it is never evidence of exhaustion. |
-| Resume | `reckon crew resume --run <run-id> --advice "<answer>"` | Answers a structured `NEEDS-HELP:` report in the same worker session so its prior context is retained. Use `--print-only` to inspect the resume invocation without launching it. |
-| Stop | `reckon crew stop --run <run-id>` | Stops a spawned run's process group and records the stopped phase. Use this for an intentional cancellation, not as a substitute for observing or recovering a quiet run. |
+| Resume | `reckon crew resume --run <run-id> --advice "<answer>"` | Answers a structured `NEEDS-HELP:` report in the same CLI-spawned worker session so its prior context is retained. Use `--print-only` to inspect the resume invocation without launching it. Continue an in-harness run through its attached host task/session instead. |
+| Stop | `reckon crew stop --run <run-id>` | Stops a CLI-spawned run's process group and records the stopped phase. Cancel an in-harness run through its attached host task; it has no Reckon-spawned process to signal. |
 | List | `reckon crew list` | Lists all live run pointers with node, plan, backend, phase, worktree and manifest path so a fresh orchestrator session can recover ownership. |
 | Complete | `reckon crew complete --run <run-id> --gate passed\|failed\|not-run --commit <sha> [--tests-added N] [--scope-changed]` | Promotes the finished run into the owning repository's committed ledger, then deletes the pointer — in that order, so an interruption is recoverable. Records the calibration inputs no later reader can reconstruct: dispatch and completion stamps, the agent configuration that ran the node, the scoped diff's changed lines, tests added, the gate verdict, and `--scope-changed` when the node's scope was widened mid-flight. |
 | Recover | `reckon crew recover [--project <project>]` | Classifies every live pointer as running, completed-but-unpromoted (reporting its manifest path), or abandoned, and names the next action for each. Repairs the record only — it never force-removes a worktree, signals a process, or promotes a run on its own initiative. |
 | Roster | `reckon crew member add --project <project> --member <id> --harness <backend> [--session <id>]` · `reckon crew member list --project <project>` | The project's committed team. A member registered with no session captures one from its first run and reuses it for every later node and every escape-hatch resumption. |
 | Ledger | `reckon crew ledger --project <project> [--view summary\|records]` | Reads the committed record of how this project's plans were implemented: roster, gate outcomes, and measured worker-time per plan against its declared effort with the spread. |
 
-### Fleet patterns (canonical)
+### Fleet sizing
 
-| Situation | Pattern |
-|---|---|
-| 1 item, scoped | One inline worker or one isolated worktree worker |
-| 2 items, independent | Two parallel workers, one per item |
-| 3 – 8 items, independent | Coordinator-routed fleet, non-overlapping worktrees and file scopes; orchestrator audits and integrates each commit |
-| > 8 items, fan-out read | Low-cost reader fan-out plus one high-capability synthesiser |
-| Cross-cutting / strategic | Single orchestrator-level owner; context is the constraint |
-| Multi-file compiled/solver work | Orchestrator-level owner, or a fleet of at most three with tight scopes |
+The single advisory sizing table lives in `skills/reckon-ship/SKILL.md`. The
+coordinator fills available slots with independent ready nodes and refills each
+slot after its predecessor is verified; dependent work never builds on
+unverified output.
 
 Whenever a fleet is dispatched, the **Mandatory Sub-Agent Dispatch
 Preamble** in `~/.agents/AGENTS.md` and Reckon's worktree dispatch contract are

@@ -49,7 +49,9 @@ completion. Name what would be observed instead.
 **A relative manifest path is invisible to the orchestrator.** It resolves
 against the worker's own worktree, so the orchestrator looks somewhere the file
 will never be, reads a delivered node as silent, and redispatches work that
-already succeeded. Manifest paths are absolute.
+already succeeded. Manifest paths are absolute. `reckon crew dispatch` supplies
+the durable default under `<config-home>/crew/runs/<run-id>/manifest.md`; an
+explicit `--manifest` is only an absolute durable override.
 
 ## 2. The four fences
 
@@ -206,6 +208,11 @@ the default dispatch path rather than an optimisation, and why the continuity
 routing in `SKILL.md` distinguishes a followup (same member) from new scope (new
 node).
 
+That CLI continuity applies only when Reckon spawned the process. An in-harness
+run has an attached task rather than a process id: answer or cancel it through
+the host harness task/session. `reckon crew resume` and `reckon crew stop` refuse
+that launch kind because they have no process to resume or signal.
+
 Read that classification for every run at once with the `crew` MCP tool,
 `view="live"` — it carries the same verdict and next action per run without
 touching a worker. The CLI command below is the write-side twin: reach for it to
@@ -255,9 +262,9 @@ nobody asked for. Report the shortfall and request the resource instead. Partial
 coverage honestly named ("3 of 6 shots, the rest not attempted") is a result;
 full coverage at a quietly reduced fidelity is not.
 
-The orchestrator answers it itself by default, escalates only genuinely
-user-owned decisions such as scope trade-offs and irreversible choices, and
-resumes the **same** session with the advice:
+The orchestrator answers it itself by default and escalates only genuinely
+user-owned decisions such as scope trade-offs and irreversible choices. For a
+CLI-launched run it resumes the **same** session with the advice:
 
 ```bash
 reckon crew resume --run <run-id> --advice "<the answer>"
@@ -267,3 +274,7 @@ Resuming the same session is why session reuse is load-bearing rather than an
 optimisation: the advice only makes sense to a worker that still remembers what
 it tried. A fresh session would have to rebuild that context from nothing, and
 would likely repeat the attempt that failed.
+
+For an in-harness run, send the same advice through the attached harness
+task/session instead. The CLI cannot recreate or terminate a process it did not
+spawn.
