@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="gate-signal-repair">
   <meta name="plan-title" content="Gate Signal Repair">
   <meta name="plan-summary" content="Make both dispatch admission gates truthful: fix the competence gate&#x27;s unit mismatch, stale cache and hidden verdicts, and give the budget gate a real codex headroom signal plus honest handling of empty and windowed readings.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,10 +21,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="3">
-<meta name="plan-commits" content="c7a372effb012310fb3b741a68c518b0f0ba1ca6">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="c7a372effb012310fb3b741a68c518b0f0ba1ca6,d074d3f01df261d1fac969afbc3b6d4da45e1577">
 <meta name="plan-artifacts" content="docs/evidence/archive/gate-signal-repair-landed.html">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -53,22 +53,17 @@
       Full record: <a href="/reckon/evidence/archive/gate-signal-repair-landed#competence">§2 landed</a>.
     </p>
 
-    <h2 id="s3">§3 — Budget gate</h2>
-    <p><strong>Honest readings.</strong> A headroom block claims <code>known</code> only with a
-    numeric utilisation (an empty rate-limit mapping is a silence, not a measurement); the window
-    identity (rate-limit type/period) is retained so a monthly reading cannot silently pin a
-    five-hour decision; the stream-evidence attribution fallback is updated in the same change since
-    it keys on the current lax signature. Done when an empty-known block no longer displaces a real
-    reading, under test.</p>
-    <p><strong>Codex headroom.</strong> Enable the account-limits probe path for codex
-    (<code>budget_check</code>), with a probe-once-per-wave shape: <code>_budget_verdict</code>
-    accepts a caller-supplied state so preflight probes once and the wave's dispatches reuse it
-    instead of paying a ≤20 s probe each. Done when a codex preflight reports numeric utilisation on
-    this workstation and a wave of three dispatches runs one probe.</p>
-    <p><strong>Policy reaches every path.</strong> CLI resume resolves flight config like observe
-    does (ceiling, reserve and exhausted-statuses apply); a ledger bookkeeping failure while
-    recording a budget check degrades to a warning in the payload instead of aborting the dispatch
-    whose budget was fine. Done when both have tests.</p>
+    <h2 id="s3">§3 — Budget gate <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Made the budget gate honest (commit <code>d074d3f</code>): <code>known</code> headroom now
+      requires a numeric utilisation so an empty rate-limit mapping cannot displace a real reading,
+      the rate-limit type and period are retained so a monthly figure cannot pin a five-hour
+      decision, the codex probe works under host opt-in with one probe per wave reused by 3
+      dispatch checks, CLI resume resolves the same policy as observe (ceiling 83, reserve 17,
+      exhausted <code>spent</code>), and ledger bookkeeping failures degrade to payload warnings.
+      219 focused tests green, 7 added.
+      Full record: <a href="/reckon/evidence/archive/gate-signal-repair-landed#budget">§3 landed</a>.
+    </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -85,16 +80,20 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-gsr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-gsr-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="2026-08-17T16:17:39+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Repair both admission gates</h4>
     <div class="r-fu-body"><p>§2 and §3 deliverables. Wait for run-measurement-truth to land first — the horizon must be re-derived from corrected worker-time and completion sources.</p></div>
     <pre class="r-fu-prompt">/reckon-ship gate-signal-repair</pre>
+    <p class="r-fu-outcome">done - no followup. Both admission gates are now truthful. Competence (commit c7a372e): one speed definition in shared units, node estimates with provenance, ledger-keyed cache with rebuild off the dispatch path, refusals as documented exit 5 with dry-run parity; threshold equals its named horizon under both calibration directions, 152 tests green. Budget (commit d074d3f): numeric-only known headroom with retained window identity, codex probe working under host opt-in with one probe per wave reused by 3 dispatch checks, resume-side policy resolution, warning-only ledger bookkeeping failures; 219 tests green. Evidence: docs/evidence/archive/gate-signal-repair-landed.html.</p>
     </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260817-gsr-competence" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">gsr-competence landed - commit c7a372e; gate passed; measure: refusal threshold equals its named horizon under speed factors 0.5 and 2.0, ledger append invalidates cache, no synchronous rebuild on dispatch, refusal is documented exit 5 with dry-run parity; 152 focused tests green, 5 added; wall 448 s; evidence: gate-signal-repair-landed#competence. Section s2 closed.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260817-gsr-budget" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">gsr-budget landed - commit d074d3f; gate passed; measure: known headroom requires numeric utilisation (empty rate-limit mapping no longer displaces a real reading), rate-limit type/period retained, one preflight probe state reused by 3 dispatch checks (1 probe per wave), CLI resume resolves ceiling 83 / reserve 17 / exhausted spent, ledger bookkeeping failure degrades to payload warning; 219 focused tests green, 7 added; evidence: gate-signal-repair-landed#budget. Wall 4288 s is orchestrator latency across a false scope fence and is ledger-excluded as stalled.</div>
 </div>
 </section>
 </main>

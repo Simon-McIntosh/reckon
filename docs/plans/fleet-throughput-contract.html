@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="5">
-<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8">
+<meta name="plan-version" content="7">
+<meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -83,25 +83,18 @@
     get configured roles (or the contract stops mandating role names the CLI refuses). Done when
     every worker type in the skill dispatches without a role error.</p>
 
-    <h2 id="s5">§5 — Skill/CLI reconciliation sweep</h2>
-    <p>Fold the review's contract-gap list into one pass: stale classifier prose (the manifest
-    IS read now), the missing <code>budget</code> view in the skill's read table and the stale
-    MCP view literal, manifest-path guidance unified on the durable default, the member-collision
-    paragraph updated once the guard lands, in-harness caveats on resume/stop/continuity, the
-    undocumented vendored-script prerequisite (present-check at dispatch with a clear error), and
-    the config-home rename reflected in the repo AGENTS.md. Done when a fresh orchestrator can
-    follow the skill against the current CLI without hitting a documented-but-absent or
-    absent-but-required step.</p>
-    <p><strong>Three refusals an orchestrator hit in practice, none of them documented.</strong>
-    Observed while coordinating this sprint, each costing a failed dispatch round-trip:
-    a node whose plan HTML is dirty against the worktree base is refused with
-    <code>plan-unavailable</code> and the fix (commit the plan first) appears nowhere in the skill,
-    even though the landing beat routinely leaves plan state uncommitted mid-wave;
-    the single-goal validator also rejects a goal joined with <code>;</code>, while the contract
-    documents only "and"; and the scoped property requires at least one enumerated write path, so
-    a verification or cleanup node that writes nothing tracked cannot dispatch at all until it
-    names one. Done when each refusal is either documented with its remedy or the validator is
-    relaxed to match the documented rule, and a test pins the behaviour that survives.</p>
+    <h2 id="s5">§5 — Skill/CLI reconciliation sweep <span class="badge badge-shipped">✓ landed 2026-08-17</span></h2>
+    <p class="landed-summary">
+      Swept the contract onto the live surface (commit <code>372c243</code>) and made the parity
+      mechanical: 5 tests now pin 6 MCP crew views, 14 instructed CLI command paths with their
+      flags, 6 dispatch exit outcomes, 3 refusal remedies and lifecycle guidance, so drift fails a
+      test rather than misleading an orchestrator. Swept the member-collision guard, vendored-script
+      prerequisite, exit codes 0–5, durable manifest default, in-harness caveats, the missing
+      <code>records</code>/<code>budget</code> views, the XDG config-home rename, and the duplicate
+      fleet-size table. All three refusals this sprint hit in practice are documented with remedies.
+      38 contract tests green.
+      Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#reconcile">§5 landed</a>.
+    </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -131,6 +124,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260817-ftc-mcp-obs" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">ftc-mcp-obs landed - commit 43ebf37; gate passed; measure: version-only read 126 B vs 2,542 B raw (95.04% smaller), ledger records view filters plan/since/limit under test, 224 focused tests green, 4 added; wall 434 s; evidence: fleet-throughput-contract-landed#mcp-obs. Section s4 stays open: crew list project/phase filters and test/doc worker roles remain in the crew-code node.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260817-ftc-reconcile" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">ftc-reconcile landed - commit 372c243; gate passed; measure: 5 new tests mechanically pin 6 MCP crew views, 14 instructed CLI command paths with flags, 6 dispatch exit outcomes, 3 refusal remedies and lifecycle guidance; 38 contract tests green; swept items each recorded with file and line; wall 596 s; evidence: fleet-throughput-contract-landed#reconcile. Section s5 closed.</div>
 </div>
 </section>
 </main>

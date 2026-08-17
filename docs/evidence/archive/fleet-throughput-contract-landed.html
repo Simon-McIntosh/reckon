@@ -74,6 +74,34 @@
       <code>~/.config/reckon/crew/runs/r-20260817T140140956251-ftc-mcp-obs/</code>.
     </p>
 
+    <h2 id="reconcile">Skill/CLI reconciliation (surface parity pinned by test)</h2>
+    <p>
+      Commit <code>372c243</code> (2026-08-17, worker codex-b, wall 596&nbsp;s,
+      234 insertions / 52 deletions over <code>skills/reckon-ship/SKILL.md</code>, two reference
+      files, <code>AGENTS.md</code> and <code>tests/test_skill_contracts.py</code>; merged at
+      <code>a7de6fd</code>).
+    </p>
+    <ul>
+      <li><strong>Parity is now mechanical, not prose.</strong> 5 new tests cover 6 MCP crew views,
+        14 instructed CLI command paths and their flags, 6 dispatch exit outcomes, 3 refusal
+        remedies, and launch-owned lifecycle guidance — so a view literal, flag or exit code that
+        drifts from the CLI fails a test instead of misleading an orchestrator.</li>
+      <li><strong>Swept items.</strong> Member-collision guard, vendored-script prerequisite with
+        its <code>reckon sync</code> remedy, dispatch exit codes 0–5, manifest-aware classification,
+        durable-default manifest guidance, in-harness caveats on resume/stop/continuity, the
+        previously missing <code>records</code> and <code>budget</code> views, the XDG config-home
+        rename with legacy fallback, and removal of the duplicate fleet-size table from
+        <code>AGENTS.md</code> in favour of the canonical skill table.</li>
+      <li><strong>The three refusals hit in practice are documented with remedies.</strong> A plan
+        dirty against the worktree base (exit 4), a goal joined with <code>;</code> (exit 2), and a
+        node with no enumerated write path — each cost this sprint's orchestrator a failed dispatch
+        round-trip and each is now stated with its fix.</li>
+    </ul>
+    <p>
+      Tests: 5 added; <code>tests/test_skill_contracts.py</code> 38 passed, 0 failed. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260817T160556706684-ftc-reconcile/</code>.
+    </p>
+
   </main>
 </body>
 </html>

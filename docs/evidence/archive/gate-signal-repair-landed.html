@@ -54,6 +54,50 @@
       <code>~/.config/reckon/crew/runs/r-20260817T144659856102-w2-verify/</code>.
     </p>
 
+    <h2 id="budget">Budget gate (honest readings, probe-once-per-wave, policy on every path)</h2>
+    <p>
+      Commit <code>d074d3f</code> (2026-08-17, worker codex-d, 262 insertions / 25 deletions over
+      <code>reckon/budget.py</code>, <code>reckon/crew.py</code>, <code>reckon/cli.py</code>,
+      <code>reckon/_backends.py</code> and four test files; merged at <code>e91eaa1</code>).
+    </p>
+    <ul>
+      <li><strong>Honest readings.</strong> A headroom block claims <code>known</code> only with a
+        numeric utilisation, so an empty rate-limit mapping can no longer displace a real reading;
+        the rate-limit type and period survive normalization, so a monthly reading cannot silently
+        pin a five-hour decision. The stream-evidence attribution fallback was moved to a numeric
+        template in the same change, since it keyed on the previous lax signature.</li>
+      <li><strong>Codex headroom, host opt-in.</strong> The account-limits probe path works behind
+        the <code>budget_check</code> flag resolved from the host layer, per the locked decision.
+        Measure: one preflight probe state is reused by 3 dispatch admission checks — 1 probe
+        total for the wave rather than one per dispatch.</li>
+      <li><strong>Policy reaches every path.</strong> CLI resume now resolves flight config as
+        observe does — measured receiving ceiling 83, reserve 17 and exhausted status
+        <code>spent</code>, and holding on that policy. A ledger bookkeeping failure while
+        recording a budget check degrades to a payload warning instead of aborting a dispatch
+        whose budget was fine.</li>
+    </ul>
+    <p>
+      Tests: 7 added; focused suites 219 passed, 0 failed; ruff clean on all 8 changed paths.
+      Logs: <code>~/.config/reckon/crew/runs/r-20260817T145523349721-gsr-budget/</code>.
+    </p>
+    <p>
+      <strong>Measurement note.</strong> This run's wall clock reads 4288&nbsp;s because it stopped
+      on a false scope fence and waited for an orchestrator answer; its stream duration is absent
+      and it exceeds twice its 25&nbsp;m budget, so the ledger classifies it stalled and excludes it
+      from effort calibration. The exclusion is correct — the figure measures orchestrator latency,
+      not the work.
+    </p>
+    <p>
+      <strong>Negative finding: a per-worktree artifact named as an exclusive path stops a healthy
+      worker.</strong> The node was dispatched with a peer owning <code>.venv/</code>, which
+      <code>uv</code> creates inside every worktree. The worker correctly refused to proceed under
+      parallel-safety rule 7 against a conflict that could not exist across detached worktrees. Its
+      diff and 7 passing tests survived intact and the same session finished the work after the
+      fence was corrected. Exclusive write scopes must name tracked repository paths only; an
+      ignored, per-worktree build or environment directory is never shared and must never appear in
+      a scope fence.
+    </p>
+
   </main>
 </body>
 </html>
