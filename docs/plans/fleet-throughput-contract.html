@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="13">
 <meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779,d5d3c351374d905389dcc400d25523109e25e22a,864fc0c1a9185686f56fd4e5d3f69a75872e1687">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-impl" content="0.83">
 </head>
 <body>
   <main class="plan-doc">
@@ -92,6 +92,24 @@
       38 contract tests green.
       Full record: <a href="/reckon/evidence/archive/fleet-throughput-contract-landed#reconcile">§5 landed</a>.
     </p>
+
+    <h2 id="s6">§6 — The test role cannot execute tests</h2>
+    <p>
+      Found by using the role §4 had just added: the shipped <code>test</code> role resolves to a
+      <strong>read-only</strong> sandbox, and the worker protocol states that a node executing
+      builds or test runs belongs in <code>worktree-full</code> because caches outside the delivery
+      directory stay read-only. So the one role whose entire purpose is running a suite is
+      configured in the tier that forbids the writes a suite needs —
+      <code>uv run pytest</code> must create <code>.venv/</code> and
+      <code>.pytest_cache/</code> inside the worktree. Adding a role name the CLI accepts is not the
+      same as adding a role that can do its job, and the parity test added in §5 checks that a role
+      resolves, not that its sandbox suits its work.
+    </p>
+    <p><strong>Deliverable.</strong> Give <code>test</code> the sandbox tier its work requires and
+    pin the property by role semantics rather than by name, so a future role that executes cannot be
+    shipped read-only. Done when a dispatched test-role node runs the full suite and writes both its
+    cache and its manifest, and a test asserts that every execution-capable role resolves to a
+    sandbox permitting worktree writes.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
