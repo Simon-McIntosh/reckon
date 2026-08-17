@@ -475,6 +475,7 @@ def _budget_verdict(
     backend_name: str,
     backend: Mapping[str, Any],
     purpose: str,
+    budget_state: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Judge one backend's headroom for one purpose.
 
@@ -484,13 +485,16 @@ def _budget_verdict(
     """
     from reckon import budget as budget_module
 
-    recorded = budget_module.latest_recorded(project, root=root, config=config)
-    state = budget_module.state_for(
-        backend_name,
-        backend,
-        recorded=recorded.get(backend_name),
-        unattributed=recorded.unattributed,
-    )
+    if budget_state is None:
+        recorded = budget_module.latest_recorded(project, root=root, config=config)
+        state = budget_module.state_for(
+            backend_name,
+            backend,
+            recorded=recorded.get(backend_name),
+            unattributed=recorded.unattributed,
+        )
+    else:
+        state = budget_module.BudgetState(**dict(budget_state))
     verdict = budget_module.decide(state, budget_module.policy(config), purpose=purpose)
     try:
         budget_module.record_checks(
@@ -499,10 +503,10 @@ def _budget_verdict(
             root=root,
             resumption_fired=False,
         )
-    except ledger.LedgerError as exc:
-        raise CrewError(
-            f"cannot record the budget check before opening the wave: {exc}"
-        ) from exc
+    except (ledger.LedgerError, OSError) as exc:
+        verdict.setdefault("warnings", []).append(
+            f"budget check passed but its ledger history was not recorded: {exc}"
+        )
     return verdict
 
 
@@ -1427,6 +1431,7 @@ def dispatch(
     member: str = "",
     launcher=None,
     check_budget: bool = True,
+    budget_state: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1481,6 +1486,7 @@ def dispatch(
     if not competence["allowed"]:
         raise CompetenceLimit(competence)
 
+    budget_warnings: list[str] = []
     if check_budget:
         # Before the worktree, not after: a hold that had already cut a worktree
         # would leave write scope claimed by a node nobody is running.
@@ -1491,7 +1497,9 @@ def dispatch(
             backend_name=resolution.backend,
             backend=resolution.backend_settings,
             purpose="dispatch",
+            budget_state=budget_state,
         )
+        budget_warnings.extend(verdict.get("warnings") or ())
         if verdict["held"]:
             raise BudgetHold(verdict)
 
@@ -1604,7 +1612,7 @@ def dispatch(
             "argv": None,
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
-            "warnings": list(resolution.warnings),
+            "warnings": [*resolution.warnings, *budget_warnings],
             "lineage": lineage,
         }
 

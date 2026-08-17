@@ -178,6 +178,8 @@ def test_a_recorded_account_limit_answer_yields_utilisation_and_reset_time() -> 
     # The binding window is the one furthest through, not the first reported:
     # that is the window a wave would actually run into.
     assert block["utilisation_pct"] == 82.0
+    assert block["rate_limit_type"] == "secondary"
+    assert block["rate_limit_period_minutes"] == 10080
     assert block["resets_at"] == _backends._epoch_to_iso(1790600000)
 
 
@@ -245,6 +247,27 @@ def test_a_later_silence_does_not_erase_a_recorded_exhaustion(home, repo) -> Non
 
     best = budget.latest_recorded("proj", root=repo)
     assert best["alpha"].budget["utilisation_pct"] == 99.0
+
+
+def test_an_empty_rate_limit_mapping_cannot_displace_a_numeric_reading(
+    home, repo
+) -> None:
+    _record("proj", repo, backend="beta", budget_block=_known(73.0), run_id="r-old")
+    empty = _backends.dialect_for(CONFIG["backends"]["beta"])._budget({})
+    silent = ledger.build_record(
+        run_id="r-new",
+        plan="plan-a",
+        gate="passed",
+        agent={"backend": "beta"},
+        completed_at=_stamp(-1),
+        budget=empty,
+    )
+    ledger.append_run("proj", silent, root=repo)
+
+    best = budget.latest_recorded("proj", root=repo, config=CONFIG)
+
+    assert empty["headroom"] == "unknown"
+    assert best["beta"].budget["utilisation_pct"] == 73.0
 
 
 def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) -> None:
@@ -328,6 +351,28 @@ def test_stream_evidence_recovers_two_known_readings(home, repo) -> None:
     assert len(recovered) == 2
     assert {reading.attribution for reading in recovered} == {"budget-evidence"}
     assert best["beta"].budget["utilisation_pct"] == 42.0
+
+
+def test_stream_evidence_attribution_uses_the_numeric_signature(home, repo) -> None:
+    stream_budget = _backends.observe_log(
+        backend_name="beta",
+        backend=CONFIG["backends"]["beta"],
+        log_path=FIXTURES / "claude-turn.jsonl",
+    ).budget
+    record = ledger.build_record(
+        run_id="r-unlabelled-stream",
+        plan="plan-a",
+        gate="passed",
+        agent={},
+        completed_at=_stamp(-60),
+        budget=stream_budget,
+    )
+    ledger.append_run("proj", record, root=repo)
+
+    reading = budget.latest_recorded("proj", root=repo, config=CONFIG)["beta"]
+
+    assert reading.attribution == "budget-evidence"
+    assert reading.budget["rate_limit_type"] == "overage"
 
 
 def test_delivery_path_naming_another_harness_cannot_change_the_producer(
@@ -609,6 +654,73 @@ def test_a_known_account_reading_outranks_an_older_record(home, repo) -> None:
     state = next(item for item in report["backends"] if item["backend"] == "alpha")
     assert state["state"]["source"] == "account-surface"
     assert state["state"]["utilisation_pct"] == 82.0
+
+
+def test_one_preflight_state_is_reused_by_three_dispatch_checks(
+    home, repo
+) -> None:
+    answers = [
+        json.loads(line)
+        for line in (FIXTURES / "codex-account-limits.jsonl").read_text().splitlines()
+    ]
+    answer = next(item for item in answers if item.get("id") == 2)
+    asking = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "budget_check": True},
+        },
+    }
+    probes = 0
+
+    def runner(probe):
+        nonlocal probes
+        probes += 1
+        return answer
+
+    report = budget.preflight(
+        "proj", asking, root=repo, backends=["alpha"], probe_runner=runner
+    )
+    shared_state = report["backends"][0]["state"]
+    verdicts = [
+        crew._budget_verdict(
+            project="proj",
+            root=repo,
+            config=asking,
+            backend_name="alpha",
+            backend=asking["backends"]["alpha"],
+            purpose="dispatch",
+            budget_state=shared_state,
+        )
+        for _ in range(3)
+    ]
+
+    assert probes == 1
+    assert all(verdict["state"]["utilisation_pct"] == 82.0 for verdict in verdicts)
+
+
+def test_budget_history_failure_warns_without_aborting_dispatch(
+    home, repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        budget,
+        "record_checks",
+        lambda *args, **kwargs: (_ for _ in ()).throw(ledger.LedgerError("read-only")),
+    )
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *args, **kwargs: 4242,
+    )
+
+    assert record["phase"] == "starting"
+    assert record["warnings"] == [
+        "budget check passed but its ledger history was not recorded: read-only"
+    ]
 
 
 # ── A hold reports like a dispatch ──────────────────────────────────────────

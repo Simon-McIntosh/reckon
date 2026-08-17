@@ -72,6 +72,8 @@ class BudgetState:
     backend: str
     headroom: str = "unknown"
     utilisation_pct: float | None = None
+    rate_limit_type: str | None = None
+    rate_limit_period_minutes: float | None = None
     resets_at: str | None = None
     seconds_until_reset: int | None = None
     threshold_status: str | None = None
@@ -88,6 +90,8 @@ class BudgetState:
             "expired": self.expired,
             "headroom": self.headroom,
             "observed_at": self.observed_at,
+            "rate_limit_period_minutes": self.rate_limit_period_minutes,
+            "rate_limit_type": self.rate_limit_type,
             "resets_at": self.resets_at,
             "seconds_until_reset": self.seconds_until_reset,
             "source": self.source,
@@ -199,7 +203,7 @@ def _stream_evidence_backend(
         if not callable(normalise):
             continue
         try:
-            template = normalise({})
+            template = normalise({"utilization": 0.0})
         except (TypeError, ValueError):
             continue
         signature = (template.get("headroom"), str(template.get("detail") or ""))
@@ -233,7 +237,7 @@ def _record_backend(
     # A silent block carries no measurement, so evidence recovery is neither
     # needed nor useful. Restrict the fallback to known signals that would
     # otherwise disappear from the budget view.
-    if budget_block.get("headroom") == "known":
+    if _is_known(budget_block):
         recovered = _stream_evidence_backend(budget_block, config)
         if recovered:
             return recovered, "budget-evidence"
@@ -328,15 +332,15 @@ def latest_recorded(
     unattributed: list[_Reading] = []
     for reading in _readings(project, root=root, config=config):
         if reading.backend is None:
-            if reading.budget.get("headroom") == "known":
+            if _is_known(reading.budget):
                 unattributed.append(reading)
             continue
         current = best.get(reading.backend)
         if current is None:
             best[reading.backend] = reading
             continue
-        known = reading.budget.get("headroom") == "known"
-        current_known = current.budget.get("headroom") == "known"
+        known = _is_known(reading.budget)
+        current_known = _is_known(current.budget)
         if known != current_known:
             if known:
                 best[reading.backend] = reading
@@ -393,7 +397,7 @@ def state_for(
             backend=backend or {},
             runner=probe_runner,
         )
-        if block.get("headroom") == "known":
+        if _is_known(block):
             return _from_block(
                 backend_name,
                 block,
@@ -429,8 +433,10 @@ def _from_block(
     if reset_moment is not None:
         remaining = max(0, int((reset_moment - now).total_seconds()))
     expired = reset_moment is not None and reset_moment <= now
-    headroom = str(block.get("headroom") or "unknown")
+    headroom = "known" if _is_known(block) else "unknown"
     detail = str(block.get("detail") or "")
+    if block.get("headroom") == "known" and headroom == "unknown":
+        detail = "headroom was labelled known but carried no numeric utilisation"
     if expired and headroom == "known":
         headroom = "unknown"
         detail = (
@@ -438,10 +444,25 @@ def _from_block(
             "utilisation no longer describes it"
         )
     utilisation = block.get("utilisation_pct")
+    numeric_utilisation = (
+        float(utilisation)
+        if isinstance(utilisation, (int, float)) and not isinstance(utilisation, bool)
+        else None
+    )
     return BudgetState(
         backend=backend_name,
         headroom=headroom,
-        utilisation_pct=None if utilisation is None else float(utilisation),
+        utilisation_pct=numeric_utilisation,
+        rate_limit_type=(
+            str(block["rate_limit_type"])
+            if block.get("rate_limit_type") is not None
+            else None
+        ),
+        rate_limit_period_minutes=(
+            float(block["rate_limit_period_minutes"])
+            if block.get("rate_limit_period_minutes") is not None
+            else None
+        ),
         resets_at=resets_at,
         seconds_until_reset=remaining,
         threshold_status=block.get("threshold_status"),
@@ -454,6 +475,16 @@ def _from_block(
 
 def _iso(moment: datetime) -> str:
     return moment.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _is_known(block: Mapping[str, Any]) -> bool:
+    """Return whether a block contains a numeric utilisation measurement."""
+    utilisation = block.get("utilisation_pct")
+    return (
+        block.get("headroom") == "known"
+        and isinstance(utilisation, (int, float))
+        and not isinstance(utilisation, bool)
+    )
 
 
 # ── The decision ────────────────────────────────────────────────────────────

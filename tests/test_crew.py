@@ -1474,6 +1474,55 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     assert plan.stdin_text == "take the second option"
 
 
+def test_cli_resume_resolves_the_run_projects_budget_policy(
+    home, repo, monkeypatch
+) -> None:
+    record = _dispatched(home, repo, "codex-turn.jsonl")
+    observed = crew.observe(record["run_id"])
+    observed["budget"] = {
+        **observed["budget"],
+        "headroom": "known",
+        "utilisation_pct": 4.0,
+        "threshold_status": "spent",
+    }
+    crew._write_json(crew.pointer_path(record["run_id"]), observed)
+    configured = {
+        **CONFIG,
+        "budget": {
+            "utilisation_ceiling_pct": 83,
+            "resume_reserve_pct": 17,
+            "exhausted_statuses": ["spent"],
+        },
+    }
+    resolved_calls = []
+    passed_configs = []
+    original_resume = crew.resume_plan
+
+    def resolve(_module, project, checkout_path, overrides):
+        resolved_calls.append((project, checkout_path, overrides))
+        return configured
+
+    def resume(run_id, advice, *, config=None):
+        passed_configs.append(config)
+        return original_resume(run_id, advice, config=config)
+
+    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    monkeypatch.setattr(crew, "resume_plan", resume)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "resume", "--run", record["run_id"], "--advice", "continue"],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 3
+    assert resolved_calls == [("proj", str(repo), ())]
+    assert passed_configs == [configured]
+    assert payload["hold"]["ceiling_pct"] == 83
+    assert payload["hold"]["effective_ceiling_pct"] == 83
+    assert "threshold status 'spent'" in payload["hold"]["reason"]
+
+
 def test_resume_refuses_while_the_previous_process_is_alive(home, repo) -> None:
     record = _dispatched(home, repo, "codex-turn.jsonl")
     observed = crew.observe(record["run_id"])
