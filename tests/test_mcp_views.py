@@ -190,6 +190,27 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert compact_size(result) <= compact_size(raw) * 0.60
 
 
+def test_version_view_returns_only_identity_and_concurrency_token(setup):
+    docs_dir, project = setup
+    _plan(docs_dir, "readable")
+
+    selector = {"project": project, "type": "plan", "id": "readable"}
+    version = mcp_module._read_plan(resource=selector, view="version")
+    raw = mcp_module._read_plan(resource=selector, view="raw")
+
+    assert version == {
+        "resource": {
+            "project": project,
+            "type": "plan",
+            "id": "readable",
+            "archived": False,
+        },
+        "version": 3,
+        "view": "version",
+    }
+    assert compact_size(version) < compact_size(raw) * 0.20
+
+
 def test_live_runs_are_grouped_by_target_plan_and_project():
     pointers = [
         _live_pointer("alpha", run_id="run-b"),

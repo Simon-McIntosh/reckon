@@ -1424,6 +1424,25 @@ def test_read_plan_unchanged_shape(setup):
     assert r["data"]["status"] == "active"
 
 
+def test_landing_state_write_uses_version_view_instead_of_raw_read(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    read = mcp_module._read_plan(project, "plan-a", view="version")
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "impl", "value": 0.5}],
+        expected_version=read["version"],
+    )
+
+    assert "data" not in read
+    assert result["ok"] is True
+    stored, version = _store_module.read_plan(project, "plan-a")
+    assert stored["impl"] == 0.5
+    assert version == 1
+
+
 def test_read_plan_with_schema(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0})

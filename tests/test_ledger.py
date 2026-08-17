@@ -620,6 +620,49 @@ def test_completion_repair_command_requires_write_flag_to_persist(home, repo) ->
     assert ledger.runs(PROJECT, repo)[0]["completed_at"] == "2027-01-01T00:15:00Z"
 
 
+def test_record_reads_filter_by_target_time_and_count(home, repo) -> None:
+    from reckon import mcp
+
+    for run_id, plan, completed_at in (
+        ("run-early", "alpha", "2027-01-01T01:00:00Z"),
+        ("run-other", "beta", "2027-01-01T03:00:00Z"),
+        ("run-middle", "alpha", "2027-01-01T04:00:00Z"),
+        ("run-latest", "alpha", "2027-01-01T05:00:00Z"),
+    ):
+        ledger.append_run(
+            PROJECT,
+            ledger.build_record(
+                run_id=run_id,
+                plan=plan,
+                gate="passed",
+                completed_at=completed_at,
+            ),
+            root=repo,
+        )
+
+    selected = ledger.runs(
+        PROJECT,
+        repo,
+        plan="alpha",
+        since="2027-01-01T02:00:00Z",
+        limit=1,
+    )
+    exposed = mcp._crew(
+        PROJECT,
+        view="records",
+        checkout_path=str(repo),
+        plan="alpha",
+        since="2027-01-01T02:00:00Z",
+        limit=1,
+    )
+
+    assert [record["run_id"] for record in selected] == ["run-latest"]
+    assert [record["run_id"] for record in exposed["runs"]] == ["run-latest"]
+    assert exposed["version"] == 4
+    assert "members" not in exposed
+    assert "holds" not in exposed
+
+
 def test_an_unknown_gate_verdict_is_refused(home, repo) -> None:
     record = _dispatch(repo)
     with pytest.raises(ledger.LedgerError) as excinfo:
@@ -1307,7 +1350,7 @@ def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    assert "summary, flight, live, ledger or budget" in result["detail"]
+    assert "summary, flight, live, records, ledger or budget" in result["detail"]
 
 
 def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:
