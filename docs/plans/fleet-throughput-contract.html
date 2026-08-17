@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
 <meta name="plan-impl" content="0.5">
@@ -92,6 +92,16 @@
     the config-home rename reflected in the repo AGENTS.md. Done when a fresh orchestrator can
     follow the skill against the current CLI without hitting a documented-but-absent or
     absent-but-required step.</p>
+    <p><strong>Three refusals an orchestrator hit in practice, none of them documented.</strong>
+    Observed while coordinating this sprint, each costing a failed dispatch round-trip:
+    a node whose plan HTML is dirty against the worktree base is refused with
+    <code>plan-unavailable</code> and the fix (commit the plan first) appears nowhere in the skill,
+    even though the landing beat routinely leaves plan state uncommitted mid-wave;
+    the single-goal validator also rejects a goal joined with <code>;</code>, while the contract
+    documents only "and"; and the scoped property requires at least one enumerated write path, so
+    a verification or cleanup node that writes nothing tracked cannot dispatch at all until it
+    names one. Done when each refusal is either documented with its remedy or the validator is
+    relaxed to match the documented rule, and a test pins the behaviour that survives.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
