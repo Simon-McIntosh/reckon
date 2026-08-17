@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="fleet-throughput-contract">
   <meta name="plan-title" content="Fleet Throughput Contract">
   <meta name="plan-summary" content="Raise sustained worker throughput without forcing parallelism: rolling wave refill in the orchestration contract, a narrowed landing freeze, measured per-role time budgets with a runtime watchdog, wired-or-deleted concurrency config, cheap fleet polling and version-only reads, and skill/CLI reconciliation.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-17">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-commits" content="36e668a1d41fb5d5e9ecbe4e627cf7a35f027759,43ebf376dd579283c109084d3630bd99d8913ae8,372c24319bea1f87265cd1e5048080e6ad740779,d5d3c351374d905389dcc400d25523109e25e22a,864fc0c1a9185686f56fd4e5d3f69a75872e1687,97475554ec58e3dc011e1147c613d38d327f25de">
 <meta name="plan-artifacts" content="docs/evidence/archive/fleet-throughput-contract-landed.html">
 <meta name="plan-impl" content="1.0">
@@ -121,10 +121,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ftc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ftc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-16" data-recommends-skill="" data-resolved-at="2026-08-17T16:55:32+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Raise sustained throughput: contract, budgets, observation</h4>
     <div class="r-fu-body"><p>§2–§5 deliverables, gated on crew-state-integrity and dispatch-lifecycle-safety landing first. §2 (contract text) and §4 (tooling) are independently dispatchable sections.</p></div>
     <pre class="r-fu-prompt">/reckon-ship fleet-throughput-contract</pre>
+    <p class="r-fu-outcome">done - no followup. All five sections landed plus a sixth found in flight. Contract (36e668a): rolling slot refill under 'no dependent node builds on unverified work', narrowed landing freeze, one advisory fleet-size table, mandatory per-session read cut from ~24k to 10,930 tokens. Time budgets (d5d3c35): implement 8 m and review 4 m from ledger p75 (n=79, n=10) with cleanup/investigate honestly left as documented fallbacks, 60 m ceiling resolved separately, overrun visible in one poll with opt-in stop, and the dead concurrency key removed per the locked decision with legacy host values warned not fatal. Observation (43ebf37, 864fc0c): version-only read 126 B vs 2,542 B raw, ledger records and crew list filters, all six mandated roles resolving. Reconciliation (372c243): 5 tests pin 6 views, 14 CLI paths, 6 exit outcomes and 3 refusal remedies. Sandbox capability (9747555): execution-capable roles cannot ship read-only, caught by the gate the roles work had just enabled. Final gate 1941 passed / 0 failed. Evidence: docs/evidence/archive/fleet-throughput-contract-landed.html.</p>
     </article>
 </section>
 
@@ -146,6 +147,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260817-ftc-role-sandbox" data-who="reckon-ship" data-when="2026-08-17">
     <div class="r-comment-body">ftc-role-sandbox landed - commit 9747555; gate passed; measure: test role moves read-only to worktree-full while investigate and review stay read-only, driven by a declared execution_capable flag rather than a role-name allowlist - an arbitrary role named executor proves the rule generalises; resolution now rejects an execution-capable role lacking worktree-write; 190 focused tests green, 1 invariant added, schemas regenerate byte-identically; wall 343 s; evidence: fleet-throughput-contract-landed#role-sandbox. Section s6 closed.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260817-s11-gate" data-who="reckon-ship" data-when="2026-08-17">
+    <div class="r-comment-body">Final sprint gate PASSED - full suite 1941 passed / 0 failed / 0 skipped at 3e017f0 in 74.39 s, exit 0. Re-dispatched under the corrected test role resolving worktree-full, so the gate run is itself the end-to-end demonstration of the section 6 fix: the same node that collected 0 tests before the fix wrote its cache and manifest after it.</div>
 </div>
 </section>
 </main>
