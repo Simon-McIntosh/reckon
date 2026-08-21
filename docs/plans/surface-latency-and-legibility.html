@@ -22,7 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-21">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -46,239 +47,23 @@
       and then under-explains what it shows is failing at both ends of the same job.
     </p>
 
-    <h2 id="s2">§2 — Discovery latency</h2>
-
-    <h3>Measured behaviour</h3>
+    <h2 id="s2">§2 — Discovery latency <span class="r-landed">landed</span></h2>
     <p>
-      Wall-clock through the running server, immediately after a clean restart (so the first
-      call per project is a cold cache) and then twice more:
-    </p>
-
-    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:14px 0;">
-      <thead>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Project</th>
-          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Cold</th>
-          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Repeat</th>
-          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Commits</th>
-          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Docs</th>
-          <th scope="col" style="text-align:left; padding:7px 0 7px 12px;">Cache</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-efit</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">16.57 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.023 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">5,515</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">898</td>
-          <td style="padding:7px 0 7px 12px;">effective</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">nova</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">4.33 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">5.39 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">3,503</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">147</td>
-          <td style="padding:7px 0 7px 12px;"><strong>never hits</strong></td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-codex</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">4.15 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">—</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">5,739</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">—</td>
-          <td style="padding:7px 0 7px 12px;"><strong>never hits</strong></td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-standard-names</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">2.85 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.004 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">688</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">—</td>
-          <td style="padding:7px 0 7px 12px;">effective</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-ambix</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">2.36 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">—</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">1,857</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">—</td>
-          <td style="padding:7px 0 7px 12px;"><strong>never hits</strong></td>
-        </tr>
-        <tr>
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">reckon</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.056 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.056 s</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">471</td>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">66</td>
-          <td style="padding:7px 0 7px 12px;">effective</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p>
-      Two distinct populations. Projects whose cache works pay a large one-off cost and are
-      instant afterwards. Projects whose cache never fires pay that cost forever, on every
-      request the SPA makes.
-    </p>
-
-    <svg viewBox="0 0 620 190" width="100%" style="max-width:620px; margin:8px 0 4px;" role="img"
-         aria-label="Cold versus repeat discovery latency. Projects with a working cache drop to near zero on repeat; nova, imas-codex and imas-ambix stay at their cold cost.">
-      <g font-family="system-ui, sans-serif" font-size="13">
-        <line x1="150" y1="12" x2="150" y2="160" stroke="#c9c9cf" stroke-width="1"/>
-
-        <text x="144" y="28" text-anchor="end" fill="#1a1a1f">imas-efit</text>
-        <rect x="150" y="18" width="415" height="9" fill="#2f6f9f"/>
-        <rect x="150" y="29" width="1" height="9" fill="#8fbcd9"/>
-        <text x="573" y="28" fill="#1a1a1f" font-family="ui-monospace, monospace" font-size="12">16.6</text>
-
-        <text x="144" y="58" text-anchor="end" fill="#1a1a1f">nova</text>
-        <rect x="150" y="48" width="108" height="9" fill="#b4472e"/>
-        <rect x="150" y="59" width="135" height="9" fill="#b4472e"/>
-        <text x="295" y="63" fill="#1a1a1f" font-family="ui-monospace, monospace" font-size="12">4.3 → 5.4</text>
-
-        <text x="144" y="88" text-anchor="end" fill="#1a1a1f">imas-codex</text>
-        <rect x="150" y="78" width="104" height="9" fill="#b4472e"/>
-        <rect x="150" y="89" width="104" height="9" fill="#b4472e"/>
-        <text x="264" y="93" fill="#1a1a1f" font-family="ui-monospace, monospace" font-size="12">4.2 (no decay)</text>
-
-        <text x="144" y="118" text-anchor="end" fill="#1a1a1f">imas-standard-names</text>
-        <rect x="150" y="108" width="71" height="9" fill="#2f6f9f"/>
-        <rect x="150" y="119" width="1" height="9" fill="#8fbcd9"/>
-        <text x="231" y="123" fill="#1a1a1f" font-family="ui-monospace, monospace" font-size="12">2.9 → 0.004</text>
-
-        <text x="144" y="148" text-anchor="end" fill="#1a1a1f">imas-ambix</text>
-        <rect x="150" y="138" width="59" height="9" fill="#b4472e"/>
-        <rect x="150" y="149" width="59" height="9" fill="#b4472e"/>
-        <text x="219" y="153" fill="#1a1a1f" font-family="ui-monospace, monospace" font-size="12">2.4 (no decay)</text>
-
-        <text x="150" y="180" fill="#55555f" font-size="12">
-          Upper bar: cold call. Lower bar: repeat call. Blue = cache effective · red = cache bypassed.
-        </text>
-      </g>
-    </svg>
-
-    <h3>Root cause 1 — the cache is disabled outright whenever a plan has a cross-project dependency</h3>
-    <p>
-      <code>discover_plans()</code> in <code>reckon/serve.py</code> caches its result against a
-      cheap <code>(file-count, max-mtime)</code> signature. But the hit condition carries a third
-      clause:
-    </p>
-    <pre><code>if (cached
-    and cached[0] == sig
-    and not _has_external_dependencies(cached[1].get("inventory", []), project)):
-    return cached[1]</code></pre>
-    <p>
-      <code>_has_external_dependencies</code> returns true when <em>any</em> plan in the project
-      declares a <code>depends_on</code> that resolves to another mounted project. That is a
-      correctness instinct — external state can change without touching this project's files, so
-      this project's signature cannot see it — but the remedy is wrong. It does not refresh the
-      external input; it throws away the entire cache for the whole project, permanently.
-      Measured: nova has <strong>one</strong> such dependency, imas-codex one, imas-ambix three.
-      That single edge costs nova 5.4 seconds on every request forever.
+      <strong>Landed 2026-08-21.</strong> Repeat discovery now answers in 6–15 ms for every
+      mounted project, against a 100 ms target: nova 5.39 s → 0.012 s (449×), imas-codex 4.15 s →
+      0.006 s (692×), imas-ambix 2.36 s → 0.012 s (197×). The boolean cache veto is deleted and
+      replaced by per-dependency external signatures; the git creation map is cached against
+      repository HEAD with incremental range refresh; git failures now log distinctly instead of
+      being swallowed. Commit <code>5922bcf</code>, merged <code>cb16b49</code>, 5 new tests,
+      suite 1,950 passed / 0 failed.
     </p>
     <p>
-      The correct shape is to fold the external projects' own signatures into this project's cache
-      key, so an external change invalidates and an unchanged external input still hits.
-    </p>
-
-    <h3>Root cause 2 — every cold scan re-walks the repository's entire commit history</h3>
-    <p>
-      Profiling one cold <code>discover_plans("nova")</code> with <code>cProfile</code>:
-    </p>
-    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:14px 0;">
-      <thead>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Frame</th>
-          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Cumulative</th>
-          <th scope="col" style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">Share</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:400;"><code>discover_plans</code> (total)</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">8.71 s</td>
-          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">100%</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;"><code>_git_first_committed</code></th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">7.72 s</td>
-          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);"><strong>89%</strong></td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--line);">
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:400;"><code>resource_map</code> (×2, incl. one external project)</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.83 s</td>
-          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">9%</td>
-        </tr>
-        <tr>
-          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:400;"><code>parse_meta</code> (449 calls, 563 file reads)</th>
-          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.67 s</td>
-          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">8%</td>
-        </tr>
-      </tbody>
-    </table>
-    <p>
-      <code>_git_first_committed</code> shells out to
-      <code>git log --diff-filter=A --format="COMMIT %at" --name-only -- docs</code> to recover each
-      doc's true creation time. That walks the whole history — 3,503 commits for nova, 5,739 for
-      imas-codex — and on GPFS it costs 3.5 s warm and 7.7 s cold. It also carries a
-      <code>timeout=10</code> wrapped in a bare <code>except Exception: return {}</code>, so on a
-      slow filesystem the worst case is to burn ten seconds and then silently discard every
-      creation date, falling back to inode <code>ctime</code> with no signal that it happened.
-    </p>
-    <p>
-      The key property being missed: <strong>a file's first-commit timestamp is immutable.</strong>
-      Once known it never needs recomputing, and history only ever grows at the tip. There is no
-      reason to re-derive 3,500 commits' worth of add-events to learn the creation date of a doc
-      whose date was already known on the previous request.
-    </p>
-
-    <h3>Root cause 3 — one doc edit invalidates the whole project</h3>
-    <p>
-      The signature is <code>(count, max-mtime)</code> across every HTML file under
-      <code>docs/</code>. Any single plan write moves <code>max-mtime</code> and discards the
-      cached inventory for the entire project, forcing a full re-parse of every document
-      <em>and</em> another full history walk. This is precisely the situation during an active
-      orchestration session, when agents write plan state continuously and the SPA is being
-      watched. imas-efit re-pays 16.6 s each time.
-    </p>
-
-    <h3>Deliverables</h3>
-    <ol>
-      <li>
-        <strong>Cache the git creation map, keyed on repository <code>HEAD</code>.</strong>
-        Reuse the previous map when <code>HEAD</code> is unchanged. When it moves, query only the
-        new tip range rather than re-walking from the root. Paths still unresolved fall back to
-        <code>ctime</code> as today.
-      </li>
-      <li>
-        <strong>Repair the external-dependency cache bypass.</strong> Extend the cache key with the
-        signatures of the mounted projects this project actually depends on, so an unchanged
-        external input is a cache hit and a changed one correctly invalidates. Deleting the
-        third clause without a replacement is not acceptable — it would reintroduce the staleness
-        the clause was defending against.
-      </li>
-      <li>
-        <strong>Make the git-history timeout observable.</strong> A swallowed timeout that silently
-        drops every creation date is a defect in its own right; the failure must be logged and
-        distinguishable from "this repository has no git history".
-      </li>
-      <li>
-        <strong>Regression test the cache contract.</strong> A test that asserts a second
-        <code>discover_plans</code> call with an unchanged tree performs no <code>git</code>
-        subprocess and no re-parse — including for a project holding a cross-project
-        <code>depends_on</code>. This is the test whose absence let the bypass survive.
-      </li>
-    </ol>
-
-    <h3>Done when</h3>
-    <p>
-      A repeat <code>GET /_discover/&lt;project&gt;</code> against an unchanged tree returns in
-      under 100 ms for <em>every</em> mounted project, cross-project dependants included; a cold
-      call on the largest repository (imas-efit, 898 docs / 5,515 commits) completes in under
-      3 s; external-dependency invalidation is proven by a test that mutates the dependency's
-      project and observes the dependant refresh; and the existing suite stays green.
+      <strong>Open negative result:</strong> the cold-scan criterion of under 3 s is NOT met —
+      imas-efit still takes 14.8 s on the first call after a server restart. This follows directly
+      from the locked <code>git-creation-source</code> decision declining disk persistence. The
+      criterion and the decision were authored in the same session and disagree. Resolution is the
+      lead's call: persist the map to disk, or restate the criterion as steady-state.
+      Full detail: <a href="/reckon/evidence/archive/surface-latency-and-legibility-landed">execution record</a>.
     </p>
 
     <h2 id="s3">§3 — What the SPA communicates</h2>
@@ -399,6 +184,8 @@
 <h2><span class="sec">§</span> Research</h2>
 <div class="r-research" data-id="r-reuse-map" data-type="reuse-map" data-source="prior-art scout, run r-20260821T135033054402-prior-art-scout" data-added-by="reckon-ship" data-when="2026-08-21" data-url="/home/ITER/mcintos/.config/reckon/crew/runs/r-20260821T135033054402-prior-art-scout/manifest.md">
     <span class="r-research-title"><a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20260821T135033054402-prior-art-scout/manifest.md">Reuse map: 4 repositories, 17 candidate module groups, 36 classified tests. Binding verdicts — extend _DISC_CACHE/discover_plans and _git_first_committed in serve.py; reject _has_external_dependencies as the cache-hit predicate and key on the referenced external projects&#x27; own signatures instead; reuse capabilities.py&#x27;s explicit-version and atomic-replace invariants as pattern only, never as an import; keep all cache logic in serve.py rather than a new module. Confirms no existing test counts git subprocesses or parse calls across a repeated discover_plans. Separately found that ReadyGate has no rejection branch, so a failed discovery renders &#x27;Loading plan state...&#x27; forever despite STATE_ERROR being set, and that the Ambix and EFIT SPA asset copies differ from canonical reckon in 4 of 4 sampled files, making reckon the only safe edit point.</a></span></div>
+<div class="r-research" data-id="r-audit" data-type="audit" data-source="spa-legibility-audit, commit 38ac267" data-added-by="reckon-ship" data-when="2026-08-21" data-url="/reckon/research/spa-legibility-audit">
+    <span class="r-research-title"><a href="/reckon/research/spa-legibility-audit">SPA legibility audit — 15 ranked findings against live payloads: 2 critical, 6 high, 5 medium, 2 low; by class 6 not-shown, 4 shown-but-unexplained, 5 stale-or-wrong. Rank 1 and rank 2 are both the surface lying by omission: ReadyGate has no rejection branch so a failed discovery renders as an indefinite load, and the status menu flashes success without awaiting a canonical write that returns ok even when only local storage changed.</a></span></div>
 </section>
 </main>
 </body>
