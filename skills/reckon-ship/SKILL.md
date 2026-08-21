@@ -347,9 +347,13 @@ validated it to 1.6e-5, and measured the result worse on every decisive
 field. The plan text, not the worker, was the defect.)
 
 **Dispatch a prior-art scout in the background.** One read-only
-investigate-role node (or an Explore agent when worker slots are scarce),
-launched at pre-flight so it runs while the coordinator finishes reading
-state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
+investigate-role node, dispatched through `reckon crew dispatch` exactly like
+every other node — never a harness-native background agent (an
+Explore/Task-tool delegation bypasses the run ledger, the manifest contract,
+and calibration) and never inline. Scarce worker slots defer the scout; they
+do not reroute it around the crew system. The backend comes from flight
+config like every dispatch. Launch it at pre-flight so it runs while the
+coordinator finishes reading state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
 data already in reach that solve the problem in whole or in part, each with a
 one-line fitness verdict. The scout searches:
 
