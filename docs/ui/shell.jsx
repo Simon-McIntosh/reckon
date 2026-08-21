@@ -583,6 +583,46 @@ const LIFECYCLE_STATUSES = [
   { value: "abandoned",  label: "Abandoned",  group: "done"     },
 ];
 
+function statusWriteNotice(slug, result) {
+  if (result?.persistence === "canonical" && result.ok) {
+    return { state: "saved", text: `${slug} · saved to plan HTML`, version: result.version };
+  }
+  if (result?.persistence === "conflict") {
+    return { state: "conflict", text: `${slug} · conflict; not saved · refresh and retry` };
+  }
+  if (result?.persistence === "failed") {
+    return { state: "failed", text: `${slug} · ${result.where || "not saved"}` };
+  }
+  return {
+    state: "local-only",
+    text: `${slug} · local only · ${result?.where || "canonical save unavailable"}`,
+  };
+}
+
+async function persistStatusPatch({ slug, plan, patch, onAfterChange, save, notify }) {
+  const previous = Object.fromEntries(Object.keys(patch).map(key => [key, plan[key]]));
+  Object.assign(plan, patch);
+  if (onAfterChange) onAfterChange();
+
+  let result;
+  try {
+    result = save
+      ? await save(slug, patch)
+      : { ok: false, persistence: "failed", local_ok: false, where: "not saved (persistence unavailable)", version: null };
+  } catch (error) {
+    console.warn("StatusMenu: persistence failed", error);
+    result = { ok: false, persistence: "failed", local_ok: false, where: "not saved (persistence failed)", version: null };
+  }
+
+  if (result?.persistence === "conflict" || result?.persistence === "failed") {
+    Object.assign(plan, previous);
+    if (onAfterChange) onAfterChange();
+  }
+
+  if (notify) notify(statusWriteNotice(slug, result));
+  return result;
+}
+
 function StatusMenu({ slug, plan, onAfterChange }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
@@ -599,19 +639,23 @@ function StatusMenu({ slug, plan, onAfterChange }) {
   const isArchived = plan.archived === "1" || plan.archived === true || plan.archived === "true";
   const isRead = plan.read === "1" || plan.read === true || plan.read === "true";
 
-  const apply = (patch) => {
+  const apply = async (patch) => {
     // Update local inventory immediately so the UI reflects the change
     // before the server round-trips.
-    Object.assign(plan, patch);
-    if (window.planSave) window.planSave(slug, patch);
-    else if (window.reckon?.planSave) window.reckon.planSave(slug, patch);
-    if (onAfterChange) onAfterChange();
-    if (window.flashSaved) window.flashSaved(`${slug} · ${Object.keys(patch).join(", ")} updated`);
+    const save = window.planSave || window.reckon?.planSave;
+    return persistStatusPatch({
+      slug,
+      plan,
+      patch,
+      onAfterChange,
+      save,
+      notify: window.flashSaved,
+    });
   };
 
-  const setStatus = (s) => { apply({ status: s }); setOpen(false); };
-  const toggleArchive = () => { apply({ archived: isArchived ? "" : "1" }); setOpen(false); };
-  const toggleRead = () => { apply({ read: isRead ? "" : "1" }); setOpen(false); };
+  const setStatus = async (s) => { setOpen(false); await apply({ status: s }); };
+  const toggleArchive = async () => { setOpen(false); await apply({ archived: isArchived ? "" : "1" }); };
+  const toggleRead = async () => { setOpen(false); await apply({ read: isRead ? "" : "1" }); };
 
   return (
     <div className="r-status-menu-wrap" ref={ref}>

@@ -122,7 +122,7 @@ Object.assign(window, {
 // Tight feedback loop:
 //
 //   * On localhost (docs-server) — every save POSTs to
-//     /state/<project>/<plan> so the canonical JSON file on disk is updated
+//     /plan/<project>/<slug> so the canonical plan HTML is updated
 //     immediately. The local site is the operational interface; clicks
 //     write through.
 //   * On GitHub Pages — server isn't reachable; saves go to localStorage
@@ -131,8 +131,8 @@ Object.assign(window, {
 //
 // The Persist API is patch-shaped: callers pass a flat object whose keys
 // may be dotted (e.g. `{ "decisions.plasma-decoder-finetune": {...} }`).
-// Persist merges the patch into the current canonical document and writes
-// the full merged document back via POST.
+// Persist sends the patch to the server, which merges it into the current
+// canonical document and writes the plan HTML back atomically.
 //
 // Version / 412 contract:
 //   - On loadCanonical(), data._version is cached in
@@ -204,9 +204,9 @@ Object.assign(window, {
     // after every successful POST.
     _versions: {},
 
-    // load() is SYNC — returns the localStorage cache. plan.html uses this
-    // for snappy initial render. The async loadCanonical() then merges in
-    // the server state for the live source of truth.
+    // load() is SYNC so callers can render the localStorage cache immediately.
+    // The async loadCanonical() then merges in the server state for the live
+    // source of truth.
     load(plan) {
       const key = `${PROJECT}:${plan}`;
       try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch { return {}; }
@@ -232,10 +232,31 @@ Object.assign(window, {
       return next;
     },
 
+    _localFallback(plan, patch, where) {
+      try {
+        this._echoLocal(plan, patch);
+        return {
+          ok: false,
+          persistence: "local-only",
+          local_ok: true,
+          where,
+          version: null,
+        };
+      } catch (error) {
+        console.warn("Persist.save: local fallback failed", error);
+        return {
+          ok: false,
+          persistence: "failed",
+          local_ok: false,
+          where: "not saved (local storage unavailable)",
+          version: null,
+        };
+      }
+    },
+
     async save(plan, patch) {
       if (mode !== "editable") {
-        this._echoLocal(plan, patch);
-        return { ok: true, where: "localStorage (read-only site)", version: null };
+        return this._localFallback(plan, patch, "localStorage (read-only site)");
       }
 
       let version = this._versions[plan];
@@ -260,25 +281,42 @@ Object.assign(window, {
         if (r.ok) {
           const j = await r.json().catch(() => ({}));
           if (typeof j.version === "number") this._versions[plan] = j.version;
-          this._echoLocal(plan, patch);
-          return { ok: true, where: `plan html → ${plan}.html`, version: j.version };
+          let localOk = true;
+          try {
+            this._echoLocal(plan, patch);
+          } catch (error) {
+            localOk = false;
+            console.warn("Persist.save: local cache update failed", error);
+          }
+          return {
+            ok: true,
+            persistence: "canonical",
+            local_ok: localOk,
+            where: `plan html → ${plan}.html`,
+            version: j.version,
+          };
         }
         if (r.status === 412) {
           alert("Conflict: another session updated this plan since you loaded it.\nRefresh and retry.");
-          this._echoLocal(plan, patch);
-          return { ok: false, where: "localStorage (conflict — refresh)", version: null };
+          return {
+            ok: false,
+            persistence: "conflict",
+            local_ok: false,
+            where: "not saved (conflict — refresh)",
+            version: null,
+          };
         }
         console.warn("Persist.save: POST not ok", r.status);
+        return this._localFallback(plan, patch, `localStorage (server returned HTTP ${r.status})`);
       } catch (e) {
         console.warn("Persist.save: POST failed (server unreachable?)", e);
       }
 
-      this._echoLocal(plan, patch);
-      return { ok: true, where: "localStorage (server unreachable)", version: null };
+      return this._localFallback(plan, patch, "localStorage (server unreachable)");
     },
   };
 
-  // Tiny toast for "saved" confirmations.
+  // Tiny toast for persistence acknowledgements and lightweight notices.
   window.flashSaved = function (msg) {
     let t = document.getElementById("__saved-toast");
     if (!t) {
@@ -287,9 +325,12 @@ Object.assign(window, {
       t.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font:500 12.5px/1.4 var(--mono);z-index:1000;opacity:0;transition:opacity 180ms;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;";
       document.body.appendChild(t);
     }
+    const state = (msg && typeof msg === "object" && msg.state) || "saved";
     const versionTag = (msg && msg.version != null) ? ` · v${msg.version}` : "";
     const text = typeof msg === "string" ? msg : (msg && msg.text) || "saved";
-    t.textContent = "✓ " + text + versionTag;
+    const marks = { saved: "✓", "local-only": "◐", conflict: "!", failed: "×" };
+    t.dataset.state = state;
+    t.textContent = `${marks[state] || "•"} ${text}${versionTag}`;
     t.style.opacity = "1";
     clearTimeout(window.__savedTimer);
     window.__savedTimer = setTimeout(() => { t.style.opacity = "0"; }, 1600);
