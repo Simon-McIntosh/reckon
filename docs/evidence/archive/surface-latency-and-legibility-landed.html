@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"     content="reckon">
+  <meta name="reckon-type"      content="evidence">
+  <meta name="plan-slug"        content="surface-latency-and-legibility-landed">
+  <meta name="plan-title"       content="Surface Latency and Legibility — execution record">
+  <meta name="plan-summary"     content="Cumulative execution evidence: measured discovery latency before and after the cache repair, the reconnaissance reuse map, the ranked SPA legibility audit, and each node's commit and gate.">
+  <meta name="plan-evidence-for" content="surface-latency-and-legibility">
+  <meta name="plan-status"      content="active">
+  <meta name="plan-owner"       content="Simon McIntosh">
+  <title>Surface Latency and Legibility — execution record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="summary">Result so far</h2>
+    <p>
+      Repeat discovery latency is fixed for every mounted project. The three projects that
+      previously never cached at all — nova, imas-codex and imas-ambix — now answer a repeat
+      request in <strong>6 to 15 milliseconds</strong> instead of paying their full cold cost on
+      every call. The plan's repeat target of 100 ms is met with two orders of magnitude to spare.
+      The cold-scan target is <strong>not</strong> met and is discussed under
+      <a href="#cold">Cold scan remains slow</a>.
+    </p>
+
+    <h2 id="discovery-cache">Discovery cache repair</h2>
+    <p>
+      Commit <code>5922bcf</code>, merged as <code>cb16b49</code>. Two files:
+      <code>reckon/serve.py</code> (+251/−61) and a new
+      <code>tests/test_discovery_cache.py</code> (+219).
+    </p>
+
+    <h3>Measured latency, same server, before and after</h3>
+    <p>
+      Wall-clock through <code>GET /_discover/&lt;project&gt;</code>. "Before" is the first call
+      after a clean restart followed by two repeats; "after" is the same sequence against the
+      rebuilt server.
+    </p>
+
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:14px 0;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Project</th>
+          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Before, repeat</th>
+          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">After, repeat</th>
+          <th scope="col" style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">nova</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">5.39 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.012 s</td>
+          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">449×</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-codex</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">4.15 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.006 s</td>
+          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">692×</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-ambix</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">2.36 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.012 s</td>
+          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">197×</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-efit</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.023 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.014 s</td>
+          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">already cached</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">imas-standard-names</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.004 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.003 s</td>
+          <td style="text-align:right; padding:7px 0 7px 12px; font-family:var(--mono);">already cached</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>What changed in the code</h3>
+    <p>
+      <code>_has_external_dependencies</code> is deleted. It was a boolean veto that disabled the
+      cache for the entire project whenever any plan declared a cross-project dependency. In its
+      place, <code>_external_dependency_projects</code> collects the specific mounted projects
+      actually referenced, and their own discovery signatures are folded into the cache entry
+      alongside the local one. An unchanged external input is now a cache hit; a changed one
+      invalidates only what depends on it.
+    </p>
+    <p>
+      <code>_git_first_committed</code> keeps its output shape but splits the HEAD lookup from
+      history population. A per-repository <code>{head, times}</code> record is retained in memory;
+      an unchanged HEAD performs only <code>rev-parse</code> and reuses the map, while an advanced
+      HEAD queries the <code>old..new</code> range alone and merges the additions with
+      <code>setdefault</code>, so an existing first-commit timestamp is never overwritten by a
+      later one. The bare <code>except Exception: return {}</code> is replaced by a
+      <code>_run_git</code> helper that logs timeout, non-zero exit and start failure distinctly
+      and still returns the <code>ctime</code> fallback.
+    </p>
+
+    <h3>Gate evidence</h3>
+    <p>
+      Five new tests in <code>tests/test_discovery_cache.py</code>, all passing in 0.63 s. They
+      prove: repeat discovery for two mounted fixture projects — including the cross-project
+      dependant — runs exactly <strong>0 git subprocesses and 0 <code>parse_meta</code>
+      calls</strong>; mutating a referenced provider flips the dependant's
+      <code>effective_status</code> from blocked to active; an unchanged HEAD issues only
+      <code>rev-parse</code>; an advanced HEAD issues exactly one range query; and a timeout plus
+      an exit-code-7 failure each log a distinct warning while returning the file's
+      <code>ctime</code>.
+    </p>
+    <p>
+      Full suite after merge: <strong>1,944 passed, 4 failed in 65 s</strong>. The four failures
+      reproduce identically on a clean <code>main</code> with no changes applied, so they are
+      pre-existing and unrelated. They are being repaired under
+      <a href="#preexisting">Pre-existing failures</a>.
+    </p>
+
+    <h3 id="cold">Cold scan remains slow — an open negative result</h3>
+    <p>
+      The plan's second latency criterion, a cold scan of the largest repository under 3 s, is
+      <strong>not met</strong>: imas-efit still takes 14.8 s and nova 7.1 s on the first call after
+      a server restart. This is a direct consequence of the locked
+      <code>git-creation-source</code> decision, which chose an in-memory HEAD-keyed cache and
+      explicitly declined disk persistence on the grounds that restarts are rare next to the
+      per-request cost being removed. That reasoning holds for steady-state use and the measured
+      result confirms it, but it leaves every server restart re-paying a full history walk.
+    </p>
+    <p>
+      The criterion and the decision were authored in the same session and contradict each other;
+      the criterion is the one that was wrong. Recorded here rather than quietly amended, because
+      the honest options are to persist the creation map to disk — the option the decision
+      deferred — or to restate the criterion as a steady-state target. That is the lead's call.
+    </p>
+
+    <h2 id="reuse-map">Reconnaissance</h2>
+    <p>
+      Run <code>r-20260821T135033054402-prior-art-scout</code>, read-only, 442 s, gate passed.
+      Censused four repositories and classified 17 candidate module groups and 36 named tests.
+      Its binding verdicts shaped the implementation above: extend the existing cache and git
+      helper in <code>serve.py</code> rather than adding a module; reject
+      <code>_has_external_dependencies</code> as the hit predicate outright; reuse
+      <code>capabilities.py</code>'s explicit-version and atomic-replace invariants as pattern
+      only, never as an import.
+    </p>
+    <p>
+      It confirmed the test gap that let the defect survive: <strong>no existing test counted git
+      subprocesses or parse calls across a repeated <code>discover_plans</code></strong>. It also
+      returned two findings outside its brief — the <code>ReadyGate</code> rejection gap, and
+      SHA-256 evidence that the imas-ambix and imas-efit SPA asset copies are byte-identical to
+      each other but differ from canonical reckon in 4 of 4 sampled files, making reckon the only
+      safe edit point and <code>reckon sync</code> the only safe propagation path.
+    </p>
+
+    <h2 id="audit">SPA legibility audit</h2>
+    <p>
+      Run <code>r-20260821T135054536357-spa-legibility-audit</code>, commit <code>38ac267</code>,
+      merged as <code>1d38e38</code>, gate passed. Published at
+      <code>docs/research/spa-legibility-audit.html</code>: 15 ranked findings against live served
+      payloads — 2 critical, 6 high, 5 medium, 2 low; by class, 6 not-shown, 4 shown-but-unexplained,
+      5 stale-or-wrong.
+    </p>
+    <p>
+      Measured inputs: a live <code>GET /_discover/reckon</code> of 171,172 bytes carrying 67
+      artifacts and 9 sprint resources, with <strong>S5 and S9 both marked active</strong> while
+      focus stayed on S5; one plan whose authored status disagrees with its effective status
+      because of 3 open gates; 12 resource-version tokens the shell discards; and a live
+      <code>GET /crew</code> returning 9 runs spanning three projects through a table with no
+      project column.
+    </p>
+    <p>
+      The two critical findings are both about the surface lying by omission. Rank 1: the loader
+      completes the whole discovery fetch before rendering, and <code>ReadyGate</code> shows only
+      "Loading plan state…" with no elapsed time and <em>no rejection branch at all</em>, so a
+      failed discovery renders as an indefinite load — the same appearance as an unreachable
+      server, and the likely explanation for this plan's originating report. Rank 2: the status
+      menu flashes "updated" without awaiting the canonical write, and that write reports
+      <code>ok: true</code> even when the server is unreachable and only local storage changed.
+    </p>
+
+    <h2 id="preexisting">Pre-existing failures found in passing</h2>
+    <p>
+      The four suite failures are unrelated to this plan but were repaired under it rather than
+      walked past. Both root causes were established by reproduction on a clean tree.
+    </p>
+    <ul>
+      <li>
+        <code>test_agent_context.py::test_home_target_without_repository_has_only_user_context</code>
+        fails because <code>agent_context.py</code> treats any directory containing a
+        <code>.git</code> entry as a repository root using an existence check alone. An
+        <strong>empty</strong> <code>/run/user/39486/.git</code> directory, created 2026-08-19 and
+        containing zero entries, is enough to satisfy it, so a temporary home created beneath that
+        path reports a repository root where there is no repository.
+      </li>
+      <li>
+        Three <code>test_skill_contracts.py</code> assertions fail because the recent skill commits
+        deliberately retired slot-pool vocabulary in favour of roster authority, while the
+        assertions still require the removed strings. The size assertion is a genuine budget
+        breach rather than stale vocabulary: the document is now 12,558 estimated tokens against a
+        12,000 bound, and the bound is being respected rather than raised.
+      </li>
+    </ul>
+
+  </main>
+</body>
+</html>
