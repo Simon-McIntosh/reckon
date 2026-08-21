@@ -130,9 +130,22 @@ Continue through ordinary complexity, validation, and recoverable integration:
 | "This is a lot of work / the session is long / I've done enough" | Length and effort are not blockers. Continue until every implementable item is done or you hit a valid stop. |
 | "It needs full-suite validation first" | Then dispatch a test worker — validation is part of the work, not a reason to hand back. |
 | "I'll present options A/B and let the user choose" | If the plan already determines the path, there is no choice to present. Pick the plan's path and execute. Offering A/B on already-decided work is a checkpoint in disguise. |
+| "A worker hit its NEEDS-HELP fence / failed twice" | The fence stops the **worker**, never the plan — that is its whole purpose. A `NEEDS-HELP:` report is a decision brief: answer it and `reckon crew resume` the same session, or reshape the node and re-dispatch. A worker that stopped is a worker waiting, not a plan blocked. |
+| "The node died on infrastructure — a timeout, a slow connect, a cold service, a stalled filesystem read" | Repoint, do not halt. Re-dispatch with the corrected brief: a longer probe timeout, a warmed connection, a different roster member. Classify before concluding anything: check the service is actually unhealthy rather than merely slow, because a latency spike and an outage look identical from a killed worker. An environment hiccup is never a plan-level blocker. |
+| "Two attempts failed, so the approach must be wrong" | Two attempts failing the same way is a signal to reshape the node — specify the primitive, name the exact call site, widen the write scope — not to abandon the objective. Reshape and re-dispatch; a repointed node with a sharper brief routinely succeeds where a repeated one cannot. |
 
 Plans do not override global safety or expand user authority. A locked decision
 settles implementation choices only inside the already-authorised scope.
+
+**Hiccup or blocker — the one test.** Before stopping, ask whether *any* authority
+you already hold could move this forward: a longer timeout, a different member, a
+narrower or wider write scope, a reshaped node, an answered decision brief, a
+cheaper experiment that settles the question. If yes, it is a hiccup — repoint and
+continue. A true external blocker is one no available authority resolves: an
+unshipped prerequisite owned by another project, a decision only the user can make,
+spend beyond the authorised ceiling, or an outward-facing effect needing consent.
+Everything else is work in progress wearing a failure's clothes. Report hiccups in
+the completion summary; stop only for the blockers.
 
 ## Fast path
 
