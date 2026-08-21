@@ -1281,9 +1281,46 @@ window.STATE_READY.then(
   error => console.log(JSON.stringify({{
     resolved: false,
     message: error.message,
-    state_error: window.STATE_ERROR && window.STATE_ERROR.message
+    state_error: window.STATE_ERROR && window.STATE_ERROR.message,
+    pending_view: window.projectStateLoadView(
+      null,
+      window.STATE_LOAD.startedAt + 3200
+    ),
+    error_view: window.projectStateLoadView(error)
   }}))
 );
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _render_project_state_load_panel(load: dict) -> dict:
+    shell = Path("docs/ui/shell.jsx").resolve()
+    source = shell.read_text(encoding="utf-8")
+    start = source.index("function ProjectStateLoadPanel")
+    end = source.index("\nfunction ReadyGate", start)
+    component = source[start:end]
+    script = f"""
+const React = {{
+  createElement: (type, props, ...children) => ({{
+    type,
+    props: props || {{}},
+    children
+  }})
+}};
+{component}
+const tree = ProjectStateLoadPanel({{load: {json.dumps(load)}}});
+function textContent(node) {{
+  if (node === null || node === undefined || node === false) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  return (node.children || []).map(textContent).join(" ");
+}}
+console.log(JSON.stringify({{role: tree.props.role, text: textContent(tree)}}));
 """
     result = subprocess.run(
         ["node", "-e", script],
@@ -1304,3 +1341,17 @@ def test_spa_projection_does_not_hide_discovery_server_failure():
     assert result["resolved"] is False
     assert result["message"] == "/_discover/sample returned HTTP 500"
     assert result["state_error"] == result["message"]
+
+
+def test_spa_discovery_failure_panel_replaces_pending_status():
+    result = _run_state_loader(503)
+    pending = _render_project_state_load_panel(result["pending_view"])
+    failed = _render_project_state_load_panel(result["error_view"])
+
+    assert pending["role"] == "status"
+    assert "Loading plan state" in pending["text"]
+    assert "3s elapsed" in pending["text"]
+    assert failed["role"] == "alert"
+    assert "/_discover/sample" in failed["text"]
+    assert "HTTP 503" in failed["text"]
+    assert "Loading plan state" not in failed["text"]

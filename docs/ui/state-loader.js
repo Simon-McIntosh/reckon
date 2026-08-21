@@ -12,6 +12,22 @@ window.STATE_READY = (async function () {
   const PROJECT = (document.querySelector('meta[name="docs-project"]')?.content) ||
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
                   "unknown";
+  const discoveryEndpoint = `/_discover/${PROJECT}`;
+
+  window.STATE_LOAD = {
+    endpoint: discoveryEndpoint,
+    startedAt: Date.now(),
+  };
+  window.projectStateLoadView = (error = null, now = Date.now()) => ({
+    phase: error ? "error" : "pending",
+    endpoint: error?.endpoint || window.STATE_LOAD.endpoint,
+    httpStatus: Number.isFinite(error?.status) ? error.status : null,
+    message: error?.message || "",
+    elapsedSeconds: Math.max(
+      0,
+      Math.floor((now - window.STATE_LOAD.startedAt) / 1000),
+    ),
+  });
 
   async function getJson(url, { required = false } = {}) {
     try {
@@ -126,15 +142,26 @@ window.STATE_READY = (async function () {
   // index.json never stores, and is always up-to-date.
   // index.json is only used for project config (sprints, milestones, timeline).
   let disc = null;
-  const discoveryResponse = await fetch(
-    `/_discover/${PROJECT}`, { cache: "no-store" }
-  );
+  let discoveryResponse;
+  try {
+    discoveryResponse = await fetch(discoveryEndpoint, { cache: "no-store" });
+  } catch (cause) {
+    const error = new Error(
+      `${discoveryEndpoint} failed: ${cause?.message || "network error"}`
+    );
+    error.endpoint = discoveryEndpoint;
+    error.cause = cause;
+    throw error;
+  }
   if (discoveryResponse.ok) {
     disc = await discoveryResponse.json();
   } else if (!(projectionBlob && discoveryResponse.status === 404)) {
-    throw new Error(
-      `/_discover/${PROJECT} returned HTTP ${discoveryResponse.status}`
+    const error = new Error(
+      `${discoveryEndpoint} returned HTTP ${discoveryResponse.status}`
     );
+    error.endpoint = discoveryEndpoint;
+    error.status = discoveryResponse.status;
+    throw error;
   }
   if (Array.isArray(disc?.north_stars)) northStars = disc.north_stars;
   if (Array.isArray(disc?.inventory) && disc.inventory.length > 0) {
