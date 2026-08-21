@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-21">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.8">
 </head>
 <body>
   <main class="plan-doc">
@@ -169,13 +169,19 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-slal-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-slal-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-21" data-recommends-skill="" data-resolved-at="2026-08-21T14:55:11+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Execute the plan — discovery latency then the SPA legibility audit</h4>
     <div class="r-fu-body"><p>
             §2 is fully diagnosed and ready to dispatch. §3 begins with an audit node whose ranked
             findings gate the fixes that follow it, so §3 implementation waits on that output.
             The two sections touch disjoint files and can start concurrently.
           </p></div>
+    <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
+    <p class="r-fu-outcome">Landed across nine worker nodes on codex, all worktree-isolated. §2 complete: repeat discovery 5.39s → 0.012s on nova (449×), 692× on imas-codex, 197× on imas-ambix, every mounted project now under 40ms against a 100ms target; the boolean cache veto deleted in favour of per-dependency external signatures; the git creation map keyed on HEAD with incremental range refresh; git failures logged rather than swallowed. §3 audit published with 15 ranked findings, of which 6 are fixed including both criticals — the ready-gate rejection branch, honest write acknowledgement, the misleading sprint drag affordance, sprint item rationale and contract, crew project identity, and the resolved config path. Two pre-existing suite failures unrelated to this plan were repaired rather than walked past: repository detection now requires a real repository instead of any ancestor holding a .git entry, and the skill contract assertions were reconciled with roster-authority vocabulary while compacting the document to 11,631 tokens under its unchanged 12,000 bound. Suite 1,951 passed / 0 failed; all eleven worktrees removed after verifying reachability. Two items remain open and are carried in the next followup: the unmet cold-scan criterion, which contradicts a decision locked in the same session, and audit ranks 3, 6, 9-15.</p>
+    </article>
+<article class="r-fu" data-id="f-slal-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-08-21" data-recommends-skill="/reckon-ship surface-latency-and-legibility" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Resolve the cold-scan contradiction, then land audit ranks 3, 6 and 9-15</h4>
+    <div class="r-fu-body"><p>Two distinct pieces of work remain, and the first needs a lead decision before it can be dispatched.</p><p><strong>The cold-scan criterion is unmet and contradicts a locked decision.</strong> §2 targets a cold scan under 3 seconds; imas-efit still takes 14.8 s and nova 7.1 s on the first call after a server restart, because the locked <code>git-creation-source</code> decision declined disk persistence on the reasoning that restarts are rare. Both were authored in the same session and disagree. Either persist the creation map under the config home so a restart no longer re-pays the history walk — reopening that decision through the dissent flow — or restate the criterion as a steady-state target. Do not quietly amend the criterion to match the outcome.</p><p><strong>Audit rank 3 has a live data half the SPA half cannot fix.</strong> S5 and S9 are both marked active while the legacy index names S5 as focus; S5 has 7 of 8 items shipped with only <code>registered-repo-state-migration</code> outstanding, while all current work sits in S9. The SPA remedy is to show every active sprint and warn on the conflict rather than silently picking one. Whether S5 should close is a sprint decision for the lead, not a rendering fix.</p><p><strong>Remaining findings.</strong> Rank 6 renders authored-versus-effective status with its open-gate count on compact surfaces. Ranks 9 to 15 are medium and low: plan-fetch provenance when a partial document would otherwise look complete, discarded resource-version tokens, graph-tab reading order, crew phase legibility, handoff prompt copying, vocabulary explanation, and blocker ownership. Full detail with source files and remedies is in the audit research resource.</p></div>
     <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
     </article>
 </section>

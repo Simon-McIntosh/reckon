@@ -185,6 +185,65 @@
       <code>ok: true</code> even when the server is unreachable and only local storage changed.
     </p>
 
+    <h2 id="spa-landed">SPA legibility fixes landed</h2>
+    <p>
+      Six of the fifteen audit findings are fixed, including both criticals. Every node ran in an
+      isolated worktree on codex; each commit touched only its declared paths.
+    </p>
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:14px 0;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Rank</th>
+          <th scope="col" style="text-align:left; padding:7px 12px;">What was wrong</th>
+          <th scope="col" style="text-align:left; padding:7px 12px; font-family:var(--mono);">Commit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">1 · critical</th>
+          <td style="padding:7px 12px;">The ready gate had no rejection branch, so a failed discovery rendered as an indefinite load — indistinguishable from an unreachable server. Now reports elapsed seconds while pending and an endpoint-specific alert on rejection.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">85082f3</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">2 · critical</th>
+          <td style="padding:7px 12px;">A status write flashed success without awaiting persistence, and that write returned ok even when the server was unreachable and only local storage changed. Writes now await the promise and distinguish canonical save with version, local-only fallback, and conflict that reverts the optimistic value.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">dbad7d7</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">4 · high</th>
+          <td style="padding:7px 12px;">Sprint cards were draggable and the drop target changed their visible status, but the override lived only in component state and a refresh discarded it. Affordance removed: 2 state hooks, 3 drag handlers, 3 card attributes and the drop label, pending a canonical sprint mutation.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">4e0ee94</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">5 · high</th>
+          <td style="padding:7px 12px;">The board read a justification field that does not exist and never read done_when, so all nine sprint resources lost their item rationale and completion contract on screen.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">4e2fc2b</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">7 · high</th>
+          <td style="padding:7px 12px;">The crew table rendered nine runs spanning three projects with no project identity, under a project-branded shell.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">fc79eac</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">8 · high</th>
+          <td style="padding:7px 12px;">The fleet page twice directed the reader to a hard-coded legacy home path the server may not read. The resolved mounts file is now published in the projects payload and rendered from that value; zero legacy occurrences remain.</td>
+          <td style="padding:7px 12px; font-family:var(--mono);">8bdf35b</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Verified against the live server after restart: <code>mounts_path</code> resolves to
+      <code>~/.config/reckon/mounts.json</code>; repeat discovery measured at 13 ms (nova),
+      37 ms (imas-efit) and 4 ms (reckon). Suite <strong>1,951 passed / 0 failed</strong>.
+    </p>
+    <p>
+      <strong>Carried, not landed:</strong> ranks 3, 6, and 9 through 15. Rank 3 is the live
+      integrity case — S5 and S9 are both marked active while the legacy index names S5 as focus,
+      and the shell silently picks one. Its SPA remedy is carried; whether S5 should close is a
+      sprint decision left to the lead. Rank 6 needs authored-versus-effective status rendered on
+      compact surfaces. Ranks 9 to 15 are medium and low.
+    </p>
+
     <h2 id="preexisting">Pre-existing failures found in passing</h2>
     <p>
       The four suite failures are unrelated to this plan but were repaired under it rather than
