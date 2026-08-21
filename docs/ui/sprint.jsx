@@ -1,5 +1,5 @@
 // Sprint view — one focused execution surface.
-// One clear goal block, a switcher, a kanban with drag-drop hover feedback.
+// One clear goal block, a switcher, and a read-only kanban.
 // No "what is a sprint" explainer, no past-sprints accordion.
 
 function Sprint({ sprintId, onNav }) {
@@ -63,11 +63,7 @@ function Sprint({ sprintId, onNav }) {
     return () => { alive = false; };
   }, [showSprintPrompt, sprint.id]);
 
-  // Local kanban state — overrides plan.status for drag-drop demo
-  const [localStatus, setLocalStatus] = useState({});
-  const [dragOver, setDragOver] = useState(null);
   const STATUS_TO_COL = { pending: "todo", draft: "todo", active: "doing", blocked: "doing", in_progress: "doing", shipped: "done", done: "done" };
-  const COL_TO_STATUS = { todo: "pending", doing: "active", done: "shipped" };
   const gateSummary = (gates) => {
     const rows = gates || [];
     if (rows.length === 0) return "—";
@@ -78,12 +74,11 @@ function Sprint({ sprintId, onNav }) {
   const cols = useMemo(() => {
     const g = { todo: [], doing: [], done: [] };
     for (const p of items) {
-      const effectiveStatus = localStatus[p.slug] || p.status;
-      const col = STATUS_TO_COL[effectiveStatus] || "doing";
-      g[col].push({ ...p, _eff: effectiveStatus });
+      const col = STATUS_TO_COL[p.status] || "doing";
+      g[col].push(p);
     }
     return g;
-  }, [items, localStatus]);
+  }, [items]);
   const runsByPlan = useMemo(() => {
     const grouped = {};
     for (const run of liveRuns) {
@@ -92,22 +87,6 @@ function Sprint({ sprintId, onNav }) {
     }
     return grouped;
   }, [liveRuns]);
-
-  const onDragStart = (e, slug) => {
-    e.dataTransfer.setData("text/plain", slug);
-    e.dataTransfer.effectAllowed = "move";
-    e.currentTarget.classList.add("dragging");
-  };
-  const onDragEnd = (e) => {
-    e.currentTarget.classList.remove("dragging");
-    setDragOver(null);
-  };
-  const onDrop = (e, colId) => {
-    e.preventDefault();
-    const slug = e.dataTransfer.getData("text/plain");
-    if (slug) setLocalStatus(s => ({ ...s, [slug]: COL_TO_STATUS[colId] }));
-    setDragOver(null);
-  };
 
   return (
     <div className="r-page wide">
@@ -151,13 +130,7 @@ function Sprint({ sprintId, onNav }) {
         ].map(col => (
           <div
             key={col.id}
-            className={`r-col ${dragOver === col.id ? "drag-over" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(col.id); }}
-            onDragLeave={(e) => {
-              // Only clear if we actually left the column (not just moved within children)
-              if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null);
-            }}
-            onDrop={(e) => onDrop(e, col.id)}
+            className="r-col"
           >
             <div className="col-h">
               <span>{col.title}</span>
@@ -171,11 +144,8 @@ function Sprint({ sprintId, onNav }) {
               return (
                 <a
                   key={p.slug}
-                  className={`r-kcard ${p._eff === "blocked" ? "blocked" : ""}`}
+                  className={`r-kcard ${p.status === "blocked" ? "blocked" : ""}`}
                   href={`#plan/${p.slug}`}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, p.slug)}
-                  onDragEnd={onDragEnd}
                 >
                 <div className="t">
                   {p.title}
@@ -201,11 +171,11 @@ function Sprint({ sprintId, onNav }) {
                 {p.whyNow && <div className="just"><strong>Why now:</strong> {p.whyNow}</div>}
                 {p.doneWhen && <div className="just"><strong>Done when:</strong> {p.doneWhen}</div>}
                 <div className="progress">
-                  <span className="bar"><i className={p._eff === "shipped" ? "shipped" : p._eff === "blocked" ? "blocked" : ""} style={{ width: `${Math.round((p.impl || 0) * 100)}%` }}></i></span>
+                  <span className="bar"><i className={p.status === "shipped" ? "shipped" : p.status === "blocked" ? "blocked" : ""} style={{ width: `${Math.round((p.impl || 0) * 100)}%` }}></i></span>
                   <span style={{ minWidth: 28, textAlign: "right" }}>{Math.round((p.impl || 0) * 100)}%</span>
                 </div>
                 <div className="row">
-                  <span className={`status ${p._eff}`}><span className="dot"></span>{p._eff}</span>
+                  <span className={`status ${p.status}`}><span className="dot"></span>{p.status}</span>
                   <span>·</span>
                   <span>{p.ms}</span>
                   {(p.dec_open || 0) > 0 && <><span>·</span><span style={{ color: "var(--warn)" }}>D {p.dec_open}</span></>}
@@ -220,7 +190,7 @@ function Sprint({ sprintId, onNav }) {
             })}
             {col.cards.length === 0 && (
               <div style={{ textAlign: "center", padding: "20px 0", color: "var(--muted)", fontSize: 12 }}>
-                drop here
+                No items
               </div>
             )}
           </div>
