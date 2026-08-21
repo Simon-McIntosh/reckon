@@ -142,6 +142,7 @@ resolve target
 └─ sprint → roadmap + all plans/research/evidence → enrich DAG → run ready queue
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
+→ audit plan currency against the code + dispatch the prior-art scout (reuse map)
 → check every node against the seven-property contract (§3b)
 → reckon crew preflight — a spent backend holds its nodes, the rest still run
 → reckon crew dispatch each ready node — branch only on the returned launch kind
@@ -222,6 +223,11 @@ structured state (decisions, followups). Do not implement items marked
     every landing beat, route that node's manifest `follow_ons` through the same loop,
     and repeat until a complete pass finds nothing foldable. Never set a plan
     to `shipped` or `done` while a foldable followup is open.
+16. **No implementation node before the reuse map exists.** Every substantive
+    implementation wave is preceded by a prior-art scout (§1b) whose reuse map
+    the nodes cite; a node that authors new machinery states why each named
+    reuse candidate fails. Trivial mechanical edits are exempt; "the scout
+    would slow us down" is not.
 
 ## §Prerequisite blocking — STOP and ask for authorization
 
@@ -311,6 +317,53 @@ Do not proceed until you have read and understood:
 - All `<section data-reckon="followups">` items (resolved and open)
 - The `plan-depends-on` meta tag
 - Any `Trigger:` subsections or deferral markers
+
+### 1b. Currency audit and prior-art reconnaissance — MANDATORY
+
+Plans go stale, and agents are quick to rebuild what already exists. Between
+reading the plan and authoring any implementation node:
+
+**Audit plan currency against the code.** Every mechanism the plan asserts —
+an API, a kernel, a file, a claimed limitation, a mathematical property — is
+checked against the tree it names before nodes are cut from it. A node
+authored from stale text inherits its defects and executes them faithfully.
+(Incident 2026-08-21, nova: a section specified clipping to an "arc turning
+point" of a bilinear level set; the derivative's numerator is a constant, so
+no interior turning point exists. The worker built the correction exactly,
+validated it to 1.6e-5, and measured the result worse on every decisive
+field. The plan text, not the worker, was the defect.)
+
+**Dispatch a prior-art scout in the background.** One read-only
+investigate-role node (or an Explore agent when worker slots are scarce),
+launched at pre-flight so it runs while the coordinator finishes reading
+state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
+data already in reach that solve the problem in whole or in part, each with a
+one-line fitness verdict. The scout searches:
+
+- this repository, capability-shaped rather than filename-shaped ("2-D
+  interpolation", "polygon clipping", "contour tracing" — not "does
+  fsa_kernel.py exist");
+- every repository named by the plan's external `depends_on` / `blocks`
+  refs; and
+- every repository this repo's AGENTS.md declares as coupled (e.g.
+  nova ⇄ imas-ambix) — coupling runs both ways, so an ambix plan searches
+  nova and vice versa.
+
+**Nodes cite the reuse map.** Each implementation node's goal/prompt names
+the existing machinery it extends or consumes. A node that authors new
+machinery states why each named reuse candidate fails — "did not look" is the
+failure mode this step exists to remove. (Incidents 2026-08-20, nova: a node
+was dispatched to invent a sub-cell quadrature stencil while
+`separatrix_clip.TracedClippedSupports` already carried exact clipped-cell
+moments two packages away; a smeared surface-averaging kernel had earlier
+been authored while a contour-traced extraction and a contourpy wrapper both
+already existed in the same repo. Each duplicate was caught by the user, not
+by process.)
+
+The scout costs minutes of read-only time. The failure it prevents is not
+just wasted effort: a duplicate implementation becomes a second authority
+that later disagrees with the first, and reconciling two authorities costs
+more than either did.
 
 ### 2. Classify ALL items
 
