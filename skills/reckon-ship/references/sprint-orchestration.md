@@ -114,17 +114,19 @@ The coordinator must not inspect implementation details beyond what scoping or
 review requires, edit product/source/test files, run tests, run paid domain
 pipelines, run any operational pipeline, or repair worker code. Represent
 every implementation, investigation, test execution, operational pipeline run,
-and corrective repair as a worker node. Delegate even one ready node whenever
-a worker slot is available. Cross-cutting work changes the task requirements
+and corrective repair as a worker node. Delegate every ready node; there is
+no slot pool — a busy roster is grounds to register another member, never to
+hold ready work. Cross-cutting work changes the task requirements
 and scope; it never makes the sprint coordinator the implementation owner.
 
 On worker failure, add and dispatch a corrective node with the failed
 manifest, scoped diff, and missing done-when evidence. Do not reconstruct the
-implementation in coordinator context. If no capable worker or slot exists,
+implementation in coordinator context. If no capable worker backend exists,
 prefer pausing the node and continuing independent ready work. Inline fallback
 is allowed only after reporting all of the following before implementation:
 
-- why no worker capability or slot exists;
+- why no worker backend is capable (member scarcity never qualifies — members
+  are registered on demand);
 - why pausing would prevent useful progress;
 - the exact node and write scope;
 - the estimated context cost and the coordinator context remaining after it;
@@ -193,7 +195,7 @@ Detect and recover in this order, and do not redispatch first:
    failed and dispatch a corrective worker.
 
 Never redispatch on an idle signal alone. Confirm from disk first: a duplicate
-run of a node that already succeeded burns a worker slot, and for a node with
+run of a node that already succeeded wastes a member and its budget, and for a node with
 write scope it risks a conflicting second commit.
 
 Prompt-side rules that make this work:
@@ -212,12 +214,12 @@ requirements only. Its neutral `class` and optional floors for reasoning,
 context, tool autonomy, verification, and risk describe what the node needs;
 they do not select a model.
 
-Set an explicit concurrency cap in the current prompt or coordinator checkpoint
-before dispatch. Derive it from available slots, dependency independence, file
-scope conflicts, and operational limits; Reckon defines no fixed default.
-Use the single advisory fleet-size table in `../SKILL.md`; do not restate it in
-this reference. The roster of free, distinct members is the real ceiling for
-session-reusing workers.
+Set an explicit concurrency target in the current prompt or coordinator
+checkpoint before dispatch. Derive it from dependency independence, file-scope
+conflicts, and operational limits; Reckon defines no fixed default and no slot
+pool — the only binding rule is one live run per roster member, so meet the
+target by registering members. Use the single advisory fleet-size table in
+`../SKILL.md`; do not restate it in this reference.
 
 Runtime routing is prompt-owned:
 

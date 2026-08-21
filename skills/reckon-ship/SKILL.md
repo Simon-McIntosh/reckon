@@ -57,7 +57,7 @@ The coordinator MUST NOT implement, investigate implementation details beyond
 scoping/review, edit product/source/test files, execute tests or operational
 pipelines, or repair worker code. Every implementation, investigation, test
 execution, operational pipeline run, and corrective repair is a worker node,
-even when only one item is ready and a worker slot is available. On failure,
+even when only one item is ready and a worker could take it at once. On failure,
 redispatch a corrective worker. The detailed contract, manifest, and checkpoint
 discipline live in `references/sprint-orchestration.md`.
 
@@ -70,7 +70,7 @@ single well-formed node dispatches in one call. Node count changes the active
 fleet, never whether a node is delegated.
 
 Inline fallback is exceptional and is a reported event, not a judgement call: use
-it only when no capable worker or slot exists, say so and context-budget it
+it only when no capable worker backend exists (member scarcity never qualifies — register one), say so and context-budget it
 before implementing, and prefer pausing the node. "The plan is small", "this is
 one file", "dispatch overhead exceeds the work" and "I already have the context"
 are not the exception — they are the rationalisation the exception is worded
@@ -350,10 +350,10 @@ field. The plan text, not the worker, was the defect.)
 investigate-role node, dispatched through `reckon crew dispatch` exactly like
 every other node — never a harness-native background agent (an
 Explore/Task-tool delegation bypasses the run ledger, the manifest contract,
-and calibration) and never inline. Scarce worker slots defer the scout; they
-do not reroute it around the crew system. The backend comes from flight
-config like every dispatch. Launch it at pre-flight so it runs while the
-coordinator finishes reading state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
+and calibration) and never inline. There is no worker pool to be scarce:
+register a fresh roster member for the scout if every existing member is
+busy. The backend comes from flight config like every dispatch. Launch it at
+pre-flight so it runs while the coordinator finishes reading state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
 data already in reach that solve the problem in whole or in part, each with a
 one-line fitness verdict. The scout searches:
 
@@ -588,15 +588,28 @@ missing or unusable terminal manifests become `abandoned`. Still read the
 manifest's evidence before promotion: classification distinguishes outcomes but
 does not prove the gate.
 
+### Concurrency — the roster is the whole authority
+
+**There is no slot pool and no numeric worker cap anywhere in Reckon.** The one
+binding rule is per-member serialisation: dispatch refuses a member that
+already owns a non-terminal live pointer, so the concurrency ceiling is exactly
+the number of registered members with no run in flight. The coordinator raises
+concurrency by registering more members (`reckon crew member add`) — a
+one-line, reversible act — and lowers it by dispatching fewer. Backend
+`concurrency:` keys in flight config are retired and ignored. Never treat
+"the pool is loaded" as a constraint, a reason to queue ready independent
+work, or a reason to route around the crew system: if ready nodes outnumber
+free members, add members.
+
 ### Advisory fleet-size guide
 
 **This table is advisory.** It shapes the active fleet; it never decides whether
 to delegate. That is
 already settled for both targets — every ready node goes to an appropriately
 capable worker, one-item and cross-cutting nodes included, rather than making the
-coordinator the implementation owner. The roster of free, distinct members is
-the real ceiling for session-reusing workers; available slots, dependency
-independence, file scopes, gates, budgets, and runtime limits may lower it.
+coordinator the implementation owner. Dependency independence, file scopes,
+gates, budgets, and runtime limits shape the useful fleet size; none of them is
+a slot pool.
 
 | Items | Strategy |
 |---|---|
@@ -614,10 +627,12 @@ Worker prompts reference the live plan and carry only the portable runtime
 safety contract; §05 followups remain one-line session invocations.
 
 Use background mode when the runtime supports it. The current user prompt or
-coordinator sets an explicit concurrency cap before dispatch from the available
-slots, ready nodes, member roster, and file-scope conflicts. Fill available slots
-to that cap, then refill each slot as soon as its finished node is verified and a
-ready independent node exists. Do not wait for the slowest active node. The safety
+coordinator sets an explicit concurrency target before dispatch from the ready
+nodes, file-scope conflicts, and dependency structure — and registers enough
+members to meet it, since free members are the only ceiling. Dispatch every
+ready independent node, then redispatch each member as soon as its finished
+node is verified and a ready independent node exists. Do not wait for the
+slowest active node. The safety
 rule is: **no dependent node builds on unverified work**. A dependent waits for
 its predecessor's verification, integration, and landing beat; unrelated ready
 work does not.
@@ -765,7 +780,7 @@ An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then any test logs or artifacts its
 prompt required, then ask it to write the deliverable to the named path and
 reply with the path only. Redispatch is the last step, not the first — a
-duplicate run of a node that already succeeded burns a worker slot and, with
+duplicate run of a node that already succeeded wastes a member and its budget and, with
 write scope, risks a conflicting second commit.
 
 **A report opening `NEEDS-HELP:` is not a failure — it is a decision brief, and
@@ -780,8 +795,8 @@ reckon crew resume --run <run-id> --advice "<the answer>"
 ```
 
 If an agent genuinely FAILS or produces incomplete work:
-- Dispatch a corrective worker; pause the node if no capable worker or slot
-  exists. A repair inside the failed node's own scope goes back to its roster
+- Dispatch a corrective worker; pause the node only if no capable worker
+  backend exists. A repair inside the failed node's own scope goes back to its roster
   member, so the fix reaches a worker that remembers the attempt
 - Do NOT proceed to the next section while a failed section's work is outstanding
 
