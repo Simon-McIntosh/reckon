@@ -39,7 +39,7 @@ function normalizeProject(raw) {
   };
 }
 
-function FleetPage({projects, refreshedAt, onOpen}) {
+function FleetPage({projects, mountsPath, refreshedAt, onOpen}) {
   const tot     = projects.reduce((a, p) => a + p.plans_count, 0);
   const active  = projects.reduce((a, p) => a + p.active, 0);
   const blocked = projects.reduce((a, p) => a + p.blocked, 0);
@@ -60,7 +60,7 @@ function FleetPage({projects, refreshedAt, onOpen}) {
       </div>
       {window.ProjectCard && projects.map(p => <window.ProjectCard key={p.project} p={p} onOpen={onOpen}/>)}
       <div className="add-hint">
-        Add a project: edit <code>~/docs-server/mounts.json</code>. No restart needed.
+        Add a project: edit <code>{mountsPath}</code>. No restart needed.
       </div>
     </main>
   );
@@ -176,6 +176,7 @@ function FleetCmdKPalette({onClose, projects}) {
 
 function HomeApp() {
   const [projects, setProjects] = useState([]);
+  const [mountsPath, setMountsPath] = useState("mounts.json");
   const [refreshedAt, setRefreshedAt] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -200,6 +201,7 @@ function HomeApp() {
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(data => {
         if (data.updated) setRefreshedAt(new Date(data.updated).toLocaleTimeString());
+        if (data.mounts_path) setMountsPath(data.mounts_path);
         setProjects((data.projects || []).map(normalizeProject));
         setLoading(false);
       })
@@ -247,12 +249,12 @@ function HomeApp() {
           <div style={{padding: "48px 24px", textAlign: "center", color: "var(--muted)"}}>
             <div style={{fontSize: 28, marginBottom: 12}}>🗂</div>
             <h2 style={{fontSize: 15, fontWeight: 600}}>No projects mounted yet</h2>
-            <p>Edit <code>~/docs-server/mounts.json</code> to register a project, then run <code>uv run reckon serve</code>.</p>
+            <p>Edit <code>{mountsPath}</code> to register a project, then run <code>uv run reckon serve</code>.</p>
           </div>
         </main>
       )}
       {!loading && !error && projects.length > 0 && (
-        <FleetPage projects={projects} refreshedAt={refreshedAt} onOpen={onOpen}/>
+        <FleetPage projects={projects} mountsPath={mountsPath} refreshedAt={refreshedAt} onOpen={onOpen}/>
       )}
       {cmdK && <FleetCmdKPalette projects={projects} onClose={() => setCmdK(false)}/>}
     </>

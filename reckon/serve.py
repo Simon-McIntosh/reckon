@@ -331,6 +331,7 @@ def collect_projects(mounts: dict[str, Path]) -> dict:
         out.append(proj)
     return {
         "updated": datetime.now().isoformat(timespec="seconds"),
+        "mounts_path": str(_MOUNTS_FILE or _mounts_path()),
         "projects": out,
     }
 
