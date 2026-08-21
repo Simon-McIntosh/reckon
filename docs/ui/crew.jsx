@@ -100,6 +100,7 @@ function CrewView() {
           <table aria-label="Live crew runs">
             <thead>
               <tr>
+                <th>Project</th>
                 <th>Member</th>
                 <th>Role</th>
                 <th>Plan</th>
@@ -115,6 +116,7 @@ function CrewView() {
             <tbody>
               {runs.map(run => (
                 <tr key={`${run.project || ""}:${run.run_id}`}>
+                  <td><code>{run.project || "—"}</code></td>
                   <td><code>{run.member || "—"}</code></td>
                   <td>{run.role || "—"}</td>
                   <td>
