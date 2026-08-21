@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="spa-legibility-audit">
+  <meta name="plan-title" content="SPA Legibility Audit">
+  <meta name="plan-summary" content="Ranked audit of what the reckon SPA omits, leaves unexplained, or presents incorrectly, grounded in live served payloads and every routed UI surface.">
+  <meta name="plan-informs" content="surface-latency-and-legibility">
+  <title>SPA Legibility Audit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="summary">Audit result</h2>
+    <p>
+      The SPA is visually mature but does not reliably distinguish canonical state, derived state,
+      local-only state, and failed state. The audit found <strong>15 reader-facing information
+      defects</strong>: 2 critical, 6 high, 5 medium, and 2 low. By defect class, 6 are
+      <strong>not shown</strong>, 4 are <strong>shown but unexplained</strong>, and 5 are
+      <strong>stale or wrong</strong>. The first implementation wave should address ranks 1–8;
+      each is high-impact and has a contained remedy that does not require a visual redesign.
+    </p>
+    <p>
+      The central pattern is provenance loss. The server distinguishes authored workflow status
+      from effective status, distributes sprint resources separately from the legacy index, emits
+      version tokens, and reports project identity on every crew run. The loader often receives
+      those distinctions and then flattens or discards them before rendering. Two interactive
+      paths go further: they visually acknowledge a change before proving that canonical state
+      changed.
+    </p>
+
+    <h2 id="method">Method and evidence snapshot</h2>
+    <p>
+      The audit read every routed component loaded by <code>docs/index.html</code>, followed each
+      component's field accesses back through <code>docs/ui/state-loader.js</code>, and compared
+      them with live responses from <code>GET /_discover/reckon</code> and <code>GET /crew</code>
+      on 2026-08-21. Findings are limited to information already available to the current surface
+      or to copy that is demonstrably inconsistent with the repository's operating contract.
+      Styling preferences and navigation redesign are excluded.
+    </p>
+    <table style="width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Evidence</th>
+          <th scope="col" style="text-align:right; padding:7px 12px;">Observed</th>
+          <th scope="col" style="text-align:left; padding:7px 0 7px 12px;">Why it matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Live discovery response</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">171,172 bytes</td>
+          <td style="padding:7px 0 7px 12px;">A cold or invalidated read is large enough that silence during loading reads as failure.</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Discovered resources</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">67 artifacts · 9 sprints</td>
+          <td style="padding:7px 0 7px 12px;">The SPA has enough data for typed search, relationship context, and sprint rationale.</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Artifact metadata present</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">66 summaries · 52 linked · 67 created dates</td>
+          <td style="padding:7px 0 7px 12px;">Compact surfaces can explain intent and provenance without another request.</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Conflicting sprint state</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">S5 active · S9 active · focus S5</td>
+          <td style="padding:7px 0 7px 12px;">The loader silently turns a contradiction into one authoritative-looking sprint.</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Derived status divergence</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">1 plan · 3 open gates</td>
+          <td style="padding:7px 0 7px 12px;">The effective blocked state is correct, but compact views hide why it differs from authored active state.</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Version provenance</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">12 resource tokens</td>
+          <td style="padding:7px 0 7px 12px;">The payload can identify the loaded snapshot, but the project shell discards every token.</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;">Live crew response</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">9 runs · 3 projects · gates 189–1,346 chars</td>
+          <td style="padding:7px 0 7px 12px;">The global table needs project identity and a compact gate signal, not an unbounded contract cell.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="findings">Ranked findings</h2>
+    <p>
+      Rank is ordered by the likelihood and cost of a reader taking the wrong action. “Reader”
+      names the person whose task fails, not a hypothetical persona. Each remedy is deliberately
+      incremental and stays inside the existing shell and visual language.
+    </p>
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; min-width:1050px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--line);">
+            <th scope="col" style="text-align:right; padding:7px 10px 7px 0;">Rank</th>
+            <th scope="col" style="text-align:left; padding:7px 10px;">Impact</th>
+            <th scope="col" style="text-align:left; padding:7px 10px;">Class</th>
+            <th scope="col" style="text-align:left; padding:7px 10px;">Source file</th>
+            <th scope="col" style="text-align:left; padding:7px 10px;">Reader failed</th>
+            <th scope="col" style="text-align:left; padding:7px 10px;">Evidence</th>
+            <th scope="col" style="text-align:left; padding:7px 0 7px 10px;">Concrete remedy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">1</td>
+            <td style="padding:9px 10px;"><strong>Critical</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/state-loader.js:123–150</code><br><code>docs/ui/shell.jsx:826–835</code></td>
+            <td style="padding:9px 10px;">Any reader opening a project, especially over a forwarded port</td>
+            <td style="padding:9px 10px;">The loader performs the entire discovery fetch before rendering. <code>ReadyGate</code> shows only “Loading plan state…” with no elapsed time or stage, and never catches a rejected <code>STATE_READY</code> promise. The live request took 4.3 s during this audit; the plan records a 16.57 s cold case.</td>
+            <td style="padding:9px 0 9px 10px;">Render a timed loading state immediately: “Scanning &lt;project&gt; · 4.3 s elapsed”, then parse/render stages. Catch rejection into an explicit failure panel with endpoint, HTTP status, retry, and service-status guidance. Keep the locked block-on-cold policy; communicate the wait rather than serving distrusted data.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">2</td>
+            <td style="padding:9px 10px;"><strong>Critical</strong></td>
+            <td style="padding:9px 10px;">stale-or-wrong</td>
+            <td style="padding:9px 10px;"><code>docs/ui/shell.jsx:602–614</code><br><code>docs/ui/ui.jsx:235–277</code></td>
+            <td style="padding:9px 10px;">A plan owner changing workflow status, archive state, or review state</td>
+            <td style="padding:9px 10px;">The status menu mutates the inventory and flashes “updated” without awaiting <code>Persist.save</code>. That save reports <code>ok: true</code> even when the server is unreachable and only local storage changed; a second conflict is also echoed locally.</td>
+            <td style="padding:9px 0 9px 10px;">Await the canonical write result before showing success. Distinguish “saved to plan HTML vN”, “local only”, and “conflict; not saved”. Revert or visibly mark the optimistic value when canonical persistence fails, and expose a retry path.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">3</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">stale-or-wrong</td>
+            <td style="padding:9px 10px;"><code>docs/ui/state-loader.js:177–190,248–257</code><br><code>docs/ui/shell.jsx:1132–1143</code></td>
+            <td style="padding:9px 10px;">A coordinator deciding which sprint is current</td>
+            <td style="padding:9px 10px;">The live distributed response contains nine sprint resources, with both S5 and S9 marked active, while <code>active_sprint_id</code> is S5. The overview silently selects S5 and labels it as the sprint in focus. The legacy index was last updated 2026-07-29 and lists only S3–S6.</td>
+            <td style="padding:9px 0 9px 10px;">Treat multiple active sprints or a legacy focus that disagrees with distributed resources as an integrity state. Show all active sprints, label the selected one “focus from legacy index”, and display a compact warning linking to the conflicting resources. Do not silently pick one.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">4</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">stale-or-wrong</td>
+            <td style="padding:9px 10px;"><code>docs/ui/sprint.jsx:65–108,145–223</code></td>
+            <td style="padding:9px 10px;">A planner moving work between workflow columns</td>
+            <td style="padding:9px 10px;">Cards are draggable and the drop target changes their visible status, but the code calls this a “drag-drop demo” and stores the override only in component state. There is no canonical write, acknowledgement, or local-only label; refresh discards it.</td>
+            <td style="padding:9px 0 9px 10px;">Until a validated resource mutation exists, remove <code>draggable</code> and the “drop here” affordance. If editing is retained, use the same version-safe canonical write as plan state, show pending/saved/failed states, and snap back on failure.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">5</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/sprint.jsx:42–48,165–215</code></td>
+            <td style="padding:9px 10px;">A sprint reader deciding why an item is present and what closes it</td>
+            <td style="padding:9px 10px;">Every live sprint item carries <code>why_now</code> and <code>done_when</code>. The board reads a nonexistent <code>justification</code> field and never reads <code>done_when</code>, so all nine sprint resources lose their item rationale and completion contract on screen.</td>
+            <td style="padding:9px 0 9px 10px;">Map <code>why_now</code> directly into the existing card rationale line. Add a compact “done when” disclosure per card, preserving the gate summary as the measured-state companion rather than a replacement for the contract.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">6</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">shown-but-unexplained</td>
+            <td style="padding:9px 10px;"><code>docs/ui/state-loader.js:159–173</code><br><code>docs/ui/shell.jsx:456–505,717–741</code><br><code>docs/ui/sprint.jsx:201–215</code></td>
+            <td style="padding:9px 10px;">A coordinator diagnosing why apparently active work is blocked</td>
+            <td style="padding:9px 10px;">The loader deliberately overwrites the compatibility <code>status</code> alias with <code>effective_status</code>. The live plan <code>derived-gate-state</code> is authored active but effectively blocked by three open gates. Lists and title bars show only “blocked”; only the full plan's gate table explains the derivation.</td>
+            <td style="padding:9px 0 9px 10px;">On compact plan and sprint surfaces, render “active → blocked” with “3 open gates” and link to the gate section. Reserve plain “blocked” for cases where authored and effective states agree.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">7</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/crew.jsx:37–61,100–133</code></td>
+            <td style="padding:9px 10px;">An operator watching concurrent runs</td>
+            <td style="padding:9px 10px;">The Crew tab fetches the global <code>/crew</code> route. Its nine current rows span reckon, nova, and imas-codex, and every row includes <code>project</code>, but the table has no Project column and the page remains under a project-branded shell.</td>
+            <td style="padding:9px 0 9px 10px;">Either fetch <code>/crew/&lt;current-project&gt;</code> for a project-scoped tab or add Project as the first column plus an explicit “all projects” scope label and project filter. Retain the already-correct cross-project links.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">8</td>
+            <td style="padding:9px 10px;"><strong>High</strong></td>
+            <td style="padding:9px 10px;">stale-or-wrong</td>
+            <td style="padding:9px 10px;"><code>docs/ui/home.jsx:58–64,237–250</code></td>
+            <td style="padding:9px 10px;">A first-time operator adding a project or recovering the service</td>
+            <td style="padding:9px 10px;">The fleet page twice directs the reader to <code>~/docs-server/mounts.json</code>, although the canonical path is <code>~/.config/reckon/mounts.json</code> and the former is only a legacy fallback. The empty state also says to run <code>uv run reckon serve</code>, bypassing the documented systemd user-service workflow.</td>
+            <td style="padding:9px 0 9px 10px;">Show the resolved config path returned by the server, not a hard-coded home path. Point recovery to <code>reckon service status</code> and setup to the managed sync/register command; retain “no restart needed” for mount changes.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">9</td>
+            <td style="padding:9px 10px;"><strong>Medium</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/plan.jsx:195–262,418–503</code></td>
+            <td style="padding:9px 10px;">A reader relying on a plan's prose, decisions, gates, or comments</td>
+            <td style="padding:9px 10px;">HTML fetch failure silently falls back to a reduced state-driven body. Full-state fetch failure is swallowed and leaves decisions, gates, and canonical comments absent. Neither case identifies the missing source, so a partial document looks complete.</td>
+            <td style="padding:9px 0 9px 10px;">Keep the fallback readable, but place a persistent provenance banner above it: which source failed, which sections are unavailable, HTTP status, and retry. Never let a reduced rendering masquerade as the complete plan.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">10</td>
+            <td style="padding:9px 10px;"><strong>Medium</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/state-loader.js:248–263</code><br><code>docs/ui/shell.jsx:838–1075</code></td>
+            <td style="padding:9px 10px;">Any reader checking whether the visible project state is current</td>
+            <td style="padding:9px 10px;">Discovery emitted 12 <code>resource_versions</code> entries, but <code>window.STATE</code> discards the map and records no discovery completion time. Unlike Fleet and Crew, the project shell has no refreshed-at or snapshot identity.</td>
+            <td style="padding:9px 0 9px 10px;">Preserve <code>resource_versions</code>, <code>source_format</code>, and a client <code>loaded_at</code>. Show one quiet shell-level line such as “distributed snapshot · 12 resources · loaded 14:03:21”, with manual refresh and a changed-version indicator.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">11</td>
+            <td style="padding:9px 10px;"><strong>Medium</strong></td>
+            <td style="padding:9px 10px;">shown-but-unexplained</td>
+            <td style="padding:9px 10px;"><code>docs/ui/graph.jsx:23–93,154–330</code></td>
+            <td style="padding:9px 10px;">A coordinator reading the Graph tab as execution order</td>
+            <td style="padding:9px 10px;">The first “trajectory” is selected by maximum dependency-hop count among active or blocked plans. It ignores worker-hours, readiness, sprint order, and unresolved gate conditions, while the roadmap surface computes a weighted critical path with those distinctions. The UI shows neither the measure nor its limitations.</td>
+            <td style="padding:9px 0 9px 10px;">Fetch the roadmap result for an execution-oriented critical path. If the local graph remains, label it exactly “longest dependency chain by hop count” and show why it differs from executable/weighted order; do not present it as an unlabeled first trajectory.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">12</td>
+            <td style="padding:9px 10px;"><strong>Medium</strong></td>
+            <td style="padding:9px 10px;">shown-but-unexplained</td>
+            <td style="padding:9px 10px;"><code>docs/ui/crew.jsx:100–133</code></td>
+            <td style="padding:9px 10px;">An operator scanning for a stalled or failed run</td>
+            <td style="padding:9px 10px;">The Gate column prints the dispatch completion contract verbatim. Current cells range from 189 to 1,346 characters and are not verdicts; long prose dominates the table while phase and last activity are the actual scan signals.</td>
+            <td style="padding:9px 0 9px 10px;">Rename the value “done when” and collapse it to one line with a disclosure. Give Gate its measured verdict when available; keep phase, elapsed, and last activity visible without horizontal prose pressure.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">13</td>
+            <td style="padding:9px 10px;"><strong>Medium</strong></td>
+            <td style="padding:9px 10px;">stale-or-wrong</td>
+            <td style="padding:9px 10px;"><code>docs/ui/bits.jsx:134–159</code></td>
+            <td style="padding:9px 10px;">A coordinator copying a handoff prompt</td>
+            <td style="padding:9px 10px;">The modal says the prompt was built from <code>&lt;slug&gt;.json</code>, but plan HTML is the sole per-plan store. It also instructs every reader to paste into a “Claude conversation”, although runtime routing is provider-neutral.</td>
+            <td style="padding:9px 0 9px 10px;">Say “built from live plan HTML and project discovery” and “paste into a fresh agent session”. Include the loaded plan version so the handoff's provenance is checkable.</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--line); vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">14</td>
+            <td style="padding:9px 10px;"><strong>Low</strong></td>
+            <td style="padding:9px 10px;">shown-but-unexplained</td>
+            <td style="padding:9px 10px;"><code>docs/ui/shell.jsx:456–505,717–759</code><br><code>docs/ui/sprint.jsx:205–215</code></td>
+            <td style="padding:9px 10px;">A reader who did not author the plan-system vocabulary</td>
+            <td style="padding:9px 10px;">Compact rows use <code>D 2</code>, <code>! 3</code>, <code>ms</code>, unlabeled percentage, and “Gates 10/13 passed” without tooltips or links. The same title bar spells out “progress” and “sprint”, showing that space is available for clearer language.</td>
+            <td style="padding:9px 0 9px 10px;">Use “2 decisions”, “3 blockers”, “milestone”, and “progress”, or add accessible labels and explanatory tooltips. Make the signals links to the relevant plan section.</td>
+          </tr>
+          <tr style="vertical-align:top;">
+            <td style="text-align:right; padding:9px 10px 9px 0; font-family:var(--mono);">15</td>
+            <td style="padding:9px 10px;"><strong>Low</strong></td>
+            <td style="padding:9px 10px;">not-shown</td>
+            <td style="padding:9px 10px;"><code>docs/ui/state-loader.js:258–261</code><br><code>docs/ui/shell.jsx:1128–1330</code></td>
+            <td style="padding:9px 10px;">A project owner looking for blocker ownership and next action</td>
+            <td style="padding:9px 10px;">The loader keeps the project-level <code>blockers</code> array, including owner, summary, and next action, but no active overview component reads it. Current reckon's only row is resolved; an active row would be equally invisible except for indirect per-plan counts.</td>
+            <td style="padding:9px 0 9px 10px;">Add an overview blocker section only when unresolved rows exist, showing summary, owner, gated count, and next action. Keep resolved rows out of the live cockpit and available through history.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="coverage">Surface coverage</h2>
+    <p>
+      Every routed surface and shared interaction layer was inspected. The table prevents a ranked
+      list from being mistaken for a review of only the files that produced findings.
+    </p>
+    <table style="width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Surface</th>
+          <th scope="col" style="text-align:left; padding:7px 12px;">Primary source</th>
+          <th scope="col" style="text-align:left; padding:7px 0 7px 12px;">Audit outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Fleet home and project picker</th><td style="padding:7px 12px;"><code>home.jsx</code>, <code>_shared.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 8 and 10; cards otherwise expose counts, last edit, and activity coherently.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Load and shell readiness</th><td style="padding:7px 12px;"><code>state-loader.js</code>, <code>shell.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 1, 3, 6, and 10.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Filters, artifact list, command palette</th><td style="padding:7px 12px;"><code>shell.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 6 and 14; typed search includes summary, and type/provenance facets are otherwise visible.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Overview cockpit</th><td style="padding:7px 12px;"><code>shell.jsx</code> <code>CockpitBody</code>; loaded legacy <code>cockpit.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 3 and 15. The active route uses <code>CockpitBody</code>; the older component is not the rendered authority.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Plan, research, and evidence reader</th><td style="padding:7px 12px;"><code>plan.jsx</code>, <code>decision.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 2, 6, and 9; typed banners and the explicit gate table communicate rich metadata correctly when both fetches succeed.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Sprint board</th><td style="padding:7px 12px;"><code>sprint.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 3–6 and 14.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Dependency graph and plan fan</th><td style="padding:7px 12px;"><code>graph.jsx</code></td><td style="padding:7px 0 7px 12px;">Rank 11; authored edges and research→plan→evidence direction are otherwise represented consistently.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Crew watcher and in-flight bands</th><td style="padding:7px 12px;"><code>crew.jsx</code>, <code>plan.jsx</code>, <code>sprint.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 7 and 12; three-second polling, elapsed time, phase, and last activity are clear.</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Status, decisions, comments, and persistence</th><td style="padding:7px 12px;"><code>ui.jsx</code>, <code>bits.jsx</code>, <code>decision.jsx</code>, <code>shell.jsx</code></td><td style="padding:7px 0 7px 12px;">Ranks 2 and 13; decision context and quote-anchored comments are otherwise explicit.</td></tr>
+        <tr><th scope="row" style="text-align:left; padding:7px 12px 7px 0;">Theme, density, glyphs, base chrome</th><td style="padding:7px 12px;"><code>_shared.jsx</code>, <code>glyphs.jsx</code>, shared CSS</td><td style="padding:7px 0 7px 12px;">No material information defect found; no redesign recommendation.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="sequence">Recommended implementation sequence</h2>
+    <ol>
+      <li><strong>Restore truth at mutation boundaries:</strong> ranks 2 and 4. A surface must not claim canonical change without a successful canonical write.</li>
+      <li><strong>Make waiting and failure legible:</strong> ranks 1 and 9, then expose snapshot provenance from rank 10.</li>
+      <li><strong>Preserve state distinctions already in the payload:</strong> ranks 3, 5, 6, and 7.</li>
+      <li><strong>Correct operational copy:</strong> rank 8, then rank 13.</li>
+      <li><strong>Clarify dense analytical surfaces:</strong> ranks 11, 12, 14, and 15.</li>
+    </ol>
+    <p>
+      This sequence is intentionally not a redesign. It adds acknowledgements, source labels,
+      missing fields, and bounded disclosures to existing components. A separate navigation or
+      visual-language proposal is not justified by this evidence.
+    </p>
+  </main>
+</body>
+</html>
