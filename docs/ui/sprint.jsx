@@ -39,12 +39,13 @@ function Sprint({ sprintId, onNav }) {
     };
   }, [project]);
 
-  // Materialise items with their plan info + justification
+  // Materialise items with their plan info and sprint-level contract.
   const items = sprint.items.map(it => {
     const slug = typeof it === "string" ? it : it.slug;
-    const justification = typeof it === "object" ? it.justification : null;
+    const whyNow = typeof it === "object" ? it.why_now : null;
+    const doneWhen = typeof it === "object" ? it.done_when : null;
     const plan = M.inventory.find(p => p.slug === slug);
-    return plan ? { ...plan, justification } : null;
+    return plan ? { ...plan, whyNow, doneWhen } : null;
   }).filter(Boolean);
 
   // Build the fleet prompt via the shared builder, hydrating each plan's live
@@ -197,7 +198,8 @@ function Sprint({ sprintId, onNav }) {
                   )}
                 </div>
                 <div className="slug">/{p.slug}</div>
-                {p.justification && <div className="just">{p.justification}</div>}
+                {p.whyNow && <div className="just"><strong>Why now:</strong> {p.whyNow}</div>}
+                {p.doneWhen && <div className="just"><strong>Done when:</strong> {p.doneWhen}</div>}
                 <div className="progress">
                   <span className="bar"><i className={p._eff === "shipped" ? "shipped" : p._eff === "blocked" ? "blocked" : ""} style={{ width: `${Math.round((p.impl || 0) * 100)}%` }}></i></span>
                   <span style={{ minWidth: 28, textAlign: "right" }}>{Math.round((p.impl || 0) * 100)}%</span>
