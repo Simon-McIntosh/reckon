@@ -35,11 +35,13 @@ from __future__ import annotations
 
 import html.parser
 import json
+import logging
 import mimetypes
 import os
 import re
 import socket
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -62,6 +64,7 @@ from reckon.resources import (
 )
 
 HOME = Path.home()
+LOGGER = logging.getLogger(__name__)
 
 # ── Configurable paths (set via main() args or env vars) ──────────────────
 
@@ -422,54 +425,128 @@ def _read_head_meta(path: Path) -> tuple[str, dict[str, str]]:
         return "", {}
 
 
-_DISC_CACHE: dict[tuple[str, str], tuple[tuple[int, int], dict]] = {}
+@dataclass(frozen=True)
+class _DiscoveryCacheEntry:
+    local_signature: tuple[int, int]
+    external_projects: tuple[str, ...]
+    external_signatures: tuple[tuple[str, str, tuple[int, int] | None], ...]
+    result: dict
+
+
+@dataclass(frozen=True)
+class _GitCreationEntry:
+    head: str
+    times: dict[str, int]
+
+
+_DISC_CACHE: dict[tuple[str, str], _DiscoveryCacheEntry] = {}
+_GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
+
+
+def _run_git(
+    args: list[str], repo_dir: Path, *, operation: str
+) -> subprocess.CompletedProcess[str] | None:
+    """Run one bounded Git query and make every failure observable."""
+
+    try:
+        result = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            cwd=repo_dir,
+            timeout=10,
+        )
+    except subprocess.TimeoutExpired:
+        LOGGER.warning("Git %s timed out after 10 seconds in %s", operation, repo_dir)
+        return None
+    except OSError as exc:
+        LOGGER.warning("Git %s could not start in %s: %s", operation, repo_dir, exc)
+        return None
+    if result.returncode != 0:
+        detail = result.stderr.strip()
+        suffix = f": {detail}" if detail else ""
+        LOGGER.warning(
+            "Git %s failed with exit code %d in %s%s",
+            operation,
+            result.returncode,
+            repo_dir,
+            suffix,
+        )
+        return None
+    return result
+
+
+def _git_head(repo_dir: Path) -> str | None:
+    result = _run_git(["git", "rev-parse", "HEAD"], repo_dir, operation="HEAD lookup")
+    if result is None:
+        return None
+    head = result.stdout.strip()
+    if not head:
+        LOGGER.warning("Git HEAD lookup returned no commit in %s", repo_dir)
+        return None
+    return head
+
+
+def _parse_first_committed(output: str) -> dict[str, int]:
+    times: dict[str, int] = {}
+    timestamp: int | None = None
+    for raw in output.splitlines():
+        line = raw.strip()
+        if line.startswith("COMMIT "):
+            try:
+                timestamp = int(line[7:])
+            except ValueError:
+                timestamp = None
+        elif line and timestamp is not None:
+            # Git emits newest commits first, so the last add event is the first.
+            times[line] = timestamp
+    return times
 
 
 def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     """Return {repo-relative-path: unix_ts} for the first commit of each HTML file."""
     try:
         rel_docs = str(docs_dir.relative_to(repo_dir))
-        result = subprocess.run(
-            [
-                "git",
-                "log",
-                "--diff-filter=A",
-                "--format=COMMIT %at",
-                "--name-only",
-                "--",
-                rel_docs,
-            ],
-            capture_output=True,
-            text=True,
-            cwd=repo_dir,
-            timeout=10,
-        )
-        if result.returncode != 0:
-            return {}
-        times: dict[str, int] = {}
-        ts: int | None = None
-        for raw in result.stdout.splitlines():
-            line = raw.strip()
-            if line.startswith("COMMIT "):
-                try:
-                    ts = int(line[7:])
-                except ValueError:
-                    ts = None
-            elif line and ts is not None and not line.startswith("COMMIT"):
-                times[line] = ts
-        return times
-    except Exception:
+    except ValueError:
+        LOGGER.warning("Docs directory %s is outside repository %s", docs_dir, repo_dir)
         return {}
 
+    cache_key = (str(repo_dir.resolve()), rel_docs)
+    cached = _GIT_CREATION_CACHE.get(cache_key)
+    head = _git_head(repo_dir)
+    if head is None:
+        return dict(cached.times) if cached else {}
+    if cached and cached.head == head:
+        return dict(cached.times)
 
-def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
-    """Return {inventory, sprints, milestones} by scanning HTML doc pages.
+    args = ["git", "log"]
+    if cached:
+        args.append(f"{cached.head}..{head}")
+    args.extend(
+        [
+            "--diff-filter=A",
+            "--format=COMMIT %at",
+            "--name-only",
+            "--",
+            rel_docs,
+        ]
+    )
+    result = _run_git(args, repo_dir, operation="history lookup")
+    if result is None:
+        return dict(cached.times) if cached else {}
 
-    Any HTML file under docs_dir (outside infra dirs/files) is a doc; meta tags
-    enrich it. Results are cached per project against a cheap (count, max-mtime)
-    signature so an unchanged docs tree returns instantly.
-    """
-    html_files = sorted(docs_dir.rglob("*.html"))
+    times = dict(cached.times) if cached else {}
+    additions = _parse_first_committed(result.stdout)
+    for path, timestamp in additions.items():
+        times.setdefault(path, timestamp)
+    _GIT_CREATION_CACHE[cache_key] = _GitCreationEntry(head=head, times=times)
+    return dict(times)
+
+
+def _discovery_signature(
+    docs_dir: Path, project: str, state_root: Path | None
+) -> tuple[int, int]:
+    html_files = list(docs_dir.rglob("*.html"))
     state_files = [
         path
         for path in (
@@ -484,18 +561,85 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         if path.is_file()
     ]
     signature_files = [*html_files, *state_files]
-    sig = (
+    return (
         len(signature_files),
-        max((f.stat().st_mtime_ns for f in signature_files), default=0),
+        max((path.stat().st_mtime_ns for path in signature_files), default=0),
     )
+
+
+def _external_dependency_projects(
+    inventory: list[dict], project: str
+) -> tuple[str, ...]:
+    """Return the mounted-project names that can affect derived lifecycle state."""
+
+    from reckon._schema import parse_plan_ref
+
+    projects = {
+        str(parsed.project)
+        for item in inventory
+        for ref in item.get("depends_on", [])
+        if (parsed := parse_plan_ref(ref)) is not None
+        and parsed.is_external(project)
+        and parsed.project
+    }
+    return tuple(sorted(projects))
+
+
+def _external_project_signatures(
+    projects: tuple[str, ...], state_root: Path | None
+) -> tuple[tuple[str, str, tuple[int, int] | None], ...]:
+    mounts = load_mounts() if projects else {}
+    signatures = []
+    for project in projects:
+        docs_dir = mounts.get(project)
+        if docs_dir is None:
+            signatures.append((project, "", None))
+            continue
+        signatures.append(
+            (
+                project,
+                str(docs_dir.resolve()),
+                _discovery_signature(docs_dir, project, state_root),
+            )
+        )
+    return tuple(signatures)
+
+
+def _cache_discovery_result(
+    cache_key: tuple[str, str],
+    local_signature: tuple[int, int],
+    project: str,
+    state_root: Path | None,
+    result: dict,
+) -> dict:
+    external_projects = _external_dependency_projects(
+        result.get("inventory", []), project
+    )
+    _DISC_CACHE[cache_key] = _DiscoveryCacheEntry(
+        local_signature=local_signature,
+        external_projects=external_projects,
+        external_signatures=_external_project_signatures(external_projects, state_root),
+        result=result,
+    )
+    return result
+
+
+def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
+    """Return {inventory, sprints, milestones} by scanning HTML doc pages.
+
+    Any HTML file under docs_dir (outside infra dirs/files) is a doc; meta tags
+    enrich it. Results are cached per project against a cheap (count, max-mtime)
+    signature so an unchanged docs tree returns instantly.
+    """
+    sig = _discovery_signature(docs_dir, project, state_root)
     cache_key = (project, str(docs_dir.resolve()))
     cached = _DISC_CACHE.get(cache_key)
-    if (
-        cached
-        and cached[0] == sig
-        and not _has_external_dependencies(cached[1].get("inventory", []), project)
-    ):
-        return cached[1]
+    if cached and cached.local_signature == sig:
+        external_signatures = _external_project_signatures(
+            cached.external_projects, state_root
+        )
+        if external_signatures == cached.external_signatures:
+            return cached.result
 
     # Batch git first-commit lookup — gives true creation time for tracked files.
     # Falls back to inode ctime when a file is untracked or git is unavailable.
@@ -608,8 +752,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "source_format": "distributed",
             "resource_versions": composed.get("resource_versions", {}),
         }
-        _DISC_CACHE[cache_key] = (sig, result)
-        return result
+        return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
     # ── Legacy project state ───────────────────────────────────────────────
     # Marker absence/staging means the JSON index is the only canonical store.
@@ -663,8 +806,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         "north_stars": north_stars,
         "source_format": "legacy-index",
     }
-    _DISC_CACHE[cache_key] = (sig, result)
-    return result
+    return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
 
 def _read_gates(path: Path) -> list[dict]:
@@ -677,19 +819,6 @@ def _read_gates(path: Path) -> list[dict]:
     if 'data-reckon="gates"' not in text and "data-reckon='gates'" not in text:
         return []
     return list(_plan_html.read_state(text).get("gates") or [])
-
-
-def _has_external_dependencies(inventory: list[dict], project: str) -> bool:
-    """Return whether cached discovery depends on another mounted project."""
-
-    from reckon._schema import parse_plan_ref
-
-    return any(
-        parsed.is_external(project)
-        for item in inventory
-        for ref in item.get("depends_on", [])
-        if (parsed := parse_plan_ref(ref)) is not None
-    )
 
 
 def _derive_lifecycle(
