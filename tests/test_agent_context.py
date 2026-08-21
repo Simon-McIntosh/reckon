@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -27,6 +28,16 @@ def _request(home: Path, target: Path, **kwargs) -> ContextRequest:
     return ContextRequest(target=target, user_home=home, **kwargs)
 
 
+def _init_repository(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "init", "--quiet", str(path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def test_home_target_without_repository_has_only_user_context(tmp_path):
     home = _home(tmp_path)
 
@@ -39,10 +50,22 @@ def test_home_target_without_repository_has_only_user_context(tmp_path):
     assert len(manifest["instructions"]["effective_chain"]) == 1
 
 
+def test_empty_git_directory_in_home_ancestor_is_not_a_repository(tmp_path):
+    ancestor = tmp_path / "not-a-repository"
+    (ancestor / ".git").mkdir(parents=True)
+    home = _home(ancestor)
+
+    manifest = build_context_manifest(_request(home, home))
+
+    assert manifest["ok"]
+    assert manifest["repository"]["root"] is None
+    assert manifest["instructions"]["project_chain"] == []
+
+
 def test_repository_root_instruction_is_manifested(tmp_path):
     home = _home(tmp_path)
     repo = tmp_path / "repo"
-    (repo / ".git").mkdir(parents=True)
+    _init_repository(repo)
     instruction = repo / "AGENTS.md"
     instruction.write_text("repository policy\n")
 
@@ -61,7 +84,7 @@ def test_nested_target_includes_root_to_target_chain(tmp_path):
     repo = tmp_path / "repo"
     target = repo / "physics" / "gpu"
     target.mkdir(parents=True)
-    (repo / ".git").mkdir()
+    _init_repository(repo)
     root_instruction = repo / "AGENTS.md"
     nested_instruction = repo / "physics" / "AGENTS.override.md"
     root_instruction.write_text("root policy\n")
@@ -134,7 +157,7 @@ def test_nested_instruction_budget_overflow_is_a_hard_failure(tmp_path):
     repo = tmp_path / "repo"
     target = repo / "nested"
     target.mkdir(parents=True)
-    (repo / ".git").mkdir()
+    _init_repository(repo)
     (repo / "AGENTS.md").write_text("123456")
     (target / "AGENTS.md").write_text("789")
 
@@ -164,8 +187,7 @@ def test_config_budget_and_fallback_instruction_name_are_used(tmp_path):
         'project_doc_fallback_filenames = ["CONTEXT.md"]\n'
     )
     repo = tmp_path / "repo"
-    repo.mkdir()
-    (repo / ".git").mkdir()
+    _init_repository(repo)
     fallback = repo / "CONTEXT.md"
     fallback.write_text("fallback policy\n")
 

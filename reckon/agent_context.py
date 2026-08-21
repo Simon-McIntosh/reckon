@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -289,11 +290,19 @@ def _fallback_names(config: dict[str, Any]) -> list[str]:
 
 
 def _find_repository_root(target_dir: Path) -> Path | None:
-    current = target_dir
-    for directory in (current, *current.parents):
-        if (directory / ".git").exists():
-            return directory
-    return None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(target_dir), "rev-parse", "--show-toplevel"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    root = result.stdout.strip()
+    return _absolute(Path(root)) if root else None
 
 
 def _project_instruction_chain(
