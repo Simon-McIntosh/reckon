@@ -61,20 +61,12 @@ even when only one item is ready and a worker could take it at once. On failure,
 redispatch a corrective worker. The detailed contract, manifest, and checkpoint
 discipline live in `references/sprint-orchestration.md`.
 
-**A small plan is the case this rule exists for, not an exception to it.** One
-node is where inline is cheapest to rationalise and costs the most: the work
-lands in coordinator context that then cannot review it, no worktree bounds the
-blast radius, no manifest records what happened, and the run never reaches the
-ledger — so the node is invisible to calibration and to the next session. A
-single well-formed node dispatches in one call. Node count changes the active
-fleet, never whether a node is delegated.
-
-Inline fallback is exceptional and is a reported event, not a judgement call: use
-it only when no capable worker backend exists (member scarcity never qualifies — register one), say so and context-budget it
-before implementing, and prefer pausing the node. "The plan is small", "this is
-one file", "dispatch overhead exceeds the work" and "I already have the context"
-are not the exception — they are the rationalisation the exception is worded
-against.
+**A small plan is not an exception.** Even one node needs worktree isolation,
+independent review, a manifest, and a ledger record; node count changes fleet
+size, never whether work is delegated. Inline fallback is a reported exception
+only when no capable worker backend exists. Member scarcity never qualifies —
+register one. State the exception and its context cost before implementing, and
+prefer pausing the node.
 
 ### Continuity — who receives the next piece of work
 
@@ -88,28 +80,18 @@ the next piece of work *is*, not by whichever worker is convenient:
 | A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
 | New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
 
-**This works only if the original dispatch named `--member`.** `reckon crew
-complete` deletes the live pointer, taking the run's `session_id` with it, so
-after promotion the session survives in exactly one place: the roster entry in
-committed `crew.json`, where `capture_session` recorded it on the member's first
-run (first id wins). **So dispatch every node as a roster member by default** —
-`reckon crew member list --project <project>` shows the team, `reckon crew member
-add` registers a new one, and a member registered with no session captures one
-from its first run.
+**This works only if the original dispatch named `--member`.** Completion removes
+the live pointer; the session survives in the member's committed `crew.json`
+entry. **So dispatch every node as a roster member by default** — list members
+with `reckon crew member list --project <project>` and register them with
+`reckon crew member add`. A member without a session captures its first run's
+session.
 
-The boundary between the middle row and the last is scope, not size. Work that
-stays inside the landed node's declared write paths and its gate goes back to the
-same member. Work that widens the scope is a new node — dispatching it into an
-old session hides a scope change inside a session that was fenced for something
-else, and a scope change is exactly what `--scope-changed` exists to record.
-
-**A member is a serial worker, so size the active fleet in members, not in nodes.**
-Before creating a worktree, dispatch refuses a member that already owns a
-non-terminal live pointer. The typed refusal names both the member and the
-in-flight run. Observe or recover that run, finish or intentionally stop it, and
-promote its result before reusing the member. Use a distinct roster member for
-independent concurrent work; do not hide a continuation inside an unmembered
-fresh session merely to bypass the guard.
+Scope decides continuity. Work inside the landed node's paths and gate returns
+to its member; wider scope is a new node and records `--scope-changed`.
+**A member is a serial worker, so size the active fleet in members.** Dispatch
+refuses a member with a non-terminal in-flight run; observe or recover and
+promote that run before reuse. Independent concurrent work uses distinct members.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
@@ -125,27 +107,21 @@ Continue through ordinary complexity, validation, and recoverable integration:
 
 | Rationalization | Reality |
 |---|---|
-| "This change is high-blast-radius / touches core code" | Allocate it to an appropriately capable worker, test it, and validate integration. |
-| "Better to confirm the approach before executing" | The plan IS the approved approach. Locked decisions ARE the confirmation. Asking again is re-litigating settled decisions. |
-| "This is a lot of work / the session is long / I've done enough" | Length and effort are not blockers. Continue until every implementable item is done or you hit a valid stop. |
-| "It needs full-suite validation first" | Then dispatch a test worker — validation is part of the work, not a reason to hand back. |
-| "I'll present options A/B and let the user choose" | If the plan already determines the path, there is no choice to present. Pick the plan's path and execute. Offering A/B on already-decided work is a checkpoint in disguise. |
-| "A worker hit its NEEDS-HELP fence / failed twice" | The fence stops the **worker**, never the plan — that is its whole purpose. A `NEEDS-HELP:` report is a decision brief: answer it and `reckon crew resume` the same session, or reshape the node and re-dispatch. A worker that stopped is a worker waiting, not a plan blocked. |
-| "The node died on infrastructure — a timeout, a slow connect, a cold service, a stalled filesystem read" | Repoint, do not halt. Re-dispatch with the corrected brief: a longer probe timeout, a warmed connection, a different roster member. Classify before concluding anything: check the service is actually unhealthy rather than merely slow, because a latency spike and an outage look identical from a killed worker. An environment hiccup is never a plan-level blocker. |
-| "Two attempts failed, so the approach must be wrong" | Two attempts failing the same way is a signal to reshape the node — specify the primitive, name the exact call site, widen the write scope — not to abandon the objective. Reshape and re-dispatch; a repointed node with a sharper brief routinely succeeds where a repeated one cannot. |
+| "This is risky or touches core code" | Route to a capable worker; test and validate integration. |
+| "Better to confirm the approach" | The plan and locked decisions are the approval. |
+| "This is long or needs full validation" | Continue; validation is a worker node. |
+| "I'll offer options" | Follow the locked choice unless a genuinely new decision surfaced. |
+| "A worker stopped at its fence" | Answer `NEEDS-HELP:` and resume that session, or reshape and redispatch the node. |
+| "Infrastructure timed out" | Verify outage versus latency, then repoint with the corrected runtime brief. |
+| "Two attempts failed" | Reshape or split the node; repeated worker failure is not plan abandonment. |
 
 Plans do not override global safety or expand user authority. A locked decision
 settles implementation choices only inside the already-authorised scope.
 
-**Hiccup or blocker — the one test.** Before stopping, ask whether *any* authority
-you already hold could move this forward: a longer timeout, a different member, a
-narrower or wider write scope, a reshaped node, an answered decision brief, a
-cheaper experiment that settles the question. If yes, it is a hiccup — repoint and
-continue. A true external blocker is one no available authority resolves: an
-unshipped prerequisite owned by another project, a decision only the user can make,
-spend beyond the authorised ceiling, or an outward-facing effect needing consent.
-Everything else is work in progress wearing a failure's clothes. Report hiccups in
-the completion summary; stop only for the blockers.
+**Hiccup or blocker — the one test.** If existing authority can move the work
+forward by changing runtime, member, scope, node shape, advice, or experiment,
+repoint and continue. Stop only when progress needs new authority: an external
+prerequisite, user-owned decision, excess spend, or consent for an outward effect.
 
 ## Fast path
 
@@ -336,15 +312,9 @@ Do not proceed until you have read and understood:
 Plans go stale, and agents are quick to rebuild what already exists. Between
 reading the plan and authoring any implementation node:
 
-**Audit plan currency against the code.** Every mechanism the plan asserts —
-an API, a kernel, a file, a claimed limitation, a mathematical property — is
-checked against the tree it names before nodes are cut from it. A node
-authored from stale text inherits its defects and executes them faithfully.
-(Incident 2026-08-21, nova: a section specified clipping to an "arc turning
-point" of a bilinear level set; the derivative's numerator is a constant, so
-no interior turning point exists. The worker built the correction exactly,
-validated it to 1.6e-5, and measured the result worse on every decisive
-field. The plan text, not the worker, was the defect.)
+**Audit plan currency against the code.** Check every asserted API, file,
+limitation, and technical property against the named tree before cutting nodes.
+A node authored from stale text executes its defects faithfully.
 
 **Dispatch a prior-art scout in the background.** One read-only
 investigate-role node, dispatched through `reckon crew dispatch` exactly like
@@ -366,21 +336,9 @@ one-line fitness verdict. The scout searches:
   nova ⇄ imas-ambix) — coupling runs both ways, so an ambix plan searches
   nova and vice versa.
 
-**Nodes cite the reuse map.** Each implementation node's goal/prompt names
-the existing machinery it extends or consumes. A node that authors new
-machinery states why each named reuse candidate fails — "did not look" is the
-failure mode this step exists to remove. (Incidents 2026-08-20, nova: a node
-was dispatched to invent a sub-cell quadrature stencil while
-`separatrix_clip.TracedClippedSupports` already carried exact clipped-cell
-moments two packages away; a smeared surface-averaging kernel had earlier
-been authored while a contour-traced extraction and a contourpy wrapper both
-already existed in the same repo. Each duplicate was caught by the user, not
-by process.)
-
-The scout costs minutes of read-only time. The failure it prevents is not
-just wasted effort: a duplicate implementation becomes a second authority
-that later disagrees with the first, and reconciling two authorities costs
-more than either did.
+**Nodes cite the reuse map.** Each implementation node names the machinery it
+extends or consumes. New machinery requires a fitness verdict explaining why
+each named reuse candidate fails; otherwise it creates a competing authority.
 
 ### 2. Classify ALL items
 

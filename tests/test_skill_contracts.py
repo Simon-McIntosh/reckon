@@ -328,7 +328,7 @@ def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
     assert "dispatching an unrelated ready node is outside this freeze" in ship.lower()
 
 
-def test_ship_refills_free_slots_without_crossing_unverified_dependencies() -> None:
+def test_ship_refills_members_without_crossing_unverified_dependencies() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -336,7 +336,11 @@ def test_ship_refills_free_slots_without_crossing_unverified_dependencies() -> N
         ).read_text()
     )
 
-    assert "refill each slot as soon as its finished node is verified" in ship
+    assert "Concurrency — the roster is the whole authority" in ship
+    assert "There is no slot pool and no numeric worker cap anywhere in Reckon" in ship
+    assert "free members are the only ceiling" in ship
+    assert "registers enough members to meet it" in ship
+    assert "redispatch each member as soon as its finished node is verified" in ship
     assert "no dependent node builds on unverified work" in ship
     assert "Do not wait for the slowest active node" in ship
     assert "independent refill may start" in reference
@@ -352,10 +356,8 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
     reference = texts[root / "references" / "sprint-orchestration.md"]
     assert "Advisory fleet-size guide" in ship
     assert "This table is advisory" in ship
-    assert "roster of free, distinct members is the real ceiling" in normalized(
-        ship.lower()
-    )
-    assert "single advisory fleet-size table in `../SKILL.md`" in reference
+    assert "none of them is a slot pool" in normalized(ship.lower())
+    assert "single advisory fleet-size table in `../SKILL.md`" in normalized(reference)
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
