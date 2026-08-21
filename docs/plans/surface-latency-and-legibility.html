@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="surface-latency-and-legibility">
-  <meta name="plan-title"     content="Surface Latency and Legibility">
-  <meta name="plan-summary"   content="The served surface is slow enough to read as unreachable and says less than it knows: repair the discovery cache that never hits, stop re-walking git history on every request, and close the gap between what the server holds and what the SPA communicates.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="surface-latency-and-legibility">
+  <meta name="plan-title" content="Surface Latency and Legibility">
+  <meta name="plan-summary" content="The served surface is slow enough to read as unreachable and says less than it knows: repair the discovery cache that never hits, stop re-walking git history on every request, and close the gap between what the server holds and what the SPA communicates.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S9">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Surface Latency and Legibility | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-21">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -358,46 +360,40 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-
-      <div class="r-dec" data-key="git-creation-source" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How should a document's creation date be sourced once the full-history walk is removed from the request path?</p>
-        <p class="r-dec-ctx">The current call recovers true first-commit time but costs 89% of a cold scan. The alternatives trade accuracy for latency differently, and the choice determines whether the "created" column stays trustworthy.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="head-keyed-cache">Cache the map keyed on HEAD; incremental tip query when HEAD moves</button>
-          <button class="r-opt" data-value="persist-to-disk">Persist the map under the config home so a server restart does not re-pay</button>
-          <button class="r-opt" data-value="drop-git-use-ctime">Drop git entirely; accept inode ctime as the creation date</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="cold-scan-budget" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Should a cold discovery scan be allowed to block the request, or should the endpoint serve a stale-but-immediate result and refresh behind it?</p>
-        <p class="r-dec-ctx">Even with both root causes fixed, the first scan of a 898-document repository costs real time. Serving stale-then-refreshing removes the worst-case wait entirely but introduces a window where the SPA shows data it knows is out of date — which interacts directly with the §3 finding that staleness is currently invisible.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="block">Block on the scan; rely on the cache making cold rare</button>
-          <button class="r-opt" data-value="stale-while-revalidate">Serve stale immediately and refresh in the background, surfacing the staleness in the SPA</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="git-creation-source" data-choice="head-keyed-cache" data-by="reckon-ship" data-when="2026-08-21T13:49:28+00:00">
+    <p class="r-dec-q">How should a document&#x27;s creation date be sourced once the full-history walk is removed from the request path?</p>
+    <p class="r-dec-ctx">The current call recovers true first-commit time but costs 89% of a cold scan. The alternatives trade accuracy for latency differently, and the choice determines whether the &quot;created&quot; column stays trustworthy.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="head-keyed-cache">Cache the map keyed on HEAD; incremental tip query when HEAD moves</button>
+      <button class="r-opt" data-value="persist-to-disk">Persist the map under the config home so a server restart does not re-pay</button>
+      <button class="r-opt" data-value="drop-git-use-ctime">Drop git entirely; accept inode ctime as the creation date</button>
+      </p>
+    <p class="r-dec-rat">Keeps the creation dates accurate, which drop-git-use-ctime would silently degrade: a fresh clone or a rsync gives every file the same ctime, so the created column would become meaningless exactly where history is most useful. Keying on HEAD is sound because a file&#x27;s first-commit timestamp is immutable and history only grows at the tip, so an unchanged HEAD provably needs no requery. Disk persistence was not taken now because it optimises the server-restart path only, and restarts are rare next to the per-request cost this plan is removing; it stays available as a followup if cold-start after restart proves painful.</p>
+    </div>
+<div class="r-dec" data-key="cold-scan-budget" data-choice="block" data-by="reckon-ship" data-when="2026-08-21T13:49:28+00:00">
+    <p class="r-dec-q">Should a cold discovery scan be allowed to block the request, or should the endpoint serve a stale-but-immediate result and refresh behind it?</p>
+    <p class="r-dec-ctx">Even with both root causes fixed, the first scan of a 898-document repository costs real time. Serving stale-then-refreshing removes the worst-case wait entirely but introduces a window where the SPA shows data it knows is out of date — which interacts directly with the §3 finding that staleness is currently invisible.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="block">Block on the scan; rely on the cache making cold rare</button>
+      <button class="r-opt" data-value="stale-while-revalidate">Serve stale immediately and refresh in the background, surfacing the staleness in the SPA</button>
+      </p>
+    <p class="r-dec-rat">Once the cache actually holds, a cold scan is rare rather than routine, so stale-while-revalidate would add a permanent correctness caveat to every read in exchange for removing a rare wait. Serving data the server knows is out of date is a poor trade for a planning surface whose whole purpose is telling the truth about project state, and it would interact badly with the finding that staleness is currently invisible. The reader-facing remedy belongs in the SPA showing that a scan is running, not in the endpoint answering with data it distrusts.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-slal-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-written-by="reckon-create" data-written-at="2026-08-21">
-        <h4 class="r-fu-title">Execute the plan — discovery latency then the SPA legibility audit</h4>
-        <div class="r-fu-body">
-          <p>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-slal-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-08-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Execute the plan — discovery latency then the SPA legibility audit</h4>
+    <div class="r-fu-body"><p>
             §2 is fully diagnosed and ready to dispatch. §3 begins with an audit node whose ranked
             findings gate the fixes that follow it, so §3 implementation waits on that output.
             The two sections touch disjoint files and can start concurrently.
-          </p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
-      </article>
-    </section>
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
+    </article>
+</section>
 
   </main>
 </body>
