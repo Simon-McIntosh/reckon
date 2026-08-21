@@ -114,6 +114,9 @@ Continue through ordinary complexity, validation, and recoverable integration:
 | "A worker stopped at its fence" | Answer `NEEDS-HELP:` and resume that session, or reshape and redispatch the node. |
 | "Infrastructure timed out" | Verify outage versus latency, then repoint with the corrected runtime brief. |
 | "Two attempts failed" | Reshape or split the node; repeated worker failure is not plan abandonment. |
+| "This next step is a *different kind* of work" | Not an exemption. §7c's list is closed; a new category is the stop wearing a costume. |
+| "Each fold surfaced another fold" | That is convergence, not creep. See §7d — fold depth carries no stopping authority. |
+| "The handoff is written, the next link is named" | A named next link you could dispatch is a defect, not a deliverable. See §9. |
 
 Plans do not override global safety or expand user authority. A locked decision
 settles implementation choices only inside the already-authorised scope.
@@ -141,6 +144,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → immediately write that node's commit, gate measure, artifacts, and impl to the plan
 → emit the completion summary, WHY carrying the gate evidence
 → re-triage open followups + manifest follow_ons; fold them into the DAG until dry
+→ write the drain ledger; foldable-remaining must read 0 before any closing report
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
 ```
@@ -208,10 +212,14 @@ structured state (decisions, followups). Do not implement items marked
 14. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
-15. **Drain foldable followups before closure.** Re-triage open followups after
-    every landing beat, route that node's manifest `follow_ons` through the same loop,
-    and repeat until a complete pass finds nothing foldable. Never set a plan
-    to `shipped` or `done` while a foldable followup is open.
+15. **Drain foldable followups before closure, and sign the drain.** Re-triage open
+    followups after every landing beat, route that node's manifest `follow_ons`
+    through the same loop, and repeat until a complete pass finds nothing foldable.
+    Write the §7c drain ledger before any closing report: every row disposed as
+    `folded` (with its node id), `authority-required`, `dissent-reopen`,
+    `foreign-owner`, or `context-exhausted` (with its figure). **A session does not
+    end while `foldable-remaining` is nonzero** — see the closure fence, §4d. Never
+    set a plan to `shipped` or `done` while a foldable followup is open.
 16. **No implementation node before the reuse map exists.** Every substantive
     implementation wave is preceded by a prior-art scout (§1b) whose reuse map
     the nodes cite; a node that authors new machinery states why each named
@@ -661,7 +669,35 @@ else. Read the file for the host you are on. Where no such capability exists,
 report the reset time and stop — degraded, not broken, and never a reason to
 dispatch into the quota anyway.
 
-### 4d. The summary reflex — what, why, how, when
+### 4d. The closure fence — a session does not end into available work
+
+**Authored here and nowhere else.** §4b refuses to open work behind an unmeasured
+gate. §4c refuses to open a wave on a spent quota. Both guard the same direction:
+doing too much. **This fence guards the other one, and it is the one that actually
+fires.** Stopping is the unguarded move in every orchestration, because stopping
+produces no error, no refusal, and no artifact — only a tidy report.
+
+So before the closing summary, **refuse to end the session while any queue row is
+foldable.** Run the drain of §7c, write its ledger, and read the ledger back:
+
+- every open row carries a disposition from the closed set, or the session
+  continues;
+- a row whose disposition is `folded` but which has no dispatched node id is not
+  folded — it is a stop with paperwork;
+- `context-exhausted` is the one disposition that ends a session with foldable
+  work outstanding, and it must carry its figure (§7c).
+
+Report the fence like any other, on the four axes of §4e with occasion `close`. A
+session that ends with `foldable-remaining: 0` has earned its summary; a session
+that ends with a nonzero count and no `context-exhausted` row has not, and the
+ledger will say so to whoever reads it next.
+
+**The asymmetry is deliberate and worth stating plainly.** Overrunning a gate or a
+budget announces itself — a refused call, a failed assertion, an angry ledger.
+Under-running a plan announces nothing. That is precisely why it needs the
+heavier machinery, not the lighter.
+
+### 4e. The summary reflex — what, why, how, when
 
 Dispatches are silent by design and workers report in their own idiom, so the
 orchestrator owes the lead a readable account at four occasions: **at dispatch,
@@ -935,16 +971,91 @@ authority, decision, owning plan, or repository that makes the exemption true.
 Do not invent a fourth category such as inconvenience, worker capacity, or
 ordinary unfinished work.
 
+There is a fifth disposition, and it is the only one that may end a session with
+foldable work still on the queue:
+
+- **`context-exhausted`** — the *orchestrator's own* budget cannot carry another
+  fold. This is a legitimate handoff and a common one, but it is **reportable, not
+  silent**: it must carry a figure — remaining context or token headroom, or the
+  backend hold from §4c — and it applies to the SESSION, never to an item. Naming
+  it honestly is the point. An orchestrator that is genuinely out of room says so
+  with a number; one that is not out of room has no exemption to claim, and
+  dressing a scope judgement in this label is the failure this disposition exists
+  to expose.
+
+Do not invent a sixth category such as inconvenience, worker capacity, a
+"different kind of work", or ordinary unfinished work.
+
 After folding and executing the added nodes, re-read open followups before
 testing for completion: landing that work may have generated more. Re-triage
 after every landing beat and terminate only when a complete pass finds nothing
 foldable. A fixed pass count, the end of the original DAG, or an empty
 `follow_ons` field from one manifest is not the termination condition.
 
+**The drain ledger — the check that makes this rule hold.** A rule paired with no
+runnable check decays, and this one decayed for exactly that reason: "a complete
+pass found nothing foldable" is unfalsifiable, because the pass leaves no object
+behind. So the pass now writes one. Before the closing report, enumerate EVERY
+queue row and give each a disposition from the closed set:
+
+```text
+DRAIN LEDGER — <plan|sprint> @ <iso-now>
+  <id or one-line description>   folded → <node-id>
+  <id or one-line description>   authority-required → <the authority needed>
+  <id or one-line description>   dissent-reopen → <the locked decision>
+  <id or one-line description>   foreign-owner → <owning plan or repo>
+  <id or one-line description>   context-exhausted → <the figure>
+  ---
+  rows: N   foldable-remaining: 0
+```
+
+Write it into the landing beat's plan comment or the cumulative evidence record,
+so it is committed rather than conversational. Three properties do the work:
+
+- **A row with no disposition is an unfinished drain**, not a tidy stop. Continue.
+- **`folded` requires a dispatched node id.** A row marked folded with no node is
+  a stop with paperwork on it — the most convincing form of this failure, and the
+  one a reader can now catch.
+- **`foldable-remaining: 0` is the termination condition**, and it is now a
+  quantity someone can check against the ledger's own rows rather than a feeling
+  about whether enough was done.
+
 **Terminal status is gated on this drain.** Do not set `status` to `shipped` or
-`done` while any foldable followup is open. Exempt followups may remain open only
-with the recorded exemption above; their presence is an explicit authority,
-dissent, or ownership boundary rather than forgotten executable work.
+`done` while any foldable followup is open. Exempt rows may remain open only with
+their recorded exemption; their presence is an explicit authority, dissent,
+ownership, or context boundary rather than forgotten executable work.
+
+### 7d. Fold depth is expected, and carries no stopping authority
+
+**A fold chain routinely runs many layers deep, and each layer looks like the last
+one.** Attach refuses on lifecycle → review the targets → review refuses on
+admission → adjudicate the defects → the defects are validator bugs → fix the
+validators → re-stage → persist. That is eight layers, every one legitimate, every
+one narrowing the blocker. Measured on a real sprint it went ten.
+
+The trap is that depth *feels* like scope drift. It reads as though the work keeps
+expanding, when what is actually happening is that each refusal is handing you a
+smaller and better-specified problem than the one before. **Convergence and creep
+look identical from the inside; only their direction differs.** Test the direction:
+
+- **Converging** — each layer's blocker is NARROWER than its parent's, the write
+  scope is the same size or smaller, and the measure gets more exact. Continue.
+- **Creeping** — each layer's blocker is WIDER, new subsystems keep entering the
+  write scope, and the measure gets vaguer. That is a genuine scope change: stop,
+  and raise it as its own plan rather than folding it.
+
+Depth alone is never the signal, so **do not count layers and do not budget them.**
+A ten-layer chain converging on a one-line validator fix is healthy; a two-layer
+chain that has already pulled in three subsystems is not. The only quantity that
+governs stopping is the drain ledger's `foldable-remaining`, and the only session-
+level exemption is `context-exhausted` with its figure.
+
+One corollary worth stating because it is counter-intuitive: **the deepest layers
+are usually the cheapest and highest-leverage.** By layer six the problem has been
+narrowed by five successive refusals, so the fix is often small and general — a
+false-positive validator, a wrong call signature, a too-narrow guard — and it
+unblocks everything stacked above it. Abandoning a chain near its bottom discards
+the most specific diagnosis anyone has ever had of that problem.
 
 ### 8. Final validation — eat the dog food
 
@@ -1009,9 +1120,24 @@ fenced, paste-ready prompt so switching to a fresh session is seamless:
 ```
 ````
 
+**A "Next up" block naming work you had the authority, budget, and roster to do is
+a defect, not a courtesy.** This block exists to hand over what genuinely cannot
+continue here — an exempt row from the §7c ledger — and for nothing else. It is
+the most seductive way to stop, because a well-written handoff has every surface
+feature of a delivery: it is specific, it is actionable, it reads as considerate,
+and it leaves the reader with a clear next step. None of that is delivery. Before
+writing the block, check each line against the ledger: **every entry must trace to
+a row whose disposition is `authority-required`, `dissent-reopen`, `foreign-owner`,
+or `context-exhausted`.** An entry tracing to a `folded` row, or to no row at all,
+means the session stopped early and the block is the evidence.
+
 Rules:
 - One fenced prompt per advised follow-on; if several follow-ons are advised
   for one session, stack them in ONE fence in execution order.
+- Every fenced line traces to an exempt ledger row. If the ledger says
+  `foldable-remaining: 0` and no row is `context-exhausted`, there is nothing to
+  hand over and the block is omitted entirely — that is the good outcome, not a
+  missing section.
 - The fenced line is exactly the slash invocation the next session needs. The
   plan owns all guidance, so never append a parenthetical brief or pasted wall.
 - Mention the followup id at most once, in passing (e.g. "tracked as
