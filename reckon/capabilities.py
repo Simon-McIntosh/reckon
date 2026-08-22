@@ -175,6 +175,7 @@ def derive_capabilities(
                     "gate": str(run.get("gate") or ""),
                     "tests_added": run.get("tests_added"),
                     "changed_lines": _descriptive_changed_lines(run),
+                    "spec_level": str(run.get("spec_level") or "") or None,
                 }
             )
 

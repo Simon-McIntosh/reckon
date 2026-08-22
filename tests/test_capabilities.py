@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
@@ -47,7 +48,11 @@ def _run(
     effort: str = "high",
     changed_lines: dict | None = None,
     completed_at_source: str = "stream_mtime",
+    spec_level: str | None = None,
 ) -> None:
+    build_record_kwargs: dict[str, Any] = {}
+    if spec_level is not None:
+        build_record_kwargs["spec_level"] = spec_level
     ledger.append_run(
         root.name,
         ledger.build_record(
@@ -58,6 +63,7 @@ def _run(
             worker_seconds=int(actual_hours * 3600),
             completed_at_source=completed_at_source,
             changed_lines=changed_lines,
+            **build_record_kwargs,
         ),
         root=root,
     )
@@ -196,6 +202,18 @@ def test_changed_lines_are_descriptive_and_never_enter_selection(tmp_path) -> No
         ),
     )
     assert derive_source.count("_descriptive_changed_lines(run)") == 1
+
+
+def test_spec_level_is_captured_in_observations(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(root, "exact", "work", 1.0, spec_level="exact")
+    _run(root, "none", "work", 1.0)
+
+    observations = _derive(root)["configurations"][0]["observations"]
+    indexed = {entry["run_id"]: entry for entry in observations}
+    assert indexed["exact"]["spec_level"] == "exact"
+    assert indexed["none"]["spec_level"] is None
 
 
 def test_cache_contains_only_directly_rederived_values(home, tmp_path) -> None:
