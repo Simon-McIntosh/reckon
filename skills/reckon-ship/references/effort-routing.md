@@ -1,10 +1,15 @@
 # Effort routing — matching worker capacity to specification completeness
 
-Advisory policy for the coordinator choosing per-node routing overrides. The
-mechanics are unchanged: routing is always an explicit `--set` override on the
-dispatch call, the run record attributes the outcome to the exact
-configuration that ran, and flight config owns every model and effort
-identifier. This reference owns only the decision procedure.
+Policy for routing by specification level. The mechanics: the coordinator
+declares one dial per dispatch — `--spec-level exact|guided|open` — and flight
+config resolves the backend, model, provider-effort and time budget underneath
+it through `roles.<role>.by_spec_level` (locked decision `routing-mode:
+config-mapped` on the crew-effort-routing plan). A `--set` override remains the
+per-dispatch escape hatch: the override layer rewrites the mapping itself, so
+it still wins. The run record attributes the outcome to the exact configuration
+that ran, and flight config owns every model and effort identifier. This
+reference owns the decision procedure — what level to declare, and what mapping
+to put in config.
 
 ## The principle
 
@@ -27,13 +32,20 @@ an exact spec only amortises when several dispatches share it.
 Declare the level on the dispatch (`--spec-level exact|guided|open`) so the
 ledger can test this table against outcomes.
 
-## Advisory routing (initial priors — the ledger calibrates them)
+## The mapping (initial priors — the ledger calibrates them)
 
-| Declared level | First-choice routing | Why |
+These rows are what goes into `roles.<role>.by_spec_level` in a flight layer;
+the coordinator no longer applies them by hand on each call:
+
+| Declared level | First-choice mapping | Why |
 |---|---|---|
-| `exact` | small-model lane via its gate below, else the default backend at `--set backends.<name>.effort=medium` | The reasoning is already in the spec. |
-| `guided` | `medium` for small nodes, `high` above ~1 worker-hour | Implementation reasoning remains; design reasoning does not. |
-| `open` | `high`; `xhigh` for cross-cutting single-owner nodes | The worker carries design and implementation. |
+| `exact` | the small-model backend via its gate below, else the default backend at reduced effort | The reasoning is already in the spec. |
+| `guided` | reduced effort for small nodes, full effort above ~1 worker-hour | Implementation reasoning remains; design reasoning does not. |
+| `open` | full effort; the top tier for cross-cutting single-owner nodes | The worker carries design and implementation. |
+
+A node the mapping routes somewhere its gate forbids (an `open` node toward a
+small model, say) is a config bug — the mapping encodes this table, and the
+ledger's slices amend it at the plan's calibration checkpoints.
 
 Read the current slice results before trusting these rows: the committed
 ledger records pass rate, worker minutes, tokens and redispatch lineage per
@@ -43,11 +55,10 @@ threshold over at least ten usable runs, charged for its redispatches.
 
 ## The small-model lane — eligibility gate
 
-Routing a node to a small-model backend (e.g. `--set
-roles.implement.backend=codex-spark` where the project flight layer defines
-it) is permitted only when **all** hold. The lane buys speed and budget on
-work whose correctness is already pinned — never a way to write uncertain
-code quickly.
+Routing a node to a small-model backend — whether the `by_spec_level` mapping
+resolves it there or a `--set` override sends it — is permitted only when
+**all** hold. The lane buys speed and budget on work whose correctness is
+already pinned — never a way to write uncertain code quickly.
 
 1. Declared level is `exact`, and the plan section actually prescribes the
    change with a named check. A declaration the section does not support is a
