@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"     content="reckon">
+  <meta name="reckon-type"      content="evidence">
+  <meta name="plan-slug"        content="crew-effort-routing-landed">
+  <meta name="plan-title"       content="Crew Effort Routing — Landed">
+  <meta name="plan-summary"     content="Execution evidence for the crew-effort-routing prototype: model probes, the two varied-configuration pilot runs, and the config surfaces landed.">
+  <meta name="plan-evidence-for" content="crew-effort-routing">
+  <meta name="plan-verifies"    content="crew-effort-routing#s5">
+  <title>Crew Effort Routing — Landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="probes">Model availability probes (2026-08-22)</h2>
+    <p>One trivial read-only <code>codex exec</code> per candidate identifier on
+      this host's ChatGPT-account login. <code>gpt-5.3-codex-spark</code> is the
+      only supported small-model identifier; it responded correctly and accepted
+      <code>model_reasoning_effort=medium</code> without warning. Rejected with
+      400 "not supported when using Codex with a ChatGPT account":
+      <code>gpt-5.3-spark</code>, <code>gpt-5.3-codex</code>,
+      <code>codex-spark</code>, <code>gpt-5.6-codex-spark</code>.</p>
+
+    <h2 id="s5-1">§5.1 — spec-level recording (guided tier, reduced effort)</h2>
+    <p>Run <code>r-20260822T091215143976-spec-level-recording</code>, dispatched
+      with <code>--set backends.codex.effort=medium</code> — the ledger's first
+      non-default configuration after 820 uniform runs. Worker commit
+      <code>dbb81e0</code>, merged as <code>4d3f3d2</code>. Gate <strong>passed</strong>:
+      focused suites 173/173 green, ruff clean; 8 tests added; scope exactly the
+      five fenced paths. Worker time <strong>266 s</strong> (vs the 12.8-min
+      median of high-effort implement runs); 8,562 output tokens. Delivered:
+      <code>TaskNode.spec_level</code> with fail-fast vocabulary refusal,
+      <code>--spec-level</code> on dispatch, the SPEC ownership line in worker
+      prompts, and a top-level <code>spec_level</code> field on every committed
+      ledger record, forwarded at completion.</p>
+
+    <h2 id="s5-2">§5.2 — capability observation slice (exact tier, spark lane pilot)</h2>
+    <p>Run <code>r-20260822T092102204792-capability-spec-slice</code>, dispatched
+      to <code>codex-spark</code> (<code>gpt-5.3-codex-spark</code>) with
+      <code>--spec-level exact</code> — the first spark-lane run and the first
+      record carrying a declared level. Worker commit <code>2a10c38</code>,
+      merged as <code>1406b50</code>. Gate <strong>passed</strong>: 14/14 capability
+      tests green including the prescribed regression test; full-diff pilot audit
+      found the change exactly as prescribed (the one observation key verbatim,
+      one clean optional test-helper kwarg). Worker time <strong>63 s</strong>;
+      8,597 output tokens. Verification after merge: crew + ledger + capabilities
+      suites 187/187, full suite 1961 passed.</p>
+
+    <h2 id="s5-3">§5.3 — config and policy surfaces</h2>
+    <p>Landed in <code>6767cd5</code>: project flight layer
+      <code>docs/state/reckon/flight.yaml</code> defining the
+      <code>codex-spark</code> backend (defined, not defaulted — no role selects
+      it), the advisory policy reference
+      <code>skills/reckon-ship/references/effort-routing.md</code>, and the
+      dispatch-section pointer in the ship skill. Dry-run demonstration from
+      merged main: <code>--set roles.implement.backend=codex-spark --spec-level
+      exact --dry-run</code> exits 0 resolving backend <code>codex-spark</code>,
+      launch <code>cli</code>, <code>node.spec_level=exact</code>. A first
+      attempt with a prose done-when was refused on the <code>demonstrable</code>
+      property — the seven-property contract catching exactly the measure class
+      the spark gate disqualifies. Note: the resolved time budget was
+      <code>8m</code> — the implement role's overlay wins over the spark
+      backend's 15&nbsp;m default, so a spark dispatch wanting longer states
+      <code>--time-budget</code> explicitly.</p>
+
+    <h2 id="calibration">Calibration state after landing</h2>
+    <p>The rebuilt capability cache tracks 4 agent configurations (previously
+      effectively 1): <code>gpt-5.6-sol/high</code> (499 usable runs, 16 h
+      horizon), <code>gpt-5.6-sol/medium</code> (1 run), and
+      <code>gpt-5.3-codex-spark</code> (1 run). Single-run horizons are
+      binning artifacts, not competence evidence — the manual ≤&nbsp;0.5&nbsp;h
+      spark bound of the plan's §4 gate stays in force until slices reach the
+      ≥&nbsp;10-run threshold of the plan's §6 decision rule. Observations now
+      carry <code>spec_level</code>, so the §6 read-out can slice pass rate,
+      worker minutes, tokens, and redispatch lineage per
+      (configuration × declared level × size bucket).</p>
+
+    <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
+    <p>The full-suite verification surfaced a pre-existing failure:
+      <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code>
+      (reckon-ship SKILL.md at 13,344 estimated tokens before this session's
+      edits, against a 12,000 bound — broken by an earlier commit). Repaired in
+      <code>e016572</code> by relocating worked examples to
+      <code>references/sprint-orchestration.md</code> §10 and compressing
+      rationale while preserving every contract-anchored phrase: 11,904
+      estimated tokens after; skill-contract tests 38/38; full suite 1961
+      passed.</p>
+
+  </main>
+</body>
+</html>

@@ -4,21 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="crew-effort-routing">
-  <meta name="plan-title"     content="Crew Effort Routing">
-  <meta name="plan-summary"   content="Route each crew dispatch's model and effort from how completely the node is specified, add a gated small-model lane for exactly-specified work, and calibrate the dispatch sweet spot from the run ledger.">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-effort-routing">
+  <meta name="plan-title" content="Crew Effort Routing">
+  <meta name="plan-summary" content="Route each crew dispatch&#x27;s model and effort from how completely the node is specified, add a gated small-model lane for exactly-specified work, and calibrate the dispatch sweet spot from the run ledger.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-owner" content="Simon McIntosh">
   <title>Crew Effort Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-22">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -236,13 +239,22 @@
     </p>
 
     <h2 id="s5">§5 — Prototype (this session)</h2>
+    <p class="landed-summary"><span class="badge badge-shipped">✓ landed 2026-08-22</span>
+      All three subsections shipped, executed under the routing they propose.
+      §5.1 at <code>sol/medium</code>: gate passed, 173/173 tests, 8 added, 266 worker-seconds (commit <code>dbb81e0</code>).
+      §5.2 down the spark lane at exact tier: gate passed on full-diff pilot audit, 63 worker-seconds (commit <code>2a10c38</code>).
+      §5.3 config + policy landed (<code>6767cd5</code>); spark dry-run resolves end-to-end; capability cache now tracks 4 configurations.
+      Full record: <a href="/reckon/evidence/archive/crew-effort-routing-landed">crew-effort-routing-landed</a>.
+    </p>
     <p>
       The prototype changes no default behaviour: the field is optional, the spark
       backend is defined but not routed to, and routing overrides remain explicit
       per-dispatch data. It is deliberately executed <em>under the policy it
       proposes</em>: §5.1 is a guided node dispatched at reduced effort, §5.2 is an
       exact node dispatched down the spark lane under the pilot audit — together
-      producing the ledger's first varied-configuration rows.
+      producing the ledger's first varied-configuration rows. The subsection
+      contracts below are retained as the reference record of what the workers
+      were dispatched against.
     </p>
 
     <h3 id="s5.1">§5.1 — Record a declared specification level end-to-end (guided)</h3>
@@ -348,59 +360,58 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-
-      <div class="r-dec" data-key="spec-vocabulary" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Is the three-level declared vocabulary (exact / guided / open) the right specification signal?</p>
-        <p class="r-dec-ctx">The prototype implements the enum as an optional field — reversible, nothing depends on it yet. Alternatives: free text (unmeasurable), derived-only scoring (weak proxies, no declaration to audit). §4 defines the levels by design ownership.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="three-level-enum">three-level enum</button>
-          <button class="r-opt" data-value="free-text">free text</button>
-          <button class="r-opt" data-value="derived-only">derived-only</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="routing-mode" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How does a declared level select routing?</p>
-        <p class="r-dec-ctx">O2 (orchestrator applies the advisory table as an explicit --set override, ledger measures) versus O4 (flight-schema mapping resolves it automatically). O4 is deferred behind the §6 checkpoint by default; locking it now would encode unmeasured priors as config.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="advisory-override">advisory table + explicit --set</button>
-          <button class="r-opt" data-value="config-mapped">config-mapped resolution now</button>
-          <button class="r-opt" data-value="fixed-effort">keep fixed effort</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the spark lane open under the §4 gate?</p>
-        <p class="r-dec-ctx">gpt-5.3-codex-spark is confirmed available on this account. The gate: exact level with a runnable named check, ≤ 0.5 h estimate, no open decisions, mechanical roles only, first twenty runs full-diff audited, two consecutive gate failures close the lane. §5.2 runs one pilot dispatch under exactly these conditions.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="pilot-gated">open as gated pilot</button>
-          <button class="r-opt" data-value="dry-run-only">dry-run only for now</button>
-          <button class="r-opt" data-value="reject">reject the lane</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="scheduling" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where does this plan sit in the roadmap — which sprint, or explicitly backlog?</p>
-        <p class="r-dec-ctx">The §5 prototype executes in the authoring session; §6 is an ongoing measurement loop with a checkpoint after ~50 varied runs. Deliberately left sprint-unassigned pending this decision rather than silently unscheduled.</p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="spec-vocabulary" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Is the three-level declared vocabulary (exact / guided / open) the right specification signal?</p>
+    <p class="r-dec-ctx">The prototype implements the enum as an optional field — reversible, nothing depends on it yet. Alternatives: free text (unmeasurable), derived-only scoring (weak proxies, no declaration to audit). §4 defines the levels by design ownership.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="three-level-enum">three-level enum</button>
+      <button class="r-opt" data-value="free-text">free text</button>
+      <button class="r-opt" data-value="derived-only">derived-only</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="routing-mode" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does a declared level select routing?</p>
+    <p class="r-dec-ctx">O2 (orchestrator applies the advisory table as an explicit --set override, ledger measures) versus O4 (flight-schema mapping resolves it automatically). O4 is deferred behind the §6 checkpoint by default; locking it now would encode unmeasured priors as config.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="advisory-override">advisory table + explicit --set</button>
+      <button class="r-opt" data-value="config-mapped">config-mapped resolution now</button>
+      <button class="r-opt" data-value="fixed-effort">keep fixed effort</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the spark lane open under the §4 gate?</p>
+    <p class="r-dec-ctx">gpt-5.3-codex-spark is confirmed available on this account. The gate: exact level with a runnable named check, ≤ 0.5 h estimate, no open decisions, mechanical roles only, first twenty runs full-diff audited, two consecutive gate failures close the lane. §5.2 runs one pilot dispatch under exactly these conditions.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="pilot-gated">open as gated pilot</button>
+      <button class="r-opt" data-value="dry-run-only">dry-run only for now</button>
+      <button class="r-opt" data-value="reject">reject the lane</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="scheduling" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does this plan sit in the roadmap — which sprint, or explicitly backlog?</p>
+    <p class="r-dec-ctx">The §5 prototype executes in the authoring session; §6 is an ongoing measurement loop with a checkpoint after ~50 varied runs. Deliberately left sprint-unassigned pending this decision rather than silently unscheduled.</p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-cer-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-written-by="crew-effort-routing investigation"
-               data-written-at="2026-08-22">
-        <h4 class="r-fu-title">Land the §5 prototype: spec-level recording, capability slice, config and policy surfaces</h4>
-        <div class="r-fu-body">Execute §5.1 and §5.2 as crew nodes under the routing they demonstrate (guided at reduced effort; exact down the spark lane with full-diff audit), then land the §5.3 coordinator surfaces and record the dry-run evidence.</div>
-        <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §5</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cer-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="crew-effort-routing investigation" data-written-at="2026-08-22" data-recommends-skill="" data-resolved-at="2026-08-22T09:37:23+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land the §5 prototype: spec-level recording, capability slice, config and policy surfaces</h4>
+    <div class="r-fu-body">Execute §5.1 and §5.2 as crew nodes under the routing they demonstrate (guided at reduced effort; exact down the spark lane with full-diff audit), then land the §5.3 coordinator surfaces and record the dry-run evidence.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §5</pre>
+    <p class="r-fu-outcome">Landed. §5.1 spec-level recording at sol/medium: gate passed, 173/173 focused tests, 8 added, 266 worker-seconds, commit dbb81e0 (merged 4d3f3d2). §5.2 capability slice down the spark lane (gpt-5.3-codex-spark, exact tier, full-diff pilot audit): gate passed, 14/14 tests, 63 worker-seconds, commit 2a10c38 (merged 1406b50). §5.3 flight layer + effort-routing reference landed in 6767cd5; spark dry-run resolves end-to-end from merged main. Capability cache rebuilt: 4 configurations tracked, observations carry spec_level. Full suite 1961 passed. Evidence: /reckon/evidence/archive/crew-effort-routing-landed.</p>
+    </article>
+<article class="r-fu" data-id="f-cer-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship session 2026-08-22" data-written-at="2026-08-22" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">§6 checkpoint: read the calibration slices and lock the routing table</h4>
+    <div class="r-fu-body">Trigger: roughly 50 varied-configuration runs in the committed ledgers (dispatches declaring --spec-level and routed by the §4 advisory table). Read pass rate, worker minutes, tokens, and redispatch lineage per (configuration × declared level × size bucket); apply the §6 decision rule; then lock or amend the four open decisions (spec-vocabulary, routing-mode, spark-lane, scheduling) from measured slices rather than priors.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §6</pre>
+    </article>
+</section>
 
   </main>
 </body>
