@@ -471,6 +471,15 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
     assert stored["worker_seconds_source"] == "unavailable"
 
 
+def test_a_completed_record_carries_the_declared_specification_level() -> None:
+    stored = ledger.build_record(
+        run_id="r-specified", plan="plan-a", gate="passed", spec_level="exact"
+    )
+
+    assert "spec_level" in ledger.RECORD_FIELDS
+    assert stored["spec_level"] == "exact"
+
+
 def test_completion_repair_reports_event_time_without_writing(home, repo) -> None:
     _historical_record(repo, "historical-event")
     _historical_stream(

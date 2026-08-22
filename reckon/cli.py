@@ -467,6 +467,12 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
 @click.option("--plan", "plan_slug", required=True, help="Plan slug the node serves.")
 @click.option("--section", default="", help="Plan section the node implements.")
 @click.option("--role", default="implement", show_default=True, help="Routing role.")
+@click.option(
+    "--spec-level",
+    type=click.Choice(["exact", "guided", "open"]),
+    default=None,
+    help="Declared specification ownership level; omitted means undeclared.",
+)
 @click.option("--node", "node_id", required=True, help="Stable node id.")
 @click.option("--goal", default="", help="The one deliverable this node produces.")
 @click.option("--done-when", default="", help="The measure that emits evidence.")
@@ -540,6 +546,7 @@ def crew_dispatch(
     plan_slug,
     section,
     role,
+    spec_level,
     node_id,
     goal,
     done_when,
@@ -575,6 +582,7 @@ def crew_dispatch(
         plan=plan_slug,
         section=section,
         role=role,
+        spec_level=spec_level or "",
         done_when=done_when,
         write_paths=list(write_paths),
         time_budget=time_budget,
