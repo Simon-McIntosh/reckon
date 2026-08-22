@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="crew-effort-routing">
+  <meta name="plan-title"     content="Crew Effort Routing">
+  <meta name="plan-summary"   content="Route each crew dispatch's model and effort from how completely the node is specified, add a gated small-model lane for exactly-specified work, and calibrate the dispatch sweet spot from the run ledger.">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Crew Effort Routing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Problem and evidence</h2>
+    <p>
+      Every crew dispatch resolves its worker model and reasoning effort from flight
+      config, and the host layer pins the codex backend to one configuration:
+      <code>gpt-5.6-sol</code> at <code>effort: high</code>. Nothing in current
+      practice varies it. The committed run ledgers across all mounted repositories
+      hold <strong>820 completed runs and every one of them ran that single
+      configuration</strong> — 86% gate-passed, median 12.8 worker-minutes for
+      implement nodes, p90 42 minutes, with individual runs spanning under a minute
+      to over four hours. One effort tier is serving a hundred-fold spread in task
+      size and an unmeasured spread in task difficulty.
+    </p>
+    <figure>
+      <img src="/reckon/figures/crew-effort-routing/run-duration-spread.png"
+           alt="Strip plot of worker minutes per run for each role on a log scale, all at one model and effort"
+           style="max-width:100%">
+      <figcaption>Committed run durations per role (log scale). Black tick =
+      median, grey tick = p90. Every point is the same model and effort — the
+      ledger contains no variation from which a cheaper adequate tier could be
+      identified.</figcaption>
+    </figure>
+    <p>
+      This monoculture has two costs, and they compound at opposite corners of the
+      same space:
+    </p>
+    <ul>
+      <li><strong>Effort over-spend.</strong> A node whose plan section already
+        prescribes the change — files named, snippets given, the check to run
+        stated — leaves little reasoning for the worker to do, yet is billed at the
+        same effort tier as a node the worker must design from scratch.</li>
+      <li><strong>Specification over-spend.</strong> The orchestrator (a
+        top-tier reasoning session) pays its own tokens to write prescriptions.
+        When it writes code snippets and test text into a plan and then dispatches
+        a high-effort worker anyway, the same reasoning is paid for twice — and an
+        over-prescribed spec can also over-constrain a worker that would have
+        found a better shape itself.</li>
+    </ul>
+    <p>
+      The calibration machinery to find the sweet spot already exists —
+      <code>reckon/capabilities.py</code> derives per-configuration success curves
+      and a competence horizon from the ledgers, and dispatch refuses nodes beyond
+      a measured horizon (exit 5) — but it has exactly one configuration to learn
+      from, and no record of how well-specified any node was. The blocking gap is
+      therefore not analysis: it is <strong>instrumentation (record the
+      specification level) and variation (dispatch at more than one
+      configuration)</strong>.
+    </p>
+
+    <h2 id="s2">§2 — What the dispatch stack already provides</h2>
+    <p>
+      The investigation confirmed the mechanics need almost nothing new; the
+      routing surface is already per-dispatch and provider-neutral:
+    </p>
+    <ul>
+      <li><strong>Layered flight config</strong> (<code>reckon/flight.py</code>):
+        shipped → host → project → override, with per-key provenance.
+        <code>model</code> and <code>effort</code> are free text on every backend
+        and role — reckon deliberately fixes no effort ladder.</li>
+      <li><strong>Per-dispatch override:</strong> <code>reckon crew dispatch
+        --set backends.codex.effort=medium</code> (or any dotted key) wins over
+        every layer, so the orchestrator can already vary routing per node; the
+        choice travels as data on the call.</li>
+      <li><strong>Attribution:</strong> every run record stores the exact agent
+        configuration that ran it (backend, model, effort, sandbox), the gate
+        verdict, worker seconds, tokens, changed lines and tests added — the full
+        read-out needed for calibration.</li>
+      <li><strong>The competence gate:</strong> per-configuration success curves
+        over estimated hours yield <code>competence_horizon_hours</code>; dispatch
+        refuses a node whose estimate exceeds the measured horizon of the selected
+        configuration. A configuration with no history is allowed (absence of
+        evidence is not evidence of incompetence) — which is exactly the opening a
+        pilot lane needs, and why the pilot needs its own explicit audit fence
+        (§4).</li>
+      <li><strong>Backend translation is contained:</strong>
+        <code>reckon/_backends.py</code> passes model and effort through to the
+        codex CLI as <code>-m &lt;model&gt;</code> and
+        <code>-c model_reasoning_effort=&lt;effort&gt;</code>; any identifier the
+        account supports works without code change.</li>
+    </ul>
+    <p>
+      What does <em>not</em> exist yet: any recorded signal of specification
+      completeness on a run, any routing policy connecting specification to
+      effort, and any small-model backend in config. Availability of the small
+      codex model was probed live on this host (one trivial read-only prompt per
+      identifier):
+    </p>
+    <table>
+      <thead><tr><th>Model identifier</th><th>Probe result on this account</th></tr></thead>
+      <tbody>
+        <tr><td><code>gpt-5.3-codex-spark</code></td><td><strong>Supported</strong> — responded correctly; accepts <code>model_reasoning_effort</code> without complaint</td></tr>
+        <tr><td><code>gpt-5.3-spark</code></td><td>Rejected — 400 "not supported when using Codex with a ChatGPT account"</td></tr>
+        <tr><td><code>gpt-5.3-codex</code></td><td>Rejected — 400, same message</td></tr>
+        <tr><td><code>codex-spark</code></td><td>Rejected — 400, same message</td></tr>
+        <tr><td><code>gpt-5.6-codex-spark</code></td><td>Rejected — 400, same message</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Options considered</h2>
+    <p><strong>O1 — advisory prose only.</strong> Add an effort-selection table to
+      the reckon-ship skill and let the orchestrator judge each node. Zero code
+      surface, immediately usable — but the judgment leaves no trace on the run
+      record, so the ledger can never say whether the judgments were right, and
+      un-recorded policy drifts. Insufficient alone; its table survives as the
+      advisory layer of O2.</p>
+    <p><strong>O2 — declared specification level, recorded on the run, routing by
+      orchestrator override (recommended now).</strong> The dispatch gains an
+      optional declared <code>spec-level</code> (vocabulary in §4) that travels
+      node → run record → committed ledger → capability observations. Routing
+      stays an explicit orchestrator <code>--set</code> override guided by an
+      advisory table. Reckon stays neutral (it maps nothing to nothing); the
+      ledger accumulates exactly the slices needed to find the sweet spot; the
+      surface is one optional field plus one recorded key.</p>
+    <p><strong>O3 — derived specification scoring.</strong> Reckon computes
+      proxies at dispatch (does done-when name a runnable check; code-block count
+      and word count of the plan section at base; goal length). Honest —
+      self-graded declarations cannot flatter themselves — but the proxies are
+      weak individually and the parse surface is real. Deferred: worth adding as
+      an <em>audit</em> of declared levels once declared data exists to validate
+      proxies against, not as the primary signal.</p>
+    <p><strong>O4 — config-mapped automatic routing.</strong> A flight-schema
+      extension mapping spec level → model/effort per role, resolved by
+      <code>resolve_role</code>. This is the eventual "policy as data" home, but
+      locking a mapping before any measurement exists would encode priors as
+      config. Deferred behind the §6 checkpoint.</p>
+    <p><strong>O5 — reckon chooses effort itself.</strong> Rejected. The flight
+      schema states the principle explicitly: an effort ladder must not be fixed
+      by reckon, and silent rerouting is the failure mode the provenance layer
+      exists to prevent. Routing decisions are the orchestrator's, expressed as
+      data.</p>
+
+    <h2 id="s4">§4 — Design: specification levels, routing, and the spark lane</h2>
+    <p>
+      <strong>The specification level names who owns the design.</strong> It is a
+      property of the node's plan section, declared at dispatch:
+    </p>
+    <table>
+      <thead><tr><th>Level</th><th>The plan section provides</th><th>The worker owns</th></tr></thead>
+      <tbody>
+        <tr><td><code>exact</code></td><td>The prescribed change: files, snippets or exact steps, and the named check to run</td><td>Transcription and verification. A prescription that fails its own check is a blocker to report, not a licence to redesign.</td></tr>
+        <tr><td><code>guided</code></td><td>The fixed design: interfaces, invariants, where things live, and the measure</td><td>Deriving the implementation within that design.</td></tr>
+        <tr><td><code>open</code></td><td>The goal, constraints, and the measure</td><td>The design and the implementation.</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/crew-effort-routing/routing-policy-space.png"
+           alt="Policy space: specification completeness against worker effort, with a matched diagonal band, two waste zones, and a boxed spark lane at exact/low"
+           style="max-width:100%">
+      <figcaption>The routing space. Off-diagonal corners are the two waste modes:
+      exact spec + high effort is double-paid reasoning; open spec + low effort is
+      an under-powered worker. The spark lane is the boxed corner — entered only
+      through the gate below.</figcaption>
+    </figure>
+    <p>
+      <strong>Choose the level first, by ownership — never inflate it to enable a
+      cheaper worker.</strong> If the design is genuinely settled (a mechanical
+      migration, a repeated pattern, a change this plan already had to reason out
+      for other reasons), write it exactly and route down. If it is not settled,
+      do <em>not</em> spend orchestrator tokens writing code into the plan: declare
+      guided or open and route the reasoning to the worker. Raising the
+      specification level pays orchestrator reasoning for worker reasoning at an
+      unfavourable exchange rate unless the exact spec amortises over several
+      nodes (one template, many dispatches) — that amortised case is the spark
+      lane's natural habitat.
+    </p>
+    <p><strong>Advisory routing table (initial priors — §6 calibrates them; the
+      choice always travels as an explicit <code>--set</code> override on the
+      dispatch call):</strong></p>
+    <table>
+      <thead><tr><th>Declared level</th><th>First-choice routing</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>exact</code></td><td>spark lane (via its gate), else sol at <code>medium</code></td><td>The reasoning is already in the spec; the worker executes and verifies.</td></tr>
+        <tr><td><code>guided</code></td><td>sol at <code>medium</code> for small nodes, <code>high</code> above ~1 worker-hour</td><td>Implementation reasoning remains; design reasoning does not.</td></tr>
+        <tr><td><code>open</code></td><td>sol at <code>high</code>; <code>xhigh</code> for cross-cutting single-owner nodes</td><td>The worker carries design and implementation.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The spark lane — scope fence.</strong> Dispatching
+      <code>gpt-5.3-codex-spark</code> is permitted only when <em>all</em> of the
+      following hold. The lane exists to buy speed and budget on work whose
+      correctness is already pinned by its specification and its check — never to
+      write uncertain code quickly.
+    </p>
+    <ol>
+      <li>Declared level is <code>exact</code>, and the plan section actually
+        prescribes the change with a named check — a declaration the section does
+        not support is a specification bug to fix before dispatch.</li>
+      <li>The done-when is a runnable named check (a test command, a command whose
+        output is compared, or a numeric bound) — prose measures disqualify.</li>
+      <li>Node estimate ≤ 0.5 worker-hours until spark has its own measured
+        competence horizon; thereafter the existing competence gate governs.</li>
+      <li>No <code>requires-decision</code> keys — nothing left open that the
+        worker could resolve by guessing.</li>
+      <li>Role is a mechanical class (<code>implement</code>, <code>test</code>,
+        <code>documentation</code>). Judgment roles
+        (<code>review</code>, <code>investigate</code>) never route to the
+        lane.</li>
+      <li><strong>Pilot audit:</strong> for the first twenty spark runs the
+        orchestrator audits the full diff, not only the manifest and gate. A gate
+        failure on an exact-tier node indicts the specification before the model —
+        reclassify the node's level first, then judge the lane.</li>
+      <li><strong>Circuit breaker:</strong> two consecutive spark gate failures
+        close the lane until the failing specifications have been re-examined and
+        the closure decision revisited on this plan.</li>
+    </ol>
+    <p>
+      Model identifiers and effort vocabularies remain provider data in flight
+      config; reckon source names none of them. The spark backend is defined in
+      this repository's project flight layer
+      (<code>docs/state/reckon/flight.yaml</code>) and is routed to only by
+      explicit override — no role selects it by default.
+    </p>
+
+    <h2 id="s5">§5 — Prototype (this session)</h2>
+    <p>
+      The prototype changes no default behaviour: the field is optional, the spark
+      backend is defined but not routed to, and routing overrides remain explicit
+      per-dispatch data. It is deliberately executed <em>under the policy it
+      proposes</em>: §5.1 is a guided node dispatched at reduced effort, §5.2 is an
+      exact node dispatched down the spark lane under the pilot audit — together
+      producing the ledger's first varied-configuration rows.
+    </p>
+
+    <h3 id="s5.1">§5.1 — Record a declared specification level end-to-end (guided)</h3>
+    <p><strong>Design (fixed):</strong> a declared level travels dispatch flag →
+      node → run pointer → committed ledger record.</p>
+    <ul>
+      <li><code>TaskNode</code> (<code>reckon/crew.py</code>) gains
+        <code>spec_level: str = ""</code>, serialised by <code>as_dict()</code>.
+        Accepted values: empty (undeclared), <code>exact</code>,
+        <code>guided</code>, <code>open</code>. An unknown value is refused in
+        <code>plan_dispatch</code> beside the node-id shape check — fail fast,
+        before any side effect, naming the accepted vocabulary.</li>
+      <li><code>compose_prompt</code> emits one additional line after
+        <code>ROLE</code> when a level is declared, telling the worker what it
+        owns (per the §4 table): exact → implement as written and run the named
+        check, deviation is a blocker to report; guided → the plan fixes the
+        design, derive the implementation; open → the plan fixes goal and
+        measure, design and implement. No line when undeclared.</li>
+      <li><code>reckon crew dispatch</code> (<code>reckon/cli.py</code>) gains
+        <code>--spec-level</code> (choice: exact / guided / open; default
+        undeclared).</li>
+      <li><code>ledger.build_record</code> (<code>reckon/ledger.py</code>) gains
+        <code>spec_level: str = ""</code>, stored as a top-level record field and
+        added to <code>RECORD_FIELDS</code>; <code>complete()</code>
+        (<code>reckon/crew.py</code>) forwards it from the pointer's node dict.</li>
+      <li>Tests in <code>tests/test_crew.py</code> and
+        <code>tests/test_ledger.py</code>: vocabulary refusal, node
+        serialisation, prompt line present/absent, record field survives
+        build_record, completion forwards the level from a pointer.</li>
+    </ul>
+    <p><strong>Done-when:</strong> <code>uv run pytest tests/test_crew.py
+      tests/test_ledger.py</code> passes with the new coverage present.</p>
+
+    <h3 id="s5.2">§5.2 — Capability observations carry the level (exact)</h3>
+    <p><strong>Prescription:</strong> in
+      <code>reckon/capabilities.py::derive_capabilities</code>, the observation
+      dict appended for each usable run gains one key after
+      <code>"changed_lines"</code>:</p>
+    <pre>"spec_level": str(run.get("spec_level") or "") or None,</pre>
+    <p>Add one test to <code>tests/test_capabilities.py</code> using the existing
+      <code>_project</code> / <code>_plan</code> fixtures and
+      <code>ledger.append_run</code> + <code>ledger.build_record</code> directly:
+      one run built with <code>spec_level="exact"</code>, one without; assert the
+      derived observations carry <code>"exact"</code> and <code>None</code>
+      respectively.</p>
+    <p><strong>Done-when:</strong> <code>uv run pytest
+      tests/test_capabilities.py</code> passes including the new test.</p>
+    <p><em>Sequencing:</em> depends on §5.1 (the <code>build_record</code>
+      parameter); dispatched only after §5.1 is verified and integrated.</p>
+
+    <h3 id="s5.3">§5.3 — Config and policy surfaces (coordinator-owned)</h3>
+    <ul>
+      <li>Project flight layer <code>docs/state/reckon/flight.yaml</code> defining
+        the <code>codex-spark</code> backend (command <code>codex</code>, model
+        <code>gpt-5.3-codex-spark</code>, worktree-full sandbox, short time
+        budget). Defined, not defaulted: <code>default_backend</code> is
+        untouched and no role selects it.</li>
+      <li>Advisory policy reference
+        <code>skills/reckon-ship/references/effort-routing.md</code> carrying the
+        §4 tables and the spark gate, with a one-line pointer from the dispatch
+        section of <code>skills/reckon-ship/SKILL.md</code>.</li>
+      <li>A recorded <code>--dry-run</code> dispatch demonstrating spark-lane
+        resolution end-to-end (routing, provenance, competence verdict) without
+        spawning a worker.</li>
+    </ul>
+
+    <h2 id="s6">§6 — Finding the dispatch sweet spot: trial protocol</h2>
+    <p>
+      With the level recorded and routing varied, the sweet spot is a measurement,
+      not a debate. The loop:
+    </p>
+    <ol>
+      <li><strong>Instrument</strong> — §5 lands: every dispatch may declare a
+        level; the ledger keeps it beside the agent configuration it ran on.</li>
+      <li><strong>Vary</strong> — orchestrators route by the §4 advisory table
+        (guided/open at <code>medium</code> vs <code>high</code> by size; exact
+        down the spark lane under its gate). Assignment follows the table rather
+        than randomisation; at the current run rate (hundreds of runs per month
+        across mounted repos) the slices populate within weeks, and the table
+        itself is the thing under test.</li>
+      <li><strong>Read out</strong> per (configuration × declared level × size
+        bucket): gate pass rate, median worker minutes, tokens, and redispatch
+        rate (lineage attempts — a cheap tier that fails and redispatches to a
+        higher one has to be charged both runs).</li>
+      <li><strong>Decision rule</strong> — the sweet spot for a slice is the
+        cheapest configuration whose pass rate ≥ 0.8 (the capabilities success
+        threshold) over at least 10 usable runs, ties resolved by fewer total
+        worker-minutes including redispatches. A slice with no qualifying cheap
+        configuration keeps the current default.</li>
+      <li><strong>Checkpoint</strong> — after roughly 50 varied-configuration
+        runs, review the slices on this plan: lock the winning mapping into
+        flight config as role overlays (option O4 graduates from deferred), widen
+        or close the spark lane per its own numbers, and decide whether derived
+        spec scoring (O3) is worth adding as an audit of declarations.</li>
+    </ol>
+    <p>
+      The over-specification side has no direct ledger counter (orchestrator
+      tokens are not recorded per plan section), so it is controlled by rule
+      rather than by measurement: the §4 ownership test decides the level, and the
+      checkpoint reviews whether exact-tier specs are amortising (several
+      dispatches per spec) or being written one-off for single nodes — the
+      latter is the double-paid corner and the signal to stop.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+
+      <div class="r-dec" data-key="spec-vocabulary" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Is the three-level declared vocabulary (exact / guided / open) the right specification signal?</p>
+        <p class="r-dec-ctx">The prototype implements the enum as an optional field — reversible, nothing depends on it yet. Alternatives: free text (unmeasurable), derived-only scoring (weak proxies, no declaration to audit). §4 defines the levels by design ownership.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="three-level-enum">three-level enum</button>
+          <button class="r-opt" data-value="free-text">free text</button>
+          <button class="r-opt" data-value="derived-only">derived-only</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="routing-mode" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How does a declared level select routing?</p>
+        <p class="r-dec-ctx">O2 (orchestrator applies the advisory table as an explicit --set override, ledger measures) versus O4 (flight-schema mapping resolves it automatically). O4 is deferred behind the §6 checkpoint by default; locking it now would encode unmeasured priors as config.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="advisory-override">advisory table + explicit --set</button>
+          <button class="r-opt" data-value="config-mapped">config-mapped resolution now</button>
+          <button class="r-opt" data-value="fixed-effort">keep fixed effort</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the spark lane open under the §4 gate?</p>
+        <p class="r-dec-ctx">gpt-5.3-codex-spark is confirmed available on this account. The gate: exact level with a runnable named check, ≤ 0.5 h estimate, no open decisions, mechanical roles only, first twenty runs full-diff audited, two consecutive gate failures close the lane. §5.2 runs one pilot dispatch under exactly these conditions.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="pilot-gated">open as gated pilot</button>
+          <button class="r-opt" data-value="dry-run-only">dry-run only for now</button>
+          <button class="r-opt" data-value="reject">reject the lane</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="scheduling" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Where does this plan sit in the roadmap — which sprint, or explicitly backlog?</p>
+        <p class="r-dec-ctx">The §5 prototype executes in the authoring session; §6 is an ongoing measurement loop with a checkpoint after ~50 varied runs. Deliberately left sprint-unassigned pending this decision rather than silently unscheduled.</p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-cer-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="orchestrator"
+               data-written-by="crew-effort-routing investigation"
+               data-written-at="2026-08-22">
+        <h4 class="r-fu-title">Land the §5 prototype: spec-level recording, capability slice, config and policy surfaces</h4>
+        <div class="r-fu-body">Execute §5.1 and §5.2 as crew nodes under the routing they demonstrate (guided at reduced effort; exact down the spark lane with full-diff audit), then land the §5.3 coordinator surfaces and record the dry-run evidence.</div>
+        <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §5</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
