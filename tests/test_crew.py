@@ -391,6 +391,15 @@ def test_the_resolution_fills_the_defaults_a_dispatch_would_fill(home) -> None:
     assert resolution.launch == "cli"
 
 
+def test_a_node_serialises_its_declared_specification_level() -> None:
+    assert _node(spec_level="guided").as_dict()["spec_level"] == "guided"
+
+
+def test_an_unknown_specification_level_is_refused_before_resolution(home) -> None:
+    with pytest.raises(crew.CrewError, match="exact, guided, open.*undeclared"):
+        crew.plan_dispatch(node=_node(spec_level="prescriptive"), config=CONFIG)
+
+
 @pytest.mark.parametrize("spelling", ["3", "s3", "#s3", "section 3", "§ 3"])
 def test_numbered_section_spellings_normalize_at_dispatch(home, spelling) -> None:
     resolution = crew.plan_dispatch(
@@ -434,6 +443,8 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
             "plan-a",
             "--section",
             node.section,
+            "--spec-level",
+            "guided",
             "--node",
             node.id,
             "--goal",
@@ -455,6 +466,7 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
     payload = json.loads(result.output)
     assert result.exit_code == 0
     assert payload["write_paths"] == write_paths
+    assert payload["node"]["spec_level"] == "guided"
     _assert_no_dispatch_artifacts(repo)
 
 
@@ -1716,6 +1728,29 @@ def test_the_prompt_copies_no_plan_prose(home, repo) -> None:
     assert len(prompt.splitlines()) < 70
 
 
+@pytest.mark.parametrize(
+    ("spec_level", "guidance"),
+    [
+        ("exact", "implement as written and run the named check"),
+        ("guided", "the plan fixes the design; derive the implementation"),
+        ("open", "the plan fixes the goal and measure; design and implement"),
+    ],
+)
+def test_the_prompt_names_declared_specification_ownership(
+    home, repo, spec_level, guidance
+) -> None:
+    record = _dispatched(home, repo, spec_level=spec_level)
+    prompt = Path(record["prompt_path"]).read_text()
+
+    assert f"SPEC     {spec_level} — {guidance}" in prompt
+
+
+def test_the_prompt_omits_specification_guidance_when_undeclared(home, repo) -> None:
+    record = _dispatched(home, repo)
+
+    assert "\nSPEC     " not in Path(record["prompt_path"]).read_text()
+
+
 def test_the_prompt_names_concurrent_scopes(home, repo) -> None:
     record = crew.dispatch(
         node=_node(),
@@ -1741,6 +1776,14 @@ def test_promotion_without_a_commit_records_absent_changed_lines(home, repo) -> 
 
     assert stored["commits"] == []
     assert stored["changed_lines"] is None
+
+
+def test_promotion_forwards_the_declared_specification_level(home, repo) -> None:
+    record = _dispatched(home, repo, spec_level="guided")
+
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+
+    assert stored["spec_level"] == "guided"
 
 
 @pytest.mark.parametrize("gate", ["failed", "not-run"])

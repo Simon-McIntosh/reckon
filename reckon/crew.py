@@ -250,6 +250,7 @@ class TaskNode:
     plan: str
     section: str = ""
     role: str = "implement"
+    spec_level: str = ""
     done_when: str = ""
     write_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
@@ -270,6 +271,7 @@ class TaskNode:
             "requires_decisions": list(self.requires_decisions),
             "role": self.role,
             "section": self.section,
+            "spec_level": self.spec_level,
             "time_budget": self.time_budget,
             "write_paths": list(self.write_paths),
         }
@@ -730,6 +732,18 @@ def compose_prompt(
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
     section = f" {node.section}" if node.section else ""
+    specification_guidance = {
+        "exact": (
+            "SPEC     exact — implement as written and run the named check; "
+            "deviation is a blocker to report.\n"
+        ),
+        "guided": (
+            "SPEC     guided — the plan fixes the design; derive the implementation.\n"
+        ),
+        "open": (
+            "SPEC     open — the plan fixes the goal and measure; design and implement.\n"
+        ),
+    }.get(node.spec_level, "")
     delivery_directory_note = ""
     if Path(working_directory) != Path(worktree):
         delivery_directory_note = f"""
@@ -744,7 +758,7 @@ NODE     {node.id}
 GOAL     {node.goal}
 PLAN     {project}:{node.plan}{section}
 ROLE     {node.role}
-{delivery_directory_note}
+{specification_guidance}{delivery_directory_note}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}
@@ -1385,6 +1399,11 @@ def plan_dispatch(
     """
     if not _SAFE_ID.fullmatch(node.id):
         raise CrewError(f"node id {node.id!r} must match {_SAFE_ID.pattern}")
+    if node.spec_level not in ("", "exact", "guided", "open"):
+        raise CrewError(
+            f"spec level {node.spec_level!r} is not one of exact, guided, open, "
+            "or empty (undeclared)"
+        )
     backend_name, backend = resolve_role(config, node.role)
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
@@ -2264,6 +2283,7 @@ def _complete_locked(
         section=str(node.get("section") or ""),
         node=str(node.get("id") or ""),
         role=str(record.get("role") or ""),
+        spec_level=str(node.get("spec_level") or ""),
         member_id=str(record.get("member") or ""),
         backend=str(
             record.get("backend") or (record.get("agent") or {}).get("backend") or ""
@@ -2425,7 +2445,14 @@ def _apply_budget_watchdog(
     pid = record.get("pid")
     try:
         _signal_process_group(int(pid), record.get("pid_start_time"))
-    except (CrewError, ProcessLookupError, PermissionError, OSError, TypeError, ValueError) as exc:
+    except (
+        CrewError,
+        ProcessLookupError,
+        PermissionError,
+        OSError,
+        TypeError,
+        ValueError,
+    ) as exc:
         record["watchdog_detail"] = f"budget watchdog could not stop pid {pid}: {exc}"
         return
     record["phase"] = "stopped"

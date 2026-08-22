@@ -72,6 +72,7 @@ RECORD_FIELDS = (
     "section",
     "node",
     "role",
+    "spec_level",
     "member",
     "backend",
     "agent",
@@ -306,6 +307,7 @@ def build_record(
     node: str = "",
     section: str = "",
     role: str = "",
+    spec_level: str = "",
     member_id: str = "",
     backend: str = "",
     agent: Mapping[str, Any] | None = None,
@@ -341,6 +343,7 @@ def build_record(
         "section": normalize_section(section),
         "node": str(node),
         "role": str(role),
+        "spec_level": str(spec_level),
         "member": str(member_id),
         # Routing is a property of the run, not only of the agent description.
         # Keeping it at the record level preserves attribution when a recovered
