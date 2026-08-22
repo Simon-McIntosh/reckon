@@ -80,18 +80,14 @@ the next piece of work *is*, not by whichever worker is convenient:
 | A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
 | New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
 
-**This works only if the original dispatch named `--member`.** Completion removes
-the live pointer; the session survives in the member's committed `crew.json`
-entry. **So dispatch every node as a roster member by default** — list members
-with `reckon crew member list --project <project>` and register them with
-`reckon crew member add`. A member without a session captures its first run's
-session.
-
-Scope decides continuity. Work inside the landed node's paths and gate returns
-to its member; wider scope is a new node and records `--scope-changed`.
-**A member is a serial worker, so size the active fleet in members.** Dispatch
-refuses a member with a non-terminal in-flight run; observe or recover and
-promote that run before reuse. Independent concurrent work uses distinct members.
+**This works only if the original dispatch named `--member`** — the session
+survives in the member's committed `crew.json` entry after the live pointer
+goes. **So dispatch every node as a roster member by default** (`reckon crew
+member list` / `member add`; a member without a session captures its first
+run's). Scope decides continuity: work inside the landed node's paths returns
+to its member; wider scope is a new node recording `--scope-changed`. **A
+member is a serial worker** — dispatch refuses one with a non-terminal
+in-flight run, so independent concurrent work uses distinct members.
 
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
@@ -243,12 +239,11 @@ belongs to the OTHER project's checkout — never implement it in this one;
 surface it as `/reckon-ship <project>:<slug>`.
 
 Before applying this stop, inspect `roadmap.wiring_findings`. A research or
-evidence artifact in `depends_on` is not an unmet executable prerequisite; move
-that edge to `informs`. A superseded umbrella, dangling slug, cycle, or
-sprint-order inversion is also a plan-state defect. Repair it through
-`reckon-edit` when authorized, re-run `roadmap`, and only then classify the
-remaining unresolved rows as true prerequisites. Never ask the user to
-override a relationship that Reckon identifies as malformed.
+evidence artifact in `depends_on` belongs in `informs`; a superseded umbrella,
+dangling slug, cycle, or sprint-order inversion is a plan-state defect. Repair
+through `reckon-edit` when authorized, re-run `roadmap`, and only then classify
+the remaining rows as true prerequisites. Never ask the user to override a
+relationship Reckon identifies as malformed.
 
 For a plan-mode stop, ask for explicit user authorization:
 
@@ -287,33 +282,17 @@ follow its earliest local prerequisite from the returned critical/open path.
 Resolve every error-level wiring finding before implementation.
 
 ```python
-# Read ALL current plan state, then read the response/storage contract
-state = read_plan(
-    resource={"project": "<project>", "type": "plan", "id": "<slug>"},
-    view="raw",
-)
-contract = read_plan(
-    resource={"project": "<project>", "type": "plan", "id": "<slug>"},
-    view="schema",
-)
-
-# Also fetch the raw HTML to read section prose
-# (the MCP payload has parsed state; you also need the full prose sections)
-# Use: curl http://127.0.0.1:8765/<project>/plans/<slug> OR read the discovery row's href
+state = read_plan(resource={"project": "<project>", "type": "plan",
+                            "id": "<slug>"}, view="raw")
+contract = read_plan(resource={"project": "<project>", "type": "plan",
+                               "id": "<slug>"}, view="schema")
 ```
 
-Then read the COMPLETE HTML file from disk:
-```bash
-# Read the full plan HTML — every section, every paragraph
-cat docs/plans/<slug>.html
-```
-
-Do not proceed until you have read and understood:
-- Every `<h2>` section and its prose
-- All `<section data-reckon="decisions">` items (locked and open)
-- All `<section data-reckon="followups">` items (resolved and open)
-- The `plan-depends-on` meta tag
-- Any `Trigger:` subsections or deferral markers
+The MCP payload holds parsed state; the prose lives in the file. Read the
+COMPLETE HTML from disk (`cat docs/plans/<slug>.html`) and do not proceed until
+you have read every `<h2>` section, all decision and followup items (locked,
+open, and resolved), the `plan-depends-on` meta tag, and any `Trigger:`
+subsections or deferral markers.
 
 ### 1b. Currency audit and prior-art reconnaissance — MANDATORY
 
@@ -326,23 +305,16 @@ A node authored from stale text executes its defects faithfully.
 
 **Dispatch a prior-art scout in the background.** One read-only
 investigate-role node, dispatched through `reckon crew dispatch` exactly like
-every other node — never a harness-native background agent (an
-Explore/Task-tool delegation bypasses the run ledger, the manifest contract,
-and calibration) and never inline. There is no worker pool to be scarce:
-register a fresh roster member for the scout if every existing member is
-busy. The backend comes from flight config like every dispatch. Launch it at
-pre-flight so it runs while the coordinator finishes reading state. Its single deliverable is a REUSE MAP: the modules, symbols, tests and
-data already in reach that solve the problem in whole or in part, each with a
-one-line fitness verdict. The scout searches:
-
-- this repository, capability-shaped rather than filename-shaped ("2-D
-  interpolation", "polygon clipping", "contour tracing" — not "does
-  fsa_kernel.py exist");
-- every repository named by the plan's external `depends_on` / `blocks`
-  refs; and
-- every repository this repo's AGENTS.md declares as coupled (e.g.
-  nova ⇄ imas-ambix) — coupling runs both ways, so an ambix plan searches
-  nova and vice versa.
+every other node — never a harness-native background agent (that bypasses the
+run ledger, manifest contract, and calibration) and never inline; register a
+fresh roster member if every existing one is busy. Launch it at pre-flight so
+it runs while the coordinator finishes reading state. Its single deliverable is
+a REUSE MAP: the modules, symbols, tests and data already in reach that solve
+the problem in whole or part, each with a one-line fitness verdict. It searches
+capability-shaped, not filename-shaped ("2-D interpolation", not "does
+fsa_kernel.py exist"), across this repository, every repository named by the
+plan's external `depends_on` / `blocks` refs, and every repository this repo's
+AGENTS.md declares as coupled — coupling runs both ways.
 
 **Nodes cite the reuse map.** Each implementation node names the machinery it
 extends or consumes. New machinery requires a fitness verdict explaining why
@@ -363,16 +335,9 @@ Build a complete audit before implementing anything:
 **Report a complete audit before dispatching a single worker:**
 ```
 Audit for <slug>:
-  Implementable: §2 (3 items), §3 (2 items), §4 (1 item)
-  Deferred:      §5 — marked post-v1
-  Already done:  §1 — commit abc1234 present in prose
-  Prerequisites: CLEAR (no depends_on / all satisfied)
-
-Dispatch plan:
-  §2: fleet of 3 (parallel) — workers A/B/C
-  §3: fleet of 2 (parallel) — workers D/E
-  §4: one worker — 1 item
-  Sequential order: §2 → §3 → §4 (§3 depends on §2 output)
+  Implementable: §2 (3 items), §3 (2 items)   Deferred: §5 — post-v1
+  Already done:  §1 — commit abc1234           Prerequisites: CLEAR
+Dispatch plan: §2 fleet of 3 → §3 fleet of 2 (§3 depends on §2 output)
 ```
 
 ### 3. Scope allocation
@@ -509,16 +474,11 @@ crew(project, view="budget")    backend headroom, hold state, reset time, and di
 ```
 
 `view="live"` answers "are my background workers alive, and where are they" for
-the whole fleet at once. Reaching for `reckon crew list`, a `stat` on a stream
-file, or a `ps` grep instead is a sign you skipped the tool — those give you less,
-one run at a time, and a `ps` grep cannot tell your workers from a peer session's.
-
-Two things the tool cannot do for you. **`phase` is read from the stored record,
-so it lags** — a run deep into its work still reads `starting` until an `observe`
-folds its stream, while `process_alive` and `log_age_seconds` in the same payload
-are always fresh. Run `observe` first when the phase matters. And **`observe` is
-also what captures the run's token usage**, so promoting without it records
-`tokens: null` even though the stream held them all along.
+the whole fleet at once; `reckon crew list`, stream-file `stat`s, and `ps`
+greps give less. Two caveats: **`phase` lags the stored record** (a working run
+reads `starting` until an `observe` folds its stream; `process_alive` and
+`log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
+promoting without it records `tokens: null`.
 
 ### Arm a watch when you dispatch, and watch the manifest's status
 
@@ -543,16 +503,12 @@ until grep -qE '^status: (complete|blocked|failed)' "$M/node.md" 2>/dev/null; do
 done
 ```
 
-The liveness check matters as much as the grep. A watch keyed only to a file
-waits forever when its run died before writing anything — which is exactly what a
-session-lock collision does, and the wait is silent, so the lost node looks like a
-slow one.
-
-The live classifier reads the manifest's recorded status. `complete` becomes
-`completed_unpromoted`; `blocked` and `failed` retain those classifications;
-missing or unusable terminal manifests become `abandoned`. Still read the
-manifest's evidence before promotion: classification distinguishes outcomes but
-does not prove the gate.
+The liveness check matters as much as the grep: a watch keyed only to a file
+waits silently forever when its run died before writing anything. The live
+classifier reads the manifest's recorded status — `complete` becomes
+`completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
+manifests become `abandoned` — but classification does not prove the gate; read
+the manifest's evidence before promotion.
 
 ### Concurrency — the roster is the whole authority
 
@@ -642,64 +598,45 @@ already recorded, so it spends none of the resource it is measuring.
 
 Four properties of a hold, each the opposite of a failure mode:
 
-- **A hold is not a failure.** No worktree is created, no node fails, nothing has
-  to be unwound, and the nodes stay ready. `reckon crew dispatch` exits 3 with a
-  `hold` payload for the same reason — a caller that cannot tell a hold from a
-  malformed node either rewrites work that was fine or abandons work that was
-  only waiting.
-- **A hold is per-backend.** One spent backend must never stop ready nodes routed
-  somewhere else; the pre-flight reports held and clear backends side by side, and
-  the clear ones dispatch in the same wave.
-- **Unknown never holds.** A backend that publishes no headroom reads `unknown`,
-  and the wave opens. Absence of a signal is not evidence of exhaustion: a false
-  hold is invisible and stalls everything, while the failure it would prevent is a
-  rejected call that announces itself.
-- **A hold is never silent.** Report it on the four axes below, with the
-  occasion `hold`: what is held, why — with the figure — how it stays recoverable,
-  and when it lifts. A hold nobody reported is indistinguishable from a crashed
-  orchestrator.
+- **A hold is not a failure.** Nothing is created or unwound; the nodes stay
+  ready. `reckon crew dispatch` exits 3 with a `hold` payload for the same reason.
+- **A hold is per-backend.** The pre-flight reports held and clear backends side
+  by side; the clear ones dispatch in the same wave.
+- **Unknown never holds.** A backend publishing no headroom reads `unknown` and
+  the wave opens — absence of a signal is not evidence of exhaustion.
+- **A hold is never silent.** Report it on the four axes below with occasion
+  `hold`: what is held, why — with the figure — how it recovers, when it lifts.
 
-The reserve is worth understanding rather than tuning. A fresh dispatch stops at
-the ceiling *less* `budget.resume_reserve_pct`, while answering a stuck worker may
-spend it — because spending the last of a quota on a new node leaves nothing to
-answer a `NEEDS-HELP:` report with, which strands the wave in its worst possible
-state: work in flight and no way to unblock it.
+A fresh dispatch stops at the ceiling *less* `budget.resume_reserve_pct`;
+answering a stuck worker may spend the reserve — spending the last of a quota on
+a new node leaves nothing to answer a `NEEDS-HELP:` report with.
 
-**Resuming a held wave without a human is a host capability, not a process rule.**
-Whether this orchestrator can schedule its own resumption at the reported
-`resume_at` depends entirely on the harness it is running inside, so it is
-documented per host in `references/orchestrator-harness/<harness>.md` and nowhere
-else. Read the file for the host you are on. Where no such capability exists,
-report the reset time and stop — degraded, not broken, and never a reason to
-dispatch into the quota anyway.
+**Resuming a held wave without a human is a host capability, not a process rule** —
+documented per host in `references/orchestrator-harness/<harness>.md`. Where no
+such capability exists, report the reset time and stop — degraded, not broken,
+never a reason to dispatch into the quota anyway.
 
 ### 4d. The closure fence — a session does not end into available work
 
-**Authored here and nowhere else.** §4b refuses to open work behind an unmeasured
-gate. §4c refuses to open a wave on a spent quota. Both guard the same direction:
-doing too much. **This fence guards the other one, and it is the one that actually
-fires.** Stopping is the unguarded move in every orchestration, because stopping
-produces no error, no refusal, and no artifact — only a tidy report.
+**Authored here and nowhere else.** §4b and §4c guard doing too much. **This
+fence guards stopping — the unguarded move, because stopping produces no error,
+no refusal, and no artifact, only a tidy report.** Overrunning a gate or budget
+announces itself; under-running a plan announces nothing, which is why stopping
+gets the heavier machinery.
 
-So before the closing summary, **refuse to end the session while any queue row is
-foldable.** Run the drain of §7c, write its ledger, and read the ledger back:
+Before the closing summary, **refuse to end the session while any queue row is
+foldable.** Run the drain of §7c, write its ledger, and read it back:
 
 - every open row carries a disposition from the closed set, or the session
   continues;
-- a row whose disposition is `folded` but which has no dispatched node id is not
-  folded — it is a stop with paperwork;
+- a row disposed `folded` with no dispatched node id is not folded — it is a
+  stop with paperwork;
 - `context-exhausted` is the one disposition that ends a session with foldable
   work outstanding, and it must carry its figure (§7c).
 
-Report the fence like any other, on the four axes of §4e with occasion `close`. A
-session that ends with `foldable-remaining: 0` has earned its summary; a session
-that ends with a nonzero count and no `context-exhausted` row has not, and the
-ledger will say so to whoever reads it next.
-
-**The asymmetry is deliberate and worth stating plainly.** Overrunning a gate or a
-budget announces itself — a refused call, a failed assertion, an angry ledger.
-Under-running a plan announces nothing. That is precisely why it needs the
-heavier machinery, not the lighter.
+Report the fence on the four axes of §4e with occasion `close`. A session ending
+with `foldable-remaining: 0` has earned its summary; one ending with a nonzero
+count and no `context-exhausted` row has not, and the ledger says so.
 
 ### 4e. The summary reflex — what, why, how, when
 
@@ -716,28 +653,15 @@ WHAT   §3 dispatch primitive (impl-a) · §4 observation (impl-b) · §5 docs (
 WHY    §3 unblocks §4 and §5; all three read the §2 contract; no shared files
 HOW    detached worktrees, scopes below, manifests on disk
 WHEN   ~20 min each; gate g-end-to-end closes the wave — §6 stays shut until it passes
-
-Wave 2 complete — 3/3 landed, gate g-end-to-end PASSED
-WHAT   dispatch primitive + observation + docs (1a2b3c4, 5d6e7f8, 9a0b1c2)
-WHY    gate evidence: node landed in its worktree, manifest on disk, 28 tests green
-HOW    all scoped clean on git show --stat; no out-of-scope paths
-WHEN   next §6 — ready, nothing blocks it
-
-Wave 3 held — 1 backend held, 1 clear
-WHAT   §6 integration (impl-d) held; §7 docs (impl-e) dispatching on the clear backend
-WHY    held backend at 97.2% utilisation against a 95% effective ceiling
-HOW    no worktree created and no node failed; both nodes stay ready
-WHEN   resets 2026-08-12T18:04:00Z, in 2280s — the wave reopens then
 ```
 
 `WHAT` names nodes and artifacts. `WHY` gives the causal reason this wave runs
 now — **and at completion or a hold it carries the figure.** `HOW` carries runtime
 and isolation facts only. `WHEN` gives a duration estimate and names the gate that
-closes the wave, or the reset that lifts the hold.
-
-That one discipline is why the format earns its place: it forces every wave
-report to be quantitative, and makes a wave that cannot state its gate evidence
-visibly incomplete rather than plausibly done.
+closes the wave, or the reset that lifts the hold. The discipline forces every
+wave report to be quantitative: a wave that cannot state its gate evidence is
+visibly incomplete rather than plausibly done. Completion and hold examples:
+`references/sprint-orchestration.md` §10.
 
 ### 5. Verify every worker — MANDATORY
 
@@ -748,10 +672,9 @@ on unverified work, while any free slot may refill from the ready queue.
 **Read the manifest path returned by dispatch, not just the message.** Dispatch
 defaults it to the durable run directory under the Reckon config home; omit
 `--manifest` unless an absolute durable override is required. A background worker
-can finish its work and still end its turn
-without delivering a report — the runtime signals it idle and the node looks
-failed when it is not. Requiring the manifest on disk removes the failure mode;
-see "Durable delivery" in `references/sprint-orchestration.md`.
+can finish and still end its turn without delivering a report — the manifest on
+disk removes that failure mode; see "Durable delivery" in
+`references/sprint-orchestration.md`.
 
 For each completed agent:
 1. Read the worker's manifest file. Use the runtime's result/wait tool as a
@@ -775,10 +698,9 @@ For each completed agent:
    unrelated ready node is outside this freeze and may refill a free slot.
 
 An agent that signals idle WITHOUT a report has probably not failed. Before
-redispatching: check the manifest path, then any test logs or artifacts its
-prompt required, then ask it to write the deliverable to the named path and
-reply with the path only. Redispatch is the last step, not the first — a
-duplicate run of a node that already succeeded wastes a member and its budget and, with
+redispatching: check the manifest path, then required test logs/artifacts, then
+ask it to write the deliverable to the named path. Redispatch is the last step —
+a duplicate run of a node that already succeeded wastes a member and, with
 write scope, risks a conflicting second commit.
 
 **A report opening `NEEDS-HELP:` is not a failure — it is a decision brief, and
@@ -823,21 +745,12 @@ negative finding while the evidence is fresh.
   from the same implementation/test wave rather than restating them
 - Compact outcomes table only when it is denser than prose; no status-card
   chrome or one-line documents
-- **Figures only where they add understanding (mandate 2026-06-03)**: embed
-  result graphics under `docs/figures/<topic>/` with project-absolute `src` when
-  spatial, plotted, geometric, topological, or sequential relationships are
-  clearer visually. There is no image quota. Worker prompts for doc-producing
-  tasks MUST carry this representation-selection rule, not a demand to produce
-  an image.
-- **Minimal ink is binding.** Follow `reckon-create` hard-rule 8. A graphic must
-  communicate more clearly than a short table. Remove outer frames,
-  backgrounds, card grids, repeated boxes/pills, decorative colour, duplicate
-  headings, and legends that direct labels can replace. Apply the erase test:
-  any mark whose removal loses no information must go.
-- **Never imagify a table.** Rows/columns of labels, values, verdicts, and short
-  explanations belong in a semantic HTML `<table>`, never SVG/PNG/canvas.
-  Predominantly tabular-text images fail review even when visually minimal:
-  remove the image and keep the selectable, searchable, responsive HTML.
+- **Figures and representation follow `reckon-create` hard-rule 8**, which is
+  binding here too: figures only where a spatial/plotted/sequential relationship
+  is clearer visually (no image quota), minimal ink with the erase test, and
+  never an image of what is naturally an HTML `<table>`. Worker prompts for
+  doc-producing tasks MUST carry this representation-selection rule, not a
+  demand to produce an image.
 
 ### 6b. Collapse-on-landing — MANDATORY
 
@@ -845,26 +758,20 @@ negative finding while the evidence is fresh.
 
 ```html
 <section id="s2" class="section-landed">
-  <header>
-    <span class="badge badge-shipped">✓ landed 2026-06-24</span>
-    <h2>§2 — Data prep pipeline</h2>
-  </header>
-  <p class="landed-summary">
-    Built <code>src/data_prep.py</code>; pipeline smoke-test green.
-    Encoded 11,237 shots in 3h12m; eval MAE 0.04 — passing.
-    Full record: <a href="/<project>/evidence/archive/<slug>-landed#s2">§2 landed</a>
-    (commit <code>abc1234</code>).
-  </p>
+  <header><span class="badge badge-shipped">✓ landed 2026-06-24</span>
+    <h2>§2 — Data prep pipeline</h2></header>
+  <p class="landed-summary">Built <code>src/data_prep.py</code>; smoke-test
+    green. Encoded 11,237 shots in 3h12m; eval MAE 0.04 — passing. Full record:
+    <a href="/<project>/evidence/archive/<slug>-landed#s2">§2 landed</a>
+    (commit <code>abc1234</code>).</p>
 </section>
 ```
 
-**Rules for the landed summary:**
-- 2-4 lines max: what was built (past tense), the **quantitative result** (numbers, verdict), artifact paths, link + SHAs
-- A summary that omits the result is incomplete — "landed §2" is not a summary
-- Section header gets `✓ landed YYYY-MM-DD` badge (`.badge-shipped`)
-- Original prose is retained under the matching anchor in the cumulative
-  evidence HTML — gone from evergreen
-- **Author as HTML, never markdown**
+**Rules for the landed summary:** 2-4 lines — what was built (past tense), the
+**quantitative result** ("landed §2" without its numbers is not a summary),
+artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge
+(`.badge-shipped`) on the header; original prose moves to the cumulative
+evidence anchor; **HTML, never markdown**.
 
 ### 7. Update plan state — in the SAME BEAT as EACH node promotion
 
@@ -903,14 +810,10 @@ a moved percentage is never the only new information. Preserve the manifest's
 exact measure and artifact paths rather than replacing them with “passed”. The
 cumulative evidence HTML receives the fuller record in the same landing beat.
 
-**`impl` calculation:**
-- Set `impl = (count of completed executable nodes) / (count of total executable nodes)`
-- Count the whole selected plan, including nodes in partially landed sections;
-  the orchestrator owns this denominator because it owns the complete DAG
-- Monotonic — only ever increases
-- Set it on EVERY node landing, not just the final node in a section
-
-Note: `impl` is a settable scalar — the server does NOT compute it automatically. You MUST set it.
+**`impl`** = (count of completed executable nodes) / (count of total executable
+nodes) over the whole selected plan (the orchestrator owns the denominator),
+monotonic. Set it on EVERY node landing — the server does NOT compute it; you
+MUST set it.
 
 If the node also closes its section, include the driving-followup resolution in
 the same `edit_plan` call and then collapse the section as §6b requires. If it
@@ -979,15 +882,12 @@ There is a fifth disposition, and it is the only one that may end a session with
 foldable work still on the queue:
 
 - **`context-exhausted`** — the *orchestrator's own* budget cannot carry another
-  fold. This is a legitimate handoff and a common one, but it is **reportable, not
-  silent**: it must carry a figure — remaining context or token headroom, or the
-  backend hold from §4c — and it applies to the SESSION, never to an item. Naming
-  it honestly is the point. An orchestrator that is genuinely out of room says so
-  with a number; one that is not out of room has no exemption to claim, and
-  dressing a scope judgement in this label is the failure this disposition exists
-  to expose.
+  fold. A legitimate, common handoff, but **reportable, not silent**: it must
+  carry a figure — remaining context or token headroom, or the backend hold from
+  §4c — and it applies to the SESSION, never to an item. Dressing a scope
+  judgement in this label is the failure the figure exists to expose.
 
-Do not invent a sixth category such as inconvenience, worker capacity, a
+Do not invent a sixth category — not inconvenience, worker capacity, a
 "different kind of work", or ordinary unfinished work.
 
 After folding and executing the added nodes, re-read open followups before
@@ -996,11 +896,10 @@ after every landing beat and terminate only when a complete pass finds nothing
 foldable. A fixed pass count, the end of the original DAG, or an empty
 `follow_ons` field from one manifest is not the termination condition.
 
-**The drain ledger — the check that makes this rule hold.** A rule paired with no
-runnable check decays, and this one decayed for exactly that reason: "a complete
-pass found nothing foldable" is unfalsifiable, because the pass leaves no object
-behind. So the pass now writes one. Before the closing report, enumerate EVERY
-queue row and give each a disposition from the closed set:
+**The drain ledger — the check that makes this rule hold.** "A complete pass
+found nothing foldable" is unfalsifiable unless the pass leaves an object behind,
+so it writes one. Before the closing report, enumerate EVERY queue row and give
+each a disposition from the closed set:
 
 ```text
 DRAIN LEDGER — <plan|sprint> @ <iso-now>
@@ -1031,16 +930,8 @@ ownership, or context boundary rather than forgotten executable work.
 
 ### 7d. Fold depth is expected, and carries no stopping authority
 
-**A fold chain routinely runs many layers deep, and each layer looks like the last
-one.** Attach refuses on lifecycle → review the targets → review refuses on
-admission → adjudicate the defects → the defects are validator bugs → fix the
-validators → re-stage → persist. That is eight layers, every one legitimate, every
-one narrowing the blocker. Measured on a real sprint it went ten.
-
-The trap is that depth *feels* like scope drift. It reads as though the work keeps
-expanding, when what is actually happening is that each refusal is handing you a
-smaller and better-specified problem than the one before. **Convergence and creep
-look identical from the inside; only their direction differs.** Test the direction:
+**A fold chain routinely runs many layers deep, and depth feels like scope drift
+from the inside.** Convergence and creep differ only in direction — test it:
 
 - **Converging** — each layer's blocker is NARROWER than its parent's, the write
   scope is the same size or smaller, and the measure gets more exact. Continue.
@@ -1048,18 +939,11 @@ look identical from the inside; only their direction differs.** Test the directi
   write scope, and the measure gets vaguer. That is a genuine scope change: stop,
   and raise it as its own plan rather than folding it.
 
-Depth alone is never the signal, so **do not count layers and do not budget them.**
-A ten-layer chain converging on a one-line validator fix is healthy; a two-layer
-chain that has already pulled in three subsystems is not. The only quantity that
-governs stopping is the drain ledger's `foldable-remaining`, and the only session-
-level exemption is `context-exhausted` with its figure.
-
-One corollary worth stating because it is counter-intuitive: **the deepest layers
-are usually the cheapest and highest-leverage.** By layer six the problem has been
-narrowed by five successive refusals, so the fix is often small and general — a
-false-positive validator, a wrong call signature, a too-narrow guard — and it
-unblocks everything stacked above it. Abandoning a chain near its bottom discards
-the most specific diagnosis anyone has ever had of that problem.
+**Do not count layers and do not budget them** — a ten-layer chain converging on a
+one-line fix is healthy, and the deepest layers are usually the cheapest and
+highest-leverage. The only quantity that governs stopping is the drain ledger's
+`foldable-remaining`, and the only session-level exemption is `context-exhausted`
+with its figure. Worked example: `references/sprint-orchestration.md` §10.
 
 ### 8. Final validation — eat the dog food
 
@@ -1080,24 +964,16 @@ assert state["data"]["impl"] == expected_fraction         # set correctly
 # version has incremented
 ```
 
-For a sprint target, also verify every sprint item is done or explicitly blocked,
-all integrated worker commits are reachable from the primary branch, the
+For a sprint target, also verify every sprint item is done or explicitly
+blocked, integrated worker commits are reachable from the primary branch, the
 sprint summary links its plan/evidence outcomes, and no session worktree
-remains. Close the sprint only when all executable nodes are complete.
+remains. Re-run `roadmap(project, sprint=<id>)` at closure and require an empty
+ready set and no error-level wiring findings before setting the sprint done.
 
-Re-run `roadmap(project, sprint=<id>)` at closure. Record both lifecycle and
-stored implementation completion; require an empty ready set and no error-level
-wiring findings before setting the sprint done.
-
-```bash
-# Validate HTML integrity
-uv run --project ~/Code/reckon reckon audit-doc docs/plans/<slug>.html
-# Must report no ERRORs before committing
-```
-
-The coordinator runs this itself in either mode. It validates a document the
-coordinator just authored — its own state write, not a worker's product — which
-is why it is not a delegated node. Product tests are, and remain, worker nodes.
+Validate HTML integrity yourself — `uv run --project ~/Code/reckon reckon
+audit-doc docs/plans/<slug>.html` must report no ERRORs before committing. This
+checks the coordinator's own state write, which is why it is not a delegated
+node; product tests are, and remain, worker nodes.
 
 Commit:
 ```bash
@@ -1125,15 +1001,12 @@ fenced, paste-ready prompt so switching to a fresh session is seamless:
 ````
 
 **A "Next up" block naming work you had the authority, budget, and roster to do is
-a defect, not a courtesy.** This block exists to hand over what genuinely cannot
-continue here — an exempt row from the §7c ledger — and for nothing else. It is
-the most seductive way to stop, because a well-written handoff has every surface
-feature of a delivery: it is specific, it is actionable, it reads as considerate,
-and it leaves the reader with a clear next step. None of that is delivery. Before
-writing the block, check each line against the ledger: **every entry must trace to
-a row whose disposition is `authority-required`, `dissent-reopen`, `foreign-owner`,
-or `context-exhausted`.** An entry tracing to a `folded` row, or to no row at all,
-means the session stopped early and the block is the evidence.
+a defect, not a courtesy.** The block hands over only what genuinely cannot
+continue here — an exempt row from the §7c ledger. A well-written handoff has
+every surface feature of a delivery and is none of it. **Every entry must trace
+to a ledger row disposed `authority-required`, `dissent-reopen`,
+`foreign-owner`, or `context-exhausted`;** an entry tracing to a `folded` row,
+or to no row, means the session stopped early and the block is the evidence.
 
 Rules:
 - One fenced prompt per advised follow-on; if several follow-ons are advised

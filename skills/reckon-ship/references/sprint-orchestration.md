@@ -526,3 +526,44 @@ no session path remains.
 If the orchestrator is interrupted, a new session can inspect the execution
 checkpoint, `git worktree list`, worker HEADs, plan versions, and sprint state;
 integrate or recover each worktree before resuming the DAG.
+
+## 10. Wave reports and fold depth — worked examples
+
+Read this only when hand-composing reports or judging a deep fold chain; the
+binding rules live in the skill (§4e summary reflex, §7d fold depth).
+
+### Wave reports on the four axes
+
+```text
+Dispatching wave 2 — 3 workers
+WHAT   §3 dispatch primitive (impl-a) · §4 observation (impl-b) · §5 docs (impl-c)
+WHY    §3 unblocks §4 and §5; all three read the §2 contract; no shared files
+HOW    detached worktrees, scopes below, manifests on disk
+WHEN   ~20 min each; gate g-end-to-end closes the wave — §6 stays shut until it passes
+
+Wave 2 complete — 3/3 landed, gate g-end-to-end PASSED
+WHAT   dispatch primitive + observation + docs (1a2b3c4, 5d6e7f8, 9a0b1c2)
+WHY    gate evidence: node landed in its worktree, manifest on disk, 28 tests green
+HOW    all scoped clean on git show --stat; no out-of-scope paths
+WHEN   next §6 — ready, nothing blocks it
+
+Wave 3 held — 1 backend held, 1 clear
+WHAT   §6 integration (impl-d) held; §7 docs (impl-e) dispatching on the clear backend
+WHY    held backend at 97.2% utilisation against a 95% effective ceiling
+HOW    no worktree created and no node failed; both nodes stay ready
+WHEN   resets 2026-08-12T18:04:00Z, in 2280s — the wave reopens then
+```
+
+### Fold depth — a real converging chain
+
+Attach refuses on lifecycle → review the targets → review refuses on admission →
+adjudicate the defects → the defects are validator bugs → fix the validators →
+re-stage → persist. Eight layers, every one legitimate, every one narrowing the
+blocker; measured on a real sprint it went ten. Each refusal hands over a
+smaller and better-specified problem, which is why depth feels like scope drift
+while actually converging. The corollary: the deepest layers are usually the
+cheapest and highest-leverage — by layer six the problem has been narrowed by
+five successive refusals, so the fix is often small and general (a
+false-positive validator, a wrong call signature, a too-narrow guard) and
+unblocks everything stacked above it. Abandoning a chain near its bottom
+discards the most specific diagnosis anyone has ever had of that problem.
