@@ -21,7 +21,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, ledger
+from reckon import crew, flight, ledger
 
 
 CONFIG = {
@@ -336,6 +336,76 @@ def test_a_role_may_route_to_another_backend() -> None:
     name, backend = crew.resolve_role(CONFIG, "inline")
     assert name == "native"
     assert backend["launch"] == "in-harness"
+
+
+def test_specification_level_may_switch_backend_and_overlay_settings() -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {
+            "roles": {
+                "implement": {
+                    "model": "role-model",
+                    "by_spec_level": {
+                        "exact": {
+                            "backend": "native",
+                            "model": "exact-model",
+                            "effort": "low",
+                            "time_budget": "3m",
+                        }
+                    },
+                }
+            }
+        },
+    )
+
+    name, backend = crew.resolve_role(config, "implement", "exact")
+
+    assert name == "native"
+    assert backend["launch"] == "in-harness"
+    assert backend["model"] == "exact-model"
+    assert backend["effort"] == "low"
+    assert backend["time_budget"] == "3m"
+    assert "by_spec_level" not in backend
+
+
+def test_specification_level_may_overlay_effort_without_switching_backend() -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {"roles": {"implement": {"by_spec_level": {"guided": {"effort": "medium"}}}}},
+    )
+
+    name, backend = crew.resolve_role(config, "implement", "guided")
+
+    assert name == "alpha"
+    assert backend["model"] == "some-model"
+    assert backend["effort"] == "medium"
+
+
+def test_undeclared_specification_level_leaves_role_resolution_unchanged() -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {"roles": {"implement": {"by_spec_level": {"exact": {"backend": "native"}}}}},
+    )
+
+    assert crew.resolve_role(config, "implement", "") == crew.resolve_role(
+        CONFIG, "implement"
+    )
+
+
+def test_dispatch_override_rewrites_the_matching_specification_mapping() -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {"roles": {"implement": {"by_spec_level": {"guided": {"effort": "medium"}}}}},
+    )
+    overridden = flight.deep_merge(
+        config,
+        flight.parse_overrides(["roles.implement.by_spec_level.guided.effort=low"]),
+    )
+
+    plan = crew.plan_dispatch(node=_node(spec_level="guided"), config=overridden)
+
+    assert plan.backend == "alpha"
+    assert plan.backend_settings["effort"] == "low"
 
 
 def test_an_unconfigured_role_lists_the_configured_ones() -> None:

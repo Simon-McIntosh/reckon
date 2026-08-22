@@ -400,6 +400,17 @@
                         "null"
                     ]
                 },
+                "by_spec_level": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SpecificationRouting"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay."
+                },
                 "effort": {
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
@@ -462,6 +473,17 @@
                         "null"
                     ]
                 },
+                "by_spec_level": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SpecificationRouting"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay."
+                },
                 "effort": {
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
@@ -511,6 +533,43 @@
             "title": "RoleConfig",
             "type": "object"
         },
+        "RoutingOverlay": {
+            "additionalProperties": false,
+            "description": "Settings that replace the selected role and backend routing for one level.",
+            "properties": {
+                "backend": {
+                    "description": "Backend this role dispatches to. Absent means `default_backend`.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "RoutingOverlay",
+            "type": "object"
+        },
         "SandboxMode": {
             "description": "The filesystem blast radius granted to a worker.",
             "enum": [
@@ -520,6 +579,47 @@
             ],
             "title": "SandboxMode",
             "type": "string"
+        },
+        "SpecificationRouting": {
+            "additionalProperties": false,
+            "description": "Routing overlays keyed by the closed specification-level vocabulary.",
+            "properties": {
+                "exact": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/RoutingOverlay"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Routing for a node whose implementation is fully prescribed."
+                },
+                "guided": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/RoutingOverlay"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Routing for a node whose design is fixed but implementation is derived."
+                },
+                "open": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/RoutingOverlay"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Routing for a node whose design and implementation remain to the worker."
+                }
+            },
+            "title": "SpecificationRouting",
+            "type": "object"
         },
         "SummaryConfig": {
             "additionalProperties": false,

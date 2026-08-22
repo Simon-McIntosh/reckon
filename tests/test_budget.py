@@ -605,6 +605,27 @@ def test_the_preflight_spawns_no_process(home, repo, monkeypatch) -> None:
     assert report["held_backends"] == ["alpha"]
 
 
+def test_role_preflight_includes_every_specification_routing_backend(
+    home, repo
+) -> None:
+    config = {
+        **CONFIG,
+        "roles": {
+            **CONFIG["roles"],
+            "implement": {
+                "by_spec_level": {
+                    "exact": {"backend": "beta", "time_budget": "3m"},
+                    "guided": {"effort": "medium"},
+                }
+            },
+        },
+    }
+
+    assert budget.backends_for_roles(config, ["implement"]) == ["alpha", "beta"]
+    report = budget.preflight("proj", config, root=repo, roles=["implement"])
+    assert [item["backend"] for item in report["backends"]] == ["alpha", "beta"]
+
+
 def test_an_account_surface_is_read_only_when_the_backend_asks_for_it(
     home, repo
 ) -> None:
@@ -656,9 +677,7 @@ def test_a_known_account_reading_outranks_an_older_record(home, repo) -> None:
     assert state["state"]["utilisation_pct"] == 82.0
 
 
-def test_one_preflight_state_is_reused_by_three_dispatch_checks(
-    home, repo
-) -> None:
+def test_one_preflight_state_is_reused_by_three_dispatch_checks(home, repo) -> None:
     answers = [
         json.loads(line)
         for line in (FIXTURES / "codex-account-limits.jsonl").read_text().splitlines()

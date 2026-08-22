@@ -289,6 +289,20 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
                 f"names backend '{backend_name}', which no layer defines "
                 f"(defined backends: {known})",
             )
+        by_spec_level = role.get("by_spec_level") or {}
+        if isinstance(by_spec_level, Mapping):
+            for level, overlay in by_spec_level.items():
+                if not isinstance(overlay, Mapping):
+                    continue
+                overlay_backend = overlay.get("backend")
+                if overlay_backend and overlay_backend not in backends:
+                    known = ", ".join(sorted(backends)) or "none"
+                    raise FlightConfigError(
+                        sources,
+                        f"roles.{role_name}.by_spec_level.{level}.backend",
+                        f"names backend '{overlay_backend}', which no layer defines "
+                        f"(defined backends: {known})",
+                    )
         backend = backends.get(backend_name) if backend_name else None
         if not isinstance(backend, Mapping):
             continue
