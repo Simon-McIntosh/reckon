@@ -17,8 +17,8 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-12">
-<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-08-22">
+<meta name="plan-version" content="11">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -138,6 +138,11 @@ Done-when
     <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-roadmap-analysis-landed">Roadmap and wiring analysis landed: project allocation, critical paths, guarded prose edits, and coordinated skill repairs</a></span></div>
 <div class="r-research" data-id="e-eoh-unified-edit" data-type="evidence-record" data-source="Reckon repository commit 5ce9f32" data-added-by="maintainer" data-when="2026-08-03" data-url="/reckon/evidence/archive/execution-orchestration-hardening-unified-edit-landed">
     <span class="r-research-title"><a href="/reckon/evidence/archive/execution-orchestration-hardening-unified-edit-landed">Unified plan editing landed: one mode-discriminated MCP write surface with guarded state and prose paths</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-20260822-quota-death-budget-gap" data-who="reckon-ship:nova" data-when="2026-08-22T16:30:00+00:00">
+    <div class="r-comment-body">MEASURED GAP filed from a live nova incident (run r-20260822T151117616586, 2026-08-22): a codex worker whose usage limit exhausted MID-TURN died with phase failed, no manifest, and a stream tail of turn.started, error, turn.failed - and that death NEVER FED THE BUDGET TRACKER. crew preflight read headroom unknown and held nothing during an actual exhaustion, so a fresh dispatch could have run straight into the same wall before the reset; the budget contract says holds happen only where exhaustion was actually reported, and this exhaustion was observable in the stream but unclassified. Proposed tool work, two halves: (1) the failure classifier inspects the terminal error event of a failed run and, on the backend quota signature, records an exhaustion into the budget state with its reset time so preflight holds until then; (2) the live/recover classification labels such runs quota-exhausted-resumable rather than bare failed, since the proven recovery is one crew resume into the same session after reset - the member context survives and only uncommitted in-flight edits are lost. The orchestrator-facing half of this incident (the watcher signature and the manual treat-as-held rule) is already documented in reckon-ship SKILL.md at bc9f6b5; this comment files the product half with the plan that owns bounded, resumable execution.</div>
+</div>
 </section>
 </main>
 </body>
