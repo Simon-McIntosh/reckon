@@ -24,3 +24,20 @@ backends:
     sandbox: worktree-full
     session_reuse: true
     time_budget: 15m
+
+# One dial per dispatch: the declared --spec-level resolves routing here.
+# The level overlay wins over the role overlay, so exact nodes get the spark
+# backend's longer budget rather than the implement role's short one. A --set
+# override still rewrites any of this per dispatch. Eligibility for the exact
+# lane stays gated (size, runnable check, pilot audit) — see
+# skills/reckon-ship/references/effort-routing.md.
+roles:
+  implement:
+    by_spec_level:
+      exact:
+        backend: codex-spark
+        time_budget: 15m
+      guided:
+        effort: medium
+      open:
+        effort: high

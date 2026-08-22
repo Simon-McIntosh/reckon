@@ -80,6 +80,28 @@
       worker minutes, tokens, and redispatch lineage per
       (configuration × declared level × size bucket).</p>
 
+    <h2 id="s7">§7 — config-mapped routing (one dial)</h2>
+    <p>Run <code>r-20260822T095148757302-spec-level-config-routing</code>,
+      dispatched at guided tier / <code>sol medium</code> per the table it was
+      implementing. Worker commit <code>b625b88</code>, merged and pushed. Gate
+      <strong>passed</strong>: 204/204 focused tests (8 new), ruff clean,
+      regenerated schema artifacts byte-identical across a second generator run
+      (hash logs in the run directory). Worker output 11,035 tokens. Delivered:
+      <code>by_spec_level</code> routing overlays in the flight schema (fixed
+      exact/guided/open slots carrying backend/model/effort/time_budget),
+      resolution precedence level-backend &gt; role-backend &gt; default with
+      level overlay applied last, whole-config validation of overlay backends,
+      and budget pre-flight fan-out across every backend a role can reach.</p>
+    <p>Mapping made live in <code>docs/state/reckon/flight.yaml</code>
+      (<code>roles.implement.by_spec_level</code>) and verified end-to-end by
+      dry-run with no <code>--set</code>: <code>exact</code> →
+      <code>codex-spark/gpt-5.3-codex-spark</code> at 15&nbsp;m (the level
+      overlay correctly outranks the implement role's 8&nbsp;m budget),
+      <code>guided</code> → <code>sol/medium</code>, <code>open</code> →
+      <code>sol/high</code>, undeclared → <code>sol/high</code> unchanged.
+      Decision <code>routing-mode</code> locked to <code>config-mapped</code>
+      by the lead the same day.</p>
+
     <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
     <p>The full-suite verification surfaced a pre-existing failure:
       <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code>
