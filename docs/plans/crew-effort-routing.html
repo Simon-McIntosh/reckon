@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-22">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -359,6 +359,62 @@
       latter is the double-paid corner and the signal to stop.
     </p>
 
+    <h2 id="s7">§7 — Config-mapped routing: one dial, wired in flight config</h2>
+    <p>
+      With <code>routing-mode</code> locked to config-mapped, the orchestrator
+      turns exactly one dial per dispatch — <code>--spec-level</code> — and the
+      flight config resolves the backend, model, provider-effort and time budget
+      underneath it as data. The <code>--set</code> override remains the
+      per-dispatch escape hatch (the override layer rewrites the mapping itself,
+      so it still wins over every layer). The design is fixed; the worker derives
+      the implementation.
+    </p>
+    <ul>
+      <li><strong>Schema</strong> (LinkML source <code>reckon/schema/flight.yaml</code>):
+        <code>RoleConfig</code> gains an optional <code>by_spec_level</code> of a
+        new class with three optional slots — <code>exact</code>,
+        <code>guided</code>, <code>open</code> — each holding a routing overlay
+        class with optional <code>backend</code>, <code>model</code>,
+        <code>effort</code>, <code>time_budget</code>. Fixed slots, not a keyed
+        map, so the level vocabulary validates for free. Regenerate
+        <code>reckon/_flight_schema.py</code> and
+        <code>docs/_shared/flight.schema.json</code> with
+        <code>scripts/regen_flight_schema.py</code>; hand edits to generated
+        files are refused by their own headers.</li>
+      <li><strong>Resolution</strong> (<code>reckon/crew.py</code>):
+        <code>resolve_role(config, role, spec_level="")</code>. Backend selection
+        precedence: overlay <code>backend</code> &gt; role <code>backend</code>
+        &gt; <code>default_backend</code>. Effective settings merge backend
+        settings, then the role overlay (excluding <code>name</code>,
+        <code>backend</code>, <code>by_spec_level</code>), then the matching
+        level overlay (excluding <code>backend</code>). An empty level leaves
+        behaviour byte-identical to today. <code>plan_dispatch</code> passes
+        <code>node.spec_level</code>; the existing fail-fast vocabulary check
+        stays ahead of resolution.</li>
+      <li><strong>Whole-config validation</strong> (<code>reckon/flight.py</code>):
+        every backend a <code>by_spec_level</code> overlay names must exist in
+        the merged <code>backends</code>, reported with the full key path like
+        the existing role-backend rule.</li>
+      <li><strong>Pre-flight fan-out</strong> (<code>reckon/budget.py</code>):
+        <code>backends_for_roles</code> returns every backend a role can reach —
+        its base backend plus each <code>by_spec_level</code> overlay backend —
+        deduplicated, so a budget hold on any reachable backend is visible
+        before a wave opens.</li>
+      <li><strong>Tests</strong>: schema acceptance of a <code>by_spec_level</code>
+        layer and rejection of an unknown level key; resolution precedence
+        (backend switch, effort-only overlay, empty level no-op, <code>--set</code>
+        override rewriting the mapping); resolved-validation error naming a
+        missing overlay backend; preflight fan-out including overlay backends.</li>
+    </ul>
+    <p>
+      Landing this section makes the reckon project mapping live:
+      <code>roles.implement.by_spec_level</code> routing <code>exact</code> to
+      the spark backend (with its own time budget) and <code>guided</code> /
+      <code>open</code> to reduced / full effort on the default backend — applied
+      in <code>docs/state/reckon/flight.yaml</code> only after the code merges,
+      because every layer is schema-validated on read.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="spec-vocabulary" data-choice="" data-by="" data-when="">
@@ -371,15 +427,15 @@
       </p>
     <p class="r-dec-rat"></p>
     </div>
-<div class="r-dec" data-key="routing-mode" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="routing-mode" data-choice="config-mapped" data-by="Simon McIntosh (lead)" data-when="2026-08-22T09:51:23+00:00">
     <p class="r-dec-q">How does a declared level select routing?</p>
     <p class="r-dec-ctx">O2 (orchestrator applies the advisory table as an explicit --set override, ledger measures) versus O4 (flight-schema mapping resolves it automatically). O4 is deferred behind the §6 checkpoint by default; locking it now would encode unmeasured priors as config.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="advisory-override">advisory table + explicit --set</button>
-      <button class="r-opt" data-value="config-mapped">config-mapped resolution now</button>
+      <button class="r-opt chosen" data-value="config-mapped">config-mapped resolution now</button>
       <button class="r-opt" data-value="fixed-effort">keep fixed effort</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Lead decision 2026-08-22: one dial per dispatch. The orchestrator declares only --spec-level; flight config resolves backend, model, provider-effort and time budget underneath it as data (roles.&lt;role&gt;.by_spec_level), keeping --set as the per-dispatch escape hatch. The dial stays named by spec completeness rather than effort so a wrong declaration remains checkable against the plan section and the ledger.</p>
     </div>
 <div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">Does the spark lane open under the §4 gate?</p>
@@ -394,6 +450,16 @@
 <div class="r-dec" data-key="scheduling" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">Where does this plan sit in the roadmap — which sprint, or explicitly backlog?</p>
     <p class="r-dec-ctx">The §5 prototype executes in the authoring session; §6 is an ongoing measurement loop with a checkpoint after ~50 varied runs. Deliberately left sprint-unassigned pending this decision rather than silently unscheduled.</p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="shadow-sidecar" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Do we measure spark with shadow sidecar runs on live nodes?</p>
+    <p class="r-dec-ctx">A shadow run dispatches the same node to the spark backend in its own worktree, runs the gate, records the outcome, and never merges - paired per-node evidence across all spec tiers with zero code pollution. Risks and mitigations: ledger ambiguity -&gt; records carry lineage kind shadow naming the primary run, and calibration slices label them; cleanup reachability -&gt; the shadow&#x27;s evidence is its diff artifact and test log in the durable run directory, not a merged commit; spend -&gt; shadow a sample (the spark side costs roughly a minute and ~9k output tokens per node). Evidence rule: shadow evidence qualifies a tier for the gated pilot; only live gated evidence opens routing.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="sampled-shadow">shadow a sample of live nodes</button>
+      <button class="r-opt" data-value="no-shadow">no shadows - pilot lane only</button>
+      <button class="r-opt" data-value="shadow-everything">shadow every implement node</button>
+      </p>
     <p class="r-dec-rat"></p>
     </div>
 </section>
