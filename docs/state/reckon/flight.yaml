@@ -1,0 +1,26 @@
+# Flight control — reckon project layer.
+#
+# Merges over the host layer; only the keys named here change. This layer
+# adds the small-model lane backend. It is defined, not defaulted:
+# default_backend is untouched and no role selects it, so nothing routes
+# here except an explicit per-dispatch override, e.g.
+#
+#     reckon crew dispatch ... --set roles.implement.backend=codex-spark
+#
+# Eligibility for that override is gated — the lane takes only exactly
+# specified nodes with a runnable named check. The gate and the routing
+# policy live in the crew-effort-routing plan and in
+# skills/reckon-ship/references/effort-routing.md.
+#
+# yaml-language-server: $schema=http://127.0.0.1:8765/_shared/flight.schema.json
+
+version: 1
+
+backends:
+  codex-spark:
+    launch: cli
+    command: codex
+    model: gpt-5.3-codex-spark
+    sandbox: worktree-full
+    session_reuse: true
+    time_budget: 15m

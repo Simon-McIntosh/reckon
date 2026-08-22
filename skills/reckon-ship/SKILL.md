@@ -589,6 +589,10 @@ prompt. If it is not specified, the coordinator chooses it explicitly for each
 node from the available runtime workers and records the choice in the dispatch
 prompt — as a `--set` override on the dispatch call, so the choice is data rather
 than prose. Reckon does not infer a relative tier from the coordinator model.
+Choose the override from the node's declared specification level
+(`--spec-level exact|guided|open`) using `references/effort-routing.md` — it
+maps who owns the design to how much worker effort the node still needs, and
+gates the small-model lane.
 Worker prompts reference the live plan and carry only the portable runtime
 safety contract; §05 followups remain one-line session invocations.
 
