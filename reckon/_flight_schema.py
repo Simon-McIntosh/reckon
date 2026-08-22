@@ -226,6 +226,39 @@ class RoleConfig(ConfiguredBaseModel):
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    by_spec_level: Optional[SpecificationRouting] = Field(default=None, description="""Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay.""")
+
+    @field_validator('time_budget')
+    def pattern_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class SpecificationRouting(ConfiguredBaseModel):
+    """
+    Routing overlays keyed by the closed specification-level vocabulary.
+    """
+    exact: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose implementation is fully prescribed.""")
+    guided: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose design is fixed but implementation is derived.""")
+    open: Optional[RoutingOverlay] = Field(default=None, description="""Routing for a node whose design and implementation remain to the worker.""")
+
+
+class RoutingOverlay(ConfiguredBaseModel):
+    """
+    Settings that replace the selected role and backend routing for one level.
+    """
+    backend: Optional[str] = Field(default=None, description="""Backend this role dispatches to. Absent means `default_backend`.""")
+    model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -303,6 +336,8 @@ class SummaryConfig(ConfiguredBaseModel):
 FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
 RoleConfig.model_rebuild()
+SpecificationRouting.model_rebuild()
+RoutingOverlay.model_rebuild()
 GateConfig.model_rebuild()
 BudgetConfig.model_rebuild()
 FenceConfig.model_rebuild()

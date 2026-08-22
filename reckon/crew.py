@@ -434,7 +434,9 @@ def validate_node(
 # ── Routing ─────────────────────────────────────────────────────────────────
 
 
-def resolve_role(config: Mapping[str, Any], role: str) -> tuple[str, dict[str, Any]]:
+def resolve_role(
+    config: Mapping[str, Any], role: str, spec_level: str = ""
+) -> tuple[str, dict[str, Any]]:
     """Resolve a role to its backend name and the effective backend settings.
 
     A role overlays only the keys it names; everything else falls through to the
@@ -449,7 +451,19 @@ def resolve_role(config: Mapping[str, Any], role: str) -> tuple[str, dict[str, A
     if not isinstance(overlay, Mapping):
         overlay = {}
     backends = config.get("backends") or {}
-    backend_name = overlay.get("backend") or config.get("default_backend")
+    routing_by_level = overlay.get("by_spec_level") or {}
+    level_overlay = (
+        routing_by_level.get(spec_level, {})
+        if spec_level and isinstance(routing_by_level, Mapping)
+        else {}
+    )
+    if not isinstance(level_overlay, Mapping):
+        level_overlay = {}
+    backend_name = (
+        level_overlay.get("backend")
+        or overlay.get("backend")
+        or config.get("default_backend")
+    )
     if not backend_name:
         raise CrewError(
             f"role {role!r} selects no backend and no default_backend is set"
@@ -463,7 +477,11 @@ def resolve_role(config: Mapping[str, Any], role: str) -> tuple[str, dict[str, A
         )
     effective = dict(backend)
     for key, value in overlay.items():
-        if key in ("name", "backend"):
+        if key in ("name", "backend", "by_spec_level"):
+            continue
+        effective[key] = value
+    for key, value in level_overlay.items():
+        if key == "backend":
             continue
         effective[key] = value
     return str(backend_name), effective
@@ -1404,7 +1422,7 @@ def plan_dispatch(
             f"spec level {node.spec_level!r} is not one of exact, guided, open, "
             "or empty (undeclared)"
         )
-    backend_name, backend = resolve_role(config, node.role)
+    backend_name, backend = resolve_role(config, node.role, node.spec_level)
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
         raise CrewError(

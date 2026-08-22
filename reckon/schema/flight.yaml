@@ -240,6 +240,24 @@ slots:
   backend:
     description: Backend this role dispatches to. Absent means `default_backend`.
 
+  by_spec_level:
+    description: >-
+      Routing overlays selected by the specification completeness declared for
+      a node. An undeclared level applies no overlay.
+    range: SpecificationRouting
+
+  exact:
+    description: Routing for a node whose implementation is fully prescribed.
+    range: RoutingOverlay
+
+  guided:
+    description: Routing for a node whose design is fixed but implementation is derived.
+    range: RoutingOverlay
+
+  open:
+    description: Routing for a node whose design and implementation remain to the worker.
+    range: RoutingOverlay
+
   enforce:
     range: GateEnforcement
 
@@ -332,6 +350,22 @@ classes:
       - execution_capable
       - sandbox
       - session_reuse
+      - time_budget
+      - by_spec_level
+
+  SpecificationRouting:
+    description: Routing overlays keyed by the closed specification-level vocabulary.
+    slots:
+      - exact
+      - guided
+      - open
+
+  RoutingOverlay:
+    description: Settings that replace the selected role and backend routing for one level.
+    slots:
+      - backend
+      - model
+      - effort
       - time_budget
 
   GateConfig:

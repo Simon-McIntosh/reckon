@@ -578,12 +578,13 @@ def record_checks(
 
 
 def backends_for_roles(config: Mapping[str, Any], roles: Iterable[str]) -> list[str]:
-    """Resolve the backends a set of roles would dispatch to."""
+    """Resolve every backend a set of roles can reach."""
     names: list[str] = []
     for role in roles:
-        name, _settings = crew.resolve_role(config, role)
-        if name not in names:
-            names.append(name)
+        for spec_level in ("", "exact", "guided", "open"):
+            name, _settings = crew.resolve_role(config, role, spec_level)
+            if name not in names:
+                names.append(name)
     return names
 
 

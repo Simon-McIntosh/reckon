@@ -175,6 +175,49 @@ def test_schema_enumerates_no_backend_names():
     assert "enum" not in json.dumps(backends["additionalProperties"])
 
 
+def test_schema_accepts_routing_by_specification_level(layers):
+    write(
+        layers["host"],
+        "backends:\n"
+        "  quick:\n"
+        "    launch: cli\n"
+        "    command: quick-cli\n"
+        "roles:\n"
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      exact:\n"
+        "        backend: quick\n"
+        "        effort: low\n"
+        "        time_budget: 3m\n"
+        "      guided:\n"
+        "        effort: medium\n",
+    )
+
+    routing = resolve_files(layers).config["roles"]["implement"]["by_spec_level"]
+    assert routing["exact"] == {
+        "backend": "quick",
+        "effort": "low",
+        "time_budget": "3m",
+    }
+    assert routing["guided"] == {"effort": "medium"}
+
+
+def test_schema_rejects_an_unknown_specification_level(layers):
+    write(
+        layers["host"],
+        "roles:\n"
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      partial:\n"
+        "        effort: medium\n",
+    )
+
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+
+    assert excinfo.value.key_path == "roles.implement.by_spec_level.partial"
+
+
 # ── 2. Layer precedence and deep merge ──────────────────────────────────────
 
 
@@ -436,13 +479,25 @@ def test_role_naming_an_undefined_backend_is_an_error(layers):
     assert excinfo.value.key_path == "roles.review.backend"
 
 
-def test_execution_capability_rejects_a_read_only_sandbox(layers):
+def test_specification_overlay_naming_an_undefined_backend_is_an_error(layers):
     write(
         layers["host"],
         "roles:\n"
-        "  executor:\n"
-        "    execution_capable: true\n"
-        "    sandbox: read-only\n",
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      exact:\n"
+        "        backend: absent\n",
+    )
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    assert excinfo.value.key_path == "roles.implement.by_spec_level.exact.backend"
+    assert "absent" in excinfo.value.constraint
+
+
+def test_execution_capability_rejects_a_read_only_sandbox(layers):
+    write(
+        layers["host"],
+        "roles:\n  executor:\n    execution_capable: true\n    sandbox: read-only\n",
     )
     with pytest.raises(FlightConfigError) as excinfo:
         resolve_files(layers)
