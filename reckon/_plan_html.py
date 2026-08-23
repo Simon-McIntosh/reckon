@@ -216,7 +216,7 @@ def read_state(html_text: str) -> dict:
             st[field] = content
         elif field in _LIST_SCALARS:
             st[field] = [x.strip() for x in content.split(",") if x.strip()]
-        elif field in ("impl", "effort_hours", "version"):
+        elif field in ("impl", "effort_hours", "wall_clock_hours", "version"):
             try:
                 st[field] = int(content) if field == "version" else float(content)
             except (TypeError, ValueError):
@@ -250,6 +250,14 @@ def read_state(html_text: str) -> dict:
         warnings.append(
             f"effort: legacy letter {legacy_effort!r} maps to "
             f"{st['effort_hours']:.1f} worker-hours; plan is uncalibrated"
+        )
+
+    wall = st.get("wall_clock_hours")
+    worker = st.get("effort_hours")
+    if wall is not None and worker is not None and wall > worker:
+        warnings.append(
+            f"effort: wall-clock {wall:.2f}h exceeds {worker:.2f} worker-hours; "
+            "parallelism cannot take longer than the same work done serially"
         )
 
     # ``doc`` remains a compatibility alias on disk but reads are canonical.
@@ -678,6 +686,8 @@ def write_state(html_text: str, state: dict) -> str:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", state[f])
     if "effort_hours" in state and state.get("effort_calibrated") is not False:
         out = _set_meta(out, "plan-effort-hours", state["effort_hours"])
+    if state.get("wall_clock_hours") is not None:
+        out = _set_meta(out, "plan-wall-clock-hours", state["wall_clock_hours"])
     for f in _LIST_SCALARS:
         if f in state:
             out = _set_meta(
@@ -819,7 +829,7 @@ def parse_meta(path: Path, slug: str | None = None) -> dict:
             rec[field] = content
         elif field in _LIST_SCALARS:
             rec[field] = [x.strip() for x in content.split(",") if x.strip()]
-        elif field in ("impl", "effort_hours"):
+        elif field in ("impl", "effort_hours", "wall_clock_hours"):
             try:
                 rec[field] = float(content)
             except ValueError:

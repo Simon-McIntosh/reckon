@@ -458,6 +458,16 @@ class PlanState(BaseModel):
         multiple_of=0.25,
         description="Neutral worker-hours from the plan-effort-hours meta",
     )
+    wall_clock_hours: float | None = Field(
+        None,
+        gt=0,
+        multiple_of=0.25,
+        description=(
+            "Elapsed hours from the plan-wall-clock-hours meta, assuming the "
+            "maximum parallelism the plan itself supports. Never exceeds "
+            "effort_hours; equals it for strictly sequential work."
+        ),
+    )
     effort_calibrated: bool | None = Field(
         None,
         description="Whether worker-hours were authored rather than mapped from a letter",

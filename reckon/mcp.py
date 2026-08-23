@@ -840,6 +840,13 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "sprint": item.get("sprint"),
                 "roi": item.get("roi"),
                 "effort": item.get("effort"),
+                # Both effort quantities must survive into the inventory: the
+                # roadmap falls back to the legacy letter map when they are
+                # absent, which silently replaces an authored estimate with the
+                # default for its size letter.
+                "effort_hours": item.get("effort_hours"),
+                "wall_clock_hours": item.get("wall_clock_hours"),
+                "effort_calibrated": item.get("effort_calibrated"),
                 "capability": item.get("capability"),
                 "tier": item.get("tier"),
                 "dec_open": int(item.get("dec_open", 0) or 0),

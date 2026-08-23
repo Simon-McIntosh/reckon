@@ -503,22 +503,16 @@ until grep -qE '^status: (complete|blocked|failed)' "$M/node.md" 2>/dev/null; do
 done
 ```
 
-The liveness check matters as much as the grep: a watch keyed only to a file
-waits silently forever when its run died before writing anything. The most
-common such death is a **mid-turn backend quota exhaustion**: the worker ends
-with `phase: failed`, NO manifest, and a stream tail of `turn.started → error
-→ turn.failed`. Recovery is one call after the limit resets — `reckon crew
-resume --run <id>` with advice to take stock (`git status`, its own test
-logs) before redoing anything: the member's session context survives and only
-uncommitted in-flight edits are lost, which commit-only-on-green already
-bounds. One standing gap to know: a quota death does NOT feed the budget
-tracker, so `crew preflight` can read clear during a real exhaustion — after
-any quota death, treat that backend as held until its reset regardless of
-what preflight says. The live
-classifier reads the manifest's recorded status — `complete` becomes
-`completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
-manifests become `abandoned` — but classification does not prove the gate; read
-the manifest's evidence before promotion.
+The liveness check matters as much as the grep: a watch keyed to a file alone
+waits forever when its run died before writing. The commonest death is a **mid-turn backend quota exhaustion**: `phase: failed`, NO manifest,
+a stream tail of `turn.started → error → turn.failed`. Recover with `reckon crew
+resume --run <id>` after the reset, advising it to take stock (`git status`, its
+logs) first: session context survives, only uncommitted edits are lost. A quota
+death does NOT feed the budget tracker, so `crew preflight` can read clear
+during a real exhaustion — hold that backend anyway. The live classifier reads the manifest's
+recorded status — `complete` becomes `completed_unpromoted`, `blocked`/`failed`
+are retained, missing terminal manifests become `abandoned` — but that does not
+prove the gate; read its evidence before promotion.
 
 ### Concurrency — the roster is the whole authority
 

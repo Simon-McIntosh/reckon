@@ -716,6 +716,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "ms": rec.get("milestone", "—"),
                     "roi": rec.get("roi", "mid"),
                     "effort": rec.get("effort", "M"),
+                    # Authored hours must reach the roadmap: dropping them here
+                    # silently substitutes the legacy letter's default, so a
+                    # 12-hour plan reports as its size letter's 2.
+                    "effort_hours": rec.get("effort_hours"),
+                    "wall_clock_hours": rec.get("wall_clock_hours"),
+                    "effort_calibrated": rec.get("effort_calibrated"),
                     "sprint": rec.get("sprint") or None,
                     "capability": rec.get("capability"),
                     "tier": rec.get("tier"),

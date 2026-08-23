@@ -23,7 +23,12 @@ from reckon.mcp_views import in_flight_by_plan
 
 _EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
-_AUTHORISED_STATUSES = frozenset({"pending", "active", "in-progress"})
+# A plan is authorised to run as soon as it exists and describes live work.
+# ``draft`` belongs here: drafting is how a plan gets written, not a permission
+# tier, and withholding readiness until someone re-labels it produces a queue of
+# implementable work that reads as blocked. Only terminal or suspended states
+# fall outside.
+_AUTHORISED_STATUSES = frozenset({"draft", "pending", "active", "in-progress"})
 
 
 def _item_slug(item: Any) -> str:
@@ -60,8 +65,32 @@ def _effort_calibrated(plan: dict[str, Any]) -> bool:
     return plan.get("effort_hours") is not None
 
 
+def _wall_clock_hours(plan: dict[str, Any]) -> float:
+    """Elapsed hours for one plan at the parallelism it supports.
+
+    Worker-hours measure labour; wall-clock measures how long the plan blocks
+    the schedule. They differ whenever a plan can fan out, and only the second
+    belongs in a path length. An unauthored value falls back to worker-hours,
+    which is the honest serial assumption rather than an invented speed-up.
+    """
+    declared = plan.get("wall_clock_hours")
+    if declared is not None:
+        try:
+            value = float(declared)
+        except (TypeError, ValueError):
+            value = 0.0
+        if value > 0:
+            # Parallelism cannot beat the serial total; clamp rather than trust.
+            return min(max(0.0, value), _effort_hours(plan))
+    return _effort_hours(plan)
+
+
 def _remaining_effort_hours(plan: dict[str, Any]) -> float:
     return round(_effort_hours(plan) * (1.0 - _progress(plan)), 3)
+
+
+def _remaining_wall_hours(plan: dict[str, Any]) -> float:
+    return round(_wall_clock_hours(plan) * (1.0 - _progress(plan)), 3)
 
 
 def _uncalibrated_plans(
@@ -685,9 +714,11 @@ def build_roadmap(
             "roi": plan.get("roi") or "mid",
             "effort": plan.get("effort") or "M",
             "effort_hours": _effort_hours(plan),
+            "wall_clock_hours": _wall_clock_hours(plan),
             "effort_calibrated": _effort_calibrated(plan),
             "progress_pct": round(_progress(plan) * 100, 1),
             "remaining_effort_hours": _remaining_effort_hours(plan),
+            "remaining_wall_hours": _remaining_wall_hours(plan),
             "depends_on": dependency_rows.get(slug, []),
             "explicit_blockers": explicit_blockers,
             "gate_blockers": gate_blockers,
@@ -698,7 +729,7 @@ def build_roadmap(
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         pending.append(row)
-        if status == "draft":
+        if not authorised and status not in TERMINAL_STATUSES:
             age_days, age_source = _authorisation_age(project, plan)
             unauthorised.append(
                 {
@@ -732,7 +763,7 @@ def build_roadmap(
         ]
         best = max(
             candidates,
-            key=lambda path: sum(_remaining_effort_hours(plans[item]) for item in path),
+            key=lambda path: sum(_remaining_wall_hours(plans[item]) for item in path),
             default=[],
         )
         return [*best, node]
@@ -744,7 +775,7 @@ def build_roadmap(
         path = longest_path(slug)
         if path:
             path_candidates[tuple(path)] = round(
-                sum(_remaining_effort_hours(plans[item]) for item in path), 3
+                sum(_remaining_wall_hours(plans[item]) for item in path), 3
             )
     sorted_paths = sorted(path_candidates.items(), key=lambda item: (-item[1], item[0]))
     open_paths = []
@@ -754,7 +785,14 @@ def build_roadmap(
         open_paths.append(
             {
                 "plans": path_plans,
+                # Elapsed time to walk the path, each plan fanning out as far
+                # as it supports; worker-hours is the labour the same path
+                # costs and is reported beside it, never in place of it.
                 "length_hours": length_hours,
+                "length_unit": "elapsed-hours",
+                "worker_hours": round(
+                    sum(_remaining_effort_hours(plans[item]) for item in path), 3
+                ),
                 "effort_unit": _EFFORT_UNIT,
                 "uncalibrated_plans": uncalibrated,
                 "uncalibrated_count": len(uncalibrated),
@@ -766,6 +804,8 @@ def build_roadmap(
         else {
             "plans": [],
             "length_hours": 0.0,
+            "length_unit": "elapsed-hours",
+            "worker_hours": 0.0,
             "effort_unit": _EFFORT_UNIT,
             "uncalibrated_plans": [],
             "uncalibrated_count": 0,
@@ -874,6 +914,10 @@ def build_roadmap(
             "remaining_hours": round(
                 sum(_remaining_effort_hours(plan) for plan in plan_values), 3
             ),
+            "remaining_wall_hours": round(
+                sum(_remaining_wall_hours(plan) for plan in plan_values), 3
+            ),
+            "wall_clock_unit": "elapsed-hours",
             "uncalibrated_plans": uncalibrated,
             "uncalibrated_count": len(uncalibrated),
         },

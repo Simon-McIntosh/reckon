@@ -604,6 +604,21 @@
       "description": "Neutral worker-hours from the plan-effort-hours meta",
       "title": "Effort Hours"
     },
+    "wall_clock_hours": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "multipleOf": 0.25,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Elapsed hours from the plan-wall-clock-hours meta, assuming the maximum parallelism the plan itself supports. Never exceeds effort_hours; equals it for strictly sequential work.",
+      "title": "Wall Clock Hours"
+    },
     "effort_calibrated": {
       "anyOf": [
         {

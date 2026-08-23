@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import os
-from datetime import date, datetime, time, timedelta
+from datetime import date, timedelta
 
 import pytest
 
@@ -77,7 +76,11 @@ def test_roadmap_returns_ready_work_and_hourly_critical_path() -> None:
     assert [item["slug"] for item in result["ready_now"]] == ["foundation"]
     assert result["critical_path"] == {
         "plans": ["foundation", "integration", "release"],
+        # No plan declares wall-clock, so elapsed falls back to the serial
+        # assumption and matches the labour total.
         "length_hours": 7.0,
+        "length_unit": "elapsed-hours",
+        "worker_hours": 7.0,
         "effort_unit": "worker-hours",
         "uncalibrated_plans": ["foundation", "integration", "release"],
         "uncalibrated_count": 3,
@@ -227,6 +230,8 @@ def test_effort_summary_names_unit_and_reports_remaining_hours() -> None:
     assert result["effort"] == {
         "unit": "worker-hours",
         "remaining_hours": 2.5,
+        "remaining_wall_hours": 2.5,
+        "wall_clock_unit": "elapsed-hours",
         "uncalibrated_plans": ["legacy"],
         "uncalibrated_count": 1,
     }
@@ -249,8 +254,11 @@ def test_live_actionable_plan_without_north_star_is_informational() -> None:
     findings = [
         item for item in result["wiring_findings"] if item["code"] == "unoriented-plan"
     ]
-    assert [(item["slug"], item["severity"]) for item in findings] == [
-        ("actionable", "info")
+    # A draft is live actionable work, so it is held to the same orientation
+    # expectation as any other plan.
+    assert sorted((item["slug"], item["severity"]) for item in findings) == [
+        ("actionable", "info"),
+        ("unauthorised", "info"),
     ]
 
 
@@ -429,7 +437,7 @@ def test_dispatchability_is_derived_separately_from_authorisation() -> None:
         "sample",
         [
             _plan("authorised"),
-            _plan("awaiting-authorisation", status="draft"),
+            _plan("drafting", status="draft"),
             without_gate,
             without_followup,
         ],
@@ -440,92 +448,93 @@ def test_dispatchability_is_derived_separately_from_authorisation() -> None:
     assert rows["authorised"]["dispatchable"] is True
     assert rows["authorised"]["authorised"] is True
     assert rows["authorised"]["ready"] is True
-    assert rows["awaiting-authorisation"]["dispatchable"] is True
-    assert rows["awaiting-authorisation"]["authorised"] is False
-    assert rows["awaiting-authorisation"]["ready"] is False
+    # Drafting is how a plan gets written, not a permission tier: a draft is
+    # implementable the moment it exists and must never queue as unauthorised.
+    assert rows["drafting"]["dispatchable"] is True
+    assert rows["drafting"]["authorised"] is True
+    assert rows["drafting"]["ready"] is True
+    assert result["authorisation"]["authored_but_unauthorised"] == []
+    # Dispatchability remains its own axis: a plan can be authorised and still
+    # be undispatchable because it is missing the parts a worker needs.
     assert rows["without-gate"]["dispatchable"] is True
     assert rows["without-gate"]["missing_dispatchability"] == []
     assert rows["without-gate"]["ready"] is True
     assert rows["without-followup"]["missing_dispatchability"] == ["open_followup"]
     assert result["blocked"] == []
-    assert {item["slug"] for item in result["deferred"]} == {
-        "awaiting-authorisation",
-        "without-followup",
-    }
+    # Only the undispatchable plan defers now; drafting no longer parks work.
+    assert {item["slug"] for item in result["deferred"]} == {"without-followup"}
 
 
-def test_authorisation_report_lists_every_draft_with_age_and_decay_verdict() -> None:
+def test_wall_clock_and_worker_hours_are_predicted_separately() -> None:
+    """Labour and elapsed time are different quantities and must not collapse.
+
+    A plan that fans out costs the same worker-hours but blocks the schedule
+    for less time. Path length is elapsed time, because plans on a path run one
+    after another while each plan internally parallelises.
+    """
+    fanned = _plan("fanned", effort_hours=12.0)
+    fanned["wall_clock_hours"] = 3.0
+    serial = _plan("serial", effort_hours=4.0)
+    serial["depends_on"] = ["fanned"]
+
+    result = build_roadmap("sample", [fanned, serial], [])
+    rows = {row["slug"]: row for row in result["pending_work"]}
+
+    assert rows["fanned"]["effort_hours"] == 12.0
+    assert rows["fanned"]["wall_clock_hours"] == 3.0
+    # Undeclared wall-clock falls back to the serial assumption, never a guess.
+    assert rows["serial"]["wall_clock_hours"] == 4.0
+
+    assert result["effort"]["remaining_hours"] == 16.0
+    assert result["effort"]["remaining_wall_hours"] == 7.0
+
+    critical = result["critical_path"]
+    assert critical["plans"] == ["fanned", "serial"]
+    assert critical["length_hours"] == 7.0
+    assert critical["length_unit"] == "elapsed-hours"
+    assert critical["worker_hours"] == 16.0
+
+
+def test_declared_wall_clock_cannot_exceed_the_serial_total() -> None:
+    """Parallelism can only shorten a plan; a larger figure is clamped."""
+    impossible = _plan("impossible", effort_hours=4.0)
+    impossible["wall_clock_hours"] = 9.0
+
+    result = build_roadmap("sample", [impossible], [])
+    row = result["pending_work"][0]
+
+    assert row["effort_hours"] == 4.0
+    assert row["wall_clock_hours"] == 4.0
+
+
+def test_drafts_never_queue_as_unauthorised_however_old() -> None:
+    """Age must not turn a draft into work that reads as needing permission.
+
+    Drafting is how a plan gets written. The authorisation report exists for
+    states that genuinely must not run; a plan sitting in draft for four months
+    is simply an old plan, and parking it behind a permission tier hides
+    implementable work behind a label nobody has to clear.
+    """
     today = date.today()
     inventory = []
-    for slug, age_days in (
-        ("recent-draft", 12),
-        ("older-one", 61),
-        ("older-two", 75),
-        ("older-three", 90),
-        ("older-four", 120),
-    ):
+    for slug, age_days in (("recent-draft", 12), ("ancient-draft", 120)):
         plan = _plan(slug, status="draft")
         plan["modified"] = (today - timedelta(days=age_days)).isoformat()
         inventory.append(plan)
-    authorised = _plan("authorised")
-    authorised["modified"] = (today - timedelta(days=180)).isoformat()
-    inventory.append(authorised)
 
     result = build_roadmap("sample", inventory, [])
     report = result["authorisation"]
-    rows = {row["slug"]: row for row in report["authored_but_unauthorised"]}
 
-    assert report["count"] == 5
-    assert report["stale_count"] == 4
-    assert set(rows) == {
+    assert report["authored_but_unauthorised"] == []
+    assert report["count"] == 0
+    assert report["stale_count"] == 0
+    rows = {row["slug"]: row for row in result["pending_work"]}
+    assert rows["ancient-draft"]["authorised"] is True
+    assert rows["ancient-draft"]["ready"] is True
+    assert {item["slug"] for item in result["ready_now"]} == {
         "recent-draft",
-        "older-one",
-        "older-two",
-        "older-three",
-        "older-four",
+        "ancient-draft",
     }
-    assert {slug: rows[slug]["age_days"] for slug in rows} == {
-        "recent-draft": 12,
-        "older-one": 61,
-        "older-two": 75,
-        "older-three": 90,
-        "older-four": 120,
-    }
-    assert rows["recent-draft"]["age_verdict"] == "current"
-    assert all(
-        rows[f"older-{name}"]["age_verdict"] == "stale"
-        for name in ("one", "two", "three", "four")
-    )
-    assert {row["age_source"] for row in rows.values()} == {"plan-modified"}
-
-
-def test_authorisation_report_derives_age_from_existing_plan_file(
-    tmp_path, monkeypatch
-) -> None:
-    docs_dir = tmp_path / "docs"
-    plan_path = docs_dir / "plans" / "unmodified.html"
-    plan_path.parent.mkdir(parents=True)
-    plan_path.write_text(
-        """<!doctype html>
-<html><head>
-<meta name="docs-project" content="sample">
-<meta name="reckon-type" content="plan">
-<meta name="plan-slug" content="unmodified">
-<meta name="plan-status" content="draft">
-</head><body></body></html>
-"""
-    )
-    modified = date.today() - timedelta(days=17)
-    timestamp = datetime.combine(modified, time.min).timestamp()
-    os.utime(plan_path, (timestamp, timestamp))
-    monkeypatch.setattr("reckon.roadmap._load_mounts", lambda: {"sample": docs_dir})
-
-    result = build_roadmap("sample", [_plan("unmodified", status="draft")], [])
-    row = result["authorisation"]["authored_but_unauthorised"][0]
-
-    assert row["age_days"] == 17
-    assert row["age_source"] == "file-mtime"
-    assert row["age_verdict"] == "current"
 
 
 def test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit() -> (
