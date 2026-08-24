@@ -750,11 +750,12 @@ def dispatch(
     backlog observed by this dispatch. The exact runs and resolving commands
     are copied onto the new record so the exception survives its command line.
 
-    Process-launching dispatches require a live project watcher.
-    ``watch_required`` is explicit here so library callers and in-harness
-    preparation, which launches no worker, keep control of that policy. A watch
-    override records both the arming command and the liveness observed at the
-    dispatch gate.
+    Process-launching dispatches joining an existing fleet require a live
+    project watcher. The first run can therefore bootstrap the fleet before a
+    watcher is armed. ``watch_required`` is explicit here so library callers
+    and in-harness preparation, which launches no worker, keep control of that
+    policy. A watch override records both the arming command and the liveness
+    observed at the dispatch gate.
     """
     repo_root = Path(repo).resolve()
     authority = resolve_dispatch_authority(project, repo_root)
@@ -904,9 +905,11 @@ def dispatch(
 
     dispatch_watch = watch_state(project)
     starts_worker = resolution.launch == "cli"
+    project_has_live_runs = bool(list_live(project=project))
     if (
         watch_required
         and starts_worker
+        and project_has_live_runs
         and not dispatch_watch["watcher_live"]
         and not watch_override
     ):

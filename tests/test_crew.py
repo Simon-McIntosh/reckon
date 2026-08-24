@@ -801,6 +801,12 @@ with _project_watch_claim('proj', '1h') as (acquired, _record):
         watcher.wait(timeout=5)
 
     assert crew.watch_state("proj")["watcher_live"] is False
+    existing = _write_running_pointer(
+        home,
+        "r-existing",
+        repo=str(repo),
+        write_paths=["reckon/cli.py"],
+    )
     with pytest.raises(crew.WatcherRequired):
         crew.dispatch(
             node=_node(),
@@ -811,6 +817,7 @@ with _project_watch_claim('proj', '1h') as (acquired, _record):
             launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
             watch_required=True,
         )
+    crew.pointer_path(existing["run_id"]).unlink()
     _assert_no_dispatch_artifacts(repo)
 
 
@@ -1389,16 +1396,33 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     assert Path(record["worktree"]).is_dir()
 
 
-def test_dispatch_requires_a_live_project_watcher_before_creating_a_worktree(
+def test_dispatch_into_an_occupied_project_requires_a_watcher_before_worktree(
     home, repo
 ) -> None:
+    owner = crew.dispatch(
+        node=_node(
+            id="owner-node",
+            manifest_path=str(home / "owner-manifest.md"),
+        ),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="owner-session",
+        launcher=lambda *args, **kwargs: 4242,
+        watch_required=True,
+    )
+
     with pytest.raises(crew.WatcherRequired) as excinfo:
         crew.dispatch(
-            node=_node(),
+            node=_node(
+                id="refused-node",
+                manifest_path=str(home / "refused-manifest.md"),
+                write_paths=["reckon/cli.py"],
+            ),
             project="proj",
             repo=repo,
             config=CONFIG,
-            session="sess",
+            session="refused-session",
             launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
             watch_required=True,
         )
@@ -1409,7 +1433,16 @@ def test_dispatch_requires_a_live_project_watcher_before_creating_a_worktree(
         "watcher": {},
     }
     assert "reckon crew watch --project proj" in str(excinfo.value)
-    _assert_no_dispatch_artifacts(repo)
+    assert crew.list_live(project="proj") == [owner]
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "owner-node" in listed.stdout
+    assert "refused-node" not in listed.stdout
 
 
 def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) -> None:
@@ -1500,6 +1533,12 @@ def test_cli_dispatch_reports_missing_watcher_on_its_own_exit_code(
     home, repo, monkeypatch
 ) -> None:
     monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    existing = _write_running_pointer(
+        home,
+        "r-existing",
+        repo=str(repo),
+        write_paths=["reckon/_backends.py"],
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -1533,6 +1572,7 @@ def test_cli_dispatch_reports_missing_watcher_on_its_own_exit_code(
     assert payload["watch"]["watcher_live"] is False
     assert payload["watch"]["arming_line"] == "reckon crew watch --project proj"
     assert payload["watch"]["arming_line"] in payload["detail"]
+    crew.pointer_path(existing["run_id"]).unlink()
     _assert_no_dispatch_artifacts(repo)
 
 
