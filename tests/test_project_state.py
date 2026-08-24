@@ -26,6 +26,8 @@ from reckon.project_state import (
     append_timeline_event,
     audit_project_state,
     compose_project_state,
+    create_project_state,
+    marker_path,
     migrate_project_state,
     move_sprint_item,
     project_state_mode,
@@ -228,6 +230,39 @@ def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
     assert manifest["owner"] == "owner"
     assert "path" not in manifest
     assert "plans_count" not in manifest
+
+
+def test_composition_orders_numbered_sprints_naturally(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    create_project_state(docs, "sample")
+    for number in range(1, 13):
+        write_resource(
+            docs,
+            "sample",
+            "sprint",
+            f"S{number}",
+            {"theme": f"Iteration {number}", "items": []},
+            0,
+            create=True,
+        )
+
+    assert [
+        sprint["id"] for sprint in compose_project_state(docs, "sample")["sprints"]
+    ] == [f"S{number}" for number in range(1, 13)]
+
+
+def test_composition_retains_nonlexicographic_marker_sprint_sequence(migrated):
+    docs, _, _ = migrated
+    marker = json.loads(marker_path(docs).read_text(encoding="utf-8"))
+    sprint_rows = [row for row in marker["resources"] if row["type"] == "sprint"]
+    other_rows = [row for row in marker["resources"] if row["type"] != "sprint"]
+    marker["resources"] = [*reversed(sprint_rows), *other_rows]
+    marker_path(docs).write_text(json.dumps(marker), encoding="utf-8")
+
+    assert [
+        sprint["id"] for sprint in compose_project_state(docs, "sample")["sprints"]
+    ] == ["earlier", "current"]
 
 
 def test_migration_derives_missing_blocker_identity_without_parity_loss(tmp_path):
