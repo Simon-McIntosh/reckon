@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-impl" content="0.14">
 </head>
 <body>
@@ -165,12 +165,31 @@
     <code>git show --stat</code> audit against declared scope that verification already performs, and
     the two together are the whole guarantee.</p>
 
+    <p><strong>The guard fires only where it refuses, never where a coordinator would ask.</strong>
+    Probed adversarially against three live claims immediately after the refusal landed:
+    <code>--dry-run</code> validated a node claiming <code>reckon/roadmap.py</code> while a live run
+    held exactly that path, and validated a parent directory containing it, and validated a
+    string-prefix sibling &mdash; all three identically, all <code>ok</code>. The cause is one line
+    of placement: <code>_raise_live_scope_conflict</code> is called from <code>dispatch</code> and
+    not from <code>plan_dispatch</code>, so the dry-run path never reads live claims.</p>
+
+    <p>This is consistent with the member guard and the budget hold, which are also dispatch-only,
+    and for a pure refusal that placement is right. It is wrong for this one, because this section's
+    purpose is to <em>sequence before launch</em> and the dry-run is the surface on which a
+    coordinator asks whether a wave is safe. A planning surface that answers <em>yes</em> for a path
+    dispatch would reject is worse than no planning surface: it is confidently wrong at exactly the
+    moment the answer is being trusted. The repair is not to move the refusal, which would make a
+    dry-run fail rather than report, but to have the dry-run <em>report</em> the conflicts it would
+    hit while still exiting zero.</p>
+
     <p><strong>Done when</strong> two candidate nodes whose declared scopes overlap by containment
     are refused before any worktree exists with a message naming the owning run and the conflicting
-    path; a node claiming a declared source is judged to conflict with a node claiming its generated
-    output; the planner returns a lane assignment for a candidate set whose partition matches a
-    hand-computed expectation on the three-node case in &#167;1; and the scopes view reports the live
-    claim map without mutating a pointer.</p>
+    path; a dry-run against a live claim reports that conflict with the owning run while still
+    validating the node, demonstrated by a test that holds a claim and dry-runs against it; a node
+    claiming a declared source is judged to conflict with a node claiming its generated output; the
+    planner returns a lane assignment for a candidate set whose partition matches a hand-computed
+    expectation on the three-node case in &#167;1; and the scopes view reports the live claim map
+    without mutating a pointer.</p>
 
     <h2 id="s4">&#167;4 &mdash; Ready is not a queue, and saying so exposes the horizon</h2>
 
@@ -257,11 +276,21 @@
     has run before inherits the stale manifest, and it worsens with lanes, because every stale
     artifact in the fleet is a false wake-up competing with the real ones.</p>
 
-    <p><strong>The fix is one concept, not three patches.</strong> An attempt is the unit: resuming
-    or redispatching starts a new one, and the record names its stream, resets its phase, and
-    carries a counter a manifest must beat to be read as fresh. Every reader then asks the same
-    question &mdash; what does the <em>current</em> attempt say &mdash; instead of three readers
-    each trusting a different stale field.</p>
+    <p><strong>A fourth reading has the same cause and blocks the repair outright.</strong>
+    <code>crew resume</code> refuses a run whose record carries no captured session id, telling the
+    caller to observe it first. The session id was in the stream from the worker's first turn;
+    only <code>observe</code> folds it into the record, so answering a stuck worker requires a
+    preparatory command whose sole purpose is to copy a value that already exists. It cost one
+    call here because the error names the fix precisely, and it is still a reader trusting a
+    stored field that a single other command maintains &mdash; the same shape as the three
+    above.</p>
+
+    <p><strong>The fix is one concept, not four patches.</strong> An attempt is the unit: resuming
+    or redispatching starts a new one, and the record names its stream, resets its phase, carries a
+    counter a manifest must beat to be read as fresh, and captures the session id when the stream
+    first reports it rather than when someone asks. Every reader then asks the same question
+    &mdash; what does the <em>current</em> attempt say &mdash; instead of four readers each
+    trusting a different stale field.</p>
 
     <p><strong>Done when</strong> follow mode emits one event per terminal run over a multi-run fleet
     and ends when the last pointer is reconciled; a resumed run reports the current attempt's stream
