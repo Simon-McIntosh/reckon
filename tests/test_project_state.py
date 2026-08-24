@@ -19,8 +19,10 @@ from reckon import mcp as mcp_module
 from reckon._store import read_plan, write_plan
 from reckon.project_state import (
     LegacyIndexReadOnly,
+    MIGRATION_COMPOSED_DERIVATIONS,
     ProjectStateConflict,
     ProjectStateError,
+    _parity_projection,
     append_timeline_event,
     audit_project_state,
     compose_project_state,
@@ -226,6 +228,43 @@ def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
     assert manifest["owner"] == "owner"
     assert "path" not in manifest
     assert "plans_count" not in manifest
+
+
+def test_migration_derives_missing_blocker_identity_without_parity_loss(tmp_path):
+    assert MIGRATION_COMPOSED_DERIVATIONS == frozenset(
+        {"blockers[].id", "blockers[].next", "timeline[].id"}
+    )
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, "alpha", "active", 0.4)
+    index = _legacy_index(docs)
+    envelope = json.loads(index.read_text(encoding="utf-8"))
+    legacy = envelope["data"]
+    legacy["blockers"][0].pop("id")
+    legacy["sprints"][1]["items"][0]["blocked_by"] = []
+    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+
+    migrate_project_state(docs, "sample")
+
+    composed = compose_project_state(docs, "sample")
+    assert composed["blockers"][0]["id"] == "blocker-1"
+    assert _parity_projection(legacy, "sample") == _parity_projection(
+        composed, "sample"
+    )
+
+
+def test_composed_parity_still_reports_authored_blocker_change(migrated):
+    docs, index, _ = migrated
+    legacy = json.loads(index.read_text(encoding="utf-8"))["data"]
+    composed = compose_project_state(docs, "sample")
+    composed["blockers"][0]["summary"] = "Different authored summary"
+
+    old_projection = _parity_projection(legacy, "sample")
+    new_projection = _parity_projection(composed, "sample")
+
+    assert old_projection != new_projection
+    assert old_projection["blockers"][0]["summary"] == "Network unavailable"
+    assert new_projection["blockers"][0]["summary"] == "Different authored summary"
 
 
 def test_migration_coerces_bare_string_sprint_item(tmp_path):
