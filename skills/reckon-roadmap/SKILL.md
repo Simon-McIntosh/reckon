@@ -51,7 +51,9 @@ The tool returns:
 | `completion` | Plan count, completed count, pending count, lifecycle %, stored implementation % |
 | `sprints` | Sprint sequence with item resolution, ready/blocked/deferred counts, and both percentages |
 | `pending_work` | Every open plan in scope, including prerequisites and exact blockers |
-| `ready_now` | Runnable workflow plans whose hard prerequisites and explicit blockers are clear |
+| `ready_now` | Dependency-ready workflow plans whose hard prerequisites and explicit blockers are clear; schedule readiness is a separate axis |
+| `schedule` | Configured sprint window, ordered sprints holding open work, horizon depth, and schedule-ready/deferred counts |
+| `schedule_deferred` | Plans outside the configured sprint window, retained in roadmap order with the sprint each sits behind |
 | `immediate_roadmap` | Ready work ordered by critical-path membership, sprint order, ROI, unlocks, and remaining effort |
 | `critical_path` | Longest remaining local dependency chain weighted by effort and progress |
 | `open_paths` | Alternative longest execution paths, capped by `max_paths` |
@@ -60,9 +62,16 @@ The tool returns:
 | `allocation` | Optional project responsibility/routing policy and the ownership preflight reminder |
 
 `blocked` contains only explicit, dependency-derived, persisted, or cycle
-blockers. `deferred` contains valid non-runnable work such as drafts. Read each
-row's `depends_on` and `explicit_blockers`; do not flatten those causes into one
-generic label or treat deferred work as blocked.
+blockers. `deferred` contains valid non-runnable work such as plans missing a
+dispatch handoff. Schedule deferral is different again: each pending row exposes
+`dependency_readiness` beside `schedule_readiness`, and `schedule_deferred`
+retains queued rows with `schedule_deferred_reason` and
+`schedule_behind_sprint`. Read both axes; neither answers the other question.
+
+The project manifest may declare `schedule_horizon_sprints` as a positive
+integer. Reckon derives the ordered window from the earliest sprint holding open
+work and reports the total count as `schedule.horizon_depth`. With no declaration,
+the schedule axis remains visible but does not silently impose a queue.
 
 ## Wiring diagnosis
 

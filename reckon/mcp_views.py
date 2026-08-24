@@ -1147,6 +1147,10 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
         item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
     ]
     completion = raw.get("completion") or {}
+    schedule = raw.get("schedule") or {}
+    dependency_ready = len(raw.get("ready_now") or [])
+    dependency_blocked = len(raw.get("blocked") or [])
+    dependency_deferred = len(raw.get("deferred") or [])
     return {
         "project": raw.get("project", ""),
         "completion": {
@@ -1159,9 +1163,28 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
                 "implementation_pct",
             )
         },
-        "ready": len(raw.get("ready_now") or []),
-        "blocked": len(raw.get("blocked") or []),
-        "deferred": len(raw.get("deferred") or []),
+        "ready": dependency_ready,
+        "blocked": dependency_blocked,
+        "deferred": dependency_deferred,
+        "dependency_readiness": {
+            "ready": dependency_ready,
+            "blocked": dependency_blocked,
+            "deferred": dependency_deferred,
+        },
+        "schedule_readiness": {
+            key: schedule.get(key)
+            for key in (
+                "configured",
+                "configuration_key",
+                "window_sprints",
+                "horizon_depth",
+                "open_sprints",
+                "earliest_open_sprint",
+                "ready_sprints",
+                "ready",
+                "deferred",
+            )
+        },
         "finding_counts": _roadmap_finding_counts(findings),
     }
 

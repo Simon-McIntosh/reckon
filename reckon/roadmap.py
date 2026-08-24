@@ -283,6 +283,36 @@ def _sprint_membership(
     return dict(membership), order
 
 
+def _open_sprints(
+    sprints: list[dict[str, Any]], plans: dict[str, dict[str, Any]]
+) -> list[str]:
+    """Return ordered sprints that still contain executable work."""
+
+    result: list[str] = []
+    for sprint in sprints:
+        sprint_id = str(sprint.get("id") or "")
+        status = str(sprint.get("status") or "").lower()
+        if not sprint_id or status in TERMINAL_STATUSES:
+            continue
+        item_plans = [
+            plans[slug]
+            for item in sprint.get("items") or []
+            if (slug := _item_slug(item)) in plans
+        ]
+        if any(_status(plan) not in TERMINAL_STATUSES for plan in item_plans):
+            result.append(sprint_id)
+    return result
+
+
+def _schedule_horizon(project_manifest: dict[str, Any] | None) -> int | None:
+    """Read the declared number of open sprints allowed in the schedule window."""
+
+    value = (project_manifest or {}).get("schedule_horizon_sprints")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return None
+    return value
+
+
 def _sprint_of(
     slug: str, plan: dict[str, Any], membership: dict[str, list[str]]
 ) -> list[str]:
@@ -390,6 +420,14 @@ def build_roadmap(
             all_plans[str(item["slug"])] = item
 
     membership, sprint_order = _sprint_membership(sprints)
+    open_sprints = _open_sprints(sprints, all_plans)
+    schedule_horizon = _schedule_horizon(project_manifest)
+    schedule_ready_sprints = (
+        open_sprints[:schedule_horizon]
+        if schedule_horizon is not None
+        else open_sprints
+    )
+    schedule_boundary = schedule_ready_sprints[-1] if schedule_ready_sprints else None
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
     live_runs = in_flight_by_plan(project)
@@ -662,6 +700,7 @@ def build_roadmap(
     ready: list[dict[str, Any]] = []
     blocked: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
+    schedule_deferred: list[dict[str, Any]] = []
     unauthorised: list[dict[str, Any]] = []
     for slug, plan in plans.items():
         status = _status(plan)
@@ -700,6 +739,18 @@ def build_roadmap(
             or slug in cycle_members
         )
         readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
+        plan_sprint = plan.get("sprint") or (membership.get(slug) or [None])[0]
+        is_schedule_deferred = bool(
+            schedule_horizon is not None
+            and plan_sprint in open_sprints
+            and plan_sprint not in schedule_ready_sprints
+        )
+        schedule_reason = None
+        if is_schedule_deferred:
+            schedule_reason = (
+                f"held behind {schedule_boundary}; the schedule window starts at "
+                f"{open_sprints[0]} and spans {schedule_horizon} sprints holding open work"
+            )
         row = {
             "slug": slug,
             "title": plan.get("title") or slug,
@@ -710,7 +761,7 @@ def build_roadmap(
             "effective_status": effective_status(
                 status, [*dependency_blockers, *explicit_blockers, *gate_blockers]
             ),
-            "sprint": plan.get("sprint") or (membership.get(slug) or [None])[0],
+            "sprint": plan_sprint,
             "roi": plan.get("roi") or "mid",
             "effort": plan.get("effort") or "M",
             "effort_hours": _effort_hours(plan),
@@ -725,6 +776,14 @@ def build_roadmap(
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,
+            "dependency_ready": is_ready,
+            "dependency_readiness": readiness,
+            "schedule_ready": not is_schedule_deferred,
+            "schedule_readiness": "deferred" if is_schedule_deferred else "ready",
+            "schedule_deferred_reason": schedule_reason,
+            "schedule_behind_sprint": schedule_boundary
+            if is_schedule_deferred
+            else None,
         }
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
@@ -752,6 +811,8 @@ def build_roadmap(
             blocked.append(row)
         else:
             deferred.append(row)
+        if is_schedule_deferred:
+            schedule_deferred.append(row)
 
     def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
         if node in visiting or node in cycle_members:
@@ -828,6 +889,7 @@ def build_roadmap(
     pending.sort(key=lambda row: (not row["ready"], *priority(row)))
     blocked.sort(key=priority)
     deferred.sort(key=priority)
+    schedule_deferred.sort(key=priority)
     unauthorised.sort(
         key=lambda row: (
             row["age_days"] is None,
@@ -842,6 +904,12 @@ def build_roadmap(
             "sprint": row["sprint"],
             "progress_pct": row["progress_pct"],
             "unlocks": row["unlocks"],
+            "dependency_ready": row["dependency_ready"],
+            "dependency_readiness": row["dependency_readiness"],
+            "schedule_ready": row["schedule_ready"],
+            "schedule_readiness": row["schedule_readiness"],
+            "schedule_deferred_reason": row["schedule_deferred_reason"],
+            "schedule_behind_sprint": row["schedule_behind_sprint"],
             "reason": (
                 "critical path"
                 if row["slug"] in critical_members
@@ -878,6 +946,13 @@ def build_roadmap(
                 "ready": sum(row.get("sprint") == sprint_name for row in ready),
                 "blocked": sum(row.get("sprint") == sprint_name for row in blocked),
                 "deferred": sum(row.get("sprint") == sprint_name for row in deferred),
+                "schedule_ready": sum(
+                    row.get("sprint") == sprint_name and row["schedule_ready"]
+                    for row in pending
+                ),
+                "schedule_deferred": sum(
+                    row.get("sprint") == sprint_name for row in schedule_deferred
+                ),
                 "feeds_sprints": downstream.get(sprint_name, {}).get(
                     "feeds_sprints", []
                 ),
@@ -934,6 +1009,18 @@ def build_roadmap(
         "ready_now": ready,
         "blocked": blocked,
         "deferred": deferred,
+        "schedule": {
+            "configured": schedule_horizon is not None,
+            "configuration_key": "schedule_horizon_sprints",
+            "window_sprints": schedule_horizon,
+            "horizon_depth": len(open_sprints),
+            "open_sprints": open_sprints,
+            "earliest_open_sprint": open_sprints[0] if open_sprints else None,
+            "ready_sprints": schedule_ready_sprints,
+            "ready": sum(row["schedule_ready"] for row in pending),
+            "deferred": len(schedule_deferred),
+        },
+        "schedule_deferred": schedule_deferred,
         "authorisation": {
             "authored_but_unauthorised": unauthorised,
             "count": len(unauthorised),
