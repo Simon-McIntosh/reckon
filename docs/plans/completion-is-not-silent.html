@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-impl" content="1.0">
 </head>
 <body>
@@ -221,15 +221,15 @@
       </p>
     <p class="r-dec-rat">Locked 2026-08-24 on measured failure rather than preference. The skill rule already exists and already gives the reason; it was followed on about eight dispatches and skipped on two in one session, with no signal distinguishing them, which is the same way the member-collision rule failed earlier in the same sprint. Restating it a third time repairs nothing. A background promoter was rejected for a stronger reason than cost: promotion is the moment a human or coordinator judges the gate, audits the scoped diff and decides the verdict, so automating it would replace a judgement with a default and produce a ledger full of unexamined passes. Refusing at dispatch keeps the judgement where it belongs and fires it exactly when someone is there to make it.</p>
     </div>
-<div class="r-dec" data-key="watch-arming" data-choice="" data-by="lead" data-when="2026-08-24T13:25:56+00:00">
+<div class="r-dec" data-key="watch-arming" data-choice="single-fleet-watch-armed-by-dispatch" data-by="lead" data-when="2026-08-24T20:14:34+00:00">
     <p class="r-dec-q">How many watches does a wave need, and who arms them?</p>
     <p class="r-dec-ctx">Nothing currently arms a watch; the skill asks the coordinator to. Executing this plan produced eight overlapping watches on a single run, so the question is both how many and who.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="single-fleet-watch-armed-by-dispatch">One project-wide watch, whose arming line dispatch returns and whose live state it reports</button>
+      <button class="r-opt chosen" data-value="single-fleet-watch-armed-by-dispatch">One project-wide watch, whose arming line dispatch returns and whose live state it reports</button>
       <button class="r-opt" data-value="per-run-watch-armed-by-coordinator">One watch per run, armed by the coordinator from the skill&#x27;s recipe</button>
       <button class="r-opt" data-value="reckon-spawns-the-watcher-itself">Reckon spawns a detached watcher process on every dispatch</button>
       </p>
-    <p class="r-dec-rat">Locked 2026-08-24 by the lead on measured noise. A per-run watch scales with the fleet, so an eight-node wave owes eight wake-ups for events nobody needed separately, and it is the form that produced the incident. Project-wide is one process whatever the fleet size, and it exits on the first event that matters. Reckon spawning the watcher itself was rejected on a hard constraint rather than preference: in this host the wake primitive is a harness-launched background command exiting, and a process Reckon detaches is not one the harness watches, so it would run forever and wake nobody. What Reckon can own portably is the single command plus the report of whether it is live; arming it with no coordinator action is host-local and belongs in the harness reference as a settings hook.</p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead on measured noise. A per-run watch scales with the fleet, so an eight-node wave owes eight wake-ups for events nobody needed separately, and it is the form that produced the incident. Project-wide is one process whatever the fleet size, and it exits on the first event that matters. Reckon spawning the watcher itself was rejected on a hard constraint rather than preference: in this host the wake primitive is a harness-launched background command exiting, and a process Reckon detaches is not one the harness watches, so it would run forever and wake nobody. What Reckon can own portably is the single command plus the report of whether it is live; arming it with no coordinator action is host-local and belongs in the harness reference as a settings hook. Re-locked 2026-08-24 after a silent partial write left the choice empty while its rationale claimed it was locked.</p>
     </div>
 </section>
 
