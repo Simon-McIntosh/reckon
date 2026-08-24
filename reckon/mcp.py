@@ -935,6 +935,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "capability": item.get("capability"),
                 "tier": item.get("tier"),
                 "dec_open": int(item.get("dec_open", 0) or 0),
+                "decisions": list(item.get("decisions") or []),
                 "blockers": int(item.get("blockers", 0) or 0),
                 "blocking": list(item.get("blocking") or []),
                 "gates": list(item.get("gates") or []),

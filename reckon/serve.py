@@ -663,12 +663,11 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             continue
         html_file = resource.path
 
-        # Lightweight inventory: head <meta> + a regex open-decision count, no
-        # full-body parse — so a project with thousands of docs stays cheap.
-        # The SPA fetches a doc's full state (decisions, followups, …) from
-        # GET /plan/<project>/<slug> when it opens that doc.
+        # Scalar inventory stays on the lightweight meta path. Named gate and
+        # decision rows are the body state needed to explain roadmap blockers.
+        # The SPA fetches the remaining full state from the per-document route.
         rec = _plan_html.parse_meta(html_file)
-        gates = _read_gates(html_file)
+        gates, decisions = _read_readiness_state(html_file)
         slug = resource.slug
         artifact_type = resource.type
         item = {
@@ -727,6 +726,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "tier": rec.get("tier"),
                     "impl": rec["impl"],
                     "dec_open": rec["dec_open"],
+                    "decisions": decisions,
                     "blockers": rec["blockers"],
                     "gates": gates,
                     "depends_on": rec.get("depends_on", []),
@@ -816,16 +816,27 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
 
-def _read_gates(path: Path) -> list[dict]:
-    """Read gate state only for documents declaring the semantic section."""
+def _read_readiness_state(path: Path) -> tuple[list[dict], list[dict]]:
+    """Read named gate and decision state used to explain readiness."""
 
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return []
-    if 'data-reckon="gates"' not in text and "data-reckon='gates'" not in text:
-        return []
-    return list(_plan_html.read_state(text).get("gates") or [])
+        return [], []
+    has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
+    has_decisions = (
+        'data-reckon="decisions"' in text or "data-reckon='decisions'" in text
+    )
+    if not has_gates and not has_decisions:
+        return [], []
+    state = _plan_html.read_state(text)
+    gates = list(state.get("gates") or []) if has_gates else []
+    decisions = state.get("decisions") or {}
+    decision_rows = [
+        {"key": key, **(decision if isinstance(decision, dict) else {})}
+        for key, decision in decisions.items()
+    ]
+    return gates, decision_rows
 
 
 def _derive_lifecycle(

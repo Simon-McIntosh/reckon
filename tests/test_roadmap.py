@@ -103,6 +103,118 @@ def test_completed_dependency_clears_without_hiding_stored_progress() -> None:
     assert result["completion"]["implementation_pct"] == 62.5
 
 
+def test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind() -> None:
+    deciding = _plan("deciding")
+    deciding["decisions"] = [
+        {
+            "key": "transport",
+            "title": "Which transport should carry the payload?",
+            "choice": "",
+            "rationale": "",
+        }
+    ]
+    endpoint = _plan("endpoint", depends_on=["deciding"])
+    result = build_roadmap("sample", [deciding, endpoint], [])
+    rows = {row["slug"]: row for row in result["pending_work"]}
+
+    blocker = {
+        "kind": "decision",
+        "plan": "deciding",
+        "id": "transport",
+        "question": "Which transport should carry the payload?",
+        "status": "open",
+        "choice": "",
+        "rationale": "",
+    }
+    assert rows["deciding"]["decision_blockers"] == [blocker]
+    assert rows["deciding"]["depends_on"] == []
+    assert rows["deciding"]["explicit_blockers"] == []
+    assert rows["deciding"]["gate_blockers"] == []
+    assert rows["deciding"]["readiness"] == "blocked"
+    assert result["decision_blockers"] == [blocker]
+    assert result["decision_readiness"] == {
+        "ready": False,
+        "open": 1,
+        "deferred": 0,
+    }
+    assert "deciding" not in {row["slug"] for row in result["ready_now"]}
+
+    deciding["decisions"][0]["choice"] = "socket"
+    released = build_roadmap("sample", [deciding, endpoint], [])
+
+    assert released["decision_blockers"] == []
+    assert released["decision_readiness"] == {
+        "ready": True,
+        "open": 0,
+        "deferred": 0,
+    }
+    assert "deciding" in {row["slug"] for row in released["ready_now"]}
+
+
+def test_locked_or_deferred_decision_releases_work_and_stays_reported() -> None:
+    locked = _plan("locked")
+    locked["decisions"] = [
+        {
+            "key": "transport",
+            "title": "Which transport?",
+            "choice": "socket",
+            "rationale": "Selected for bounded delivery.",
+        }
+    ]
+    deferred = _plan("deferred")
+    deferred["decisions"] = [
+        {
+            "key": "retention",
+            "title": "How long should records remain?",
+            "choice": "",
+            "rationale": "Deferred until retention policy is published.",
+        }
+    ]
+
+    result = build_roadmap("sample", [locked, deferred], [])
+    rows = {row["slug"]: row for row in result["pending_work"]}
+
+    assert rows["locked"]["readiness"] == "ready"
+    assert rows["locked"]["decision_blockers"] == []
+    assert rows["locked"]["decisions"][0]["status"] == "locked"
+    assert rows["deferred"]["readiness"] == "ready"
+    assert rows["deferred"]["decision_blockers"] == []
+    assert rows["deferred"]["deferred_decisions"][0] == {
+        "kind": "decision",
+        "plan": "deferred",
+        "id": "retention",
+        "question": "How long should records remain?",
+        "status": "deferred",
+        "choice": "",
+        "rationale": "Deferred until retention policy is published.",
+    }
+    assert result["decision_blockers"] == []
+    assert result["deferred_decisions"] == rows["deferred"]["deferred_decisions"]
+    assert result["decision_readiness"] == {
+        "ready": True,
+        "open": 0,
+        "deferred": 1,
+    }
+    assert {row["slug"] for row in result["ready_now"]} == {"locked", "deferred"}
+
+
+def test_plans_without_decisions_keep_existing_readiness() -> None:
+    result = build_roadmap("sample", [_plan("unaffected")], [])
+    row = result["pending_work"][0]
+
+    assert row["readiness"] == "ready"
+    assert row["decision_blockers"] == []
+    assert row["deferred_decisions"] == []
+    assert row["decisions"] == []
+    assert result["decision_blockers"] == []
+    assert result["deferred_decisions"] == []
+    assert result["decision_readiness"] == {
+        "ready": True,
+        "open": 0,
+        "deferred": 0,
+    }
+
+
 def test_schedule_readiness_uses_the_configured_open_sprint_window() -> None:
     inventory = [
         _plan("earliest", sprint="first"),
