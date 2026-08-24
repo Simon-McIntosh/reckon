@@ -29,7 +29,7 @@ from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
 from reckon._schema import (
@@ -145,6 +145,16 @@ class ProjectStateMode:
 def _safe_segment(value: str, label: str) -> str:
     if not value or value in {".", ".."} or not _SAFE_SEGMENT.fullmatch(value):
         raise ValueError(f"{label} must be a single safe path segment")
+    return value
+
+
+def _repository_relative_path(value: Any, label: str) -> str:
+    """Validate one stored repository-relative POSIX path without rewriting it."""
+    if not isinstance(value, str) or not value or "\\" in value:
+        raise ValueError(f"{label} must be a repository-relative POSIX path: {value!r}")
+    path = PurePosixPath(value)
+    if path.is_absolute() or path == PurePosixPath(".") or ".." in path.parts:
+        raise ValueError(f"{label} must be a repository-relative POSIX path: {value!r}")
     return value
 
 
@@ -479,6 +489,26 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
                 if not isinstance(work, str) or not work.strip():
                     raise ValueError("project scope route work must be non-empty")
                 _safe_segment(str(destination or ""), "project scope route project")
+        derivations = cleaned.get("derivations")
+        if derivations is not None:
+            if not isinstance(derivations, dict):
+                raise ValueError("project derivations must be an object")
+            validated_derivations: dict[str, list[str]] = {}
+            for source, generated in derivations.items():
+                source_path = _repository_relative_path(
+                    source, "project derivation source"
+                )
+                if not isinstance(generated, list):
+                    raise ValueError(
+                        f"project derivation outputs for {source!r} must be a list"
+                    )
+                validated_derivations[source_path] = [
+                    _repository_relative_path(
+                        generated_path, "project derivation generated path"
+                    )
+                    for generated_path in generated
+                ]
+            cleaned["derivations"] = validated_derivations
         north_stars = cleaned.get("north_stars")
         if north_stars is not None:
             if not isinstance(north_stars, list):

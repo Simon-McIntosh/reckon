@@ -6,6 +6,7 @@ import base64
 import http.client
 import json
 import multiprocessing
+import re
 import subprocess
 import threading
 from copy import deepcopy
@@ -441,6 +442,85 @@ def test_project_scope_rejects_malformed_routes(migrated):
             },
             version,
         )
+
+
+def test_project_derivations_round_trip_beside_scope(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+    scope = {
+        "owns": ["runtime orchestration"],
+        "excludes": ["language vocabulary"],
+        "routes": [{"work": "vocabulary", "project": "language"}],
+    }
+    derivations = {
+        "reckon/schema/flight.yaml": [
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+        ]
+    }
+
+    new_version = write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "scope": scope, "derivations": derivations},
+        version,
+    )
+
+    stored, stored_version = read_resource(docs, "sample", "project", "project")
+    assert new_version == stored_version == version + 1
+    assert stored["derivations"] == derivations
+    assert stored["scope"] == scope
+    composed_project = compose_project_state(docs, "sample")["projects"][0]
+    assert composed_project["derivations"] == derivations
+    assert composed_project["scope"] == scope
+
+
+@pytest.mark.parametrize(
+    ("derivations", "offending"),
+    [
+        ({"/schema/source.yaml": ["generated.py"]}, "/schema/source.yaml"),
+        ({"../schema/source.yaml": ["generated.py"]}, "../schema/source.yaml"),
+        ({"schema/source.yaml": ["/generated.py"]}, "/generated.py"),
+        ({"schema/source.yaml": ["../../generated.py"]}, "../../generated.py"),
+    ],
+)
+def test_project_derivations_reject_paths_outside_repository(
+    migrated, derivations, offending
+):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    with pytest.raises(ValueError, match=re.escape(offending)):
+        write_resource(
+            docs,
+            "sample",
+            "project",
+            "project",
+            {**project, "derivations": derivations},
+            version,
+        )
+
+
+def test_project_absent_and_empty_derivations_mean_none(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    assert "derivations" not in project
+    assert "derivations" not in compose_project_state(docs, "sample")["projects"][0]
+
+    write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "derivations": {}},
+        version,
+    )
+    stored, _ = read_resource(docs, "sample", "project", "project")
+    assert stored["derivations"] == {}
+    assert compose_project_state(docs, "sample")["projects"][0]["derivations"] == {}
 
 
 def test_project_north_stars_round_trip_and_compose(migrated):
