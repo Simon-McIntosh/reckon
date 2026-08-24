@@ -75,6 +75,7 @@ from reckon.capability import (
     from_legacy_tier,
     validate_capability,
 )
+from reckon.tags import normalise_tag
 
 # ── Schema version ──────────────────────────────────────────────────────────
 #: Bump on any breaking change to the plan/index shape. Embedded in the derived
@@ -123,6 +124,32 @@ def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
     """json_schema_extra payload advertising the canonical enum for a str field
     (without making the Python field reject off-enum values on read)."""
     return {"enum": list(values)}
+
+
+def _normalise_tags(value: Any, *, reject_invalid: bool = False) -> Any:
+    """Canonicalise tag identities while keeping legacy reads lenient.
+
+    Invalid identities survive parsing so old resources remain readable.  The
+    explicit write validator reports them, while valid spelling variants are
+    normalised and duplicate canonical identities collapse in authored order.
+    """
+
+    if not isinstance(value, (list, tuple, set)):
+        return value
+    tags: list[Any] = []
+    seen: set[str] = set()
+    for authored in value:
+        try:
+            tag = normalise_tag(authored)
+        except (TypeError, ValueError):
+            if reject_invalid:
+                raise
+            tags.append(authored)
+            continue
+        if tag not in seen:
+            tags.append(tag)
+            seen.add(tag)
+    return tags
 
 
 class ResourceIdentity(BaseModel):
@@ -342,7 +369,7 @@ class Followup(BaseModel):
     recommends_skill: str = ""
     title: str = ""
     body: str = ""
-    prompt: str = ""  # §05 template — mandatory-non-empty on write
+    prompt: str = ""  # One-line invocation; mandatory and non-empty on write.
     resolved_at: str | None = None
     resolved_by: str | None = None
     outcome: str | None = None
@@ -527,6 +554,10 @@ class PlanState(BaseModel):
     supersedes: list[str] = Field(default_factory=list)
     commits: list[str] = Field(default_factory=list)
     artifacts: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Canonical topical identities carried by this resource",
+    )
 
     # ── Server-owned (never authored) ──
     modified: str = ""  # ISO date, server-written on each POST
@@ -566,6 +597,11 @@ class PlanState(BaseModel):
                 return "research"
             return s or "plan"
         return v
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _norm_tags(cls, v: Any) -> Any:
+        return _normalise_tags(v)
 
     # ── Dependency scope views (derived, never stored) ──
     def local_depends_on(self) -> list[str]:
@@ -671,6 +707,11 @@ class PlanState(BaseModel):
             )
         if self.type and self.type not in TYPE_ENUM:
             errors.append(f"type: {self.type!r} not in {TYPE_ENUM}")
+        for tag in self.tags:
+            try:
+                normalise_tag(tag)
+            except (TypeError, ValueError) as exc:
+                errors.append(f"tags: {exc}")
         if self.type != "plan":
             neutral = {
                 "status": ("", "draft", "reference"),
@@ -716,7 +757,8 @@ class PlanState(BaseModel):
         for fu in self.followups:
             if not (fu.prompt or "").strip():
                 errors.append(
-                    f"followup {fu.id or '<no-id>'}: §05 prompt is mandatory (empty)"
+                    f"followup {fu.id or '<no-id>'}: one-line invocation prompt "
+                    "is mandatory (empty)"
                 )
             if fu.capability:
                 errors.extend(
@@ -794,6 +836,12 @@ class Sprint(_TolerantIndexModel):
     ends: str = ""
     items: list[SprintItem] = Field(default_factory=list)
     summary: str = ""
+    tags: list[str] = Field(default_factory=list)
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _norm_tags(cls, v: Any) -> Any:
+        return _normalise_tags(v, reject_invalid=True)
 
 
 class Milestone(_TolerantIndexModel):
