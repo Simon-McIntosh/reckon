@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="7">
-<meta name="plan-impl" content="0.14">
+<meta name="plan-version" content="9">
+<meta name="plan-impl" content="0.43">
 </head>
 <body>
   <main class="plan-doc">
@@ -248,6 +248,20 @@
     stream. A follow mode that emits one event per terminal run, ending when the fleet empties,
     turns the wait into a queue the coordinator drains.</p>
 
+    <p><strong>Worse than inefficient at width: the watch has no memory, so it re-fires on a run it
+    already reported.</strong> Measured on a five-lane wave. A scout finished, the watch exited
+    naming it, the coordinator re-armed before promoting it, and the watch exited immediately on
+    that same run again &mdash; because the only thing that clears a terminal pointer from its view
+    is promotion. So the oldest unpromoted run masks every later event, and a coordinator that
+    re-arms while holding any backlog is woken by history rather than by news. At one lane this is
+    invisible, because the coordinator promotes before re-arming. At five it is a busy loop that
+    hides the four runs still working.</p>
+
+    <p>Follow mode therefore needs a memory, not only a stream: it emits each run once and then
+    keeps waiting, rather than re-reporting whatever terminal pointer happens to be oldest. That
+    also removes the ordering trap where the coordinator must promote in the order the watch
+    happens to surface, instead of the order the work argues for.</p>
+
     <p><strong>Integration is the real ceiling, and it is one coordinator wide.</strong> Audit,
     merge, promote, plan-write, push are strictly serial in one session: one git index, one plan
     version, one ledger version. Two sprints can be shipped concurrently by two sessions &mdash;
@@ -418,6 +432,12 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-20260824T1435" data-who="reckon-ship" data-when="2026-08-24T14:35:00+00:00">
     <div class="r-comment-body">derived-peer-scope-refusal landed — commit c26c8ce, merged a675da5; gate passed; measure final full suite 2118 passed in 75.07s with zero failures against base 9c87caf, up from 2113 at base; 291 insertions over 6 files, 3 test functions covering 4 cases, 967 worker-seconds against a 35m budget. Dispatch now derives peer scopes from same-project live pointers filtered by resolved repository root, normalises to repository-relative POSIX paths, and raises ScopeConflict on componentwise containment before worktree creation, at CLI error scope-conflict exit 7; the same-member guard remains the more specific earlier refusal. Scope was widened mid-flight to tests/test_ledger.py and the run is recorded --scope-changed, so it is excluded from effort calibration. The worker stopped at its fence rather than weakening the guard to fit three fixtures that dispatched concurrent identical claims — the exact state the refusal exists to reject — and those fixtures now declare disjoint claims. Remaining in this section: the scopes read view, the lane planner, and the derivation-group map now locked to the project resource.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1452" data-who="reckon-ship" data-when="2026-08-24T14:52:00+00:00">
+    <div class="r-comment-body">derivation-map-on-project-resource landed — commit e18fc2d, merged; gate passed; measure full suite 2124 passed in 67.22s with zero failures, +6 against the 2118 base; 111 insertions over 2 files, 347 worker-seconds against a 25m budget, routed at medium effort from the guided spec level. The project resource carries an optional derivations map from a repository-relative POSIX source path to its generated outputs, rejecting absolute, traversal, empty and backslash paths before a versioned write publishes them; an absent key stays absent and an empty map round-trips. The consumer that expands a source claim into its generated artifacts is deliberately not wired yet, because crew.py was claimed by a concurrent node — which is the file-contention this plan exists to measure, observed on its own execution.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260824T1450" data-who="reckon-ship" data-when="2026-08-24T14:50:00+00:00">
+    <div class="r-comment-body">schedule-readiness-axis landed — commit 8609ef1, merged; gate passed; measure full suite 2120 passed in 81.42s with zero failures, +2 against the 2118 base; 229 insertions over 5 files, 576 worker-seconds against a 35m budget. Roadmap now reports schedule_readiness beside dependency_readiness, deferring work outside a window of sprints counted from the earliest holding open work, with each deferred row naming the sprint it sits behind and remaining in ready_now and immediate_roadmap. Window width reads from the project manifest and is never hardcoded. It reports horizon_depth=6 against an independent count of six sprints holding open work — S5, S6, S8, S9, S12, S13 — correcting the count of five recorded in s1, which missed S8. Open: schedule_horizon_sprints is undeclared so the axis reports configured=false and imposes no queue. Any width below 5 would defer S12 and S13, which is where current work lives, so the number should follow a sprint consolidation rather than precede it.</div>
 </div>
 </section>
 </main>
