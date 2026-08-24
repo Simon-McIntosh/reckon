@@ -481,39 +481,44 @@ reads `starting` until an `observe` folds its stream; `process_alive` and
 `log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
 promoting without it records `tokens: null`.
 
-### Arm a watch when you dispatch, and watch the manifest's status
+### Arm one project-wide watch when you dispatch
 
 **Nothing tells you a worker stopped.** Run state is pull-only: a worker that
 finishes, blocks, or dies changes a file, and you find out when you next look. So
-arm the watch as part of dispatching — not after, not when you remember. A node
-dispatched with nothing waiting on it is a node you will discover by accident,
-and the accident is usually someone asking why nothing has happened.
+arm the watch returned by dispatch as part of the same dispatch beat. Every
+successful dispatch payload contains:
 
-**Wait on the manifest's `status:` line, never on the file existing.** A blocked
-manifest exists exactly like a successful one, so an existence test reports
-surrender as delivery:
-
-```bash
-# wrong — fires identically for status: complete and status: blocked
-until [ -f "$M/node.md" ]; do sleep 20; done
-
-# right — distinguishes delivery from surrender, and gives up on a dead run
-until grep -qE '^status: (complete|blocked|failed)' "$M/node.md" 2>/dev/null; do
-  kill -0 "$PID" 2>/dev/null || { echo "process gone, no manifest"; break; }
-  sleep 20
-done
+```json
+{
+  "watch": {
+    "arming_line": "reckon crew watch --project <project>",
+    "watcher_live": false
+  }
+}
 ```
 
-The liveness check matters as much as the grep: a watch keyed to a file alone
-waits forever when its run died before writing. The commonest death is a **mid-turn backend quota exhaustion**: `phase: failed`, NO manifest,
-a stream tail of `turn.started → error → turn.failed`. Recover with `reckon crew
-resume --run <id>` after the reset, advising it to take stock (`git status`, its
-logs) first: session context survives, only uncommitted edits are lost. A quota
-death does NOT feed the budget tracker, so `crew preflight` can read clear
-during a real exhaustion — hold that backend anyway. The live classifier reads
-the manifest's recorded status — `complete` becomes `completed_unpromoted`,
-`blocked`/`failed` are retained, missing terminal manifests become `abandoned`
-— but that does not prove the gate; read its evidence before promotion.
+If `watcher_live` is false, launch exactly that `arming_line` with the host's
+background mechanism. If true, do not launch another. The watcher is one per
+project, not one per run: one fleet event owes one wake-up however many nodes
+were dispatched.
+
+```bash
+reckon crew watch --project <project> [--stall-window 15m]
+```
+
+The command blocks until the first project pointer has a terminal manifest, its
+stream stays quiet beyond the resolved stall window, or the project has no live
+pointers. It exits with JSON naming `run_id`, `classification`, and
+`next_action`; a second invocation exits immediately with `event:
+watcher-live` and the current watcher metadata. The single-watcher guarantee is
+an advisory lock held by the live command, so an unlocked stale record is
+reclaimed automatically. A recorded worker pid is never the watch's liveness
+signal, which also keeps in-harness runs observable.
+
+The live classifier reads the manifest's recorded status — `complete` becomes
+`completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
+manifests become `abandoned` — but that does not prove the gate; read its
+evidence before promotion.
 Dispatch consumes that signal too: once a complete or blocked manifest is older
 than `fences.unreconciled_run_grace`, new work for the project is refused with
 every run's resolving command. Reconcile the rows before continuing. If one

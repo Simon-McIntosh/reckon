@@ -593,6 +593,122 @@ def _write_terminal_pointer(
     return record
 
 
+def _write_running_pointer(
+    home: Path,
+    run_id: str,
+    *,
+    project: str = "proj",
+    stream_age_seconds: int = 0,
+) -> dict:
+    """Create one live pointer with a stream whose quiet age is controlled."""
+    stream = home / "streams" / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    quiet_since = datetime.now(tz=timezone.utc) - timedelta(
+        seconds=stream_age_seconds
+    )
+    os.utime(stream, (quiet_since.timestamp(), quiet_since.timestamp()))
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "repo": "/temporary/repository",
+        "node": {"id": "working-node", "plan": "plan-a", "time_budget": "20m"},
+        "phase": "working",
+        "created_at": quiet_since.isoformat(),
+        "manifest_path": str(home / "manifests" / f"{run_id}.md"),
+        "log_path": str(stream),
+        "process_alive": None,
+    }
+    crew._write_json(crew.pointer_path(run_id), record)
+    return record
+
+
+def test_project_watch_exits_on_the_first_terminal_manifest(home) -> None:
+    _write_running_pointer(home, "r-alpha")
+    _write_terminal_pointer(home, "r-beta", age_seconds=0, status="complete")
+
+    result = crew.watch("proj", stall_window="5m")
+
+    assert result["event"] == "terminal"
+    assert result["run_id"] == "r-beta"
+    assert result["classification"] == "completed_unpromoted"
+    assert result["next_action"].startswith("reckon crew complete --run r-beta")
+
+
+def test_project_watch_exits_when_a_stream_exceeds_the_stall_window(home) -> None:
+    _write_running_pointer(home, "r-quiet", stream_age_seconds=61)
+
+    result = crew.watch("proj", stall_window="1m")
+
+    assert result["event"] == "stalled"
+    assert result["run_id"] == "r-quiet"
+    assert result["classification"] == "running"
+    assert result["stalled_for_seconds"] >= 60
+    assert result["manifest_status"] is None
+    assert result["next_action"] == "reckon crew observe --run r-quiet"
+
+
+def test_project_watch_exits_immediately_without_live_pointers(home) -> None:
+    result = crew.watch("proj", stall_window="1h")
+
+    assert result == {
+        "project": "proj",
+        "event": "empty",
+        "run_id": None,
+        "classification": "no_live_pointers",
+        "next_action": "none — project 'proj' has no live pointers",
+    }
+
+
+def test_second_project_watch_reports_the_live_watcher(home) -> None:
+    _write_running_pointer(home, "r-working")
+    sleeping = threading.Event()
+    release = threading.Event()
+
+    def controlled_sleep(_seconds):
+        sleeping.set()
+        assert release.wait(timeout=5)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(
+            crew.watch,
+            "proj",
+            stall_window="1h",
+            sleeper=controlled_sleep,
+        )
+        assert sleeping.wait(timeout=5)
+
+        second = crew.watch("proj", stall_window="1h")
+        assert second["event"] == "watcher-live"
+        assert second["watcher_live"] is True
+        assert second["watcher"]["pid"] == os.getpid()
+
+        crew.pointer_path("r-working").unlink()
+        release.set()
+        assert first.result(timeout=5)["event"] == "empty"
+
+
+def test_project_watch_reclaims_an_unlocked_stale_record(home) -> None:
+    path = crew.watch_lock_path("proj")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": "proj",
+                "pid": 999999999,
+                "started_at": "2026-08-01T00:00:00Z",
+            }
+        )
+    )
+
+    result = crew.watch("proj", stall_window="1h")
+
+    assert result["event"] == "empty"
+    reclaimed = json.loads(path.read_text())
+    assert reclaimed["pid"] == os.getpid()
+    assert reclaimed["project"] == "proj"
+
+
 def test_live_run_listing_combines_project_and_phase_filters(home) -> None:
     records = [
         {
@@ -753,6 +869,44 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     )
     assert record["pid"] == 4242
     assert Path(record["worktree"]).is_dir()
+
+
+def test_dispatch_returns_the_project_watch_arming_line_and_live_state(
+    home, repo
+) -> None:
+    _write_running_pointer(home, "r-existing")
+    sleeping = threading.Event()
+    release = threading.Event()
+
+    def controlled_sleep(_seconds):
+        sleeping.set()
+        assert release.wait(timeout=5)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        watcher = pool.submit(
+            crew.watch,
+            "proj",
+            stall_window="1h",
+            sleeper=controlled_sleep,
+        )
+        assert sleeping.wait(timeout=5)
+
+        record = crew.dispatch(
+            node=_node(id="next-node"),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *args, **kwargs: 4242,
+        )
+        assert record["watch"]["arming_line"] == "reckon crew watch --project proj"
+        assert record["watch"]["watcher_live"] is True
+        assert record["watch"]["watcher"]["pid"] == os.getpid()
+
+        crew.pointer_path("r-existing").unlink()
+        crew.pointer_path(record["run_id"]).unlink()
+        release.set()
+        assert watcher.result(timeout=5)["event"] == "empty"
 
 
 def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> None:
