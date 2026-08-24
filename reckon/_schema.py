@@ -511,6 +511,14 @@ class PlanState(BaseModel):
         json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
     )
     sprint: str | None = None
+    graph_handle: str | None = Field(
+        None,
+        description=(
+            "Stable ship-target handle carried by this endpoint plan. Membership "
+            "is always derived from depends_on and is never stored."
+        ),
+        json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
+    )
     north_star: str | None = None
     capability: CapabilityRequest | None = None
     tier: str = Field(
@@ -651,6 +659,7 @@ class PlanState(BaseModel):
                 "effort",
                 "milestone",
                 "sprint",
+                "graph_handle",
                 "north_star",
                 "capability",
                 "tier",
@@ -701,6 +710,12 @@ class PlanState(BaseModel):
             errors.append(
                 f"milestone: {self.milestone!r} must be an identifier or empty"
             )
+        if self.type == "plan" and not _OPTIONAL_IDENTIFIER_RE.fullmatch(
+            self.graph_handle or ""
+        ):
+            errors.append(
+                f"graph_handle: {self.graph_handle!r} must be an identifier or empty"
+            )
         if self.type == "plan" and self.capability:
             errors.extend(
                 validate_capability(self.capability.model_dump(by_alias=True))
@@ -721,6 +736,7 @@ class PlanState(BaseModel):
                 "effort": ("", "M"),
                 "milestone": ("", "—"),
                 "sprint": ("", None),
+                "graph_handle": ("", None),
                 "north_star": ("", None),
                 "capability": (None,),
                 "impl": (0, 0.0, None),

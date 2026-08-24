@@ -865,12 +865,14 @@ def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
     inventory = []
     for item in discovered.get("inventory", []):
         resource = resources.get(str(item.get("resource_id") or ""))
-        tags = (
-            list(_plan_html.parse_meta(resource.path).get("tags") or [])
-            if resource is not None
-            else []
+        meta = _plan_html.parse_meta(resource.path) if resource is not None else {}
+        inventory.append(
+            {
+                **item,
+                "tags": list(meta.get("tags") or []),
+                "graph_handle": meta.get("graph_handle"),
+            }
         )
-        inventory.append({**item, "tags": tags})
     return {**discovered, "inventory": inventory}
 
 
@@ -923,6 +925,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "ms": milestone,
                 "milestone": milestone,
                 "sprint": item.get("sprint"),
+                "graph_handle": item.get("graph_handle"),
                 "roi": item.get("roi"),
                 "effort": item.get("effort"),
                 # Both effort quantities must survive into the inventory: the
@@ -2545,12 +2548,14 @@ def _roadmap(
     Portfolio scans default to ``view='summary'`` with per-project completion,
     ready/blocked/deferred counts, and finding totals. ``view='detail'`` adds a
     cursor-paginated findings page; ``view='raw'`` returns the lossless report.
-    Single-project calls without ``view`` preserve the legacy raw response.
+    A ``graph:<handle>`` project target returns the derived cross-project
+    dependency closure carried by its endpoint plan. Single-project calls
+    without ``view`` preserve the legacy raw response.
     ``checkout_path`` is accepted for a single project and follows the same
     worktree-routing contract as ``read_plan``.
     """
 
-    from reckon.roadmap import build_roadmap
+    from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
 
     if max_paths < 1 or max_paths > 50:
         return {
@@ -2558,6 +2563,70 @@ def _roadmap(
             "error": "invalid_max_paths",
             "detail": "max_paths must be between 1 and 50",
         }
+    if project.startswith("graph:"):
+        handle = project.removeprefix("graph:").strip()
+        if checkout_path is not None:
+            return {
+                "ok": False,
+                "error": "graph_checkout_path_unsupported",
+                "handle": handle,
+                "detail": "graph targets resolve across registered project mounts",
+            }
+        try:
+            mounted: dict[str, dict[str, Any]] = {}
+            for row in _list_projects().get("projects", []):
+                if not isinstance(row, dict) or not row.get("name"):
+                    continue
+                mounted_project = str(row["name"])
+                discovered = _discover_project(mounted_project)
+                index_data, _version = read_plan(mounted_project, "index")
+                project_rows = index_data.get("projects") or []
+                manifest = (
+                    project_rows[0]
+                    if project_rows and isinstance(project_rows[0], dict)
+                    else {}
+                )
+                inventory = [
+                    _inventory_row(item)
+                    for item in discovered.get("inventory", [])
+                ]
+                followups_by_plan: dict[str, list[dict[str, Any]]] = {}
+                for followup in list_followups_across(
+                    mounted_project,
+                    unresolved_only=False,
+                ):
+                    plan_slug = str(followup.get("plan_slug") or "")
+                    if plan_slug:
+                        followups_by_plan.setdefault(plan_slug, []).append(followup)
+                for item in inventory:
+                    if item.get("type", "plan") == "plan":
+                        item["followups"] = followups_by_plan.get(
+                            str(item.get("slug")), []
+                        )
+                mounted[mounted_project] = {
+                    "inventory": inventory,
+                    "sprints": list(discovered.get("sprints", [])),
+                    "active_sprint_id": (
+                        discovered.get("active_sprint_id")
+                        or index_data.get("active_sprint_id")
+                    ),
+                    "project_manifest": manifest,
+                }
+            return resolve_graph_target(handle, mounted)
+        except GraphTargetError as exc:
+            return {
+                "ok": False,
+                "error": "graph_target_unavailable",
+                "handle": handle,
+                "detail": str(exc),
+            }
+        except Exception as exc:  # noqa: BLE001 — MCP errors stay structured
+            return {
+                "ok": False,
+                "error": "roadmap_error",
+                "project": project,
+                "detail": str(exc),
+            }
     if project == "*":
         if checkout_path is not None:
             return {
