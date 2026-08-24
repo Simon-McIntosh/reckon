@@ -58,6 +58,7 @@ from reckon.crew.runs import (
     _manifest_mtime_ns,
     _merge_peer_scopes,
     _mutate_pointer,
+    plan_scope_lanes,
     _process_start_time,
     _project_derivations,
     _raise_live_scope_conflict,
@@ -537,6 +538,7 @@ class DispatchPlan:
     warnings: list[str] = field(default_factory=list)
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
+    live_conflicts: list[dict[str, Any]] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
@@ -554,6 +556,8 @@ class DispatchPlan:
             payload["competence"] = dict(self.competence)
         if self.authority is not None:
             payload["authority"] = dict(self.authority)
+        if self.live_conflicts is not None:
+            payload["live_conflicts"] = [dict(item) for item in self.live_conflicts]
         return payload
 
 
@@ -593,6 +597,7 @@ def plan_dispatch(
     base: str = "HEAD",
     execution_override: bool = False,
     authority: Mapping[str, Any] | None = None,
+    report_live_conflicts: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -684,6 +689,17 @@ def plan_dispatch(
         resolution.competence = _competence_verdict(
             resolution=resolution, project=project, repo=Path(repo).resolve()
         )
+        if report_live_conflicts:
+            repo_root = Path(repo).resolve()
+            work_projects = resolved_authority["write"]["projects"]
+            derivations = _project_derivations(work_projects[0], repo_root)
+            scope_report = plan_scope_lanes(
+                [node.as_dict()],
+                project=project,
+                repo=repo_root,
+                derivations=derivations,
+            )
+            resolution.live_conflicts = scope_report["live_conflicts"]
     return resolution
 
 
