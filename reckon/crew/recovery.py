@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import fcntl
+import os
 import re
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping
@@ -18,6 +20,7 @@ from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _manifest_freshness,
+    _process_start_time,
     _project_watch_claim,
     _read_watch_record,
     _stream_quiet_seconds,
@@ -26,6 +29,7 @@ from reckon.crew.runs import (
     list_live,
     process_alive,
     watch_lock_path,
+    watch_state as _kernel_watch_state,
 )
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
@@ -292,6 +296,61 @@ def _utc_seconds() -> float:
     return datetime.now(tz=timezone.utc).timestamp()
 
 
+@contextmanager
+def _watch_registration(project: str, stall_window: str):
+    """Register a watcher together with the process responsible for reaping it."""
+    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+        if acquired:
+            parent_pid = os.getppid()
+            watcher.update(
+                {
+                    "parent_pid": parent_pid,
+                    "parent_start_time": _process_start_time(parent_pid),
+                }
+            )
+            with watch_lock_path(project).open("r+b") as handle:
+                _write_watch_record(handle, watcher)
+        yield acquired, watcher
+
+
+def watch_state(project: str) -> dict[str, Any]:
+    """Report a watcher as live only while its recorded observer is alive."""
+    state = _kernel_watch_state(project)
+    if not state["watcher_live"]:
+        return state
+
+    watcher = state["watcher"]
+    if "parent_pid" not in watcher:
+        # Registrations written before observer identity was recorded retain
+        # their kernel-lock semantics until they naturally turn over.
+        return state
+
+    try:
+        parent_pid = int(watcher.get("parent_pid"))
+    except (TypeError, ValueError):
+        parent_pid = 0
+    expected_start_time = watcher.get("parent_start_time")
+    actual_start_time = _process_start_time(parent_pid)
+    parent_live = (
+        parent_pid > 1
+        and bool(expected_start_time)
+        and process_alive(parent_pid) is True
+        and actual_start_time == expected_start_time
+    )
+    if parent_live:
+        return state
+
+    return {
+        **state,
+        "watcher_live": False,
+        "reason": "orphaned",
+        "detail": (
+            f"registered watcher pid {watcher.get('pid')} is orphaned: "
+            f"recorded parent pid {parent_pid} is no longer the live parent process"
+        ),
+    }
+
+
 def unwatch(project: str) -> dict[str, Any]:
     """Stop the registered watcher for one project and release its claim."""
     path = watch_lock_path(project)
@@ -486,7 +545,7 @@ def watch_ticker(
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
 
-    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+    with _watch_registration(project, stall_window) as (acquired, watcher):
         if not acquired:
             yield {
                 "project": project,
@@ -613,7 +672,7 @@ def watch_follow(
     reported_runs: set[str] = set()
     fleet_seen = False
 
-    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+    with _watch_registration(project, stall_window) as (acquired, watcher):
         if not acquired:
             yield {
                 "project": project,
