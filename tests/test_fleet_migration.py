@@ -227,6 +227,62 @@ def test_dirty_migration_path_is_deferred_with_exact_path(tmp_path):
     assert blocker["paths"] == ["docs/work.html"]
 
 
+def test_detached_alternate_worktree_with_no_migration_changes_is_ignored(tmp_path):
+    _, docs = _repository(tmp_path, "sample")
+    _git(docs.parent, "worktree", "add", "--detach", str(tmp_path / "alternate-clean"), "HEAD")
+    (tmp_path / "alternate-clean" / "notes.txt").write_text("ignore")
+
+    result = preflight_repository(docs, "sample")
+
+    assert result["ok"] is True, result["blockers"]
+    assert not any(
+        item["code"] == "dirty-alternate-worktrees" for item in result["blockers"]
+    )
+
+
+def test_detached_alternate_worktree_with_dirty_html_blocks_preflight(tmp_path):
+    _, docs = _repository(tmp_path, "sample")
+    _git(docs.parent, "worktree", "add", "--detach", str(tmp_path / "alternate-html"), "HEAD")
+    alternate = tmp_path / "alternate-html" / "docs" / "work.html"
+    alternate.write_text((alternate.read_text()).replace("Migration fixture", "Alternate edit"))
+
+    result = preflight_repository(docs, "sample")
+
+    assert result["ok"] is False
+    blocker = next(
+        item for item in result["blockers"] if item["code"] == "dirty-alternate-worktrees"
+    )
+    assert blocker["worktrees"] == [
+        {"path": str(tmp_path / "alternate-html"), "paths": ["docs/work.html"]}
+    ]
+
+
+def test_preflight_nova_is_unblocked_when_detached_alternate_changes_are_non_migration():
+    result = preflight_repository(Path("/home/ITER/mcintos/Code/nova/docs"), "nova")
+
+    assert result["ok"] is True
+    assert result["blockers"] == []
+
+
+def test_preflight_imas_ambix_blocks_exact_three_claude_staged_html_worktrees():
+    result = preflight_repository(
+        Path("/home/ITER/mcintos/Code/imas-ambix/docs"), "imas-ambix"
+    )
+    blocker = next(
+        item for item in result["blockers"] if item["code"] == "dirty-alternate-worktrees"
+    )
+    expected = [
+        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-phase-impl",
+        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-phase-review",
+        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-scout",
+    ]
+    assert not result["ok"]
+    assert sorted(row["path"] for row in blocker["worktrees"]) == sorted(expected)
+    for row in blocker["worktrees"]:
+        assert row["paths"] and row["paths"][-1].endswith(".html")
+        assert ".claude/worktrees" in row["path"]
+
+
 def test_install_failure_restores_snapshot_exactly(tmp_path):
     repo, docs = _repository(tmp_path, "sample")
     repository = preflight_repository(docs, "sample")["repository"]
