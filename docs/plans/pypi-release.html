@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -133,6 +133,15 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824-authority-boundary" data-who="reckon-ship" data-when="2026-08-24T09:35:00+00:00">
     <div class="r-comment-body"><p><strong>Authority boundary reached, and it is the one §3 predicted.</strong> Registering the trusted publisher needs an authenticated session as PyPI project owner, and the first upload is irreversible — a version number can be yanked but never reused. Lead selected <strong>0.2.0</strong> as the first released version, following the existing rc line to its release; sub-1.0 matches an interface this same sprint is about to change, since declaring 1.0 now would force 2.0.0 on landing the tag field and project-qualified sprint refs under the locked strict-semver contract. Remaining, both owner-only: register <code>release.yml</code> for the <code>testpypi</code> and <code>pypi</code> environments, then push <code>v0.2.0</code>. Full record: <a href="/reckon/evidence/archive/pypi-release-landed">execution evidence</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-rehearsal-landed" data-who="reckon-ship" data-when="2026-08-24T09:58:00+00:00">
+    <div class="r-comment-body"><p><strong>release-dry-run-trigger landed</strong> — commit <code>026c8cd</code>; gate structural-contract <strong>passed</strong>; measure: <strong>8 passed, 0 failed</strong> (the original 6 plus 2 new). <strong>Found by reading the merged workflow against this section's own words.</strong> §3 asks for a TestPyPI dry run before the first real upload, but the workflow triggered only on a version tag and chained TestPyPI into PyPI — so the only rehearsal available was spending the real version number. <code>workflow_dispatch</code> now takes a <code>testpypi-only</code> input defaulting to true, and the PyPI job cannot be reached while it is set.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-regression-verdict" data-who="reckon-ship" data-when="2026-08-24T09:59:00+00:00">
+    <div class="r-comment-body"><p><strong>Regression verdict: no existing test changed state.</strong> An absolute suite count could not settle this — the first run returned 45 non-passing outcomes, all traced to sandbox restrictions, and the worker said so rather than claiming green. So the question became a difference: the same suite at the pre-wave base (<strong>1937 passed / 34 failed / 10 errors</strong>) and at the integrated revision (<strong>1944 passed / 35 failed / 10 errors</strong>), invoking the repository interpreter directly because the shared uv cache is mounted read-only in the worker sandbox and kills <code>uv run</code> before pytest collects. All 34 pre-wave failing ids still fail, all 10 error ids still error, none recovered. Exactly one non-passing id is new — the wave's own <code>test_built_wheel_carries_discovery_metadata</code>, whose traceback shows its internal <code>uv build</code> hitting that same read-only cache rather than an assertion mismatch; its authoring worker ran it green with a working cache.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-publisher-registered" data-who="reckon-ship" data-when="2026-08-24T10:00:00+00:00">
+    <div class="r-comment-body"><p><strong>Trusted publishers registered by the lead on both PyPI and TestPyPI.</strong> That clears the half of the authority boundary that could never be automated from here. One owner-only action remains and it is irreversible: pushing <code>v0.2.0</code>. A rehearsal is now available first — run the workflow manually with <code>testpypi-only</code> left at its default, which publishes to TestPyPI and cannot reach PyPI.</p></div>
 </div>
 </section>
 </main>

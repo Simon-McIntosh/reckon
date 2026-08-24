@@ -97,6 +97,51 @@
     <code>reckon-plans</code> metadata from outside the checkout. <code>tests/test_build.py</code>
     16 passed, 0 failed in 4.82 s; <code>ruff check</code> clean on all three touched files.</p>
 
+    <h2 id="regression">Regression verdict: nothing the wave touched broke</h2>
+
+    <p>The first suite run returned 1942 passed, 35 failed, 10 errors — and the worker reported
+    honestly that this was <em>not</em> a clean product verdict, because all 45 non-passing
+    outcomes traced to sandbox restrictions: 31 attempted envelope locks under a read-only config
+    home, 3 failures and 7 errors attempted loopback sockets, and 4 invoked offline builds against
+    an empty cache.</p>
+
+    <p><strong>An absolute count could not settle it, so the question was changed to a
+    difference.</strong> The same suite was run once at the pre-wave base and once at the
+    integrated revision, bypassing <code>uv</code> entirely — the shared cache is mounted
+    read-only in the worker sandbox, which kills <code>uv run</code> before pytest collects — and
+    invoking the repository interpreter directly instead.</p>
+
+    <table>
+      <thead><tr><th>Revision</th><th>Passed</th><th>Failed</th><th>Errors</th></tr></thead>
+      <tbody>
+        <tr><td>Pre-wave <code>a453673</code></td><td>1937</td><td>34</td><td>10</td></tr>
+        <tr><td>Integrated <code>5e193b6</code></td><td>1944</td><td>35</td><td>10</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>All 34 pre-wave failing ids still fail, all 10 pre-wave error ids still error, and
+    none recovered.</strong> Exactly one non-passing id is new:
+    <code>tests/test_packaging_metadata.py::test_built_wheel_carries_discovery_metadata</code> —
+    a test the wave itself added, whose traceback shows its internal <code>uv build</code> failing
+    to initialise the read-only shared cache, not an assertion mismatch. Its authoring worker ran
+    it green with a working cache. The +7 passed are the wave's other new tests.</p>
+
+    <p>So the measured delta is 1 and its cause is the sandbox, not the change. No existing test
+    changed state in either direction.</p>
+
+    <h2 id="rehearsal">A rehearsal that cannot reach PyPI</h2>
+
+    <p>Commit <code>026c8cd</code>. Reading the merged workflow surfaced a gap against §3's own
+    deliverable: it asks for a TestPyPI dry run before the first real upload, but the workflow
+    triggered <em>only</em> on a version tag, and its TestPyPI and PyPI jobs are chained — so
+    there was no way to exercise TestPyPI alone, and the only rehearsal available was spending the
+    real version number.</p>
+
+    <p><code>workflow_dispatch</code> now takes a <code>testpypi-only</code> input defaulting to
+    true, and the PyPI publish job cannot be reached while it is set. Two new tests assert the
+    manual trigger exists and that a dry run cannot reach PyPI; the original 6 structural cases
+    stay green, 8 passed 0 failed.</p>
+
     <h2 id="authority">What remains, and why this session cannot finish it</h2>
 
     <p><strong>The chain is complete up to the point where it leaves this machine.</strong>
