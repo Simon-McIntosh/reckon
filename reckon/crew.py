@@ -1253,6 +1253,43 @@ def _agent_configuration(
     }
 
 
+def _session_member_id(session: str) -> str:
+    """Derive the private roster identity owned by one dispatching session."""
+    digest = hashlib.sha256(str(session).encode()).hexdigest()[:20]
+    return f"session-{digest}"
+
+
+def _register_session_member(
+    project: str,
+    member_id: str,
+    *,
+    backend: str,
+    role: str,
+    root: Path,
+    attempts: int = 12,
+) -> dict[str, Any]:
+    """Provision a session-owned member without losing a concurrent write."""
+    last: ledger.LedgerError | None = None
+    for _attempt in range(max(1, attempts)):
+        existing = ledger.member(project, member_id, root=root)
+        if existing is not None:
+            return existing
+        try:
+            return ledger.register_member(
+                project,
+                member_id,
+                harness=backend,
+                role=role,
+                root=root,
+            )
+        except ledger.LedgerError as exc:
+            last = exc
+    raise CrewError(
+        f"could not provision session member {member_id!r} after {attempts} "
+        f"attempts: {last}"
+    )
+
+
 def _estimated_hours(
     repo: Path, project: str, node: TaskNode
 ) -> tuple[float | None, str]:
@@ -1519,9 +1556,9 @@ def dispatch(
     task back with :func:`attach`.
 
     Naming a roster ``member`` routes the node into that member's long-lived
-    session when the backend reuses sessions, so a repository's team accumulates
-    context across nodes instead of rebuilding it every dispatch. A member whose
-    session is still null gets one captured on its first run.
+    session. Omitting it provisions a private member derived from the dispatching
+    session, so independent coordinators never shop from a shared free list. A
+    member whose worker session is still null gets one captured on its first run.
 
     A node whose backend has no headroom left is *held* rather than dispatched:
     :class:`BudgetHold` is raised before any worktree exists, so the node stays
@@ -1588,21 +1625,25 @@ def dispatch(
     fences = config.get("fences") or {}
     peers = node.peer_scopes
 
-    roster_member = None
-    if member:
-        roster_member = ledger.member(project, member, root=repo_root)
+    named_member = bool(member)
+    effective_member = member or _session_member_id(session)
+    roster_member = ledger.member(project, effective_member, root=repo_root)
+    if named_member:
         if roster_member is None:
             raise CrewError(
                 f"project {project!r} has no crew member {member!r}; register it "
                 "with `reckon crew member add` before dispatching to it"
             )
+    if roster_member is not None:
         for pointer in list_live():
             if (
                 pointer.get("project") == project
-                and pointer.get("member") == member
+                and pointer.get("member") == effective_member
                 and pointer.get("phase") not in _TERMINAL_RUN_PHASES
             ):
-                raise MemberInFlight(member, str(pointer.get("run_id") or "unknown"))
+                raise MemberInFlight(
+                    effective_member, str(pointer.get("run_id") or "unknown")
+                )
     reuse_session = (
         str(roster_member.get("session_id"))
         if roster_member
@@ -1666,7 +1707,7 @@ def dispatch(
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
             "session_reuse": bool(backend.get("session_reuse")),
-            "member": member,
+            "member": effective_member,
             # The configuration that actually ran the node, recorded now because
             # a later config layer change makes it unreconstructable — and
             # without it a measured duration cannot be attributed to anything.
@@ -1733,6 +1774,14 @@ def dispatch(
             }
 
         _write_json(pointer_path(run_id), record)
+        if roster_member is None:
+            _register_session_member(
+                project,
+                effective_member,
+                backend=backend_name,
+                role=node.role,
+                root=repo_root,
+            )
     except Exception:
         if spawned_pid is not None:
             try:
