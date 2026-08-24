@@ -31,7 +31,7 @@ RESOURCE_TYPES = frozenset(
 )
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 100
-RESPONSE_SCHEMA_VERSION = 1
+RESPONSE_SCHEMA_VERSION = 2
 MAX_SELECTOR_LENGTH = 128
 MAX_CURSOR_LENGTH = 256
 MAX_ERROR_TEXT_LENGTH = 512
@@ -694,6 +694,21 @@ def _response_schema(
             "view": {"const": view},
         },
     }
+    if context != "audit":
+        common["required"].append("provenance")
+        common["properties"]["provenance"] = {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["checkout", "branch", "content_digest"],
+            "properties": {
+                "checkout": {"type": "string"},
+                "branch": {"type": "string"},
+                "content_digest": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                },
+            },
+        }
     if selector.type == "plan" and view not in {"schema", "version"}:
         common["properties"]["in_flight"] = {
             "type": "array",
@@ -830,6 +845,7 @@ def resource_view(
     data: dict[str, Any],
     *,
     view: str,
+    provenance: dict[str, str],
     deps: list[dict[str, Any]] | None = None,
     cursor: str | None = None,
     limit: int | None = None,
@@ -891,6 +907,7 @@ def resource_view(
             "resource": selector.as_dict(),
             "version": version,
             "view": "schema",
+            "provenance": provenance,
             "schema_version": RESPONSE_SCHEMA_VERSION,
             "response_schema": _response_schema(
                 selector, selected, context=response_context
@@ -901,6 +918,7 @@ def resource_view(
             "dos_donts": dos_donts or {},
         }
 
+    result["provenance"] = provenance
     if (
         selector.type == "plan"
         and not selector.archived
@@ -917,6 +935,7 @@ def discovery_view(
     raw: dict[str, Any],
     *,
     view: str,
+    provenance: dict[str, str],
     cursor: str | None,
     limit: int | None,
     include_prompts: bool,
@@ -934,6 +953,7 @@ def discovery_view(
             "resource": selector.as_dict(),
             "version": version,
             "view": "raw",
+            "provenance": provenance,
             "data": raw,
         }
     if selected == "schema":
@@ -942,6 +962,7 @@ def discovery_view(
             version,
             {},
             view="schema",
+            provenance=provenance,
             storage_schema=storage_schema,
             op_vocab=op_vocab,
             dos_donts=dos_donts,
@@ -955,6 +976,7 @@ def discovery_view(
             "resource": selector.as_dict(),
             "version": version,
             "view": "history",
+            "provenance": provenance,
             "records": [{"kind": "timeline", **item} for item in page],
             "pagination": pagination,
         }
@@ -1024,6 +1046,7 @@ def discovery_view(
         "resource": selector.as_dict(),
         "version": version,
         "view": selected,
+        "provenance": provenance,
         "title": project,
         "summary": (
             f"{raw.get('summary', {}).get('plans', 0)} plans; "
