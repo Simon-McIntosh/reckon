@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="pypi-release">
   <meta name="plan-title" content="A Version to Pin, Not a Commit">
   <meta name="plan-summary" content="Publish reckon-plans to PyPI so every consuming repository&#x27;s CI pins a released version instead of a git ref. Without it, federated publication costs N repositories to bump on each reckon change, or leaves them tracking a moving branch that can break their builds with no signal.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,7 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -120,6 +121,20 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260824-metadata-landed" data-who="reckon-ship" data-when="2026-08-24T09:32:00+00:00">
+    <div class="r-comment-body"><p><strong>packaging-metadata landed</strong> — commit <code>dff9e38</code>; gate suite-focused <strong>passed</strong>; measure: Project-URL entries 0 → <strong>4</strong>, classifiers 1 → <strong>7</strong>, focused test 1 passed / 0 failed, wheel 486,535 B and sdist 1,530,480 B both built. Artifacts <code>pyproject.toml</code>, <code>tests/test_packaging_metadata.py</code>. The test asserts against the built wheel METADATA rather than the source file, so it fails if packaging drops the fields in transit.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-workflow-landed" data-who="reckon-ship" data-when="2026-08-24T09:33:00+00:00">
+    <div class="r-comment-body"><p><strong>release-workflow landed</strong> — commit <code>6616c6d</code>; gate structural-contract <strong>passed</strong>; measure: <strong>6 passed, 0 failed</strong>. <code>.github/workflows/release.yml</code> carries 3 jobs, an exact semantic-version tag filter (line 5), <code>fetch-depth: 0</code> (line 18) which is the late-failing trap §2 names, TestPyPI with its own OIDC environment (lines 29-48), and a PyPI job gated on TestPyPI succeeding (lines 50-66). No password, API token, or secret is referenced anywhere in the workflow.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-version-landed" data-who="reckon-ship" data-when="2026-08-24T09:34:00+00:00">
+    <div class="r-comment-body"><p><strong>version-provenance landed</strong> — commit <code>b9732eb</code>; gate full-file suite <strong>passed</strong>; measure: <code>tests/test_build.py</code> <strong>16 passed, 0 failed</strong> in 4.82 s, ruff clean. <strong>This node did not exist when the wave was cut.</strong> The prior-art scout found that the wheel self-containment proof §3 asks for already existed at <code>tests/test_build.py:427</code>, while the other half of the same acceptance was broken: <code>reckon/__init__.py</code> looked up <code>version("reckon")</code> against a distribution named <code>reckon-plans</code>, so an installed wheel reported the <code>"dev"</code> fallback, and no <code>reckon --version</code> existed at all. The plan's stated done-when could not have passed at any point. Lookup now names the real distribution and narrows its except clause to <code>PackageNotFoundError</code>, and the installed-wheel fixture asserts exact equality from outside the checkout.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-authority-boundary" data-who="reckon-ship" data-when="2026-08-24T09:35:00+00:00">
+    <div class="r-comment-body"><p><strong>Authority boundary reached, and it is the one §3 predicted.</strong> Registering the trusted publisher needs an authenticated session as PyPI project owner, and the first upload is irreversible — a version number can be yanked but never reused. Lead selected <strong>0.2.0</strong> as the first released version, following the existing rc line to its release; sub-1.0 matches an interface this same sprint is about to change, since declaring 1.0 now would force 2.0.0 on landing the tag field and project-qualified sprint refs under the locked strict-semver contract. Remaining, both owner-only: register <code>release.yml</code> for the <code>testpypi</code> and <code>pypi</code> environments, then push <code>v0.2.0</code>. Full record: <a href="/reckon/evidence/archive/pypi-release-landed">execution evidence</a>.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

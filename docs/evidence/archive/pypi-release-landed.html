@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="pypi-release-landed">
+  <meta name="plan-title" content="Release Packaging — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the release packaging work: metadata gaps closed, a trusted-publishing workflow added, and the version an installed wheel reports repaired so the release acceptance can assert it.">
+  <meta name="plan-evidence-for" content="pypi-release">
+  <meta name="plan-verifies" content="pypi-release#s2,pypi-release#s3">
+  <title>Release Packaging — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="scout">Prior-art reconnaissance reshaped the wave before it opened</h2>
+
+    <p>A read-only scout ran ahead of any implementation node and returned a ten-row reuse map
+    covering four capability areas, each row citing a concrete <code>path:line</code> with a
+    fitness verdict, backed by sixteen counted search commands. It changed the wave's shape in
+    one decisive way and is recorded here because the correction is more valuable than the
+    map.</p>
+
+    <p><strong>The third node as originally cut was redundant.</strong> The plan's §3 treats
+    "the wheel ships its UI assets rather than reaching into a source tree" as the acceptance
+    that matters, implying it needed building. It was already built and already tested:
+    <code>pyproject.toml</code> force-includes <code>docs/ui</code> and <code>docs/_shared</code>
+    into <code>reckon/_assets</code>, <code>reckon/cli.py:14</code> resolves
+    <code>_assets</code> ahead of a source <code>docs/</code>, and
+    <code>tests/test_build.py:427</code> already installs the built wheel outside the checkout
+    and runs the console script against a scratch docs tree.</p>
+
+    <p><strong>What was genuinely missing was the other half of the same acceptance.</strong>
+    <code>reckon/__init__.py</code> looked up <code>version("reckon")</code> while the
+    distribution is named <code>reckon-plans</code>, so an installed wheel silently reported the
+    <code>"dev"</code> fallback — and the CLI exposed no <code>--version</code> at all. The
+    plan's stated done-when, that the installed <code>reckon --version</code> match the git tag
+    exactly, could not have passed at any point. The node was re-cut against that defect.</p>
+
+    <p>Scout run <code>r-20260824T091136734891-prior-art-scout</code>, 474 s, gate passed,
+    read-only sandbox, no repository file changed.</p>
+
+    <h2 id="s2">§2 — Distribution metadata</h2>
+
+    <p>Commit <code>dff9e38</code>. <code>pyproject.toml</code> gained a
+    <code>[project.urls]</code> table and a real classifier set, with
+    <code>tests/test_packaging_metadata.py</code> asserting the properties against the built
+    wheel's <code>METADATA</code> rather than against the source file — so the test fails if
+    packaging drops them in transit.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><code>Project-URL</code> entries</td><td>0</td><td><strong>4</strong> — Homepage, Documentation, Issues, Source</td></tr>
+        <tr><td>Classifiers</td><td>1 (license only)</td><td><strong>7</strong> — incl. Development Status :: 4 - Beta, Intended Audience :: Developers, Topic :: Software Development :: Libraries :: Python Modules, Programming Language :: Python :: 3.12</td></tr>
+        <tr><td>Focused test</td><td>—</td><td>1 passed, 0 failed</td></tr>
+        <tr><td>Artifacts</td><td>—</td><td>wheel 486,535 B and sdist 1,530,480 B both built</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Trusted publishing, and the version the release must assert</h2>
+
+    <p>Two nodes landed against this section. They are recorded together because neither is
+    sufficient alone: a workflow that publishes correctly is worthless if the artifact it
+    publishes reports the wrong version.</p>
+
+    <h3>The release workflow</h3>
+
+    <p>Commit <code>6616c6d</code>. <code>.github/workflows/release.yml</code> carries three
+    jobs, an exact semantic-version tag filter at line 5, full VCS history at line 18 — the
+    <code>fetch-depth: 0</code> that the plan names as the trap that fails late — a wheel and
+    sdist build at line 22, TestPyPI with its own OIDC environment at lines 29–48, and a PyPI
+    job at lines 50–66 that depends on the TestPyPI publication succeeding. The workflow
+    references no password, API token, or secret anywhere: <strong>a leaked credential cannot
+    leak if it does not exist</strong>.</p>
+
+    <p><code>tests/test_release_workflow.py</code> asserts those properties structurally —
+    6 passed, 0 failed. The tests parse the YAML rather than pattern-matching text, so the
+    contract survives reformatting.</p>
+
+    <h3>Version provenance</h3>
+
+    <p>Commit <code>b9732eb</code>. The metadata lookup now names the actual
+    <code>reckon-plans</code> distribution and narrows its exception handling to
+    <code>PackageNotFoundError</code>, so a genuine packaging failure is no longer swallowed
+    into a <code>"dev"</code> string. <code>reckon --version</code> is exposed through Click's
+    root version option. The existing installed-wheel fixture now invokes both
+    <code>--version</code> and <code>importlib.metadata.version</code> from its isolated wheel
+    target with a working directory outside the checkout, and asserts exact equality.</p>
+
+    <p>Measured: the shared distribution, the imported module and the CLI all reported the same
+    version string, and the scratch-installed wheel's CLI equalled that wheel's own
+    <code>reckon-plans</code> metadata from outside the checkout. <code>tests/test_build.py</code>
+    16 passed, 0 failed in 4.82 s; <code>ruff check</code> clean on all three touched files.</p>
+
+    <h2 id="authority">What remains, and why this session cannot finish it</h2>
+
+    <p><strong>The chain is complete up to the point where it leaves this machine.</strong>
+    Registering the trusted publisher requires an authenticated session as the PyPI project
+    owner — the release workflow's own manifest names this as fenced out of the worker node,
+    and it is the one step §3 of the plan already predicted could not be automated from here.
+    The first upload is additionally irreversible: a version number, once published, can be
+    yanked but never reused.</p>
+
+    <p>The lead selected <strong>0.2.0</strong> as the first released version, following the
+    existing <code>v0.2.0rc24</code> / <code>v0.2.0rc25</code> line to its release. Sub-1.0
+    matches an interface that the same sprint is about to change: a tag field and
+    project-qualified sprint refs are in flight, and declaring 1.0 now would force 2.0.0 on
+    landing them under the locked strict-semver contract.</p>
+
+    <p>Two actions remain, both the project owner's: register <code>release.yml</code> as the
+    trusted-publisher workflow for the <code>testpypi</code> environment on TestPyPI and the
+    <code>pypi</code> environment on PyPI, then push <code>v0.2.0</code>.</p>
+
+  </main>
+</body>
+</html>
