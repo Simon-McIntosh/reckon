@@ -14,7 +14,45 @@ The repo provides:
 
 - Package manager: uv (`uv run reckon serve` to start the server)
 - Python ≥ 3.12, dynamic versioning via hatch-vcs
-- No tests yet — add under `tests/` as needed, run with `uv run pytest`
+- Tests live under `tests/`, run with `uv run pytest`
+
+## Tests
+
+In a detached worktree the shared uv cache may be mounted read-only, and
+`uv run` then dies before pytest collects anything. Call the root
+environment's interpreter directly instead — it needs neither the cache nor a
+sync:
+
+```bash
+PYTHONPATH="$PWD" <repo>/.venv/bin/python -m pytest -p no:cacheprovider -q
+```
+
+Judge a run by its **delta against a known base revision**, not by an absolute
+count. A worker sandbox restricts sockets, config-home writes and network
+builds, so a tier that cannot execute freely reports failures that have nothing
+to do with the code under test.
+
+### A test must not read or write state outside the repository under test
+
+A test that does is not a test, it is a monitor: it reports on the machine
+rather than on the code. It also passes when written, which is why review never
+catches it. Both directions have been measured here, and they are not equally
+bad:
+
+- **Reading** outside state makes the test wrong whenever the environment
+  moves. Preflight assertions naming absolute paths in sibling checkouts failed
+  the moment those directories were legitimately removed — the test broke on an
+  authorised action, not on a defect.
+- **Writing** outside state makes *someone else* wrong. A dispatch test wrote
+  its live run pointer into the real pointer directory, so two concurrent test
+  runs collided with each other, and a test could corrupt a live fleet
+  session's view of what is running.
+
+The write direction is the dangerous one: a reader can only be wrong, while a
+writer can make others wrong. So synthesise a temporary repository rather than
+reaching for a real one, point every environment-resolved directory at a temp
+path — and then assert the real directory is untouched afterwards, because an
+isolated read does not prove an isolated write.
 
 ## Frontend
 

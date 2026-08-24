@@ -144,6 +144,68 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="s3-defects">§3 — Three defects the gate could not have caught, all found before a repository changed</h2>
+
+    <p>The plan's locked <code>robustness-evidence-source</code> decision recorded an
+      accepted limit: the evidence covers only the corpus shapes the two
+      already-migrated projects contain. That limit was real, and it bound on the
+      first live target rather than on <code>imas-standard-names</code> as §4 had
+      guessed. Each failure was caught in staging, and each target was left
+      byte-identical.</p>
+
+    <table>
+      <thead><tr><th>#</th><th>Defect</th><th>Where</th><th>Disposition</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>migrate-fleet</code> also flattens layout</td><td><code>fleet_migration.py:877</code></td><td>Lead redirected §3/§4 to the per-project command; layout findings routed to their owning plan</td></tr>
+        <tr><td>2</td><td>Composed parity rejects a bare-string sprint item</td><td><code>project_state.py:1042</code></td><td>Hardened in reckon</td></tr>
+        <tr><td>3</td><td>Validation rejects sprint items naming archived plans</td><td><code>project_state.py:507, 807</code>; raises at <code>535, 774</code></td><td>Hardened in reckon</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Defect 2 — nova.</strong> <code>migrate-project-state</code> exited 1 on
+      composed-state parity at <code>$.sprints[9].items[4]</code>: the legacy index
+      stores that sprint item as the bare string
+      <code>'current-constrained-forward-solve'</code> while the composed form is
+      <code>{'slug': 'current-constrained-forward-solve'}</code>. Semantically
+      identical, structurally different. <code>_parity_projection</code> guards on
+      <code>isinstance(item, dict)</code>, so a string passes through unnormalised and
+      the digest cannot match. nova was left untouched: HEAD identical, zero tracked
+      diffs, only a lock and a frozen snapshot under <code>docs/.reckon</code>.</p>
+
+    <p><strong>Defect 3 — imas-ambix.</strong> Migration validation requires every
+      sprint item to resolve to a <em>live</em> plan
+      (<code>include_archived=False</code>). Seven identities failed — and
+      <strong>six of the seven are simply archived</strong>:
+      <code>frame-precompute</code>, <code>plasma-decoder-finetune</code>,
+      <code>tokenizer-benchmarks</code>, <code>tokenizers</code>,
+      <code>v0-runway</code>, <code>world-model-v0</code>. Only
+      <code>plans-migration-ambix</code> is genuinely unresolvable. That ratio is the
+      finding: it turns "seven broken references" into one real question and six false
+      alarms. A historical sprint referencing archived work is ordinary lifecycle, so
+      this is the reader being wrong about time rather than the index being wrong about
+      content.</p>
+
+    <p><strong>Both were fixed in reckon, not in the ten corpora, and that direction
+      was deliberate.</strong> The nova worker's own follow-on proposed that the
+      orchestrator repair imas-ambix's index; it was declined. Editing a foreign
+      repository to satisfy our tool inverts the direction of the fix and guarantees
+      the next repository with an archived sprint item or a string-form item
+      reproduces the block. Harden once. The repair's measure loads both real legacy
+      indexes and asserts zero refusals on the previously failing paths <em>without
+      mutating either repository</em>, which is a stronger check than a synthetic
+      fixture would give.</p>
+
+    <p><strong>A hygiene finding worth acting on before eight more repositories are
+      committed.</strong> This repository gitignores <code>docs/.reckon/locks/</code>
+      at <code>.gitignore:5</code>, but a consumer repository does not, and
+      <code>imas-codex</code> has consequently <em>committed</em>
+      <code>docs/.reckon/locks/imas-codex-migration-project-state.lock</code> — a
+      transient advisory lock in version control. Neither <code>nova</code> nor
+      <code>imas-ambix</code> ignores that path either. Migrated state is therefore
+      staged explicitly here, excluding the locks directory; the durable repair is for
+      whichever plan owns <code>reckon sync</code>'s project infrastructure to write
+      the ignore rule when it onboards a project.</p>
+
     <h2 id="preflight-scope">§3 — The preflight blocker, narrowed to what it protects</h2>
 
     <p>Run <code>r-20260824T110909931263-worktree-preflight-scope</code>, worker
