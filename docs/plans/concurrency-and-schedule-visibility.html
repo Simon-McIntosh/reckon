@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="29">
 <meta name="plan-impl" content="0.85">
 </head>
 <body>
@@ -511,6 +511,34 @@
     and shipping a closure whose members the schedule window would defer records that override on
     the run rather than proceeding silently.</p>
 
+    <h2 id="s8">&#167;8 &mdash; What the landings left behind</h2>
+
+    <p><strong>Two deliverables were nearly lost by being written as prose inside a landed
+    summary.</strong> A collapse summary is where a reader stops reading, and the dependency scan
+    reads plans rather than section text, so work recorded there is invisible to every surface that
+    decides what runs next. Discovered work belonging to this plan is a section with executable
+    nodes; this is that section, and its existence is the correction.</p>
+
+    <p><strong>The planning surface still answers yes where dispatch says no.</strong>
+    <code>--dry-run</code> resolves and validates without consulting live claims, so a coordinator
+    asking whether a wave is safe is told it is, and then refused at dispatch. The refusal belongs
+    in <code>dispatch</code> and must stay there; what the dry run owes is a <em>report</em> of the
+    conflicts it would hit, while still exiting zero, because a planning surface that fails is not
+    a planning surface. <strong>Done when</strong> a dry run against a path held by a live claim
+    reports that conflict with the owning run named, still validates the node and still exits zero,
+    a dry run with no conflict reports none, and the dispatch refusal is unchanged.</p>
+
+    <p><strong>The schedule window has no declared width, so the axis imposes no queue.</strong>
+    This one is not engineering. Any width below five would defer S12 and S13, where the current
+    work lives, because six sprints hold open work at once &mdash; so declaring a width now would
+    either be ignored or would stall the work in flight. It is therefore <em>gated</em> rather than
+    merely postponed, and on a condition the tool already computes: the axis reports
+    <code>horizon_depth</code> on every scan, so the gate opens itself when the horizon actually
+    consolidates, with nobody having to remember this paragraph.
+    <strong>Done when</strong> the project manifest declares a width, the axis reports a non-empty
+    deferred set with each row naming the sprint it sits behind, and the declared width is
+    justified in one line against the horizon depth measured at the time.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="scope-declaration-site" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
@@ -648,6 +676,13 @@
 <div class="r-comment" data-section="s7" data-id="c-20260824T1855" data-who="reckon-ship" data-when="2026-08-24T18:55:00+00:00">
     <div class="r-comment-body">decisions-block-closure landed — commit 1119a08, merged; gate passed; measure 41 targeted cases then the dispatch-tree suite at 2190 passed with zero failures; 945 worker-seconds against a 35m budget, scope widened so the run records --scope-changed. An open decision is now a blocker kind of its own, distinct from dependency, explicit and gate blockers, naming both the decision and the plan carrying it; locking it clears the block, and explicit deferral clears it while the decision stays visible in the report so deferral cannot hide it. The worker blocked first and chose correctly between two paths: decision identity is plumbed through the inventory its callers build, rather than teaching roadmap.py to parse plan HTML, which would have broken the analyser's storage-neutral contract and this repository's rule that a test must not read state outside the repo under test. That refusal cost one resume and saved an architectural regression that would have passed its own tests. Denominator note: impl moves 0.70 to 0.72 rather than further, because sections 6 and 7 were added to this plan after the earlier figures were set, so the denominator grew from seven nodes to thirteen while eight have now landed.</div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="horizon-consolidated" data-section="s8" data-gated-sections="s8" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Roadmap reports horizon_depth of two or fewer sprints holding open work.</h4>
+    <p class="r-gate-required-evidence">A roadmap scan recording the depth and naming every sprint that still holds open work.</p>
+    </div>
 </section>
 </main>
 </body>
