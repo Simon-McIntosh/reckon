@@ -7,6 +7,7 @@ import click
 
 from reckon import __version__
 from reckon._store import _config_home
+from reckon import pages
 
 
 def _asset_root() -> Path:
@@ -1513,6 +1514,13 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     if not docs_dir.exists():
         raise click.ClickException(f"docs path not found: {docs_dir}")
 
+    publication_strategy = None
+    if generate_ci:
+        try:
+            publication_strategy = pages.detect_publication_strategy(docs_dir)
+        except pages.PagesError as exc:
+            raise click.ClickException(str(exc)) from exc
+
     proj_name = project or docs_dir.parent.name
     asset_root = _asset_root()
 
@@ -1635,11 +1643,17 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     # ── Generate CI workflow (optional) ───────────────────────────────────
     if generate_ci:
         repo_root = docs_dir.parent
-        workflows_dir = repo_root / ".github" / "workflows"
-        workflows_dir.mkdir(parents=True, exist_ok=True)
-        ci_yml = workflows_dir / "reckon-pages.yml"
-        ci_yml.write_text(_CI_WORKFLOW_TEMPLATE.format(docs_path=docs_path))
-        click.echo(f"  wrote {ci_yml.relative_to(repo_root)}")
+        if publication_strategy.write_workflow:
+            workflows_dir = repo_root / ".github" / "workflows"
+            workflows_dir.mkdir(parents=True, exist_ok=True)
+            ci_yml = workflows_dir / "reckon-pages.yml"
+            ci_yml.write_text(_CI_WORKFLOW_TEMPLATE.format(docs_path=docs_path))
+            click.echo(f"  wrote {ci_yml.relative_to(repo_root)}")
+        else:
+            click.echo(
+                "  Pages publication: "
+                f"{publication_strategy.describe()}; no workflow written"
+            )
 
     click.echo(
         f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running."

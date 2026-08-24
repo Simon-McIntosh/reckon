@@ -13,6 +13,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.cli as cli
+import reckon.pages as pages
 import reckon.serve as serve
 from reckon import __version__
 
@@ -311,6 +312,11 @@ def test_sync_generates_pinned_uv_workflow(tmp_path, monkeypatch):
     docs_dir = repo_dir / "docs"
     docs_dir.mkdir(parents=True)
     monkeypatch.chdir(repo_dir)
+    monkeypatch.setattr(
+        pages,
+        "detect_publication_strategy",
+        lambda _docs_dir: pages.select_publication_strategy(None),
+    )
 
     result = CliRunner().invoke(
         cli.main,
