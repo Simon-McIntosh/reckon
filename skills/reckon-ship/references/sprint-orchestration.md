@@ -477,6 +477,24 @@ Every exempt open followup records which exemption it claims and the concrete
 authority, decision, plan, or repository behind that claim. Capacity,
 inconvenience, and ordinary unfinished work are not exemptions.
 
+Session closure also drains current run pointers. Read
+`crew(project, view="drain")`; its `unreconciled_runs` count is derived from the
+live pointer directory, not reconstructed from dispatch memory. A pointer may
+remain only after `reckon crew drain --project <project> --leave
+<run-id>=<disposition>` records one of the closed-set dispositions:
+
+- `handed-off` — another session owns reconciliation;
+- `still-working` — the current live classification is `running`. This
+  disposition stops excusing the pointer as soon as the run turns terminal.
+
+Every other pointer counts. Promotion removes a run from the drain by deleting
+its pointer. The committed closure ledger records both termination figures on
+one line:
+
+```text
+  rows: N   foldable-remaining: 0   unreconciled-runs: 0
+```
+
 Fold eligible entries into sections and DAG nodes, execute the newly ready
 nodes, then re-read the plan because their landings may have created more
 followups. The loop runs after every landing beat and terminates only when a complete

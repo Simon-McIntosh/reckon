@@ -2602,13 +2602,15 @@ def _crew(
     since: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Read crew state: routing, budget headroom, live runs, or the ledger.
+    """Read crew state: routing, budget headroom, live runs, drains, or the ledger.
 
-    Read-only, and deliberately one tool over five views rather than five tools.
+    Read-only, and deliberately one tool over seven views rather than seven tools.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
-    classification :func:`reckon.crew.recover` would give it; ``flight`` reports
+    classification :func:`reckon.crew.recover` would give it; ``drain`` derives
+    the session-closure count and recorded dispositions from those pointers;
+    ``flight`` reports
     the resolved routing config with the layer that supplied every value; and
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
@@ -2623,11 +2625,22 @@ def _crew(
     from reckon import flight as flight_module
     from reckon import ledger as ledger_module
 
-    if view not in ("summary", "flight", "live", "records", "ledger", "budget"):
+    if view not in (
+        "summary",
+        "flight",
+        "live",
+        "drain",
+        "records",
+        "ledger",
+        "budget",
+    ):
         return {
             "ok": False,
             "error": "invalid_view",
-            "detail": ("view must be summary, flight, live, records, ledger or budget"),
+            "detail": (
+                "view must be drain, or summary, flight, live, records, ledger "
+                "or budget"
+            ),
         }
     try:
         if view == "budget":
@@ -2651,6 +2664,12 @@ def _crew(
                 if str(record.get("project") or "") == project
             ]
             return {"ok": True, "project": project, "view": view, "runs": runs}
+        if view == "drain":
+            return {
+                "ok": True,
+                "view": view,
+                **crew_module.drain(project),
+            }
         if view == "ledger":
             data, version = ledger_module.load(project, checkout_path)
             return {

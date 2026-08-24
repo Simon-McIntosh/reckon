@@ -82,6 +82,12 @@ FENCES = ("scope", "time", "evidence", "delivery")
 
 _TERMINAL_RUN_PHASES = frozenset({"complete", "failed", "stopped"})
 
+# A live pointer may remain at session closure only when another session owns
+# its reconciliation, or while its worker is verifiably still running. Keeping
+# this vocabulary closed makes an unexplained pointer fail closed instead of
+# accepting arbitrary prose as proof that somebody owns it.
+RUN_DRAIN_DISPOSITIONS = ("handed-off", "still-working")
+
 # Session-owned roster rows are a short-lived index over durable run records.
 # The default leaves enough time for an ordinary follow-up to reuse a warm
 # worker while bounding growth when a caller does not supply a narrower policy.
@@ -730,6 +736,78 @@ def list_live(
             continue
         records.append(data)
     return records
+
+
+def record_run_disposition(
+    run_id: str,
+    disposition: str,
+    *,
+    project: str | None = None,
+) -> dict[str, Any]:
+    """Record why one live pointer may remain across session closure."""
+    reason = str(disposition).strip()
+    if reason not in RUN_DRAIN_DISPOSITIONS:
+        allowed = ", ".join(RUN_DRAIN_DISPOSITIONS)
+        raise CrewError(
+            f"run disposition {disposition!r} is not one of {allowed}"
+        )
+
+    def record(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer_project = str(pointer.get("project") or "")
+        if project is not None and pointer_project != project:
+            raise CrewError(
+                f"live run {run_id!r} belongs to project {pointer_project!r}, "
+                f"not {project!r}"
+            )
+        pointer["closure_disposition"] = {
+            "kind": reason,
+            "recorded_at": _utc_now(),
+        }
+        return pointer
+
+    return _mutate_pointer(run_id, record)
+
+
+def drain(project: str) -> dict[str, Any]:
+    """Return the closure drain derived from one project's live pointers.
+
+    A handoff remains valid until the receiving session reconciles the pointer.
+    ``still-working`` is narrower: it excuses only a pointer whose current
+    classification remains ``running``. Any missing, malformed, unknown or
+    expired disposition therefore contributes to ``unreconciled_runs``.
+    """
+    rows: list[dict[str, Any]] = []
+    for pointer in list_live(project=project):
+        row = classify_pointer(pointer)
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "")
+            if isinstance(recorded, Mapping)
+            else ""
+        )
+        valid = disposition == "handed-off" or (
+            disposition == "still-working" and row["classification"] == "running"
+        )
+        rows.append(
+            {
+                **row,
+                "disposition": dict(recorded)
+                if isinstance(recorded, Mapping)
+                else None,
+                "disposition_valid": valid,
+                "unreconciled": not valid,
+            }
+        )
+
+    unreconciled = sum(1 for row in rows if row["unreconciled"])
+    return {
+        "project": project,
+        "live_pointers": len(rows),
+        "disposed_runs": len(rows) - unreconciled,
+        "unreconciled_runs": unreconciled,
+        "dispositions": list(RUN_DRAIN_DISPOSITIONS),
+        "runs": rows,
+    }
 
 
 def _read_watch_record(handle) -> dict[str, Any]:
