@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-impl" content="0.85">
 </head>
 <body>
@@ -704,6 +704,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260824T194716380687-watch-ticker" data-who="codex-t" data-when="2026-08-24T19:56:22Z">
     <div class="r-comment-body"><p>Baseline line per live run at arming, a line per transition carrying node, states and counts, nothing on an unchanged poll, reasons truncated, stream ends at drain, objects behind a flag.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260824T195730029494-crew-unwatch" data-who="codex-m" data-when="2026-08-24T20:05:13Z">
+    <div class="r-comment-body"><p>One command stops the project&#x27;s registered watcher by verified pid and start time; a stale registration whose process no longer matches is left untouched, so pid reuse cannot redirect the signal.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260824T1855" data-who="reckon-ship" data-when="2026-08-24T18:55:00+00:00">
     <div class="r-comment-body">decisions-block-closure landed — commit 1119a08, merged; gate passed; measure 41 targeted cases then the dispatch-tree suite at 2190 passed with zero failures; 945 worker-seconds against a 35m budget, scope widened so the run records --scope-changed. An open decision is now a blocker kind of its own, distinct from dependency, explicit and gate blockers, naming both the decision and the plan carrying it; locking it clears the block, and explicit deferral clears it while the decision stays visible in the report so deferral cannot hide it. The worker blocked first and chose correctly between two paths: decision identity is plumbed through the inventory its callers build, rather than teaching roadmap.py to parse plan HTML, which would have broken the analyser's storage-neutral contract and this repository's rule that a test must not read state outside the repo under test. That refusal cost one resume and saved an architectural regression that would have passed its own tests. Denominator note: impl moves 0.70 to 0.72 rather than further, because sections 6 and 7 were added to this plan after the earlier figures were set, so the denominator grew from seven nodes to thirteen while eight have now landed.</div>
