@@ -18,13 +18,13 @@
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-depends-on" content="pypi-release,project-onboarding">
-  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-sprint" content="S12">
   <meta name="plan-owner" content="Simon McIntosh">
   <title>A Sprint Should Span Repositories, and Be Legible | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -463,15 +463,15 @@
       </p>
     <p class="r-dec-rat">Locked by the lead 2026-08-24. A one-shot kept for reuse becomes an undocumented tool run later against a corpus it no longer describes, and this particular script rewrites 119 links. The receipt is the durable artifact; the script is a means. Retaining it under a scripts directory would also violate the consuming repository&#x27;s own rule against migration-named files persisting in the tree.</p>
     </div>
-<div class="r-dec" data-key="multi-repo-publication-topology" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="multi-repo-publication-topology" data-choice="federated-per-repo" data-by="Simon McIntosh" data-when="2026-08-24T09:02:58+00:00">
     <p class="r-dec-q">How do plans from several repositories reach one published site?</p>
     <p class="r-dec-ctx">reckon&#x27;s CI only checks out reckon. mounts.json is per-instance local state, so CI cannot see which repositories the ITER host resolves. Three shapes were considered. Vendoring or symlinking linked repositories into reckon needs a committed repository list plus a commit per plan edit, duplicating content and making the publish decision a central filter. Central sourcing - reckon CI checking out declared repositories with a repository_dispatch trigger from each - works but makes reckon&#x27;s CI the thing that decides what is published, so one misconfiguration publishes a personal fork, and it needs credentials to reach anything non-public which is precisely the capability that should not exist. Per-repository publication with a federated index means each repository&#x27;s own CI runs reckon build and deploys its own Pages site, and reckon publishes a thin composed index over the published ones.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="federated-per-repo">Each repo publishes itself; reckon federates a composed index over the published set</button>
+      <button class="r-opt chosen" data-value="federated-per-repo">Each repo publishes itself; reckon federates a composed index over the published set</button>
       <button class="r-opt" data-value="central-sourcing-dispatch">reckon CI checks out declared repos and builds one site, triggered by repository_dispatch</button>
       <button class="r-opt" data-value="vendored-into-reckon">Linked repo docs are vendored or symlinked into reckon and committed</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24, after verifying the property it depends on rather than assuming it: an unregistered project with no mounts entry, no state directory and no running server built cleanly at 496K with relative asset paths and a .nojekyll marker, so reckon build is genuinely self-contained. The decisive argument is that the guard becomes structural rather than configured - a repository that never opts in has no build job, so no central list can misconfigure a personal fork into publication - and no cross-repository credentials are needed at all. Central sourcing was rejected despite being operationally simpler (one CI instead of N) precisely because it relocates the disclosure risk into a list. Accepted cost: each consumer pins reckon, which is why pypi-release is sequenced first in S12.</p>
     </div>
 </section>
 

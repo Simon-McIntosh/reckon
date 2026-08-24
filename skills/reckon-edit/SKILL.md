@@ -327,10 +327,36 @@ Free-form decision: no `<button>` elements; `data-choice` holds the typed answer
 2. `edit_plan(…, ops=[{"op":"lock","key":"…","choice":"…","rationale":"…","by":"…"}], expected_version=…)`.
 3. If irreversible, write archival `docs/plans/archive/<slug>-<key>-locked.html`.
 
-**Interactive walkthrough:**
-1. Collect open decisions (where `choice == ""`); present each `r-dec-q` + options.
-2. Accumulate choices; call `edit_plan` with one `lock` op per decision.
-3. Report how many decisions were locked.
+**Interactive walkthrough — use the host's structured question format, never a bare list.**
+
+An open decision presented as `- [key] "title" options: a, b` forces the lead to ask a
+follow-up before they can answer, which is a round trip the skill caused. Surface open
+decisions as a **structured multiple-choice question** through whatever quiz/question
+primitive the host harness provides, so they can be answered directly.
+
+Every question carries a recommendation and its reasoning:
+
+1. **Collect** open decisions (`choice == ""`).
+2. **Batch up to four in ONE call.** Serial asking is the same round-trip problem in
+   slower form. With more than four open, ask the four that gate the most work and say
+   which you deferred and why.
+3. **Recommended option first, marked as such in its label.** A question with no
+   recommendation is an abdication: you have read the plan and the code, the lead has not.
+4. **Each option's description carries the REASONING AND THE COST**, not a restatement of
+   the label. Name what it buys, what it accepts, and — where it exists — the measurement
+   that decided it. An option whose description could be inferred from its title is wasted.
+5. **State low confidence rather than hiding it**, and do not recommend at all where the
+   decision is genuinely the lead's: disclosure, spend, irreversible or outward-facing
+   effects. Say plainly that it is theirs and give the trade-off instead.
+6. **Lock with the reasoning as the rationale.** `edit_plan` one `lock` op per answer, and
+   the rationale records WHY — the measurement, the rejected alternative and the accepted
+   cost. A rationale reading only "chosen by the lead" throws away the reason at exactly
+   the moment it becomes history, and the next reader cannot tell a considered choice from
+   a coin flip.
+7. **Report** what was locked, and re-read before writing if a peer may have written since.
+
+Do NOT ask about a decision the plan already locked, and do not re-ask to confirm a lock —
+that is the dissent flow below, and it needs new evidence rather than a second opinion.
 
 **Dissent / reopen (§07):**
 1. Write a followup with `recommends_skill: "/reckon-edit <slug> --reopen <key>"`.

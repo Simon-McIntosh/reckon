@@ -15,14 +15,14 @@
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-sprint" content="S12">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-blocks" content="sprint-scope-and-surface">
   <title>A Version to Pin, Not a Commit | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -101,13 +101,13 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="version-scheme" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="version-scheme" data-choice="semver-strict" data-by="Simon McIntosh" data-when="2026-08-24T09:03:13+00:00">
     <p class="r-dec-q">What versioning scheme does the published package commit to?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="semver-strict">Semantic versioning, with the plan format and MCP surface as the public interface</button>
+      <button class="r-opt chosen" data-value="semver-strict">Semantic versioning, with the plan format and MCP surface as the public interface</button>
       <button class="r-opt" data-value="calver">Calendar versioning, treating every release as potentially breaking</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. The plan HTML format and the MCP tool surface are the declared public interface, so a breaking change to either takes a major version. That is what lets a consumer write reckon-plans&gt;=X.Y and adopt on its own schedule, which is the entire reason for leaving git refs behind - calendar versioning would force exact pins and a re-test on every bump, reintroducing most of the N-repositories-to-bump cost that publishing is meant to remove. Accepted cost: a judgement call per release about whether a change is breaking, which the two named interfaces make tractable.</p>
     </div>
 </section>
 

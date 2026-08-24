@@ -118,7 +118,13 @@ state still comes from plan HTML.
 
 For each plan, read `decisions` from parsed state (map keyed by `data-key` on `.r-dec` elements). Open decision: `data-choice=""` or absent.
 
-Format: `- <slug>: [<key>] "<title>" options: <choices>`
+**Do not stop at a bare list.** `- <slug>: [<key>] "<title>" options: <choices>` is a
+reading aid, not an answerable question, and offering it forces a follow-up before the lead
+can decide anything. When open decisions are the reason for the report — or when the lead
+could act on them now — present them as structured multiple-choice questions with a marked
+recommendation and reasoning per option, per the canonical rule in `reckon-edit` SKILL.md
+(*Interactive walkthrough*). Status is read-only, so it asks and reports; `reckon-edit`
+owns the `lock` write.
 
 ### Step 4 — surface unresolved followups
 

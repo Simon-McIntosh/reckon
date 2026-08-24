@@ -15,7 +15,7 @@
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="elevated">
-  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-sprint" content="S12">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="pypi-release">
   <meta name="plan-blocks" content="sprint-scope-and-surface">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -121,21 +121,21 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="onboarding-surface" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="onboarding-surface" data-choice="extend-sync" data-by="Simon McIntosh" data-when="2026-08-24T09:03:25+00:00">
     <p class="r-dec-q">Does onboarding extend reckon sync or become its own command?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="extend-sync">Extend sync , since it already registers and already writes CI behind a flag</button>
+      <button class="r-opt chosen" data-value="extend-sync">Extend sync , since it already registers and already writes CI behind a flag</button>
       <button class="r-opt" data-value="new-onboard-command">A separate command, keeping sync to asset refresh</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. sync already registers the project, copies UI assets and writes CI behind --generate-ci, so onboarding is the same act plus Pages detection and a badge; extending keeps one entry point and one mental model rather than two commands that overlap heavily. The risk this accepts must be handled explicitly: sync is ALSO the routine refresh-assets-after-a-reckon-update command, so every onboarding-only side effect is flag-gated and idempotent, and a second run changes nothing. That idempotence is already a stated done-when for the badge and now applies to the whole onboarding path.</p>
     </div>
-<div class="r-dec" data-key="pages-detection-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="pages-detection-source" data-choice="query-api" data-by="Simon McIntosh" data-when="2026-08-24T09:03:25+00:00">
     <p class="r-dec-q">How does onboarding learn a repository&#x27;s Pages configuration?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="query-api">Query the GitHub API at onboarding time, refusing when unauthenticated</button>
+      <button class="r-opt chosen" data-value="query-api">Query the GitHub API at onboarding time, refusing when unauthenticated</button>
       <button class="r-opt" data-value="declared-locally">Require the operator to declare it, so onboarding needs no network</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. The failure mode is replacing someone&#x27;s live documentation site, so the safety-critical fact is read from the authority rather than trusted from a declaration - and it refuses when unauthenticated or when the answer is ambiguous, so the destructive path is never taken on a guess. A local declaration moves that fact into a human answer, and the operator least likely to know the Pages configuration is exactly the one onboarding an unfamiliar repository. Accepted cost: onboarding needs network and a token and behaves differently offline, which is why the per-case strategies are tested against RECORDED Pages configurations rather than live GitHub.</p>
     </div>
 </section>
 

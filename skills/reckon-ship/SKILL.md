@@ -92,7 +92,7 @@ in-flight run, so independent concurrent work uses distinct members.
 **Do NOT stop at routine checkpoints.** Keep going and update state as work
 lands. Valid early stops are:
 - A prerequisite plan is unshipped (hard stop — see §Prerequisite blocking)
-- A NEW decision surfaced that is not already locked in the plan, is material to the work, and cannot be deduced from the plan/code/sensible defaults (an already-locked decision is NOT a reason to stop — honour it and proceed)
+- A NEW decision surfaced that is not already locked in the plan, is material to the work, and cannot be deduced from the plan/code/sensible defaults (an already-locked decision is NOT a reason to stop — honour it and proceed). When stopping for one, present it — and any other open decision the lead could settle in the same breath — as a structured multiple-choice question with a marked recommendation and per-option reasoning, per `reckon-edit` SKILL.md (*Interactive walkthrough*). Never hand back a bare list of open decision keys.
 - The next section's scope would require writing files outside your allocated write scope
 - Applicable safety policy or user authority requires confirmation
 - A worker commit cannot be integrated safely without overwriting unrelated work
