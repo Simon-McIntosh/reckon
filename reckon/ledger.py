@@ -95,6 +95,7 @@ RECORD_FIELDS = (
     "session_id",
     "budget",
     "lineage",
+    "unreconciled_override",
 )
 
 
@@ -329,6 +330,7 @@ def build_record(
     session_id: str | None = None,
     budget: Mapping[str, Any] | None = None,
     lineage: Mapping[str, Any] | None = None,
+    unreconciled_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict."""
     verdict = str(gate).strip().lower()
@@ -374,6 +376,9 @@ def build_record(
         # very resource it is measuring — most often when it is scarcest.
         "budget": dict(budget or {}),
         "lineage": None if lineage is None else dict(lineage),
+        "unreconciled_override": (
+            None if unreconciled_override is None else dict(unreconciled_override)
+        ),
     }
 
 

@@ -585,6 +585,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--dry-run",
             "--member",
             "--manifest",
+            "--allow-unreconciled-runs",
         },
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
@@ -631,6 +632,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
         "budget-hold": 3,
         "plan-unavailable": 4,
         "competence-refusal": 5,
+        "unreconciled-runs": 6,
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source

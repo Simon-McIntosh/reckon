@@ -616,6 +616,14 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     ),
 )
 @click.option(
+    "--allow-unreconciled-runs",
+    is_flag=True,
+    help=(
+        "Dispatch despite terminal run pointers older than the configured grace; "
+        "the waived backlog is recorded on the new run."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -644,6 +652,7 @@ def crew_dispatch(
     checkout_path,
     overrides,
     allow_execution_mismatch,
+    allow_unreconciled_runs,
     dry_run,
     pretty,
 ):
@@ -728,6 +737,7 @@ def crew_dispatch(
             peer_scopes=node.peer_scopes,
             member=member,
             execution_override=allow_execution_mismatch,
+            unreconciled_override=allow_unreconciled_runs,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
@@ -755,6 +765,17 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(5) from exc
+    except crew_module.UnreconciledRuns as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "unreconciled-runs",
+                "detail": str(exc),
+                "runs": exc.runs,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(6) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(

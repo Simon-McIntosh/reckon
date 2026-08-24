@@ -225,6 +225,23 @@ class MemberInFlight(CrewError):
         )
 
 
+class UnreconciledRuns(CrewError):
+    """Finished worker records must be reconciled before more work starts."""
+
+    def __init__(self, runs: Iterable[Mapping[str, Any]], grace: str) -> None:
+        self.runs = [dict(run) for run in runs]
+        self.grace = grace
+        actions = "\n".join(
+            f"- {run['run_id']}: {run['next_action']}" for run in self.runs
+        )
+        super().__init__(
+            f"project has {len(self.runs)} unreconciled run(s) older than the "
+            f"{grace} grace:\n{actions}\n"
+            "reconcile each run, or pass --allow-unreconciled-runs to record "
+            "an explicit waiver on the new run"
+        )
+
+
 class BudgetHold(CrewError):
     """A wave is held on budget rather than failed.
 
@@ -1674,6 +1691,7 @@ def dispatch(
     check_budget: bool = True,
     budget_state: Mapping[str, Any] | None = None,
     execution_override: bool = False,
+    unreconciled_override: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1698,6 +1716,10 @@ def dispatch(
     An execution-fit override is an explicit exception to a heuristic refusal;
     the matched measure and resolved role stay on the run record so the exception
     remains visible after the request that supplied it is gone.
+
+    An unreconciled-run override is narrower: it waives only the terminal
+    backlog observed by this dispatch. The exact runs and resolving commands
+    are copied onto the new record so the exception survives its command line.
     """
     repo_root = Path(repo).resolve()
     script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
@@ -1732,6 +1754,24 @@ def dispatch(
     if not competence["allowed"]:
         raise CompetenceLimit(competence)
 
+    fences = config.get("fences") or {}
+    unreconciled_grace = str(fences.get("unreconciled_run_grace") or "")
+    unreconciled = overdue_unreconciled_runs(
+        project=project,
+        grace=unreconciled_grace,
+    )
+    if unreconciled and not unreconciled_override:
+        raise UnreconciledRuns(unreconciled, unreconciled_grace)
+    waiver = (
+        {
+            "requested": True,
+            "grace": unreconciled_grace,
+            "waived_runs": unreconciled,
+        }
+        if unreconciled_override
+        else None
+    )
+
     budget_warnings: list[str] = []
     if check_budget:
         # Before the worktree, not after: a hold that had already cut a worktree
@@ -1754,7 +1794,6 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
-    fences = config.get("fences") or {}
     peers = node.peer_scopes
 
     reap_idle_session_members(
@@ -1872,6 +1911,7 @@ def dispatch(
             "budget": _backends.unknown_budget("no events yet"),
             "warnings": [*resolution.warnings, *budget_warnings],
             "lineage": lineage,
+            "unreconciled_override": waiver,
         }
 
         if launch_kind == "cli":
@@ -2542,6 +2582,7 @@ def _complete_locked(
         session_id=session_id,
         budget=measured_budget,
         lineage=record.get("lineage"),
+        unreconciled_override=record.get("unreconciled_override"),
     )
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
@@ -2739,6 +2780,17 @@ def classify_pointer(
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
     terminal = phase in ("complete", "failed")
+    terminal_at = None
+    terminal_age_seconds = None
+    if manifest_status in {"complete", "blocked", "failed"}:
+        terminal_seconds = manifest.stat().st_mtime
+        moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+        terminal_at = (
+            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
+        terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
     if manifest_status == "complete":
         classification = "completed_unpromoted"
@@ -2822,6 +2874,8 @@ def classify_pointer(
         "manifest_path": str(manifest) if str(manifest) != "." else "",
         "manifest_status": manifest_status or None,
         "manifest_commits": manifest_commits,
+        "terminal_at": terminal_at,
+        "terminal_age_seconds": terminal_age_seconds,
         "log_age_seconds": age,
         "log_fresh": None if age is None else age <= stale_after_seconds,
         **timing,
@@ -2829,6 +2883,29 @@ def classify_pointer(
         "detail": detail,
         "next_action": action,
     }
+
+
+def overdue_unreconciled_runs(
+    *,
+    project: str,
+    grace: str,
+    now_seconds: float | None = None,
+) -> list[dict[str, Any]]:
+    """Return actionable terminal pointers older than the configured grace."""
+    if not grace:
+        return []
+    grace_seconds = parse_duration(grace)
+    rows = []
+    for pointer in list_live(project=project):
+        row = classify_pointer(pointer, now_seconds=now_seconds)
+        age = row.get("terminal_age_seconds")
+        if (
+            row["classification"] in {"completed_unpromoted", "blocked"}
+            and isinstance(age, int)
+            and age > grace_seconds
+        ):
+            rows.append(row)
+    return rows
 
 
 def _utc_seconds() -> float:

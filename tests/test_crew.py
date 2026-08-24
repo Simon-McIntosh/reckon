@@ -560,6 +560,39 @@ def _assert_no_dispatch_artifacts(repo: Path) -> None:
     assert "node-a" not in listed.stdout
 
 
+def _write_terminal_pointer(
+    home: Path,
+    run_id: str,
+    *,
+    age_seconds: int,
+    status: str = "complete",
+) -> dict:
+    """Create one project-scoped pointer whose manifest has a known terminal age."""
+    manifest = home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"node: delivered-node\nstatus: {status}\ncommits: HEAD\n"
+    )
+    terminal = datetime.now(tz=timezone.utc) - timedelta(seconds=age_seconds)
+    os.utime(manifest, (terminal.timestamp(), terminal.timestamp()))
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "repo": "/temporary/repository",
+        "node": {
+            "id": "delivered-node",
+            "plan": "plan-a",
+            "time_budget": "20m",
+        },
+        "phase": "complete",
+        "created_at": (terminal - timedelta(days=2)).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(home / "absent-stream.jsonl"),
+    }
+    crew._write_json(crew.pointer_path(run_id), record)
+    return record
+
+
 def test_live_run_listing_combines_project_and_phase_filters(home) -> None:
     records = [
         {
@@ -720,6 +753,134 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     )
     assert record["pid"] == 4242
     assert Path(record["worktree"]).is_dir()
+
+
+def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> None:
+    assert crew.live_dir() == home / "crew" / "live"
+    run_ids = ("r-delivered-alpha", "r-delivered-beta")
+    for run_id in run_ids:
+        _write_terminal_pointer(home, run_id, age_seconds=601)
+    configured = {
+        **CONFIG,
+        "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
+    }
+
+    with pytest.raises(crew.UnreconciledRuns) as excinfo:
+        crew.dispatch(
+            node=_node(id="next-node"),
+            project="proj",
+            repo=repo,
+            config=configured,
+            session="sess",
+            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
+        )
+
+    assert [row["run_id"] for row in excinfo.value.runs] == list(run_ids)
+    for run_id in run_ids:
+        expected = f"reckon crew complete --run {run_id} --gate <verdict> --commit HEAD"
+        assert f"- {run_id}: {expected}" in str(excinfo.value)
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "next-node" not in listed.stdout
+
+
+def test_dispatch_grace_starts_when_the_manifest_turns_terminal(home, repo) -> None:
+    _write_terminal_pointer(home, "r-recent-delivery", age_seconds=30)
+    configured = {
+        **CONFIG,
+        "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
+    }
+
+    record = crew.dispatch(
+        node=_node(id="next-node"),
+        project="proj",
+        repo=repo,
+        config=configured,
+        session="sess",
+        launcher=lambda *args, **kwargs: 4242,
+    )
+
+    assert record["run_id"] != "r-recent-delivery"
+    assert record["unreconciled_override"] is None
+
+
+def test_dispatch_override_records_and_promotes_the_waived_backlog(home, repo) -> None:
+    old_run = "r-deliberately-left"
+    _write_terminal_pointer(home, old_run, age_seconds=601)
+    configured = {
+        **CONFIG,
+        "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
+    }
+
+    record = crew.dispatch(
+        node=_node(id="next-node"),
+        project="proj",
+        repo=repo,
+        config=configured,
+        session="sess",
+        launcher=lambda *args, **kwargs: 4242,
+        unreconciled_override=True,
+    )
+
+    waiver = record["unreconciled_override"]
+    assert waiver["requested"] is True
+    assert waiver["grace"] == "5m"
+    assert [row["run_id"] for row in waiver["waived_runs"]] == [old_run]
+    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    assert stored["unreconciled_override"] == waiver
+
+
+def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
+    home, repo, monkeypatch
+) -> None:
+    old_run = "r-cli-delivery"
+    _write_terminal_pointer(home, old_run, age_seconds=601)
+    configured = {
+        **CONFIG,
+        "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
+    }
+    monkeypatch.setattr(
+        cli_module,
+        "_resolved_flight",
+        lambda *args, **kwargs: configured,
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            "§3",
+            "--node",
+            "next-node",
+            "--goal",
+            "record the launch matrix for one backend",
+            "--done-when",
+            "uv run pytest tests/test_crew.py reports 0 failures",
+            "--write-path",
+            "reckon/crew.py",
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 6
+    assert payload["error"] == "unreconciled-runs"
+    assert payload["runs"][0]["run_id"] == old_run
+    assert f"reckon crew complete --run {old_run}" in payload["detail"]
 
 
 def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
