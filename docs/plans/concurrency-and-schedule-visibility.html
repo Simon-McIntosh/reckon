@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-impl" content="0.94">
 </head>
 <body>
@@ -551,6 +551,16 @@
     can now legitimately declare a delivery scope inside a repository whose own project has three
     workers running in it, and neither side will see the other. The registry that arbitrated every
     lane assignment tonight would simply not fire.</p>
+
+    <p><strong>A manifest may report completion and omit the commit that proves it, and nothing
+    notices.</strong> Measured on the landing that closed this very gap: the worker committed its
+    change and left the manifest's commit field empty. The coordinator's extraction produced an
+    empty string, <code>git merge</code> ran with no argument, and the shell's success chain
+    printed a confirmation anyway &mdash; nothing merged, nothing said so, and the run would have
+    been promoted against a commit that was never integrated. The promotion is the moment this is
+    cheap to catch: a manifest reporting <code>status: complete</code> with changed paths and no
+    commit sha cannot be verified, so it should be refused there rather than trusted and
+    discovered later by whoever wonders where the change went.</p>
 
     <p>The repair is a filter rather than a mechanism. Scope claims should resolve by
     <em>repository root</em>, which is what a file collision actually depends on, rather than by
