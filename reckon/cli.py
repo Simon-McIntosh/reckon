@@ -2173,6 +2173,35 @@ def archive(project, older_than_days, apply_changes, checkout_path):
         )
 
 
+@main.group(name="evidence")
+def evidence():
+    """Compose closure evidence from durable project records."""
+
+
+@evidence.command(name="synthesize")
+@click.option("--project", required=True, help="Mounted project key.")
+@click.option("--plan", "plan_slug", required=True, help="Plan slug to summarize.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repository root for a worktree-specific synthesis.",
+)
+def synthesize_evidence(project, plan_slug, checkout_path):
+    """Write canonical landed evidence from comments and the run ledger."""
+    from reckon.evidence import EvidenceSynthesisError, synthesize_landed_record
+
+    docs_dir = _project_docs_root(project, checkout_path)
+    try:
+        result = synthesize_landed_record(docs_dir, project, plan_slug)
+    except EvidenceSynthesisError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        f"Synthesized {result.path} from {result.runs} run(s), "
+        f"{result.comments} comment(s), and {result.commits} commit(s)."
+    )
+
+
 def _print_roadmap_report(report: dict) -> None:
     project = report.get("project", "")
     completion = report.get("completion", {})
