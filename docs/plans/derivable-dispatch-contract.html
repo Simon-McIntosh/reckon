@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
 <meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -160,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260824-third-instance" data-who="reckon-ship" data-when="2026-08-24T11:36:00+00:00">
     <div class="r-comment-body"><p><strong>The sibling defect was measured three times in the session that fixed the first one, and the third instance changes what §3 should cover.</strong> All three are one shape — a node fenced out of a file it structurally requires: <code>tag-field-on-resources</code> fenced from the schema artifact it generates, <code>execution-fit-refusal</code> fenced from <code>reckon/crew.py</code> where dispatch validation lives, and <code>idle-member-reaping</code> fenced against a peer list that was already stale. The workers refused correctly every time; the third was caught only by hand at dry-run. <strong>That exposes something auto-provisioning does not fix:</strong> it removes contention between coordinators, but a single coordinator fencing its own concurrent nodes off each other's files is unchecked, because the <code>--peer</code> list is supplied by the same coordinator that got the scope wrong and is therefore no independent check. A node's required scope is derivable from the files it is asked to change far more reliably than from a hand-written peer declaration. Recorded here rather than folded, because it widens §3 rather than fitting inside it. Full record: <a href="/reckon/evidence/archive/derivable-dispatch-contract-landed">execution evidence</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-resume-cannot-widen" data-who="reckon-ship" data-when="2026-08-24T11:38:00+00:00">
+    <div class="r-comment-body"><p><strong>A mechanical gap found by walking into it twice: <code>crew resume</code> cannot widen a node's write scope.</strong> The fence lives in the run record's <code>write_paths</code>; advice is prose delivered to the worker and changes nothing about what it is permitted to touch. So a node blocked on a wrong fence stays blocked no matter how the advice is worded, and the worker is right to keep refusing — its recorded scope is the authority, not the message. <strong>The coordinator's natural move on a scope block is exactly the one that does not work.</strong> I resumed <code>execution-fit-refusal</code> twice with progressively wider prose while its recorded scope stayed at two paths, burning two turns before reading the worker's own brief, which had already diagnosed it and recommended a serialized re-dispatch owning all four paths. That is what landed. Two candidate repairs, and the second is cheaper: let resume accept a scope change and record it, or have resume <em>refuse</em> when the advice implies paths outside the recorded fence, naming re-dispatch as the remedy. Either removes a silent no-op from the recovery ladder. Recorded here because it is the same family as this plan's other two defects — the tooling accepting an instruction it cannot honour and reporting nothing.</p></div>
 </div>
 </section>
 </main>
