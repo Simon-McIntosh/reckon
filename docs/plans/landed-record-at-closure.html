@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="landed-record-at-closure">
+  <meta name="plan-title"     content="A Landed Record Should Mean Landed">
+  <meta name="plan-summary"   content="Execution evidence is written into a file whose name says landed and whose directory says archive, while the plan is a third done and the file is rewritten every twenty minutes. Move the per-step record to where it already lives — section-anchored plan comments and the committed run ledger — and make the landed document a synthesis written once, at closure, from both.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="mid">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S13">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,evidence">
+  <title>A Landed Record Should Mean Landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The name and the directory both assert something untrue</h2>
+
+    <p>Measured during the sprint that produced this plan, not inferred.
+    <code>pypi-release-landed.html</code> was created when its plan stood at
+    <strong>impl 0.75</strong>; <code>resource-tagging-system-landed.html</code> was created at
+    <strong>impl 0.33</strong> and rewritten twice inside twenty minutes. Both live under
+    <code>docs/evidence/archive/</code>.</p>
+
+    <p><strong>So two claims are made by structure rather than by content, and both are false for
+    most of the file's life.</strong> The suffix <code>-landed</code> asserts the work landed. The
+    directory <code>archive/</code> asserts the document is frozen. A reader browsing the archive
+    sees completed records for work that is a third done, and the only way to learn otherwise is
+    to open the plan it points at.</p>
+
+    <p><strong>The third problem is duplication, and it is the one that will cause a wrong
+    answer.</strong> The execution skill already requires a section-anchored plan comment on every
+    node landing carrying the commit, the gate verdict and its quantitative measure, and the
+    artifacts. The evidence file then receives a fuller version of the same facts. Both were
+    written on every landing during this sprint, in near-identical words. Two records of one fact
+    with no mechanism keeping them equal is a drift surface, and the drift will be discovered by
+    someone quoting the stale one.</p>
+
+    <h2 id="s2">§2 — Both replacements already exist</h2>
+
+    <p>This is not a proposal to build a store. The per-step record has two homes already, and
+    the work is to stop writing a third.</p>
+
+    <table>
+      <thead><tr><th>Record</th><th>Where it already lives</th><th>What it already carries</th></tr></thead>
+      <tbody>
+        <tr><td>Narrative, per node</td><td><code>&lt;section data-reckon="comments"&gt;</code> in the plan, anchored to a section id</td><td>Authored HTML, committed with the plan, rendered in place beside the section it describes</td></tr>
+        <tr><td>Machine-readable, per run</td><td><code>docs/state/&lt;project&gt;/crew.json</code> run records</td><td>Commit, gate verdict, tests added, worker seconds, changed lines, session id, scope-changed flag, budget</td></tr>
+      </tbody>
+    </table>
+
+    <p>The ledger is the stronger half and is underused. It is committed, version-paired, and
+    already carries per-run measurements no prose record reconstructs — worker seconds against
+    declared effort, changed-line counts, whether scope moved mid-flight. A landed document
+    written from it can state what a plan cost as well as what it did.</p>
+
+    <h2 id="s3">§3 — The synthesis is a better document than the accretion</h2>
+
+    <p><strong>Writing the landed record once, at closure, is not merely more honest — it
+    produces a different and better artifact.</strong> An accreted record is written beat by
+    beat by an author who cannot yet see which findings mattered, so it preserves everything at
+    equal weight and in arrival order. A synthesis is written with the whole arc visible: it can
+    say which node changed the plan's shape, which measurement turned out to be the load-bearing
+    one, and which detour was a dead end worth recording as a negative result.</p>
+
+    <p>The evidence written during this sprint demonstrates the difference in both directions. The
+    genuinely valuable entries — a scout finding that an acceptance could never have passed, a
+    rehearsal that failed usefully and proved a credential path, a worker that blocked rather than
+    writing outside a wrong fence — were only recognisable as the important ones afterwards. They
+    were recorded beside routine per-node counts that a synthesis would compress to a line.</p>
+
+    <p><strong>Done when</strong> the execution skill's rules state one per-node write and one
+    closure write rather than two per-node writes, and a test asserts that no
+    <code>plan-evidence-for</code> record exists for a plan whose status is not terminal.</p>
+
+    <h2 id="s4">§4 — The failure this trades into, and the gate that prevents it</h2>
+
+    <p><strong>Deferring the synthesis makes it skippable, and a plan that reaches
+    <code>shipped</code> with no landed record at all is a worse outcome than a misnamed
+    file.</strong> An accreted record has one virtue: it exists by the time the plan closes,
+    because it was written incrementally and nobody had to remember a final step.</p>
+
+    <p>So closure must require the synthesis, the same way the write boundary already refuses a
+    landing that names no continuation. That refusal is the model: a plan-terminal write is
+    rejected unless the continuation chain is closed in words. The same boundary rejects a
+    plan-terminal write with no evidence record carrying <code>plan-evidence-for</code>.</p>
+
+    <p><strong>Done when</strong> setting a plan to a terminal status without a matching evidence
+    record is refused at the write boundary with a message naming the missing record, and a test
+    asserts the refusal fires rather than the plan closing silently.</p>
+
+    <h2 id="s5">§5 — What happens to the records already written this way</h2>
+
+    <p>Several evidence records already exist in the accreted shape, including the two this plan
+    cites as measurements. They are not wrong in content — the counts, commits and verdicts in
+    them are accurate — so nothing is rewritten for its own sake.</p>
+
+    <p><strong>The migration is therefore a rename question, not a content one, and it splits by
+    plan state.</strong> A record whose plan is terminal is already what it claims to be and stays
+    as it is. A record whose plan is still active is a live document in an archive directory, and
+    the honest resolution is to move it out of <code>archive/</code> until its plan closes.</p>
+
+    <p><strong>Done when</strong> every <code>plan-evidence-for</code> record under an archive path
+    belongs to a plan with a terminal status, verified by a test over the live corpus rather than
+    by inspection, and the audit reports any future violation as a finding.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="per-step-evidence-home" data-choice="plan-comments-and-ledger" data-by="Simon McIntosh" data-when="2026-08-24T11:20:00+00:00">
+    <p class="r-dec-q">Where does per-step execution evidence live while a plan is in progress?</p>
+    <p class="r-dec-ctx">Today it is written twice: into a section-anchored plan comment, and into a cumulative file under docs/evidence/archive/ whose name and directory both assert completion.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="plan-comments-and-ledger">In the plan's own comments plus the committed run ledger, with no third file until closure</button>
+      <button class="r-opt" data-value="keep-cumulative-file">Keep the cumulative evidence file, and rename it so it does not claim to be landed</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. Both replacements already exist and are already written: plan comments carry the anchored narrative and are committed with the plan, and crew.json run records carry commit, gate, tests added, worker seconds, changed lines and scope-changed per run. Writing a third record of the same facts creates a drift surface with nothing keeping the copies equal, and the drift is discovered by whoever quotes the stale one. Renaming the cumulative file would fix the false claim but keep the duplication, which is the more consequential of the two problems.</p>
+    </div>
+<div class="r-dec" data-key="closure-evidence-enforcement" data-choice="refuse-at-write-boundary" data-by="reckon-ship" data-when="2026-08-24T11:20:00+00:00">
+    <p class="r-dec-q">What stops a plan closing with no landed record once the synthesis is deferred?</p>
+    <p class="r-dec-ctx">An accreted record has one virtue: it exists by the time the plan closes because nobody had to remember a final step. Deferring the synthesis trades a misnamed file for a possibly missing one.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-at-write-boundary">Refuse a plan-terminal write when no evidence record carries plan-evidence-for</button>
+      <button class="r-opt" data-value="audit-finding">Allow the write and report the omission as an audit finding</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 on the precedent rather than on preference. The write boundary already refuses a plan-terminal write whose continuation chain is not closed in words, and that refusal works because it fires at the moment the mistake is made rather than whenever someone next runs an audit. An audit finding on a closed plan arrives after the session that could cheaply have written the record has ended, which is exactly when the context needed to write it is gone.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-lrc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship landed-record-at-closure" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stop writing the third record, then make closure require the synthesis</h4>
+    <div class="r-fu-body"><p>The order matters because the second step is what makes the first safe. Collapse the per-node write to one — the section-anchored plan comment — and leave the run ledger to carry the measurements it already carries. Then make the write boundary refuse a plan-terminal status with no <code>plan-evidence-for</code> record, so deferring the synthesis cannot turn into omitting it; the existing continuation refusal is the working precedent. Then reconcile the records already written in the accreted shape, which is a placement question rather than a content one: a record whose plan is terminal is already what it claims to be, and one whose plan is still active does not belong under an archive path.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship landed-record-at-closure</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

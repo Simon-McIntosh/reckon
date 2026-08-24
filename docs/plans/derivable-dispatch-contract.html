@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="derivable-dispatch-contract">
+  <meta name="plan-title"     content="Dispatch Should Not Require What It Can Derive">
+  <meta name="plan-summary"   content="Two measured defects with one shape: dispatch makes the coordinator supply facts it could work out itself. Which member is free is unknowable to a second coordinator, so two of them collide over a shared list that only ever grows. And a node whose measure is running a test suite validates clean onto a role declaring it cannot execute anything, surfacing two runs later as a sandbox error nobody reads as a routing mistake.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="mid">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S13">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <title>Dispatch Should Not Require What It Can Derive | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The roster serves two needs with one object</h2>
+
+    <p><strong>Measured, during a sprint run by two coordinators at once.</strong> One announced
+    that <code>codex-g</code>, <code>codex-h</code> and <code>sandbox-fix</code> were free, then
+    took two of them; the other lost two dispatches to the collision and had to re-register.
+    Neither did anything the documentation forbids — the execution skill states plainly that
+    members are cheap and that a coordinator raises concurrency by registering more.</p>
+
+    <p><strong>The prose is right and the collision happened anyway, which locates the defect in
+    the mechanism.</strong> The roster is being asked to serve two needs that want opposite
+    things:</p>
+
+    <table>
+      <thead><tr><th>Need</th><th>What it wants</th><th>What it is forced to use</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Concurrency</strong> — N workers now, identity irrelevant</td><td>anonymity</td><td>a shared list of names</td></tr>
+        <tr><td><strong>Continuity</strong> — the worker that remembers this attempt</td><td>a stable name</td><td>the same shared list</td></tr>
+      </tbody>
+    </table>
+
+    <p>Both coordinators needed the first and were made to shop in the second. Dispatch refuses
+    only on a non-terminal live pointer, so <em>idle</em> is observable while <em>another
+    coordinator is about to use this</em> is not. There is no signal for intent, so collision is
+    the designed outcome rather than bad luck.</p>
+
+    <p><strong>Half the mechanism already exists, and the roster has no lifecycle at all.</strong>
+    <code>--member</code> is already optional: 34 of 136 recorded runs carried no member and still
+    captured a <code>session_id</code> on the run record. Meanwhile <code>crew member</code>
+    exposes exactly <code>add</code> and <code>list</code> — there is no remove and no reap, so
+    the roster only grows. It stood at 16 members accumulated across three dates, 6 of which had
+    never captured a session.</p>
+
+    <h2 id="s2">§2 — Ephemeral by default, named on purpose</h2>
+
+    <p><strong>Deliverable.</strong> A dispatch that names no member provisions its own, scoped to
+    the dispatching session id — which cannot collide, because the session is the namespace. The
+    ephemeral captures its session like any member, so a follow-up inside the same scope still
+    reaches a worker that remembers the attempt. Named members remain, unchanged, for deliberate
+    continuity across sessions.</p>
+
+    <p><strong>Reaping is what keeps the roster honest, and the delay is not a tuning knob — it
+    is the continuity window.</strong> An ephemeral is reaped when it holds no live pointer and
+    has received no dispatch for the configured interval. Set it too short and the follow-up
+    dispatch that should have reused a warm session gets a cold one; too long and the roster
+    accumulates exactly as it does today.</p>
+
+    <p><strong>The property that makes reaping cheap rather than lossy:</strong> run records
+    already carry <code>session_id</code>, so removing a roster row does not destroy the worker's
+    context — the committed ledger keeps the handle, and a member can be re-registered against a
+    session found there. Reaping discards an index entry, not the thing it indexes. That is
+    already true of the data model and needs no change to become true.</p>
+
+    <p><strong>Done when</strong> two concurrent coordinators dispatching without naming members
+    never contend, asserted by a test that runs concurrent dispatches and requires distinct
+    members and zero refusals; a follow-up dispatch inside the reap window reuses the same session
+    id; and an ephemeral idle past the window is gone from <code>member list</code> while its
+    session id is still recoverable from the ledger.</p>
+
+    <h2 id="s3">§3 — A node whose measure is execution, routed to a role that cannot execute</h2>
+
+    <p><strong>Measured on the same sprint.</strong> Three suite runs were dispatched with
+    <code>--role review</code>. That role is configured <code>execution_capable: false</code> and
+    resolves to the read-only sandbox tier, under which the shared <code>uv</code> cache is not
+    writable and <code>uv run</code> dies before pytest collects. The runs reported 34 failures
+    and 10 errors, all environmental. The same suite under an execution-capable role at
+    <code>worktree-full</code> reports <strong>1991 passed, 0 failed, 0 errors</strong>.</p>
+
+    <p><strong>The cost was not the failed runs — it was the diagnosis.</strong> The error surfaces
+    as a cache permission problem two runs downstream of the decision that caused it, and reads as
+    infrastructure. It sent one coordinator into the sandbox-tier translation code and produced a
+    confident, wrong explanation before the role configuration was checked.</p>
+
+    <p><strong>The seven-property contract validated this node as well-formed</strong>, because
+    every property it checks is about the node in isolation. Nothing cross-references the node's
+    stated measure against whether its resolved role can execute anything, so a contradiction
+    between the two is expressible and passes.</p>
+
+    <p><strong>Deliverable:</strong> dispatch refuses a node whose done-when describes execution
+    when the resolved role declares <code>execution_capable: false</code>, exiting as a
+    not-dispatchable node-contract failure naming both the measure and the role — the same class
+    as any other malformed node, and repaired the same way, by correcting the request.</p>
+
+    <p><strong>The detection has to be honest about being a heuristic.</strong> A done-when is
+    free text, so this cannot be a proof. The refusal must therefore name what it matched and
+    stay overridable, because a false refusal that cannot be bypassed is worse than the error it
+    prevents. What makes it worth having anyway is the asymmetry: a false refusal costs one
+    corrected flag, while the miss costs a wrong diagnosis of the sandbox.</p>
+
+    <p><strong>Done when</strong> a node whose measure names running a test suite is refused
+    against an <code>execution_capable: false</code> role with a message naming both, the same
+    node dispatches cleanly against an execution-capable role, and an explicit override is
+    accepted and recorded on the run so a deliberate exception is auditable rather than silent.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="member-provisioning" data-choice="ephemeral-by-default" data-by="Simon McIntosh" data-when="2026-08-24T11:22:00+00:00">
+    <p class="r-dec-q">How does a coordinator get a worker when it does not care which one?</p>
+    <p class="r-dec-ctx">Members are documented as cheap and unlimited, yet two coordinators still collided over a shared free list, because dispatch refuses only on a non-terminal pointer and there is no way to signal intent to claim.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="ephemeral-by-default">Dispatch provisions its own member, scoped to the dispatching session, and reaps it after an idle window</button>
+      <button class="r-opt" data-value="document-the-protocol">Keep the shared roster and document register-your-own as the protocol</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. Documenting the protocol was tried implicitly and failed: the execution skill already states that members are cheap and that concurrency is raised by registering more, and a coordinator that had read it still drew from a pool it had itself announced as free. A rule with no mechanism behind it is guidance, and this one is contended by construction because intent is invisible between sessions. Scoping an auto-provisioned member to the dispatching session removes the shared resource rather than adding etiquette around it.</p>
+    </div>
+<div class="r-dec" data-key="execution-fit-refusal" data-choice="refuse-with-override" data-by="reckon-ship" data-when="2026-08-24T11:22:00+00:00">
+    <p class="r-dec-q">What does dispatch do when a node's measure implies execution but its role declares it cannot execute?</p>
+    <p class="r-dec-ctx">A done-when is free text, so matching it against execution intent is a heuristic and will sometimes be wrong in both directions.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-with-override">Refuse as a node-contract failure naming the measure and the role, with an explicit recorded override</button>
+      <button class="r-opt" data-value="warn-only">Emit a warning and dispatch anyway</button>
+      <button class="r-opt" data-value="auto-reroute">Silently reroute the node to an execution-capable role</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 on the cost asymmetry. A false refusal costs one corrected flag at the moment of dispatch; a miss costs a run that fails for an unrelated-looking reason two steps downstream, and in the measured case produced a confident wrong diagnosis of the sandbox before anyone checked the role. A warning does not help because the failure it predicts is already being read as infrastructure noise. Silent rerouting was rejected outright: it makes the resolved routing differ from the requested routing with nothing in the record saying so, which is the same class of invisible mismatch this plan exists to remove. The override keeps a deliberate exception possible and auditable.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ddc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship derivable-dispatch-contract" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Provision members instead of shopping for them, and refuse a node its role cannot run</h4>
+    <div class="r-fu-body"><p>Auto-provisioning comes first because it removes a shared mutable resource rather than adding etiquette around one — scope the member to the dispatching session so collision is unrepresentable, and let the reap window double as the continuity window, since a follow-up inside it should still reach a warm session. Reaping is safe because the committed ledger already keeps every run's session id, so removing a roster row discards an index entry rather than the context it points at. Then the execution-fit refusal, which is a heuristic over free text and must therefore name what it matched and stay overridable, because a false refusal that cannot be bypassed is worse than the error it prevents.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship derivable-dispatch-contract</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
