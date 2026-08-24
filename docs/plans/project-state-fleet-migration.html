@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="project-state-fleet-migration">
   <meta name="plan-title" content="Migrate the Fleet, Then Delete the Ladder">
   <meta name="plan-summary" content="Ten mounted projects still hold monolithic legacy state. Prove the project-state migration preserves relational metadata field by field, migrate imas-ambix and nova first so work can resume there, then the rest — and make sync create distributed state natively, which is the change that turns the migration tools into genuine one-shots that can be deleted.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="13.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="16">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="19">
 </head>
 <body>
   <main class="plan-doc">
@@ -294,7 +294,24 @@
       landed</a> (commit <code>083431a</code>).</p>
     </section>
 
-    <h2 id="s6">§6 — Deleting the ladder</h2>
+    <section id="s6" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+        <h2>§6 — Deleting the ladder</h2></header>
+      <p class="landed-summary"><strong>2,354 lines deleted against 313 added.</strong> Gone:
+      <code>migrate-project-state</code>, <code>migrate-fleet</code>, and the three
+      <code>migration-*</code> ledger commands that read what the fleet command produced,
+      plus <code>reckon/fleet_migration.py</code> entire and its test module. Kept and
+      verified after the merge: <code>migrate-layout</code> works, the parity reporter still
+      returns <strong>225/225 with 0 mismatches</strong> on <code>nova</code>, 0 dangling
+      imports repository-wide, fleet still 12/12, and a scratch project still reaches
+      <code>distributed</code> through <code>sync</code> alone with <strong>0 legacy
+      indexes</strong> — a ladder removed, not a floor. Suite 2,092 passed / 0 failed.
+      Full record:
+      <a href="/reckon/evidence/archive/project-state-fleet-migration-landed#s6-ladder">§6
+      landed</a> (commit <code>807053f</code>).</p>
+    </section>
+
+    <details><summary>Original design detail — the disposal rule and what survives it</summary>
 
     <p>Once every project is distributed and nothing can be born legacy, both
     <code>migrate-fleet</code> and <code>migrate-project-state</code> have no remaining caller
@@ -306,10 +323,17 @@
     <p>The receipts stay. The migration markers, the frozen snapshots and this plan's evidence
     record are the durable artifacts; the code that produced them is not.</p>
 
+    <p><strong>Executed slightly wider than written:</strong> three further commands
+    (<code>migration-record</code>, <code>migration-inventory</code>,
+    <code>migration-rollback</code>) read ledgers nothing can produce any more, so keeping them
+    would have been the exact case this disposal rule names.</p>
+
     <p><strong>Done when</strong> the fleet reports 12 of 12 distributed, the commands are gone
     from the CLI surface, the test suite is green without them, and a fresh
     <code>reckon sync</code> on a scratch project still produces distributed state — proving the
     deletion removed a ladder rather than a floor.</p>
+
+    </details>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -344,10 +368,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-psfm-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship project-state-fleet-migration" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-psfm-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship project-state-fleet-migration" data-resolved-at="2026-08-24T12:48:46+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Prove relational parity, then migrate the two repositories work is waiting on</h4>
     <div class="r-fu-body"><p>The gate comes first and it is not negotiable: a field-by-field diff of both already-migrated projects against their frozen snapshots, covering relations, organisational fields, sprint items and the nested collections — with decision rationales compared in full, and the two measured false positives excluded by name rather than by loosening the comparison. Then <code>imas-ambix</code> and <code>nova</code>, each verified against its own snapshot with the same harness and rolled back rather than explained if the diff is not clean. Then the remaining eight, with <code>imas-standard-names</code> last as the corpus most likely to exceed what the gate proved. <code>sync</code> creating distributed state natively must land before <code>project-onboarding</code> touches the same function, and it is what earns the deletion in §6.</p></div>
     <pre class="r-fu-prompt">/reckon-ship project-state-fleet-migration</pre>
+    <p class="r-fu-outcome">done — no followup. All six sections landed. Fleet 12/12 distributed with 125 typed resources and zero documents moved; both priority repositories migrated, verified and committed (nova 5acde3e0, imas-ambix 6503254), all ten repositories committed and none pushed per the lead's instruction. The robustness gate was built and passed, and then corrected: its second named false positive was masking a real lexicographic sprint-ordering defect that had silently affected imas-codex since its own migration. Five migration defects were found and fixed in reckon rather than in the ten corpora, all of them the reader refusing a legitimate legacy shape. sync now creates distributed state natively, which is what earned the deletion, and L2G proved it by being a repository that would otherwise have stranded. The tooling is removed and the receipts kept. Nothing foldable remains open.</p>
     </article>
 </section>
 
@@ -384,6 +409,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1400-s4-complete" data-who="reckon-ship" data-when="2026-08-24T14:00:00+00:00">
     <div class="r-comment-body">SECTION COMPLETE — 12 of 12 mounted projects distributed, 125 typed resources fleet-wide, zero documents moved anywhere. Ten repositories migrated and committed this session, none pushed: imas-efit 40 resources (cfdcdd20), imas-ambix 28 (6503254), nova 21 (5acde3e0), imas-standard-names 3 (f7ed697), norma 3 (2c131c4), hanney 2 (da9829c), helix 2 (a6be845), tessera 2 (ba92030), vv 2 (2283545), L2G 2 (b118fa6). imas-codex 13 and reckon 7 were already migrated and were repaired in place by the read-time ordering fix without being touched. L2G is the case that justifies the oneshot-deletion-gate decision: it held no aggregate state, so migrate-project-state could never apply, and it reached distributed form through reckon sync alone with no index.json written at any point — had the tools been deleted on fleet-completion alone it would have been the first repository to strand. Two pre-existing defect sets are now visible and owned by their own repositories, unchanged across migration: hanney 1 non-executable-hard-dependency error, imas-efit 16 error-level wiring findings. Also recorded: four of my own node criteria were wrong in exactly the way this plan's s2 exclusion was — generalised from one corpus and asserted as universal — each surfaced by a worker refusing a clean result rather than widening its own fence. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s4-complete.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260824T1440-s6" data-who="reckon-ship" data-when="2026-08-24T14:40:00+00:00">
+    <div class="r-comment-body">SECTION COMPLETE — worker commit 807053f, merged. 2354 lines deleted against 313 added: migrate-project-state, migrate-fleet, migration-record, migration-inventory, migration-rollback, reckon/fleet_migration.py entire (1180 lines) and tests/test_fleet_migration.py (331), plus migrate_project_state, its locked helper, legacy payload builder, validation layer and historical-plan lookup. Executed wider than written: the three migration-* ledger commands read ledgers nothing can produce any more, which is the exact case the disposal rule names. All six gates verified INDEPENDENTLY after the merge, not taken from the manifest: 0 retired commands in reckon --help; migrate-layout works; parity reporter returns 225 compared / 225 matched / 0 mismatches on nova; 0 dangling imports repository-wide; fleet 12/12; scratch project reaches distributed/complete with 2 resources and 0 legacy indexes through sync alone. Suite 2092 passed / 0 failed against a 2112/0 base, delta exactly 21 migration tests removed plus 1 receipt-reporter test added. One test was deleted rather than rewritten because its subject was the migration itself; its result is preserved in the evidence record. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s6-ladder.</div>
+</div>
+<div class="r-comment" data-section="decisions" data-id="c-20260824T1440-drain" data-who="reckon-ship" data-when="2026-08-24T14:40:00+00:00">
+    <div class="r-comment-body">DRAIN LEDGER — project-state-fleet-migration @ 2026-08-24T14:40Z. prior-art scout snapshot-corpus reconciliation: folded -> parity-harness. nova sprint-ordering correction: folded -> sprint-order-fidelity. ambix synthesised blocker-id parity: folded -> derived-field-parity. hermetic preflight coverage owed: folded -> preflight-predicate-coverage. tags on typed resources: folded -> tags-in-parity-enumeration. imas-efit blockers-omit-next: folded -> derived-field-parity (found by its fleet probe before dispatch). deletion scope beyond two named commands: folded -> remove-migration-ladder. headless-fragment layout abort and the -landed classifier misroute: foreign-owner -> sprint-scope-and-surface §3, recorded there at v12. imas-codex committed lock file and the missing docs/.reckon/locks ignore rule: foreign-owner -> the plan owning reckon sync onboarding. five ledger-test failures from session-derived member provisioning: foreign-owner -> peer session's reckon/crew.py, fixed there. motion-readout's five untracked files plus three cleared-but-unremoved ambix worktrees: authority-required -> lead, foreign repository peer work. hanney 1 and imas-efit 16 pre-existing error-level wiring findings: foreign-owner -> those repositories' own plans, counts identical before and after migration. --- rows: 13  foldable-remaining: 0</div>
 </div>
 </section>
 </main>

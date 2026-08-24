@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-24T14:24:29",
+  "updated": "2026-08-24T14:47:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -155,7 +155,7 @@
         "id": "codex-v",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
+        "session_id": "01a033be-1cf3-7fc0-8660-d5506d76c409",
         "created": "2026-08-24"
       },
       {
@@ -9895,9 +9895,81 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260824T122810464906-remove-migration-ladder",
+        "plan": "project-state-fleet-migration",
+        "section": "\u00a76",
+        "node": "remove-migration-ladder",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-v",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-24T12:28:11Z",
+        "completed_at": "2026-08-24T12:46:58Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1127,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1127,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "0d83d153eeb649c456797d4bf74116e8d8c79038",
+        "commits": [
+          "807053f"
+        ],
+        "changed_lines": {
+          "added": 115,
+          "removed": 2303,
+          "files": 5
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "All five retired commands absent from reckon --help; fleet_migration.py and its test module deleted; migrate_project_state and its helpers gone; repository-wide grep reports 0 deleted imports remaining. Preserved and verified: migrate-layout works, create_project_state / project_state_mode / compose_project_state / _parity_projection / MIGRATION_COMPOSED_DERIVATIONS / project_state_parity all importable. Floor-not-ladder gate: a scratch project reaches format=distributed status=complete with 2 resources and 0 legacy indexes through sync alone; nova parity still 225/225, 0 mismatches. Suite 2092 passed 0 failed against a 2112-passed 0-failed base, delta exactly 21 migration tests removed plus 1 receipt-reporter test added",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260824T122810464906-remove-migration-ladder/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a033be-1cf3-7fc0-8660-d5506d76c409",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10078208,
+            "cached_input_tokens_cumulative": 10078208,
+            "input_tokens": 10366485,
+            "input_tokens_cumulative": 10366485,
+            "output_tokens": 43374,
+            "output_tokens_cumulative": 43374,
+            "reasoning_output_tokens": 10413,
+            "reasoning_output_tokens_cumulative": 10413
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 213
+    "_version": 215
   }
 }

@@ -144,6 +144,53 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="s6-ladder">§6 — The ladder removed, and the receipts kept</h2>
+
+    <p>Worker commit <code>807053f</code>, merged. <strong>2,354 lines deleted against
+      313 added.</strong> Gone: the per-project command, the fleet command, the three
+      ledger commands that read what the fleet command produced,
+      <code>reckon/fleet_migration.py</code> entire (1,180 lines) and its test module
+      (331), plus <code>migrate_project_state</code>, its locked helper, its legacy
+      payload builder, its validation layer and its historical-plan lookup.</p>
+
+    <p><strong>Extended past the plan's literal text, deliberately.</strong> §6 named two
+      commands; three more — <code>migration-record</code>,
+      <code>migration-inventory</code>, <code>migration-rollback</code> — read ledgers
+      that nothing can produce any more, from a module being deleted. Keeping them would
+      have been the precise case the disposal rule exists to prevent: a command operating
+      on a corpus that can no longer exist. Stopping at the two named literally would have
+      left three worse instances behind.</p>
+
+    <h3>The floor-not-ladder gate, verified independently after the merge</h3>
+
+    <table>
+      <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Retired commands absent from the CLI surface</td><td>0 hits across all five</td></tr>
+        <tr><td><code>migrate-layout</code> still present and working</td><td>yes — belongs to different work, untouched</td></tr>
+        <tr><td>Parity reporter still verifies a live corpus</td><td><code>nova</code> ok, <strong>225 compared, 225 matched, 0 mismatches</strong></td></tr>
+        <tr><td>No dangling import of a deleted symbol</td><td>0 hits repository-wide</td></tr>
+        <tr><td>Fleet still fully distributed</td><td>12 / 12</td></tr>
+        <tr><td>A scratch project still reaches distributed state</td><td>through <code>sync</code> alone: <code>complete</code>, 2 resources, <strong>0 legacy indexes</strong></td></tr>
+        <tr><td>Suite</td><td>2,092 passed / 0 failed, against a 2,112 / 0 base — delta exactly 21 migration tests removed plus 1 receipt-reporter test added</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>What survives is the receipts, which is what §6 promised.</strong> Every
+      completion marker, every frozen pre-migration index, the parity reporter that reads
+      them, and this record. A repository migrated today can still be verified against its
+      own frozen source; what is gone is the ability to run a conversion nothing needs.</p>
+
+    <p><strong>One test was deleted rather than rewritten, and that was the right
+      call.</strong> The test proving the migration preserved every plan byte had the
+      migration itself as its subject. With the function gone that property is historical,
+      not testable, and its result — plan files byte-identical — is recorded above. The
+      reporter's own contracts stayed under test by fixtures that write a legacy index,
+      typed resources, and a hash-validated frozen snapshot directly. Note that §5's
+      native creation cannot substitute for a migration in such a fixture: it produces no
+      frozen snapshot because it has no legacy source, which is exactly why
+      <code>L2G</code> carries a marker and no frozen index.</p>
+
     <h2 id="design-findings">Design findings worth more than the code that carried them</h2>
 
     <p>Two of this session's results are about how to write a check, not about the
