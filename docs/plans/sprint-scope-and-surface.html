@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Four findings from a live migration: sprint items carry a bare slug while dependency refs are already project-qualified, so a sprint cannot span repositories; the layout migration destroys the only topical grouping and no tag field replaces it; two sprint-order inversions and a membership gap sit unrepaired; and the SPA&#x27;s design tokens are sound while its shell and cascade are not. Plus a public static build so the surface can be designed against a real URL.">
   <meta name="plan-status" content="draft">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-effort-hours" content="24.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="6">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,18 +64,47 @@
     instead. The execution side understands cross-repository work. Only sprint
     <em>membership</em> does not.</p>
 
-    <p><strong>Deliverable:</strong> a sprint item's slug accepts the same optional
-    <code>project:</code> qualifier as every other ref, resolved through the existing
-    external-ref machinery rather than a second implementation. <strong>Done when</strong> a
-    sprint holding items from two mounted projects reports per-item scope, found, status and
-    impl the way <code>deps</code> already does; <code>roadmap</code> orders across both; a
-    qualified item whose project equals the owner reads as local; and an unmounted or
-    dangling qualified item is an audit finding rather than a silent omission.</p>
+    <p><strong>The requirement is bidirectional, and that is the part a qualified ref alone
+    does not give.</strong> Executing another project's sprint already works. What is missing
+    is two things together: <em>attaching</em> plans owned by different repositories to one
+    sprint, and <em>reaching that sprint from any participating repository</em>. A sprint is
+    the object that says "this is the work we are doing now", so a person working in either
+    repository must arrive at the same sprint and see all of its members — not a local subset
+    with the rest invisible. A one-way outward ref from a single owning repository fails the
+    second half: the other repository has no path to the sprint at all.</p>
 
-    <p><strong>Two design questions this raises</strong>, recorded as decisions rather than
-    assumed: whether a cross-repository sprint resource lives in one repository or is
-    composed from a sprint resource in each, and what a sprint's completion means when one
-    member repository is not checked out.</p>
+    <p><strong>Deliverable, and it is two changes rather than one.</strong> First, a sprint
+    item's slug accepts the same optional <code>project:</code> qualifier as every other ref,
+    resolved through the existing external-ref machinery rather than a second implementation.
+    Second, <strong>plan linking gains the return path</strong>: a plan states the sprint it
+    belongs to in a form that resolves across repositories, so the sprint is discoverable from
+    the member rather than only the member from the sprint. Today <code>plan-sprint</code>
+    holds a bare id (<code>S9</code>) whose meaning is local by construction, which is exactly
+    why a shared sprint cannot be reached from a second checkout.</p>
+
+    <p><strong>Done when</strong> a sprint holding items from two mounted projects reports
+    per-item scope, found, status and impl the way <code>deps</code> already does;
+    <code>roadmap</code> orders across both; the sprint resolves from <em>either</em>
+    repository with the same membership; a qualified item whose project equals the owner reads
+    as local; and an unmounted or dangling qualified item is an audit finding rather than a
+    silent omission.</p>
+
+    <p><strong>Where the two instances land, and why this is issued once.</strong> There are
+    two reckon deployments — the ITER host and WSL — but plan state is version-controlled by
+    the repositories themselves, not by the server, so a link or tag change is a commit like
+    any other and propagates by pull. The instances read; they do not own. So this is authored
+    once and both see it. The only per-instance state is <code>mounts.json</code> and the
+    state-dir symlink, which <code>reckon-sync</code> owns exclusively and which decide
+    <em>which</em> repositories a given instance can resolve — meaning a cross-repository
+    sprint renders fully only where both members are mounted. That is a mount question, not a
+    content question, and it is why an unresolved member must report explicitly rather than
+    vanish.</p>
+
+    <p><strong>Three design questions this raises</strong>, recorded as decisions rather than
+    assumed: whether a cross-repository sprint resource lives in one repository or is composed
+    from a sprint resource in each; what a sprint's completion means when one member
+    repository is not mounted; and what shape the return link takes so that a plan naming a
+    shared sprint stays portable in a checkout where the other member is absent.</p>
 
     <h2 id="s3">§3 — The layout migration destroys grouping with nowhere to put it</h2>
 
@@ -126,6 +155,59 @@
     <p>The pre-image is already preserved at
     <code>~/.local/share/imas-codex/receipts/reckon-migration/layout-moves-preimage.txt</code>,
     so this is recoverable whenever it is taken.</p>
+
+    <h3>The migration breaks 119 links, measured, and the checker cannot prove otherwise yet</h3>
+
+    <p><strong>This is the constraint that governs the whole section.</strong> Scanning every
+    project-absolute <code>href</code> in the live corpus: <strong>526</strong> internal links
+    across <strong>175</strong> files, of which <strong>119 links to 48 distinct targets</strong>
+    point at a document the migration moves. Worked examples:</p>
+
+    <table>
+      <thead><tr><th>Refs</th><th>Link</th><th>Move</th></tr></thead>
+      <tbody>
+        <tr><td>10</td><td><code>/imas-codex/sn-search-facility.html</code></td><td>→ <code>plans/sn-search-facility.html</code></td></tr>
+        <tr><td>7</td><td><code>/imas-codex/sn-quality-parity.html</code></td><td>→ <code>plans/sn-quality-parity.html</code></td></tr>
+        <tr><td>5</td><td><code>/imas-codex/sn-quality-parity</code> <em>(no extension)</em></td><td>→ <code>plans/sn-quality-parity.html</code></td></tr>
+        <tr><td>4</td><td><code>/imas-codex/archive/standard-names/11-rich-compose.html</code></td><td>→ <code>plans/archive/11-rich-compose.html</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>Note both link forms occur — with and without the <code>.html</code> suffix — so a
+    rewriter that handles one and not the other silently fixes 7 references and breaks 5.</p>
+
+    <p><strong>And the existing link checker cannot establish a baseline.</strong>
+    <code>audit-doc --check-links</code> raises
+    <code>ResourceIdentity.validate_for_write failed: slug: must be a single safe path
+    segment</code> on the pre-migration corpus, because a nested resource such as
+    <code>research/standard-names/foo.html</code> has no single-segment slug. So the tool that
+    would prove the migration safe requires the migration to have already happened. That
+    circularity has to be broken before anything moves, not after.</p>
+
+    <p><strong>Sequenced deliverable, and the migration itself is a stage in this plan rather
+    than something run beforehand:</strong></p>
+
+    <ul>
+      <li><strong>Make the link checker work on a nested corpus</strong> in check-only mode, so
+      a genuine before-state exists. A read-only audit has no business asserting a write-time
+      identity invariant.</li>
+      <li><strong>Record the before-state</strong> — every internal link and its resolution —
+      as a committed artifact, not a terminal scroll.</li>
+      <li><strong>Add tags and backfill</strong> from the saved pre-image (§3 above).</li>
+      <li><strong>Rewrite the links as part of the move</strong>, handling both suffixed and
+      extensionless forms, then <strong>run the migration</strong>.</li>
+      <li><strong>Prove the after-state equals the before-state</strong>: same set of resolved
+      targets, zero dangling. <strong>Done when</strong> that comparison is an assertion in the
+      suite rather than a judgement, and it fails if a single reference stops resolving.</li>
+      <li><strong>Delete the one-shot scripts.</strong> Any script written purely to perform or
+      verify this migration is removed in the same commit that records its successful
+      completion, with the receipt kept as evidence. A one-shot left in the tree becomes an
+      undocumented tool someone runs again later against a corpus it no longer describes.</li>
+    </ul>
+
+    <p>Until that chain is green the layout migration does not run. The project-state
+    migration is already done and is independent — the typed resolver reads flat resources for
+    compatibility — so nothing is blocked by waiting.</p>
 
     <h2 id="s4">§4 — Wiring findings the migration surfaced, and one that predates it</h2>
 
@@ -200,6 +282,45 @@
     arrives as a diff to a 1,544-line file and a 2,256-line stylesheet that no one can
     review.</p>
 
+    <h2 id="s5b">§5b — A tag nobody can enumerate is not a vocabulary</h2>
+
+    <p><strong>Yes, and without it the tag field is worse than no tag field.</strong> An
+    author who cannot see the existing tags invents one, and within a week the corpus carries
+    <code>standard-names</code>, <code>standard_names</code>, <code>sn</code> and
+    <code>standardnames</code> as four unrelated groupings. That failure is not hypothetical
+    here: the same shape has already been paid for twice in a consuming project — a closed
+    grammar vocabulary that agents had to derive at runtime rather than restate, and an
+    identity-key convention that varied by label and produced four silent-zero query failures
+    in a single session. Both were fixed the same way: make the vocabulary discoverable from
+    the authority rather than remembered.</p>
+
+    <p><strong>Both surfaces, because they serve different moments.</strong></p>
+
+    <ul>
+      <li><strong>The MCP read surface is the authority.</strong>
+      <code>read_plan(project)</code> already returns a discovery envelope — plans, followups,
+      questions, sprints, milestones, <code>active_sprint_id</code>, summary. The tag inventory
+      belongs there, computed live across plans <em>and</em> evidence and research docs, with a
+      usage count per tag. An agent doing anything programmatic gets it without asking, and a
+      count makes a one-off typo visible beside an established tag rather than equal to it.</li>
+      <li><strong>The authoring skill is the reminder.</strong> <code>reckon-create</code> is
+      where a new resource's metadata is chosen, so the existing tags belong in front of the
+      author at that moment. A skill that says "add tags" without showing which ones exist is
+      the instruction that produced the four-spellings outcome above.</li>
+    </ul>
+
+    <p><strong>One design position worth stating rather than discovering later:</strong> the
+    tag list should be reported as <em>observed usage with counts</em>, not as a curated
+    allow-list. A closed list needs governance nobody will do, and it blocks a legitimately new
+    topic at exactly the wrong moment. Counts give the author the signal to reuse without
+    forbidding invention — and they let an audit surface singletons for review, which is the
+    cheap version of governance.</p>
+
+    <p><strong>Done when</strong> the discovery response carries every tag in use across plans,
+    research and evidence with its count; a test asserts the inventory is derived from the
+    corpus rather than from any literal list, so a new tag appears without a code change; and
+    <code>reckon-create</code> shows the inventory at authoring time.</p>
+
     <h2 id="s6">§6 — Make the surface designable against a real URL</h2>
 
     <p>The capability already exists and is one step from being useful.
@@ -233,7 +354,7 @@
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="cross-repo-sprint-residence" data-choice="" data-by="" data-when="">
-    <p class="r-dec-q">Where does a sprint spanning repositories live?</p>
+    <p class="r-dec-q">Where does a sprint spanning repositories live, given it must be reachable from every member?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="one-owning-repo">One owning repository holds the sprint; items carry qualified refs outward</button>
       <button class="r-opt" data-value="composed-per-repo">Each repository holds its own sprint resource and the view composes them</button>
@@ -272,6 +393,34 @@
       </p>
     <p class="r-dec-rat"></p>
     </div>
+<div class="r-dec" data-key="tag-vocabulary-governance" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Is the tag inventory observed usage with counts, or a curated allow-list?</p>
+    <p class="r-dec-ctx">An author who cannot enumerate existing tags invents one, and the corpus fragments into standard-names, standard_names, sn and standardnames as four unrelated groupings. A closed list needs governance nobody will do and blocks a legitimately new topic at the worst moment; counts give the reuse signal without forbidding invention, and let an audit surface singletons as the cheap form of governance.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="observed-with-counts">Observed usage with counts; singletons surfaced by audit</button>
+      <button class="r-opt" data-value="curated-allowlist">A curated allow-list validated at write time</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="sprint-return-link-shape" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What shape does a plan&#x27;s sprint reference take, so a shared sprint resolves from any member repository?</p>
+    <p class="r-dec-ctx">plan-sprint holds a bare id whose meaning is local by construction, so qualifying sprint ITEMS alone leaves a second checkout with no path to the sprint. The return path is the half the first draft missed, and it must stay portable in a checkout where the other member repository is not mounted.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="qualified-sprint-ref">A qualified project-prefixed sprint ref on the plan, mirroring depends_on</button>
+      <button class="r-opt" data-value="sprint-declares-members">The sprint declares its members; plans stay unqualified and the view resolves inward</button>
+      <button class="r-opt" data-value="both-directions">Both directions, each independently resolvable</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="migration-oneshot-disposal" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How are the one-shot migration scripts disposed of?</p>
+    <p class="r-dec-ctx">A script written to perform or verify a single migration becomes an undocumented tool someone runs again later against a corpus it no longer describes. The receipt is the durable artifact; the script is not.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="delete-with-receipt">Deleted in the same commit that records successful completion; receipt kept as evidence</button>
+      <button class="r-opt" data-value="keep-under-scripts">Retained under a scripts directory for reuse</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -283,6 +432,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260824-link-risk-measured" data-who="reckon-create" data-when="2026-08-24T07:30:00+00:00">
+    <div class="r-comment-body"><p><strong>The link risk is measured, not estimated, and it is the reason the migration is a staged deliverable rather than a command to run.</strong> Across the live corpus: 526 project-absolute internal links in 175 files, of which <strong>119 links to 48 distinct targets</strong> resolve to a document the migration moves. Both link forms are in use — <code>/imas-codex/sn-quality-parity.html</code> appears 7 times and the extensionless <code>/imas-codex/sn-quality-parity</code> 5 times — so a rewriter handling one form silently repairs 7 references and breaks 5.</p><p><strong>And the checker cannot currently establish the baseline.</strong> <code>audit-doc --check-links</code> raises <code>slug: must be a single safe path segment</code> on the pre-migration tree, because a nested resource has no single-segment slug. A read-only audit is asserting a write-time identity invariant, so the one tool that could prove the migration safe requires the migration to have happened first. Breaking that circularity is the first deliverable of the section, ahead of any file move.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260824-scope-corrected" data-who="reckon-create" data-when="2026-08-24T07:35:00+00:00">
+    <div class="r-comment-body"><p><strong>Scope corrected by the lead before any work started.</strong> The first draft of this section read the requirement as project-qualified sprint selection — running another repository's sprint — which already works and was never the gap. The actual requirement is <em>bidirectional</em>: attach plans owned by different repositories to one sprint, AND reach that sprint from any participating repository. A one-way outward ref from a single owning repository satisfies the first half and fails the second, leaving the other checkout with no path to the sprint at all.</p><p>That makes it two changes rather than one, and the second is the one the draft missed: <strong>plan linking needs the return path</strong>. <code>plan-sprint</code> holds a bare id whose meaning is local by construction, so a shared sprint is unreachable from a second checkout no matter how its items are qualified.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
