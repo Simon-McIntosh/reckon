@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="project-onboarding-landed">
+  <meta name="plan-title" content="Onboard a Repository Without Taking Its Website — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: Pages detection and its refusals, publication as explicit opt-in, and the idempotent locally-served badge.">
+  <meta name="plan-evidence-for" content="project-onboarding">
+  <title>Project Onboarding — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Onboard a Repository Without Taking Its Website — cumulative execution record</h1>
+    <p>Three nodes, one session, 19 tests added, suite 2128 → 2156 with zero failures throughout.</p>
+
+    <h2 id="detection">Detection and the per-case strategy</h2>
+    <p>Commit <code>1f15c41</code> (worker codex-x, 567&nbsp;worker-seconds, 588 insertions over 11
+    files including 7 recorded Pages fixtures). Gate <strong>passed</strong>: 9 targeted cases,
+    full suite <strong>2136 passed, 0 failed</strong>.</p>
+    <p>Four safe cases are mapped and three unsafe or unknowable ones refused — Actions-based Pages
+    naming the existing-publisher conflict, and every indeterminate state including authentication
+    failure, missing token, unsupported source path, network failure, malformed payload and
+    repository mismatch. Every refusal fires <em>before</em> sync mutates mounts, state, assets or
+    workflows.</p>
+    <p><strong>The smallest check matters most:</strong> authenticated repository identity is
+    verified before a 404 is accepted as no-Pages. Without it a permissions error reads as a free
+    site — the same answer with the opposite consequence.</p>
+
+    <h2 id="opt-in">Publication as consent, not inference</h2>
+    <p>Commit <code>422279d</code> (worker codex-x, 560&nbsp;worker-seconds, 215 insertions over 3
+    files). Gate <strong>passed</strong>: 8 targeted cases, full suite
+    <strong>2144 passed, 0 failed</strong>.</p>
+    <p>Recorded on the repository's own project resource, surviving a versioned read and write. A
+    sync without it stays entirely local; a second run changes nothing; an opted-in repository
+    whose Pages case is unsafe is <em>still</em> refused, so the opt-in grants intent and never
+    overrides the detection verdict.</p>
+    <p><strong>The carrying assertion is negative:</strong> a public fork's visibility does not
+    substitute for consent. Measured on this very account, where <code>isPrivate false</code> with
+    <code>isFork true</code> would have published a personal fork and reported itself correct.</p>
+
+    <h2 id="badge">One badge, locally served</h2>
+    <p>Commit <code>2a35004</code> (worker codex-x, 664&nbsp;worker-seconds, 227 insertions over 4
+    files). Gate <strong>passed</strong>: 10 targeted cases, full suite
+    <strong>2156 passed, 0 failed</strong>.</p>
+    <p>Inserted once and updated in place rather than appended, served from a committed mark at
+    <code>docs/_shared/badge.svg</code> so no README renders a request to someone else's
+    infrastructure, added only when publication is opted in, and pointed at the subpath the
+    detected strategy selected rather than an assumed root. A second run leaves the README
+    byte-identical.</p>
+    <p>All three nodes ran on one roster member, so each inherited the previous node's context
+    rather than rediscovering the Pages surface three times.</p>
+  </main>
+</body>
+</html>

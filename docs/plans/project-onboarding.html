@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="project-onboarding">
   <meta name="plan-title" content="Onboard a Repository Without Taking Its Website">
   <meta name="plan-summary" content="Extend reckon sync so onboarding a repository is one command: register it, generate a publish workflow, and add a README badge linking to its plans. The binding constraint is that a repository gets exactly one GitHub Pages site, and a measured example already serves one — so reckon must detect the existing publisher and occupy a subpath rather than take it over.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="4">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -142,10 +142,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-onb-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:project-onboarding" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-onb-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:project-onboarding" data-resolved-at="2026-08-24T15:54:05+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Detect the existing Pages publisher before writing any workflow</h4>
     <div class="r-fu-body"><p>Build the detection and the per-case strategy table first, because the destructive path is the default one: a generated <code>deploy-pages</code> workflow replaces a legacy branch-served site. Then the badge, idempotent and with a locally committed compass mark rather than a third-party endpoint. Publication stays a separate explicit opt-in so onboarding never enables it as a side effect. Every case asserted against a recorded Pages configuration rather than live GitHub.</p></div>
     <pre class="r-fu-prompt">/reckon-ship reckon:project-onboarding</pre>
+    <p class="r-fu-outcome">done — no followup. Three sections landed in one session: §2 Pages detection with four safe strategies and three refusals (1f15c41), §3 publication as explicit repository-local opt-in (422279d), §4 the idempotent locally-served badge (2a35004). Full suite 2156 passed with 19 tests added across the three nodes and zero failures. The plan's guard held throughout: the destructive path — a generated deploy workflow replacing a legacy branch-served site — cannot be reached without an authenticated answer from the Pages API, and a public fork's visibility never substitutes for consent. Downstream work is not written as a followup because it is already derived: this plan's blocks metadata names sprint-scope-and-surface, which roadmap will surface as ready once resource-tagging-system also completes.</p>
     </article>
 </section>
 
@@ -155,6 +156,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824T1525" data-who="reckon-ship" data-when="2026-08-24T15:25:00+00:00">
     <div class="r-comment-body">publication-opt-in landed — commit 422279d, merged; gate passed; measure 8 targeted cases passed then full suite 2144 passed in 77.19s with zero failures, +8 against the 2136 base; 215 insertions over 3 files, 560 worker-seconds against a 35m budget, routed back to the member that landed the detection layer so its session already held that context. Publication is recorded on the repository's own project resource and survives a versioned read and write; a sync run without it stays entirely local with no publish job and no side effect; a second run changes nothing; and an opted-in repository whose Pages case is unsafe is still refused, so the opt-in grants intent and never overrides the detection verdict. The assertion that carries the locked guard is the negative one: a public fork's visibility does not substitute for consent, which is exactly the case measured on this project where isPrivate false and isFork true would have published a personal fork and reported itself correct. Remaining: the idempotent badge, which is gated on a live publication URL and so follows this.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260824T1555" data-who="reckon-ship" data-when="2026-08-24T15:55:00+00:00">
+    <div class="r-comment-body">onboarding-badge landed — commit 2a35004, merged; gate passed; measure 10 targeted cases passed then full suite 2156 passed in 74.25s with zero failures, +4 against the 2152 base; 227 insertions over 4 files, 664 worker-seconds against a 35m budget. One badge, inserted once and updated in place rather than appended, served from a locally committed mark in docs/_shared/badge.svg so no README renders a request to a third-party endpoint, added only when publication is opted in, and pointed at the subpath the detected Pages strategy selected rather than an assumed root. A second onboarding run leaves the README byte-identical. That closes every implementable section of this plan.</div>
 </div>
 </section>
 </main>
