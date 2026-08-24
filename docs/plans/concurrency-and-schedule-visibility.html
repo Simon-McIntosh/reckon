@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="20">
 <meta name="plan-impl" content="0.72">
 </head>
 <body>
@@ -336,16 +336,31 @@
     &mdash; what does the <em>current</em> attempt say &mdash; instead of four readers each
     trusting a different stale field.</p>
 
+    <p><strong>Stopping a watch needs its own command, for the same reason arming did.</strong>
+    There is no way to stop a watcher except by finding and signalling its process, so the
+    coordinator reaches for a general-purpose process killer &mdash; four times in this session.
+    The pattern given to <code>pkill -f</code> matches the command line of the shell running it,
+    so it kills its own shell before the intended target; that cost one lost resume here, and on a
+    workstation carrying eleven workers across three projects a broader pattern would have killed
+    another session's fleet. No skill mentions this and none should have to: the machinery for
+    signalling a known process precisely already exists in this codebase, verifying the recorded
+    start time so pid reuse cannot redirect the signal, and it is what <code>crew stop</code>
+    already uses for workers. A watcher deserves the same, so the dangerous general-purpose form
+    is never the only way to do an ordinary thing.</p>
+
     <p><strong>Done when</strong> a dispatch into a project with no live watcher is refused before
     any worktree exists, naming the arming command, while <code>--no-watch</code> dispatches and
-    records the waiver on the run; follow mode emits one event per terminal run over a multi-run
-    fleet, never emits the same run twice, and ends when the last pointer is reconciled; a resumed
-    run reports the current attempt's stream as its log, a non-terminal phase while its process is
-    alive, and a watch that does not fire on the previous attempt's manifest, all three
-    demonstrated by one test that resumes a blocked run and asserts the watch waits while the
-    stream stays fresh; and two concurrent sessions promoting runs into the same ledger both
-    succeed, with the contended write retried rather than failed, demonstrated by a test that runs
-    the two promotions concurrently.</p>
+    records the waiver on the run; a watcher records its parent and declines to register when it
+    is orphaned, so a watch nothing is waiting on stops counting as live; one command stops the
+    registered watcher for a project by verified pid and start time, reaching no other project and
+    no worker; follow mode emits one event per terminal run over a multi-run fleet, never emits the
+    same run twice, and ends when the last pointer is reconciled; a resumed run reports the current
+    attempt's stream as its log, a non-terminal phase while its process is alive, and a watch that
+    does not fire on the previous attempt's manifest, all three demonstrated by one test that
+    resumes a blocked run and asserts the watch waits while the stream stays fresh; and two
+    concurrent sessions promoting runs into the same ledger both succeed, with the contended write
+    retried rather than failed, demonstrated by a test that runs the two promotions
+    concurrently.</p>
 
     <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked</h2>
 
@@ -563,6 +578,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1835" data-who="reckon-ship" data-when="2026-08-24T18:35:00+00:00">
     <div class="r-comment-body">Two defects in the watcher guard, both found by using it within the hour and both recorded before repair. FIRST, a bootstrap deadlock: crew watch on an empty project exits immediately with no_live_pointers, and dispatch refuses when no watcher is live, so the first dispatch of any wave can never have one. The waiver therefore becomes routine, and a waiver used every time is not a waiver — it is a speed bump that trains the coordinator to pass the flag without reading the message, which is the failure this guard exists to prevent, reproduced by the guard itself. Exit-on-empty is correct for drain detection and wrong for arming; the repair is for an empty fleet to be a waiting state with the terminal form kept behind an explicit flag. SECOND, the cross-repository authority node tightened write-path validation to refuse any path outside the work repository, which also refuses the reckon run and report directories under the config home — the sanctioned delivery scope for a node with no tracked repository output, used by five nodes in this session including every scout and both integration suites. The refusal is right in principle and wrong in extent. Both are in flight as watcher-guard-usability, dispatched with the waiver for exactly the bootstrap case it was written for.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T1915" data-who="reckon-ship" data-when="2026-08-24T19:15:00+00:00">
+    <div class="r-comment-body">Correcting an earlier claim recorded in this section. It says reckon cannot portably detect a watcher the harness is not waiting on, because it cannot know how the host launched the process. That is true of which primitive launched it and false of the property that matters, which is whether anything will observe the process exit. A watch backgrounded with a shell ampersand outlives the shell that spawned it and is reparented to init, so its parent id becomes 1; a harness-launched background command keeps a living parent that reaps it. Orphaning is therefore a direct test rather than a proxy, and it is POSIX rather than host-specific. Deliverable, and it belongs with follow mode because both are watch semantics on the same module: crew watch records its parent id in the lock and declines to register as the project watcher when it is orphaned, and watcher_live requires that recorded parent to still be alive, so an orphaned watcher stops counting and dispatch refuses again. Accepted limit, stated rather than hidden: this proves something is waiting on the process, not that the something is a coordinator, so nohup, systemd and disown all read as orphaned. Flagging them is correct, because none of them can wake a coordinator either. Measured cause: the ampersand form was used four times in this session, each time producing a watcher that held the single-watcher lock, satisfied the guard, and notified nobody — twice leaving completed runs unpromoted, once for over two hours.</div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260824T1855" data-who="reckon-ship" data-when="2026-08-24T18:55:00+00:00">
     <div class="r-comment-body">decisions-block-closure landed — commit 1119a08, merged; gate passed; measure 41 targeted cases then the dispatch-tree suite at 2190 passed with zero failures; 945 worker-seconds against a 35m budget, scope widened so the run records --scope-changed. An open decision is now a blocker kind of its own, distinct from dependency, explicit and gate blockers, naming both the decision and the plan carrying it; locking it clears the block, and explicit deferral clears it while the decision stays visible in the report so deferral cannot hide it. The worker blocked first and chose correctly between two paths: decision identity is plumbed through the inventory its callers build, rather than teaching roadmap.py to parse plan HTML, which would have broken the analyser's storage-neutral contract and this repository's rule that a test must not read state outside the repo under test. That refusal cost one resume and saved an architectural regression that would have passed its own tests. Denominator note: impl moves 0.70 to 0.72 rather than further, because sections 6 and 7 were added to this plan after the earlier figures were set, so the denominator grew from seven nodes to thirteen while eight have now landed.</div>
