@@ -561,6 +561,7 @@ def test_ship_crew_views_match_the_typed_mcp_surface() -> None:
 def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     assert "`scope-conflict` | 7" in ship
+    assert "`watcher-required` | 8" in ship
     assert "Peer scopes come from live pointers" in ship
     assert "`--peer <other-node>=<their-paths>` is optional" in ship
     expected = {
@@ -589,6 +590,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--member",
             "--manifest",
             "--allow-unreconciled-runs",
+            "--no-watch",
         },
         ("crew", "drain"): {"--project", "--leave"},
         ("crew", "list"): set(),
@@ -653,6 +655,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
         "competence-refusal": 5,
         "unreconciled-runs": 6,
         "scope-conflict": 7,
+        "watcher-required": 8,
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source
@@ -678,6 +681,9 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     assert "worktree_fleet.py" in ship
     assert "reckon sync docs/" in ship
     assert "commit the plan before dispatching" in ship
+    assert "before creating a worktree" in ship
+    assert "`--no-watch`" in ship
+    assert "promoted ledger record" in ship
     assert "a goal containing `;` is not one deliverable" in ship
     assert "every node needs at least one `--write-path`" in ship
     assert '" then ", ";"' in crew_source

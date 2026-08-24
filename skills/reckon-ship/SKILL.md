@@ -402,6 +402,7 @@ repair the request, not as a worker failure:
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
 | `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
+| `watcher-required` | 8 | Arm the exact reported `reckon crew watch --project P` command, or use `--no-watch` only for a synchronous one-off; the waiver is recorded on the run. |
 
 Three node-contract refusals are easy to mistake for infrastructure failures:
 
@@ -423,6 +424,15 @@ not prepare.
 Pre-flight the routing surface once per session with `reckon flight --project P`:
 it reports the resolved config, which layer supplied each value, and which
 backends are actually available.
+
+Keep one live `reckon crew watch --project P` process for the project before
+opening a process-launching dispatch. The command refuses with
+`watcher-required` before creating a worktree when that kernel-backed watcher
+seat is empty. An in-harness result only prepares a directive; arm the watcher
+before the host launches and attaches that task. `--no-watch` is the explicit
+exception for a genuinely synchronous one-off; it records the arming command
+and observed watcher liveness on both the live run and its promoted ledger
+record.
 
 **One dispatch instruction covers every backend.** State what the node is;
 reckon resolves how it runs. Which harness, at what model, effort and sandbox
@@ -496,26 +506,29 @@ reads `starting` until an `observe` folds its stream; `process_alive` and
 `log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
 promoting without it records `tokens: null`.
 
-### Arm one project-wide watch when you dispatch
+### Keep one project-wide watch live while dispatching
 
 **Nothing tells you a worker stopped.** Run state is pull-only: a worker that
-finishes, blocks, or dies changes a file, and you find out when you next look. So
-arm the watch returned by dispatch as part of the same dispatch beat. Every
-successful dispatch payload contains:
+finishes, blocks, or dies changes a file, and you find out when you next look.
+Process-launching dispatch therefore verifies the watcher before it creates a
+worktree. Every successful dispatch payload also reports the watcher it
+observed:
 
 ```json
 {
   "watch": {
     "arming_line": "reckon crew watch --project <project>",
-    "watcher_live": false
+    "watcher_live": true
   }
 }
 ```
 
-If `watcher_live` is false, launch exactly that `arming_line` with the host's
-background mechanism. If true, do not launch another. The watcher is one per
-project, not one per run: one fleet event owes one wake-up however many nodes
-were dispatched.
+If dispatch reports `watcher-required`, launch exactly its `arming_line` with
+the host's background mechanism and retry. Do not launch another when
+`watcher_live` is true. The watcher is one per project, not one per run: one
+fleet event owes one wake-up however many nodes were dispatched. A caller that
+deliberately passes `--no-watch` owns synchronous observation and leaves a
+durable `watch_override` on the run.
 
 ```bash
 reckon crew watch --project <project> [--stall-window 15m]
