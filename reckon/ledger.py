@@ -110,6 +110,45 @@ def normalize_section(value: Any) -> str:
     return f"§{match.group(1)}" if match else section
 
 
+def evidence_records_for_plan(
+    project: str,
+    plan: str,
+    root: str | Path | None = None,
+) -> list[Path]:
+    """Return typed evidence resources whose back-link names ``plan``.
+
+    Both live evidence and frozen evidence are authoritative at closure. A
+    project-qualified reference only matches when its qualifier names the
+    project being written.
+    """
+    from reckon import _plan_html
+    from reckon._schema import parse_plan_ref
+
+    docs_dir = _store._docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return []
+    evidence_dir = docs_dir / "evidence"
+    candidates = [
+        *evidence_dir.glob("*.html"),
+        *evidence_dir.glob("archive/*.html"),
+    ]
+    matches: list[Path] = []
+    for path in sorted(candidates):
+        record = _plan_html.parse_plan(path)
+        if record.get("type") != "evidence":
+            continue
+        for raw_ref in record.get("evidence_for") or []:
+            ref = parse_plan_ref(raw_ref)
+            if (
+                ref is not None
+                and not ref.is_external(project)
+                and ref.slug == plan
+            ):
+                matches.append(path)
+                break
+    return matches
+
+
 def _utc_now() -> str:
     return (
         datetime.now(tz=timezone.utc)
