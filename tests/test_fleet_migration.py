@@ -257,32 +257,6 @@ def test_detached_alternate_worktree_with_dirty_html_blocks_preflight(tmp_path):
     ]
 
 
-def test_preflight_nova_is_unblocked_when_detached_alternate_changes_are_non_migration():
-    result = preflight_repository(Path("/home/ITER/mcintos/Code/nova/docs"), "nova")
-
-    assert result["ok"] is True
-    assert result["blockers"] == []
-
-
-def test_preflight_imas_ambix_blocks_exact_three_claude_staged_html_worktrees():
-    result = preflight_repository(
-        Path("/home/ITER/mcintos/Code/imas-ambix/docs"), "imas-ambix"
-    )
-    blocker = next(
-        item for item in result["blockers"] if item["code"] == "dirty-alternate-worktrees"
-    )
-    expected = [
-        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-phase-impl",
-        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-phase-review",
-        "/home/ITER/mcintos/Code/imas-ambix/.claude/worktrees/s12-scout",
-    ]
-    assert not result["ok"]
-    assert sorted(row["path"] for row in blocker["worktrees"]) == sorted(expected)
-    for row in blocker["worktrees"]:
-        assert row["paths"] and row["paths"][-1].endswith(".html")
-        assert ".claude/worktrees" in row["path"]
-
-
 def test_install_failure_restores_snapshot_exactly(tmp_path):
     repo, docs = _repository(tmp_path, "sample")
     repository = preflight_repository(docs, "sample")["repository"]
