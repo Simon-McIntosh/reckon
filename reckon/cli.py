@@ -2059,6 +2059,70 @@ def audit(project):
         sys.exit(1)
 
 
+@main.command(name="archive")
+@click.option("--project", required=True, help="Mounted project key.")
+@click.option(
+    "--older-than-days",
+    required=True,
+    type=click.IntRange(min=0),
+    help="Archive terminal documents whose age exceeds this configured threshold.",
+)
+@click.option(
+    "--apply",
+    "apply_changes",
+    is_flag=True,
+    help="Set plan-archived=1 after printing the complete candidate list.",
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repository root for a worktree-specific project pass.",
+)
+def archive(project, older_than_days, apply_changes, checkout_path):
+    """Preview or apply age-based archival of done and superseded documents."""
+    from reckon.archive import ArchiveConfig, ArchiveError, run_archive_pass
+
+    docs_dir = _project_docs_root(project, checkout_path)
+
+    def report_candidates(candidates):
+        if not candidates:
+            click.echo("No archive candidates.")
+            return
+        rows = [
+            (item.slug, item.status, f"{item.age_days}d", item.relative_path)
+            for item in candidates
+        ]
+        headers = ("slug", "status", "age", "path")
+        widths = [
+            max(len(header), *(len(row[index]) for row in rows))
+            for index, header in enumerate(headers)
+        ]
+        row_format = "  ".join(f"{{:<{width}}}" for width in widths)
+        click.echo(row_format.format(*headers))
+        click.echo(row_format.format(*("-" * width for width in widths)))
+        for row in rows:
+            click.echo(row_format.format(*row))
+
+    try:
+        result = run_archive_pass(
+            docs_dir,
+            project,
+            ArchiveConfig(older_than_days=older_than_days),
+            apply=apply_changes,
+            reporter=report_candidates,
+        )
+    except (ArchiveError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if apply_changes:
+        click.echo(f"Archived {len(result.archived)} document(s).")
+    else:
+        click.echo(
+            f"Dry run: {len(result.candidates)} candidate(s); no files changed."
+        )
+
+
 def _print_roadmap_report(report: dict) -> None:
     project = report.get("project", "")
     completion = report.get("completion", {})
