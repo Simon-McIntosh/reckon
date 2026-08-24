@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="completion-is-not-silent">
+  <meta name="plan-title"     content="Finished Work Should Not Wait to Be Noticed">
+  <meta name="plan-summary"   content="A worker that finishes changes a file and tells nobody. If the coordinator did not arm a watch, the finished node sits unpromoted until someone asks what is running. Reckon already detects this exactly and reports it to nobody: the live view classifies the run completed_unpromoted, computes its budget overrun and names the next action. Make that existing signal load-bearing instead of decorative.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S13">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <title>Finished Work Should Not Wait to Be Noticed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; Run state is pull-only, so completion is silent</h2>
+
+    <p><strong>Dispatch is fire-and-forget and nothing closes the loop.</strong> A worker that
+    finishes writes a manifest and exits. A worker that blocks writes a manifest and exits. A
+    worker that dies writes nothing. In all three cases the coordinator learns only by looking,
+    and if it does not look, the node stays finished-and-unnoticed for as long as the session
+    lasts.</p>
+
+    <p><strong>Measured in the session that produced this plan.</strong> Two nodes completed and
+    sat unpromoted for <strong>55 minutes</strong>, their worktrees held, their commits unmerged.
+    Both had overrun their time budget by a wide margin and nothing reacted. They were discovered
+    only because the lead asked what was running.</p>
+
+    <table>
+      <thead><tr><th>Field the live view already computes</th><th>Value on the stranded runs</th><th>Consumed by</th></tr></thead>
+      <tbody>
+        <tr><td><code>classification</code></td><td><code>completed_unpromoted</code></td><td>nothing</td></tr>
+        <tr><td><code>next_action</code></td><td>the exact <code>crew complete</code> line to run</td><td>nothing</td></tr>
+        <tr><td><code>budget_overrun</code> / <code>budget_overrun_seconds</code></td><td><code>true</code> / 2009 and 1884</td><td>nothing</td></tr>
+        <tr><td><code>log_fresh</code> / <code>log_age_seconds</code></td><td><code>false</code> / 3259 and 3313</td><td>nothing</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>So this is not a detection problem.</strong> Reckon already identifies the exact
+    condition, computes how long it has persisted, and prints the command that resolves it. Every
+    one of those fields was sitting in the live view the whole time. The gap is that producing a
+    correct diagnosis and having somebody read it are different things, and nothing in the loop
+    requires the second.</p>
+
+    <h2 id="s2">&#167;2 &mdash; The existing rule is prose, and prose is what failed</h2>
+
+    <p>The execution skill already says to arm a watch at dispatch, and states the reason
+    plainly: a node dispatched with nothing waiting on it is a node you will discover by
+    accident. That rule was followed correctly on roughly eight dispatches in the same session
+    and skipped on two, with no signal at either moment that the two were different.</p>
+
+    <p><strong>That is the same shape as the member collision this sprint already fixed</strong>,
+    and it failed the same way. The documentation was right, a coordinator that had read it did
+    the wrong thing anyway, and nothing caught it &mdash; because a rule whose only enforcement is
+    the reader's attention is enforced exactly as well as the reader is attentive, which is not a
+    property anyone should design around.</p>
+
+    <p>The lesson is already written down twice in this repository from two separate incidents.
+    Writing it a third time is not the repair.</p>
+
+    <h2 id="s3">&#167;3 &mdash; Refuse at the moment a coordinator is provably present</h2>
+
+    <p><strong>The deliverable is a guard on dispatch, because dispatch is the one moment the
+    coordinator is demonstrably awake and able to act.</strong> A coordinator asking to start new
+    work while finished work sits unreconciled is not busy &mdash; it is present, and it is about
+    to make the backlog worse.</p>
+
+    <p>The mechanism class already exists and needs no invention. Dispatch refuses a member that
+    holds a non-terminal live pointer, raising a typed error that names the owning run. The same
+    check, over the same pointer directory, can refuse a wave while the project holds runs
+    classified <code>completed_unpromoted</code> or <code>blocked</code> past a threshold.</p>
+
+    <p><strong>Three properties keep it from becoming an obstruction</strong>, and they matter
+    more than the check itself:</p>
+
+    <ul>
+      <li><strong>Threshold, not instant.</strong> A node finishing seconds before an unrelated
+      dispatch is normal concurrency, not a backlog. The refusal fires only once a run has been
+      terminal and unpromoted long enough that nobody is plausibly mid-beat on it.</li>
+      <li><strong>Nameable and actionable.</strong> The refusal prints the runs and their
+      <code>next_action</code> lines, so clearing it is a paste rather than an investigation
+      &mdash; the same standard the tag audit was held to.</li>
+      <li><strong>Overridable and recorded.</strong> A coordinator with a genuine reason to leave
+      work unreconciled says so explicitly and the override lands on the run record, exactly as
+      the execution-fit refusal already does.</li>
+    </ul>
+
+    <p><strong>Done when</strong> a dispatch into a project holding a run terminal-and-unpromoted
+    past the threshold is refused with a message naming each such run and its resolving command;
+    a dispatch made while a run finished moments ago is not refused; the explicit override
+    dispatches and records itself on the run; and a test asserts all three without reading or
+    writing any pointer directory outside its own temporary home.</p>
+
+    <h2 id="s4">&#167;4 &mdash; The half a refusal cannot reach</h2>
+
+    <p><strong>A dispatch-time guard catches the coordinator who keeps working. It cannot catch
+    the one who stops.</strong> A session that dispatches two nodes and then ends leaves them
+    exactly as stranded as before, and that is the case where the work is most likely to be lost
+    entirely rather than merely delayed.</p>
+
+    <p>The closure fence in the execution skill already requires a drain before a closing report,
+    but it drains <em>followups</em> &mdash; it says nothing about runs whose manifests are
+    written and whose commits are unmerged. A session can satisfy the drain completely while
+    leaving two finished nodes on disk.</p>
+
+    <p><strong>Deliverable:</strong> extend the drain to run state. Before a closing report the
+    coordinator reconciles every live pointer, and the ledger it already writes gains a second
+    count alongside <code>foldable-remaining</code>: unreconciled runs, which must read zero for
+    the same reason. A run left deliberately &mdash; handed to another session, or genuinely
+    still working &mdash; is recorded with that reason, in the same closed-set style the followup
+    dispositions already use.</p>
+
+    <p><strong>Done when</strong> the closing ledger reports an unreconciled-run count derived
+    from the live view rather than from memory, and a session ending with a nonzero count and no
+    recorded reason is visible as such in its own artifact.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">&#167;</span> Decisions</h2>
+<div class="r-dec" data-key="guard-placement" data-choice="refuse-at-dispatch" data-by="reckon-ship" data-when="2026-08-24T12:55:00+00:00">
+    <p class="r-dec-q">Where does the guard against unreconciled finished work fire?</p>
+    <p class="r-dec-ctx">The detection already exists in the live view. The question is what consumes it, given that the coordinator who needs telling is the one not looking.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse-at-dispatch">Refuse at dispatch, because that is the moment the coordinator is provably present</button>
+      <button class="r-opt" data-value="stronger-skill-rule">State the watch rule more forcefully in the execution skill</button>
+      <button class="r-opt" data-value="background-daemon">A background process that promotes finished runs automatically</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 on measured failure rather than preference. The skill rule already exists and already gives the reason; it was followed on about eight dispatches and skipped on two in one session, with no signal distinguishing them, which is the same way the member-collision rule failed earlier in the same sprint. Restating it a third time repairs nothing. A background promoter was rejected for a stronger reason than cost: promotion is the moment a human or coordinator judges the gate, audits the scoped diff and decides the verdict, so automating it would replace a judgement with a default and produce a ledger full of unexamined passes. Refusing at dispatch keeps the judgement where it belongs and fires it exactly when someone is there to make it.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">&#167;</span> Followups</h2>
+<article class="r-fu" data-id="f-cns-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship completion-is-not-silent" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the signal that already exists load-bearing, at both ends of the loop</h4>
+    <div class="r-fu-body"><p>Nothing here needs new detection. The live view already classifies a finished-and-unpromoted run, computes how far past its budget it has drifted, and prints the command that clears it &mdash; and nothing reads any of it. Start with the dispatch refusal, because it reuses the guard class that already refuses a member holding a live pointer and fires at the one moment the coordinator is provably awake; keep it thresholded so ordinary concurrency is untouched, nameable so clearing it is a paste, and overridable with the override recorded on the run. Then extend the closure drain from followups to run state, because a refusal at dispatch cannot reach a session that simply stops, and that is the case where finished work is lost rather than delayed.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship completion-is-not-silent</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

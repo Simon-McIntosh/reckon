@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="derivable-dispatch-contract">
   <meta name="plan-title" content="Dispatch Should Not Require What It Can Derive">
   <meta name="plan-summary" content="Two measured defects with one shape: dispatch makes the coordinator supply facts it could work out itself. Which member is free is unknowable to a second coordinator, so two of them collide over a shared list that only ever grows. And a node whose measure is running a test suite validates clean onto a role declaring it cannot execute anything, surfacing two runs later as a sandbox error nobody reads as a routing mistake.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="3">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -147,10 +147,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ddc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship derivable-dispatch-contract" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ddc-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship derivable-dispatch-contract" data-resolved-at="2026-08-24T12:53:15+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Provision members instead of shopping for them, and refuse a node its role cannot run</h4>
     <div class="r-fu-body"><p>Auto-provisioning comes first because it removes a shared mutable resource rather than adding etiquette around one — scope the member to the dispatching session so collision is unrepresentable, and let the reap window double as the continuity window, since a follow-up inside it should still reach a warm session. Reaping is safe because the committed ledger already keeps every run's session id, so removing a roster row discards an index entry rather than the context it points at. Then the execution-fit refusal, which is a heuristic over free text and must therefore name what it matched and stay overridable, because a false refusal that cannot be bypassed is worse than the error it prevents.</p></div>
     <pre class="r-fu-prompt">/reckon-ship derivable-dispatch-contract</pre>
+    <p class="r-fu-outcome">done - no followup. Both sections landed. Unnamed dispatch derives a session-scoped member (632712f): two concurrent unnamed dispatches gave two distinct members and zero refusals, and a follow-up still reused its warm session. Idle members are reaped (f2a8988), one holding a live pointer is never reaped whatever its age, a named member is never reaped, and a reaped member's session stays recoverable from the ledger; 137 crew tests pass. An execution-incapable role is refused naming both matched measure and role, the same measure dispatches under an execution-capable role, and the override records status overridden in pointer and ledger (ea3a0de); 162 tests pass. A defect the first node introduced was repaired inside the same plan (f0c7e09): the derived-member guard consulted the process-global pointer directory and failed five ledger tests whenever anything was in flight; it now filters by project and resolved repository, 194 tests pass. What remains is wider than this plan rather than undone, and is carried by the unreconciled-work plan in the same sprint.</p>
     </article>
 </section>
 
