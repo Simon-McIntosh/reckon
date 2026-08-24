@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="15">
-<meta name="plan-impl" content="0.63">
+<meta name="plan-version" content="16">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -557,6 +557,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1452b" data-who="reckon-ship" data-when="2026-08-24T14:52:00+00:00">
     <div class="r-comment-body">current-attempt-identity landed — commit 4e0f5f5, merged; gate passed; measure six targeted attempt and compatibility cases passed, tests/test_crew.py 147 passed, full suite 2120 passed in 60.60s with zero failures and +2 against its 2118 base, ruff clean on all three changed paths; 183 insertions and 10 deletions over 3 files, 691 worker-seconds against a 35m budget. A resumed or redispatched run now reports its current attempt: the record names that attempt's stream rather than the first, keeps a non-terminal phase while the process lives, captures the session id without a preparatory observe, and a watch armed after a resume ignores the previous attempt's manifest. All four readings were measured on this plan's own execution before the fix, which is why the node exists. The follow mode and the watch's missing memory remain open in this section; the busy-loop where an unpromoted run masks every later event is unfixed.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T1545" data-who="reckon-ship" data-when="2026-08-24T15:45:00+00:00">
+    <div class="r-comment-body">refuse-unwatched-dispatch landed — commit d38406d, merged; gate passed; measure 8 targeted cases passed, 195 across the two touched test files, then full suite 2152 passed in 64.62s with zero failures, +8 against the 2144 base; 245 insertions over 6 files, 724 worker-seconds against a 35m budget. Dispatch now refuses a project holding no live watcher and names the arming command, a watcher whose process has died does not count as live so the refusal fires again, and --no-watch waives it with the waiver recorded on both the pointer and the promoted ledger record. The three fences now close without a gap: work cannot start unwatched, more cannot start while finished work sits unreconciled, and a session cannot end with runs outstanding. RESIDUAL FOUND ON LANDING, and it is honest to record it: the guard tests whether a watcher process is alive, not whether it can wake anyone. A watch backgrounded with a shell ampersand rather than the harness's own primitive satisfies the guard and notifies nobody — the exact mistake made twice in this session, once immediately after merging the guard. Reckon cannot detect this portably because it cannot know how the host launched the process. The structural remedy is follow mode surfaced through the harness's monitor primitive, which makes the ampersand form unavailable rather than merely discouraged; the interim remedy is one line in the harness reference.</div>
 </div>
 </section>
 </main>
