@@ -968,6 +968,7 @@ _PLAN_SET_TOP = frozenset(
         "effort",
         "milestone",
         "sprint",
+        "graph_handle",
         "capability",
         "owner",
         "summary",

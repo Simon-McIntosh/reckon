@@ -3,7 +3,7 @@ name: reckon-ship
 description: >-
   Execute a complete Reckon plan, or coordinate an entire sprint, without doing
   implementation inline. Resolves a plan slug with an optional section,
-  `/reckon-ship S1`, and a project-qualified sprint id. Both targets are strictly
+  `/reckon-ship S1`, a project-qualified sprint id, and `graph:<handle>`. All targets are strictly
   coordinator-only, a one-node plan included: build the execution DAG, delegate
   every implementation, investigation, test, pipeline, and repair node through
   isolated worktrees by default, audit and integrate worker commits, record
@@ -18,7 +18,7 @@ allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__r
 
 ## Critical behaviour: resolve the target, then finish its executable scope
 
-There are two execution targets:
+There are three execution targets:
 
 - **Single-plan target:** `/reckon-ship <slug>` delivers the entire plan;
   `/reckon-ship <slug> §N` delivers only the named section.
@@ -27,6 +27,10 @@ There are two execution targets:
   sprint plan, transitive dependencies, linked research, and prior evidence,
   then coordinates a rolling queue of ready nodes. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
+- **Graph target:** `/reckon-ship graph:<handle>` resolves the one endpoint plan
+  carrying that handle and executes its complete transitive dependency closure
+  across registered project mounts. Only the handle is authored on the endpoint;
+  membership, shipped-of-total, critical path, and average width are derived live.
 
 On a single-plan target without a section, you MUST:
 1. Read the complete plan HTML and classify every section
@@ -41,14 +45,16 @@ external systems, destructive actions, or new outward-facing effects. Reckon
 composes the dispatch contract; consult `references/sprint-orchestration.md`
 only when hand-composing a delegation Reckon did not prepare.
 
-Use `roadmap(project, sprint=<id>)` as the canonical plan-level graph. Do not
+Use `roadmap(project, sprint=<id>)` for a sprint and
+`roadmap(project="graph:<handle>", view="raw")` for a graph target as the
+canonical plan-level graph. Do not
 rebuild plan dependency order from repeated discovery calls. Add section-level
 and file-conflict edges only after the tool returns no error-level wiring
 findings.
 
-### Both targets are coordinator-only
+### All targets are coordinator-only
 
-**One contract, both targets, a one-node plan included.** Whichever target resolved,
+**One contract, all targets, a one-node plan included.** Whichever target resolved,
 preserve coordinator context for orchestration. The coordinator may resolve/read
 state, checkpoint the DAG/scopes, create worktrees, dispatch or message workers,
 audit evidence, integrate/push, write state, clean, and report.
@@ -127,7 +133,8 @@ prerequisite, user-owned decision, excess spend, or consent for an outward effec
 ```text
 resolve target
 ├─ plan → roadmap + full plan → classify sections → delegate in dependency order
-└─ sprint → roadmap + all plans/research/evidence → enrich DAG → run ready queue
+├─ sprint → roadmap + all plans/research/evidence → enrich DAG → run ready queue
+└─ graph → graph roadmap + every closure plan/evidence → run derived ready queue
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
 → audit plan currency against the code + dispatch the prior-art scout (reuse map)
@@ -155,6 +162,8 @@ Full detail below.
 - `/reckon-ship <slug> [§N]` — implements only the named section
 - `/reckon-ship S1` — executes sprint `S1` in the current project
 - `/reckon-ship <project>:S1` — executes a sprint in an explicit project
+- `/reckon-ship graph:<handle>` — executes the derived cross-project closure
+  of the endpoint carrying `<handle>`
 - Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
 
 **Dual-role:** invoked by human or orchestrator AND records one-line §05 session handoffs.
@@ -163,7 +172,7 @@ If the user wants to *write* the plan → `reckon-edit`. Plan doesn't exist → 
 
 ## The model — the plan HTML is the document AND the store
 
-**The plan HTML is the source of truth.** Read it first — ALL of it. Both targets
+**The plan HTML is the source of truth.** Read it first — ALL of it. All targets
 delegate what it describes and coordinate the outcomes; the modes differ in the
 scope they resolve, never in who does the work. The HTML documents the work;
 the `data-reckon` sections carry
@@ -177,39 +186,45 @@ structured state (decisions, followups). Do not implement items marked
 
 ## Hard rules
 
-1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch.
+1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch. On a graph target, read every plan in the returned derived closure and its linked evidence.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Coordinators delegate every executable node, on both targets.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §Both targets are coordinator-only, never the default for small work.
-5. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
-6. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
-7. **The portable dispatch contract is mandatory.** `reckon crew dispatch`
+4. **Whole graph by default.** `/reckon-ship graph:<handle>` means every member
+   returned by the live derived closure, including dependencies in other mounted
+   repositories. A missing handle or an open non-deferred decision is a refusal.
+   Shipping explicitly overrides the schedule window: report
+   `schedule_override.deferred` and its members before dispatch rather than
+   silently treating them as schedule-ready.
+5. **Coordinators delegate every executable node, on all targets.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §All targets are coordinator-only, never the default for small work.
+6. **Verify every worker.** Retrieve its compact manifest, audit `git show --stat <sha>` against declared scope, and ensure relevant tests ran before integration. Test execution is itself a worker node.
+7. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
+8. **The portable dispatch contract is mandatory.** `reckon crew dispatch`
    composes it. Read and embed the reference contract only when hand-composing a
    delegation Reckon did not prepare.
-8. **Update the plan at every node landing.** Immediately after EACH
+9. **Update the plan at every node landing.** Immediately after EACH
    `reckon crew complete`, the orchestrator updates the cumulative evidence and
    calls `edit_plan` once with the node's commit, gate measure, artifacts, and
    advanced `impl`. Nothing else may be promoted or merged before this write.
    Dispatch of an unrelated ready node may continue; it does not wait on this
    plan-write beat. Collapse the evergreen section only when its final node lands;
    never wait for section closure to record earlier nodes.
-9. **One cumulative evidence record and a followup are required.** Default to
+10. **One cumulative evidence record and a followup are required.** Default to
    `docs/evidence/archive/<slug>-landed.html`, carrying
    `reckon-type=evidence` and `plan-evidence-for=<slug>`, with one stable anchor
    per material result. Update that record after each landing. Do not create a
    file per section, commit, test wave, or one-line outcome. Create another
    evidence resource only when it is a materially independent artifact useful
    on its own.
-10. **Collapse the evergreen when a section ships.** Replace the section body
+11. **Collapse the evergreen when a section ships.** Replace the section body
     with a 2-4 line landed-summary + link to the matching anchor in the
     cumulative evidence HTML.
-11. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
-12. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
-13. **Cleanup is mandatory and conservative.** Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch. Never force-remove unmerged or dirty worktrees.
-14. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
+12. **No plan-state drift.** Plan and sprint state must reflect reality at the end of every turn.
+13. **The sprint coordinator owns only coordination, integration, and shared state.** Workers commit implementation and verification work in detached worktrees; they do not merge, push the primary branch, or mutate the shared index/plan state.
+14. **Cleanup is mandatory and conservative.** Remove a worktree only after it is clean and its commit is reachable from the integrated primary branch. Never force-remove unmerged or dirty worktrees.
+15. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
-15. **Drain followups and live run pointers before closure, and sign both.** Re-triage open
+16. **Drain followups and live run pointers before closure, and sign both.** Re-triage open
     followups after every landing beat, route that node's manifest `follow_ons`
     through the same loop, and repeat until a complete pass finds nothing foldable.
     Write the §7c drain ledger before any closing report: every row disposed as
@@ -221,7 +236,7 @@ structured state (decisions, followups). Do not implement items marked
     only `handed-off` or `still-working`; the latter expires when the run turns
     terminal. Never
     set a plan to `shipped` or `done` while a foldable followup is open.
-16. **No implementation node before the reuse map exists.** Every substantive
+17. **No implementation node before the reuse map exists.** Every substantive
     implementation wave is preceded by a prior-art scout (§1b) whose reuse map
     the nodes cite; a node that authors new machinery states why each named
     reuse candidate fails. Trivial mechanical edits are exempt; "the scout
@@ -269,13 +284,19 @@ Wait for the user's response before doing anything else. If the user authorizes 
 
 ## Workflow
 
-### 0. Resolve plan vs sprint
+### 0. Resolve plan, sprint, or graph
 
 1. Derive the current project from the repository/mount context.
-2. Call `roadmap(project)` and match the argument against exact sprint ids.
-3. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as sprint
+2. Treat `graph:<handle>` as a graph target. Call
+   `roadmap(project="graph:<handle>", view="raw")`; never reproduce its
+   traversal or persist its returned `members`. Refuse an error response or any
+   returned `decision_blockers`. Read every returned member plan, report the
+   `schedule_override.deferred` count and member refs, then use the coordinator
+   workflow over the returned ready queue across its mounted repositories.
+3. Otherwise call `roadmap(project)` and match the argument against exact sprint ids.
+4. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as
    a sprint target. Treat `plan:<slug>` or every other slug as a single-plan target.
-4. If a sprint target, resolve the sprint and use the same coordinator workflow
+5. If a sprint target, resolve the sprint and use the same coordinator workflow
    over its complete graph. Do not continue with the plan-only preflight below.
 
 ### 1. Plan pre-flight — read the FULL plan
@@ -570,7 +591,7 @@ free members, add members.
 
 **This table is advisory.** It shapes the active fleet; it never decides whether
 to delegate. That is
-already settled for both targets — every ready node goes to an appropriately
+already settled for all targets — every ready node goes to an appropriately
 capable worker, one-item and cross-cutting nodes included, rather than making the
 coordinator the implementation owner. Dependency independence, file scopes,
 gates, budgets, and runtime limits shape the useful fleet size; none of them is
@@ -1070,6 +1091,14 @@ sprint summary links its plan/evidence outcomes, and no session worktree
 remains. Re-run `roadmap(project, sprint=<id>)` at closure and require an empty
 ready set and no error-level wiring findings before setting the sprint done.
 
+For a graph target, re-run
+`roadmap(project="graph:<handle>", view="raw")` at closure and verify its
+`completion.shipped == completion.total`, its ready queue is empty, and its
+decision blocker list remains empty. Record the final shipped-of-total,
+critical path, average width, repositories reached, and schedule override
+count in the endpoint plan's cumulative evidence. The graph owns no separate
+lifecycle state; each member plan remains the authority for its own outcome.
+
 Validate HTML integrity yourself — `uv run --project ~/Code/reckon reckon
 audit-doc docs/plans/<slug>.html` must report no ERRORs before committing. This
 checks the coordinator's own state write, which is why it is not a delegated
@@ -1145,7 +1174,7 @@ reference only when hand-composing a delegation Reckon did not prepare.
 (`references/worker-backends.md` is maintainer documentation of the translation
 internals; an orchestrator never needs it.)
 
-Every node is delegated on both targets. The skill carries the fixed session
+Every node is delegated on all targets. The skill carries the fixed session
 contract; use `references/sprint-orchestration.md` only when hand-composing. It
 expands on:
 

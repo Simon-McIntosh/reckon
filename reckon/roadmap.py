@@ -9,7 +9,7 @@ graph traversal in each surface.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, Mapping
 
 from reckon._schema import LEGACY_EFFORT_HOURS, parse_plan_ref
 from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
@@ -29,6 +29,14 @@ _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
 # implementable work that reads as blocked. Only terminal or suspended states
 # fall outside.
 _AUTHORISED_STATUSES = frozenset({"draft", "pending", "active", "in-progress"})
+
+
+class GraphTargetError(ValueError):
+    """A graph ship target cannot resolve to one complete dependency closure."""
+
+    def __init__(self, handle: str, detail: str) -> None:
+        self.handle = handle
+        super().__init__(f"graph handle {handle!r}: {detail}")
 
 
 def _item_slug(item: Any) -> str:
@@ -427,6 +435,203 @@ def _scope_slugs(
                 selected.add(parsed.slug)
                 pending.append(parsed.slug)
     return selected
+
+
+def _qualified_plan(project: str, slug: str) -> str:
+    return f"{project}:{slug}"
+
+
+def resolve_graph_target(
+    handle: str,
+    projects: Mapping[str, Mapping[str, Any] | list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Resolve one endpoint handle to its derived cross-project closure.
+
+    ``projects`` is mounted project state keyed by project name. Each value is
+    either an inventory list or a mapping carrying ``inventory`` and optional
+    ``sprints``, ``active_sprint_id`` and ``project_manifest`` values. Only the
+    endpoint handle is authored; every member and metric below is recomputed
+    from the current plans and their dependency edges.
+    """
+
+    target_handle = str(handle or "").strip()
+    if not target_handle:
+        raise GraphTargetError(target_handle, "a non-empty handle is required")
+
+    project_state: dict[str, dict[str, Any]] = {}
+    plans: dict[tuple[str, str], dict[str, Any]] = {}
+    endpoints: list[tuple[str, str]] = []
+    for project, raw_state in projects.items():
+        state = (
+            {"inventory": raw_state}
+            if isinstance(raw_state, list)
+            else dict(raw_state)
+        )
+        inventory = [
+            dict(item)
+            for item in state.get("inventory") or []
+            if isinstance(item, dict)
+            and item.get("type", "plan") == "plan"
+            and item.get("slug")
+            and not item.get("archived")
+        ]
+        project_state[project] = {**state, "inventory": inventory}
+        for plan in inventory:
+            slug = str(plan["slug"])
+            plan.setdefault("project", project)
+            plans[(project, slug)] = plan
+            if str(plan.get("graph_handle") or "").strip() == target_handle:
+                endpoints.append((project, slug))
+
+    if not endpoints:
+        raise GraphTargetError(target_handle, "names no live plan")
+    if len(endpoints) > 1:
+        names = ", ".join(
+            _qualified_plan(project, slug) for project, slug in sorted(endpoints)
+        )
+        raise GraphTargetError(target_handle, f"is carried by multiple plans: {names}")
+
+    endpoint = endpoints[0]
+    graph: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    pending = [endpoint]
+    while pending:
+        key = pending.pop()
+        if key in graph:
+            continue
+        project, slug = key
+        plan = plans[key]
+        dependencies: list[tuple[str, str]] = []
+        for raw_ref in plan.get("depends_on") or []:
+            parsed = parse_plan_ref(raw_ref)
+            if parsed is None:
+                raise GraphTargetError(
+                    target_handle,
+                    f"{_qualified_plan(project, slug)} has invalid dependency {raw_ref!r}",
+                )
+            dependency_project = (
+                str(parsed.project)
+                if parsed.is_external(project)
+                else project
+            )
+            dependency = (dependency_project, parsed.slug)
+            if dependency_project not in project_state:
+                raise GraphTargetError(
+                    target_handle,
+                    f"dependency {raw_ref!r} reaches unmounted project {dependency_project!r}",
+                )
+            if dependency not in plans:
+                raise GraphTargetError(
+                    target_handle,
+                    f"dependency {raw_ref!r} names no live plan",
+                )
+            dependencies.append(dependency)
+            pending.append(dependency)
+        graph[key] = sorted(set(dependencies))
+
+    def longest_path(
+        key: tuple[str, str], active: frozenset[tuple[str, str]] = frozenset()
+    ) -> list[tuple[str, str]]:
+        if key in active:
+            cycle = " -> ".join(
+                _qualified_plan(*item) for item in [*sorted(active), key]
+            )
+            raise GraphTargetError(target_handle, f"dependency cycle: {cycle}")
+        candidates = [
+            longest_path(dependency, active | {key})
+            for dependency in graph.get(key, [])
+        ]
+        if not candidates:
+            return [key]
+        depth = max(len(candidate) for candidate in candidates)
+        best = min(candidate for candidate in candidates if len(candidate) == depth)
+        return [*best, key]
+
+    critical_keys = longest_path(endpoint)
+    member_keys = sorted(graph)
+    member_set = set(member_keys)
+    shipped = sum(_status(plans[key]) in COMPLETED_STATUSES for key in member_keys)
+
+    schedule_rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for project in sorted({project for project, _slug in member_keys}):
+        state = project_state[project]
+        report = build_roadmap(
+            project,
+            state["inventory"],
+            list(state.get("sprints") or []),
+            active_sprint_id=state.get("active_sprint_id"),
+            project_manifest=state.get("project_manifest") or {},
+        )
+        for row in report["pending_work"]:
+            schedule_rows[(project, str(row["slug"]))] = row
+
+    decision_blockers: list[dict[str, Any]] = []
+    ready: list[str] = []
+    for key in member_keys:
+        plan = plans[key]
+        if _status(plan) in COMPLETED_STATUSES:
+            continue
+        decisions = _decision_rows(plan)
+        open_decisions = [row for row in decisions if row["status"] == "open"]
+        decision_blockers.extend(open_decisions)
+        dependencies_complete = all(
+            _status(plans[dependency]) in COMPLETED_STATUSES
+            for dependency in graph[key]
+        )
+        explicit_blockers = [
+            row
+            for row in plan.get("blocking") or []
+            if isinstance(row, dict) and row.get("kind") == "explicit"
+        ]
+        if (
+            dependencies_complete
+            and not explicit_blockers
+            and not unpassed_gate_blockers(plan.get("gates") or [])
+            and not open_decisions
+            and _status(plan) in _AUTHORISED_STATUSES
+            and _dispatchability(plan)[0]
+        ):
+            ready.append(_qualified_plan(*key))
+
+    deferred_members = sorted(
+        _qualified_plan(*key)
+        for key in member_set
+        if schedule_rows.get(key, {}).get("schedule_ready") is False
+    )
+    critical_refs = [_qualified_plan(*key) for key in critical_keys]
+    total = len(member_keys)
+    depth = len(critical_keys)
+    return {
+        "target": f"graph:{target_handle}",
+        "handle": target_handle,
+        "endpoint": {
+            "project": endpoint[0],
+            "slug": endpoint[1],
+            "ref": _qualified_plan(*endpoint),
+        },
+        "members": [
+            {
+                "project": project,
+                "slug": slug,
+                "ref": _qualified_plan(project, slug),
+                "status": _status(plans[(project, slug)]),
+                "impl": _progress(plans[(project, slug)]),
+            }
+            for project, slug in member_keys
+        ],
+        "repositories": sorted({project for project, _slug in member_keys}),
+        "completion": {"shipped": shipped, "total": total},
+        "shipped_of_total": f"{shipped}/{total}",
+        "critical_path": {"plans": critical_refs, "depth": depth},
+        "average_width": round(total / depth, 3) if depth else 0.0,
+        "ready": sorted(ready),
+        "decision_blockers": decision_blockers,
+        "ship_ready": not decision_blockers,
+        "schedule_override": {
+            "required": bool(deferred_members),
+            "deferred": len(deferred_members),
+            "members": deferred_members,
+        },
+    }
 
 
 def build_roadmap(
