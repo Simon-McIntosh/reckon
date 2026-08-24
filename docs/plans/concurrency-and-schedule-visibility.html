@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="concurrency-and-schedule-visibility">
+  <meta name="plan-title"     content="What May Run Together, and What Should Run Next">
+  <meta name="plan-summary"   content="An orchestrator can ask which plans have their prerequisites met and gets a good answer. It cannot ask which nodes may safely run at the same time, because file claims are never compared, and it cannot ask what it should start next, because readiness ignores the sprint order it already computes. Both answers are derivable from data already on disk.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S13">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-informs"   content="agent-fleet-orchestration,crew-fleet-rox-review">
+  <title>What May Run Together, and What Should Run Next | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; What is measured, and what was already repaired</h2>
+
+    <p><strong>The fleet has no cap and has never had one.</strong> The fleet review established
+    that nothing in the code limits concurrent workers, that the de-facto ceiling is the registered
+    roster under per-member serialisation, and that the wave barrier was
+    <em>&ldquo;the most expensive artificial serialization: max-of-wave wait vs mean run time idles
+    ~45% of worker-time at 3-wide.&rdquo;</em> That finding landed: the dead concurrency key is
+    gone, the execution skill now says a wave is a reporting snapshot rather than a barrier, and the
+    landing freeze explicitly exempts dispatching an unrelated ready node.</p>
+
+    <p><strong>This plan does not re-open any of that.</strong> It starts from what the repaired
+    contract still cannot answer, measured on a session executing a plan under it:</p>
+
+    <table>
+      <thead><tr><th>Quantity</th><th>Value</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Concurrency actually run by that session</td><td>1</td><td>observed</td></tr>
+        <tr><td>Plans in <code>ready_now</code> at the same moment</td><td>13</td><td><code>roadmap</code></td></tr>
+        <tr><td>Roster members registered / idle</td><td>27 / 15</td><td><code>crew member list</code></td></tr>
+        <tr><td>Maximum simultaneous runs ever recorded</td><td>7</td><td>ledger, 177 runs with both stamps</td></tr>
+        <tr><td>Mean daily peak concurrency</td><td>3.8</td><td>ledger</td></tr>
+        <tr><td>Sprints holding open work simultaneously</td><td>5 &mdash; S5, S6, S9, S12, S13</td><td><code>roadmap</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>Running at 1 was locally correct and globally wrong. Correct, because the three sections that
+    session shipped all wrote <code>reckon/crew.py</code>, <code>reckon/cli.py</code>,
+    <code>skills/reckon-ship/SKILL.md</code> and <code>tests/test_crew.py</code>, and three contract
+    tests bind the skill text to the CLI surface in both directions, so a second lane would have
+    collided and left the suite red between landings. Wrong, because that judgement was reached by a
+    coordinator reading test bodies by hand, and nothing in the system could have reached it &mdash;
+    or contradicted it.</p>
+
+    <h2 id="s2">&#167;2 &mdash; Three gates gate a dispatch, and one of them is modelled</h2>
+
+    <table>
+      <thead><tr><th>Gate</th><th>Question it answers</th><th>Modelled?</th></tr></thead>
+      <tbody>
+        <tr><td>Dependency edges</td><td>Can this run at all?</td><td>Yes &mdash; <code>depends_on</code>, gates, cycles, explicit blockers</td></tr>
+        <tr><td><strong>File-scope exclusivity</strong></td><td>May these run <em>together</em>?</td><td><strong>No</strong> &mdash; <code>--write-path</code> exists only per dispatch, compared only against peers the coordinator retypes</td></tr>
+        <tr><td><strong>Schedule order</strong></td><td>Which should run <em>next</em>?</td><td><strong>No</strong> &mdash; sprint order is computed and used only for sorting</td></tr>
+      </tbody>
+    </table>
+
+    <p>Both unmodelled gates have the same character, and it is the character this repository keeps
+    finding: <strong>the data is already on disk and nothing derives the answer.</strong> Claimed
+    paths are in every live pointer. Sprint order is built at
+    <code>reckon/roadmap.py</code> line 392. Neither reaches the decision it should govern.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 250" width="100%" style="max-width:720px" role="img"
+           aria-label="Two conflict graphs: three nodes sharing four files collapse to one lane; the same three nodes with disjoint scopes give three lanes.">
+        <text x="8" y="18" font-family="system-ui" font-size="14" font-weight="600" fill="#111">Declared scopes overlap &rarr; one lane</text>
+        <text x="400" y="18" font-family="system-ui" font-size="14" font-weight="600" fill="#111">Declared scopes disjoint &rarr; three lanes</text>
+
+        <rect x="14" y="42" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="66" y="64" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">refusal</text>
+        <rect x="14" y="128" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="66" y="150" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">watch</text>
+        <rect x="182" y="85" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="234" y="107" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">drain</text>
+
+        <line x1="118" y1="59" x2="182" y2="95" stroke="#b45309" stroke-width="1.5"/>
+        <line x1="118" y1="145" x2="182" y2="109" stroke="#b45309" stroke-width="1.5"/>
+        <line x1="66" y1="76" x2="66" y2="128" stroke="#b45309" stroke-width="1.5"/>
+        <text x="128" y="196" font-family="system-ui" font-size="13" fill="#b45309">shared: crew.py &middot; cli.py &middot; SKILL.md &middot; test_crew.py</text>
+        <text x="128" y="216" font-family="system-ui" font-size="13" fill="#111">every pair conflicts, so the lane count is 1</text>
+
+        <rect x="406" y="42" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="458" y="64" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">refusal</text>
+        <rect x="406" y="85" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="458" y="107" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">watch</text>
+        <rect x="406" y="128" width="104" height="34" rx="3" fill="#fff" stroke="#8a8f98"/>
+        <text x="458" y="150" font-family="system-ui" font-size="13" fill="#111" text-anchor="middle">drain</text>
+        <line x1="530" y1="59" x2="560" y2="59" stroke="#8a8f98" stroke-width="1"/>
+        <line x1="530" y1="102" x2="560" y2="102" stroke="#8a8f98" stroke-width="1"/>
+        <line x1="530" y1="145" x2="560" y2="145" stroke="#8a8f98" stroke-width="1"/>
+        <text x="568" y="63" font-family="system-ui" font-size="13" fill="#111">lane 1</text>
+        <text x="568" y="106" font-family="system-ui" font-size="13" fill="#111">lane 2</text>
+        <text x="568" y="149" font-family="system-ui" font-size="13" fill="#111">lane 3</text>
+        <text x="406" y="196" font-family="system-ui" font-size="13" fill="#111">no edges, so the partition is maximal</text>
+      </svg>
+      <figcaption>The same three ready nodes, partitioned by declared write scope. Dependency
+      independence decided nothing here: all three were dependency-free and still had to run in one
+      lane. The partition on the left is what a coordinator derived by reading contract tests by
+      hand; the partition is what the system should return.</figcaption>
+    </figure>
+
+    <h2 id="s3">&#167;3 &mdash; A per-project claim registry, and the planner that reads it</h2>
+
+    <p><strong>The registry already exists implicitly.</strong> The claimed-path set for a project is
+    the union of <code>node.write_paths</code> over its live pointers, and
+    <code>list_live(project=&hellip;)</code> already returns them. No new store, no new lifecycle:
+    a claim lives exactly as long as its pointer, <code>crew complete</code> releases it, and a dead
+    run holds its claim until the reconciliation machinery already built for that purpose clears
+    it.</p>
+
+    <p>What is missing is that dispatch makes the coordinator <em>retype</em> it.
+    <code>--peer &lt;node&gt;=&lt;paths&gt;</code> feeds the <code>scoped</code> property check, but
+    the peers are supplied by hand, from memory, for data already on disk. Three deliverables:</p>
+
+    <ul>
+      <li><strong>Derived peer scopes.</strong> Dispatch reads live claims for the same project and
+      repository root and refuses a declared-path collision before worktree creation, naming the
+      owning run &mdash; the shape <code>MemberInFlight</code> and the unreconciled-backlog refusal
+      already use. <code>--peer</code> becomes an override, not the source.</li>
+      <li><strong>A read view.</strong> <code>crew(project, view="scopes")</code> returns path &rarr;
+      owning run and node, so a wave can be planned before anything is submitted.</li>
+      <li><strong>A lane planner.</strong> Given candidate nodes with declared paths plus the live
+      claims, return the conflict graph and an ordered lane assignment. This is the half that
+      matters: a refusal bounces the coordinator back to re-plan, while a partition hands it the
+      wave.</li>
+    </ul>
+
+    <p><strong>Containment, not string equality.</strong> <code>reckon/</code> and
+    <code>reckon/crew.py</code> must conflict. Normalise to repository-relative POSIX paths and
+    compare by prefix; key the registry on project and resolved repository root, which dispatch
+    already does for the member guard. A claim in one repository means nothing in another, which is
+    why the registry is per project.</p>
+
+    <p><strong>Derivation groups are the failure this will hit first, and it has already been
+    observed.</strong> A node adding one fence key had to claim
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> as well as
+    the <code>reckon/schema/flight.yaml</code> they both regenerate from. A registry keyed on
+    declared paths cannot know that, so a second node touching a generated file would be judged
+    disjoint and would collide. The registry therefore needs a per-project
+    <strong>source &rarr; generated</strong> map, and claiming a source claims its outputs. This is
+    the real content of making the registry per project rather than global.</p>
+
+    <p><strong>A claim is a declaration, not a fence, and the plan must not oversell it.</strong> The
+    sandbox is <code>worktree-full</code>; a worker can write outside its declared scope. The
+    registry prevents <em>declared</em> collisions only. Its complement is the post-hoc
+    <code>git show --stat</code> audit against declared scope that verification already performs, and
+    the two together are the whole guarantee.</p>
+
+    <p><strong>Done when</strong> two candidate nodes whose declared scopes overlap by containment
+    are refused before any worktree exists with a message naming the owning run and the conflicting
+    path; a node claiming a declared source is judged to conflict with a node claiming its generated
+    output; the planner returns a lane assignment for a candidate set whose partition matches a
+    hand-computed expectation on the three-node case in &#167;1; and the scopes view reports the live
+    claim map without mutating a pointer.</p>
+
+    <h2 id="s4">&#167;4 &mdash; Ready is not a queue, and saying so exposes the horizon</h2>
+
+    <p><strong>The seam is one line.</strong> <code>reckon/roadmap.py</code> computes readiness from
+    dependency blockers, explicit blockers, gate blockers and cycle membership. Sprint status and
+    sprint order are built in the same function and used only to sort the result and to exclude
+    closed sprints. So <code>ready_now</code> answers <em>are this plan's prerequisites met</em> and
+    is read as <em>should this be started now</em>, which is how five sprints come to contribute to
+    one ready set.</p>
+
+    <p><strong>It is already causing two agents to contradict each other in writing.</strong> One
+    session reported a plan as deliberately held behind an earlier sprint; <code>roadmap</code>
+    reported the same plan <code>ready</code> with no dependencies, no explicit blockers and no
+    gates. Both were right about different questions. The hold was true and had nowhere in the model
+    to live: sprint-item <code>blocked_by</code> would have rendered it as <em>blocked</em>, which is
+    a defect state and not what a queued plan is, and the <code>deferred</code> bucket only fills for
+    unauthorised or undispatchable plans, which is why it is empty.</p>
+
+    <p><strong>Deliverable: a second, derived axis.</strong> Keep dependency readiness exactly as it
+    is and add schedule readiness beside it, with the deferred rows carrying a computed reason naming
+    the sprint they sit behind. Derived, so it cannot drift &mdash; the same property that makes
+    <code>feeds_sprints</code> trustworthy. &ldquo;Held behind an earlier sprint&rdquo; stops being
+    prose in a transcript and becomes a field, and two readers can no longer disagree.</p>
+
+    <p><strong>Two constraints, and the first is written in the file already.</strong> The comment
+    above <code>_AUTHORISED_STATUSES</code> explains why <code>draft</code> counts as authorised:
+    withholding readiness for a labelling reason &ldquo;produces a queue of implementable work that
+    reads as blocked.&rdquo; The identical trap applies here, which is why deferred rows must stay
+    distinct from blocked ones, carry their reason, and keep appearing in the ordered roadmap.
+    Nothing may disappear; it only stops claiming to be startable. Second, the rule must key on
+    sprint order and open work rather than the <code>active</code> label, because the label cannot
+    currently be evaluated: S5, S9 and S12 are all <code>active</code>,
+    <code>active_sprint_id</code> names S5, and the work landing most recently was in S13, which is
+    still <code>planned</code>.</p>
+
+    <p><strong>What the rule reveals is the more valuable half.</strong> Applied strictly, schedule
+    readiness would defer almost everything behind S5, because the project has five sprints open at
+    once. That is not an argument against the field &mdash; it is the field doing its job, and the
+    only honest reading is that the sprint horizon is five deep and nobody could see it. Choosing how
+    wide the horizon should be is a decision below, not something this plan may settle on its
+    own.</p>
+
+    <p><strong>Done when</strong> a plan whose sprint sits behind an earlier sprint holding open work
+    is reported schedule-deferred with a reason naming that sprint while remaining dependency-ready
+    and still listed in the ordered roadmap; the two axes are separately readable so neither
+    question is answered with the other's data; and the reported horizon depth for this project
+    matches a hand count of sprints holding open work.</p>
+
+    <h2 id="s5">&#167;5 &mdash; The seam that opens once lanes are wide</h2>
+
+    <p>Two constraints only bite above one lane, so they belong here rather than in &#167;3.</p>
+
+    <p><strong>The coordinator re-arms once per event.</strong> The project watch exits on the first
+    live pointer to turn terminal, which is exactly right for one lane and wrong for several: at N
+    lanes the coordinator spends N arm-and-wake cycles on N events it could have drained as a
+    stream. A follow mode that emits one event per terminal run, ending when the fleet empties,
+    turns the wait into a queue the coordinator drains.</p>
+
+    <p><strong>Integration is the real ceiling, and it is one coordinator wide.</strong> Audit,
+    merge, promote, plan-write, push are strictly serial in one session: one git index, one plan
+    version, one ledger version. Two sprints can be shipped concurrently by two sessions &mdash;
+    sprint state is already distributed per sprint resource, so there is no contention there &mdash;
+    and what remains shared is the run ledger and the primary branch, both version-paired, so the
+    failure mode is retry rather than corruption. What is missing is a stated rule for who pushes,
+    and a retry that does not surprise the loser.</p>
+
+    <p><strong>Done when</strong> follow mode emits one event per terminal run over a multi-run fleet
+    and ends when the last pointer is reconciled; and two concurrent sessions promoting runs into the
+    same ledger both succeed, with the contended write retried rather than failed, demonstrated by a
+    test that runs the two promotions concurrently.</p>
+
+    <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked</h2>
+
+    <p><strong>The dispatch contract already introduces workers to each other, and then forbids
+    contact.</strong> Every worker prompt carries a block naming its concurrent peers and their
+    paths, under the heading that tells it never to touch them and to request a scope change
+    instead. A peer is presented as a hazard. It is never presented as the one process on the
+    machine that already knows the answer to the question the worker is about to guess at.</p>
+
+    <p><strong>The common case is adjacent scope, not shared scope.</strong> One node owns the module
+    where a function is being designed; another owns the caller. Their files are disjoint, so no
+    exclusivity rule is violated and no conflict is detectable &mdash; and the second node still has
+    to know the first one's signature. Today it guesses, or it stops. Executing the plan that
+    produced this one, three consecutive nodes each needed the previous node's names, and the
+    coordinator resolved it by writing the names into every node contract by hand. That works and it
+    does not scale past one coordinator's attention.</p>
+
+    <p><strong>One distinction governs the whole section, and relaxing it would undo the merge
+    invariant.</strong> Communication carries shared <em>knowledge</em>. Exclusivity governs shared
+    <em>writes</em>, and stays exactly as strict as it is now: two workers that agree perfectly still
+    produce two divergent commits to one file, and reconciling those is the orchestrator's job. So a
+    channel may settle an interface, a name, a call signature, an ordering, or the answer to
+    &ldquo;have you already moved that&rdquo;. It may never hand a path from one live scope to
+    another &mdash; that remains a coordinator decision, because the coordinator owns the claim
+    registry that makes it safe.</p>
+
+    <p><strong>Deliverable: a peer channel, on by default for adjacent nodes.</strong> Adjacency is
+    computable from &#167;3's conflict graph &mdash; nodes whose declared scopes are near-missing
+    rather than overlapping, plus nodes a coordinator names explicitly. For those, dispatch wires the
+    channel and tells each worker who its peers are and how to reach them, in place of a block that
+    only says what not to touch.</p>
+
+    <p><strong>Blocking, never polling &mdash; the same lesson, one level down.</strong> A worker that
+    polls an inbox spends its own time budget on the failure this repository has already paid for
+    twice. A peer read blocks until a reply arrives or a bounded wait expires, reusing the watch
+    mechanism rather than inventing a second waiting style, and a timeout degrades to the existing
+    <code>NEEDS-HELP:</code> report so an unanswered question still reaches the coordinator.</p>
+
+    <p><strong>The transport is per launch kind, and only one of them exists today.</strong> An
+    in-harness worker inherits the host harness's own inter-session messaging, which is why this is
+    worth doing at all. A CLI-spawned worker is a separate process with no channel, so it needs a
+    file-backed mailbox in its run directory &mdash; the same durable-delivery shape the manifest
+    already uses, for the same reason: a message that exists only in a process is lost when the
+    process ends.</p>
+
+    <p><strong>Done when</strong> two concurrently dispatched adjacent nodes exchange a question and
+    an answer without coordinator involvement, evidenced in both run directories; a peer read that
+    receives no reply within its bound produces a <code>NEEDS-HELP:</code> report naming the
+    unanswered question rather than expiring silently; a worker attempting to take a path held by a
+    live peer claim is still refused; and the channel is wired without the coordinator naming it, for
+    a node pair whose adjacency &#167;3 computed.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&#167;</span> Decisions</h2>
+
+      <div class="r-dec" data-key="scope-declaration-site" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Where are candidate write paths declared, so a wave can be planned before launch?</p>
+        <p class="r-dec-ctx">Planning a wave needs paths one step earlier than dispatch, where they are currently invented per node. The coordinator knows its own nodes; it does not know another plan's.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="wave-manifest">A submitted wave manifest of candidate nodes, planned against live claims &mdash; no plan-authoring change</button>
+          <button class="r-opt" data-value="plan-sections-declare-scope">Plan sections declare their write scope in the HTML, so waves can be planned across plans and sprints with no coordinator</button>
+          <button class="r-opt" data-value="both-staged">Wave manifest now, section-declared scope only if something needs it</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="derivation-group-home" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Where does the per-project source-to-generated map live?</p>
+        <p class="r-dec-ctx">Claiming a schema source must claim its generated artifacts, or two nodes will be judged disjoint and collide on a regenerated file. The map is per project because the derivations are.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="project-resource">The project resource beside its scope policy</button>
+          <button class="r-opt" data-value="flight-config">A flight-config layer, resolved like every other per-project setting</button>
+          <button class="r-opt" data-value="repo-file">A file in the repository the generator already lives in</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="schedule-horizon-width" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How wide is the schedule horizon that schedule-readiness enforces?</p>
+        <p class="r-dec-ctx">Strictly applied to a project with five sprints open, an earliest-open-sprint rule defers nearly everything. The width is a policy choice about how much work may be in flight, not a derivation.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="earliest-open-sprint">Only the earliest sprint holding open work is schedule-ready</button>
+          <button class="r-opt" data-value="all-active-sprints">Every sprint marked active is schedule-ready, and the label is repaired to mean it</button>
+          <button class="r-opt" data-value="sliding-window">A declared window of N sprints from the earliest open one</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="concurrent-sprint-integration" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How do two sessions shipping two sprints share the primary branch?</p>
+        <p class="r-dec-ctx">Sprint state is already per-sprint, so the contention is the run ledger and the primary branch. Both are version-paired, so this decides who waits, not whether anything is lost.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="single-pusher">One session owns pushes for the window, the other hands it merged commits</button>
+          <button class="r-opt" data-value="per-sprint-branch">Each sprint integrates on its own branch, merged to primary at sprint close</button>
+          <button class="r-opt" data-value="retry-and-race">Both push, with the ledger write retried on version conflict</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="adjacency-definition" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What makes two nodes adjacent enough to be wired together by default?</p>
+        <p class="r-dec-ctx">Too narrow and the channel is never on when it would have helped; too broad and every worker is handed a roster of peers it has no reason to talk to. Overlapping scope is already refused, so adjacency is about near-misses.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="shared-parent-directory">Declared scopes share a parent directory</button>
+          <button class="r-opt" data-value="import-or-call-edge">A declared dependency between the nodes' modules, read from the code rather than the paths</button>
+          <button class="r-opt" data-value="same-plan-or-section">Same plan, or same section, regardless of path distance</button>
+          <button class="r-opt" data-value="all-concurrent-peers">Every concurrent node in the session, since the prompt already lists them</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&#167;</span> Followups</h2>
+      <article class="r-fu" data-id="f-csv-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §3" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Start with the claim registry, because it is the gate that already cost a session its parallelism</h4>
+        <div class="r-fu-body"><p>&#167;3 is first on evidence rather than preference: the file-scope gate is what forced a three-node wave into one lane while fifteen members sat idle, and it is the only one of the three gates with no representation at all in the model. It also needs no new store &mdash; the claims are already in the live pointers and already expire with them. Take the derived peer scopes and the containment rule before the planner, since a refusal that names the owning run is useful on its own and the planner is only worth building once the comparison it depends on is trusted. &#167;4 can run in parallel with it: <code>roadmap</code> readiness shares no file with the dispatch guard. &#167;6 follows &#167;3, since the channel is wired from the adjacency &#167;3 computes. Settle <code>scope-declaration-site</code> before the planner and <code>schedule-horizon-width</code> before &#167;4 lands, because both change what the deliverable is rather than how it is written.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship concurrency-and-schedule-visibility §3</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
