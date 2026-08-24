@@ -46,6 +46,19 @@ def test_tool_argument_models_publish_cheap_observation_options():
         "limit": 2,
     }
 
+    scopes = CrewArgs(
+        project="proj",
+        view="scopes",
+        candidates=[{"id": "node-a", "write_paths": ["reckon/crew.py"]}],
+    )
+    assert scopes.model_dump(exclude_none=True) == {
+        "project": "proj",
+        "view": "scopes",
+        "candidates": [
+            {"id": "node-a", "write_paths": ["reckon/crew.py"]}
+        ],
+    }
+
 
 @pytest.fixture()
 def setup(tmp_path, monkeypatch):

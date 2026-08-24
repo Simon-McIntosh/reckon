@@ -904,6 +904,157 @@ def test_dispatch_derives_peer_scope_without_prefix_or_repository_false_positive
     assert Path(record["worktree"]).is_dir()
 
 
+def test_scopes_view_reads_claim_owners_without_mutating_the_pointer(
+    home, repo
+) -> None:
+    from reckon import mcp
+
+    owner = _write_running_pointer(
+        home,
+        "r-scope-view-owner",
+        repo=str(repo),
+        node_id="owner-node",
+        write_paths=["reckon/crew.py"],
+    )
+    pointer = crew.pointer_path(owner["run_id"])
+    before = pointer.read_bytes()
+
+    result = mcp._crew("proj", view="scopes", checkout_path=str(repo))
+
+    assert result["ok"] is True
+    assert result["claim_map"] == {
+        "reckon/crew.py": [
+            {
+                "run_id": owner["run_id"],
+                "node": "owner-node",
+                "declared_path": "reckon/crew.py",
+            }
+        ]
+    }
+    assert result["claims"] == [
+        {
+            "path": "reckon/crew.py",
+            "run_id": owner["run_id"],
+            "node": "owner-node",
+            "declared_path": "reckon/crew.py",
+        }
+    ]
+    assert pointer.read_bytes() == before
+
+
+def test_lane_planner_groups_a_connected_three_node_scope_graph(home, repo) -> None:
+    candidates = [
+        {
+            "id": "refusal",
+            "write_paths": ["reckon/crew.py", "reckon/cli.py"],
+        },
+        {
+            "id": "watch",
+            "write_paths": ["reckon/crew.py", "skills/reckon-ship/SKILL.md"],
+        },
+        {
+            "id": "drain",
+            "write_paths": [
+                "reckon/cli.py",
+                "skills/reckon-ship/SKILL.md",
+                "tests/test_crew.py",
+            ],
+        },
+    ]
+
+    result = crew.plan_scope_lanes(candidates, project="proj", repo=repo)
+
+    assert result["lane_count"] == 1
+    assert result["lanes"] == [
+        {"lane": 1, "nodes": ["refusal", "watch", "drain"]}
+    ]
+    assert result["conflict_graph"] == {
+        "refusal": ["drain", "watch"],
+        "watch": ["drain", "refusal"],
+        "drain": ["refusal", "watch"],
+    }
+
+
+def test_scopes_view_expands_project_derivations_before_partitioning(
+    home, repo
+) -> None:
+    from reckon import mcp
+
+    project_dir = repo / "docs" / "state" / "proj"
+    project_dir.mkdir(parents=True)
+    (project_dir / "index.json").write_text(
+        json.dumps(
+            {
+                "project": "proj",
+                "doc": "index",
+                "data": {
+                    "_version": 0,
+                    "projects": [
+                        {
+                            "name": "proj",
+                            "derivations": {
+                                "reckon/schema/flight.yaml": [
+                                    "reckon/_flight_schema.py",
+                                    "docs/_shared/flight.schema.json",
+                                ]
+                            },
+                        }
+                    ],
+                },
+            }
+        )
+    )
+
+    result = mcp._crew(
+        "proj",
+        view="scopes",
+        checkout_path=str(repo),
+        candidates=[
+            {
+                "id": "schema-source",
+                "write_paths": ["reckon/schema/flight.yaml"],
+            },
+            {
+                "id": "generated-output",
+                "write_paths": ["reckon/_flight_schema.py"],
+            },
+        ],
+    )
+
+    assert result["lane_count"] == 1
+    assert result["lanes"] == [
+        {"lane": 1, "nodes": ["schema-source", "generated-output"]}
+    ]
+    source = result["candidates"][0]
+    assert source["derived_paths"] == [
+        {
+            "path": "docs/_shared/flight.schema.json",
+            "declared_path": "reckon/schema/flight.yaml",
+            "derived_from": "reckon/schema/flight.yaml",
+        },
+        {
+            "path": "reckon/_flight_schema.py",
+            "declared_path": "reckon/schema/flight.yaml",
+            "derived_from": "reckon/schema/flight.yaml",
+        },
+    ]
+    assert result["conflicts"][0]["paths"] == [
+        {
+            "left_path": "reckon/_flight_schema.py",
+            "right_path": "reckon/_flight_schema.py",
+        }
+    ]
+
+
+def test_lane_planner_returns_no_lanes_for_an_empty_candidate_set(home, repo) -> None:
+    result = crew.plan_scope_lanes([], project="proj", repo=repo)
+
+    assert result["lane_count"] == 0
+    assert result["lanes"] == []
+    assert result["conflict_graph"] == {}
+    assert result["conflicts"] == []
+
+
 def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
     home, repo, monkeypatch
 ) -> None:

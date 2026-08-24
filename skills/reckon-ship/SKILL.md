@@ -479,6 +479,7 @@ things that change the world — `dispatch`, `attach`, `resume`, `stop`,
 crew(project, view="live")      every run in flight: node, plan, phase, process_alive,
                                 manifest_present, worktree, its recover classification,
                                 and the next action for each — one call, no worker touched
+crew(project, view="scopes")    live path owners, candidate conflicts, and ordered serial lanes
 crew(project, view="drain")     closure count derived from live pointers, with each
                                 recorded disposition and whether it remains valid
 crew(project, view="ledger")    committed run records
