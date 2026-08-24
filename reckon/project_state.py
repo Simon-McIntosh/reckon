@@ -48,6 +48,13 @@ RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset({"sprint", "milestone", "blocker", "timeline", "project"})
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
 NORTH_STAR_ADVISORY_CAP = 5
+MIGRATION_COMPOSED_DERIVATIONS = frozenset(
+    {
+        "blockers[].id",
+        "blockers[].next",
+        "timeline[].id",
+    }
+)
 PROJECT_DERIVED_FIELDS = frozenset(
     {
         "active_sprint_id",
@@ -697,6 +704,28 @@ def _event_id(event: dict[str, Any], position: int) -> str:
     return f"event-{digest}"
 
 
+def _apply_migration_composed_derivations(
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply every deterministic field synthesis shared by migration and parity."""
+    derived = deepcopy(data)
+    for position, blocker in enumerate(derived.get("blockers", [])):
+        if "blockers[].id" in MIGRATION_COMPOSED_DERIVATIONS and isinstance(
+            blocker, dict
+        ):
+            blocker["id"] = str(blocker.get("id") or f"blocker-{position + 1}")
+        if "blockers[].next" in MIGRATION_COMPOSED_DERIVATIONS and isinstance(
+            blocker, dict
+        ):
+            blocker.setdefault("next", "")
+    for position, event in enumerate(derived.get("timeline", [])):
+        if "timeline[].id" in MIGRATION_COMPOSED_DERIVATIONS and isinstance(
+            event, dict
+        ):
+            event["id"] = str(event.get("id") or _event_id(event, position))
+    return derived
+
+
 def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
     project_rows = legacy.get("projects") or []
     row = (
@@ -717,6 +746,7 @@ def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
 def _migration_payloads(
     project: str, legacy: dict[str, Any]
 ) -> dict[tuple[str, str], dict[str, Any]]:
+    legacy = _apply_migration_composed_derivations(legacy)
     payloads: dict[tuple[str, str], dict[str, Any]] = {}
     for sprint in legacy.get("sprints", []):
         record = dict(sprint)
@@ -736,15 +766,14 @@ def _migration_payloads(
         payloads[("milestone", mid)] = record
     for position, blocker in enumerate(legacy.get("blockers", [])):
         record = dict(blocker)
-        bid = str(record.get("id") or f"blocker-{position + 1}")
+        bid = str(record["id"])
         _safe_segment(bid, "blocker id")
         record.pop("n", None)
         record.update({"id": bid, "type": "blocker", "version": 0})
         payloads[("blocker", bid)] = record
     events = []
-    for position, event in enumerate(legacy.get("timeline", [])):
+    for event in legacy.get("timeline", []):
         record = dict(event)
-        record["id"] = str(record.get("id") or _event_id(record, position))
         events.append(record)
     payloads[("timeline", "timeline")] = {
         "id": "timeline",
@@ -1048,6 +1077,7 @@ def _parity_projection(
     data: dict[str, Any], project: str | None = None
 ) -> dict[str, Any]:
     """Normalise old/new views to durable, non-derived project state."""
+    data = _apply_migration_composed_derivations(data)
     result = {
         "project": {},
         "sprints": [],
@@ -1091,7 +1121,6 @@ def _parity_projection(
             result[key].append(record)
     for row in data.get("timeline", []):
         record = deepcopy(row)
-        record.pop("id", None)
         result["timeline"].append(record)
     project_rows = data.get("projects") or []
     project_row = (
