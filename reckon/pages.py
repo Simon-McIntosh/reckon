@@ -6,11 +6,11 @@ import json
 import os
 import re
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 
@@ -18,6 +18,8 @@ _GITHUB_API = "https://api.github.com"
 _REMOTE_PATTERN = re.compile(
     r"^(?:git@github\.com:|https?://github\.com/)(?P<owner>[^/]+)/(?P<name>[^/]+?)(?:\.git)?/?$"
 )
+_BADGE_START = "<!-- reckon-plans-badge -->"
+_BADGE_END = "<!-- /reckon-plans-badge -->"
 
 
 class PagesError(RuntimeError):
@@ -60,6 +62,7 @@ class PublicationStrategy:
     branch: str | None
     repository_path: PurePosixPath
     site_subpath: PurePosixPath
+    site_url: str | None = None
 
     def describe(self) -> str:
         branch = f", branch={self.branch}" if self.branch else ""
@@ -206,7 +209,100 @@ def detect_publication_strategy(
     )
     configuration = pages_configuration_from_response(pages_status, pages_payload)
     docs_relative = PurePosixPath(resolved_docs.relative_to(repo_root).as_posix())
-    return select_publication_strategy(configuration, docs_path=docs_relative)
+    strategy = select_publication_strategy(configuration, docs_path=docs_relative)
+    site_base = _pages_site_base(repository, pages_status, pages_payload)
+    return replace(
+        strategy,
+        site_url=_site_subpath_url(site_base, strategy.site_subpath),
+    )
+
+
+def write_readme_badge(docs_dir: Path, strategy: PublicationStrategy) -> bool:
+    """Insert or update the repository-local plans badge when its target is known."""
+    if strategy.site_url is None:
+        return False
+
+    resolved_docs = docs_dir.expanduser().resolve()
+    repo_root = _repository_root(resolved_docs)
+    readme = repo_root / "README.md"
+    existing_bytes = readme.read_bytes() if readme.is_file() else b""
+    try:
+        existing = existing_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise PagesUndeterminedError(
+            "README.md is not UTF-8; refusing to rewrite it for the plans badge"
+        ) from exc
+    newline = "\r\n" if "\r\n" in existing else "\n"
+    badge_asset = PurePosixPath(
+        resolved_docs.relative_to(repo_root).as_posix()
+    ) / "_shared" / "badge.svg"
+    image_target = quote(badge_asset.as_posix(), safe="/")
+    block = (
+        f"{_BADGE_START}{newline}"
+        f"[![Plans]({image_target})]({strategy.site_url}){newline}"
+        f"{_BADGE_END}"
+    )
+
+    start_count = existing.count(_BADGE_START)
+    end_count = existing.count(_BADGE_END)
+    if start_count == end_count == 0:
+        if existing:
+            separator = newline if existing.endswith(("\n", "\r")) else newline * 2
+            updated = f"{existing}{separator}{block}{newline}"
+        else:
+            updated = f"{block}{newline}"
+    elif start_count == end_count == 1:
+        start = existing.index(_BADGE_START)
+        end = existing.find(_BADGE_END, start + len(_BADGE_START))
+        if end < 0:
+            raise PagesUndeterminedError(
+                "README contains misordered reckon plans badge markers; refusing "
+                "to rewrite it"
+            )
+        end += len(_BADGE_END)
+        updated = f"{existing[:start]}{block}{existing[end:]}"
+    else:
+        raise PagesUndeterminedError(
+            "README contains ambiguous reckon plans badge markers; refusing to append "
+            "another badge"
+        )
+
+    updated_bytes = updated.encode("utf-8")
+    if updated_bytes == existing_bytes:
+        return False
+    readme.write_bytes(updated_bytes)
+    return True
+
+
+def _pages_site_base(
+    repository: RepositoryCoordinates,
+    status: int,
+    payload: Mapping[str, Any],
+) -> str:
+    if status == 200:
+        html_url = payload.get("html_url")
+        if isinstance(html_url, str) and html_url.strip():
+            parsed = urlsplit(html_url.strip())
+            if (
+                parsed.scheme in {"http", "https"}
+                and parsed.netloc
+                and parsed.username is None
+                and parsed.password is None
+            ):
+                return urlunsplit(
+                    (parsed.scheme, parsed.netloc, parsed.path.rstrip("/") + "/", "", "")
+                )
+
+    owner = quote(repository.owner.casefold(), safe="")
+    repository_name = quote(repository.name, safe="")
+    if repository.name.casefold() == f"{repository.owner}.github.io".casefold():
+        return f"https://{owner}.github.io/"
+    return f"https://{owner}.github.io/{repository_name}/"
+
+
+def _site_subpath_url(base_url: str, site_subpath: PurePosixPath) -> str:
+    encoded_subpath = "/".join(quote(part, safe="") for part in site_subpath.parts)
+    return f"{base_url.rstrip('/')}/{encoded_subpath}/"
 
 
 def _verify_repository_response(
