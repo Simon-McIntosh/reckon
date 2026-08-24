@@ -102,12 +102,14 @@ def _node(**overrides) -> crew.TaskNode:
 
 
 def _dispatch(repo, *, fixture: str | None = None, **kwargs) -> dict:
+    node_kwargs = kwargs.pop("node_kwargs", {})
+    node_id = str(node_kwargs.get("id") or "node-a")
     record = crew.dispatch(
-        node=_node(**kwargs.pop("node_kwargs", {})),
+        node=_node(**node_kwargs),
         project=PROJECT,
         repo=repo,
         config=CONFIG,
-        session="sess",
+        session=kwargs.pop("session", f"sess-{node_id}"),
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
         **kwargs,
     )
@@ -216,14 +218,14 @@ def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
     _deliver(record)
     before = sorted(path.name for path in crew.live_dir().glob("*.json"))
     assert before == [f"{record['run_id']}.json"]
-    assert not (repo / "docs" / "state" / PROJECT / "crew.json").exists()
+    assert ledger.member(PROJECT, record["member"], repo) is not None
 
     result = crew.complete(
         record["run_id"], gate="passed", commits=[record["base_sha"]]
     )
 
     assert result["ledger_path"] == str(repo / "docs" / "state" / PROJECT / "crew.json")
-    assert result["ledger_version"] == 1
+    assert result["ledger_version"] == 2
     assert result["pointer_removed"] is True
     assert sorted(path.name for path in crew.live_dir().glob("*.json")) == []
     stored = ledger.runs(PROJECT, repo)
@@ -280,7 +282,10 @@ def test_stream_duration_is_separate_from_stalled_wall_time(home, repo) -> None:
 
 def test_session_cumulative_tokens_become_summable_run_deltas(home, repo) -> None:
     first = _dispatch(
-        repo, fixture="codex-turn.jsonl", node_kwargs={"id": "token-first"}
+        repo,
+        fixture="codex-turn.jsonl",
+        session="token-session",
+        node_kwargs={"id": "token-first"},
     )
     _timestamp_stream(
         first,
@@ -292,7 +297,10 @@ def test_session_cumulative_tokens_become_summable_run_deltas(home, repo) -> Non
     first_stored = crew.complete(first["run_id"], gate="passed")["record"]
 
     second = _dispatch(
-        repo, fixture="codex-turn.jsonl", node_kwargs={"id": "token-second"}
+        repo,
+        fixture="codex-turn.jsonl",
+        session="token-session",
+        node_kwargs={"id": "token-second"},
     )
     _timestamp_stream(
         second,
@@ -759,7 +767,20 @@ def test_no_live_pointer_path_resolves_inside_a_working_tree(home, repo) -> None
 
 
 def test_a_run_in_flight_leaves_the_working_tree_clean(home, repo) -> None:
-    record = _dispatch(repo)
+    ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
+    subprocess.run(
+        ["git", "add", f"docs/state/{PROJECT}/crew.json"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: seed member\n\nFixture state."],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    record = _dispatch(repo, member="worker-a")
     assert _porcelain(repo) == []
     # The worker's own scoped files live in its worktree, not the main tree.
     assert Path(record["worktree"]).is_dir()
@@ -828,6 +849,30 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
         running["run_id"],
         delivered["run_id"],
         dead["run_id"],
+    }
+
+
+def test_derived_member_guard_ignores_a_run_from_another_repository(
+    home, repo
+) -> None:
+    session = "shared-coordinator-session"
+    member = crew._session_member_id(session)
+    ledger.register_member(PROJECT, member, harness="alpha", root=repo)
+    foreign_run = {
+        "run_id": "r-foreign",
+        "project": PROJECT,
+        "repo": str(home.parent / "outside-repository"),
+        "member": member,
+        "phase": "running",
+    }
+    crew._write_json(crew.pointer_path(foreign_run["run_id"]), foreign_run)
+
+    record = _dispatch(repo, session=session, node_kwargs={"id": "node-local"})
+
+    assert record["member"] == member
+    assert {pointer["run_id"] for pointer in crew.list_live()} == {
+        foreign_run["run_id"],
+        record["run_id"],
     }
 
 
@@ -1324,7 +1369,7 @@ def test_the_crew_tool_reads_the_ledger_and_the_live_pointers(home, repo) -> Non
     live = mcp._crew(PROJECT, view="live", checkout_path=str(repo))
 
     assert [item["run_id"] for item in committed["runs"]] == ["r-one"]
-    assert committed["version"] == 1
+    assert committed["version"] == 2
     assert [row["run_id"] for row in live["runs"]] == [record["run_id"]]
     assert live["runs"][0]["classification"] == "running"
 
