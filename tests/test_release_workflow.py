@@ -15,13 +15,37 @@ def steps_for(job: dict) -> list[dict]:
     return job["steps"]
 
 
-def test_release_runs_only_for_version_tags() -> None:
+def test_release_triggers_are_limited_to_version_tags_and_manual_dry_runs() -> None:
     workflow = load_workflow()
     trigger = workflow.get("on", workflow.get(True))
 
-    assert set(trigger) == {"push"}
+    assert set(trigger) == {"push", "workflow_dispatch"}
     assert set(trigger["push"]) == {"tags"}
     assert trigger["push"]["tags"] == ["v[0-9]+.[0-9]+.[0-9]+"]
+
+
+def test_manual_trigger_defaults_to_test_index_only() -> None:
+    workflow = load_workflow()
+    trigger = workflow.get("on", workflow.get(True))
+
+    assert trigger["workflow_dispatch"] == {
+        "inputs": {
+            "testpypi-only": {
+                "description": "Stop after publishing to TestPyPI",
+                "required": True,
+                "type": "boolean",
+                "default": True,
+            }
+        }
+    }
+
+
+def test_manual_dry_run_cannot_reach_production_publish() -> None:
+    production = load_workflow()["jobs"]["publish-pypi"]
+
+    assert production["if"] == (
+        "${{ github.event_name == 'push' && inputs.testpypi-only != true }}"
+    )
 
 
 def test_build_has_full_version_history_and_both_distribution_formats() -> None:
