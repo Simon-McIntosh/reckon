@@ -1492,7 +1492,7 @@ def service_uninstall():
     "--generate-ci",
     is_flag=True,
     default=False,
-    help="Write .github/workflows/reckon-pages.yml.",
+    help="Opt into Pages publication and write a workflow when the strategy permits.",
 )
 def sync(docs_path, project, mounts_file, state_root, generate_ci):
     """Register a project and copy reckon UI files into its docs directory.
@@ -1611,7 +1611,11 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
 
     # ── Initialise project state without converting existing state ────────────
     index_json = state_dir / "index.json"
-    from reckon.project_state import create_project_state, project_state_mode
+    from reckon.project_state import (
+        create_project_state,
+        enable_project_publication,
+        project_state_mode,
+    )
 
     if project_state_mode(docs_dir).format == "distributed":
         click.echo("  preserved frozen index.json (distributed project state)")
@@ -1622,6 +1626,15 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
         click.echo(
             "  created distributed project state "
             f"(resources={len(created['resources'])})"
+        )
+
+    if generate_ci:
+        publication_version, publication_changed = enable_project_publication(
+            docs_dir, proj_name
+        )
+        state = "recorded" if publication_changed else "already recorded"
+        click.echo(
+            f"  publication opt-in {state} (project version {publication_version})"
         )
 
     # ── Register in mounts.json ────────────────────────────────────────────

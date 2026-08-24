@@ -18,6 +18,7 @@ from click.testing import CliRunner
 from reckon import _plan_html
 from reckon import cli as cli_module
 from reckon import mcp as mcp_module
+from reckon import pages as pages_module
 from reckon._store import read_plan, write_plan
 from reckon.project_state import (
     LegacyIndexReadOnly,
@@ -32,6 +33,7 @@ from reckon.project_state import (
     audit_project_state,
     compose_project_state,
     create_project_state,
+    enable_project_publication,
     marker_path,
     move_sprint_item,
     read_resource,
@@ -621,6 +623,175 @@ def test_project_without_north_stars_reads_unchanged(migrated):
         project,
         version,
     )
+
+
+def test_project_publication_opt_in_survives_versioned_read_and_write(migrated):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    new_version = write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, "publication": {"enabled": True}},
+        version,
+    )
+
+    stored, stored_version = read_resource(docs, "sample", "project", "project")
+    assert new_version == stored_version == version + 1
+    assert stored["publication"] == {"enabled": True}
+    assert compose_project_state(docs, "sample")["projects"][0]["publication"] == {
+        "enabled": True
+    }
+
+
+@pytest.mark.parametrize(
+    "publication",
+    [True, {"enabled": "yes"}, {"enabled": True, "visibility": "PUBLIC"}],
+)
+def test_project_publication_opt_in_rejects_ambiguous_values(migrated, publication):
+    docs, _index, _evidence = migrated
+    project, version = read_resource(docs, "sample", "project", "project")
+
+    with pytest.raises(ValueError, match="project publication"):
+        write_resource(
+            docs,
+            "sample",
+            "project",
+            "project",
+            {**project, "publication": publication},
+            version,
+        )
+
+
+def _invoke_project_sync(docs: Path, tmp_path: Path, *extra: str):
+    return CliRunner().invoke(
+        cli_module.main,
+        [
+            "sync",
+            str(docs),
+            "--project",
+            "sample",
+            "--mounts",
+            str(tmp_path / "mounts.json"),
+            "--state-root",
+            str(tmp_path / "config-state"),
+            *extra,
+        ],
+    )
+
+
+def _file_contents(root: Path) -> dict[str, bytes]:
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
+def test_sync_without_publication_opt_in_stays_local(tmp_path, monkeypatch):
+    root = tmp_path / "checkout"
+    docs = root / "docs"
+    docs.mkdir(parents=True)
+    monkeypatch.setattr(
+        pages_module,
+        "detect_publication_strategy",
+        lambda *_: pytest.fail("routine sync must not query or enable publication"),
+    )
+
+    result = _invoke_project_sync(docs, tmp_path)
+
+    assert result.exit_code == 0, result.output
+    project, _version = read_resource(docs, "sample", "project", "project")
+    assert "publication" not in project
+    assert not (root / ".github/workflows/reckon-pages.yml").exists()
+
+
+def test_public_fork_visibility_does_not_substitute_for_opt_in(tmp_path, monkeypatch):
+    root = tmp_path / "checkout"
+    docs = root / "docs"
+    docs.mkdir(parents=True)
+    assert _invoke_project_sync(docs, tmp_path).exit_code == 0
+    project, version = read_resource(docs, "sample", "project", "project")
+    fork_facts = {"isPrivate": False, "isFork": True, "visibility": "PUBLIC"}
+    stored_version = write_resource(
+        docs,
+        "sample",
+        "project",
+        "project",
+        {**project, **fork_facts},
+        version,
+    )
+    monkeypatch.setattr(
+        pages_module,
+        "detect_publication_strategy",
+        lambda *_: pytest.fail("visibility must not trigger Pages detection"),
+    )
+
+    result = _invoke_project_sync(docs, tmp_path)
+
+    assert result.exit_code == 0, result.output
+    stored, after_version = read_resource(docs, "sample", "project", "project")
+    assert after_version == stored_version
+    assert {key: stored[key] for key in fork_facts} == fork_facts
+    assert "publication" not in stored
+    assert not (root / ".github/workflows/reckon-pages.yml").exists()
+
+
+def test_publication_opt_in_is_recorded_once_and_sync_is_idempotent(
+    tmp_path, monkeypatch
+):
+    root = tmp_path / "checkout"
+    docs = root / "docs"
+    docs.mkdir(parents=True)
+    monkeypatch.setattr(
+        pages_module,
+        "detect_publication_strategy",
+        lambda *_: pages_module.select_publication_strategy(None),
+    )
+
+    first = _invoke_project_sync(docs, tmp_path, "--generate-ci")
+    project, version = read_resource(docs, "sample", "project", "project")
+    first_contents = _file_contents(root)
+    second = _invoke_project_sync(docs, tmp_path, "--generate-ci")
+    after, after_version = read_resource(docs, "sample", "project", "project")
+
+    assert first.exit_code == second.exit_code == 0
+    assert project["publication"] == {"enabled": True}
+    assert after == project
+    assert after_version == version
+    assert _file_contents(root) == first_contents
+    assert (root / ".github/workflows/reckon-pages.yml").is_file()
+    assert "publication opt-in recorded" in first.output
+    assert "publication opt-in already recorded" in second.output
+
+
+def test_opted_in_repository_still_refuses_unsafe_pages_strategy(tmp_path, monkeypatch):
+    root = tmp_path / "checkout"
+    docs = root / "docs"
+    docs.mkdir(parents=True)
+    assert _invoke_project_sync(docs, tmp_path).exit_code == 0
+    opted_in_version, changed = enable_project_publication(docs, "sample")
+    assert changed is True
+    before, version = read_resource(docs, "sample", "project", "project")
+    assert version == opted_in_version
+
+    def refuse_unsafe_pages(*_args, **_kwargs):
+        raise pages_module.PagesConflictError(
+            "Actions-based Pages already publishes this repository"
+        )
+
+    monkeypatch.setattr(
+        pages_module, "detect_publication_strategy", refuse_unsafe_pages
+    )
+
+    result = _invoke_project_sync(docs, tmp_path, "--generate-ci")
+
+    assert result.exit_code == 1
+    assert "Actions-based Pages already publishes this repository" in result.output
+    assert read_resource(docs, "sample", "project", "project") == (before, version)
+    assert not (root / ".github/workflows/reckon-pages.yml").exists()
 
 
 def test_distributed_resource_access_rejects_before_activation(tmp_path):
