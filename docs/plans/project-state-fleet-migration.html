@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
 <meta name="plan-impl" content="0.42">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 </head>
 <body>
   <main class="plan-doc">
@@ -114,10 +114,12 @@
     entity-escaping fault there survives every summary-level comparison. The harness compares
     them in full rather than by length or digest alone.</p>
 
-    <h3>Two measured false positives the harness must exclude by name</h3>
+    <h3>One measured false positive, and one claim that was wrong</h3>
 
-    <p>Both would read as the migration breaking relational metadata. Neither is caused by it,
-    and a naive before/after diff reports both.</p>
+    <p>Both were originally asserted to read as the migration breaking relational metadata
+    without being caused by it. Only the first survived measurement; the second turned out
+    to name a real defect, and the correction is recorded in place rather than quietly
+    rewritten.</p>
 
     <ul>
       <li><strong><code>blocks</code> is descriptive, not gating.</strong> Declaring
@@ -126,12 +128,32 @@
       of both its prerequisites until explicit <code>depends_on</code> was added. That is a
       pre-existing semantic. A test that migrates and then checks <code>blocks</code>-based
       ordering finds it "broken" identically before and after.</li>
-      <li><strong>New wiring findings are increased visibility, not damage.</strong> On
-      <code>imas-codex</code>, <code>roadmap</code> reported two <code>sprint-order-inversion</code>
-      errors and one <code>plan-sprint-missing-item</code> warning after migration that it had
-      not reported before. Nothing was created; <code>roadmap</code> could simply see more once
-      it read typed resources instead of one index. A finding-count diff shows errors appearing
-      and reads as breakage.</li>
+      <li><strong>New sprint-order findings were NOT a false positive, and excluding
+      them by name masked a real defect. Corrected 2026-08-24 by measurement.</strong>
+      This section originally instructed the harness to exclude post-migration
+      <code>sprint-order-inversion</code> findings as increased visibility — that
+      <code>roadmap</code> could simply see more once it read typed resources. That
+      story was plausible, unmeasured, and wrong.
+      <code>compose_project_state</code> orders sprint ids lexicographically, so
+      <code>S10</code> and <code>S11</code> sort ahead of <code>S2</code> and consumers
+      are placed before prerequisites that are already complete. Measured:
+      <code>compose_project_state</code> on <code>imas-codex</code> returns
+      <code>['S1','S10','S11','S2','S3',…]</code>; <code>nova</code>'s migration
+      produced <strong>7 error-level inversions where its legacy state had zero</strong>;
+      and <code>imas-codex</code> has carried <strong>two real inversions since its own
+      migration</strong>, mis-attributed to this very exclusion. The defect reaches
+      every corpus with a double-digit sprint id — <code>imas-ambix</code> 14 of 23,
+      <code>nova</code> 6 of 15, <code>imas-efit</code> 4 of 13 — and it is live in this
+      repository's own <code>roadmap</code> output, which lists <code>S10</code> before
+      <code>S3</code>. Both sessions coordinating from that output read it repeatedly
+      today without noticing.
+      <br><strong>The lesson is about the shape of the mistake, not the sort order.</strong>
+      A correctly-implemented exclusion of the wrong class is more dangerous than the
+      loosened comparison this section guards against, because a loosened comparison
+      looks weak on the page while a named exclusion reads as rigour. The
+      <code>blocks</code> exclusion above carried a measurement and survived; this one
+      carried a rationale and did not. <strong>A named exclusion must carry its
+      measurement, not its rationale.</strong></li>
     </ul>
 
     <p><strong>Done when</strong> a harness diffs both already-migrated projects against their
