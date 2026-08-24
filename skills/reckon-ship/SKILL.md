@@ -395,6 +395,7 @@ repair the request, not as a worker failure:
 | `budget-hold` | 3 | Keep the node ready and retry after the reported reset. |
 | `plan-unavailable` | 4 | Commit the plan before dispatching so its named section exists identically at the base revision. |
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
+| `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
 
 Three node-contract refusals are easy to mistake for infrastructure failures:
 
@@ -509,10 +510,15 @@ a stream tail of `turn.started → error → turn.failed`. Recover with `reckon 
 resume --run <id>` after the reset, advising it to take stock (`git status`, its
 logs) first: session context survives, only uncommitted edits are lost. A quota
 death does NOT feed the budget tracker, so `crew preflight` can read clear
-during a real exhaustion — hold that backend anyway. The live classifier reads the manifest's
-recorded status — `complete` becomes `completed_unpromoted`, `blocked`/`failed`
-are retained, missing terminal manifests become `abandoned` — but that does not
-prove the gate; read its evidence before promotion.
+during a real exhaustion — hold that backend anyway. The live classifier reads
+the manifest's recorded status — `complete` becomes `completed_unpromoted`,
+`blocked`/`failed` are retained, missing terminal manifests become `abandoned`
+— but that does not prove the gate; read its evidence before promotion.
+Dispatch consumes that signal too: once a complete or blocked manifest is older
+than `fences.unreconciled_run_grace`, new work for the project is refused with
+every run's resolving command. Reconcile the rows before continuing. If one
+must deliberately remain, pass `--allow-unreconciled-runs`; the new run records
+the exact backlog it waived.
 
 ### Concurrency — the roster is the whole authority
 

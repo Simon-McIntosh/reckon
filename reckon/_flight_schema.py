@@ -301,6 +301,7 @@ class FenceConfig(ConfiguredBaseModel):
     manifest_required: Optional[bool] = Field(default=None, description="""Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.""")
     enforce_budget_watchdog: Optional[bool] = Field(default=None, description="""Whether observation stops a live CLI worker after its declared time budget multiplied by the configured grace. Off by default; classification always reports the overrun without mutating the run.""")
     budget_grace_multiple: Optional[float] = Field(default=None, description="""Multiple of a run's declared time budget allowed before opt-in watchdog enforcement stops it. Values below one would stop before the declared allowance elapsed.""", ge=1)
+    unreconciled_run_grace: Optional[str] = Field(default=None, description="""How long a complete or blocked worker manifest may remain as a live pointer before dispatch refuses more work for that project.""")
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -312,6 +313,19 @@ class FenceConfig(ConfiguredBaseModel):
                     raise ValueError(err_msg)
         elif isinstance(v, str) and not pattern.match(v):
             err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('unreconciled_run_grace')
+    def pattern_unreconciled_run_grace(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid unreconciled_run_grace format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid unreconciled_run_grace format: {v}"
             raise ValueError(err_msg)
         return v
 

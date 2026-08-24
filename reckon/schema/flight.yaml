@@ -296,6 +296,13 @@ slots:
     range: float
     minimum_value: 1
 
+  unreconciled_run_grace:
+    description: >-
+      How long a complete or blocked worker manifest may remain as a live
+      pointer before dispatch refuses more work for that project.
+    range: string
+    pattern: "^[0-9]+[smh]$"
+
   cleanup:
     range: WorktreeCleanup
 
@@ -393,6 +400,7 @@ classes:
       - manifest_required
       - enforce_budget_watchdog
       - budget_grace_multiple
+      - unreconciled_run_grace
 
   WorktreeConfig:
     description: Worktree lifecycle policy.

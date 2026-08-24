@@ -277,6 +277,24 @@ def test_the_shipped_layer_carries_the_budget_thresholds(layers):
     assert resolved.origin("budget.resume_reserve_pct") == "shipped"
 
 
+def test_unreconciled_run_grace_resolves_with_layer_provenance(layers):
+    shipped = resolve_files(layers)
+    assert shipped.config["fences"]["unreconciled_run_grace"] == "5m"
+    assert shipped.origin("fences.unreconciled_run_grace") == "shipped"
+
+    write(layers["project"], "fences:\n  unreconciled_run_grace: 12m\n")
+    project = resolve_files(layers)
+    assert project.config["fences"]["unreconciled_run_grace"] == "12m"
+    assert project.origin("fences.unreconciled_run_grace") == "project"
+
+    overridden = resolve_files(
+        layers,
+        overrides={"fences": {"unreconciled_run_grace": "90s"}},
+    )
+    assert overridden.config["fences"]["unreconciled_run_grace"] == "90s"
+    assert overridden.origin("fences.unreconciled_run_grace") == "override"
+
+
 def test_a_project_may_tighten_the_budget_ceiling_alone(layers):
     write(layers["project"], "budget:\n  utilisation_ceiling_pct: 80\n")
     resolved = resolve_files(layers)
