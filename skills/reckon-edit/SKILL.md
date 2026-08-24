@@ -75,6 +75,15 @@ Silent bypasses hide drift.
 3. **Content parity.** Add text in new blocks; do not reflow or paraphrase existing content.
 4. **All plan state lives in semantic HTML elements.** Edits to decisions, followups, status,
    and impl go into `<meta name="plan-*">` scalars and `data-reckon` section elements.
+**Never append a followup carrying WORK to a completed plan.** A plan at `impl` 1.0 or
+status `shipped`/`done` is excluded from `roadmap`'s `pending_work` and every open path, so
+a followup on it is hidden work, not tracked work — it renders on the page and appears
+nowhere anyone looks to decide what to do next. Work discovered against a completed plan
+gets a NEW plan (`reckon-create`) linked to an advancing sprint. The one legitimate
+followup on a completed plan is a POINTER whose body names the plan that carries the work.
+Test it: after writing, does `roadmap(project)` list the work in `pending_work`? If not you
+hid it. Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+
 5. **Every followup MUST carry a non-empty `<pre class="r-fu-prompt">` block.** A followup
    without a prompt is rejected at write time. See §05 invocation below.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.

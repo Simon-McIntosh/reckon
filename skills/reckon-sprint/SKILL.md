@@ -218,6 +218,15 @@ instructions or user write authorization.
 
 ## Close and rebalance gates
 
+**Never wire new work into a closed sprint, and keep the horizon advancing.** A `done`
+sprint is a record; an item added to it is invisible to the advancing horizon. When the
+active sprint's items are all resolved, CLOSE it and open the next rather than parking new
+work in it, in a stale `planned` sprint, or in a completed one. Work discovered against a
+closed sprint belongs to the advancing sprint. Same rule one level down: work discovered
+against a COMPLETED PLAN needs a new plan, not a followup on the finished one — a followup
+there is excluded from `roadmap`'s `pending_work` and is hidden rather than tracked.
+Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+
 - Do not close a sprint while `roadmap(project, sprint=<id>)` returns ready or
   in-progress work. Execute it or record a genuine external/human blocker.
 - A derived prerequisite is not duplicated as an explicit blocker. Keep the

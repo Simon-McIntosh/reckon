@@ -830,6 +830,52 @@ as a concrete section, add its executable nodes to the DAG, and keep the plan
 active. A followup is reserved for work owned by a different plan, whose own
 lifecycle keeps it visible to `roadmap`.
 
+### 7a-bis. Completed work is a RECORD, not a container — canonical rule
+
+**A finished plan and a closed sprint are records of what happened. Neither is a
+place to put new work.** This is the rule that governs where discovered work goes,
+and it is authored here; `reckon-edit`, `reckon-sprint` and `reckon-create` refer
+to it.
+
+**Why it matters, mechanically.** A plan at `impl` 1.0 or status `shipped`/`done`
+is excluded from `roadmap`'s `pending_work`, `ready_now`, `critical_path` and every
+open path. So a followup appended to it is not *tracked* work — it is **hidden**
+work. It renders on the plan page, it satisfies the continuation check, and it
+appears nowhere a human or agent looks to decide what to do next. The same holds a
+level up: an item added to a `done` sprint is invisible to the advancing horizon.
+Squeezing work into a completed container is the most convincing way to lose it,
+precisely because it leaves a paper trail that looks like tracking.
+
+| Where the work was discovered | Where it goes |
+|---|---|
+| against a plan that is still `active`/`pending` | a **section** on that plan, with DAG nodes (§7) |
+| against a plan that is **complete** | a **NEW plan**, linked to an advancing sprint |
+| against a **closed** sprint | the **advancing** sprint — never back-filled |
+| owned by a different live plan | a followup **pointer** on yours, naming that plan |
+
+**The one legitimate followup on a completed plan is a pointer, never the work.**
+Its body names the plan that carries the work and says nothing that would have to
+be executed from where it sits. If you cannot name that owning plan, the followup
+is hiding work and a plan is what you owe.
+
+**Reopening a completed plan is not the escape hatch.** Flipping `shipped` back to
+`active` to hang one more node on it is legitimate exactly once — when the plan's
+own declared scope genuinely was not finished. Doing it repeatedly is the smell
+that the work is a new subject wearing the old plan's name: each flip erases the
+signal that the earlier scope closed, and readers can no longer tell which verdict
+belongs to which question.
+
+**The operational test, and it is falsifiable.** After writing the work down, call
+`roadmap(project)` and look for it in `pending_work`. If it is not there, you did
+not record work — you hid it. Fix it by creating the plan, not by rewording the
+followup.
+
+**Sprint horizon.** Keep the horizon advancing: when the active sprint's items are
+all resolved, close it and open the next, rather than parking new work in a stale
+`planned` sprint or a closed one. Move a plan between sprints only with its
+prerequisites — moving a prerequisite behind its successor is a sprint-order
+inversion and a failed rebalance.
+
 ### 7b. Continuation closes at THREE altitudes, not one
 
 **Work never ends without naming what comes next** — and the chain has three ends,

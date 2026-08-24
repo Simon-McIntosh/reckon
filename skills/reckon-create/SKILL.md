@@ -25,6 +25,13 @@ Full detail below.
 
 ## When to invoke
 
+**Work discovered against a COMPLETED plan or a CLOSED sprint belongs here.** This is the
+most-missed trigger. A finished plan is a record: appending a followup to it hides the work,
+because `roadmap` excludes completed plans from `pending_work` and every open path. If you
+are about to write a followup onto a plan at `impl` 1.0, or to reopen a `shipped` plan to
+hang one more node on it, the correct move is usually a NEW plan linked to an advancing
+sprint. Canonical rule: `reckon-ship` SKILL.md §7a-bis.
+
 Trigger on any of:
 - "create a plan for X" / "new plan: Y" / "draft a plan" / "start a plan called Z"
 - "write a dashboard / create an explainer / author a doc"
