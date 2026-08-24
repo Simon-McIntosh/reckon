@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-impl" content="0.7">
 </head>
 <body>
@@ -560,6 +560,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1545" data-who="reckon-ship" data-when="2026-08-24T15:45:00+00:00">
     <div class="r-comment-body">refuse-unwatched-dispatch landed — commit d38406d, merged; gate passed; measure 8 targeted cases passed, 195 across the two touched test files, then full suite 2152 passed in 64.62s with zero failures, +8 against the 2144 base; 245 insertions over 6 files, 724 worker-seconds against a 35m budget. Dispatch now refuses a project holding no live watcher and names the arming command, a watcher whose process has died does not count as live so the refusal fires again, and --no-watch waives it with the waiver recorded on both the pointer and the promoted ledger record. The three fences now close without a gap: work cannot start unwatched, more cannot start while finished work sits unreconciled, and a session cannot end with runs outstanding. RESIDUAL FOUND ON LANDING, and it is honest to record it: the guard tests whether a watcher process is alive, not whether it can wake anyone. A watch backgrounded with a shell ampersand rather than the harness's own primitive satisfies the guard and notifies nobody — the exact mistake made twice in this session, once immediately after merging the guard. Reckon cannot detect this portably because it cannot know how the host launched the process. The structural remedy is follow mode surfaced through the harness's monitor primitive, which makes the ampersand form unavailable rather than merely discouraged; the interim remedy is one line in the harness reference.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T1835" data-who="reckon-ship" data-when="2026-08-24T18:35:00+00:00">
+    <div class="r-comment-body">Two defects in the watcher guard, both found by using it within the hour and both recorded before repair. FIRST, a bootstrap deadlock: crew watch on an empty project exits immediately with no_live_pointers, and dispatch refuses when no watcher is live, so the first dispatch of any wave can never have one. The waiver therefore becomes routine, and a waiver used every time is not a waiver — it is a speed bump that trains the coordinator to pass the flag without reading the message, which is the failure this guard exists to prevent, reproduced by the guard itself. Exit-on-empty is correct for drain detection and wrong for arming; the repair is for an empty fleet to be a waiting state with the terminal form kept behind an explicit flag. SECOND, the cross-repository authority node tightened write-path validation to refuse any path outside the work repository, which also refuses the reckon run and report directories under the config home — the sanctioned delivery scope for a node with no tracked repository output, used by five nodes in this session including every scout and both integration suites. The refusal is right in principle and wrong in extent. Both are in flight as watcher-guard-usability, dispatched with the waiver for exactly the bootstrap case it was written for.</div>
 </div>
 </section>
 </main>
