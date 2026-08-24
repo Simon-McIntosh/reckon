@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="5">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="7">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -141,7 +141,19 @@
     from the live view rather than from memory, and a session ending with a nonzero count and no
     recorded reason is visible as such in its own artifact.</p>
 
-    <h2 id="s5">&#167;5 &mdash; The coordinator that waits by asking again</h2>
+    <h2 id="s5">&#167;5 &mdash; The coordinator that waits by asking again <span class="badge badge-shipped">&#10003; landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong>
+    <code>reckon crew watch --project &lt;project&gt;</code> is one blocking project-wide watcher
+    held by a kernel advisory lock, so a second attempt reports the live watcher instead of
+    becoming one. It exits on the first terminal manifest with that run's classification and
+    resolving command, on a stream quiet past 15m or <code>--stall-window</code>, and immediately
+    on an empty fleet. Every successful dispatch now returns <code>watch.arming_line</code> and
+    <code>watch.watcher_live</code>, and the pointer is published before the probe so an empty
+    fleet cannot be reported for a run that exists. Full suite 2106 passed, 0 failures, 6 tests
+    added. Full record:
+    <a href="/reckon/evidence/archive/completion-is-not-silent-landed#single-fleet-watch">&#167;5 landed</a>
+    (commit <code>8b9a638</code>).</p>
 
     <p><strong>Measured while this plan was being executed, which is how it was found.</strong>
     The coordinator armed a correct watch at dispatch and then asked the same question every turn
@@ -224,6 +236,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824T1330" data-who="reckon-ship" data-when="2026-08-24T13:30:00+00:00">
     <div class="r-comment-body">unreconciled-dispatch-refusal landed — commit cb656ad; gate passed; measure targeted contract 8 passed then full suite 2100 passed in 58.48s with 0 failures against base 4dddca0, generated Pydantic and JSON schemas byte-identical to the LinkML source; 327 insertions over 12 files, 6 tests added, 755 worker-seconds against a 45m budget. Shipped fences.unreconciled_run_grace=5m, CLI error unreconciled-runs at exit 6, waiver --allow-unreconciled-runs storing the waived rows on the pointer and the promoted ledger record. Grace derives from manifest mtime, not dispatch time, so a run dispatched long ago whose manifest turned terminal moments ago is not refused. Artifacts recorded at docs/evidence/archive/completion-is-not-silent-landed.html#dispatch-refusal.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T1345" data-who="reckon-ship" data-when="2026-08-24T13:45:00+00:00">
+    <div class="r-comment-body">single-fleet-watch landed — commit 8b9a638, merged 8cf8f0a; gate passed; measure 7 of 7 focused tests then full suite 2106 passed in 65.23s with zero failures against base fc424d3, six new product tests over the 2100-test base; 402 insertions and 31 deletions over 7 files, 928 worker-seconds against a 40m budget. Shipped reckon crew watch --project P with kernel-backed advisory-lock exclusivity, exits on terminal manifest, on stream quiet past a default 15m or --stall-window, and immediately on an empty fleet; every successful dispatch now returns watch.arming_line and watch.watcher_live. The pointer is published before the dispatch watcher probe, closing the empty-fleet race. Dogfooded on landing: the empty-fleet exit returned classification no_live_pointers rather than blocking. Recorded at docs/evidence/archive/completion-is-not-silent-landed.html#single-fleet-watch.</div>
 </div>
 </section>
 </main>

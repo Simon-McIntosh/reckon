@@ -94,6 +94,45 @@
       <code>~/.config/reckon/crew/runs/r-20260824T130935083877-unreconciled-dispatch-refusal/</code>.
     </p>
 
+    <h2 id="single-fleet-watch">One project watch, armed from dispatch</h2>
+    <p>
+      Commit <code>8b9a638</code> (2026-08-24, worker codex-m, 928&nbsp;worker-seconds against a
+      40&nbsp;m budget, 402 insertions / 31 deletions over 7 files, merged no-ff as
+      <code>8cf8f0a</code>).
+    </p>
+    <ul>
+      <li><strong>One watcher, whole project.</strong> <code>reckon crew watch --project P</code>
+        blocks on every live pointer at once. A per-run watch would scale with the fleet, which is
+        exactly the shape that produced the incident below.</li>
+      <li><strong>Exclusivity is kernel-backed, not advisory prose.</strong> A second watch for the
+        same project reports the live watcher and exits; metadata whose process no longer holds the
+        lock is reclaimed rather than blocking forever behind a dead owner.</li>
+      <li><strong>Three exits, all of them events.</strong> A terminal manifest exits with the
+        shared classification and <code>next_action</code>; a stream quiet past 15&nbsp;m or
+        <code>--stall-window</code> exits naming the stalled run; an empty fleet exits at once
+        instead of waiting for work that does not exist.</li>
+      <li><strong>Liveness is stream quiet, never the recorded pid.</strong> Reading the pid misled
+        the session that found this, and an in-harness run has no pid at all.</li>
+      <li><strong>Arming is reported, not remembered.</strong> Every successful dispatch returns
+        <code>watch.arming_line</code> and <code>watch.watcher_live</code>. The pointer is published
+        before the probe, so the empty-fleet answer cannot race a run that already exists.</li>
+    </ul>
+    <p>
+      <strong>The incident this repairs, measured on this plan's own execution.</strong> The
+      coordinator armed a correct watch at dispatch and then re-asked every turn anyway, reaching
+      <strong>eight concurrent background watches on one run</strong> before the lead intervened.
+      Nothing was lost and the loop worked — it was simply unusable, which no existing fence
+      measures. The portable skill's polling recipe is now one command; the host-local arming form
+      (<code>run_in_background</code>, and the hook that removes the last manual step) sits in the
+      Claude Code harness reference beside the wake-on-completion capability it depends on.
+    </p>
+    <p>
+      Gate: <strong>passed</strong>. Focused 7/7 in 0.84&nbsp;s; full suite
+      <strong>2106 passed in 65.23&nbsp;s, 0 failures</strong> against base <code>fc424d3</code>,
+      six new product tests over the 2100 at base. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260824T132735038806-single-fleet-watch/</code>.
+    </p>
+
   </main>
 </body>
 </html>
