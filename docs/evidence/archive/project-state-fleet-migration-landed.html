@@ -144,6 +144,88 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="preflight-scope">§3 — The preflight blocker, narrowed to what it protects</h2>
+
+    <p>Run <code>r-20260824T110909931263-worktree-preflight-scope</code>, worker
+      commit <code>f35d94a</code>, 4 tests added. Gate <strong>passed</strong>. The
+      blocker fired on the mere <em>existence</em> of an alternate worktree, which
+      deferred every repository carrying ordinary detached session trees. It now
+      inspects each worktree independently and reuses the same
+      <code>_overlaps_migration_path</code> predicate already applied to the mounted
+      checkout, and the code is renamed <code>dirty-alternate-worktrees</code> so it
+      names the condition it detects.</p>
+
+    <p>This is a narrowing justified by mechanism, not a loosened gate: the migration
+      writes only inside the mounted checkout's <code>docs/</code> tree, and a
+      detached worktree at an older revision shares no working tree with it, so it
+      cannot collide. What can collide — a worktree holding uncommitted docs state —
+      still blocks. <strong>Measured after the change: <code>nova</code>
+      <code>ok=true</code> with zero blockers; <code>imas-ambix</code> still
+      <code>ok=false</code></strong>, naming exactly the three trees that carry
+      staged docs HTML. Full suite 2020 passed. Accepted limit, recorded rather than
+      fixed: a worktree whose <code>git status</code> cannot be read is skipped
+      rather than blocking; the preceding directory check covers the realistic case,
+      and this file is removed entirely by §6.</p>
+
+    <h2 id="ambix-triage">§3 — imas-ambix worktree triage: the blocker has no unpublished work behind it</h2>
+
+    <p>Run <code>r-20260824T110756057460-ambix-worktree-triage</code> (read-only
+      investigate, requested by the lead). Gate <strong>passed</strong>: 7 of 7
+      alternate worktrees classified, <strong>6 safe to remove, 1 needing human
+      review</strong>, every HEAD reachable from <code>main</code>.</p>
+
+    <p><strong>The three June trees that block the migration hold nothing
+      unpublished.</strong> Each stages an identical repository-wide, rollback-shaped
+      snapshot — 1,645 paths, 6,536 insertions, 816,445 deletions — and each cached
+      tree <em>exactly matches reachable ancestor</em>
+      <code>9dae38ba19805ac73a84a046479be47231556915</code>. So the staged content is
+      already in the repository's history and removing those trees would lose nothing.
+      The blocker is therefore real by the check's definition and empty in substance.</p>
+
+    <p><strong>One tree holds the only recovery candidate.</strong>
+      <code>cdw-ship-01/motion-readout</code> carries five untracked files, each
+      differing from the same path in reachable commit
+      <code>eaf8e31b8f1a6132faf76f453da14198768062d7</code>:
+      <code>docs/figures/camera-dynamics-wm/fig-cdw-motion-readout.png</code>,
+      <code>imas_ambix/camdyn/artifacts/motion_readout.json</code>,
+      <code>imas_ambix/camdyn/motion_readout.py</code>,
+      <code>scripts/slurm/camdyn_motion_readout.sbatch</code> and
+      <code>tests/camdyn/test_motion_readout.py</code>. Those want comparing before
+      that tree goes. Note it does not block the migration — none of the five is a
+      migration-relevant path.</p>
+
+    <h2 id="fleet-readiness">§4 — Fleet readiness, measured rather than assumed</h2>
+
+    <p>Preflight run across all 12 mounted projects after the narrowing. Of the ten
+      legacy repositories, <strong>7 now pass with zero blockers</strong> and 3 do
+      not — and the three fail for three different reasons, none of which is corpus
+      shape.</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th>Preflight</th><th>Blocker</th><th>What it needs</th></tr></thead>
+      <tbody>
+        <tr><td><code>hanney</code>, <code>helix</code>, <code>imas-efit</code>, <code>norma</code>, <code>nova</code>, <code>tessera</code>, <code>vv</code></td><td>pass</td><td>—</td><td>nothing; dispatchable</td></tr>
+        <tr><td><code>imas-ambix</code></td><td>block</td><td><code>dirty-alternate-worktrees</code></td><td>the three June trees removed — lead decision</td></tr>
+        <tr><td><code>imas-standard-names</code></td><td>block</td><td><code>upstream-behind</code></td><td>a fast-forward pull in that checkout</td></tr>
+        <tr><td><code>L2G</code></td><td>block</td><td><code>missing-project-index</code></td><td>not a migration at all — see below</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong><code>L2G</code> is the case §5 just solved, and it is the first
+      evidence that the born-distributed change was the right sequencing.</strong> It
+      has no state directory and therefore no legacy index to migrate, so
+      <code>migrate-project-state</code> can never apply to it and the preflight is
+      right to refuse. It reaches distributed state through <code>reckon sync</code>
+      creating typed state natively — the path that did not exist before this session.</p>
+
+    <p>This also corrects §4's own sequencing rationale. It reserved last place for
+      <code>imas-standard-names</code> as the corpus most likely to exceed what the
+      gate proved; measured, that repository holds an ordinary two-file legacy state
+      and its only obstacle is being behind upstream. The structural outliers are
+      <code>L2G</code>, which has no state at all, and <code>imas-efit</code>, which
+      carries six extra legacy sidecar JSON documents beside its index — and
+      <code>imas-efit</code> passes preflight cleanly.</p>
+
     <h2 id="s3-preflight">§3 — What actually blocks the two priority repositories</h2>
 
     <p>Measured with <code>preflight_repository</code> against both mounted
