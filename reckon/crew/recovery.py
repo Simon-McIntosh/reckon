@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import re
 import time
 from datetime import datetime, timezone
@@ -18,10 +19,13 @@ from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _manifest_freshness,
     _project_watch_claim,
+    _read_watch_record,
     _stream_quiet_seconds,
     _utc_now,
+    _write_watch_record,
     list_live,
     process_alive,
+    watch_lock_path,
 )
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
@@ -286,6 +290,71 @@ def overdue_unreconciled_runs(
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
     return datetime.now(tz=timezone.utc).timestamp()
+
+
+def unwatch(project: str) -> dict[str, Any]:
+    """Stop the registered watcher for one project and release its claim."""
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            watcher = _read_watch_record(handle)
+            registered_project = str(watcher.get("project") or "")
+            if registered_project != project:
+                raise CrewError(
+                    f"refusing to stop watcher for project {project!r}: "
+                    f"the locked registration names {registered_project!r}"
+                )
+            try:
+                pid = int(watcher.get("pid"))
+            except (TypeError, ValueError) as exc:
+                raise CrewError(
+                    f"refusing to stop watcher for project {project!r}: "
+                    "the locked registration has no valid pid"
+                ) from exc
+
+            try:
+                _signal_process_group(pid, watcher.get("pid_start_time"))
+            except ProcessLookupError:
+                stopped = False
+                reason = "watcher-exited"
+                detail = (
+                    f"watcher pid {pid} exited before it could be signalled; "
+                    "its registration was released"
+                )
+            else:
+                stopped = True
+                reason = "stopped"
+                detail = f"stopped registered watcher pid {pid}"
+
+            # The watcher owns this lock until its process exits. Taking it
+            # before clearing the record makes registration release observable
+            # to a subsequent arming command, without replacing the lock inode.
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            _write_watch_record(handle, {})
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            return {
+                "project": project,
+                "stopped": stopped,
+                "registration_released": True,
+                "reason": reason,
+                "detail": detail,
+                "watcher": watcher,
+            }
+
+        watcher = _read_watch_record(handle)
+        _write_watch_record(handle, {})
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return {
+            "project": project,
+            "stopped": False,
+            "registration_released": True,
+            "reason": "nothing-to-stop",
+            "detail": f"project {project!r} has no registered watcher to stop",
+            "watcher": watcher,
+        }
 
 
 def _single_clause(value: Any, *, limit: int = 96) -> str:

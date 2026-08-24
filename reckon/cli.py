@@ -915,6 +915,21 @@ def crew_watch(project, stall_window, exit_on_empty, follow, json_output, pretty
     _emit({"ok": True, **result}, pretty)
 
 
+@crew.command(name="unwatch")
+@click.option("--project", required=True, help="Project whose watcher to stop.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_unwatch(project, pretty):
+    """Stop one project's registered watcher and release its claim."""
+    from reckon.crew.node import CrewError
+    from reckon.crew.recovery import unwatch
+
+    try:
+        result = unwatch(project)
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
+
+
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
