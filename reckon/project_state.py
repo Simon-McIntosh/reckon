@@ -509,6 +509,18 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
                     for generated_path in generated
                 ]
             cleaned["derivations"] = validated_derivations
+        publication = cleaned.get("publication")
+        if publication is not None:
+            if not isinstance(publication, dict):
+                raise ValueError("project publication must be an object")
+            unexpected = set(publication) - {"enabled"}
+            if unexpected:
+                raise ValueError(
+                    "project publication has unsupported keys: "
+                    + ", ".join(sorted(unexpected))
+                )
+            if not isinstance(publication.get("enabled"), bool):
+                raise ValueError("project publication enabled must be a boolean")
         north_stars = cleaned.get("north_stars")
         if north_stars is not None:
             if not isinstance(north_stars, list):
@@ -619,6 +631,23 @@ def write_resource(
             expected_version,
             create=create,
         )
+
+
+def enable_project_publication(docs_dir: Path, project: str) -> tuple[int, bool]:
+    """Persist an explicit publication opt-in without advancing unchanged state."""
+    manifest, version = read_resource(docs_dir, project, "project", "project")
+    publication = manifest.get("publication")
+    if isinstance(publication, dict) and publication.get("enabled") is True:
+        return version, False
+    new_version = write_resource(
+        docs_dir,
+        project,
+        "project",
+        "project",
+        {**manifest, "publication": {"enabled": True}},
+        version,
+    )
+    return new_version, True
 
 
 def _write_resource_unlocked(
