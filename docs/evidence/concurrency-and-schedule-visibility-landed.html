@@ -114,6 +114,50 @@
       observed on its own execution.
     </p>
 
+    <h2 id="crew-split">The module split, and what it bought</h2>
+    <p>
+      Commit <code>8261536</code> (2026-08-24, worker codex-w, 1184&nbsp;worker-seconds against a
+      55&nbsp;m budget). Gate <strong>passed</strong>: merged tree <strong>2197 passed, 0
+      failed</strong>, and <code>reckon.crew</code> exposes exactly the 101 names in the committed
+      snapshot &mdash; 0 missing, 0 extra.
+    </p>
+    <table>
+      <thead><tr><th></th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/crew.py</code></td><td>4012 lines</td><td><strong>59</strong>, a pure façade</td></tr>
+        <tr><td>modules</td><td>1</td><td>9, largest 877</td></tr>
+        <tr><td>public surface</td><td>101 names</td><td>101, asserted equal to a committed snapshot</td></tr>
+        <tr><td>test files edited</td><td>&mdash;</td><td>1, by 6 lines</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The boundaries were not invented.</strong> <code>crew.py</code> had declared them in
+      section comments for months &mdash; node, routing, runs, prompts, dispatch, promotion,
+      recovery, reports, summary &mdash; so the split was a move, not a redesign, which is why it
+      could be done in one node at speed.
+    </p>
+    <p>
+      <strong>What it bought, measured on the next wave rather than argued.</strong> The four
+      remaining nodes on this plan all wanted <code>crew.py</code> and would have run one at a
+      time. They now wanted <code>recovery.py</code>, <code>dispatch.py</code>,
+      <code>promotion.py</code> and <code>roadmap.py</code>, and ran three-wide immediately. One
+      lane became three on the first attempt.
+    </p>
+    <p>
+      <strong>One limit worth recording.</strong> The split divided the source and not the tests:
+      <code>tests/test_crew.py</code> is still 3310 lines, so concurrent nodes must each write
+      their own test module or they collide there instead. Every node in the following wave did,
+      which is why the fan-out held.
+    </p>
+    <p>
+      <strong>The stop that made it safe.</strong> The worker halted with one failing test rather
+      than edit a test its contract forbade &mdash; a contract test that greps
+      <code>crew.py</code> as a <em>file</em> for refusal strings that had moved into
+      <code>dispatch.py</code>. The repair was a fidelity change, not a relaxation: the test now
+      reads the whole package, so the assertion keeps its exact meaning and cannot be satisfied by
+      a string sitting in the wrong module.
+    </p>
+
   </main>
 </body>
 </html>
