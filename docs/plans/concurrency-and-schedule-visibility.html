@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="9">
-<meta name="plan-impl" content="0.43">
+<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.57">
 </head>
 <body>
   <main class="plan-doc">
@@ -438,6 +438,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1450" data-who="reckon-ship" data-when="2026-08-24T14:50:00+00:00">
     <div class="r-comment-body">schedule-readiness-axis landed — commit 8609ef1, merged; gate passed; measure full suite 2120 passed in 81.42s with zero failures, +2 against the 2118 base; 229 insertions over 5 files, 576 worker-seconds against a 35m budget. Roadmap now reports schedule_readiness beside dependency_readiness, deferring work outside a window of sprints counted from the earliest holding open work, with each deferred row naming the sprint it sits behind and remaining in ready_now and immediate_roadmap. Window width reads from the project manifest and is never hardcoded. It reports horizon_depth=6 against an independent count of six sprints holding open work — S5, S6, S8, S9, S12, S13 — correcting the count of five recorded in s1, which missed S8. Open: schedule_horizon_sprints is undeclared so the axis reports configured=false and imposes no queue. Any width below 5 would defer S12 and S13, which is where current work lives, so the number should follow a sprint consolidation rather than precede it.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T1452b" data-who="reckon-ship" data-when="2026-08-24T14:52:00+00:00">
+    <div class="r-comment-body">current-attempt-identity landed — commit 4e0f5f5, merged; gate passed; measure six targeted attempt and compatibility cases passed, tests/test_crew.py 147 passed, full suite 2120 passed in 60.60s with zero failures and +2 against its 2118 base, ruff clean on all three changed paths; 183 insertions and 10 deletions over 3 files, 691 worker-seconds against a 35m budget. A resumed or redispatched run now reports its current attempt: the record names that attempt's stream rather than the first, keeps a non-terminal phase while the process lives, captures the session id without a preparatory observe, and a watch armed after a resume ignores the previous attempt's manifest. All four readings were measured on this plan's own execution before the fix, which is why the node exists. The follow mode and the watch's missing memory remain open in this section; the busy-loop where an unpromoted run masks every later event is unfixed.</div>
 </div>
 </section>
 </main>
