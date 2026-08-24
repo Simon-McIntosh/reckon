@@ -121,6 +121,19 @@ def test_create_and_edit_skills_guard_repository_allocation() -> None:
     assert "Never leave two canonical live plans" in edit
 
 
+def test_create_and_edit_skills_share_the_canonical_authoring_exemplar() -> None:
+    skill_root = ROOT / "skills"
+    exemplar = "docs/_exemplar-plan.html"
+
+    for skill_name in ("reckon-create", "reckon-edit"):
+        text = normalized((skill_root / skill_name / "SKILL.md").read_text())
+        assert exemplar in text
+        assert (
+            "canonical annotated exemplar for plan, research, and evidence resources"
+            in text
+        )
+
+
 def test_create_skill_reads_live_tag_inventory_before_choosing_tags() -> None:
     create = normalized(
         (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text()

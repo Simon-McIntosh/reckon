@@ -25,6 +25,17 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 
 Full detail below.
 
+## Canonical authoring exemplar
+
+Read `docs/_exemplar-plan.html` in the Reckon repository before writing a
+resource. It is the canonical annotated exemplar for plan, research, and
+evidence resources: the file itself is a schema-valid plan, and it contains
+complete copyable research and evidence documents. Copy the matching specimen,
+substitute the target repository's identity and content, and validate the result
+with `reckon audit-doc <path>`. Use the explanations below to resolve intent and
+policy questions; do not reconstruct basic markup from prose when the executable
+example already carries it.
+
 ## When to invoke
 
 **Work discovered against a COMPLETED plan or a CLOSED sprint belongs here.** This is the
