@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="9">
 </head>
 <body>
   <main class="plan-doc">
@@ -344,6 +344,46 @@
     is reachable through it. Reckon's own <code>docs/</code> becomes the example, which is the
     honest form of a demo: the tool's own planning state, not a fixture.</p>
 
+    <h3>The guard is not "is it private", and that is measurable</h3>
+
+    <p><strong>Publication is per-repository opt-in, never a central filter.</strong> The lead's
+    rule is that private information stays private and a fork of an upstream repository counts
+    as personal. A predicate of "publish unless private" satisfies the letter and breaks the
+    rule, measured on this machine:</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th><code>isPrivate</code></th><th><code>isFork</code></th><th>GitHub visibility</th><th>Publish?</th></tr></thead>
+      <tbody>
+        <tr><td><code>Simon-McIntosh/reckon</code></td><td>false</td><td>false</td><td>PUBLIC</td><td>yes</td></tr>
+        <tr><td><code>Simon-McIntosh/imas-codex</code></td><td>false</td><td><strong>true</strong></td><td>PUBLIC</td><td><strong>no — personal fork</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>A guard keyed on <code>isPrivate</code> publishes that fork and reports itself correct.
+    That is a disclosure failure produced by a plausible predicate — the same shape as every
+    silent-null finding that motivated this plan, with a worse blast radius, because the output
+    is a public URL rather than a wrong count. <code>isFork</code> narrows it but is still a
+    proxy: the durable rule is that a repository publishes only by declaring so in its own
+    tree, so a repository that never opted in cannot be published by any central
+    misconfiguration.</p>
+
+    <p><strong>That settles the topology question, and the trigger with it.</strong> Each
+    repository's own CI runs <code>reckon build docs</code> and deploys its own Pages site,
+    triggered by changes to its own <code>docs/</code>. Reckon publishes a thin composed index
+    over the set that has published. Nothing needs cross-repository credentials, no central
+    list can leak a non-participant, and the common-case trigger is local rather than a
+    cross-repo dispatch — only a change in the <em>set</em> of published projects needs
+    reckon's index rebuilt, which is rare enough for a manual or dispatched run.</p>
+
+    <p><strong>Three costs to state honestly rather than discover.</strong> The SPA must read
+    several <code>index.json</code> files cross-origin, which needs the Pages CORS behaviour
+    verified rather than assumed — if it does not permit it, the composed index degrades to
+    links out instead of a unified view, and that is the fallback rather than a blocker.
+    Cross-repository plan links become cross-origin URLs, which is arguably an improvement
+    since they become real addresses. And a federated view can show a stale member if one
+    repository has not rebuilt, so each published site must carry its build time and the
+    composed view must show it rather than implying simultaneity.</p>
+
     <p><strong>Two things to settle before publishing rather than after.</strong> Reckon's own
     plans would become public, so their content is a disclosure decision, not a technical one.
     And a static build must be a genuine snapshot of the same SPA rather than a divergent
@@ -353,71 +393,81 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="cross-repo-sprint-residence" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="cross-repo-sprint-residence" data-choice="composed-per-repo" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">Where does a sprint spanning repositories live, given it must be reachable from every member?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="one-owning-repo">One owning repository holds the sprint; items carry qualified refs outward</button>
-      <button class="r-opt" data-value="composed-per-repo">Each repository holds its own sprint resource and the view composes them</button>
+      <button class="r-opt chosen" data-value="composed-per-repo">Each repository holds its own sprint resource and the view composes them</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. The requirement is navigation from any member, and a single owning repository makes one participant privileged: if that repository is not mounted the sprint does not exist for anyone else. Composed-per-repo means each repository carries the members it owns and the view unions them, so the sprint is reachable symmetrically from every side. Cost accepted: composition needs a stable sprint identity across repositories, and disagreement on that identity becomes an audit finding rather than a silent divergence.</p>
     </div>
-<div class="r-dec" data-key="absent-member-repo" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="absent-member-repo" data-choice="explicit-unresolved" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">What does a cross-repository sprint report when a member repository is not mounted?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="explicit-unresolved">An explicit unresolved row, never counted as complete or omitted</button>
+      <button class="r-opt chosen" data-value="explicit-unresolved">An explicit unresolved row, never counted as complete or omitted</button>
       <button class="r-opt" data-value="audit-error">An audit error that blocks sprint closure outright</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. Absence must never read as completion or as permission. A hard audit error blocking closure was rejected as too strict: an unmounted repository is a local condition, not a defect in the sprint, and it would make a sprint uncloseable on a machine that legitimately lacks the other checkout. An explicit unresolved row that is never counted complete and never silently omitted gets the safety without the false blocker.</p>
     </div>
-<div class="r-dec" data-key="tags-before-layout" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="tags-before-layout" data-choice="tags-first" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">Must the tag field and its backfill precede the layout migration?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="tags-first">Yes — tags and backfill first, then flatten with provable zero grouping loss</button>
+      <button class="r-opt chosen" data-value="tags-first">Yes — tags and backfill first, then flatten with provable zero grouping loss</button>
       <button class="r-opt" data-value="flatten-now">No — flatten now and accept that 71 documents lose their programme</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. 71 documents lose their programme irrecoverably, and the backfill needs no judgement because the source directory IS the tag. Doing it afterwards means reconstructing from git history rather than from a live pre-image. Nothing is blocked by waiting: the project-state migration is already complete and independent, and the typed resolver reads flat resources for compatibility.</p>
     </div>
-<div class="r-dec" data-key="public-pages-disclosure" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="public-pages-disclosure" data-choice="own-docs-public" data-by="Simon McIntosh" data-when="2026-08-24T08:38:06+00:00">
     <p class="r-dec-q">Do reckon&#x27;s own plans go public as the GitHub Pages example?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="own-docs-public">Yes — reckon&#x27;s own planning state is the example</button>
+      <button class="r-opt chosen" data-value="own-docs-public">Yes — reckon&#x27;s own planning state is the example</button>
       <button class="r-opt" data-value="fixture-project">No — publish a synthetic fixture project instead</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24 WITH A GUARD: private information stays private, and a fork of an upstream repository counts as personal regardless of its GitHub visibility. Publication is therefore per-repository opt-in, never a central filter. The guard is not isPrivate - measured, Simon-McIntosh/imas-codex reports isPrivate false, isFork true, visibility PUBLIC, so a predicate of &#x27;publish unless private&#x27; would publish a personal fork while reporting itself correct. That is a disclosure failure produced by a plausible predicate, the same shape as every silent-null finding that motivated this plan.</p>
     </div>
-<div class="r-dec" data-key="shell-decomposition-timing" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="shell-decomposition-timing" data-choice="decompose-first" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">Does the shell decomposition precede the visual redesign or land with it?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="decompose-first">Decompose and state the CSS layering contract first</button>
+      <button class="r-opt chosen" data-value="decompose-first">Decompose and state the CSS layering contract first</button>
       <button class="r-opt" data-value="together">One pass — restructure and redesign together</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. shell.jsx holds 20 components in 1,544 lines and styles.css carries 498 selectors with no stated ownership boundary, so a visual redesign landing as a diff to those is unreviewable. Concurrent sessions are the normal operating mode here, which already makes that file a merge magnet. Decomposition is also the cheaper half and independently valuable if the redesign never happens.</p>
     </div>
-<div class="r-dec" data-key="tag-vocabulary-governance" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="tag-vocabulary-governance" data-choice="observed-with-counts" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">Is the tag inventory observed usage with counts, or a curated allow-list?</p>
     <p class="r-dec-ctx">An author who cannot enumerate existing tags invents one, and the corpus fragments into standard-names, standard_names, sn and standardnames as four unrelated groupings. A closed list needs governance nobody will do and blocks a legitimately new topic at the worst moment; counts give the reuse signal without forbidding invention, and let an audit surface singletons as the cheap form of governance.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="observed-with-counts">Observed usage with counts; singletons surfaced by audit</button>
+      <button class="r-opt chosen" data-value="observed-with-counts">Observed usage with counts; singletons surfaced by audit</button>
       <button class="r-opt" data-value="curated-allowlist">A curated allow-list validated at write time</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. A curated allow-list needs governance nobody will perform and blocks a legitimately new topic at the exact moment someone is authoring. Counts give the reuse signal without forbidding invention, and an audit surfacing singletons is governance at near-zero cost. Same shape as the closed-vocabulary problem in a consuming project, where the lesson was to derive from the authority rather than curate by hand.</p>
     </div>
-<div class="r-dec" data-key="sprint-return-link-shape" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="sprint-return-link-shape" data-choice="both-directions" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">What shape does a plan&#x27;s sprint reference take, so a shared sprint resolves from any member repository?</p>
     <p class="r-dec-ctx">plan-sprint holds a bare id whose meaning is local by construction, so qualifying sprint ITEMS alone leaves a second checkout with no path to the sprint. The return path is the half the first draft missed, and it must stay portable in a checkout where the other member repository is not mounted.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="qualified-sprint-ref">A qualified project-prefixed sprint ref on the plan, mirroring depends_on</button>
       <button class="r-opt" data-value="sprint-declares-members">The sprint declares its members; plans stay unqualified and the view resolves inward</button>
-      <button class="r-opt" data-value="both-directions">Both directions, each independently resolvable</button>
+      <button class="r-opt chosen" data-value="both-directions">Both directions, each independently resolvable</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24, and coherent with composed-per-repo which nearly implies it. Each direction fails alone: items-only leaves a second checkout with no path to the sprint, and sprint-declares-members-only means a plan cannot state its own sprint portably when a plan should be readable in isolation. Both, each INDEPENDENTLY resolvable, means either half working is enough to render - which matters precisely when one repository is not mounted. Accepted risk: two mechanisms to keep consistent, so consistency between them is itself an audit surface.</p>
     </div>
-<div class="r-dec" data-key="migration-oneshot-disposal" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="migration-oneshot-disposal" data-choice="delete-with-receipt" data-by="Simon McIntosh" data-when="2026-08-24T08:37:49+00:00">
     <p class="r-dec-q">How are the one-shot migration scripts disposed of?</p>
     <p class="r-dec-ctx">A script written to perform or verify a single migration becomes an undocumented tool someone runs again later against a corpus it no longer describes. The receipt is the durable artifact; the script is not.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="delete-with-receipt">Deleted in the same commit that records successful completion; receipt kept as evidence</button>
+      <button class="r-opt chosen" data-value="delete-with-receipt">Deleted in the same commit that records successful completion; receipt kept as evidence</button>
       <button class="r-opt" data-value="keep-under-scripts">Retained under a scripts directory for reuse</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. A one-shot kept for reuse becomes an undocumented tool run later against a corpus it no longer describes, and this particular script rewrites 119 links. The receipt is the durable artifact; the script is a means. Retaining it under a scripts directory would also violate the consuming repository&#x27;s own rule against migration-named files persisting in the tree.</p>
+    </div>
+<div class="r-dec" data-key="multi-repo-publication-topology" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How do plans from several repositories reach one published site?</p>
+    <p class="r-dec-ctx">reckon&#x27;s CI only checks out reckon. mounts.json is per-instance local state, so CI cannot see which repositories the ITER host resolves. Three shapes were considered. Vendoring or symlinking linked repositories into reckon needs a committed repository list plus a commit per plan edit, duplicating content and making the publish decision a central filter. Central sourcing - reckon CI checking out declared repositories with a repository_dispatch trigger from each - works but makes reckon&#x27;s CI the thing that decides what is published, so one misconfiguration publishes a personal fork, and it needs credentials to reach anything non-public which is precisely the capability that should not exist. Per-repository publication with a federated index means each repository&#x27;s own CI runs reckon build and deploys its own Pages site, and reckon publishes a thin composed index over the published ones.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="federated-per-repo">Each repo publishes itself; reckon federates a composed index over the published set</button>
+      <button class="r-opt" data-value="central-sourcing-dispatch">reckon CI checks out declared repos and builds one site, triggered by repository_dispatch</button>
+      <button class="r-opt" data-value="vendored-into-reckon">Linked repo docs are vendored or symlinked into reckon and committed</button>
       </p>
     <p class="r-dec-rat"></p>
     </div>
