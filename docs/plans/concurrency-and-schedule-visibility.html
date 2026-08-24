@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
 <meta name="plan-impl" content="0.85">
 </head>
 <body>
@@ -377,10 +377,42 @@
     state it moved between, and the fleet's current counts, so the box reads as a running account
     rather than a wall.</p>
 
-    <pre>19:42:03  peer-channel           starting &rarr; working    3 live &middot; 0 blocked &middot; 0 unpromoted
-19:51:17  single-landing-record  working  &rarr; blocked    3 live &middot; 1 blocked &middot; 0 unpromoted
-19:58:44  peer-channel           working  &rarr; complete   3 live &middot; 1 blocked &middot; 1 unpromoted
-20:01:12  peer-channel                    &rarr; promoted   2 live &middot; 1 blocked &middot; 0 unpromoted</pre>
+    <pre>19:35:45  dry-run-reports-conflicts       &rarr; dispatched  1 live &middot; 0 blocked &middot; 0 unpromoted
+19:36:02  dry-run-reports-conflicts  dispatched &rarr; working  1 live &middot; 0 blocked &middot; 0 unpromoted
+19:42:03  peer-channel                    &rarr; dispatched  2 live &middot; 0 blocked &middot; 0 unpromoted
+19:51:17  single-landing-record   working &rarr; blocked     3 live &middot; 1 blocked &middot; 0 unpromoted
+19:58:44  peer-channel            working &rarr; complete    3 live &middot; 1 blocked &middot; 1 unpromoted
+20:01:12  peer-channel                    &rarr; promoted    2 live &middot; 1 blocked &middot; 0 unpromoted</pre>
+
+    <p><strong>Launch is a transition, and it is the one that gives the wave its shape.</strong>
+    Emitting only on delivery leaves the surface silent from arming until something finishes, which
+    is indistinguishable from a dead fleet &mdash; the ambiguity that has already cost this session
+    three separate interruptions to ask whether anything was running. A line at dispatch answers
+    that immediately, and on a five-lane wave five lines appear at once, which is the fleet
+    inventory the collapsed per-run shells used to provide for free.</p>
+
+    <p><strong>Arming must print the current fleet before it streams deltas.</strong> A watch is
+    armed after the dispatches it will report, so a purely delta-based stream misses every launch
+    that already happened and shows an empty box over a busy fleet. One line per live run at
+    startup, then transitions &mdash; the shape is visible from the moment anyone looks, not from
+    the next thing that happens to change.</p>
+
+    <p><strong>Ending at drain is right for a fence and wrong for a ticker, so they are different
+    modes.</strong> A wave-lived watch ends when the last pointer is reconciled, which makes its
+    presence an honest in-flight signal &mdash; that is what a fence wants. But a single-node wave
+    then appears and disappears before anyone reads it: the job is never seen, and the surface is
+    useless in exactly the case where a person most wants to know what is happening. A
+    session-lived watch instead persists across the empty gaps between waves, accumulating the
+    session's transitions, and ends on an explicit stop rather than on a momentarily empty
+    fleet.</p>
+
+    <p>This also dissolves the bootstrap deadlock recorded above rather than patching it. Armed
+    once at the start of a session, a session-lived watch is already live when the first dispatch
+    of every wave arrives, so the guard is satisfied without a waiver and without the guard needing
+    to special-case an empty fleet. The earlier repair &mdash; making a single-event watch wait on
+    emptiness &mdash; was papering over a predicate bug; keeping a deliberate session ticker alive
+    across quiet periods is a different thing with its own reason, and the two should not be
+    confused because they share a symptom.</p>
 
     <p><strong>Three properties keep it useful rather than noisy.</strong> It emits on a state
     <em>change</em> and never on a poll, so a five-lane wave produces perhaps twenty lines rather
