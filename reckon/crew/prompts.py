@@ -18,6 +18,9 @@ def compose_prompt(
     time_budget: str,
     needs_help_after_failures: int,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
+    run_id: str = "",
+    peer_channels: Mapping[str, Mapping[str, str]] | None = None,
+    peer_channel_path: str = "",
 ) -> str:
     """Compose a worker prompt from the four fences and a pointer to the plan.
 
@@ -32,6 +35,21 @@ def compose_prompt(
             for name, paths in sorted(peers.items())
         )
         or "  none"
+    )
+    channel_peers = peer_channels or {}
+    channel_line = (
+        ", ".join(
+            f"{name}=run {details['run_id']}"
+            for name, details in sorted(channel_peers.items())
+        )
+        or "none yet; later adjacent dispatches appear in peers.json"
+    )
+    peer_channel = Path(
+        peer_channel_path or Path(manifest_path).parent / "peer-channel"
+    )
+    peer_client = (
+        "python -c 'from reckon.crew.dispatch import _peer_command; "
+        "raise SystemExit(_peer_command())'"
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
     section = f" {node.section}" if node.section else ""
@@ -68,6 +86,13 @@ FENCE — SCOPE (exclusive write paths; nothing outside them)
 
 CONCURRENT NODES (never touch their paths; request a scope change instead)
 {peer_lines}
+
+PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endpoint {peer_channel}.
+  Adjacent peers: {channel_line}
+  Client prefix: {peer_client}
+  List/ask operands: peer-list --run {run_id} OR peer-ask --run {run_id} --peer <run-or-node> --question "<question>"
+  Read/reply operands: peer-read --run {run_id} --question-id <id> --wait <duration> OR peer-reply --run {run_id} --question-id <id> --answer "<answer>"
+  Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
   {time_budget}. Exceeding it means stop and report, never push on.
