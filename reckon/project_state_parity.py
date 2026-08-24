@@ -36,7 +36,7 @@ RELATIONAL_FIELDS = (
     "verifies",
     "supersedes",
 )
-ORGANISATIONAL_FIELDS = ("sprint", "milestone", "north_star", "tier")
+ORGANISATIONAL_FIELDS = ("sprint", "milestone", "north_star", "tier", "tags")
 NESTED_FIELDS = ("decisions", "followups", "comments", "questions", "research")
 SPRINT_ITEM_FIELDS = ("sprint_items", "why_now", "done_when")
 EXCLUDED_OBSERVATIONS = (

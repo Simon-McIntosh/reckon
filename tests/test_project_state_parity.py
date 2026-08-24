@@ -24,12 +24,17 @@ from reckon.project_state_parity import (
     main,
     resolve_frozen_snapshot,
 )
+from reckon.tags import normalise_tag
 
 LONG_RATIONALE = (
     "ITER & NOVA retain <entity-bearing> rationale text exactly; "
     + "the preservation comparison must not truncate this sentence. " * 18
     + "TAIL-SENTINEL"
 )
+PLAN_TAG_SPELLINGS = ["Standard_Names", "Plasma Control"]
+SPRINT_TAG_SPELLINGS = ["Fleet Migration", "Shared_State"]
+PLAN_TAGS = [normalise_tag(tag) for tag in PLAN_TAG_SPELLINGS]
+SPRINT_TAGS = [normalise_tag(tag) for tag in SPRINT_TAG_SPELLINGS]
 
 
 def _render_plan(slug: str, *, relations: bool) -> str:
@@ -111,6 +116,7 @@ def _render_plan(slug: str, *, relations: bool) -> str:
     if relations:
         state.update(
             {
+                "tags": PLAN_TAG_SPELLINGS,
                 "depends_on": ["foundation"],
                 "blocks": ["consumer"],
                 "informs": ["design"],
@@ -141,6 +147,7 @@ def _legacy_index(docs: Path, *, include_plan_inventory: bool) -> Path:
                 "id": "current",
                 "theme": "Preservation",
                 "status": "active",
+                "tags": SPRINT_TAGS,
                 "items": [
                     {
                         "slug": "contract",
@@ -235,6 +242,8 @@ def test_migration_preserves_every_plan_byte_and_every_evidenced_field(tmp_path:
         assert evidence["status"] == "matched", field
         assert evidence["compared"] > 0, field
         assert evidence["matched"] == evidence["compared"], field
+    assert report["fields"]["tags"]["compared"] == 2
+    assert report["fields"]["tags"]["matched"] == 2
 
     newcomer = docs / "plans" / "newcomer.html"
     newcomer.write_text(_render_plan("newcomer", relations=True), encoding="utf-8")
@@ -277,6 +286,51 @@ def test_migration_preserves_every_plan_byte_and_every_evidenced_field(tmp_path:
     decision_mismatch = changed["fields"]["decisions"]["mismatches"][0]
     assert decision_mismatch["before"]["storage"]["rationale"] == LONG_RATIONALE
     assert decision_mismatch["after"]["storage"]["rationale"].endswith("!")
+
+
+def test_stored_tag_removal_and_reordering_are_mismatches(tmp_path: Path):
+    docs, _ = _migrated_corpus(tmp_path)
+    plan_state = _plan_html.read_state(
+        (docs / "plans" / "contract.html").read_text(encoding="utf-8")
+    )
+    assert plan_state["tags"] == PLAN_TAGS
+
+    sprint, version = read_resource(docs, "sample", "sprint", "current")
+    assert sprint["tags"] == SPRINT_TAGS
+    sprint["tags"] = SPRINT_TAG_SPELLINGS
+    write_resource(docs, "sample", "sprint", "current", sprint, version)
+    canonicalised = compare_project_state(docs)["fields"]["tags"]
+    assert canonicalised["status"] == "matched"
+    assert canonicalised["compared"] == 2
+    assert canonicalised["matched"] == 2
+
+    sprint, version = read_resource(docs, "sample", "sprint", "current")
+    sprint["tags"] = SPRINT_TAGS[:-1]
+    write_resource(docs, "sample", "sprint", "current", sprint, version)
+    removed = compare_project_state(docs)["fields"]["tags"]
+    assert removed["status"] == "mismatch"
+    assert removed["additional"] == 0
+    assert removed["mismatches"] == [
+        {
+            "path": "sprints[current].tags",
+            "before": SPRINT_TAGS,
+            "after": SPRINT_TAGS[:-1],
+        }
+    ]
+
+    sprint, version = read_resource(docs, "sample", "sprint", "current")
+    sprint["tags"] = list(reversed(SPRINT_TAGS))
+    write_resource(docs, "sample", "sprint", "current", sprint, version)
+    reordered = compare_project_state(docs)["fields"]["tags"]
+    assert reordered["status"] == "mismatch"
+    assert reordered["additional"] == 0
+    assert reordered["mismatches"] == [
+        {
+            "path": "sprints[current].tags",
+            "before": SPRINT_TAGS,
+            "after": list(reversed(SPRINT_TAGS)),
+        }
+    ]
 
 
 def test_missing_historical_plan_state_is_out_of_corpus(tmp_path: Path):
