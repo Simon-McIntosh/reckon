@@ -705,6 +705,7 @@ def crew_dispatch(
                 repo=_repo_root(repo),
                 base=base,
                 execution_override=allow_execution_mismatch,
+                report_live_conflicts=True,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
