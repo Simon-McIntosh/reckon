@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="completion-is-not-silent">
   <meta name="plan-title" content="Finished Work Should Not Wait to Be Noticed">
   <meta name="plan-summary" content="A worker that finishes changes a file and tells nobody. If the coordinator did not arm a watch, the finished node sits unpromoted until someone asks what is running. Reckon already detects this exactly and reports it to nobody: the live view classifies the run completed_unpromoted, computes its budget overrun and names the next action. Make that existing signal load-bearing instead of decorative.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="7">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="9">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -118,7 +118,19 @@
     dispatches and records itself on the run; and a test asserts all three without reading or
     writing any pointer directory outside its own temporary home.</p>
 
-    <h2 id="s4">&#167;4 &mdash; The half a refusal cannot reach</h2>
+    <h2 id="s4">&#167;4 &mdash; The half a refusal cannot reach <span class="badge badge-shipped">&#10003; landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong> <code>crew(project, view="drain")</code>
+    derives <code>unreconciled_runs</code> from the live pointers, and
+    <code>reckon crew drain --project P --leave RUN=handed-off|still-working</code> records the
+    closed-set disposition on the pointer. Validity is classification-aware, which is what stops a
+    stale reason hiding finished work: <code>handed-off</code> holds until reconciliation, while
+    <code>still-working</code> excuses a run only while it is classified <code>running</code> and
+    counts again the moment it turns terminal. The closure ledger now reports
+    <code>unreconciled-runs</code> beside <code>foldable-remaining</code>. Full suite 2113 passed,
+    0 failures, 7 tests added. Full record:
+    <a href="/reckon/evidence/archive/completion-is-not-silent-landed#closure-drain">&#167;4 landed</a>
+    (commit <code>bbd7e39</code>).</p>
 
     <p><strong>A dispatch-time guard catches the coordinator who keeps working. It cannot catch
     the one who stops.</strong> A session that dispatches two nodes and then ends leaves them
@@ -223,10 +235,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-cns-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship completion-is-not-silent" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cns-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship completion-is-not-silent" data-resolved-at="2026-08-24T14:00:08+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Make the signal that already exists load-bearing, at both ends of the loop</h4>
     <div class="r-fu-body"><p>Nothing here needs new detection. The live view already classifies a finished-and-unpromoted run, computes how far past its budget it has drifted, and prints the command that clears it — and nothing reads any of it. Start with the dispatch refusal, because it reuses the guard class that already refuses a member holding a live pointer and fires at the one moment the coordinator is provably awake; keep it thresholded so ordinary concurrency is untouched, nameable so clearing it is a paste, and overridable with the override recorded on the run. Then extend the closure drain from followups to run state, because a refusal at dispatch cannot reach a session that simply stops, and that is the case where finished work is lost rather than delayed.</p></div>
     <pre class="r-fu-prompt">/reckon-ship completion-is-not-silent</pre>
+    <p class="r-fu-outcome">done — no followup. All three sections landed in one session: §3 the dispatch refusal (cb656ad), §5 the single project watch (8b9a638), §4 the closure drain over run state (bbd7e39). Full suite 2113 passed with 19 tests added across the three nodes and zero new failures. §5 was discovered while executing the plan — a coordinator that waits by asking again — and folded in as a section rather than deferred, per the rule that same-plan work becomes a section. The plan's own subject is closed at all three ends of the loop: dispatching, waiting, and stopping. Follow-on subjects raised in the session (a per-project write-path claim registry with a lane planner, schedule-readiness distinct from dependency-readiness in roadmap, and the sprint-status hygiene disagreement) are different subjects and need the lead's call on plan creation and sprint placement before they can be tracked anywhere.</p>
     </article>
 </section>
 
@@ -239,6 +252,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1345" data-who="reckon-ship" data-when="2026-08-24T13:45:00+00:00">
     <div class="r-comment-body">single-fleet-watch landed — commit 8b9a638, merged 8cf8f0a; gate passed; measure 7 of 7 focused tests then full suite 2106 passed in 65.23s with zero failures against base fc424d3, six new product tests over the 2100-test base; 402 insertions and 31 deletions over 7 files, 928 worker-seconds against a 40m budget. Shipped reckon crew watch --project P with kernel-backed advisory-lock exclusivity, exits on terminal manifest, on stream quiet past a default 15m or --stall-window, and immediately on an empty fleet; every successful dispatch now returns watch.arming_line and watch.watcher_live. The pointer is published before the dispatch watcher probe, closing the empty-fleet race. Dogfooded on landing: the empty-fleet exit returned classification no_live_pointers rather than blocking. Recorded at docs/evidence/archive/completion-is-not-silent-landed.html#single-fleet-watch.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260824T1405" data-who="reckon-ship" data-when="2026-08-24T14:05:00+00:00">
+    <div class="r-comment-body">closure-drain-over-run-state landed — commit bbd7e39, merged 2281631; gate passed; measure 9 of 9 targeted then full suite 2113 passed in 59.10s, seven added tests and zero new failures against the 2106-pass base at 8cf8f0a; 365 insertions and 19 deletions over 9 files, 799 worker-seconds against a 40m budget. Shipped crew(project, view=drain) returning live_pointers, disposed_runs, unreconciled_runs and classified rows, plus reckon crew drain --project P --leave RUN=handed-off|still-working recording the closed-set disposition on the pointer. Validity is classification-aware: handed-off holds until reconciliation, still-working is valid only while the run is classified running and becomes unreconciled the moment it turns terminal, so a stale disposition cannot hide finished work. Closure ledger template now carries unreconciled-runs beside foldable-remaining. Dogfooded at closure: the drain returned unreconciled_runs 0 from live pointers rather than from memory. Recorded at docs/evidence/archive/completion-is-not-silent-landed.html#closure-drain.</div>
 </div>
 </section>
 </main>

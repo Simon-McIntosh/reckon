@@ -133,6 +133,61 @@
       <code>~/.config/reckon/crew/runs/r-20260824T132735038806-single-fleet-watch/</code>.
     </p>
 
+    <h2 id="closure-drain">Closure drain over run state</h2>
+    <p>
+      Commit <code>bbd7e39</code> (2026-08-24, worker codex-n, 799&nbsp;worker-seconds against a
+      40&nbsp;m budget, 365 insertions / 19 deletions over 9 files, merged no-ff as
+      <code>2281631</code>).
+    </p>
+    <ul>
+      <li><strong>The count is derived, not remembered.</strong>
+        <code>crew(project, view="drain")</code> returns <code>live_pointers</code>,
+        <code>disposed_runs</code>, <code>unreconciled_runs</code> and the classified rows, all
+        computed from the pointer directory at read time.</li>
+      <li><strong>A deliberate remainder is recorded, from a closed set.</strong>
+        <code>reckon crew drain --project P --leave RUN=handed-off|still-working</code> writes the
+        disposition onto the live pointer; a value outside the set is refused. Reads stay in MCP,
+        the write stays in the CLI.</li>
+      <li><strong>Validity is classification-aware, which is the load-bearing part.</strong>
+        <code>handed-off</code> holds until reconciliation. <code>still-working</code> excuses a run
+        only while it is classified <code>running</code>, and the row counts again the moment the
+        run turns terminal &mdash; so a disposition written in good faith cannot silently become a
+        hiding place for finished work.</li>
+      <li><strong>Promotion is the release.</strong> <code>crew complete</code> deletes the
+        pointer, so a reconciled run leaves the count by construction rather than by bookkeeping.</li>
+      <li><strong>The ledger carries both zeros.</strong> The closure template now reports
+        <code>unreconciled-runs</code> beside <code>foldable-remaining</code>, with the skill and
+        orchestration reference bound to both by contract test.</li>
+    </ul>
+    <p>
+      Gate: <strong>passed</strong>. Targeted 9/9 in 6.32&nbsp;s; full suite
+      <strong>2113 passed in 59.10&nbsp;s, 0 failures</strong> against the 2106-pass base at
+      <code>8cf8f0a</code>. Dogfooded at this plan's own closure: the drain returned
+      <code>unreconciled_runs: 0</code> read from live pointers. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260824T134554173454-closure-drain-over-run-state/logs/</code>.
+    </p>
+
+    <h2 id="drain-ledger">Drain ledger at closure</h2>
+    <pre>DRAIN LEDGER — completion-is-not-silent @ 2026-08-24T14:10:00Z
+  f-cns-001 make the existing signal load-bearing    folded → unreconciled-dispatch-refusal,
+                                                             closure-drain-over-run-state
+  scout follow_on: test must prove pointer isolation folded → unreconciled-dispatch-refusal (live_dir asserted under temp home)
+  coordinator waits by asking again (found in-run)   folded → single-fleet-watch (authored as §5)
+  single-fleet-watch manifest follow_ons            none
+  closure-drain manifest follow_ons                 none
+  per-project write-path claim registry + planner    authority-required → lead's call on plan creation and sprint placement
+  schedule-ready vs dependency-ready in roadmap      authority-required → lead's call on plan creation and sprint placement
+  sprint-status hygiene (three sprints active)       authority-required → lead's call on advancing the sprint horizon
+  ---
+  rows: 8   foldable-remaining: 0   unreconciled-runs: 0</pre>
+    <p>
+      The three <code>authority-required</code> rows are subjects raised while executing this plan
+      that are not this plan's subject. Under the rule that discovered work belonging elsewhere
+      needs an owning plan, and that no plan may be created into a sprint without the lead's
+      placement decision, they are named here rather than parked as followups on a shipped plan
+      where nothing would surface them.
+    </p>
+
   </main>
 </body>
 </html>
