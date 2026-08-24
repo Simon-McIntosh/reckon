@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-impl" content="0.85">
 </head>
 <body>
@@ -397,22 +397,19 @@
     startup, then transitions &mdash; the shape is visible from the moment anyone looks, not from
     the next thing that happens to change.</p>
 
-    <p><strong>Ending at drain is right for a fence and wrong for a ticker, so they are different
-    modes.</strong> A wave-lived watch ends when the last pointer is reconciled, which makes its
-    presence an honest in-flight signal &mdash; that is what a fence wants. But a single-node wave
-    then appears and disappears before anyone reads it: the job is never seen, and the surface is
-    useless in exactly the case where a person most wants to know what is happening. A
-    session-lived watch instead persists across the empty gaps between waves, accumulating the
-    session's transitions, and ends on an explicit stop rather than on a momentarily empty
-    fleet.</p>
+    <p><strong>Ending when the fleet drains stays exactly as it is, and the baseline is what makes
+    that safe.</strong> The case that argued for a longer-lived watch was the single-node wave,
+    where a watch that only speaks on delivery appears and vanishes with nothing readable in it.
+    Printing the fleet at startup answers that directly: the job is seen the moment the watch is
+    armed, whatever happens afterwards. A second mode that outlived its wave would buy nothing more
+    and would cost a second lifetime to reason about, so it is not built.</p>
 
-    <p>This also dissolves the bootstrap deadlock recorded above rather than patching it. Armed
-    once at the start of a session, a session-lived watch is already live when the first dispatch
-    of every wave arrives, so the guard is satisfied without a waiver and without the guard needing
-    to special-case an empty fleet. The earlier repair &mdash; making a single-event watch wait on
-    emptiness &mdash; was papering over a predicate bug; keeping a deliberate session ticker alive
-    across quiet periods is a different thing with its own reason, and the two should not be
-    confused because they share a symptom.</p>
+    <p>That leaves the bootstrap deadlock repaired at its cause rather than routed around. The
+    guard should refuse only when the project already holds live runs and no watcher &mdash; the
+    case where finished work can actually strand &mdash; so the first dispatch of a wave needs no
+    waiver, and a watch is armed immediately after it, when there is something to watch. Making a
+    watch idle on an empty fleet was papering over that predicate, and once the predicate is
+    correct the paper is unnecessary.</p>
 
     <p><strong>Three properties keep it useful rather than noisy.</strong> It emits on a state
     <em>change</em> and never on a poll, so a five-lane wave produces perhaps twenty lines rather
