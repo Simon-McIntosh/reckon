@@ -1033,6 +1033,11 @@ def crew_resume(run_id, advice, print_only, pretty):
     advice_path.write_text(advice + "\n")
     log_path = directory / f"resume-{turn}.jsonl"
     stderr_path = directory / f"resume-{turn}.stderr.log"
+    current = crew_module.read_pointer(run_id)
+    manifest_baseline_mtime_ns = crew_module._manifest_mtime_ns(
+        current.get("manifest_path") or ""
+    )
+    attempt_started_at = crew_module._utc_now()
     pid = crew_module._spawn(
         plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
     )
@@ -1042,6 +1047,8 @@ def crew_resume(run_id, advice, print_only, pretty):
         turn=turn,
         log_path=log_path,
         stderr_path=stderr_path,
+        attempt_started_at=attempt_started_at,
+        manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
     )
     payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
     _emit(payload, pretty)
