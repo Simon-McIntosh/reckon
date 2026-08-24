@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -35,6 +35,134 @@ def normalise_tag(authored: str) -> str:
 
 
 _TAG_CARRIER_TYPES = frozenset({"plan", "research", "evidence", "sprint"})
+
+
+def _contained_resource_path(docs_dir: Path, relative: PurePosixPath) -> Path:
+    """Resolve a mapped resource path without permitting a docs-root escape."""
+
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise ValueError(f"mapped resource path is not contained: {relative}")
+    root = docs_dir.resolve()
+    candidate = root.joinpath(*relative.parts).resolve(strict=False)
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"mapped resource path escapes docs root: {relative}") from exc
+    return candidate
+
+
+def _parse_layout_moves(preimage: str) -> list[tuple[PurePosixPath, PurePosixPath]]:
+    """Parse the saved ``source -> destination`` layout preview."""
+
+    moves: list[tuple[PurePosixPath, PurePosixPath]] = []
+    for line_number, line in enumerate(preimage.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        parts = stripped.split(" -> ")
+        if len(parts) != 2 or not all(parts):
+            raise ValueError(f"invalid layout move on line {line_number}: {line!r}")
+        moves.append((PurePosixPath(parts[0]), PurePosixPath(parts[1])))
+    return moves
+
+
+def _tag_removed_by_move(
+    source: PurePosixPath, destination: PurePosixPath
+) -> str | None:
+    """Derive the topical directory removed when a resource is flattened."""
+
+    if source.suffix.casefold() != ".html" or destination.suffix.casefold() != ".html":
+        return None
+    source_parent = source.parent
+    if source_parent == PurePosixPath("."):
+        return None
+    topic = source_parent.name
+    if topic in destination.parent.parts:
+        return None
+    return normalise_tag(topic)
+
+
+def backfill_tags_from_preimage(
+    docs_dir: Path,
+    preimage_path: Path,
+) -> dict[str, Any]:
+    """Backfill topical tags from a saved typed-layout move preview.
+
+    Only moves that flatten an HTML resource out of its immediate source
+    directory carry grouping information.  All inputs are validated and all
+    resulting HTML is prepared before the first file is changed, preventing a
+    malformed later row from leaving a partial backfill.
+    """
+
+    docs_dir = Path(docs_dir).resolve()
+    moves = _parse_layout_moves(Path(preimage_path).read_text(encoding="utf-8"))
+
+    from reckon._plan_html import read_state, write_state
+
+    prepared: list[dict[str, Any]] = []
+    resources: list[dict[str, Any]] = []
+    seen_sources: set[PurePosixPath] = set()
+    for source, destination in moves:
+        source_path = _contained_resource_path(docs_dir, source)
+        _contained_resource_path(docs_dir, destination)
+        if source in seen_sources:
+            raise ValueError(f"layout pre-image repeats source path: {source}")
+        seen_sources.add(source)
+
+        tag = _tag_removed_by_move(source, destination)
+        if tag is None:
+            continue
+        if not source_path.is_file():
+            raise FileNotFoundError(f"mapped source resource does not exist: {source}")
+
+        original = source_path.read_text(encoding="utf-8")
+        state = read_state(original)
+        tags = list(state.get("tags") or [])
+        changed = tag not in tags
+        if changed:
+            tags.append(tag)
+            state["tags"] = tags
+            state["version"] = int(state.get("version") or 0) + 1
+            rendered = write_state(original, state)
+            prepared.append(
+                {"path": source_path, "original": original, "rendered": rendered}
+            )
+        resources.append(
+            {
+                "from": source.as_posix(),
+                "to": destination.as_posix(),
+                "tag": tag,
+                "tags": tags,
+                "changed": changed,
+            }
+        )
+
+    written: list[dict[str, Any]] = []
+    try:
+        for item in prepared:
+            item["path"].write_text(item["rendered"], encoding="utf-8")
+            written.append(item)
+    except Exception:
+        for item in reversed(written):
+            item["path"].write_text(item["original"], encoding="utf-8")
+        raise
+
+    lost_resources = [
+        item["from"] for item in resources if item["tag"] not in item["tags"]
+    ]
+    return {
+        "moves": len(moves),
+        "grouped_resources": len(resources),
+        "changed": len(prepared),
+        "unchanged": len(resources) - len(prepared),
+        "grouping_loss": len(lost_resources),
+        "lost_resources": lost_resources,
+        "resources": resources,
+    }
 
 
 def _renamed_tags(tags: list[str], source: str, target: str) -> list[str]:
