@@ -62,12 +62,23 @@ class AuditArgs(BaseModel):
 class CrewArgs(BaseModel):
     project: str
     view: Literal[
-        "summary", "flight", "live", "drain", "records", "ledger", "budget"
+        "summary",
+        "flight",
+        "live",
+        "scopes",
+        "drain",
+        "records",
+        "ledger",
+        "budget",
     ] = "summary"
     checkout_path: str | None = None
     plan: str | None = None
     since: str | None = None
     limit: int | None = Field(None, ge=1)
+    candidates: list[dict[str, Any]] | None = Field(
+        None,
+        description="Ordered node manifests with id and write_paths for scopes planning",
+    )
 
 
 class WriteResult(BaseModel):

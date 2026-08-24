@@ -791,6 +791,20 @@ class _LiveScopeClaim:
     run_id: str
     node_id: str
     path: str
+    declared_path: str
+    derived_from: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the stable read-model representation of this claim."""
+        claim = {
+            "path": self.path,
+            "run_id": self.run_id,
+            "node": self.node_id,
+            "declared_path": self.declared_path,
+        }
+        if self.derived_from is not None:
+            claim["derived_from"] = self.derived_from
+        return claim
 
 
 def _repository_relative_scope(path: str, repo: Path) -> str | None:
@@ -804,7 +818,84 @@ def _repository_relative_scope(path: str, repo: Path) -> str | None:
     return relative.as_posix()
 
 
-def _live_scope_claims(project: str, repo: Path) -> list[_LiveScopeClaim]:
+def _scopes_overlap(first: str, second: str) -> bool:
+    """Return whether either normalized path contains the other by component."""
+    first_parts = Path(first).parts
+    second_parts = Path(second).parts
+    common = min(len(first_parts), len(second_parts))
+    return first_parts[:common] == second_parts[:common]
+
+
+def _scope_contains(container: str, path: str) -> bool:
+    """Return whether one normalized path contains another by component."""
+    container_parts = Path(container).parts
+    path_parts = Path(path).parts
+    return path_parts[: len(container_parts)] == container_parts
+
+
+def _normalized_derivations(
+    derivations: Mapping[str, Iterable[str]] | None,
+    repo: Path,
+) -> dict[str, tuple[str, ...]]:
+    """Normalize the repository's source-to-generated path relationships."""
+    normalized: dict[str, tuple[str, ...]] = {}
+    for source, generated in sorted((derivations or {}).items()):
+        source_path = _repository_relative_scope(str(source), repo)
+        if source_path is None:
+            raise CrewError(
+                f"project derivation source {source!r} is outside repository {repo}"
+            )
+        outputs: list[str] = []
+        for output in generated:
+            output_path = _repository_relative_scope(str(output), repo)
+            if output_path is None:
+                raise CrewError(
+                    f"project derivation output {output!r} is outside repository {repo}"
+                )
+            outputs.append(output_path)
+        normalized[source_path] = tuple(sorted(set(outputs)))
+    return normalized
+
+
+def _expanded_scope_paths(
+    paths: Iterable[str],
+    repo: Path,
+    derivations: Mapping[str, Iterable[str]] | None,
+) -> list[tuple[str, str, str | None]]:
+    """Expand declared paths through transitive source-to-generated relations."""
+    relationships = _normalized_derivations(derivations, repo)
+    expanded: dict[str, tuple[str, str | None]] = {}
+    for raw_path in paths:
+        declared = _repository_relative_scope(str(raw_path), repo)
+        if declared is None:
+            continue
+        expanded[declared] = (declared, None)
+        pending = [declared]
+        visited: set[str] = set()
+        while pending:
+            current = pending.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+            for source, generated in relationships.items():
+                if not _scope_contains(current, source):
+                    continue
+                for output in generated:
+                    if output not in expanded:
+                        expanded[output] = (declared, source)
+                    if output not in visited:
+                        pending.append(output)
+    return [
+        (path, declared, derived_from)
+        for path, (declared, derived_from) in sorted(expanded.items())
+    ]
+
+
+def _live_scope_claims(
+    project: str,
+    repo: Path,
+    derivations: Mapping[str, Iterable[str]] | None = None,
+) -> list[_LiveScopeClaim]:
     """Derive this repository's claimed paths from its project live pointers."""
     claims: list[_LiveScopeClaim] = []
     for pointer in list_live(project=project):
@@ -816,38 +907,213 @@ def _live_scope_claims(project: str, repo: Path) -> list[_LiveScopeClaim]:
             continue
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
-        for path in node.get("write_paths") or ():
-            normalized = _repository_relative_scope(str(path), repo)
-            if normalized is not None:
-                claims.append(
-                    _LiveScopeClaim(
-                        run_id=run_id,
-                        node_id=node_id,
-                        path=normalized,
-                    )
+        for path, declared, derived_from in _expanded_scope_paths(
+            node.get("write_paths") or (), repo, derivations
+        ):
+            claims.append(
+                _LiveScopeClaim(
+                    run_id=run_id,
+                    node_id=node_id,
+                    path=path,
+                    declared_path=declared,
+                    derived_from=derived_from,
                 )
+            )
     return sorted(claims, key=lambda claim: (claim.run_id, claim.node_id, claim.path))
 
 
-def _scopes_overlap(first: str, second: str) -> bool:
-    """Return whether either normalized path contains the other by component."""
-    first_parts = Path(first).parts
-    second_parts = Path(second).parts
-    common = min(len(first_parts), len(second_parts))
-    return first_parts[:common] == second_parts[:common]
+def scope_claims(
+    project: str,
+    repo: str | Path,
+    *,
+    derivations: Mapping[str, Iterable[str]] | None = None,
+) -> list[dict[str, Any]]:
+    """Read this repository's live claim registry without changing pointers."""
+    repo_root = Path(repo).expanduser().resolve()
+    return [
+        claim.as_dict()
+        for claim in _live_scope_claims(project, repo_root, derivations)
+    ]
+
+
+def _candidate_nodes(
+    candidates: Iterable[Mapping[str, Any]],
+    repo: Path,
+    derivations: Mapping[str, Iterable[str]] | None,
+) -> list[dict[str, Any]]:
+    """Validate and normalize an ordered candidate wave manifest."""
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for position, candidate in enumerate(candidates):
+        node_id = str(candidate.get("id") or candidate.get("node") or "").strip()
+        if not node_id:
+            raise CrewError(f"candidate at index {position} has no node id")
+        if node_id in seen:
+            raise CrewError(f"candidate node id {node_id!r} is duplicated")
+        seen.add(node_id)
+        raw_paths = candidate.get("write_paths", candidate.get("paths"))
+        if not isinstance(raw_paths, (list, tuple)) or not raw_paths:
+            raise CrewError(
+                f"candidate node {node_id!r} must declare a non-empty write_paths list"
+            )
+        paths = _expanded_scope_paths(raw_paths, repo, derivations)
+        normalized.append(
+            {
+                "id": node_id,
+                "position": position,
+                "declared_paths": sorted(
+                    {declared for _path, declared, _derived_from in paths}
+                ),
+                "paths": [path for path, _declared, _derived_from in paths],
+                "derived_paths": [
+                    {
+                        "path": path,
+                        "declared_path": declared,
+                        "derived_from": derived_from,
+                    }
+                    for path, declared, derived_from in paths
+                    if derived_from is not None
+                ],
+            }
+        )
+    return normalized
+
+
+def _scope_intersections(
+    first: Iterable[str], second: Iterable[str]
+) -> list[dict[str, str]]:
+    """Return every deterministic path pair that overlaps by containment."""
+    return [
+        {"left_path": left, "right_path": right}
+        for left in sorted(set(first))
+        for right in sorted(set(second))
+        if _scopes_overlap(left, right)
+    ]
+
+
+def plan_scope_lanes(
+    candidates: Iterable[Mapping[str, Any]],
+    *,
+    project: str,
+    repo: str | Path,
+    derivations: Mapping[str, Iterable[str]] | None = None,
+) -> dict[str, Any]:
+    """Partition candidate nodes into ordered, mutually independent lanes.
+
+    A lane is a serial sequence. Conflicting nodes therefore stay in the same
+    lane, while disconnected components may run concurrently as separate lanes.
+    Candidate order is retained both between lanes and within each lane.
+    """
+    repo_root = Path(repo).expanduser().resolve()
+    nodes = _candidate_nodes(candidates, repo_root, derivations)
+    live_claims = _live_scope_claims(project, repo_root, derivations)
+    adjacency = {node["id"]: set() for node in nodes}
+    conflicts: list[dict[str, Any]] = []
+    for index, left in enumerate(nodes):
+        for right in nodes[index + 1 :]:
+            intersections = _scope_intersections(left["paths"], right["paths"])
+            if not intersections:
+                continue
+            adjacency[left["id"]].add(right["id"])
+            adjacency[right["id"]].add(left["id"])
+            conflicts.append(
+                {
+                    "left": left["id"],
+                    "right": right["id"],
+                    "paths": intersections,
+                }
+            )
+
+    live_conflicts: list[dict[str, Any]] = []
+    for node in nodes:
+        for claim in live_claims:
+            intersections = _scope_intersections(node["paths"], [claim.path])
+            if intersections:
+                live_conflicts.append(
+                    {
+                        "candidate": node["id"],
+                        "run_id": claim.run_id,
+                        "node": claim.node_id,
+                        "claimed_path": claim.path,
+                        "paths": intersections,
+                    }
+                )
+
+    lanes: list[dict[str, Any]] = []
+    assigned: set[str] = set()
+    for node in nodes:
+        if node["id"] in assigned:
+            continue
+        pending = [node["id"]]
+        component: set[str] = set()
+        while pending:
+            current = pending.pop(0)
+            if current in component:
+                continue
+            component.add(current)
+            pending.extend(
+                neighbor
+                for neighbor in adjacency[current]
+                if neighbor not in component
+            )
+        ordered = [item["id"] for item in nodes if item["id"] in component]
+        assigned.update(component)
+        blocked_by = sorted(
+            {
+                conflict["run_id"]
+                for conflict in live_conflicts
+                if conflict["candidate"] in component
+            }
+        )
+        lane: dict[str, Any] = {"lane": len(lanes) + 1, "nodes": ordered}
+        if blocked_by:
+            lane["blocked_by_live"] = blocked_by
+        lanes.append(lane)
+
+    return {
+        "candidates": [
+            {key: value for key, value in node.items() if key != "position"}
+            for node in nodes
+        ],
+        "claims": [claim.as_dict() for claim in live_claims],
+        "conflict_graph": {
+            node_id: sorted(neighbors) for node_id, neighbors in adjacency.items()
+        },
+        "conflicts": conflicts,
+        "live_conflicts": live_conflicts,
+        "lane_count": len(lanes),
+        "lanes": lanes,
+    }
+
+
+def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
+    """Read the repository derivation map from its project resource."""
+    from reckon._store import read_plan
+
+    index, _version = read_plan(project, "index", repo)
+    projects = index.get("projects") or []
+    if not projects or not isinstance(projects[0], Mapping):
+        return {}
+    derivations = projects[0].get("derivations") or {}
+    return {
+        str(source): [str(output) for output in outputs]
+        for source, outputs in derivations.items()
+    }
 
 
 def _raise_live_scope_conflict(
     node: TaskNode,
     claims: Iterable[_LiveScopeClaim],
     repo: Path,
+    derivations: Mapping[str, Iterable[str]] | None = None,
 ) -> None:
     """Refuse the first deterministic collision with an existing live claim."""
-    candidates = sorted(
-        normalized
-        for path in node.write_paths
-        if (normalized := _repository_relative_scope(path, repo)) is not None
-    )
+    candidates = [
+        path
+        for path, _declared, _derived_from in _expanded_scope_paths(
+            node.write_paths, repo, derivations
+        )
+    ]
     for candidate in candidates:
         for claim in claims:
             if _scopes_overlap(candidate, claim.path):
@@ -2111,7 +2377,8 @@ def dispatch(
             "for this repository to install it"
         )
     _workspace_roots(repo_root)
-    live_claims = _live_scope_claims(project, repo_root)
+    derivations = _project_derivations(project, repo_root)
+    live_claims = _live_scope_claims(project, repo_root, derivations)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -2206,7 +2473,7 @@ def dispatch(
                 raise MemberInFlight(
                     effective_member, str(pointer.get("run_id") or "unknown")
                 )
-    _raise_live_scope_conflict(node, live_claims, repo_root)
+    _raise_live_scope_conflict(node, live_claims, repo_root, derivations)
     reuse_session = (
         str(roster_member.get("session_id"))
         if roster_member

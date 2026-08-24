@@ -2601,17 +2601,19 @@ def _crew(
     plan: str | None = None,
     since: str | None = None,
     limit: int | None = None,
+    candidates: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Read crew state: routing, budget headroom, live runs, drains, or the ledger.
+    """Read crew state, including live scope claims and candidate lane plans.
 
-    Read-only, and deliberately one tool over seven views rather than seven tools.
+    Read-only, and deliberately one tool over eight views rather than eight tools.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
     classification :func:`reckon.crew.recover` would give it; ``drain`` derives
     the session-closure count and recorded dispositions from those pointers;
-    ``flight`` reports
-    the resolved routing config with the layer that supplied every value; and
+    ``scopes`` reads live path claims and partitions the optional ordered
+    ``candidates`` wave manifest into mutually independent serial lanes;
+    ``flight`` reports the resolved routing config with the layer that supplied every value; and
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
     exhaustion was actually reported.
@@ -2629,6 +2631,7 @@ def _crew(
         "summary",
         "flight",
         "live",
+        "scopes",
         "drain",
         "records",
         "ledger",
@@ -2638,11 +2641,53 @@ def _crew(
             "ok": False,
             "error": "invalid_view",
             "detail": (
-                "view must be drain, or summary, flight, live, records, ledger "
-                "or budget"
+                "view must be drain, scopes, or summary, flight, live, records, "
+                "ledger or budget"
             ),
         }
     try:
+        if view == "scopes":
+            docs_dir = _docs_dir_for_project(project, checkout_path)
+            if docs_dir is None:
+                raise crew_module.CrewError(
+                    f"project {project!r} has no readable docs directory"
+                )
+            repo_root = (
+                Path(checkout_path).expanduser().resolve()
+                if checkout_path is not None
+                else docs_dir.parent
+            )
+            index_data, _version = read_plan(project, "index", checkout_path)
+            projects = index_data.get("projects") or []
+            manifest = (
+                projects[0]
+                if projects and isinstance(projects[0], dict)
+                else {}
+            )
+            planned = crew_module.plan_scope_lanes(
+                candidates or [],
+                project=project,
+                repo=repo_root,
+                derivations=manifest.get("derivations") or {},
+            )
+            claim_map: dict[str, list[dict[str, str]]] = {}
+            for claim in planned["claims"]:
+                owner = {
+                    "run_id": claim["run_id"],
+                    "node": claim["node"],
+                    "declared_path": claim["declared_path"],
+                }
+                if claim.get("derived_from") is not None:
+                    owner["derived_from"] = claim["derived_from"]
+                claim_map.setdefault(claim["path"], []).append(owner)
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                "repository": str(repo_root),
+                "claim_map": claim_map,
+                **planned,
+            }
         if view == "budget":
             config = flight_module.resolve(project, checkout_path=checkout_path).config
             return {
