@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="26">
 <meta name="plan-impl" content="0.85">
 </head>
 <body>
@@ -118,7 +118,18 @@
       hand; the partition is what the system should return.</figcaption>
     </figure>
 
-    <h2 id="s3">&#167;3 &mdash; A per-project claim registry, and the planner that reads it</h2>
+    <h2 id="s3">&#167;3 &mdash; A per-project claim registry, and the planner that reads it <span class="badge badge-shipped">&#10003; mostly landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed:</strong> claims derived from live pointers rather
+    than retyped by the caller, componentwise containment so a directory conflicts with a file
+    beneath it while a string-prefix sibling does not, refused before a worktree exists at CLI
+    error <code>scope-conflict</code> exit 7 (<code>c26c8ce</code>); the derivation map on the
+    project resource (<code>e18fc2d</code>); and the scopes read view plus the lane partition
+    (<code>ee3caac</code>). Proven on this plan's own execution &mdash; the wave that followed the
+    crew split ran three lanes that would have serialised the day before.
+    <strong>Outstanding:</strong> a dry-run against a live claim still validates cleanly instead of
+    reporting the conflict, so the planning surface can still answer <em>yes</em> where dispatch
+    would refuse.</p>
 
     <p><strong>The registry already exists implicitly.</strong> The claimed-path set for a project is
     the union of <code>node.write_paths</code> over its live pointers, and
@@ -191,7 +202,17 @@
     expectation on the three-node case in &#167;1; and the scopes view reports the live claim map
     without mutating a pointer.</p>
 
-    <h2 id="s4">&#167;4 &mdash; Ready is not a queue, and saying so exposes the horizon</h2>
+    <h2 id="s4">&#167;4 &mdash; Ready is not a queue, and saying so exposes the horizon <span class="badge badge-shipped">&#10003; mostly landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed</strong> (<code>8609ef1</code>): roadmap reports
+    schedule readiness beside dependency readiness, deferring work outside a window counted from
+    the earliest sprint holding open work, each deferred row naming the sprint it sits behind while
+    staying dependency-ready and still listed in the ordered roadmap. The width reads from the
+    project manifest and is never hardcoded. It corrected this plan's own arithmetic on landing,
+    reporting <code>horizon_depth=6</code> where &#167;1 had recorded five.
+    <strong>Outstanding by choice, not by omission:</strong> the width is still undeclared, so the
+    axis imposes no queue. Any value below five would defer S12 and S13, which is where current
+    work lives, so the number follows a sprint consolidation rather than preceding it.</p>
 
     <p><strong>The seam is one line.</strong> <code>reckon/roadmap.py</code> computes readiness from
     dependency blockers, explicit blockers, gate blockers and cycle membership. Sprint status and
@@ -390,7 +411,15 @@
     retried rather than failed, demonstrated by a test that runs the two promotions
     concurrently.</p>
 
-    <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked</h2>
+    <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked <span class="badge badge-shipped">&#10003; landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong> Dispatch wires symmetric run-directory
+    mailboxes between nodes whose scopes are connected by an import or call edge, the adjacency
+    rule locked above. A peer read blocks on the reply rather than polling, and an unanswered read
+    past its bound degrades to a <code>NEEDS-HELP:</code> report naming the question instead of
+    expiring silently. The write-claim refusal is retained unchanged, so a channel carries
+    knowledge and never becomes a route to another node's paths. 786 insertions, 5 tests, full
+    suite 2201 passed. Commit <code>ae987b4</code>.</p>
 
     <p><strong>The dispatch contract already introduces workers to each other, and then forbids
     contact.</strong> Every worker prompt carries a block naming its concurrent peers and their
@@ -612,6 +641,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1945" data-who="reckon-ship" data-when="2026-08-24T19:45:00+00:00">
     <div class="r-comment-body">Correcting the claim written into this section minutes earlier that the ticker's two audiences do not compete. That is true only of how the watch is armed, and the arming used was wrong. Followed through a plain host background command, the watch does not exit until the fleet drains, so its lines accumulate where the lead reads them live while the coordinator is woken only at the end — measured here, where the lead saw a blocked run and a completed run in the box and had to relay both, because the coordinator was waiting on a process exit that was still minutes away. The host offers a monitor primitive whose whole purpose is that each emitted line becomes a notification; using it gives the lead the running account and the coordinator a wake per transition at the same time, at roughly twenty notifications per wave. So the claim holds, but only with the monitor form, and the plan should say which form rather than leaving it to the reader. Also landed in this beat: follow-mode-and-watch-memory at 2202 and peer-channel at 2201, the latter wiring adjacency from import and call edges as locked, with symmetric run-directory mailboxes, event-blocked reads that degrade to a NEEDS-HELP report when unanswered, and the existing write-claim refusal retained so a channel never becomes a way to reach another node's paths.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260824T192745523113-wave-integration-suite" data-who="codex-v" data-when="2026-08-24T19:30:40Z">
+    <div class="r-comment-body"><p>Merged tree after follow mode, peer channel and the landing invariant.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260824T1855" data-who="reckon-ship" data-when="2026-08-24T18:55:00+00:00">
     <div class="r-comment-body">decisions-block-closure landed — commit 1119a08, merged; gate passed; measure 41 targeted cases then the dispatch-tree suite at 2190 passed with zero failures; 945 worker-seconds against a 35m budget, scope widened so the run records --scope-changed. An open decision is now a blocker kind of its own, distinct from dependency, explicit and gate blockers, naming both the decision and the plan carrying it; locking it clears the block, and explicit deferral clears it while the decision stays visible in the report so deferral cannot hide it. The worker blocked first and chose correctly between two paths: decision identity is plumbed through the inventory its callers build, rather than teaching roadmap.py to parse plan HTML, which would have broken the analyser's storage-neutral contract and this repository's rule that a test must not read state outside the repo under test. That refusal cost one resume and saved an architectural regression that would have passed its own tests. Denominator note: impl moves 0.70 to 0.72 rather than further, because sections 6 and 7 were added to this plan after the earlier figures were set, so the denominator grew from seven nodes to thirteen while eight have now landed.</div>
