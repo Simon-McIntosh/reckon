@@ -9,7 +9,8 @@ import pytest
 import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon._plan_html import write_state
-from reckon.mcp_views import compact_size
+from reckon.mcp_views import compact_size, roadmap_view
+from reckon.roadmap import build_roadmap
 
 
 @pytest.fixture()
@@ -146,6 +147,50 @@ def test_single_project_summary_reports_counts(mounted_project) -> None:
     assert result["ready"] == 1
     assert result["blocked"] == 1
     assert result["finding_counts"]["total"] >= 1
+
+
+def test_summary_keeps_dependency_and_schedule_readiness_separate() -> None:
+    inventory = [
+        {
+            "slug": slug,
+            "title": slug.title(),
+            "type": "plan",
+            "status": "active",
+            "sprint": sprint,
+            "blocking": [],
+            "gates": [{"id": "evidence", "verdict": "passed"}],
+            "followups": [{"id": "next", "status": "open"}],
+        }
+        for slug, sprint in (("current", "first"), ("queued", "second"))
+    ]
+    raw = build_roadmap(
+        "sample",
+        inventory,
+        [
+            {"id": "first", "status": "active", "items": ["current"]},
+            {"id": "second", "status": "planned", "items": ["queued"]},
+        ],
+        project_manifest={"schedule_horizon_sprints": 1},
+    )
+
+    summary = roadmap_view(raw, view="summary", cursor=None, limit=None)
+
+    assert summary["dependency_readiness"] == {
+        "ready": 2,
+        "blocked": 0,
+        "deferred": 0,
+    }
+    assert summary["schedule_readiness"] == {
+        "configured": True,
+        "configuration_key": "schedule_horizon_sprints",
+        "window_sprints": 1,
+        "horizon_depth": 2,
+        "open_sprints": ["first", "second"],
+        "earliest_open_sprint": "first",
+        "ready_sprints": ["first"],
+        "ready": 1,
+        "deferred": 1,
+    }
 
 
 def test_single_project_detail_paginates_findings(mounted_project) -> None:

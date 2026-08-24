@@ -103,6 +103,62 @@ def test_completed_dependency_clears_without_hiding_stored_progress() -> None:
     assert result["completion"]["implementation_pct"] == 62.5
 
 
+def test_schedule_readiness_uses_the_configured_open_sprint_window() -> None:
+    inventory = [
+        _plan("earliest", sprint="first"),
+        _plan("inside-window", sprint="second"),
+        _plan("queued", sprint="third"),
+        _plan("finished", status="shipped", impl=1.0, sprint="closed"),
+    ]
+    sprints = [
+        {"id": "closed", "status": "done", "items": ["finished"]},
+        {"id": "first", "status": "active", "items": ["earliest"]},
+        {"id": "second", "status": "planned", "items": ["inside-window"]},
+        {"id": "third", "status": "planned", "items": ["queued"]},
+    ]
+
+    result = build_roadmap(
+        "sample",
+        inventory,
+        sprints,
+        project_manifest={"schedule_horizon_sprints": 2},
+    )
+    rows = {row["slug"]: row for row in result["pending_work"]}
+    ordered = {row["slug"]: row for row in result["immediate_roadmap"]}
+
+    assert result["schedule"] == {
+        "configured": True,
+        "configuration_key": "schedule_horizon_sprints",
+        "window_sprints": 2,
+        "horizon_depth": 3,
+        "open_sprints": ["first", "second", "third"],
+        "earliest_open_sprint": "first",
+        "ready_sprints": ["first", "second"],
+        "ready": 2,
+        "deferred": 1,
+    }
+    assert rows["inside-window"]["dependency_ready"] is True
+    assert rows["inside-window"]["schedule_ready"] is True
+    assert rows["queued"]["dependency_ready"] is True
+    assert rows["queued"]["dependency_readiness"] == "ready"
+    assert rows["queued"]["schedule_readiness"] == "deferred"
+    assert rows["queued"]["schedule_behind_sprint"] == "second"
+    assert "second" in rows["queued"]["schedule_deferred_reason"]
+    assert [row["slug"] for row in result["schedule_deferred"]] == ["queued"]
+    assert "queued" in {row["slug"] for row in result["ready_now"]}
+    assert ordered["queued"]["schedule_readiness"] == "deferred"
+
+    wider = build_roadmap(
+        "sample",
+        inventory,
+        sprints,
+        project_manifest={"schedule_horizon_sprints": 3},
+    )
+    assert wider["schedule"]["window_sprints"] == 3
+    assert wider["schedule"]["deferred"] == 0
+    assert wider["schedule_deferred"] == []
+
+
 def test_north_star_rollup_reports_alignment_completion_and_remaining_effort() -> None:
     inventory = [
         _plan("finished", status="shipped", impl=1.0, north_star="reliability"),
