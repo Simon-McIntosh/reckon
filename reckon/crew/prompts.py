@@ -1,0 +1,119 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Iterable, Mapping
+
+from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
+
+# ── Prompt composition ──────────────────────────────────────────────────────
+
+
+def compose_prompt(
+    *,
+    node: TaskNode,
+    project: str,
+    worktree: str,
+    working_directory: str,
+    manifest_path: str,
+    time_budget: str,
+    needs_help_after_failures: int,
+    peer_scopes: Mapping[str, Iterable[str]] | None = None,
+) -> str:
+    """Compose a worker prompt from the four fences and a pointer to the plan.
+
+    Deliberately short. Anything the live plan already says is omitted, because
+    a copied brief drifts between workers and sessions while the plan does not.
+    The worker's first act is to read the plan and section named here.
+    """
+    peers = peer_scopes or {}
+    peer_lines = (
+        "\n".join(
+            f"  {name} → {', '.join(sorted(paths))}"
+            for name, paths in sorted(peers.items())
+        )
+        or "  none"
+    )
+    scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
+    section = f" {node.section}" if node.section else ""
+    specification_guidance = {
+        "exact": (
+            "SPEC     exact — implement as written and run the named check; "
+            "deviation is a blocker to report.\n"
+        ),
+        "guided": (
+            "SPEC     guided — the plan fixes the design; derive the implementation.\n"
+        ),
+        "open": (
+            "SPEC     open — the plan fixes the goal and measure; design and implement.\n"
+        ),
+    }.get(node.spec_level, "")
+    delivery_directory_note = ""
+    if Path(working_directory) != Path(worktree):
+        delivery_directory_note = f"""
+RUNTIME FILESYSTEM
+  The working directory is the delivery directory {working_directory}.
+  The repository at the assigned worktree path {worktree} is read-only.
+"""
+    return f"""You are a worker on one node. Read the live plan first; it is the
+semantic authority for context, decisions, evidence inputs and constraints.
+
+NODE     {node.id}
+GOAL     {node.goal}
+PLAN     {project}:{node.plan}{section}
+ROLE     {node.role}
+{specification_guidance}{delivery_directory_note}
+
+FENCE — SCOPE (exclusive write paths; nothing outside them)
+{scope_lines}
+
+CONCURRENT NODES (never touch their paths; request a scope change instead)
+{peer_lines}
+
+FENCE — TIME
+  {time_budget}. Exceeding it means stop and report, never push on.
+
+FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
+  {node.done_when}
+
+FENCE — DELIVERY
+  Write your manifest to {manifest_path} BEFORE finishing, then reply with
+  that path and a short summary. Your final message is the return value, but
+  the file is the delivery: a report that exists only in a message can be
+  lost, and the node then looks failed when it is not. Long output belongs in
+  the file. Redirect every long-running command to a named on-disk log.
+
+MANIFEST (write exactly these keys)
+  node: {node.id}
+  status: complete | blocked | failed
+  commits: <sha list>
+  changed_paths: <explicit list>
+  tests: <command and result>
+  test_logs: <paths on disk>
+  artifacts: <paths plus headline metrics>
+  evidence_inputs: <facts the orchestrator needs for writeback>
+  follow_ons: <work you found but were fenced out of, or none>
+  blockers: <none, or the exact unmet condition>
+
+WORKTREE AND PARALLEL-SAFETY RULES (binding)
+  1. Work only in {worktree}. Do not create, checkout or switch branches.
+  2. Never use git stash, rebase, clean, reset --hard, or path restoration.
+  3. Stage explicit assigned paths only. Never git add -A/./*, commit -a/-am.
+  4. Do not edit reckon plan or index state. Return outcome data instead.
+  5. Commit locally with a conventional subject AND a body. Do not merge or
+     push the primary branch.
+  6. No AI attribution, and no plan, sprint or ticket identifiers in commit
+     messages, symbol names, filenames or comments.
+  7. Stop and report unexpected dirty files or unsafe scope.
+
+IF YOU GET STUCK — stop and emit a report whose first line is
+`{NEEDS_HELP_MARKER} <one line>` followed by all four of:
+  tried:         what you attempted and the observable result
+  options:       two or three concrete paths you can see
+  leaning:       which one, and why
+  cost-if-wrong: what must be redone if the wrong path is taken
+Stop on any of: the same command failed {needs_help_after_failures} times with
+different fixes attempted; a decision the plan does not settle is required;
+the necessary change exceeds your write scope; the evidence cannot be produced
+with the tools or data available; the time budget is spent with the measure
+still unmet. Asking costs one turn; thrashing costs the node.
+"""

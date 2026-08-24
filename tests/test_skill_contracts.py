@@ -684,7 +684,11 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     ship = normalized(
         (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
     ).lower()
-    crew_source = (ROOT / "reckon" / "crew.py").read_text()
+    crew_sources = [
+        ROOT / "reckon" / "crew.py",
+        *sorted((ROOT / "reckon" / "crew").glob("*.py")),
+    ]
+    crew_source = "\n".join(path.read_text() for path in crew_sources)
     reference = normalized(
         (
             ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
