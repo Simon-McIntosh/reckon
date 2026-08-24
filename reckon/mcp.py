@@ -27,6 +27,7 @@ SDK note: this file uses the FastMCP pattern from mcp >= 1.0.0:
 from __future__ import annotations
 
 import json
+import shlex
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -962,6 +963,94 @@ def _tag_inventory(inventory: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         counts.update(tuple(dict.fromkeys(str(tag) for tag in item.get("tags") or [])))
     return [{"tag": tag, "count": counts[tag]} for tag in sorted(counts)]
+
+
+def _bounded_edit_distance(left: str, right: str, limit: int) -> int:
+    """Return edit distance, stopping once the requested bound is exceeded."""
+
+    if abs(len(left) - len(right)) > limit:
+        return limit + 1
+    previous = list(range(len(right) + 1))
+    for left_index, left_character in enumerate(left, start=1):
+        current = [left_index]
+        row_minimum = left_index
+        for right_index, right_character in enumerate(right, start=1):
+            current.append(
+                min(
+                    current[-1] + 1,
+                    previous[right_index] + 1,
+                    previous[right_index - 1]
+                    + (left_character != right_character),
+                )
+            )
+            row_minimum = min(row_minimum, current[-1])
+        if row_minimum > limit:
+            return limit + 1
+        previous = current
+    return previous[-1]
+
+
+def _tag_audit_findings(
+    project: str, tag_inventory: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Surface sparse and suspiciously similar tag identities without mutation."""
+
+    findings = [
+        _finding(
+            "tags",
+            "tag-singleton",
+            "warn",
+            f"tag {item['tag']!r} is used by 1 resource",
+            extra={"tag": item["tag"], "count": 1},
+        )
+        for item in tag_inventory
+        if item["count"] == 1
+    ]
+    for position, left in enumerate(tag_inventory):
+        for right in tag_inventory[position + 1 :]:
+            shorter_length = min(len(left["tag"]), len(right["tag"]))
+            distance_limit = 2 if shorter_length >= 10 else 1
+            distance = _bounded_edit_distance(
+                left["tag"], right["tag"], distance_limit
+            )
+            if distance > distance_limit:
+                continue
+            target, source = sorted(
+                (left, right), key=lambda item: (-item["count"], item["tag"])
+            )
+            invocation = " ".join(
+                shlex.quote(part)
+                for part in (
+                    "reckon",
+                    "tag",
+                    "rename",
+                    "--project",
+                    project,
+                    source["tag"],
+                    target["tag"],
+                )
+            )
+            findings.append(
+                _finding(
+                    "tags",
+                    "tag-near-duplicate",
+                    "warn",
+                    (
+                        f"tags {left['tag']!r} ({left['count']}) and "
+                        f"{right['tag']!r} ({right['count']}) differ by edit "
+                        f"distance {distance}; merge with: {invocation}"
+                    ),
+                    extra={
+                        "tags": [
+                            {"tag": left["tag"], "count": left["count"]},
+                            {"tag": right["tag"], "count": right["count"]},
+                        ],
+                        "distance": distance,
+                        "rename_invocation": invocation,
+                    },
+                )
+            )
+    return findings
 
 
 def _discovery_summary(
@@ -2776,6 +2865,7 @@ def _audit(
             for item in _discover_project(project, checkout_path).get("inventory", [])
         ]
     )
+    findings.extend(_tag_audit_findings(project, _tag_inventory(plans)))
     plan_lookup = {plan["slug"]: plan for plan in plans if plan.get("slug")}
     followups = list_followups_across(project, unresolved_only=True, root=checkout_path)
     questions = list_questions_across(project, unresolved_only=True, root=checkout_path)
