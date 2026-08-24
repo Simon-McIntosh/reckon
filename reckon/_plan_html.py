@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HTML plan state engine — the plan's data IS semantic HTML.
+"""HTML plan state engine — plan data IS semantic HTML.
 
 A plan page carries its data as ordinary HTML the reader can see and the
 reckon server reads and writes directly. There is NO embedded JSON blob.
@@ -32,6 +32,7 @@ from reckon.capability import (
     from_legacy_tier,
 )
 from reckon._schema import LEGACY_EFFORT_HOURS
+from reckon.tags import normalise_tag
 
 # ── Scalar fields carried in <meta name="plan-*"> ──────────────────────────
 _SCALARS = (
@@ -68,6 +69,7 @@ _LIST_SCALARS = (
     "supersedes",
     "commits",
     "artifacts",
+    "tags",
 )  # comma-separated in meta
 
 _PLAN_ONLY_METAS = (
@@ -690,9 +692,10 @@ def write_state(html_text: str, state: dict) -> str:
         out = _set_meta(out, "plan-wall-clock-hours", state["wall_clock_hours"])
     for f in _LIST_SCALARS:
         if f in state:
-            out = _set_meta(
-                out, f"plan-{f.replace('_', '-')}", ",".join(state.get(f) or [])
-            )
+            values = state.get(f) or []
+            if f == "tags":
+                values = list(dict.fromkeys(normalise_tag(tag) for tag in values))
+            out = _set_meta(out, f"plan-{f.replace('_', '-')}", ",".join(values))
     if "capability" in state and state.get("capability"):
         capability = state["capability"]
         requirements = capability.get("requirements") or {}
