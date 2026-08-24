@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-24T13:02:27",
+  "updated": "2026-08-24T13:03:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -7284,9 +7284,73 @@
           "detail": "backend reports token usage but no headroom"
         },
         "lineage": null
+      },
+      {
+        "run_id": "r-20260824T100451119613-native-distributed-sync",
+        "plan": "project-state-fleet-migration",
+        "section": "\u00a75",
+        "node": "native-distributed-sync",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-24T10:04:52Z",
+        "completed_at": "2026-08-24T10:11:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 385,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 385,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "da1c8c1d42459243e7dc62ddc0c914f10ed1a848",
+        "commits": [
+          "083431a"
+        ],
+        "changed_lines": {
+          "added": 193,
+          "removed": 56,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "outcome": "reckon sync now creates distributed typed state natively via create_project_state; fresh project reports format=distributed with 2 typed resources and 0 legacy index files; existing legacy index preserved unconverted; full suite 2007 passed 0 failed 0 errors",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260824T100451119613-native-distributed-sync/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0333a-e3df-7c53-9537-0ca038226a03",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2334208,
+            "cached_input_tokens_cumulative": 2334208,
+            "input_tokens": 2465957,
+            "input_tokens_cumulative": 2465957,
+            "output_tokens": 14456,
+            "output_tokens_cumulative": 14456,
+            "reasoning_output_tokens": 3773,
+            "reasoning_output_tokens_cumulative": 3773
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null
       }
     ],
     "holds": [],
-    "_version": 156
+    "_version": 157
   }
 }

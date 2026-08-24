@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"      content="reckon">
+  <meta name="reckon-type"       content="evidence">
+  <meta name="plan-slug"         content="project-state-fleet-migration-landed">
+  <meta name="plan-title"        content="Migrate the Fleet, Then Delete the Ladder — Landed">
+  <meta name="plan-summary"      content="Execution evidence for the project-state fleet migration: the reuse map, the measured corpus limit, native distributed creation in sync, the parity harness, and the per-repository migration outcomes.">
+  <meta name="plan-evidence-for" content="project-state-fleet-migration">
+  <title>Migrate the Fleet, Then Delete the Ladder — Landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="reuse-map">Prior-art reconnaissance and the measured corpus limit</h2>
+
+    <p>Run <code>r-20260824T095640145230-prior-art-scout</code> (read-only
+      investigate, 3rd attempt in this node's lineage). Gate <strong>passed</strong>:
+      3 of 3 capability areas classified <em>needs extension</em>, 17 candidate
+      symbols across 6 modules and 11 tests/fixtures across 5 test modules mapped
+      with file:line fitness verdicts. Reuse map retained at
+      <code>&lt;config-home&gt;/crew/reports/psfm-prior-art-scout.md</code>.</p>
+
+    <p><strong>The finding that reshaped §2, and it contradicts what the plan
+      assumed.</strong> The frozen pre-migration snapshot named by a project-state
+      marker is a byte-identical copy of <code>index.json</code> and nothing else.
+      Measured on this repository's own marker, that snapshot's <code>.data</code>
+      carries only <code>_version</code>, <code>active_sprint_id</code>,
+      <code>blockers</code>, <code>milestones</code>, <code>projects</code>,
+      <code>sprints</code> and <code>timeline</code> — there is no
+      <code>inventory</code> key and therefore no historical plan HTML. So the
+      already-migrated corpora can evidence every <em>aggregate project-state</em>
+      field, but they cannot by themselves evidence plan relations or the nested
+      decision/followup/comment/question/research collections that §2 enumerates.</p>
+
+    <p>This does not reopen the locked <code>robustness-evidence-source</code>
+      decision; it bounds what that source can prove and adds the second proof the
+      bar actually needs. Plan-level metadata is shown to survive by a stronger
+      argument than a diff: the migration provably never writes plan HTML, so the
+      harness asserts <strong>byte identity of every plan file across a real
+      migration</strong> over a corpus carrying all six relation families and a
+      long entity-bearing rationale. Field classes the snapshot cannot evidence are
+      reported <code>out-of-corpus</code> rather than silently counted as matched —
+      the failure mode that would let a no-op pass as a proof.</p>
+
+    <h2 id="s5">§5 — Born distributed: sync creates typed state natively</h2>
+
+    <p>Run <code>r-20260824T100451119613-native-distributed-sync</code>, worker
+      commit <code>083431a</code>. Gate <strong>passed</strong>. Delivered
+      <code>create_project_state</code> in <code>reckon/project_state.py</code> as a
+      public marker-last transaction, and routed <code>reckon sync</code> through it
+      — replacing 63 lines of legacy-index seeding in <code>reckon/cli.py</code>
+      with 103 lines of owned transaction plus 83 lines of new test.</p>
+
+    <p><strong>Measures.</strong> A project with no state directory at all, synced,
+      reports <code>format=distributed</code> having created <strong>2 typed
+      resources</strong> (<code>project</code>, <code>timeline</code>), <strong>0
+      legacy index files</strong>, and <strong>0</strong> migration-only source or
+      snapshot receipt fields in its marker. A project holding an existing legacy
+      index keeps that file byte-for-byte, stays <code>format=legacy</code>, and
+      gains no marker — so the change adds a forward path for new projects without
+      converting anything that already exists.
+      <code>test_sync_preserves_frozen_index</code> and
+      <code>test_static_build_writes_projection_without_touching_canonical_index</code>
+      both still pass. 4 tests added.</p>
+
+    <p><strong>Full suite 2007 passed, 0 failed, 0 errors</strong> in 66.55 s
+      (log retained in the run directory). This is also a correction to a
+      cross-session claim that the suite carries 34 failures and 10 errors: those
+      are artifacts of the <em>read-only</em> sandbox tier, in which
+      <code>uv run</code> dies on the shared cache before pytest collects. At the
+      <code>worktree-full</code> tier the same suite is clean, so a failure seen
+      there is real rather than inherited.</p>
+
+    <p>This is the change that earns §6. Before it, <code>sync</code> took the
+      else branch at <code>reckon/cli.py:1419</code> for any project without a
+      marker and seeded a legacy <code>index.json</code>, so a newly onboarded
+      repository was born legacy and deleting the per-project migration would have
+      stranded every future project. That path is now reachable only for a project
+      that already has a legacy index.</p>
+
+    <h2 id="s3-preflight">§3 — What actually blocks the two priority repositories</h2>
+
+    <p>Measured with <code>preflight_repository</code> against both mounted
+      checkouts. <strong><code>active-alternate-worktrees</code> is the only
+      preflight blocker on either</strong>; both are clean on <code>main</code>,
+      level with upstream, with zero uncommitted changes in migration-relevant
+      docs paths. Because <code>fleet_migration.py:1053</code> defers hard on any
+      failed preflight, the fleet command as shipped would defer the exact two
+      repositories the migration order was locked to prioritise.</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th>Alternate worktrees</th><th>Dirty</th><th>Unmerged HEAD</th><th>Touching migration paths</th></tr></thead>
+      <tbody>
+        <tr><td><code>nova</code></td><td>49 (all detached, 16–23 Aug)</td><td>5</td><td>2</td><td><strong>0</strong></td></tr>
+        <tr><td><code>imas-ambix</code></td><td>7</td><td>4</td><td>0</td><td><strong>3</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>No live crew run exists in either repository, so nothing is mid-flight and
+      the trees are abandoned rather than active. The two repositories then differ
+      in kind, not degree. Nothing among nova's 49 detached trees touches
+      <code>docs/*.html</code>, <code>docs/state/</code> or
+      <code>docs/.reckon/</code>, so none of them can interact with what the
+      migration writes. In <code>imas-ambix</code>, three trees under
+      <code>.claude/worktrees/</code> dated 5 June each hold a <strong>staged,
+      never-committed 1645-file restructure</strong> (1516 deletions, 120
+      modifications, 9 additions) — 188 of them <code>docs/*.html</code> — while
+      checked out on <code>main</code>. That is uncommitted peer work whose fate is
+      the lead's to decide, and holding on it is the check working correctly rather
+      than over-firing.</p>
+
+  </main>
+</body>
+</html>
