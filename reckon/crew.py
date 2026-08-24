@@ -57,7 +57,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from reckon import _backends, _plan_html, capabilities, ledger
+from reckon import _backends, _plan_html, capabilities, capability, ledger
 from reckon._store import _config_home
 from reckon.calibration import agent_configuration_key
 
@@ -1419,12 +1419,14 @@ class DispatchPlan:
     node: TaskNode
     budget_ceiling: str
     validation: NodeValidation
+    execution_fit: capability.ExecutionFit
     warnings: list[str] = field(default_factory=list)
     competence: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
             "backend": self.backend,
+            "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
             "node": self.node.as_dict(),
             "run_id": self.run_id,
@@ -1472,6 +1474,7 @@ def plan_dispatch(
     project: str = "",
     repo: str | Path | None = None,
     base: str = "HEAD",
+    execution_override: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -1510,9 +1513,26 @@ def plan_dispatch(
     node.peer_scopes = {
         name: list(paths) for name, paths in (peer_scopes or {}).items()
     }
+    execution_fit = capability.assess_execution_fit(
+        node.done_when,
+        role=node.role,
+        execution_capable=backend.get("execution_capable"),
+        override=execution_override,
+    )
     verdict = validate_node(
         node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
     )
+    if not execution_fit.allowed:
+        verdict = NodeValidation(
+            ok=False,
+            findings=[
+                *verdict.findings,
+                {
+                    "property": "fully-specified",
+                    "detail": execution_fit.refusal_detail(),
+                },
+            ],
+        )
     if verdict.ok and repo is not None:
         require_plan_section_visible(node=node, project=project, repo=repo, base=base)
     resolution = DispatchPlan(
@@ -1523,6 +1543,7 @@ def plan_dispatch(
         node=node,
         budget_ceiling=budget_ceiling,
         validation=verdict,
+        execution_fit=execution_fit,
         warnings=warnings,
     )
     if verdict.ok and repo is not None:
@@ -1546,6 +1567,7 @@ def dispatch(
     launcher=None,
     check_budget: bool = True,
     budget_state: Mapping[str, Any] | None = None,
+    execution_override: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1567,6 +1589,9 @@ def dispatch(
 
     Either way the operation is atomic: a failure after the worktree exists
     removes it and writes no pointer, so no orphan is left holding write scope.
+    An execution-fit override is an explicit exception to a heuristic refusal;
+    the matched measure and resolved role stay on the run record so the exception
+    remains visible after the request that supplied it is gone.
     """
     repo_root = Path(repo).resolve()
     script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
@@ -1584,6 +1609,7 @@ def dispatch(
         project=project,
         repo=repo_root,
         base=base,
+        execution_override=execution_override,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -1704,6 +1730,7 @@ def dispatch(
             "node": node.as_dict(),
             "role": node.role,
             "backend": backend_name,
+            "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
             "session_reuse": bool(backend.get("session_reuse")),
@@ -2403,6 +2430,9 @@ def _complete_locked(
         budget=measured_budget,
         lineage=record.get("lineage"),
     )
+    execution_fit = record.get("execution_fit")
+    if isinstance(execution_fit, Mapping):
+        run["execution_fit"] = dict(execution_fit)
     already_promoted = False
     try:
         written = ledger.append_run(project, run, root=ledger_root)
