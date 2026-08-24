@@ -12,13 +12,34 @@ import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from reckon import _plan_html, capabilities, flight, ledger
 from reckon.calibration import agent_configuration_key
 
-from reckon.crew.node import CrewError, DEFAULT_MEMBER_IDLE_WINDOW, PlanVisibilityError, TaskNode, _TERMINAL_RUN_PHASES, parse_duration
-from reckon.crew.runs import _live_worktree_claims, _pointer_lock, _process_start_time, crew_home, list_live, pointer_path, process_alive, read_pointer, reports_dir, runs_dir
+from reckon.crew.node import (
+    CrewError,
+    DEFAULT_MEMBER_IDLE_WINDOW,
+    PlanVisibilityError,
+    TaskNode,
+    _TERMINAL_RUN_PHASES,
+    parse_duration,
+)
+from reckon.crew.runs import (
+    _live_worktree_claims,
+    _pointer_lock,
+    _process_start_time,
+    crew_home,
+    list_live,
+    pointer_path,
+    process_alive,
+    read_pointer,
+    reports_dir,
+    runs_dir,
+)
+
+if TYPE_CHECKING:
+    from reckon.crew.dispatch import DispatchPlan
 
 # ── Routing ─────────────────────────────────────────────────────────────────
 
@@ -133,7 +154,6 @@ def resolved_time_budget(config: Mapping[str, Any], backend: Mapping[str, Any]) 
 def resolved_time_ceiling(config: Mapping[str, Any]) -> str:
     """Return the independent hard ceiling for an explicitly declared budget."""
     return str((config.get("fences") or {}).get("time_budget") or "")
-
 
 
 # ── Dispatch ────────────────────────────────────────────────────────────────
@@ -590,6 +610,36 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
     }
 
 
+def mounted_repository_projects() -> dict[Path, tuple[str, ...]]:
+    """Return mounted project identities grouped by repository root."""
+    try:
+        mounts = flight.mounted_project_docs()
+    except flight.FlightConfigError as exc:
+        raise PlanVisibilityError(str(exc)) from exc
+    grouped: dict[Path, list[str]] = {}
+    for project, docs in mounts.items():
+        grouped.setdefault(docs.parent.resolve(), []).append(str(project))
+    return {
+        repository: tuple(sorted(projects)) for repository, projects in grouped.items()
+    }
+
+
+def resolve_scope_repository(
+    path: str | Path,
+    *,
+    base_repository: str | Path,
+    repositories: Iterable[str | Path],
+) -> Path | None:
+    """Resolve a declared path to its most specific containing repository."""
+    base = Path(base_repository).expanduser().resolve()
+    raw = Path(path).expanduser()
+    resolved = (raw if raw.is_absolute() else base / raw).resolve()
+    roots = {Path(root).expanduser().resolve() for root in repositories}
+    roots.add(base)
+    matches = [root for root in roots if resolved.is_relative_to(root)]
+    return max(matches, key=lambda root: len(root.parts)) if matches else None
+
+
 def _require_write_paths_in_repository(
     node: TaskNode, authority: Mapping[str, Any]
 ) -> None:
@@ -713,8 +763,10 @@ def reap_idle_session_members(
             stamp = _parse_utc_timestamp(
                 record.get("dispatched_at") or record.get("created_at")
             )
-            if member_id and stamp and (
-                member_id not in last_dispatch or stamp > last_dispatch[member_id]
+            if (
+                member_id
+                and stamp
+                and (member_id not in last_dispatch or stamp > last_dispatch[member_id])
             ):
                 last_dispatch[member_id] = stamp
         candidates = []

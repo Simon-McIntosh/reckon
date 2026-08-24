@@ -24,6 +24,7 @@ from reckon.crew.node import (
     MemberInFlight,
     NEEDS_HELP_MARKER,
     NodeValidation,
+    ScopeConflict,
     TaskNode,
     UnreconciledRuns,
     WatcherRequired,
@@ -47,20 +48,21 @@ from reckon.crew.routing import (
     reap_idle_session_members,
     require_plan_section_visible,
     resolve_dispatch_authority,
+    mounted_repository_projects,
+    resolve_scope_repository,
     resolve_role,
     resolved_time_budget,
     resolved_time_ceiling,
 )
 from reckon.crew.runs import (
-    _live_scope_claims,
+    _expanded_scope_paths,
     _manifest_freshness,
     _manifest_mtime_ns,
     _merge_peer_scopes,
     _mutate_pointer,
-    plan_scope_lanes,
     _process_start_time,
     _project_derivations,
-    _raise_live_scope_conflict,
+    _scopes_overlap,
     _utc_now,
     _watch_arming_line,
     _write_json,
@@ -77,6 +79,234 @@ from reckon.crew.runs import (
 
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
+
+
+@dataclass(frozen=True)
+class _RepositoryScopeClaim:
+    """One live claim resolved to the repository that contains its path."""
+
+    project: str
+    repository: Path | None
+    run_id: str
+    node_id: str
+    path: str
+    absolute_path: Path
+    declared_path: str
+    derived_from: str | None = None
+
+
+def _scope_derivation_project(
+    project: str,
+    repository: Path,
+    repository_projects: Mapping[Path, tuple[str, ...]],
+    preferred_projects: Iterable[str] = (),
+) -> str:
+    """Choose the project resource that owns derivations for a repository."""
+    mounted = repository_projects.get(repository, ())
+    if project in mounted:
+        return project
+    for preferred in preferred_projects:
+        if preferred in mounted:
+            return preferred
+    return mounted[0] if mounted else project
+
+
+def _resolved_scope_entries(
+    paths: Iterable[str],
+    *,
+    base_repository: Path,
+    repositories: Iterable[Path],
+    project: str,
+    repository_projects: Mapping[Path, tuple[str, ...]],
+    preferred_projects: Iterable[str] = (),
+) -> list[tuple[Path | None, str, Path, str, str | None]]:
+    """Expand paths within the repository and project resource that own them."""
+    roots = tuple(repositories)
+    grouped: dict[Path | None, list[str]] = {}
+    for declared in paths:
+        repository = resolve_scope_repository(
+            declared,
+            base_repository=base_repository,
+            repositories=roots,
+        )
+        grouped.setdefault(repository, []).append(declared)
+
+    entries: list[tuple[Path | None, str, Path, str, str | None]] = []
+    for repository, declared_paths in grouped.items():
+        if repository is None:
+            for declared in declared_paths:
+                raw = Path(declared).expanduser()
+                absolute = (
+                    raw if raw.is_absolute() else base_repository / raw
+                ).resolve()
+                entries.append(
+                    (None, absolute.as_posix(), absolute, absolute.as_posix(), None)
+                )
+            continue
+        derivation_project = _scope_derivation_project(
+            project,
+            repository,
+            repository_projects,
+            preferred_projects,
+        )
+        derivations = _project_derivations(derivation_project, repository)
+        for path, normalized_declared, derived_from in _expanded_scope_paths(
+            declared_paths, repository, derivations
+        ):
+            entries.append(
+                (
+                    repository,
+                    path,
+                    (repository / path).resolve(),
+                    normalized_declared,
+                    derived_from,
+                )
+            )
+    return entries
+
+
+def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
+    """Read live claims globally and group their paths by repository root."""
+    repository_projects = mounted_repository_projects()
+    claims: list[_RepositoryScopeClaim] = []
+    for pointer in list_live():
+        pointer_repo_value = str(pointer.get("repo") or "")
+        if not pointer_repo_value:
+            continue
+        pointer_repo = Path(pointer_repo_value).expanduser().resolve()
+        project = str(pointer.get("project") or "")
+        authority = pointer.get("authority")
+        authority = authority if isinstance(authority, Mapping) else {}
+        authority_roots = {
+            Path(str(root)).expanduser().resolve()
+            for root in authority.get("repositories") or ()
+        }
+        roots = {*repository_projects, *authority_roots, pointer_repo}
+        write = authority.get("write")
+        write = write if isinstance(write, Mapping) else {}
+        preferred_projects = tuple(str(item) for item in write.get("projects") or ())
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            continue
+        run_id = str(pointer.get("run_id") or "unknown")
+        node_id = str(node.get("id") or "unknown")
+        for (
+            repository,
+            path,
+            absolute,
+            declared,
+            derived_from,
+        ) in _resolved_scope_entries(
+            node.get("write_paths") or (),
+            base_repository=pointer_repo,
+            repositories=roots,
+            project=project,
+            repository_projects=repository_projects,
+            preferred_projects=preferred_projects,
+        ):
+            claims.append(
+                _RepositoryScopeClaim(
+                    project=project,
+                    repository=repository,
+                    run_id=run_id,
+                    node_id=node_id,
+                    path=path,
+                    absolute_path=absolute,
+                    declared_path=declared,
+                    derived_from=derived_from,
+                )
+            )
+    return sorted(
+        claims,
+        key=lambda claim: (claim.run_id, claim.node_id, claim.absolute_path.as_posix()),
+    )
+
+
+def _candidate_scope_entries(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+) -> list[tuple[Path | None, str, Path, str, str | None]]:
+    repository_projects = mounted_repository_projects()
+    repositories = tuple(
+        Path(str(root)).expanduser().resolve()
+        for root in authority.get("repositories") or (repo,)
+    )
+    write = authority.get("write")
+    write = write if isinstance(write, Mapping) else {}
+    return _resolved_scope_entries(
+        node.write_paths,
+        base_repository=repo,
+        repositories=repositories,
+        project=project,
+        repository_projects=repository_projects,
+        preferred_projects=tuple(str(item) for item in write.get("projects") or ()),
+    )
+
+
+def _live_conflict_rows(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+    claims: Iterable[_RepositoryScopeClaim],
+) -> list[dict[str, Any]]:
+    candidates = _candidate_scope_entries(
+        node, project=project, repo=repo, authority=authority
+    )
+    conflicts: list[dict[str, Any]] = []
+    for claim in claims:
+        paths = [
+            {"left_path": path, "right_path": claim.path}
+            for repository, path, absolute, _declared, _derived_from in candidates
+            if repository == claim.repository
+            and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
+        ]
+        if not paths:
+            continue
+        conflict: dict[str, Any] = {
+            "candidate": node.id,
+            "run_id": claim.run_id,
+            "node": claim.node_id,
+            "claimed_path": claim.path,
+            "paths": paths,
+        }
+        if claim.project != project:
+            conflict["project"] = claim.project
+        conflicts.append(conflict)
+    return conflicts
+
+
+def _raise_repository_scope_conflict(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+    claims: Iterable[_RepositoryScopeClaim],
+) -> None:
+    candidates = _candidate_scope_entries(
+        node, project=project, repo=repo, authority=authority
+    )
+    for _repository, candidate, absolute, _declared, _derived_from in candidates:
+        for claim in claims:
+            if _repository != claim.repository or not _scopes_overlap(
+                absolute.as_posix(), claim.absolute_path.as_posix()
+            ):
+                continue
+            refusal = ScopeConflict(
+                run_id=claim.run_id,
+                node_id=claim.node_id,
+                candidate_path=candidate,
+                claimed_path=claim.path,
+            )
+            refusal.project = claim.project
+            if claim.project != project:
+                refusal.args = (f"{refusal} in project {claim.project!r}",)
+            raise refusal
 
 
 def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
@@ -721,15 +951,13 @@ def plan_dispatch(
         )
         if report_live_conflicts:
             repo_root = Path(repo).resolve()
-            work_projects = resolved_authority["write"]["projects"]
-            derivations = _project_derivations(work_projects[0], repo_root)
-            scope_report = plan_scope_lanes(
-                [node.as_dict()],
+            resolution.live_conflicts = _live_conflict_rows(
+                node,
                 project=project,
                 repo=repo_root,
-                derivations=derivations,
+                authority=resolved_authority,
+                claims=_repository_scope_claims(),
             )
-            resolution.live_conflicts = scope_report["live_conflicts"]
     return resolution
 
 
@@ -816,9 +1044,18 @@ def dispatch(
             "for this repository to install it"
         )
     _workspace_roots(repo_root)
-    work_projects = authority["write"]["projects"]
-    derivations = _project_derivations(work_projects[0], repo_root)
-    live_claims = _live_scope_claims(project, repo_root, derivations)
+    live_claims = _repository_scope_claims()
+    candidate_scope = _candidate_scope_entries(
+        node, project=project, repo=repo_root, authority=authority
+    )
+    candidate_repositories = {
+        repository
+        for repository, _path, _absolute, _declared, _derived_from in candidate_scope
+        if repository is not None
+    }
+    peer_claims = [
+        claim for claim in live_claims if claim.repository in candidate_repositories
+    ]
 
     competence = resolution.competence or _competence_verdict(
         resolution=resolution, project=project, repo=repo_root
@@ -869,7 +1106,7 @@ def dispatch(
     run_id = resolution.run_id
     directory = run_dir(run_id)
     explicitly_named_peers = set(node.peer_scopes)
-    peers = _merge_peer_scopes(live_claims, node.peer_scopes)
+    peers = _merge_peer_scopes(peer_claims, node.peer_scopes)
     node.peer_scopes = peers
 
     reap_idle_session_members(
@@ -896,7 +1133,13 @@ def dispatch(
                 raise MemberInFlight(
                     effective_member, str(pointer.get("run_id") or "unknown")
                 )
-    _raise_live_scope_conflict(node, live_claims, repo_root, derivations)
+    _raise_repository_scope_conflict(
+        node,
+        project=project,
+        repo=repo_root,
+        authority=authority,
+        claims=live_claims,
+    )
     adjacent_peers = _adjacent_live_peers(
         node,
         project=project,
