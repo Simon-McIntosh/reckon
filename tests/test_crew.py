@@ -682,8 +682,28 @@ def test_project_watch_exits_when_a_stream_exceeds_the_stall_window(home) -> Non
     assert result["next_action"] == "reckon crew observe --run r-quiet"
 
 
-def test_project_watch_exits_immediately_without_live_pointers(home) -> None:
-    result = crew.watch("proj", stall_window="1h")
+def test_project_watch_waits_for_the_first_pointer_on_an_empty_project(home) -> None:
+    sleeps = 0
+
+    def deliver_first_pointer(_seconds):
+        nonlocal sleeps
+        sleeps += 1
+        _write_terminal_pointer(home, "r-first", age_seconds=0)
+
+    result = crew.watch(
+        "proj",
+        stall_window="1h",
+        poll_interval=0,
+        sleeper=deliver_first_pointer,
+    )
+
+    assert sleeps == 1
+    assert result["event"] == "terminal"
+    assert result["run_id"] == "r-first"
+
+
+def test_project_watch_can_exit_on_an_empty_fleet_explicitly(home) -> None:
+    result = crew.watch("proj", stall_window="1h", exit_on_empty=True)
 
     assert result == {
         "project": "proj",
@@ -708,6 +728,7 @@ def test_second_project_watch_reports_the_live_watcher(home) -> None:
             crew.watch,
             "proj",
             stall_window="1h",
+            exit_on_empty=True,
             sleeper=controlled_sleep,
         )
         assert sleeping.wait(timeout=5)
@@ -735,12 +756,24 @@ def test_project_watch_reclaims_an_unlocked_stale_record(home) -> None:
         )
     )
 
-    result = crew.watch("proj", stall_window="1h")
+    result = crew.watch("proj", stall_window="1h", exit_on_empty=True)
 
     assert result["event"] == "empty"
     reclaimed = json.loads(path.read_text())
     assert reclaimed["pid"] == os.getpid()
     assert reclaimed["project"] == "proj"
+
+
+def test_cli_watch_exposes_the_explicit_empty_fleet_exit(home) -> None:
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--exit-on-empty"],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["event"] == "empty"
+    assert payload["classification"] == "no_live_pointers"
 
 
 def test_dead_watcher_does_not_satisfy_the_dispatch_gate(home, repo) -> None:
@@ -974,6 +1007,43 @@ def test_dispatch_refuses_a_write_outside_the_mounted_authority_set(
     assert str(outside) in str(excinfo.value)
     assert "outside the authorised work repository" in str(excinfo.value)
     _assert_no_dispatch_artifacts(repo)
+
+
+@pytest.mark.parametrize("delivery_root", [crew.runs_dir, crew.reports_dir])
+def test_non_repository_delivery_directories_are_valid_exclusive_scopes(
+    home, repo, delivery_root
+) -> None:
+    delivery = delivery_root() / "proj" / "verification.json"
+    node = _node(write_paths=[str(delivery)])
+
+    resolution = crew.plan_dispatch(
+        node=node,
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+    )
+
+    assert resolution.validation.ok is True
+    assert resolution.node.write_paths == [str(delivery)]
+
+
+def test_write_path_outside_repository_and_delivery_directories_is_refused(
+    home, repo, tmp_path
+) -> None:
+    outside = tmp_path / "unclaimed-output" / "verification.json"
+
+    with pytest.raises(crew.CrewError) as excinfo:
+        crew.plan_dispatch(
+            node=_node(write_paths=[str(outside)]),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+        )
+
+    detail = str(excinfo.value)
+    assert str(outside) in detail
+    assert str(crew.runs_dir()) in detail
+    assert str(crew.reports_dir()) in detail
 
 
 @pytest.mark.parametrize(
@@ -1342,10 +1412,7 @@ def test_dispatch_requires_a_live_project_watcher_before_creating_a_worktree(
     _assert_no_dispatch_artifacts(repo)
 
 
-def test_dispatch_returns_the_project_watch_arming_line_and_live_state(
-    home, repo
-) -> None:
-    _write_running_pointer(home, "r-existing")
+def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) -> None:
     sleeping = threading.Event()
     release = threading.Event()
 
@@ -1374,11 +1441,13 @@ def test_dispatch_returns_the_project_watch_arming_line_and_live_state(
         assert record["watch"]["arming_line"] == "reckon crew watch --project proj"
         assert record["watch"]["watcher_live"] is True
         assert record["watch"]["watcher"]["pid"] == os.getpid()
+        assert record["watch_override"] is None
 
-        crew.pointer_path("r-existing").unlink()
-        crew.pointer_path(record["run_id"]).unlink()
+        _deliver_manifest(record, "complete", commits="HEAD")
         release.set()
-        assert watcher.result(timeout=5)["event"] == "empty"
+        event = watcher.result(timeout=5)
+        assert event["event"] == "terminal"
+        assert event["run_id"] == record["run_id"]
 
 
 def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
