@@ -1,4 +1,4 @@
-"""Distributed project-state storage, migration, and concurrency tests."""
+"""Distributed project-state storage, compatibility, and concurrency tests."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import json
 import multiprocessing
 import subprocess
 import threading
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -19,18 +20,19 @@ from reckon import mcp as mcp_module
 from reckon._store import read_plan, write_plan
 from reckon.project_state import (
     LegacyIndexReadOnly,
-    MIGRATION_COMPOSED_DERIVATIONS,
     ProjectStateConflict,
     ProjectStateError,
+    _apply_migration_composed_derivations,
+    _identity_manifest,
     _parity_projection,
+    _sha256_path,
+    _write_staged_resource,
     append_timeline_event,
     audit_project_state,
     compose_project_state,
     create_project_state,
     marker_path,
-    migrate_project_state,
     move_sprint_item,
-    project_state_mode,
     read_resource,
     resource_path,
     write_resource,
@@ -59,20 +61,6 @@ def _concurrent_write(
         queue.put(("ok", result))
     except ProjectStateConflict as exc:
         queue.put(("conflict", exc.current))
-
-
-def _concurrent_migration(
-    docs: str,
-    barrier: multiprocessing.synchronize.Barrier,
-    queue: multiprocessing.queues.Queue,
-) -> None:
-    """Process target: start the same explicit migration concurrently."""
-    barrier.wait()
-    try:
-        result = migrate_project_state(Path(docs), "sample")
-        queue.put(("ok", result["changed"]))
-    except Exception as exc:  # pragma: no cover - surfaced through queue
-        queue.put(("error", str(exc)))
 
 
 def _concurrent_read(
@@ -197,6 +185,96 @@ def _legacy_index(docs: Path) -> Path:
     return path
 
 
+def _receipt_payloads(project: str, legacy: dict) -> dict[tuple[str, str], dict]:
+    state = _apply_migration_composed_derivations(legacy)
+    payloads = {}
+    for sprint in state.get("sprints", []):
+        record = deepcopy(sprint)
+        for item in record.get("items", []):
+            if isinstance(item, dict):
+                item.pop("status", None)
+                item.pop("impl", None)
+        payloads[("sprint", record["id"])] = {
+            **record,
+            "type": "sprint",
+            "version": 0,
+        }
+    for milestone in state.get("milestones", []):
+        record = deepcopy(milestone)
+        payloads[("milestone", record["id"])] = {
+            **record,
+            "type": "milestone",
+            "version": 0,
+        }
+    for blocker in state.get("blockers", []):
+        record = deepcopy(blocker)
+        record.pop("n", None)
+        payloads[("blocker", record["id"])] = {
+            **record,
+            "type": "blocker",
+            "version": 0,
+        }
+    payloads[("timeline", "timeline")] = {
+        "id": "timeline",
+        "type": "timeline",
+        "version": 0,
+        "events": deepcopy(state.get("timeline", [])),
+    }
+    payloads[("project", "project")] = _identity_manifest(project, state)
+    return payloads
+
+
+def _write_distributed_receipt(docs: Path, index: Path) -> dict:
+    source_bytes = index.read_bytes()
+    envelope = json.loads(source_bytes)
+    legacy = envelope["data"]
+    source_sha = _sha256_path(index)
+    snapshot = (
+        docs
+        / ".reckon"
+        / "snapshots"
+        / "project-state"
+        / source_sha
+        / "index.json"
+    )
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    snapshot.write_bytes(source_bytes)
+
+    rows = []
+    for (resource_type, resource_id), payload in sorted(
+        _receipt_payloads("sample", legacy).items()
+    ):
+        path = _write_staged_resource(
+            docs, "sample", resource_type, resource_id, payload
+        )
+        rows.append(
+            {
+                "type": resource_type,
+                "id": resource_id,
+                "path": str(path.relative_to(docs)),
+                "sha256": _sha256_path(path),
+                "version": int(payload.get("version", 0)),
+            }
+        )
+
+    marker = {
+        "format": "distributed",
+        "status": "complete",
+        "project": "sample",
+        "source": str(index.relative_to(docs)),
+        "source_sha256": source_sha,
+        "source_version": int(legacy.get("_version", 0)),
+        "snapshot": str(snapshot.relative_to(docs)),
+        "snapshot_sha256": _sha256_path(snapshot),
+        "resources": rows,
+        "completed_at": "2026-08-24T00:00:00+00:00",
+    }
+    target = marker_path(docs)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
+    return marker
+
+
 @pytest.fixture()
 def migrated(tmp_path: Path) -> tuple[Path, Path, dict]:
     docs = tmp_path / "docs"
@@ -204,32 +282,8 @@ def migrated(tmp_path: Path) -> tuple[Path, Path, dict]:
     _write_plan(docs, "alpha", "active", 0.4)
     index = _legacy_index(docs)
     original = index.read_bytes()
-    result = migrate_project_state(docs, "sample")
+    result = _write_distributed_receipt(docs, index)
     return docs, index, {"original": original, "result": result}
-
-
-def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
-    docs, index, evidence = migrated
-    result = evidence["result"]
-
-    assert project_state_mode(docs).format == "distributed"
-    assert index.read_bytes() == evidence["original"]
-    snapshot = docs / result["snapshot"]
-    assert snapshot.read_bytes() == evidence["original"]
-    assert result["source_sha256"] == result["snapshot_sha256"]
-
-    composed = compose_project_state(docs, "sample")
-    assert composed["source_format"] == "distributed"
-    assert composed["active_sprint_id"] == "current"
-    current = next(item for item in composed["sprints"] if item["id"] == "current")
-    assert current["items"][0]["status"] == "active"
-    assert current["items"][0]["impl"] == pytest.approx(0.4)
-    assert composed["blockers"][0]["n"] == 1
-    assert composed["timeline"][0]["id"].startswith("event-")
-    manifest = composed["projects"][0]
-    assert manifest["owner"] == "owner"
-    assert "path" not in manifest
-    assert "plans_count" not in manifest
 
 
 def test_composition_orders_numbered_sprints_naturally(tmp_path):
@@ -265,29 +319,6 @@ def test_composition_retains_nonlexicographic_marker_sprint_sequence(migrated):
     ] == ["earlier", "current"]
 
 
-def test_migration_derives_missing_blocker_identity_without_parity_loss(tmp_path):
-    assert MIGRATION_COMPOSED_DERIVATIONS == frozenset(
-        {"blockers[].id", "blockers[].next", "timeline[].id"}
-    )
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    legacy = envelope["data"]
-    legacy["blockers"][0].pop("id")
-    legacy["sprints"][1]["items"][0]["blocked_by"] = []
-    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-
-    migrate_project_state(docs, "sample")
-
-    composed = compose_project_state(docs, "sample")
-    assert composed["blockers"][0]["id"] == "blocker-1"
-    assert _parity_projection(legacy, "sample") == _parity_projection(
-        composed, "sample"
-    )
-
-
 def test_composed_parity_still_reports_authored_blocker_change(migrated):
     docs, index, _ = migrated
     legacy = json.loads(index.read_text(encoding="utf-8"))["data"]
@@ -300,67 +331,6 @@ def test_composed_parity_still_reports_authored_blocker_change(migrated):
     assert old_projection != new_projection
     assert old_projection["blockers"][0]["summary"] == "Network unavailable"
     assert new_projection["blockers"][0]["summary"] == "Different authored summary"
-
-
-def test_migration_coerces_bare_string_sprint_item(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    envelope["data"]["sprints"][1]["items"] = ["alpha"]
-    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-
-    result = migrate_project_state(docs, "sample")
-
-    stored, _ = read_resource(docs, "sample", "sprint", "current")
-    assert stored["items"] == [{"slug": "alpha"}]
-    composed = compose_project_state(docs, "sample")
-    current = next(item for item in composed["sprints"] if item["id"] == "current")
-    assert current["items"][0]["slug"] == "alpha"
-    assert result["findings"] == []
-
-
-def test_migration_accepts_sprint_item_for_archived_plan(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "retired", "done", 1.0, archived=True)
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    envelope["data"]["sprints"][1]["items"][0]["slug"] = "retired"
-    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-
-    result = migrate_project_state(docs, "sample")
-
-    assert result["findings"] == []
-    stored, _ = read_resource(docs, "sample", "sprint", "current")
-    assert stored["items"][0]["slug"] == "retired"
-
-
-def test_migration_reports_unresolved_historical_sprint_item(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    envelope["data"]["sprints"][1]["items"][0]["slug"] = "missing-history"
-    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
-
-    result = migrate_project_state(docs, "sample")
-
-    assert result["findings"] == [
-        {
-            "code": "unresolved-historical-sprint-item",
-            "severity": "warning",
-            "sprint": "current",
-            "slug": "missing-history",
-            "message": (
-                "sprint 'current' item 'missing-history' does not resolve to a plan "
-                "or archived plan"
-            ),
-        }
-    ]
-    stored, _ = read_resource(docs, "sample", "sprint", "current")
-    assert stored["items"][0]["slug"] == "missing-history"
 
 
 def test_legacy_item_lifecycle_reads_from_plan_with_compatibility_warning(tmp_path):
@@ -573,70 +543,6 @@ def test_project_without_north_stars_reads_unchanged(migrated):
     )
 
 
-def test_migration_rerun_verifies_and_changed_source_rejects(migrated):
-    docs, index, _ = migrated
-    rerun = migrate_project_state(docs, "sample")
-    assert rerun["changed"] is False
-
-    index.write_text(index.read_text() + "\n", encoding="utf-8")
-    with pytest.raises(ProjectStateError, match="changed after distributed activation"):
-        migrate_project_state(docs, "sample")
-
-
-def test_source_mutation_before_install_leaves_legacy_canonical(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-
-    def mutate() -> None:
-        index.write_text(index.read_text() + "\n", encoding="utf-8")
-
-    with pytest.raises(ProjectStateError, match="changed while migration was staged"):
-        migrate_project_state(docs, "sample", before_install=mutate)
-    assert project_state_mode(docs).format == "legacy"
-
-
-def test_install_failure_leaves_legacy_mode(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    _legacy_index(docs)
-
-    def fail(position: int, source: Path, destination: Path) -> None:
-        del source, destination
-        if position == 1:
-            raise OSError("injected install failure")
-
-    with pytest.raises(OSError, match="injected"):
-        migrate_project_state(docs, "sample", install_hook=fail)
-    assert project_state_mode(docs).format == "legacy"
-    assert not (docs / ".reckon" / "project-state-migration.json").exists()
-
-
-def test_concurrent_migrations_are_globally_serialized(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    _legacy_index(docs)
-    context = multiprocessing.get_context("spawn")
-    barrier = context.Barrier(2)
-    queue = context.Queue()
-    workers = [
-        context.Process(target=_concurrent_migration, args=(str(docs), barrier, queue))
-        for _ in range(2)
-    ]
-    for worker in workers:
-        worker.start()
-    for worker in workers:
-        worker.join(timeout=30)
-        assert worker.exitcode == 0
-    results = sorted(queue.get(timeout=2) for _ in workers)
-    assert results == [("ok", False), ("ok", True)]
-    assert project_state_mode(docs).format == "distributed"
-    assert compose_project_state(docs, "sample")["active_sprint_id"] == "current"
-
-
 def test_distributed_resource_access_rejects_before_activation(tmp_path):
     docs = tmp_path / "docs"
     docs.mkdir()
@@ -673,10 +579,6 @@ def test_distributed_resource_access_rejects_before_activation(tmp_path):
     )
     assert write_result["error"] == "project_state_error"
     assert "distributed_resource_inactive" in write_result["detail"]
-
-    # The explicit migration path still installs and activates its staged files.
-    assert migrate_project_state(docs, "sample")["changed"] is True
-
 
 def test_independent_versions_and_same_resource_conflict(migrated):
     docs, _, _ = migrated
@@ -1176,96 +1078,6 @@ def test_missing_distributed_resource_never_falls_back(migrated):
     result = mcp_module._read_plan("sample", checkout_path=str(docs.parent))
     assert result["error"] == "project_state_error"
     assert "missing" in result["detail"]
-
-
-def test_migration_restores_preexisting_destinations_on_failure(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    _legacy_index(docs)
-    preexisting = resource_path(docs, "sample", "sprint", "current")
-    preexisting.parent.mkdir(parents=True, exist_ok=True)
-    original = b"preexisting destination bytes\n"
-    preexisting.write_bytes(original)
-
-    def fail_after_sprints(position: int, source: Path, destination: Path) -> None:
-        del position, source
-        if destination.name == "timeline.html":
-            raise OSError("injected late install failure")
-
-    with pytest.raises(OSError, match="late install"):
-        migrate_project_state(docs, "sample", install_hook=fail_after_sprints)
-    assert project_state_mode(docs).format == "legacy"
-    assert preexisting.read_bytes() == original
-    assert not (docs / ".reckon" / "project-state-migration.json").exists()
-    manifest = next(
-        (docs / ".reckon" / "snapshots" / "project-state").glob("*/destinations.json")
-    )
-    records = json.loads(manifest.read_text(encoding="utf-8"))
-    assert any(
-        row["path"] == "sprints/current.html" and row["existed"] for row in records
-    )
-
-
-def test_source_mutation_before_marker_rolls_back_every_destination(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-
-    def mutate() -> None:
-        index.write_text(index.read_text(encoding="utf-8") + "\n", encoding="utf-8")
-
-    with pytest.raises(ProjectStateError, match="before migration marker"):
-        migrate_project_state(docs, "sample", before_marker=mutate)
-    assert project_state_mode(docs).format == "legacy"
-    assert not (docs / "sprints" / "current.html").exists()
-    assert not (docs / "milestones" / "launch.html").exists()
-
-
-def test_migration_ignores_legacy_focus_but_rejects_reference_mismatches(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    envelope["data"]["active_sprint_id"] = "earlier"
-    index.write_text(json.dumps(envelope), encoding="utf-8")
-    migrate_project_state(docs, "sample")
-    assert compose_project_state(docs, "sample")["active_sprint_id"] == "current"
-
-    other_docs = tmp_path / "other-docs"
-    other_docs.mkdir()
-    _write_plan(other_docs, "alpha", "active", 0.4)
-    other_index = _legacy_index(other_docs)
-    envelope = json.loads(other_index.read_text(encoding="utf-8"))
-    envelope["data"]["sprints"][1]["items"][0]["blocked_by"] = ["absent"]
-    other_index.write_text(json.dumps(envelope), encoding="utf-8")
-    with pytest.raises(ProjectStateError, match="missing blockers"):
-        migrate_project_state(other_docs, "sample")
-
-
-def test_migration_parity_preserves_timeline_order_and_project_manifest(tmp_path):
-    docs = tmp_path / "docs"
-    docs.mkdir()
-    _write_plan(docs, "alpha", "active", 0.4)
-    index = _legacy_index(docs)
-    envelope = json.loads(index.read_text(encoding="utf-8"))
-    envelope["data"]["timeline"].append(
-        {"when": "2026-07-28", "who": "owner", "what": "Second authored event"}
-    )
-    envelope["data"]["projects"][0]["title"] = "Sample title"
-    envelope["data"]["projects"][0]["default_view"] = "roadmap"
-    index.write_text(json.dumps(envelope), encoding="utf-8")
-
-    migrate_project_state(docs, "sample")
-    composed = compose_project_state(docs, "sample")
-    assert [event["what"] for event in composed["timeline"]] == [
-        "Started",
-        "Second authored event",
-    ]
-    assert composed["projects"][0]["title"] == "Sample title"
-    assert composed["projects"][0]["default_view"] == "roadmap"
 
 
 def test_legacy_discovery_ignores_partial_distributed_destinations(tmp_path):

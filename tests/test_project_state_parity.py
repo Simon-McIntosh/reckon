@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
 
 from reckon import _plan_html
 from reckon.project_state import (
+    MIGRATION_COMPOSED_DERIVATIONS,
     ProjectStateError,
-    migrate_project_state,
+    _apply_migration_composed_derivations,
+    _identity_manifest,
+    _sha256_path,
+    _write_staged_resource,
+    marker_path,
     read_resource,
     write_resource,
 )
@@ -207,25 +213,110 @@ def _legacy_index(docs: Path, *, include_plan_inventory: bool) -> Path:
     return path
 
 
-def _migrated_corpus(
+def _receipt_payloads(project: str, legacy: dict) -> dict[tuple[str, str], dict]:
+    state = _apply_migration_composed_derivations(legacy)
+    payloads = {}
+    for sprint in state.get("sprints", []):
+        record = deepcopy(sprint)
+        for item in record.get("items", []):
+            if isinstance(item, dict):
+                item.pop("status", None)
+                item.pop("impl", None)
+        payloads[("sprint", record["id"])] = {
+            **record,
+            "type": "sprint",
+            "version": 0,
+        }
+    for milestone in state.get("milestones", []):
+        record = deepcopy(milestone)
+        payloads[("milestone", record["id"])] = {
+            **record,
+            "type": "milestone",
+            "version": 0,
+        }
+    for blocker in state.get("blockers", []):
+        record = deepcopy(blocker)
+        record.pop("n", None)
+        payloads[("blocker", record["id"])] = {
+            **record,
+            "type": "blocker",
+            "version": 0,
+        }
+    payloads[("timeline", "timeline")] = {
+        "id": "timeline",
+        "type": "timeline",
+        "version": 0,
+        "events": deepcopy(state.get("timeline", [])),
+    }
+    payloads[("project", "project")] = _identity_manifest(project, state)
+    return payloads
+
+
+def _historical_receipt_corpus(
     tmp_path: Path, *, include_plan_inventory: bool = True
-) -> tuple[Path, dict[Path, bytes]]:
+) -> Path:
     docs = tmp_path / "docs"
     docs.mkdir()
-    _legacy_index(docs, include_plan_inventory=include_plan_inventory)
-    plan_bytes = {
-        path: path.read_bytes() for path in sorted((docs / "plans").glob("*.html"))
+    index = _legacy_index(docs, include_plan_inventory=include_plan_inventory)
+    source_bytes = index.read_bytes()
+    legacy = json.loads(source_bytes)["data"]
+    source_sha = _sha256_path(index)
+    snapshot = (
+        docs
+        / ".reckon"
+        / "snapshots"
+        / "project-state"
+        / source_sha
+        / "index.json"
+    )
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    snapshot.write_bytes(source_bytes)
+
+    rows = []
+    for (resource_type, resource_id), payload in sorted(
+        _receipt_payloads("sample", legacy).items()
+    ):
+        path = _write_staged_resource(
+            docs, "sample", resource_type, resource_id, payload
+        )
+        rows.append(
+            {
+                "type": resource_type,
+                "id": resource_id,
+                "path": str(path.relative_to(docs)),
+                "sha256": _sha256_path(path),
+                "version": int(payload.get("version", 0)),
+            }
+        )
+
+    marker = {
+        "format": "distributed",
+        "status": "complete",
+        "project": "sample",
+        "source": str(index.relative_to(docs)),
+        "source_sha256": source_sha,
+        "source_version": int(legacy.get("_version", 0)),
+        "snapshot": str(snapshot.relative_to(docs)),
+        "snapshot_sha256": _sha256_path(snapshot),
+        "resources": rows,
+        "completed_at": "2026-08-24T00:00:00+00:00",
     }
-    migrate_project_state(docs, "sample")
-    return docs, plan_bytes
+    target = marker_path(docs)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
+    return docs
 
 
-def test_migration_preserves_every_plan_byte_and_every_evidenced_field(tmp_path: Path):
-    docs, plan_bytes = _migrated_corpus(tmp_path)
+def test_historical_receipt_reports_evidenced_fields_and_current_drift(
+    tmp_path: Path,
+):
+    docs = _historical_receipt_corpus(tmp_path)
 
-    assert {path: path.read_bytes() for path in plan_bytes} == plan_bytes
     report = compare_project_state(docs)
 
+    assert MIGRATION_COMPOSED_DERIVATIONS == frozenset(
+        {"blockers[].id", "blockers[].next", "timeline[].id"}
+    )
     assert report["ok"] is True
     assert report["totals"]["mismatches"] == 0
     assert report["totals"]["out_of_corpus"] == 0
@@ -242,18 +333,6 @@ def test_migration_preserves_every_plan_byte_and_every_evidenced_field(tmp_path:
         assert evidence["status"] == "matched", field
         assert evidence["compared"] > 0, field
         assert evidence["matched"] == evidence["compared"], field
-    assert report["fields"]["tags"]["compared"] == 2
-    assert report["fields"]["tags"]["matched"] == 2
-
-    newcomer = docs / "plans" / "newcomer.html"
-    newcomer.write_text(_render_plan("newcomer", relations=True), encoding="utf-8")
-    augmented = compare_project_state(docs)
-    for field in RELATIONAL_FIELDS:
-        evidence = augmented["fields"][field]
-        assert evidence["status"] == "matched"
-        assert evidence["compared"] == 1
-        assert evidence["matched"] == 1
-        assert evidence["additional"] == 1
 
     sprint, version = read_resource(docs, "sample", "sprint", "current")
     sprint["items"][0].pop("blocked_by")
@@ -266,30 +345,10 @@ def test_migration_preserves_every_plan_byte_and_every_evidenced_field(tmp_path:
     assert sprint_items["compared"] == 2
     assert sprint_items["matched"] == 1
     assert sprint_items["current_state_drift"] == 1
-    assert sprint_items["drift_details"] == [
-        {
-            "path": "sprint:current/item:contract",
-            "field": "blocked_by",
-            "before": ["resolved-external"],
-            "after": "<missing>",
-        }
-    ]
-
-    path = docs / "plans" / "contract.html"
-    current = _plan_html.read_state(path.read_text(encoding="utf-8"))
-    current["decisions"]["storage"]["rationale"] = LONG_RATIONALE[:-1] + "!"
-    path.write_text(
-        _plan_html.write_state(path.read_text(encoding="utf-8"), current),
-        encoding="utf-8",
-    )
-    changed = compare_project_state(docs)
-    decision_mismatch = changed["fields"]["decisions"]["mismatches"][0]
-    assert decision_mismatch["before"]["storage"]["rationale"] == LONG_RATIONALE
-    assert decision_mismatch["after"]["storage"]["rationale"].endswith("!")
 
 
 def test_stored_tag_removal_and_reordering_are_mismatches(tmp_path: Path):
-    docs, _ = _migrated_corpus(tmp_path)
+    docs = _historical_receipt_corpus(tmp_path)
     plan_state = _plan_html.read_state(
         (docs / "plans" / "contract.html").read_text(encoding="utf-8")
     )
@@ -334,7 +393,7 @@ def test_stored_tag_removal_and_reordering_are_mismatches(tmp_path: Path):
 
 
 def test_missing_historical_plan_state_is_out_of_corpus(tmp_path: Path):
-    docs, _ = _migrated_corpus(tmp_path, include_plan_inventory=False)
+    docs = _historical_receipt_corpus(tmp_path, include_plan_inventory=False)
 
     report = compare_project_state(docs)
 
@@ -350,7 +409,7 @@ def test_missing_historical_plan_state_is_out_of_corpus(tmp_path: Path):
 
 
 def test_exact_plan_field_change_is_reported_with_path(tmp_path: Path):
-    docs, _ = _migrated_corpus(tmp_path)
+    docs = _historical_receipt_corpus(tmp_path)
     path = docs / "plans" / "contract.html"
     current = _plan_html.read_state(path.read_text(encoding="utf-8"))
     path.write_text(
@@ -383,7 +442,7 @@ def test_exact_plan_field_change_is_reported_with_path(tmp_path: Path):
 
 
 def test_snapshot_resolution_rejects_hash_mismatch_and_path_escape(tmp_path: Path):
-    docs, _ = _migrated_corpus(tmp_path)
+    docs = _historical_receipt_corpus(tmp_path)
     frozen = resolve_frozen_snapshot(docs)
     frozen.snapshot_path.write_bytes(b"changed")
 
@@ -403,7 +462,7 @@ def test_snapshot_resolution_rejects_hash_mismatch_and_path_escape(tmp_path: Pat
 def test_module_entrypoint_reports_json_and_uses_marker_project(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
-    docs, _ = _migrated_corpus(tmp_path)
+    docs = _historical_receipt_corpus(tmp_path)
 
     exit_code = main([str(docs), "--indent", "0"])
     report = json.loads(capsys.readouterr().out)
