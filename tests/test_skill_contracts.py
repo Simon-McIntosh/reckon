@@ -560,6 +560,9 @@ def test_ship_crew_views_match_the_typed_mcp_surface() -> None:
 
 def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    assert "`scope-conflict` | 7" in ship
+    assert "Peer scopes come from live pointers" in ship
+    assert "`--peer <other-node>=<their-paths>` is optional" in ship
     expected = {
         ("crew", "attach"): {"--run", "--task"},
         ("crew", "complete"): {
@@ -649,6 +652,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
         "plan-unavailable": 4,
         "competence-refusal": 5,
         "unreconciled-runs": 6,
+        "scope-conflict": 7,
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source

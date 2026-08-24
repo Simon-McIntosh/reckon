@@ -239,6 +239,27 @@ class MemberInFlight(CrewError):
         )
 
 
+class ScopeConflict(CrewError):
+    """A live run already claims a containing or contained write path."""
+
+    def __init__(
+        self,
+        *,
+        run_id: str,
+        node_id: str,
+        candidate_path: str,
+        claimed_path: str,
+    ) -> None:
+        self.run_id = run_id
+        self.node_id = node_id
+        self.candidate_path = candidate_path
+        self.claimed_path = claimed_path
+        super().__init__(
+            f"write scope {candidate_path!r} conflicts with live claim "
+            f"{claimed_path!r} held by run {run_id!r} (node {node_id!r})"
+        )
+
+
 class UnreconciledRuns(CrewError):
     """Finished worker records must be reconciled before more work starts."""
 
@@ -736,6 +757,94 @@ def list_live(
             continue
         records.append(data)
     return records
+
+
+@dataclass(frozen=True)
+class _LiveScopeClaim:
+    """One normalized repository-relative path held by a live pointer."""
+
+    run_id: str
+    node_id: str
+    path: str
+
+
+def _repository_relative_scope(path: str, repo: Path) -> str | None:
+    """Normalize an in-repository scope to a repository-relative POSIX path."""
+    raw = Path(path).expanduser()
+    resolved = (raw if raw.is_absolute() else repo / raw).resolve()
+    try:
+        relative = resolved.relative_to(repo)
+    except ValueError:
+        return None
+    return relative.as_posix()
+
+
+def _live_scope_claims(project: str, repo: Path) -> list[_LiveScopeClaim]:
+    """Derive this repository's claimed paths from its project live pointers."""
+    claims: list[_LiveScopeClaim] = []
+    for pointer in list_live(project=project):
+        pointer_repo = str(pointer.get("repo") or "")
+        if not pointer_repo or Path(pointer_repo).expanduser().resolve() != repo:
+            continue
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            continue
+        run_id = str(pointer.get("run_id") or "unknown")
+        node_id = str(node.get("id") or "unknown")
+        for path in node.get("write_paths") or ():
+            normalized = _repository_relative_scope(str(path), repo)
+            if normalized is not None:
+                claims.append(
+                    _LiveScopeClaim(
+                        run_id=run_id,
+                        node_id=node_id,
+                        path=normalized,
+                    )
+                )
+    return sorted(claims, key=lambda claim: (claim.run_id, claim.node_id, claim.path))
+
+
+def _scopes_overlap(first: str, second: str) -> bool:
+    """Return whether either normalized path contains the other by component."""
+    first_parts = Path(first).parts
+    second_parts = Path(second).parts
+    common = min(len(first_parts), len(second_parts))
+    return first_parts[:common] == second_parts[:common]
+
+
+def _raise_live_scope_conflict(
+    node: TaskNode,
+    claims: Iterable[_LiveScopeClaim],
+    repo: Path,
+) -> None:
+    """Refuse the first deterministic collision with an existing live claim."""
+    candidates = sorted(
+        normalized
+        for path in node.write_paths
+        if (normalized := _repository_relative_scope(path, repo)) is not None
+    )
+    for candidate in candidates:
+        for claim in claims:
+            if _scopes_overlap(candidate, claim.path):
+                raise ScopeConflict(
+                    run_id=claim.run_id,
+                    node_id=claim.node_id,
+                    candidate_path=candidate,
+                    claimed_path=claim.path,
+                )
+
+
+def _merge_peer_scopes(
+    claims: Iterable[_LiveScopeClaim],
+    supplied: Mapping[str, Iterable[str]] | None,
+) -> dict[str, list[str]]:
+    """Combine pointer-derived peer scopes with optional explicit supplements."""
+    peers: dict[str, set[str]] = {}
+    for claim in claims:
+        peers.setdefault(claim.node_id, set()).add(claim.path)
+    for node_id, paths in (supplied or {}).items():
+        peers.setdefault(node_id, set()).update(str(path) for path in paths)
+    return {node_id: sorted(paths) for node_id, paths in sorted(peers.items())}
 
 
 def record_run_disposition(
@@ -1977,6 +2086,7 @@ def dispatch(
             "for this repository to install it"
         )
     _workspace_roots(repo_root)
+    live_claims = _live_scope_claims(project, repo_root)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -2042,7 +2152,8 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
-    peers = node.peer_scopes
+    peers = _merge_peer_scopes(live_claims, node.peer_scopes)
+    node.peer_scopes = peers
 
     reap_idle_session_members(
         project,
@@ -2070,6 +2181,7 @@ def dispatch(
                 raise MemberInFlight(
                     effective_member, str(pointer.get("run_id") or "unknown")
                 )
+    _raise_live_scope_conflict(node, live_claims, repo_root)
     reuse_session = (
         str(roster_member.get("session_id"))
         if roster_member

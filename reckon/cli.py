@@ -401,7 +401,8 @@ def crew():
     node is not dispatchable and names which property it failed, 3 the wave is
     held on budget and names the backend, the utilisation and when it resets, 4
     the named plan section is unavailable at the worktree base ref, 5 the
-    selected worker configuration has a typed competence refusal.
+    selected worker configuration has a typed competence refusal, 6 terminal
+    pointers need reconciliation, 7 a live run holds a conflicting write scope.
     """
 
 
@@ -776,6 +777,20 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(6) from exc
+    except crew_module.ScopeConflict as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "scope-conflict",
+                "detail": str(exc),
+                "run_id": exc.run_id,
+                "node": exc.node_id,
+                "candidate_path": exc.candidate_path,
+                "claimed_path": exc.claimed_path,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(7) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(

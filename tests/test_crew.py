@@ -598,6 +598,9 @@ def _write_running_pointer(
     run_id: str,
     *,
     project: str = "proj",
+    repo: str = "/temporary/repository",
+    node_id: str = "working-node",
+    write_paths: list[str] | None = None,
     stream_age_seconds: int = 0,
 ) -> dict:
     """Create one live pointer with a stream whose quiet age is controlled."""
@@ -611,8 +614,13 @@ def _write_running_pointer(
     record = {
         "run_id": run_id,
         "project": project,
-        "repo": "/temporary/repository",
-        "node": {"id": "working-node", "plan": "plan-a", "time_budget": "20m"},
+        "repo": repo,
+        "node": {
+            "id": node_id,
+            "plan": "plan-a",
+            "time_budget": "20m",
+            "write_paths": list(write_paths or ()),
+        },
         "phase": "working",
         "created_at": quiet_since.isoformat(),
         "manifest_path": str(home / "manifests" / f"{run_id}.md"),
@@ -816,6 +824,145 @@ def test_dispatch_refuses_a_plan_absent_from_the_base(home, repo) -> None:
 
     assert "not readable at base" in str(excinfo.value)
     _assert_no_dispatch_artifacts(repo)
+
+
+@pytest.mark.parametrize(
+    ("claimed_path", "candidate_path"),
+    [
+        ("reckon", "reckon/crew.py"),
+        ("reckon/crew.py", "reckon"),
+    ],
+)
+def test_dispatch_refuses_live_scope_containment_before_worktree_creation(
+    home, repo, claimed_path, candidate_path
+) -> None:
+    owner = _write_running_pointer(
+        home,
+        "r-scope-owner",
+        repo=str(repo),
+        node_id="owner-node",
+        write_paths=[claimed_path],
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node(write_paths=[candidate_path]),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: pytest.fail("a conflicting node must not launch"),
+        )
+
+    refusal = excinfo.value
+    assert refusal.run_id == owner["run_id"]
+    assert refusal.node_id == "owner-node"
+    assert refusal.candidate_path == candidate_path
+    assert refusal.claimed_path == claimed_path
+    assert owner["run_id"] in str(refusal)
+    assert claimed_path in str(refusal)
+    assert crew.list_live() == [owner]
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "node-a" not in listed.stdout
+
+
+def test_dispatch_derives_peer_scope_without_prefix_or_repository_false_positives(
+    home, repo
+) -> None:
+    _write_running_pointer(
+        home,
+        "r-scope-owner",
+        repo=str(repo),
+        node_id="owner-node",
+        write_paths=["reckon/crew.py"],
+    )
+    _write_running_pointer(
+        home,
+        "r-other-repository",
+        repo=str(repo.parent / "other-repository"),
+        node_id="other-owner",
+        write_paths=["reckon"],
+    )
+
+    record = crew.dispatch(
+        node=_node(write_paths=["reckon/crew.pyx"]),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *a, **k: 4242,
+    )
+
+    assert record["peer_scopes"] == {"owner-node": ["reckon/crew.py"]}
+    assert "owner-node → reckon/crew.py" in Path(record["prompt_path"]).read_text()
+    assert Path(record["worktree"]).is_dir()
+
+
+def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
+    home, repo, monkeypatch
+) -> None:
+    owner = _write_running_pointer(
+        home,
+        "r-cli-scope-owner",
+        repo=str(repo),
+        node_id="owner-node",
+        write_paths=["reckon"],
+    )
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            "§3",
+            "--node",
+            "node-a",
+            "--goal",
+            "record the launch matrix for one backend",
+            "--done-when",
+            "uv run pytest tests/test_crew.py reports 0 failures",
+            "--write-path",
+            "reckon/crew.py",
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 7
+    assert payload == {
+        "ok": False,
+        "error": "scope-conflict",
+        "detail": payload["detail"],
+        "run_id": owner["run_id"],
+        "node": "owner-node",
+        "candidate_path": "reckon/crew.py",
+        "claimed_path": "reckon",
+    }
+    assert owner["run_id"] in payload["detail"]
+    assert crew.list_live() == [owner]
+    listed = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "node-a" not in listed.stdout
 
 
 def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) -> None:
