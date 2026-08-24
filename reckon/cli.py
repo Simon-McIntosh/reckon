@@ -108,6 +108,40 @@ def _merge_records_by_id(authored: list, discovered: list) -> list:
     return merged
 
 
+def _project_docs_root(project: str, checkout_path: Path | None = None) -> Path:
+    """Resolve a project's docs root from mounts or an explicit checkout."""
+    if checkout_path is not None:
+        docs_dir = (checkout_path / "docs").resolve()
+        if not docs_dir.is_dir():
+            raise click.ClickException(
+                f"cannot resolve checkout path docs directory: {docs_dir}"
+            )
+        return docs_dir
+
+    from reckon._store import _mounts_path
+
+    mounts_path = _mounts_path()
+    if not mounts_path.exists():
+        raise click.ClickException(
+            "mounts.json not found; run `reckon sync` to register project roots"
+        )
+    try:
+        mounts = json.loads(mounts_path.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        raise click.ClickException(f"cannot read mounts file {mounts_path}: {exc}") from exc
+    raw = mounts.get(project)
+    if raw is None:
+        raise click.ClickException(
+            f"project {project!r} is not mounted in {mounts_path}"
+        )
+    docs_dir = Path(raw).expanduser().resolve()
+    if not docs_dir.is_dir():
+        raise click.ClickException(
+            f"mounted project path for {project!r} is not a directory: {docs_dir}"
+        )
+    return docs_dir
+
+
 @click.group()
 @click.version_option(version=__version__, prog_name="reckon")
 def main():
@@ -319,6 +353,42 @@ def capabilities_command(rebuild, pretty):
     else:
         payload = {"rebuilt": False, **capabilities_module.inspect_capabilities()}
     _emit(payload, pretty)
+
+
+@main.group(name="tag")
+def tag():
+    """Commands for resource tag operations."""
+
+
+@tag.command(name="rename")
+@click.option(
+    "--project", required=True, help="Project owning the tagged resources."
+)
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help=(
+        "Optional repository checkout root for worktrees; defaults to mounted "
+        "project path."
+    ),
+)
+@click.option("--dry-run", is_flag=True, help="Emit affected resources without writing.")
+@click.argument("source")
+@click.argument("target")
+def tag_rename(project, checkout_path, dry_run, source, target):
+    """Rename a tag across every typed resource in the mounted project."""
+    from reckon.tags import rename_project_tag
+
+    docs_dir = _project_docs_root(project, checkout_path)
+    report = rename_project_tag(
+        docs_dir,
+        project,
+        source,
+        target,
+        dry_run=dry_run,
+    )
+    _emit(report, pretty=False)
 
 
 @main.group(name="crew")
