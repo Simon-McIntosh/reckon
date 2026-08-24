@@ -947,6 +947,43 @@ def _item_lifecycle_warnings(sprints: list[dict[str, Any]]) -> list[str]:
     return warnings
 
 
+def _natural_identifier_key(value: Any) -> tuple[tuple[int, Any], ...]:
+    """Order identifiers by text fragments and the value of numeric fragments."""
+    return tuple(
+        (0, int(fragment)) if fragment.isdigit() else (1, fragment.casefold())
+        for fragment in re.split(r"(\d+)", str(value))
+        if fragment
+    )
+
+
+def _order_distributed_sprints(
+    sprints: list[dict[str, Any]], resources: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Use a marker's authored sequence when distinguishable, else natural order."""
+    marker_ids = [
+        str(row.get("id", ""))
+        for row in resources
+        if row.get("type") == "sprint"
+    ]
+    marker_is_lexicographic = marker_ids == sorted(marker_ids)
+    if marker_ids and not marker_is_lexicographic:
+        positions = {
+            resource_id: position for position, resource_id in enumerate(marker_ids)
+        }
+        return sorted(
+            sprints,
+            key=lambda item: (
+                0,
+                positions[str(item.get("id", ""))],
+            )
+            if str(item.get("id", "")) in positions
+            else (1, _natural_identifier_key(item.get("id", ""))),
+        )
+    return sorted(
+        sprints, key=lambda item: _natural_identifier_key(item.get("id", ""))
+    )
+
+
 def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     """Compose the distributed resources into the compatibility index shape."""
     mode = project_state_mode(docs_dir)
@@ -1015,7 +1052,7 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
             timeline = list(data.get("events", []))
         elif resource_type == "project":
             project_manifest = data
-    sprints.sort(key=lambda item: str(item.get("id", "")))
+    sprints = _order_distributed_sprints(sprints, resources)
     milestones.sort(key=lambda item: str(item.get("id", "")))
     blockers.sort(key=lambda item: str(item.get("id", "")))
     compatibility_warnings = [
