@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="resource-tagging-system-landed">
+  <meta name="plan-title" content="Resource Tagging — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the tagging system: the canonical identity that keeps the vocabulary coherent, and the field that carries it on every typed resource.">
+  <meta name="plan-evidence-for" content="resource-tagging-system">
+  <meta name="plan-verifies" content="resource-tagging-system#s2,resource-tagging-system#s3">
+  <title>Resource Tagging — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s2">§2 — Canonical identity</h2>
+
+    <p>Commit <code>8ac85d1</code>. <code>reckon/tags.py</code> carries one standalone
+    <code>normalise_tag</code> function: it casefolds authored text, collapses runs of
+    whitespace, underscore and hyphen into a single hyphen, and discards other punctuation.
+    <strong>Five spellings of one intent converge byte-for-byte on <code>standard-names</code>.</strong></p>
+
+    <p>The node deliberately added <em>no caller</em>. The identity rule is the load-bearing
+    part of the whole plan, so it landed alone and provable before anything depended on it.</p>
+
+    <table>
+      <thead><tr><th>Property</th><th>Cases</th></tr></thead>
+      <tbody>
+        <tr><td>Spelling variants converging</td><td>5</td></tr>
+        <tr><td>Idempotence</td><td>3</td></tr>
+        <tr><td>Empty-identity refusals naming the authored value</td><td>5</td></tr>
+        <tr><td>Reserved-colon refusal stating the character is reserved</td><td>1</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>14 passed, 0 failed</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — The field, on every typed resource</h2>
+
+    <p>Commit <code>e8584bf</code>. Tags now travel on <code>PlanState</code> and
+    <code>Sprint</code> through the comma-separated <code>plan-tags</code> meta, the same
+    pattern <code>depends_on</code> and <code>informs</code> already use. Writes canonicalise
+    through <code>reckon.tags.normalise_tag</code>, <strong>retain authored order</strong> and
+    deduplicate equivalent identities. The generated schema exposes tags as an array of strings.</p>
+
+    <p><strong>1203 of 1203 required tests pass</strong> across
+    <code>test_tags_field.py</code>, <code>test_schema.py</code>,
+    <code>test_project_state.py</code> and <code>test_typed_resources.py</code>. The 7 new
+    assertions cover two-tag round trips for plan, research, evidence and sprint carriers,
+    canonical normalisation, deduplication, invalid sprint identity refusal, and the property
+    that matters most — <em>a resource carrying two tags is reported under both</em>, which is
+    the failure a single-valued implementation produces and which reads as working on any
+    document that happens to carry exactly one tag.</p>
+
+    <h3>The node blocked first, and was right to</h3>
+
+    <p><strong>Its first attempt refused to proceed rather than write outside its fence.</strong>
+    <code>tests/test_schema.py:489-499</code> requires <code>docs/_shared/plan.schema.json</code>
+    to equal <code>gen_json_schema()</code>, so adding a field to <code>PlanState</code> changes
+    a generated artifact that the dispatch had not included in the exclusive write paths.</p>
+
+    <p>The fence was wrong, not the worker: <strong>a generated file always travels with its
+    source</strong>, and fencing one without the other is incoherent. The scope was widened to
+    include the generated schema, the same session resumed with its context intact, and the run
+    was promoted with <code>--scope-changed</code> so a node whose scope moved mid-flight does
+    not contaminate effort calibration.</p>
+
+  </main>
+</body>
+</html>

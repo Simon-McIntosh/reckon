@@ -4,24 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="resource-tagging-system">
-  <meta name="plan-title"     content="Topical Grouping That Survives Its Authors">
-  <meta name="plan-summary"   content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with usage counts placed in front of the author at the moment of choosing, corpus-wide rename, and an audit that surfaces near-duplicates beside the command that repairs them.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="resource-tagging-system">
+  <meta name="plan-title" content="Topical Grouping That Survives Its Authors">
+  <meta name="plan-summary" content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with usage counts placed in front of the author at the moment of choosing, corpus-wide rename, and an audit that surfaces near-duplicates beside the command that repairs them.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S12">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-blocks"    content="sprint-scope-and-surface">
+  <meta name="plan-sprint" content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-blocks" content="sprint-scope-and-surface">
   <title>Topical Grouping That Survives Its Authors | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -229,17 +232,17 @@
     </div>
 <div class="r-dec" data-key="tag-grammar-headroom" data-choice="reserve-only" data-by="Simon McIntosh" data-when="2026-08-24T09:50:00+00:00">
     <p class="r-dec-q">Does the grammar reserve a facet separator now, and does it accept facets on day one?</p>
-    <p class="r-dec-ctx">Every tag known today is a topic, so a flat vocabulary is sufficient. The question is headroom: reserving <code>:</code> now costs one validation rule, while retrofitting a separator later costs a rewrite of every tagged document. Accepting facets on day one costs more than reserving and may never be used.</p>
+    <p class="r-dec-ctx">Every tag known today is a topic, so a flat vocabulary is sufficient. The question is headroom: reserving : now costs one validation rule, while retrofitting a separator later costs a rewrite of every tagged document. Accepting facets on day one costs more than reserving and may never be used.</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="reserve-only">Flat tags now, <code>:</code> reserved and refused, so facets are additive later</button>
-      <button class="r-opt" data-value="facets-now">Accept <code>facet:value</code> immediately, with a bare value meaning topic</button>
-      <button class="r-opt" data-value="no-reservation">Flat tags with no reservation — treat <code>:</code> as an ordinary character</button>
+      <button class="r-opt chosen" data-value="reserve-only">Flat tags now, : reserved and refused, so facets are additive later</button>
+      <button class="r-opt" data-value="facets-now">Accept facet:value immediately, with a bare value meaning topic</button>
+      <button class="r-opt" data-value="no-reservation">Flat tags with no reservation — treat : as an ordinary character</button>
       </p>
     <p class="r-dec-rat">Locked by the lead 2026-08-24. Reserving the separator costs one validation rule today and makes a faceted form purely additive later; retrofitting a separator once the corpus is tagged means rewriting every tagged document, so this is cheap now and never cheap again. Accepting facets on day one was rejected as design paid for before any evidence a second facet is wanted, and because a facet vocabulary needs its own inventory and governance, doubling the surface this plan is trying to keep small. A tag containing a colon is refused with a message stating the character is reserved, so the refusal teaches the rule rather than merely failing.</p>
     </div>
 <div class="r-dec" data-key="near-duplicate-response" data-choice="report-and-suggest" data-by="Simon McIntosh" data-when="2026-08-24T09:50:00+00:00">
     <p class="r-dec-q">When the audit finds two tags whose identities differ by a small edit distance, what does it do?</p>
-    <p class="r-dec-ctx">Normalisation handles spelling variance mechanically because that is decidable. A near-duplicate such as <code>standrd-names</code> beside <code>standard-names</code> is a suspected typo, which is a guess about intent rather than a derivable fact.</p>
+    <p class="r-dec-ctx">Normalisation handles spelling variance mechanically because that is decidable. A near-duplicate such as standrd-names beside standard-names is a suspected typo, which is a guess about intent rather than a derivable fact.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="report-only">Report the pair with both counts and leave both in place</button>
       <button class="r-opt chosen" data-value="report-and-suggest">Report the pair and emit the exact rename command that would merge them</button>
@@ -253,11 +256,19 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-rts-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship resource-tagging-system" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the vocabulary mechanism before the field, then backfill before the flatten</h4>
-    <div class="r-fu-body"><p>Normalisation first, since it is what keeps the vocabulary coherent when every author is a different session and nobody performs governance — applied and reported rather than refused or accepted verbatim. Then the field across every typed resource, because the 73 documents that motivate this are research and a plans-only field misses them entirely. Then the computed inventory with counts, in the discovery envelope and in front of the author at <code>reckon-create</code>. Then filtering, because a grouping you cannot query is decoration. Then rename plus the audit's singleton and near-duplicate findings, which is what stops the first typo becoming permanent. The backfill from the saved pre-image lands last but must precede the layout migration, and the zero-grouping-loss comparison is an assertion in the suite rather than a judgement. Two decisions are open for the lead: whether the grammar reserves a facet separator now, and what the audit does with a near-duplicate pair.</p></div>
+    <div class="r-fu-body"><p>Normalisation first, since it is what keeps the vocabulary coherent when every author is a different session and nobody performs governance — applied and reported rather than refused or accepted verbatim. Then the field across every typed resource, because the 73 documents that motivate this are research and a plans-only field misses them entirely. Then the computed inventory with counts, in the discovery envelope and in front of the author at <code>reckon-create</code>. Then rename plus the audit's singleton and near-duplicate findings, which is what stops the first typo becoming permanent. The backfill from the saved pre-image lands last but must precede the layout migration, and the zero-grouping-loss comparison is an assertion in the suite rather than a judgement. All five decisions are now locked, including the lead's cut of the query surface — this plan builds no tag filter.</p></div>
     <pre class="r-fu-prompt">/reckon-ship resource-tagging-system</pre>
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260824-normalisation-landed" data-who="reckon-ship" data-when="2026-08-24T11:05:00+00:00">
+    <div class="r-comment-body"><p><strong>tag-normalisation landed</strong> — commit <code>8ac85d1</code>; gate property-suite <strong>passed</strong>; measure: <strong>14 passed, 0 failed</strong> — 5 spelling variants converging byte-for-byte on <code>standard-names</code>, 3 idempotence cases, 5 empty-identity refusals naming the authored value, and 1 reserved-colon refusal stating the character is reserved. Artifact <code>reckon/tags.py</code>, one standalone <code>normalise_tag</code>. <strong>The node deliberately added no caller</strong>: the identity rule is the load-bearing part of the plan, so it landed alone and provable before anything depended on it.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-field-landed" data-who="reckon-ship" data-when="2026-08-24T11:06:00+00:00">
+    <div class="r-comment-body"><p><strong>tag-field-on-resources landed</strong> — commit <code>e8584bf</code>; gate cross-suite <strong>passed</strong>; measure: <strong>1203 of 1203 required tests pass</strong> across tags-field, schema, project-state and typed-resources, with 7 new assertions. Tags travel on <code>PlanState</code> and <code>Sprint</code> through the comma-separated <code>plan-tags</code> meta; writes canonicalise through <code>normalise_tag</code>, retain authored order and deduplicate. The assertion that matters most is carried: <em>a resource with two tags is reported under both</em>, which is the failure a single-valued implementation produces and which reads as working on any document carrying exactly one tag. <strong>The node blocked first and was right to</strong> — <code>tests/test_schema.py:489-499</code> requires the generated <code>docs/_shared/plan.schema.json</code> to equal <code>gen_json_schema()</code>, which my dispatch had fenced out. The fence was wrong, not the worker: a generated file always travels with its source. Scope widened, same session resumed, promoted with <code>--scope-changed</code> so a mid-flight scope move does not contaminate calibration. Full record: <a href="/reckon/evidence/archive/resource-tagging-system-landed">execution evidence</a>.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
