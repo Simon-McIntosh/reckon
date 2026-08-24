@@ -80,6 +80,11 @@ FENCES = ("scope", "time", "evidence", "delivery")
 
 _TERMINAL_RUN_PHASES = frozenset({"complete", "failed", "stopped"})
 
+# Session-owned roster rows are a short-lived index over durable run records.
+# The default leaves enough time for an ordinary follow-up to reuse a warm
+# worker while bounding growth when a caller does not supply a narrower policy.
+DEFAULT_MEMBER_IDLE_WINDOW = "24h"
+
 # A done-when built from one of these is an opinion, not a measure. The fix is
 # to name what would be observed instead.
 SUBJECTIVE_TERMS = (
@@ -1290,6 +1295,107 @@ def _register_session_member(
     )
 
 
+def _parse_utc_timestamp(value: Any) -> datetime | None:
+    """Return an aware UTC timestamp, or None for missing or malformed input."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def reap_idle_session_members(
+    project: str,
+    *,
+    root: str | Path | None = None,
+    idle_window: str = DEFAULT_MEMBER_IDLE_WINDOW,
+    now: datetime | None = None,
+    attempts: int = 12,
+) -> dict[str, Any]:
+    """Remove idle session-owned roster rows while retaining their run history.
+
+    Completed records are the durable source of worker session ids. The roster
+    is only their reusable index, so deleting an idle row must never rewrite a
+    run. A non-terminal pointer protects its member regardless of age.
+    """
+    window_seconds = parse_duration(idle_window)
+    observed_at = (now or datetime.now(tz=timezone.utc)).astimezone(timezone.utc)
+    repo_root = Path(root).resolve() if root is not None else None
+    pointers = [
+        pointer
+        for pointer in list_live(project=project)
+        if repo_root is None
+        or Path(str(pointer.get("repo") or "")).resolve() == repo_root
+    ]
+    protected = {
+        str(pointer.get("member"))
+        for pointer in pointers
+        if pointer.get("member")
+        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+    }
+
+    reaped: list[str] = []
+    for attempt in range(max(1, attempts)):
+        data, version = ledger.load(project, root=root)
+        last_dispatch: dict[str, datetime] = {}
+        for record in [*data["runs"], *pointers]:
+            member_id = str(record.get("member") or "")
+            stamp = _parse_utc_timestamp(
+                record.get("dispatched_at") or record.get("created_at")
+            )
+            if member_id and stamp and (
+                member_id not in last_dispatch or stamp > last_dispatch[member_id]
+            ):
+                last_dispatch[member_id] = stamp
+        candidates = []
+        for entry in data["members"]:
+            member_id = str(entry.get("id") or "")
+            if not member_id.startswith("session-") or member_id in protected:
+                continue
+            latest = last_dispatch.get(member_id) or _parse_utc_timestamp(
+                entry.get("created")
+            )
+            if latest is None:
+                continue
+            if (observed_at - latest).total_seconds() >= window_seconds:
+                candidates.append(member_id)
+        if not candidates:
+            return {"reaped": [], "idle_window": idle_window}
+
+        # Close the observation-to-write gap for workers that became live while
+        # the versioned roster update was being prepared.
+        newly_protected = {
+            str(pointer.get("member"))
+            for pointer in list_live(project=project)
+            if pointer.get("member")
+            and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+            and (
+                repo_root is None
+                or Path(str(pointer.get("repo") or "")).resolve() == repo_root
+            )
+        }
+        reaped = sorted(set(candidates) - newly_protected)
+        if not reaped:
+            return {"reaped": [], "idle_window": idle_window}
+        data["members"] = [
+            entry for entry in data["members"] if str(entry.get("id")) not in reaped
+        ]
+        try:
+            ledger.write(project, data, version, root=root)
+        except ledger.LedgerError:
+            if attempt + 1 >= max(1, attempts):
+                raise CrewError(
+                    f"could not reap idle session members after {attempts} attempts"
+                )
+            continue
+        return {"reaped": reaped, "idle_window": idle_window}
+    return {"reaped": [], "idle_window": idle_window}
+
+
 def _estimated_hours(
     repo: Path, project: str, node: TaskNode
 ) -> tuple[float | None, str]:
@@ -1651,6 +1757,13 @@ def dispatch(
     fences = config.get("fences") or {}
     peers = node.peer_scopes
 
+    reap_idle_session_members(
+        project,
+        root=repo_root,
+        idle_window=str(
+            fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW
+        ),
+    )
     named_member = bool(member)
     effective_member = member or _session_member_id(session)
     roster_member = ledger.member(project, effective_member, root=repo_root)
