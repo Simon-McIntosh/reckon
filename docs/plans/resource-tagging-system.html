@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="1">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -267,6 +267,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824-field-landed" data-who="reckon-ship" data-when="2026-08-24T11:06:00+00:00">
     <div class="r-comment-body"><p><strong>tag-field-on-resources landed</strong> — commit <code>e8584bf</code>; gate cross-suite <strong>passed</strong>; measure: <strong>1203 of 1203 required tests pass</strong> across tags-field, schema, project-state and typed-resources, with 7 new assertions. Tags travel on <code>PlanState</code> and <code>Sprint</code> through the comma-separated <code>plan-tags</code> meta; writes canonicalise through <code>normalise_tag</code>, retain authored order and deduplicate. The assertion that matters most is carried: <em>a resource with two tags is reported under both</em>, which is the failure a single-valued implementation produces and which reads as working on any document carrying exactly one tag. <strong>The node blocked first and was right to</strong> — <code>tests/test_schema.py:489-499</code> requires the generated <code>docs/_shared/plan.schema.json</code> to equal <code>gen_json_schema()</code>, which my dispatch had fenced out. The fence was wrong, not the worker: a generated file always travels with its source. Scope widened, same session resumed, promoted with <code>--scope-changed</code> so a mid-flight scope move does not contaminate calibration. Full record: <a href="/reckon/evidence/archive/resource-tagging-system-landed">execution evidence</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-inventory-landed" data-who="reckon-ship" data-when="2026-08-24T11:14:00+00:00">
+    <div class="r-comment-body"><p><strong>tag-inventory-discovery landed</strong> — commit <code>36eea19</code>; gate derived-not-listed <strong>passed</strong>; measure: <strong>124 of 124 relevant tests pass</strong> (72 across tag-inventory/mcp-tools/mcp-views, 52 across the non-overlapping mcp-audit/mcp-roadmap/mcp-store). The discovery envelope carries <code>tag_inventory</code> as an alphabetically ordered list of <code>{tag, count}</code>, derived from non-archived typed resources on every read. <strong>The assertion that makes this a vocabulary rather than a cache:</strong> the test authors a brand-new tag mid-run and observes it at count 1 on the next read with no code change — which is exactly what the locked <code>observed-with-counts</code> decision requires, since a curated allow-list would need governance nobody performs and would block a new topic at the moment of authoring. The unfiltered project inventory supplies counts even when discovery rows are filtered, so a narrowed view still shows the whole vocabulary.</p></div>
 </div>
 </section>
 </main>

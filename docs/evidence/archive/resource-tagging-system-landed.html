@@ -38,7 +38,7 @@
       </tbody>
     </table>
 
-    <h2 id="s3">§3 — The field, on every typed resource</h2>
+    <h2 id="s3">§3 — The field, and the inventory it makes countable</h2>
 
     <p>Commit <code>e8584bf</code>. Tags now travel on <code>PlanState</code> and
     <code>Sprint</code> through the comma-separated <code>plan-tags</code> meta, the same
@@ -67,6 +67,31 @@
     include the generated schema, the same session resumed with its context intact, and the run
     was promoted with <code>--scope-changed</code> so a node whose scope moved mid-flight does
     not contaminate effort calibration.</p>
+
+    <h2 id="inventory">The inventory, computed live</h2>
+
+    <p>Commit <code>36eea19</code>. The discovery envelope now carries
+    <code>tag_inventory</code> as an alphabetically ordered list of
+    <code>{tag, count}</code> records, and every plan, research and evidence row carries its
+    full tags list. Counts are derived from non-archived typed resources on every read, each
+    resource contributing once per tag it carries.</p>
+
+    <p><strong>The property that makes this a vocabulary rather than a cache is asserted
+    directly:</strong> the test authors a brand-new tag during the run and observes it appear
+    with count 1 on the next read, with no code change. The inventory is computed from corpus
+    metadata rather than any literal list, which is what the locked
+    <code>observed-with-counts</code> decision requires — a curated allow-list would have needed
+    governance nobody will perform, and would block a legitimately new topic at the exact moment
+    someone is authoring.</p>
+
+    <p>The unfiltered project inventory supplies counts even when discovery rows are filtered, so
+    a narrowed view still shows the whole vocabulary — which is the point: an author needs to see
+    what exists, not what they are currently looking at.</p>
+
+    <p><strong>124 of 124 relevant tests pass</strong> — 72 across tag-inventory, mcp-tools and
+    mcp-views, plus 52 across the non-overlapping mcp-audit, mcp-roadmap and mcp-store suites.
+    Measured on the live corpus during the test: four initial tags, a shared topic at count 2,
+    and the invented tag at count 1.</p>
 
   </main>
 </body>
