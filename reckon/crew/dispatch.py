@@ -41,7 +41,6 @@ from reckon.crew.routing import (
     _create_worktree,
     _register_session_member,
     _remove_worktree,
-    _require_write_paths_in_repository,
     _session_member_id,
     _signal_process_group,
     _workspace_roots,
@@ -70,7 +69,9 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    reports_dir,
     run_dir,
+    runs_dir,
     watch_state,
 )
 
@@ -585,6 +586,35 @@ def _path_is_tmpfs(path: str | Path) -> bool:
     return bool(best and best[1] in {"tmpfs", "ramfs"})
 
 
+def _require_write_paths_in_authority(
+    node: TaskNode, authority: Mapping[str, Any]
+) -> None:
+    """Confine writes to resolved repositories or durable delivery roots."""
+    work_repo = Path(str(authority["write"]["repository"])).resolve()
+    repository_roots: list[Path] = []
+    for value in authority.get("repositories") or (work_repo,):
+        root = Path(str(value)).expanduser().resolve()
+        if root not in repository_roots:
+            repository_roots.append(root)
+    if work_repo not in repository_roots:
+        repository_roots.append(work_repo)
+    delivery_roots = (runs_dir().resolve(), reports_dir().resolve())
+    allowed_roots = (*repository_roots, *delivery_roots)
+    for declared in node.write_paths:
+        raw = Path(declared).expanduser()
+        resolved = (raw if raw.is_absolute() else work_repo / raw).resolve()
+        if any(resolved.is_relative_to(root) for root in allowed_roots):
+            continue
+        repositories = ", ".join(str(root) for root in repository_roots)
+        raise CrewError(
+            f"write path {declared!r} resolves outside the authorised work repository "
+            f"{work_repo}, every other repository registered by the dispatch authority "
+            f"({repositories}), and Reckon delivery directories {delivery_roots[0]} and "
+            f"{delivery_roots[1]}; the repository containing this path is missing from "
+            "mounts.json or outside the resolved plan authority"
+        )
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -661,7 +691,7 @@ def plan_dispatch(
         resolved_authority = dict(
             authority or resolve_dispatch_authority(project, repo)
         )
-        _require_write_paths_in_repository(node, resolved_authority)
+        _require_write_paths_in_authority(node, resolved_authority)
         plan_commit = require_plan_section_visible(
             node=node,
             project=project,
