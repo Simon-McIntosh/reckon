@@ -277,6 +277,19 @@ class UnreconciledRuns(CrewError):
         )
 
 
+class WatcherRequired(CrewError):
+    """A dispatch needs a live project watcher before work may start."""
+
+    def __init__(self, project: str, watch: Mapping[str, Any]) -> None:
+        self.project = project
+        self.watch = dict(watch)
+        super().__init__(
+            f"project {project!r} has no live crew watcher; arm one with "
+            f"`{watch['arming_line']}`, or pass --no-watch to record an "
+            "explicit waiver for a synchronous dispatch"
+        )
+
+
 class BudgetHold(CrewError):
     """A wave is held on budget rather than failed.
 
@@ -2340,6 +2353,8 @@ def dispatch(
     budget_state: Mapping[str, Any] | None = None,
     execution_override: bool = False,
     unreconciled_override: bool = False,
+    watch_required: bool = False,
+    watch_override: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -2368,6 +2383,12 @@ def dispatch(
     An unreconciled-run override is narrower: it waives only the terminal
     backlog observed by this dispatch. The exact runs and resolving commands
     are copied onto the new record so the exception survives its command line.
+
+    Process-launching dispatches require a live project watcher.
+    ``watch_required`` is explicit here so library callers and in-harness
+    preparation, which launches no worker, keep control of that policy. A watch
+    override records both the arming command and the liveness observed at the
+    dispatch gate.
     """
     repo_root = Path(repo).resolve()
     script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
@@ -2504,6 +2525,25 @@ def dispatch(
             "previous_run_id": str(previous.get("run_id") or ""),
         }
 
+    dispatch_watch = watch_state(project)
+    starts_worker = resolution.launch == "cli"
+    if (
+        watch_required
+        and starts_worker
+        and not dispatch_watch["watcher_live"]
+        and not watch_override
+    ):
+        raise WatcherRequired(project, dispatch_watch)
+    watcher_waiver = (
+        {
+            "requested": True,
+            "arming_line": dispatch_watch["arming_line"],
+            "watcher_live": bool(dispatch_watch["watcher_live"]),
+        }
+        if watch_override
+        else None
+    )
+
     worktree = _create_worktree(repo_root, session, node.id, base)
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
@@ -2574,6 +2614,7 @@ def dispatch(
             "warnings": [*resolution.warnings, *budget_warnings],
             "lineage": lineage,
             "unreconciled_override": waiver,
+            "watch_override": watcher_waiver,
             "watch": {
                 "arming_line": _watch_arming_line(project),
                 "watcher_live": False,
@@ -3286,6 +3327,9 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    watch_override = record.get("watch_override")
+    if isinstance(watch_override, Mapping):
+        run["watch_override"] = dict(watch_override)
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
         run["execution_fit"] = dict(execution_fit)

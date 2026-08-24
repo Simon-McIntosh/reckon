@@ -403,7 +403,8 @@ def crew():
     held on budget and names the backend, the utilisation and when it resets, 4
     the named plan section is unavailable at the worktree base ref, 5 the
     selected worker configuration has a typed competence refusal, 6 terminal
-    pointers need reconciliation, 7 a live run holds a conflicting write scope.
+    pointers need reconciliation, 7 a live run holds a conflicting write scope,
+    8 no live project watcher is waiting for the dispatched work.
     """
 
 
@@ -626,6 +627,14 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     ),
 )
 @click.option(
+    "--no-watch",
+    is_flag=True,
+    help=(
+        "Dispatch without a live project watcher and record the explicit waiver "
+        "on the run."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -655,6 +664,7 @@ def crew_dispatch(
     overrides,
     allow_execution_mismatch,
     allow_unreconciled_runs,
+    no_watch,
     dry_run,
     pretty,
 ):
@@ -740,6 +750,8 @@ def crew_dispatch(
             member=member,
             execution_override=allow_execution_mismatch,
             unreconciled_override=allow_unreconciled_runs,
+            watch_required=True,
+            watch_override=no_watch,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
@@ -792,6 +804,17 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(7) from exc
+    except crew_module.WatcherRequired as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "watcher-required",
+                "detail": str(exc),
+                "watch": exc.watch,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(8) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(
