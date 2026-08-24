@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 
+from reckon import __version__
 from reckon._store import _config_home
 
 
@@ -108,6 +109,7 @@ def _merge_records_by_id(authored: list, discovered: list) -> list:
 
 
 @click.group()
+@click.version_option(version=__version__, prog_name="reckon")
 def main():
     """reckon — repo-agnostic agile planning system."""
 
