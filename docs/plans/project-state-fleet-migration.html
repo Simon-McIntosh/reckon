@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="project-state-fleet-migration">
+  <meta name="plan-title"     content="Migrate the Fleet, Then Delete the Ladder">
+  <meta name="plan-summary"   content="Ten mounted projects still hold monolithic legacy state. Prove the project-state migration preserves relational metadata field by field, migrate imas-ambix and nova first so work can resume there, then the rest — and make sync create distributed state natively, which is the change that turns the migration tools into genuine one-shots that can be deleted.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-blocks"    content="project-onboarding">
+  <title>Migrate the Fleet, Then Delete the Ladder | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Ten repositories are still on legacy state, and two of them are wanted back</h2>
+
+    <p>Measured from the live mounts registry: <strong>12 mounted projects, 2 migrated</strong>
+    — <code>imas-codex</code> and <code>reckon</code> — and <strong>10 still legacy</strong>:
+    <code>L2G</code>, <code>hanney</code>, <code>helix</code>, <code>imas-ambix</code>,
+    <code>imas-efit</code>, <code>imas-standard-names</code>, <code>norma</code>,
+    <code>nova</code>, <code>tessera</code>, <code>vv</code>.</p>
+
+    <p>The lead wants <strong><code>imas-ambix</code> and <code>nova</code> migrated first</strong>
+    in order to resume work in those repositories. That is the ordering constraint this plan
+    serves; the remaining eight follow behind the same proof.</p>
+
+    <p><strong>What this plan is not.</strong> Three distinct things share the word
+    <em>migration</em> and conflating them has already cost one wrong sequencing argument. This
+    plan owns only the first.</p>
+
+    <table>
+      <thead><tr><th>Migration</th><th>What it does</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Project state</strong></td><td>Converts a project's monolithic <code>index.json</code> into typed per-resource HTML. Moves no files.</td><td><strong>This plan</strong></td></tr>
+        <tr><td>Layout</td><td>Flattens 149 nested resources into typed roots and rewrites 119 links.</td><td><code>sprint-scope-and-surface</code> §3</td></tr>
+        <tr><td>Frozen-index redundancy</td><td>The legacy copy at <code>state/&lt;project&gt;/index.json</code> duplicates a byte-identical digest-named snapshot.</td><td>Nobody yet — cleanup, not a blocker</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>A claimed prerequisite that was checked and did not hold, recorded so it is not
+    re-litigated.</strong> It was argued that <code>reckon build</code> silently overwrites each
+    migrated repository's frozen <code>index.json</code>, making the marker's integrity claim
+    false on first publish, and that this had to be repaired ahead of everything. It does not:
+    <code>reckon/cli.py:1629</code> resolves <code>output_state</code> to
+    <code>projection.json</code> whenever the project is distributed, <code>sync</code> carries
+    the same guard at <code>reckon/cli.py:1419</code>, and
+    <code>tests/test_project_state.py:999</code> is a regression test named
+    <code>test_static_build_writes_projection_without_touching_canonical_index</code>. The guard
+    is structural, not a scheduling accident. This plan proceeds on the lead's direct
+    instruction, not on that argument.</p>
+
+    <h2 id="s2">§2 — The robustness gate: field-by-field, before anything live is touched</h2>
+
+    <p><strong>The bar is the lead's and it is specific:</strong> the migration must not drop
+    plan linking or other relational and organisational metadata. Existing evidence does not
+    meet it. The <code>imas-codex</code> run reported 13 resources, source
+    <code>b9fc8216ed3b</code>, composed parity <code>46b93fe68018</code> and a byte-identical
+    snapshot — that is <em>composed-state parity</em>, a whole-blob digest comparison. It is not
+    a field-by-field diff of relational metadata, and it must not be cited as though it were.</p>
+
+    <p><strong>The evidence can be produced without touching a live target.</strong>
+    <code>imas-codex</code> and <code>reckon</code> are already migrated and both retain their
+    frozen pre-migration snapshots. Diffing the post-migration typed resources against those
+    snapshots yields the field-by-field proof on real corpora, at zero risk to
+    <code>imas-ambix</code> or <code>nova</code>.</p>
+
+    <p><strong>What must survive, enumerated so the harness cannot quietly check less:</strong></p>
+
+    <table>
+      <thead><tr><th>Class</th><th>Fields</th></tr></thead>
+      <tbody>
+        <tr><td>Relational</td><td><code>depends_on</code>, <code>blocks</code>, <code>informs</code>, <code>evidence_for</code>, <code>verifies</code>, <code>supersedes</code></td></tr>
+        <tr><td>Organisational</td><td><code>sprint</code>, <code>milestone</code>, <code>north_star</code>, <code>tier</code></td></tr>
+        <tr><td>Sprint membership</td><td>every item, with its <code>why_now</code> and <code>done_when</code> intact</td></tr>
+        <tr><td>Nested collections</td><td>decisions — including locked <code>choice</code>, <code>rationale</code>, <code>by</code>, <code>when</code> — plus followups, comments, questions, research</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Decision rationales are the field to watch hardest.</strong> They are the longest
+    free text in the state and the least likely to be spot-checked, so a truncation or an
+    entity-escaping fault there survives every summary-level comparison. The harness compares
+    them in full rather than by length or digest alone.</p>
+
+    <h3>Two measured false positives the harness must exclude by name</h3>
+
+    <p>Both would read as the migration breaking relational metadata. Neither is caused by it,
+    and a naive before/after diff reports both.</p>
+
+    <ul>
+      <li><strong><code>blocks</code> is descriptive, not gating.</strong> Declaring
+      <code>plan-blocks</code> on a prerequisite does not make the consumer blocked — measured
+      while building this sprint, the consumer read as ready and sat on the critical path ahead
+      of both its prerequisites until explicit <code>depends_on</code> was added. That is a
+      pre-existing semantic. A test that migrates and then checks <code>blocks</code>-based
+      ordering finds it "broken" identically before and after.</li>
+      <li><strong>New wiring findings are increased visibility, not damage.</strong> On
+      <code>imas-codex</code>, <code>roadmap</code> reported two <code>sprint-order-inversion</code>
+      errors and one <code>plan-sprint-missing-item</code> warning after migration that it had
+      not reported before. Nothing was created; <code>roadmap</code> could simply see more once
+      it read typed resources instead of one index. A finding-count diff shows errors appearing
+      and reads as breakage.</li>
+    </ul>
+
+    <p><strong>Done when</strong> a harness diffs both already-migrated projects against their
+    frozen snapshots and asserts every field in the table above is preserved exactly, with the
+    two false positives excluded by explicit name rather than by a loosened comparison, and the
+    run emits a per-field count of compared and matched values so a silent no-op cannot pass as
+    a proof.</p>
+
+    <h2 id="s3">§3 — imas-ambix and nova</h2>
+
+    <p>With the gate green, migrate the lead's two priority repositories. Each is a separate
+    transaction: <code>reckon migrate-fleet</code> resolves the mounts registry at runtime, fixes
+    its path and content hash for the run, snapshots every registered repository, and mutates
+    only those named with repeated <code>--apply-project</code>. Unselected, dirty, detached or
+    otherwise unsafe repositories take an explicit terminal <code>deferred</code> ledger row
+    rather than silent omission.</p>
+
+    <p><strong>Each migration is verified with the §2 harness against its own snapshot, not
+    assumed from the fleet command's exit code.</strong> The harness was built to run on
+    already-migrated corpora precisely so it can be pointed at a freshly migrated one without
+    modification. A repository whose diff is not clean is rolled back, not explained.</p>
+
+    <p><strong>Done when</strong> both repositories report <code>format=distributed</code>
+    <code>status=complete</code>, the §2 harness passes against each, <code>roadmap</code>
+    resolves in both, and the resulting state is committed in each repository — with any new
+    wiring finding classified as pre-existing-and-now-visible or as a genuine defect, never left
+    ambiguous.</p>
+
+    <h2 id="s4">§4 — The remaining eight</h2>
+
+    <p><code>L2G</code>, <code>hanney</code>, <code>helix</code>, <code>imas-efit</code>,
+    <code>imas-standard-names</code>, <code>norma</code>, <code>tessera</code>,
+    <code>vv</code>. Same transaction shape, same per-repository verification, no new mechanism.
+    <code>imas-standard-names</code> is the one to sequence last and watch: it carries the 73
+    flattened standard-names documents that motivate the tagging work, so it is the corpus most
+    likely to expose an organisational-metadata fault.</p>
+
+    <p><strong>Done when</strong> all 12 mounted projects report distributed state and the §2
+    harness passes against every one of them.</p>
+
+    <h2 id="s5">§5 — Born distributed: the change that makes the tools deletable</h2>
+
+    <p><strong>This is a correction to the premise that the tools are one-shots, and it is the
+    reason §6 cannot simply be executed.</strong> The distributed marker is written only by
+    <code>project_state.py</code> and <code>fleet_migration.py</code>. <code>reckon sync</code>
+    never writes it: for any project without a marker it takes the else branch at
+    <code>reckon/cli.py:1419</code> and seeds a legacy <code>index.json</code> with discovered
+    sprints, milestones and <code>active_sprint_id</code>.</p>
+
+    <p>So a newly onboarded repository is <strong>born legacy</strong>. Deleting
+    <code>migrate-project-state</code> today would strand every future repository in a state
+    with no forward path — the tool would be gone precisely when the next project needed it.
+    <code>migrate-fleet</code> is genuinely one-shot, because its input is the fixed set of ten;
+    the per-project migration is not, until this changes.</p>
+
+    <p><strong>Deliverable:</strong> <code>reckon sync</code> creates distributed typed state
+    natively for a project that has none, writing the marker as part of that creation, so the
+    legacy seeding path is reachable only for projects that already have a legacy index. A new
+    project never enters the legacy shape at all, which is a stronger guarantee than migrating
+    it promptly afterwards.</p>
+
+    <p><strong>This must land before <code>project-onboarding</code> extends the same
+    function</strong>, and that is a file-scope constraint as much as a logical one: onboarding
+    adds Pages detection and badge insertion to <code>reckon sync</code>, and two plans editing
+    that function concurrently is exactly the merge hazard the sprint contract exists to
+    prevent.</p>
+
+    <p><strong>Done when</strong> a test onboards a project with no prior state and asserts the
+    result reports <code>format=distributed</code> with no <code>index.json</code> written, and
+    a second test asserts a project with an existing legacy index is left untouched by
+    <code>sync</code> rather than silently converted.</p>
+
+    <h2 id="s6">§6 — Deleting the ladder</h2>
+
+    <p>Once every project is distributed and nothing can be born legacy, both
+    <code>migrate-fleet</code> and <code>migrate-project-state</code> have no remaining caller
+    and no future input. They are removed, along with their one-shot tests, in the commit that
+    records the fleet complete — the same disposal rule the sprint already locked for the layout
+    migration's scripts, and for the same reason: a one-shot kept for reuse becomes an
+    undocumented tool someone runs later against a corpus it no longer describes.</p>
+
+    <p>The receipts stay. The migration markers, the frozen snapshots and this plan's evidence
+    record are the durable artifacts; the code that produced them is not.</p>
+
+    <p><strong>Done when</strong> the fleet reports 12 of 12 distributed, the commands are gone
+    from the CLI surface, the test suite is green without them, and a fresh
+    <code>reckon sync</code> on a scratch project still produces distributed state — proving the
+    deletion removed a ladder rather than a floor.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="robustness-evidence-source" data-choice="already-migrated-snapshots" data-by="reckon-ship" data-when="2026-08-24T09:40:00+00:00">
+    <p class="r-dec-q">Where does the field-by-field relational-parity evidence come from?</p>
+    <p class="r-dec-ctx">The lead requires proof that the migration does not drop plan linking or other relational metadata BEFORE it touches imas-ambix or nova. The existing imas-codex run proved composed-state parity — a whole-blob digest — which is a weaker claim than the bar asks for.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="already-migrated-snapshots">Diff the two already-migrated projects against their frozen pre-migration snapshots</button>
+      <button class="r-opt" data-value="dry-run-on-targets">Dry-run the migration on imas-ambix and nova and diff the staged output</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 on the sequencing constraint rather than on preference. imas-codex and reckon are already migrated and both retain frozen pre-migration snapshots, so the proof is available on two real corpora at zero risk to either priority repository — and it is available NOW, whereas a dry-run harness on the targets makes the gate depend on the very thing it is gating. The harness is written to run against any project plus its snapshot, so the same code verifies each live migration in §3 without modification. Accepted limit: the evidence covers the corpus shapes those two projects contain, which is why imas-standard-names is sequenced last in §4 as the corpus most likely to exceed them.</p>
+    </div>
+<div class="r-dec" data-key="migration-order" data-choice="priority-two-first" data-by="Simon McIntosh" data-when="2026-08-24T09:40:00+00:00">
+    <p class="r-dec-q">In what order does the fleet migrate?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="priority-two-first">imas-ambix and nova first, then the remaining eight</button>
+      <button class="r-opt" data-value="all-at-once">One fleet sweep across all ten</button>
+      <button class="r-opt" data-value="riskiest-first">Hardest corpus first, to find faults early</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24: work is waiting to resume in imas-ambix and nova, so they migrate first and their completion is confirmed back before the rest proceed. This also gives the fleet sweep two verified precedents rather than making the first live migration a ten-way commitment. Hardest-first was not chosen despite its diagnostic appeal because it delays exactly the two repositories the lead is blocked on.</p>
+    </div>
+<div class="r-dec" data-key="oneshot-deletion-gate" data-choice="born-distributed-first" data-by="reckon-ship" data-when="2026-08-24T09:40:00+00:00">
+    <p class="r-dec-q">What must be true before the migration tools are deleted?</p>
+    <p class="r-dec-ctx">The lead's position is that both tools are one-shot processes that should not recur and can be deleted once the fleet is migrated. That is true of migrate-fleet, whose input is the fixed set of ten. It is not yet true of migrate-project-state.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="born-distributed-first">Every project distributed AND sync creating distributed state natively</button>
+      <button class="r-opt" data-value="fleet-complete-only">Every project distributed is sufficient</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24, correcting the premise rather than following it. reckon sync never writes the distributed marker; for a project without one it seeds a legacy index.json at cli.py:1419. So a newly onboarded repository is born legacy, and deleting the per-project migration on fleet-completion alone would strand every future repository — the tool would be gone at precisely the moment the next project needed it. Making sync create distributed state natively removes the last future caller, at which point the lead's instinct is correct and both tools go. The deletion is not weakened, only sequenced behind the change that earns it.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-psfm-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship project-state-fleet-migration" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Prove relational parity, then migrate the two repositories work is waiting on</h4>
+    <div class="r-fu-body"><p>The gate comes first and it is not negotiable: a field-by-field diff of both already-migrated projects against their frozen snapshots, covering relations, organisational fields, sprint items and the nested collections — with decision rationales compared in full, and the two measured false positives excluded by name rather than by loosening the comparison. Then <code>imas-ambix</code> and <code>nova</code>, each verified against its own snapshot with the same harness and rolled back rather than explained if the diff is not clean. Then the remaining eight, with <code>imas-standard-names</code> last as the corpus most likely to exceed what the gate proved. <code>sync</code> creating distributed state natively must land before <code>project-onboarding</code> touches the same function, and it is what earns the deletion in §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship project-state-fleet-migration</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="resource-tagging-system">
+  <meta name="plan-title"     content="Topical Grouping That Survives Its Authors">
+  <meta name="plan-summary"   content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with counts, filterable queries, corpus-wide rename, and an audit that surfaces near-duplicates.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="11.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-blocks"    content="sprint-scope-and-surface">
+  <title>Topical Grouping That Survives Its Authors | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What is actually missing, and why a field is not enough</h2>
+
+    <p>The published schema carries <strong>41 properties and no tag field</strong>. Its only
+    grouping axes — <code>sprint</code>, <code>milestone</code>, <code>tier</code>,
+    <code>north_star</code> — are single-valued and lifecycle-shaped. None expresses "this is
+    standard-names work". So directories are the only topical grouping in the system, and the
+    layout migration deletes them: <strong>73 standard-names documents flatten, 71 of whose
+    slugs do not carry the topic</strong>, leaving <code>09-llm-compose.html</code> beside
+    <code>gpu-cluster-scoping.html</code> with nothing marking it. Three independent numbered
+    sequences each run their own 01..46 and interleave into meaninglessness.</p>
+
+    <p><strong>The minimal answer is a comma-separated meta field, and it would fail within a
+    week.</strong> An author who cannot enumerate the existing tags invents one, and the corpus
+    fragments into <code>standard-names</code>, <code>standard_names</code>, <code>sn</code> and
+    <code>standardnames</code> as four unrelated groupings — which is not hypothetical, it is the
+    same shape already paid for twice in a consuming project. A grouping mechanism whose values
+    diverge is worse than none, because it looks like it is working.</p>
+
+    <p><strong>So the design problem is not "how do we store a list of strings". It is: what
+    makes a vocabulary stay coherent when every author is a different agent or session, none of
+    them coordinates with the others, and nobody will perform governance.</strong> Four
+    properties answer that, and each is a section below: one canonical identity per tag enforced
+    where writes happen (§2); the vocabulary visible with usage counts at the moment of
+    authoring, which is the whole design (§3); and a rename that is one command rather than N
+    hand edits, because otherwise the first typo is permanent (§5). §4 records the thing this
+    plan deliberately does <em>not</em> build.</p>
+
+    <p>Two decisions on this are already locked on <code>sprint-scope-and-surface</code> and are
+    inherited rather than re-opened: the inventory is <em>observed usage with counts, not a
+    curated allow-list</em>, and <em>tags and their backfill precede the layout migration</em>.
+    This plan builds the system those decisions assume.</p>
+
+    <h2 id="s2">§2 — One canonical identity, enforced at write</h2>
+
+    <p><strong>This is the load-bearing mechanism and the one that makes the vocabulary
+    stable.</strong> A tag's stored identity is derived, not accepted: casefold, trim, collapse
+    internal whitespace and underscores to a single hyphen. Divergent spellings of the same
+    intent converge before they are ever stored, so they cannot become separate groupings.</p>
+
+    <p><img src="/reckon/figures/resource-tagging-system/normalisation-funnel.svg"
+      alt="Four spellings — standard-names, Standard_Names, standard names, standardnames — converge through a casefold, trim and separator-normalising step into the single stored identity standard-names with four documents. A fifth authored value, sn, is not a spelling variant so it stays a separate identity with one document and is flagged as a singleton by audit."
+      style="max-width:100%;height:auto"></p>
+    <p><em>Normalisation collapses spelling variance, and only spelling variance. An
+    abbreviation is a different word, so it survives as its own identity — and is surfaced as a
+    singleton rather than silently merged, because merging it would be a guess about intent.</em></p>
+
+    <p><strong>Normalisation is applied, not merely validated.</strong> Rejecting
+    <code>Standard_Names</code> with an error teaches the author nothing and blocks a write that
+    had no ambiguity in it. Silently accepting it creates the second grouping. Applying the
+    canonical form and reporting what was stored does both jobs. A value that cannot be
+    normalised into a non-empty identity — punctuation only, or empty after trimming — is a
+    genuine error and is refused.</p>
+
+    <p><strong>The grammar reserves what it does not yet use.</strong> Every tag known today is
+    a topic, so a flat vocabulary is sufficient now. But <code>:</code> is reserved from the
+    first commit, so a later faceted form such as <code>machine:iter</code> is additive rather
+    than a migration across the whole corpus. Reserving a separator costs one validation rule
+    today; retrofitting one costs a rewrite of every tagged document. This is the difference
+    between a system and a patch, and it is cheap only if it is done now.</p>
+
+    <p><strong>Done when</strong> a property test asserts that normalising any two spelling
+    variants of the same intent yields byte-identical identities, that normalisation is
+    idempotent, that an unnormalisable value is refused with a message naming the offending
+    input, and that <code>:</code> is refused with a message stating it is reserved.</p>
+
+    <h2 id="s3">§3 — Tags on every typed resource, and the inventory in front of the author</h2>
+
+    <p><strong>Tags belong on plans, research, evidence and sprints alike.</strong> The 73
+    documents that motivate this plan are <em>research</em>, not plans. A tag field that only
+    works on plans would leave the exact corpus that needs grouping without it — and would make
+    a cross-type query, which is where topical grouping earns its keep, impossible to express.</p>
+
+    <p>The field follows the established comma-separated meta pattern that
+    <code>depends_on</code> and <code>informs</code> already use, so it needs no new parsing
+    convention and travels through the same typed-resource machinery.</p>
+
+    <p><strong>The inventory is computed, never stored.</strong>
+    <code>read_plan(project)</code> already returns a discovery envelope; the tag inventory joins
+    it, derived live across plans, research and evidence with a usage count per tag. A count is
+    what makes a one-off typo visible <em>beside</em> an established tag rather than equal to it
+    — <code>standard-names (73)</code> next to <code>standrd-names (1)</code> tells the reader
+    everything without any governance having happened.</p>
+
+    <p><strong>And it must be in front of the author at the moment of authoring.</strong>
+    <code>reckon-create</code> is where a new resource's metadata is chosen. A skill that says
+    "add tags" without showing which ones exist is precisely the instruction that produces four
+    spellings. This is the cheap half of the whole plan and the half most likely to be dropped
+    as a nicety.</p>
+
+    <p><strong>Done when</strong> the discovery response carries every tag in use across all
+    typed resources with its count; a test asserts the inventory is derived from the corpus
+    rather than from any literal list, so a newly invented tag appears with no code change; and
+    <code>reckon-create</code> surfaces the inventory at authoring time.</p>
+
+    <h2 id="s4">§4 — Why there is no tag filter, and what replaces the one you would build</h2>
+
+    <p><strong>An earlier draft of this plan proposed tag filtering in discovery, in
+    <code>roadmap</code>, and as an SPA facet. That was scope, and it is cut.</strong> The
+    reasoning is worth keeping so the next author does not add it back by reflex.</p>
+
+    <p><strong>Retrieval is already free.</strong> <code>read_plan(project)</code> returns a
+    discovery envelope carrying every resource with its parsed metadata, so once resources carry
+    tags, the tags arrive with them. An agent wanting everything in a programme already holds the
+    whole corpus and selects over it — a list comprehension, not a request. A server-side filter
+    parameter would be a second way to obtain what the payload already contains, and a second
+    way is a second thing to keep consistent with the first.</p>
+
+    <p><strong>The authoring moment is the one that needed help, and it is a different
+    problem.</strong> Directories did two jobs: they told an author where a thing belonged, and
+    they let a reader enumerate a programme. Only the first was ever hard. Enumeration was
+    always cheap and stays cheap. What was expensive — and what produced four spellings of the
+    same tag — is an author choosing a value with no view of what the corpus already uses. The
+    inventory with counts (§3) is the whole answer to that, and adding query surface does not
+    improve it.</p>
+
+    <p><strong>One property from that draft is real and moves to §3 rather than being
+    lost:</strong> a resource must appear under <em>every</em> tag it carries, not only the
+    first. That is a multivalued-ness assertion on the field and the inventory, and it is the
+    failure a single-valued implementation produces — one that reads as working on any document
+    that happens to carry exactly one tag, which most will.</p>
+
+    <p><strong>Done when</strong> this plan ships no tag query parameter and no SPA tag facet,
+    and the multivalued assertion is carried by §3's tests.</p>
+
+    <h2 id="s5">§5 — Rename, because the first typo is otherwise permanent</h2>
+
+    <p><strong>This is what separates a stable vocabulary from a frozen one.</strong> Observed
+    usage with counts deliberately permits invention, which means mistakes and second thoughts
+    are permitted too. Without a rename, correcting <code>standrd-names</code> means editing
+    every carrying document by hand, so nobody does it and the corpus accumulates near-duplicates
+    forever — the allow-list's failure mode arriving by a different road.</p>
+
+    <p><strong>Deliverable:</strong> one command that renames a tag across every typed resource
+    in a project, reporting the resources it will touch before touching them, and writing through
+    the same version-safe path as any other state edit so a concurrent writer cannot be
+    clobbered. It merges into an existing tag when the target already exists, since that is
+    exactly the near-duplicate repair.</p>
+
+    <p><strong>And the audit closes the loop.</strong> Singletons are surfaced as findings —
+    the near-zero-cost governance the locked decision names — alongside pairs whose canonical
+    identities differ only by a small edit distance, which catches
+    <code>standrd-names</code> beside <code>standard-names</code> without forbidding either.
+    Reported, never auto-merged: the system corrects spelling variance mechanically because that
+    is decidable, and surfaces suspected intent variance to a human because that is not.</p>
+
+    <p><strong>Done when</strong> renaming a tag rewrites every carrying resource in one
+    version-safe pass, renaming onto an existing tag merges rather than duplicating, a dry run
+    lists the affected resources without writing, and the audit reports both singletons and
+    near-duplicate pairs with their counts.</p>
+
+    <h2 id="s6">§6 — Backfill, and the one thing that must happen before the layout migration</h2>
+
+    <p>The backfill needs no judgement, which is the whole reason it must happen while the
+    information still exists: <strong>the source directory <em>is</em> the tag</strong>. A
+    document at <code>research/standard-names/09-llm-compose.html</code> carries the tag
+    <code>standard-names</code> because that is what its location already asserted.</p>
+
+    <p>The pre-image is preserved at
+    <code>~/.local/share/imas-codex/receipts/reckon-migration/layout-moves-preimage.txt</code>,
+    so the mapping is recoverable whenever it is taken. After the flattening it is recoverable
+    only from git history, which is a materially harder and more error-prone read.</p>
+
+    <p><strong>Done when</strong> every document the layout migration would move carries a tag
+    derived from its pre-migration path, and a comparison against the saved pre-image proves
+    zero grouping loss — an assertion in the suite rather than a judgement, failing if a single
+    document would lose a programme it previously had.</p>
+
+    <p>A document can carry two tags and cannot live in two directories, so what replaces the
+    directories is strictly more expressive than what it replaces. That is worth stating plainly,
+    because the migration is otherwise easy to read as a loss being mitigated rather than an
+    improvement being unlocked.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="tag-carrier-scope" data-choice="all-typed-resources" data-by="reckon-ship" data-when="2026-08-24T09:45:00+00:00">
+    <p class="r-dec-q">Which resource types carry tags?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="all-typed-resources">Every typed resource — plans, research, evidence and sprints</button>
+      <button class="r-opt" data-value="plans-only">Plans only, keeping the schema change minimal</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the corpus rather than by preference. The 73 documents that motivate this plan are research, not plans, so a plans-only field would leave the exact material that needs grouping without it — and would make the cross-type query, which is where topical grouping earns its keep, inexpressible. The field follows the existing comma-separated meta pattern used by depends_on and informs, so extending it across types costs no new parsing convention.</p>
+    </div>
+<div class="r-dec" data-key="tag-normalisation-policy" data-choice="normalise-and-report" data-by="reckon-ship" data-when="2026-08-24T09:45:00+00:00">
+    <p class="r-dec-q">What happens when an authored tag is not in canonical form?</p>
+    <p class="r-dec-ctx">The four-spellings failure is the central risk. The choice is between refusing a non-canonical value, silently accepting it, or deriving the canonical identity from it.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="normalise-and-report">Apply the canonical form and report what was stored</button>
+      <button class="r-opt" data-value="reject-noncanonical">Refuse the write with a validation error</button>
+      <button class="r-opt" data-value="accept-verbatim">Store verbatim and reconcile at read time</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24. Accepting verbatim creates the second grouping, which is the failure being prevented. Refusing blocks a write that contained no ambiguity and teaches nothing at the moment it matters. Applying the canonical form and reporting it does both jobs: the corpus cannot fragment on spelling, and the author learns the convention from the response rather than from documentation. A value that normalises to nothing is still a genuine error and is refused. Read-time reconciliation was rejected outright because it makes stored identity ambiguous, so any consumer that does not run the same reconciliation sees a different corpus.</p>
+    </div>
+<div class="r-dec" data-key="retrieval-surface" data-choice="inventory-only" data-by="Simon McIntosh" data-when="2026-08-24T09:52:00+00:00">
+    <p class="r-dec-q">Does the tagging system add a query or filter surface, or is the inventory with counts the whole design?</p>
+    <p class="r-dec-ctx">An earlier draft of this plan proposed tag filtering in discovery, in roadmap, and as an SPA facet.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="inventory-only">The inventory with usage counts is the design — no filter is built</button>
+      <button class="r-opt" data-value="filter-and-facet">Add tag filtering to discovery and roadmap plus an SPA facet</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24, cutting the filter as scope. Retrieval is already free: read_plan(project) returns a discovery envelope carrying every resource with its parsed metadata, so once resources carry tags an agent already holds the whole corpus and selects over it - a list comprehension, not a request. A filter parameter would be a second way to obtain what the payload already contains, and a second way is a second thing to keep consistent. Directories did two jobs, telling an author where a thing belonged and letting a reader enumerate a programme, and only the first was ever hard: enumeration was always cheap and stays cheap, while an author choosing a value with no view of existing usage is what produced four spellings. The inventory with counts answers that completely and query surface does not improve it. One property from the cut draft is retained in §3 rather than lost - a resource must appear under every tag it carries, not only the first.</p>
+    </div>
+<div class="r-dec" data-key="tag-grammar-headroom" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the grammar reserve a facet separator now, and does it accept facets on day one?</p>
+    <p class="r-dec-ctx">Every tag known today is a topic, so a flat vocabulary is sufficient. The question is headroom: reserving <code>:</code> now costs one validation rule, while retrofitting a separator later costs a rewrite of every tagged document. Accepting facets on day one costs more than reserving and may never be used.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="reserve-only">Flat tags now, <code>:</code> reserved and refused, so facets are additive later</button>
+      <button class="r-opt" data-value="facets-now">Accept <code>facet:value</code> immediately, with a bare value meaning topic</button>
+      <button class="r-opt" data-value="no-reservation">Flat tags with no reservation — treat <code>:</code> as an ordinary character</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="near-duplicate-response" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When the audit finds two tags whose identities differ by a small edit distance, what does it do?</p>
+    <p class="r-dec-ctx">Normalisation handles spelling variance mechanically because that is decidable. A near-duplicate such as <code>standrd-names</code> beside <code>standard-names</code> is a suspected typo, which is a guess about intent rather than a derivable fact.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="report-only">Report the pair with both counts and leave both in place</button>
+      <button class="r-opt" data-value="report-and-suggest">Report the pair and emit the exact rename command that would merge them</button>
+      <button class="r-opt" data-value="auto-merge-singletons">Merge a singleton into an established near-neighbour automatically</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rts-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship resource-tagging-system" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the vocabulary mechanism before the field, then backfill before the flatten</h4>
+    <div class="r-fu-body"><p>Normalisation first, since it is what keeps the vocabulary coherent when every author is a different session and nobody performs governance — applied and reported rather than refused or accepted verbatim. Then the field across every typed resource, because the 73 documents that motivate this are research and a plans-only field misses them entirely. Then the computed inventory with counts, in the discovery envelope and in front of the author at <code>reckon-create</code>. Then filtering, because a grouping you cannot query is decoration. Then rename plus the audit's singleton and near-duplicate findings, which is what stops the first typo becoming permanent. The backfill from the saved pre-image lands last but must precede the layout migration, and the zero-grouping-loss comparison is an assertion in the suite rather than a judgement. Two decisions are open for the lead: whether the grammar reserves a facet separator now, and what the audit does with a near-duplicate pair.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship resource-tagging-system</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
