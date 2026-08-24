@@ -1811,6 +1811,145 @@ def _deliver_manifest(record: dict, status: str, **fields: str) -> None:
     Path(record["manifest_path"]).write_text("\n".join(lines) + "\n")
 
 
+def test_run_drain_counts_live_pointers_without_a_valid_disposition(home) -> None:
+    for run_id, project in (("r-unowned", "proj"), ("r-foreign", "other")):
+        crew._write_json(
+            crew.pointer_path(run_id),
+            {
+                "run_id": run_id,
+                "project": project,
+                "phase": "working",
+                "process_alive": True,
+            },
+        )
+
+    report = crew.drain("proj")
+
+    assert report["live_pointers"] == 1
+    assert report["unreconciled_runs"] == 1
+    assert report["disposed_runs"] == 0
+    assert report["runs"][0]["run_id"] == "r-unowned"
+    assert report["runs"][0]["unreconciled"] is True
+
+
+def test_handed_off_disposition_removes_a_run_from_the_drain(home) -> None:
+    run_id = "r-handed-off"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "phase": "working",
+            "process_alive": True,
+        },
+    )
+
+    recorded = crew.record_run_disposition(run_id, "handed-off", project="proj")
+    report = crew.drain("proj")
+
+    assert recorded["closure_disposition"]["kind"] == "handed-off"
+    assert recorded["closure_disposition"]["recorded_at"].endswith("Z")
+    assert report["unreconciled_runs"] == 0
+    assert report["disposed_runs"] == 1
+    assert report["runs"][0]["disposition_valid"] is True
+
+
+def test_still_working_disposition_expires_when_the_run_turns_terminal(
+    home,
+) -> None:
+    run_id = "r-working"
+    manifest = home / "working-manifest.md"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "phase": "working",
+            "process_alive": True,
+            "manifest_path": str(manifest),
+        },
+    )
+    crew.record_run_disposition(run_id, "still-working", project="proj")
+    assert crew.drain("proj")["unreconciled_runs"] == 0
+
+    manifest.write_text("node: node-a\nstatus: complete\ncommits: HEAD\n")
+    report = crew.drain("proj")
+
+    assert report["unreconciled_runs"] == 1
+    assert report["runs"][0]["classification"] == "completed_unpromoted"
+    assert report["runs"][0]["disposition_valid"] is False
+
+
+def test_run_drain_refuses_a_disposition_outside_the_closed_set(home) -> None:
+    run_id = "r-invalid-disposition"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "phase": "working",
+            "process_alive": True,
+        },
+    )
+
+    with pytest.raises(crew.CrewError, match="is not one of handed-off, still-working"):
+        crew.record_run_disposition(run_id, "probably-fine", project="proj")
+
+    assert "closure_disposition" not in crew.read_pointer(run_id)
+    assert crew.drain("proj")["unreconciled_runs"] == 1
+
+
+def test_cli_drain_records_dispositions_and_mcp_reads_the_same_projection(
+    home,
+) -> None:
+    from reckon import mcp
+
+    run_id = "r-command-drain"
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "phase": "working",
+            "process_alive": True,
+        },
+    )
+
+    command = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "drain",
+            "--project",
+            "proj",
+            "--leave",
+            f"{run_id}=handed-off",
+        ],
+    )
+    payload = json.loads(command.output)
+    read_view = mcp._crew("proj", view="drain")
+
+    assert command.exit_code == 0
+    assert payload["unreconciled_runs"] == 0
+    assert payload["recorded"][0]["run_id"] == run_id
+    assert read_view["ok"] is True
+    assert read_view["view"] == "drain"
+    assert read_view["unreconciled_runs"] == payload["unreconciled_runs"]
+
+
+def test_promoted_run_leaves_the_drain_by_losing_its_pointer(home, repo) -> None:
+    manifest = home / "promoted-manifest.md"
+    record = _dispatched(home, repo, manifest_path=str(manifest))
+    _deliver_manifest(record, "complete", commits="HEAD")
+    assert crew.drain("proj")["unreconciled_runs"] == 1
+
+    promoted = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])
+
+    assert promoted["pointer_removed"] is True
+    assert crew.drain("proj")["live_pointers"] == 0
+    assert crew.drain("proj")["unreconciled_runs"] == 0
+
+
 def test_terminal_phase_without_a_manifest_is_abandoned(home, repo) -> None:
     record = _dispatched(home, repo, "codex-turn.jsonl")
     observed = crew.observe(record["run_id"])

@@ -140,7 +140,8 @@ read task requirements + apply explicit runtime routing + applicable skill
 → immediately write that node's commit, gate measure, artifacts, and impl to the plan
 → emit the completion summary, WHY carrying the gate evidence
 → re-triage open followups + manifest follow_ons; fold them into the DAG until dry
-→ write the drain ledger; foldable-remaining must read 0 before any closing report
+→ write the drain ledger; foldable-remaining and unreconciled-runs must read 0
+→ record any deliberate live-pointer remainder through reckon crew drain
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
 ```
@@ -208,13 +209,17 @@ structured state (decisions, followups). Do not implement items marked
 14. **Do not execute a malformed graph.** Invalid, dangling, non-executable,
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
-15. **Drain foldable followups before closure, and sign the drain.** Re-triage open
+15. **Drain followups and live run pointers before closure, and sign both.** Re-triage open
     followups after every landing beat, route that node's manifest `follow_ons`
     through the same loop, and repeat until a complete pass finds nothing foldable.
     Write the §7c drain ledger before any closing report: every row disposed as
     `folded` (with its node id), `authority-required`, `dissent-reopen`,
     `foreign-owner`, or `context-exhausted` (with its figure). **A session does not
-    end while `foldable-remaining` is nonzero** — see the closure fence, §4d. Never
+    end while `foldable-remaining` or `unreconciled-runs` is nonzero** — see
+    the closure fence, §4d. A deliberate pointer remainder must be recorded by
+    `reckon crew drain --project <project> --leave <run-id>=<disposition>` using
+    only `handed-off` or `still-working`; the latter expires when the run turns
+    terminal. Never
     set a plan to `shipped` or `done` while a foldable followup is open.
 16. **No implementation node before the reuse map exists.** Every substantive
     implementation wave is preceded by a prior-art scout (§1b) whose reuse map
@@ -467,6 +472,8 @@ things that change the world — `dispatch`, `attach`, `resume`, `stop`,
 crew(project, view="live")      every run in flight: node, plan, phase, process_alive,
                                 manifest_present, worktree, its recover classification,
                                 and the next action for each — one call, no worker touched
+crew(project, view="drain")     closure count derived from live pointers, with each
+                                recorded disposition and whether it remains valid
 crew(project, view="ledger")    committed run records
 crew(project, view="summary")   roster, gate outcomes, measured time against declared effort
 crew(project, view="flight")    resolved routing, and which layer supplied each value
@@ -640,7 +647,9 @@ announces itself; under-running a plan announces nothing, which is why stopping
 gets the heavier machinery.
 
 Before the closing summary, **refuse to end the session while any queue row is
-foldable.** Run the drain of §7c, write its ledger, and read it back:
+foldable or any live pointer is unreconciled.** Run the followup drain of §7c,
+then call `crew(project, view="drain")`, write both figures into the ledger, and
+read it back:
 
 - every open row carries a disposition from the closed set, or the session
   continues;
@@ -648,10 +657,16 @@ foldable.** Run the drain of §7c, write its ledger, and read it back:
   stop with paperwork;
 - `context-exhausted` is the one disposition that ends a session with foldable
   work outstanding, and it must carry its figure (§7c).
+- every live pointer counts as unreconciled unless it carries a valid run
+  disposition recorded through `reckon crew drain --project <project> --leave
+  <run-id>=<disposition>`;
+- the run-disposition set is exactly `handed-off` and `still-working`;
+  `still-working` remains valid only while the live classifier reports
+  `running`, while a promoted run leaves the count by losing its pointer.
 
 Report the fence on the four axes of §4e with occasion `close`. A session ending
-with `foldable-remaining: 0` has earned its summary; one ending with a nonzero
-count and no `context-exhausted` row has not, and the ledger says so.
+with `foldable-remaining: 0` and `unreconciled-runs: 0` has earned its summary;
+one ending with an unexplained nonzero count has not, and the ledger says so.
 
 ### 4e. The summary reflex — what, why, how, when
 
@@ -970,7 +985,7 @@ DRAIN LEDGER — <plan|sprint> @ <iso-now>
   <id or one-line description>   foreign-owner → <owning plan or repo>
   <id or one-line description>   context-exhausted → <the figure>
   ---
-  rows: N   foldable-remaining: 0
+  rows: N   foldable-remaining: 0   unreconciled-runs: 0
 ```
 
 Write it into the landing beat's plan comment or the cumulative evidence record,
@@ -980,9 +995,11 @@ so it is committed rather than conversational. Three properties do the work:
 - **`folded` requires a dispatched node id.** A row marked folded with no node is
   a stop with paperwork on it — the most convincing form of this failure, and the
   one a reader can now catch.
-- **`foldable-remaining: 0` is the termination condition**, and it is now a
-  quantity someone can check against the ledger's own rows rather than a feeling
-  about whether enough was done.
+- **Both zeroes are the termination condition.** `foldable-remaining` is checked
+  against the followup rows; `unreconciled-runs` comes from
+  `crew(project, view="drain")`, never from memory. Record deliberate pointers
+  first with `reckon crew drain --project <project> --leave
+  <run-id>=handed-off|still-working`.
 
 **Terminal status is gated on this drain.** Do not set `status` to `shipped` or
 `done` while any foldable followup is open. Exempt rows may remain open only with
@@ -1022,6 +1039,7 @@ assert state["data"]["impl"] == expected_fraction         # set correctly
 # Driving followup is resolved
 # A next followup or "done — no followup" outcome is present
 # No foldable followup remains open; each exempt open followup records its exemption
+# crew(project, view="drain")["unreconciled_runs"] == 0
 # version has incremented
 ```
 

@@ -587,6 +587,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--manifest",
             "--allow-unreconciled-runs",
         },
+        ("crew", "drain"): {"--project", "--leave"},
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
@@ -618,6 +619,20 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         assert required_flags <= registered_flags, " ".join(path)
         for flag in required_flags:
             assert flag in ship
+
+
+def test_closure_ledger_carries_both_drain_counts() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    reference = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+
+    for text in (ship, reference):
+        assert "foldable-remaining: 0 unreconciled-runs: 0" in text
+        assert "`handed-off`" in text
+        assert "`still-working`" in text
 
 
 def test_ship_dispatch_exit_table_matches_cli_branches() -> None:

@@ -865,6 +865,64 @@ def crew_list(project, phase, pretty):
     _emit({"ok": True, "runs": runs}, pretty)
 
 
+@crew.command(name="drain")
+@click.option("--project", required=True, help="Project whose live pointers to drain.")
+@click.option(
+    "--leave",
+    "leaves",
+    multiple=True,
+    metavar="RUN=DISPOSITION",
+    help=(
+        "Record why a live run remains: handed-off or still-working. "
+        "Repeat for each deliberate remainder."
+    ),
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_drain(project, leaves, pretty):
+    """Report the session-closure drain over current live run pointers."""
+    crew_module, _ = _crew_modules()
+    requested = []
+    for leave in leaves:
+        run_id, separator, disposition = leave.partition("=")
+        if not separator or not run_id.strip() or not disposition.strip():
+            raise click.ClickException(
+                f"--leave {leave!r} must be RUN=DISPOSITION"
+            )
+        if disposition.strip() not in crew_module.RUN_DRAIN_DISPOSITIONS:
+            allowed = ", ".join(crew_module.RUN_DRAIN_DISPOSITIONS)
+            raise click.ClickException(
+                f"run disposition {disposition.strip()!r} is not one of {allowed}"
+            )
+        requested.append((run_id.strip(), disposition.strip()))
+
+    try:
+        recorded = [
+            crew_module.record_run_disposition(
+                run_id,
+                disposition,
+                project=project,
+            )
+            for run_id, disposition in requested
+        ]
+        result = crew_module.drain(project)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(
+        {
+            "ok": True,
+            **result,
+            "recorded": [
+                {
+                    "run_id": row.get("run_id"),
+                    "disposition": row.get("closure_disposition"),
+                }
+                for row in recorded
+            ],
+        },
+        pretty,
+    )
+
+
 @crew.command(name="gc")
 @click.option(
     "--repo",

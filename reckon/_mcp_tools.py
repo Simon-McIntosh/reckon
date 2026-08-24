@@ -61,9 +61,9 @@ class AuditArgs(BaseModel):
 
 class CrewArgs(BaseModel):
     project: str
-    view: Literal["summary", "flight", "live", "records", "ledger", "budget"] = (
-        "summary"
-    )
+    view: Literal[
+        "summary", "flight", "live", "drain", "records", "ledger", "budget"
+    ] = "summary"
     checkout_path: str | None = None
     plan: str | None = None
     since: str | None = None
