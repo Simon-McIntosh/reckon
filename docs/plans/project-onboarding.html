@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -152,6 +152,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20260824T1505" data-who="reckon-ship" data-when="2026-08-24T15:05:00+00:00">
     <div class="r-comment-body">pages-detection-and-strategy landed — commit 1f15c41, merged; gate passed; measure 9 targeted recorded-response cases passed then full suite 2136 passed in 82.32s with zero failures, +8 against the 2128 base; 588 insertions over 11 files including 7 recorded Pages fixtures, 567 worker-seconds against a 40m budget. reckon/pages.py maps the four safe cases — no Pages selects a deploying workflow at docs/, legacy main-root selects docs/ with no workflow, legacy /docs selects docs/reckon with no workflow, legacy gh-pages selects reckon/ on that branch with no workflow — and refuses the three unsafe or unknowable ones: Actions-based Pages naming the existing-publisher conflict, and every indeterminate state including authentication failure, missing token, unsupported source path, network failure, malformed payload and repository mismatch. Every refusal fires before sync mutates mounts, state, assets or workflows, so the destructive path cannot be reached on a guess. Authenticated repository identity is verified before a 404 is accepted as no Pages, which is the check that stops a permissions error reading as a free site. Remaining: the repository-local publication opt-in and the idempotent badge.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1525" data-who="reckon-ship" data-when="2026-08-24T15:25:00+00:00">
+    <div class="r-comment-body">publication-opt-in landed — commit 422279d, merged; gate passed; measure 8 targeted cases passed then full suite 2144 passed in 77.19s with zero failures, +8 against the 2136 base; 215 insertions over 3 files, 560 worker-seconds against a 35m budget, routed back to the member that landed the detection layer so its session already held that context. Publication is recorded on the repository's own project resource and survives a versioned read and write; a sync run without it stays entirely local with no publish job and no side effect; a second run changes nothing; and an opted-in repository whose Pages case is unsafe is still refused, so the opt-in grants intent and never overrides the detection verdict. The assertion that carries the locked guard is the negative one: a public fork's visibility does not substitute for consent, which is exactly the case measured on this project where isPrivate false and isFork true would have published a personal fork and reported itself correct. Remaining: the idempotent badge, which is gated on a live publication URL and so follows this.</div>
 </div>
 </section>
 </main>

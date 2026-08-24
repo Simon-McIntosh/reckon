@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="12">
-<meta name="plan-impl" content="0.57">
+<meta name="plan-version" content="13">
+<meta name="plan-impl" content="0.63">
 </head>
 <body>
   <main class="plan-doc">
@@ -468,6 +468,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824T1452" data-who="reckon-ship" data-when="2026-08-24T14:52:00+00:00">
     <div class="r-comment-body">derivation-map-on-project-resource landed — commit e18fc2d, merged; gate passed; measure full suite 2124 passed in 67.22s with zero failures, +6 against the 2118 base; 111 insertions over 2 files, 347 worker-seconds against a 25m budget, routed at medium effort from the guided spec level. The project resource carries an optional derivations map from a repository-relative POSIX source path to its generated outputs, rejecting absolute, traversal, empty and backslash paths before a versioned write publishes them; an absent key stays absent and an empty map round-trips. The consumer that expands a source claim into its generated artifacts is deliberately not wired yet, because crew.py was claimed by a concurrent node — which is the file-contention this plan exists to measure, observed on its own execution.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1520" data-who="reckon-ship" data-when="2026-08-24T15:20:00+00:00">
+    <div class="r-comment-body">scope-view-and-lane-planner landed — commit ee3caac, merged; gate passed; measure 5 focused acceptance cases, 185 affected-file tests, the crew-view contract test, then full suite 2132 passed in 63.39s with zero failures; 518 insertions and 30 deletions over 6 files, 1291 worker-seconds against a 40m budget. crew(project, view=scopes) returns immutable path ownership with project-derivation expansion, the candidate conflict graph, live conflicts, and ordered serial lanes — so a wave can be partitioned before any of it is launched, which is the half a refusal alone cannot provide. Scope widened mid-flight to skills/reckon-ship/SKILL.md and the run records --scope-changed: the views contract test asserts set equality between the views documented there and the CrewArgs literal, so a new view cannot land without its documentation. That fence was mine to draw and I drew it wrong, having excluded SKILL.md to keep cli.py free for a concurrent lane; the worker stopped rather than guessing, which cost one resume instead of one bad commit. Remaining in this section: nothing — the refusal, the derivation map, the scopes view and the planner are all in.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1450" data-who="reckon-ship" data-when="2026-08-24T14:50:00+00:00">
     <div class="r-comment-body">schedule-readiness-axis landed — commit 8609ef1, merged; gate passed; measure full suite 2120 passed in 81.42s with zero failures, +2 against the 2118 base; 229 insertions over 5 files, 576 worker-seconds against a 35m budget. Roadmap now reports schedule_readiness beside dependency_readiness, deferring work outside a window of sprints counted from the earliest holding open work, with each deferred row naming the sprint it sits behind and remaining in ready_now and immediate_roadmap. Window width reads from the project manifest and is never hardcoded. It reports horizon_depth=6 against an independent count of six sprints holding open work — S5, S6, S8, S9, S12, S13 — correcting the count of five recorded in s1, which missed S8. Open: schedule_horizon_sprints is undeclared so the axis reports configured=false and imposes no queue. Any width below 5 would defer S12 and S13, which is where current work lives, so the number should follow a sprint consolidation rather than precede it.</div>
