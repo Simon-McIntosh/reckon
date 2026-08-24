@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.71">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -270,6 +270,15 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824-inventory-landed" data-who="reckon-ship" data-when="2026-08-24T11:14:00+00:00">
     <div class="r-comment-body"><p><strong>tag-inventory-discovery landed</strong> — commit <code>36eea19</code>; gate derived-not-listed <strong>passed</strong>; measure: <strong>124 of 124 relevant tests pass</strong> (72 across tag-inventory/mcp-tools/mcp-views, 52 across the non-overlapping mcp-audit/mcp-roadmap/mcp-store). The discovery envelope carries <code>tag_inventory</code> as an alphabetically ordered list of <code>{tag, count}</code>, derived from non-archived typed resources on every read. <strong>The assertion that makes this a vocabulary rather than a cache:</strong> the test authors a brand-new tag mid-run and observes it at count 1 on the next read with no code change — which is exactly what the locked <code>observed-with-counts</code> decision requires, since a curated allow-list would need governance nobody performs and would block a new topic at the moment of authoring. The unfiltered project inventory supplies counts even when discovery rows are filtered, so a narrowed view still shows the whole vocabulary.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-authoring-landed" data-who="reckon-ship" data-when="2026-08-24T11:21:00+00:00">
+    <div class="r-comment-body"><p><strong>tag-inventory-at-authoring landed</strong> — commit <code>a98881a</code>; gate skill-contract <strong>passed</strong>; measure: <strong>39 passed, 0 failed</strong> plus skill-validator clean. <code>reckon-create</code> now requires a discovery read before <code>plan-tags</code> selection and exposes the field in both resource templates, with 4 new contract assertions covering inventory timing, canonical-identity reuse and near-duplicate refusal. This is the half of the design the lead identified as the whole point — the author sees existing usage at the moment of choosing, which is the only moment that prevents a fifth spelling.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824-rename-landed" data-who="reckon-ship" data-when="2026-08-24T11:22:00+00:00">
+    <div class="r-comment-body"><p><strong>tag-rename-operation landed</strong> — commit <code>6375743</code>; gate rename-suite <strong>passed</strong>; measure: <strong>27 of 27 tag tests pass</strong> including 5 rename-specific, ruff clean. <code>rename_project_tag</code> rewrites all four carrier types in one version-safe pass. Three properties make it a rename rather than a find-and-replace: the dry run returned all 4 affected project-qualified identities and left every file <em>byte-for-byte unchanged</em>; renaming onto an existing identity <em>merged</em> source and target into one rather than duplicating; and a simulated concurrent writer advanced the resource version so the stale rename <em>raised VersionConflict</em> instead of clobbering it. Equivalent source and target spellings are a zero-write no-op. CLI exposure and the audit's near-duplicate findings are outside this node's fence and remain open.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20260824-impl-denominator" data-who="reckon-ship" data-when="2026-08-24T11:24:00+00:00">
+    <div class="r-comment-body"><p><strong>Correction to this plan's own progress figure.</strong> <code>impl</code> was set against a six-node denominator while the plan actually decomposes into seven executable nodes: canonical identity, the field, the computed inventory, the authoring-time surface, rename, the audit's near-duplicate findings, and the backfill. Five have landed, so the figure is 0.71 rather than 0.5. Recorded rather than silently corrected because a progress fraction that moves for bookkeeping reasons is exactly as misleading as one that is stale.</p></div>
 </div>
 </section>
 </main>
