@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -236,8 +236,19 @@
     failure mode is retry rather than corruption. What is missing is a stated rule for who pushes,
     and a retry that does not surprise the loser.</p>
 
+    <p><strong>A terminal manifest that predates the current attempt is not an event, and the watch
+    currently treats it as one.</strong> Measured while dispatching this plan's own first node: the
+    worker stopped at its scope fence and wrote <code>status: blocked</code>, the coordinator
+    answered and resumed the same session, and the freshly armed watch exited immediately on the
+    manifest still sitting on disk from before the resume. It reported a blocker that had already
+    been answered. The same hazard applies to any redispatch of a node id that has run before, and
+    it gets worse with lanes, because every stale manifest in the fleet is a false wake-up
+    competing with the real ones.</p>
+
     <p><strong>Done when</strong> follow mode emits one event per terminal run over a multi-run fleet
-    and ends when the last pointer is reconciled; and two concurrent sessions promoting runs into the
+    and ends when the last pointer is reconciled; a watch armed after a resume or a redispatch does
+    not fire on a manifest written before that attempt began, demonstrated by a test that resumes a
+    blocked run and asserts the watch waits; and two concurrent sessions promoting runs into the
     same ledger both succeed, with the contended write retried rather than failed, demonstrated by a
     test that runs the two promotions concurrently.</p>
 
