@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="concurrency-and-schedule-visibility">
   <meta name="plan-title" content="What May Run Together, and What Should Run Next">
   <meta name="plan-summary" content="An orchestrator can ask which plans have their prerequisites met and gets a good answer. It cannot ask which nodes may safely run at the same time, because file claims are never compared, and it cannot ask what it should start next, because readiness ignores the sprint order it already computes. Both answers are derivable from data already on disk.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="0.14">
 </head>
 <body>
   <main class="plan-doc">
@@ -385,6 +386,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260824T1435" data-who="reckon-ship" data-when="2026-08-24T14:35:00+00:00">
+    <div class="r-comment-body">derived-peer-scope-refusal landed — commit c26c8ce, merged a675da5; gate passed; measure final full suite 2118 passed in 75.07s with zero failures against base 9c87caf, up from 2113 at base; 291 insertions over 6 files, 3 test functions covering 4 cases, 967 worker-seconds against a 35m budget. Dispatch now derives peer scopes from same-project live pointers filtered by resolved repository root, normalises to repository-relative POSIX paths, and raises ScopeConflict on componentwise containment before worktree creation, at CLI error scope-conflict exit 7; the same-member guard remains the more specific earlier refusal. Scope was widened mid-flight to tests/test_ledger.py and the run is recorded --scope-changed, so it is excluded from effort calibration. The worker stopped at its fence rather than weakening the guard to fit three fixtures that dispatched concurrent identical claims — the exact state the refusal exists to reject — and those fixtures now declare disjoint claims. Remaining in this section: the scopes read view, the lane planner, and the derivation-group map now locked to the project resource.</div>
+</div>
+</section>
+</main>
 </body>
 </html>

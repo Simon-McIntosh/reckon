@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="concurrency-and-schedule-visibility-landed">
+  <meta name="plan-title" content="What May Run Together, and What Should Run Next — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence: one anchor per landed node, carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="concurrency-and-schedule-visibility">
+  <meta name="plan-verifies" content="concurrency-and-schedule-visibility#s3">
+  <title>What May Run Together — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>What May Run Together, and What Should Run Next — cumulative execution record</h1>
+    <p>
+      One anchor per landed node: the commit, the gate measure as executed, the tests, and anything
+      negative found on the way. The evergreen plan holds the design; this record holds what
+      happened.
+    </p>
+
+    <h2 id="peer-scope-refusal">Derived peer scopes, and a refusal on containment</h2>
+    <p>
+      Commit <code>c26c8ce</code> (2026-08-24, worker codex-o, 967&nbsp;worker-seconds against a
+      35&nbsp;m budget, 291 insertions / 6 deletions over 6 files, merged no-ff as
+      <code>a675da5</code>). Recorded <code>--scope-changed</code>, so it is excluded from effort
+      calibration.
+    </p>
+    <ul>
+      <li><strong>Claims come from the pointers, not from the caller.</strong> Peer scopes are
+        derived from <code>node.write_paths</code> on same-project live pointers, filtered by
+        resolved repository root. <code>--peer</code> is no longer the source of truth for what is
+        already claimed.</li>
+      <li><strong>Containment, componentwise.</strong> Paths normalise to repository-relative POSIX
+        and compare by path component, so <code>reckon/</code> conflicts with
+        <code>reckon/crew.py</code> while a sibling sharing only a string prefix does not, and a
+        claim under a different repository root never conflicts.</li>
+      <li><strong>Refused before anything exists.</strong> <code>ScopeConflict</code> is raised
+        ahead of worktree creation and writes no pointer, matching the budget-hold precedent rather
+        than the malformed-node one. CLI surface: <code>error=scope-conflict</code> at exit&nbsp;7.
+        The same-member guard stays ahead of it as the more specific refusal.</li>
+    </ul>
+    <p>
+      Gate: <strong>passed</strong>. Focused 5 passed / 180 deselected; final full suite
+      <strong>2118 passed in 75.07&nbsp;s, 0 failures</strong> against base <code>9c87caf</code>,
+      up from 2113 at that base. 3 test functions covering 4 cases. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260824T141558826107-derived-peer-scope-refusal/</code>.
+    </p>
+    <p>
+      <strong>The blocker is the most useful part of this record.</strong> The worker stopped at its
+      write fence rather than finishing: three fixtures in <code>tests/test_ledger.py</code>
+      dispatched concurrent pointers claiming an identical path — precisely the state the new
+      refusal exists to reject — so the suite could only stay green by editing a file outside its
+      scope or by weakening the guard. It refused to weaken the guard and asked. The coordinator
+      granted the extension, the fixtures now declare disjoint claims, and the run carries
+      <code>--scope-changed</code>. A fixture asserting a condition the product forbids is a test
+      encoding the absence of a rule, and it only became visible because the rule arrived.
+    </p>
+
+  </main>
+</body>
+</html>
