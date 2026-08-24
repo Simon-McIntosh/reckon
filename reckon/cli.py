@@ -16,7 +16,7 @@ def _asset_root() -> Path:
     candidates = (package_dir / "_assets", package_dir.parent / "docs")
     required = {
         "ui": ("shell.jsx", "state-loader.js"),
-        "_shared": ("foundation.css", "dashboard.css", "state.js"),
+        "_shared": ("foundation.css", "dashboard.css", "state.js", "badge.svg"),
     }
     for root in candidates:
         if all(
@@ -1553,7 +1553,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     shared_src = asset_root / "_shared"
     shared_dest = docs_dir / "_shared"
     shared_dest.mkdir(parents=True, exist_ok=True)
-    for fname in ("foundation.css", "dashboard.css"):
+    for fname in ("foundation.css", "dashboard.css", "badge.svg"):
         src = shared_src / fname
         if src.is_file():
             shutil.copy2(src, shared_dest / fname)
@@ -1690,6 +1690,16 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
                 "  Pages publication: "
                 f"{publication_strategy.describe()}; no workflow written"
             )
+        try:
+            badge_changed = pages.write_readme_badge(
+                docs_dir, publication_strategy
+            )
+        except pages.PagesError as exc:
+            raise click.ClickException(str(exc)) from exc
+        if badge_changed:
+            click.echo("  added README plans badge")
+        elif publication_strategy.site_url is not None:
+            click.echo("  README plans badge already current")
 
     click.echo(
         f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running."
