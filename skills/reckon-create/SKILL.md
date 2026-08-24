@@ -15,6 +15,8 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 
 ## Fast path
 - Resolve repository ownership before selecting a checkout or project key.
+- Read discovery's live `tag_inventory` before choosing `plan-tags`; reuse an
+  existing canonical identity instead of inventing a near-duplicate.
 - New plan → write `docs/plans/<slug>.html` from the skeleton below.
 - New non-plan doc (RCA / explainer) → write `docs/research/<slug>.html`.
 - Seed the first followup and link actionable work to a sprint in the same session.
@@ -261,13 +263,18 @@ DOCS_DIR="$REPO_ROOT/docs"
 - Title: Title Case from slug
 - If `/reckon-create <slug>` provided, use that slug verbatim.
 
-### Step 2.5 — Decide live vs archive and relationship fields
+### Step 2.5 — Choose tags, placement and relationship fields
 
 Before writing the file:
 
-1. Decide its type and whether it belongs in that type's live or `archive/` directory.
-2. Decide whether it is a **plan** or **research/doc**.
-3. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` / `plan-evidence-for` with **slugs** for
+1. Call `read_plan(project=PROJECT)` in discovery mode and read the response's
+   live `tag_inventory`, including each tag's usage count.
+2. Choose `plan-tags` from that inventory. Reuse an existing canonical tag
+   identity when it names the topic; do not invent a near-duplicate spelling.
+   Introduce a new tag only when no existing identity describes the topic.
+3. Decide its type and whether it belongs in that type's live or `archive/` directory.
+4. Decide whether it is a **plan** or **research/doc**.
+5. Fill `plan-depends-on` / `plan-blocks` / `plan-informs` / `plan-evidence-for` with **slugs** for
    the relationships that are already explicit in the source material.
 
 For execution outcomes, prefer one cumulative evidence resource at
@@ -349,6 +356,7 @@ edit_plan(
   <meta name="plan-milestone" content="M2">
   <meta name="plan-sprint"    content="S4">
   <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="plasma-control,imas-data">
   <meta name="plan-depends-on" content="tokenizer-eval,data-curation">
   <!-- plan-impl / plan-version / plan-modified: server-owned — do NOT author -->
   <title>Plasma Decoder Fine-tune | imas-ambix</title>
@@ -397,6 +405,7 @@ edit_plan(
   <meta name="plan-slug"     content="plasma-decoder-survey">
   <meta name="plan-title"    content="Plasma Decoder Architecture Survey">
   <meta name="plan-summary"  content="Survey of plasma decoder architectures for IMAS shots">
+  <meta name="plan-tags"     content="plasma-control,imas-data">
   <meta name="plan-informs"  content="plasma-decoder-finetune,tokenizer-eval">
   <title>Plasma Decoder Architecture Survey | imas-ambix</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -440,6 +449,7 @@ Only author fields that a view downstream consumes:
 | `plan-status` | Lifecycle filter; kanban columns; "what's open" queries |
 | `plan-roi` / `plan-effort-hours` | Sprint ordering and capacity planning in worker-hours |
 | `plan-milestone` / `plan-sprint` | Milestone rollup, sprint membership |
+| `plan-tags` | Topical grouping across plans, research, evidence and sprints; discovery inventory with usage counts |
 | `plan-capability-*` | Versioned capability class and structured dispatch requirements |
 | `plan-depends-on` / `plan-blocks` | Dependency DAG → critical-path and fleet-prompt |
 | `plan-archived` | `1` hides plan from default inventory (retirements) |
@@ -470,6 +480,7 @@ Only author fields that a view downstream consumes:
 | `plan-summary` | (empty) | One-line synopsis |
 | `plan-milestone` | (empty) | e.g. `M2` |
 | `plan-sprint` | (empty) | e.g. `S4` |
+| `plan-tags` | (empty) | Comma-separated canonical identities chosen from discovery's live `tag_inventory` |
 | `plan-depends-on` | (empty) | Comma-separated slugs |
 | `plan-informs` | (empty) | Comma-separated slugs (research type only) |
 | `plan-evidence-for` | (empty) | Comma-separated slugs — the plan(s) this record is execution evidence FOR (mandatory on landed/outcome records) |

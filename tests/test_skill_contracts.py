@@ -121,6 +121,17 @@ def test_create_and_edit_skills_guard_repository_allocation() -> None:
     assert "Never leave two canonical live plans" in edit
 
 
+def test_create_skill_reads_live_tag_inventory_before_choosing_tags() -> None:
+    create = normalized(
+        (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text()
+    )
+
+    assert "tag_inventory" in create
+    assert "before choosing `plan-tags`" in create
+    assert "Reuse an existing canonical tag identity" in create
+    assert "do not invent a near-duplicate spelling" in create
+
+
 def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
     """Routing is data, so no model or provider may be named in what agents read.
 
