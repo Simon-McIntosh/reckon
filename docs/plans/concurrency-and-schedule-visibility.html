@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="12">
 <meta name="plan-impl" content="0.57">
 </head>
 <body>
@@ -262,6 +262,36 @@
     also removes the ordering trap where the coordinator must promote in the order the watch
     happens to surface, instead of the order the work argues for.</p>
 
+    <p><strong>The arming decision shipped its reporting half and not its enforcing half, and the
+    difference was measured.</strong> Dispatch returns <code>watcher_live</code>, which is exactly
+    the right fact at exactly the right moment &mdash; and it was returned <code>false</code> twice
+    in one session and ignored both times, once because the coordinator armed a watch with a shell
+    ampersand that the harness was not waiting on, and once because it simply did not look. Two
+    workers then finished unnoticed and were found only when the lead asked whether anything was
+    still alive. A field a coordinator may ignore is the same mechanism as a rule it may skip,
+    which is the argument this plan's parent made before it.</p>
+
+    <p><strong>Deliverable: dispatch refuses to start work into an unwatched project.</strong> No
+    live watcher for the project, no dispatch &mdash; the same guard class as the unreconciled
+    backlog and the member collision, fired at the same moment for the same reason, and needing no
+    capability from the host harness at all. <code>--no-watch</code> is the recorded override for a
+    genuinely synchronous one-off, so the escape hatch is explicit and lands on the run.</p>
+
+    <p>The three fences then compose into one invariant with no gap a coordinator can fall through:
+    work cannot <em>start</em> unwatched, more work cannot start while finished work sits
+    unreconciled, and a session cannot <em>end</em> with runs outstanding. Each is a refusal at a
+    moment somebody is provably present, and none of them depends on anyone remembering
+    anything.</p>
+
+    <p><strong>Follow mode is what makes the refusal cheap rather than nagging.</strong> A watch
+    that exits on the first event has to be re-armed between every landing, and that re-arm window
+    is precisely where both failures above happened. One watch that streams an event per terminal
+    run and ends when the fleet empties covers a whole wave, so the invariant holds for the
+    duration of the work rather than between interruptions. Arming with no coordinator action at
+    all remains host-local &mdash; a settings hook on the dispatch call for this harness &mdash;
+    and stays in the harness reference, because a refusal that works everywhere is worth more than
+    an automation that works in one place.</p>
+
     <p><strong>Integration is the real ceiling, and it is one coordinator wide.</strong> Audit,
     merge, promote, plan-write, push are strictly serial in one session: one git index, one plan
     version, one ledger version. Two sprints can be shipped concurrently by two sessions &mdash;
@@ -306,13 +336,16 @@
     &mdash; what does the <em>current</em> attempt say &mdash; instead of four readers each
     trusting a different stale field.</p>
 
-    <p><strong>Done when</strong> follow mode emits one event per terminal run over a multi-run fleet
-    and ends when the last pointer is reconciled; a resumed run reports the current attempt's stream
-    as its log, a non-terminal phase while its process is alive, and a watch that does not fire on
-    the previous attempt's manifest, all three demonstrated by one test that resumes a blocked run
-    and asserts the watch waits while the stream stays fresh; and two concurrent sessions promoting
-    runs into the same ledger both succeed, with the contended write retried rather than failed,
-    demonstrated by a test that runs the two promotions concurrently.</p>
+    <p><strong>Done when</strong> a dispatch into a project with no live watcher is refused before
+    any worktree exists, naming the arming command, while <code>--no-watch</code> dispatches and
+    records the waiver on the run; follow mode emits one event per terminal run over a multi-run
+    fleet, never emits the same run twice, and ends when the last pointer is reconciled; a resumed
+    run reports the current attempt's stream as its log, a non-terminal phase while its process is
+    alive, and a watch that does not fire on the previous attempt's manifest, all three
+    demonstrated by one test that resumes a blocked run and asserts the watch waits while the
+    stream stays fresh; and two concurrent sessions promoting runs into the same ledger both
+    succeed, with the contended write retried rather than failed, demonstrated by a test that runs
+    the two promotions concurrently.</p>
 
     <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked</h2>
 
