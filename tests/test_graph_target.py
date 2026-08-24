@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from reckon import mcp as mcp_module
 from reckon._plan_html import parse_meta, write_state
-from reckon._schema import PlanState, gen_json_schema
+from reckon._schema import GRAPH_HANDLE_GRAMMAR, PlanState, gen_json_schema
 from reckon._store import apply_ops
-from reckon.roadmap import GraphTargetError, resolve_graph_target
+from reckon.roadmap import GraphTargetError, resolve_graph_target, resolve_ship_target
 
 
 def _plan(
@@ -113,6 +115,65 @@ def test_missing_or_deleted_endpoint_names_the_handle() -> None:
 
     with pytest.raises(GraphTargetError, match="release.*names no live plan"):
         resolve_graph_target("release", {"alpha": []})
+
+
+def test_graph_handle_uses_the_closed_schema_grammar() -> None:
+    PlanState(
+        project="alpha",
+        slug="endpoint",
+        title="Endpoint",
+        graph_handle="Release_candidate.2",
+    ).validate_for_write()
+
+    with pytest.raises(
+        ValueError,
+        match=rf"must match {re.escape(GRAPH_HANDLE_GRAMMAR)}",
+    ):
+        PlanState(
+            project="alpha",
+            slug="endpoint",
+            title="Endpoint",
+            graph_handle="release/candidate",
+        ).validate_for_write()
+
+
+def test_duplicate_graph_handle_names_every_claiming_plan() -> None:
+    inventory = [
+        _plan("first-endpoint", graph_handle="release"),
+        _plan("second-endpoint", graph_handle="release"),
+    ]
+
+    with pytest.raises(GraphTargetError) as exc_info:
+        resolve_graph_target("release", {"alpha": inventory})
+
+    message = str(exc_info.value)
+    assert "alpha:first-endpoint" in message
+    assert "alpha:second-endpoint" in message
+
+
+def test_bare_and_prefixed_graph_targets_resolve_the_same_closure() -> None:
+    projects = {
+        "alpha": [
+            _plan("base", status="shipped", impl=1.0),
+            _plan("endpoint", depends_on=["base"], graph_handle="release"),
+        ]
+    }
+
+    assert resolve_ship_target("release", projects) == resolve_ship_target(
+        "graph:release", projects
+    )
+
+
+def test_unclaimed_bare_token_remains_a_plan_slug_and_prefix_forces_graph() -> None:
+    projects = {"alpha": [_plan("ordinary-plan")]}
+
+    assert resolve_ship_target("ordinary-plan", projects) == {
+        "target": "plan:ordinary-plan",
+        "kind": "plan",
+        "slug": "ordinary-plan",
+    }
+    with pytest.raises(GraphTargetError, match="names no live plan"):
+        resolve_ship_target("graph:ordinary-plan", projects)
 
 
 def test_open_endpoint_decision_refuses_shipping_but_deferred_decision_does_not() -> None:

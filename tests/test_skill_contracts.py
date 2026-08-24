@@ -34,11 +34,14 @@ def test_ship_skill_supports_plan_sprint_and_graph_targets() -> None:
     assert "/reckon-ship S1" in ship
     assert "/reckon-ship <project>:S1" in ship
     assert "/reckon-ship graph:<handle>" in ship
+    assert "/reckon-ship <handle>" in ship
     assert "plan:<slug>" in ship
     assert "sprint:<id>" in ship
     assert 'roadmap(project="graph:<handle>", view="raw")' in ship
     assert "Only the handle is authored on the endpoint" in ship
     assert "schedule_override.deferred" in ship
+    assert "unambiguous long form" in ship
+    assert "remains a single-plan target" in ship
 
 
 def test_ship_routing_is_prompt_owned_and_worktree_first() -> None:

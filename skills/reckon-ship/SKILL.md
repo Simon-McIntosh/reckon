@@ -3,7 +3,8 @@ name: reckon-ship
 description: >-
   Execute a complete Reckon plan, or coordinate an entire sprint, without doing
   implementation inline. Resolves a plan slug with an optional section,
-  `/reckon-ship S1`, a project-qualified sprint id, and `graph:<handle>`. All targets are strictly
+  `/reckon-ship S1`, a project-qualified sprint id, a bare graph handle, and
+  `graph:<handle>`. All targets are strictly
   coordinator-only, a one-node plan included: build the execution DAG, delegate
   every implementation, investigation, test, pipeline, and repair node through
   isolated worktrees by default, audit and integrate worker commits, record
@@ -27,10 +28,12 @@ There are three execution targets:
   sprint plan, transitive dependencies, linked research, and prior evidence,
   then coordinates a rolling queue of ready nodes. Use `plan:<slug>` or `sprint:<id>`
   only to disambiguate unusual identifiers.
-- **Graph target:** `/reckon-ship graph:<handle>` resolves the one endpoint plan
+- **Graph target:** `/reckon-ship <handle>` resolves the one endpoint plan
   carrying that handle and executes its complete transitive dependency closure
-  across registered project mounts. Only the handle is authored on the endpoint;
-  membership, shipped-of-total, critical path, and average width are derived live.
+  across registered project mounts. Handles match
+  `[A-Za-z0-9][A-Za-z0-9._-]*`. Only the handle is authored on the endpoint;
+  membership, shipped-of-total, critical path, and average width are
+  derived live. `/reckon-ship graph:<handle>` is the unambiguous long form.
 
 On a single-plan target without a section, you MUST:
 1. Read the complete plan HTML and classify every section
@@ -162,8 +165,9 @@ Full detail below.
 - `/reckon-ship <slug> [§N]` — implements only the named section
 - `/reckon-ship S1` — executes sprint `S1` in the current project
 - `/reckon-ship <project>:S1` — executes a sprint in an explicit project
-- `/reckon-ship graph:<handle>` — executes the derived cross-project closure
-  of the endpoint carrying `<handle>`
+- `/reckon-ship <handle>` — executes the derived cross-project closure when a
+  live endpoint uniquely claims the token as its graph handle
+- `/reckon-ship graph:<handle>` — the unambiguous long form for that closure
 - Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
 
 **Dual-role:** invoked by human or orchestrator AND records one-line §05 session handoffs.
@@ -189,7 +193,8 @@ structured state (decisions, followups). Do not implement items marked
 1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch. On a graph target, read every plan in the returned derived closure and its linked evidence.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
-4. **Whole graph by default.** `/reckon-ship graph:<handle>` means every member
+4. **Whole graph by default.** `/reckon-ship <handle>` or its unambiguous long
+   form `/reckon-ship graph:<handle>` means every member
    returned by the live derived closure, including dependencies in other mounted
    repositories. A missing handle or an open non-deferred decision is a refusal.
    Shipping explicitly overrides the schedule window: report
@@ -295,8 +300,16 @@ Wait for the user's response before doing anything else. If the user authorizes 
    workflow over the returned ready queue across its mounted repositories.
 3. Otherwise call `roadmap(project)` and match the argument against exact sprint ids.
 4. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as
-   a sprint target. Treat `plan:<slug>` or every other slug as a single-plan target.
-5. If a sprint target, resolve the sprint and use the same coordinator workflow
+   a sprint target, and `plan:<slug>` as an explicitly selected plan target.
+5. For every remaining bare token matching
+   `[A-Za-z0-9][A-Za-z0-9._-]*`, try the canonical
+   `roadmap(project="graph:<token>", view="raw")` read. A unique live claim makes
+   it a graph target. A response that the handle names no live plan means the
+   token remains a single-plan target; duplicate claims and every other graph
+   error are refusals, never plan fallbacks. A token outside the handle grammar
+   is also a plan target; authoring it as `plan-graph-handle` is refused with
+   the grammar stated.
+6. If a sprint target, resolve the sprint and use the same coordinator workflow
    over its complete graph. Do not continue with the plan-only preflight below.
 
 ### 1. Plan pre-flight — read the FULL plan
