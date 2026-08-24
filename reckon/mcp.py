@@ -214,8 +214,8 @@ def _read_plan(
 
       read_plan(project)                 [slug omitted/None]
           → DISCOVERY: { project, plans, followups, questions, sprints,
-            milestones, active_sprint_id, summary } — folds list_plans /
-            list_followups / list_questions / list_sprints into one call.
+            milestones, active_sprint_id, tag_inventory, summary } — folds
+            list_plans / list_followups / list_questions / list_sprints into one call.
             Optional filters: status, doc_type, sprint, milestone, owner,
             search, limit. ``include_followups`` / ``include_questions`` trim
             payload size without losing the plan inventory.
@@ -269,8 +269,9 @@ def _read_plan(
                 "project": project,
                 "detail": str(exc),
             }
+        inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
         plans = _filter_inventory(
-            [_inventory_row(item) for item in discovered.get("inventory", [])],
+            inventory,
             status=status,
             doc_type=doc_type,
             sprint=sprint,
@@ -312,6 +313,7 @@ def _read_plan(
             "active_sprint_id": active_sprint_id,
             "source_format": discovered.get("source_format", "legacy-index"),
             "resource_versions": discovered.get("resource_versions", {}),
+            "tag_inventory": _tag_inventory(inventory),
             "summary": _discovery_summary(plans, followups, questions),
         }
 
@@ -787,7 +789,30 @@ def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return {"inventory": [], "sprints": [], "milestones": []}
-    return discover_plans(docs_dir, project, _discovery_state_root(root))
+    discovered = discover_plans(docs_dir, project, _discovery_state_root(root))
+
+    from reckon import _plan_html
+    from reckon.resources import resource_map
+
+    resources = {
+        resource.identity.key: resource
+        for resource in resource_map(
+            docs_dir,
+            project,
+            include_archived=True,
+            ignore_invalid=True,
+        ).values()
+    }
+    inventory = []
+    for item in discovered.get("inventory", []):
+        resource = resources.get(str(item.get("resource_id") or ""))
+        tags = (
+            list(_plan_html.parse_meta(resource.path).get("tags") or [])
+            if resource is not None
+            else []
+        )
+        inventory.append({**item, "tags": tags})
+    return {**discovered, "inventory": inventory}
 
 
 def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
@@ -813,6 +838,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
         "supersedes": list(item.get("supersedes") or []),
         "commits": list(item.get("commits") or []),
         "artifacts": list(item.get("artifacts") or []),
+        "tags": list(item.get("tags") or []),
         "reviewed_at": item.get("reviewed_at", ""),
         "recorded_at": item.get("recorded_at", ""),
         "verdict": item.get("verdict", ""),
@@ -925,6 +951,17 @@ def _filter_inventory(
 
 def _rollup_counts(values: list[str]) -> dict[str, int]:
     return dict(Counter(values))
+
+
+def _tag_inventory(inventory: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Count live resources carrying each observed tag identity."""
+
+    counts: Counter[str] = Counter()
+    for item in inventory:
+        if item.get("archived"):
+            continue
+        counts.update(tuple(dict.fromkeys(str(tag) for tag in item.get("tags") or [])))
+    return [{"tag": tag, "count": counts[tag]} for tag in sorted(counts)]
 
 
 def _discovery_summary(
