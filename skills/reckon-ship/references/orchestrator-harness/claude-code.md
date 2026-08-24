@@ -21,6 +21,22 @@ config.
 | Self-scheduling | yes, three forms | See below. Which one is available depends on how the session was started. |
 | Budget visibility to itself | no | This harness exposes the orchestrator no machine-readable account headroom for its own session. Treat the orchestrator's own budget as unknown, and never infer it from a worker backend's figures. |
 
+## Arming the fleet watch after dispatch
+
+Every successful dispatch returns `watch.arming_line` and
+`watch.watcher_live`. When the latter is false, pass the returned line to
+`Bash` with `run_in_background: true`; when it is true, launch nothing. The
+background command exiting is the wake event this harness already observes, so
+the portable watcher must stay harness-owned rather than detaching itself.
+
+A settings automation uses the same two-field contract: a `PostToolUse` hook
+matching `Bash` inspects successful `reckon crew dispatch` JSON, ignores results
+whose `watch.watcher_live` is true, and submits the exact `watch.arming_line` as
+a background `Bash` call. The hook does not reconstruct the command from the
+dispatch arguments and does not create one watcher per run. Keep this automation
+in Claude Code settings; it depends on this host's wake-on-background-completion
+behavior and does not belong in the portable skill.
+
 ## Resuming a held wave without a human
 
 A wave held on a reset timestamp knows *when* it can reopen —

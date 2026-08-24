@@ -46,11 +46,13 @@ import json
 import math
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -84,6 +86,12 @@ _TERMINAL_RUN_PHASES = frozenset({"complete", "failed", "stopped"})
 # The default leaves enough time for an ordinary follow-up to reuse a warm
 # worker while bounding growth when a caller does not supply a narrower policy.
 DEFAULT_MEMBER_IDLE_WINDOW = "24h"
+
+# A fleet watcher reports a quiet stream after the same fifteen-minute window
+# used by the live view's freshness field. The command accepts a narrower or
+# wider duration when a host needs a different wake cadence.
+LOG_STALE_AFTER_SECONDS = 900
+DEFAULT_WATCH_STALL_WINDOW = "15m"
 
 # A done-when built from one of these is an opinion, not a measure. The fix is
 # to name what would be observed instead.
@@ -618,6 +626,13 @@ def pointer_path(run_id: str) -> Path:
     return live_dir() / f"{run_id}.json"
 
 
+def watch_lock_path(project: str) -> Path:
+    """Stable advisory-lock path for one project's fleet watcher."""
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    digest = hashlib.sha256(project.encode()).hexdigest()[:12]
+    return crew_home() / "watch" / f"{readable}-{digest}.lock"
+
+
 def _utc_now() -> str:
     return (
         datetime.now(tz=timezone.utc)
@@ -715,6 +730,161 @@ def list_live(
             continue
         records.append(data)
     return records
+
+
+def _read_watch_record(handle) -> dict[str, Any]:
+    """Read watcher metadata while preserving the handle's advisory lock."""
+    handle.seek(0)
+    try:
+        value = json.loads(handle.read().decode() or "{}")
+    except (UnicodeDecodeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _write_watch_record(handle, record: Mapping[str, Any]) -> None:
+    """Replace watcher metadata without replacing the inode carrying its lock."""
+    payload = (json.dumps(record, indent=2, sort_keys=True) + "\n").encode()
+    handle.seek(0)
+    handle.truncate()
+    handle.write(payload)
+    handle.flush()
+    os.fsync(handle.fileno())
+
+
+@contextmanager
+def _project_watch_claim(project: str, stall_window: str):
+    """Claim the one kernel-tracked watcher seat for a project, if free."""
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            yield False, _read_watch_record(handle)
+            return
+
+        record = {
+            "project": project,
+            "pid": os.getpid(),
+            "pid_start_time": _process_start_time(os.getpid()),
+            "stall_window": stall_window,
+            "started_at": _utc_now(),
+        }
+        _write_watch_record(handle, record)
+        try:
+            yield True, record
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def watch_state(project: str) -> dict[str, Any]:
+    """Return the paste-ready arming line and kernel-backed watcher liveness."""
+    arming_line = _watch_arming_line(project)
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {
+                "arming_line": arming_line,
+                "watcher_live": True,
+                "watcher": _read_watch_record(handle),
+            }
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    return {"arming_line": arming_line, "watcher_live": False, "watcher": {}}
+
+
+def _watch_arming_line(project: str) -> str:
+    """Return the exact shell-safe command a dispatch payload carries."""
+    return f"reckon crew watch --project {shlex.quote(project)}"
+
+
+def _stream_quiet_seconds(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> int:
+    """Measure quiet time from a stream, with pointer activity as the fallback."""
+    stream = Path(str(record.get("log_path") or ""))
+    if stream.is_file():
+        latest = stream.stat().st_mtime
+    else:
+        run_id = str(record.get("run_id") or "")
+        pointer = pointer_path(run_id) if run_id else Path()
+        if run_id and pointer.is_file():
+            latest = pointer.stat().st_mtime
+        else:
+            try:
+                created = datetime.fromisoformat(
+                    str(record.get("created_at") or "").replace("Z", "+00:00")
+                )
+            except ValueError:
+                latest = now_seconds
+            else:
+                if created.tzinfo is None:
+                    created = created.replace(tzinfo=timezone.utc)
+                latest = created.timestamp()
+    return max(0, int(now_seconds - latest))
+
+
+def _watch_event(project: str, *, stall_seconds: int) -> dict[str, Any] | None:
+    """Return the first terminal or stalled pointer, or the empty-fleet event."""
+    pointers = list_live(project=project)
+    if not pointers:
+        return {
+            "project": project,
+            "event": "empty",
+            "run_id": None,
+            "classification": "no_live_pointers",
+            "next_action": f"none — project {project!r} has no live pointers",
+        }
+
+    moment = _utc_seconds()
+    classified = [
+        (pointer, classify_pointer(pointer, now_seconds=moment))
+        for pointer in pointers
+    ]
+    for _pointer, row in classified:
+        if row.get("manifest_status") in {"complete", "blocked", "failed"}:
+            return {"project": project, "event": "terminal", **row}
+
+    for pointer, row in classified:
+        quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
+        if quiet > stall_seconds:
+            return {
+                "project": project,
+                "event": "stalled",
+                **row,
+                "stalled_for_seconds": quiet,
+            }
+    return None
+
+
+def watch(
+    project: str,
+    *,
+    stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
+    poll_interval: float = 1.0,
+    sleeper: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    """Block on one fleet until its first terminal delivery, stall, or drain."""
+    stall_seconds = parse_duration(stall_window)
+    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+        if not acquired:
+            return {
+                "project": project,
+                "event": "watcher-live",
+                "run_id": None,
+                "classification": "watcher_live",
+                "next_action": "wait for the live project watcher to report",
+                "watcher_live": True,
+                "watcher": watcher,
+            }
+        while True:
+            event = _watch_event(project, stall_seconds=stall_seconds)
+            if event is not None:
+                return event
+            sleeper(poll_interval)
 
 
 def _pointer_claims_worktree(record: Mapping[str, Any]) -> bool:
@@ -1912,6 +2082,11 @@ def dispatch(
             "warnings": [*resolution.warnings, *budget_warnings],
             "lineage": lineage,
             "unreconciled_override": waiver,
+            "watch": {
+                "arming_line": _watch_arming_line(project),
+                "watcher_live": False,
+                "watcher": {},
+            },
         }
 
         if launch_kind == "cli":
@@ -1953,6 +2128,11 @@ def dispatch(
                 "worktree": worktree["path"],
             }
 
+        # Publish the pointer before probing the watcher. Otherwise a watcher
+        # could drain an empty fleet between the probe and this write, leaving
+        # a new run behind a payload that incorrectly said it was watched.
+        _write_json(pointer_path(run_id), record)
+        record["watch"] = watch_state(project)
         _write_json(pointer_path(run_id), record)
         if roster_member is None:
             _register_session_member(
@@ -2660,11 +2840,6 @@ RECOVERY_CLASSES = (
     "failed",
     "abandoned",
 )
-
-# How long a log may go quiet before its freshness is reported as stale. Only
-# ever reported beside the classification — a slow worker is not a dead one.
-LOG_STALE_AFTER_SECONDS = 900
-
 
 def _budget_timing(
     record: Mapping[str, Any], *, now_seconds: float | None = None

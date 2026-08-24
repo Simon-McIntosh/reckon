@@ -822,6 +822,25 @@ def crew_observe(run_id, project, pretty):
     _emit({"ok": True, **record}, pretty)
 
 
+@crew.command(name="watch")
+@click.option("--project", required=True, help="Project whose live fleet to watch.")
+@click.option(
+    "--stall-window",
+    default="15m",
+    show_default=True,
+    help="Exit when a non-terminal run's stream stays quiet this long.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_watch(project, stall_window, pretty):
+    """Block until one project run delivers, stalls, or the fleet is empty."""
+    crew_module, _ = _crew_modules()
+    try:
+        result = crew_module.watch(project, stall_window=stall_window)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
+
+
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
