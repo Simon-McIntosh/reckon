@@ -144,6 +144,64 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="s4-complete">§4 — The fleet, complete: 12 of 12 distributed</h2>
+
+    <p>Ten repositories migrated in this session, <strong>125 typed resources</strong>
+      across the fleet, <strong>zero documents moved</strong> anywhere. Each state is
+      committed in its own repository and none is pushed, per the lead's instruction.</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th>Resources</th><th>Commit</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td><code>imas-efit</code></td><td>40</td><td><code>cfdcdd20</code></td><td>largest corpus — 13 sprints, 9 milestones, 16 blockers</td></tr>
+        <tr><td><code>imas-ambix</code></td><td>28</td><td><code>6503254</code></td><td>priority repository</td></tr>
+        <tr><td><code>nova</code></td><td>21</td><td><code>5acde3e0</code></td><td>priority repository</td></tr>
+        <tr><td><code>imas-standard-names</code></td><td>3</td><td><code>f7ed697</code></td><td>upstream-behind blocker proved harmless</td></tr>
+        <tr><td><code>norma</code></td><td>3</td><td><code>2c131c4</code></td><td></td></tr>
+        <tr><td><code>hanney</code></td><td>2</td><td><code>da9829c</code></td><td>empty aggregate</td></tr>
+        <tr><td><code>helix</code></td><td>2</td><td><code>a6be845</code></td><td>empty aggregate</td></tr>
+        <tr><td><code>tessera</code></td><td>2</td><td><code>ba92030</code></td><td>empty aggregate</td></tr>
+        <tr><td><code>vv</code></td><td>2</td><td><code>2283545</code></td><td>empty aggregate</td></tr>
+        <tr><td><code>L2G</code></td><td>2</td><td><code>b118fa6</code></td><td><strong>native creation — no index ever written</strong></tr>
+        <tr><td colspan="4"><code>imas-codex</code> 13 and <code>reckon</code> 7 were already migrated; both were repaired in place by the read-time ordering fix</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong><code>L2G</code> is the case that justifies §5's sequencing, and it is the
+      only repository here with no frozen index.</strong> It held no aggregate state at
+      all, so <code>migrate-project-state</code> could never have applied to it and the
+      fleet preflight was right to refuse it as <code>missing-project-index</code>. It
+      reached distributed form through <code>reckon sync</code> alone — the path that did
+      not exist before this session — with <code>migrate-project-state</code> never
+      invoked and no <code>index.json</code> produced at any point. Had §6 been executed
+      on fleet-completion alone, as originally proposed, this repository would have been
+      the first to strand.</p>
+
+    <h3>Four criteria I wrote wrongly, all in the same way</h3>
+
+    <p>Worth recording because it is the plan's own §2 mistake repeated at node level,
+      four times, by the session that had just corrected it. Every one was a criterion
+      generalised from one corpus and asserted as universal, and every one was surfaced
+      by a worker refusing a clean result rather than quietly widening its own fence.</p>
+
+    <table>
+      <thead><tr><th>The criterion</th><th>Broke on</th><th>Why it was wrong</th></tr></thead>
+      <tbody>
+        <tr><td>four permitted output roots</td><td><code>imas-ambix</code></td><td>taken from <code>nova</code>, which holds no milestones</td></tr>
+        <tr><td>every git-status path inside those roots</td><td><code>vv</code>, <code>tessera</code>, <code>L2G</code>, <code>imas-efit</code></td><td>taken from clean checkouts; these carry unrelated working dirt that must be preserved, not cleaned</td></tr>
+        <tr><td>a nonzero matched counter</td><td><code>helix</code></td><td>taken from rich corpora; an empty legacy aggregate correctly reports every field class out-of-corpus</td></tr>
+        <tr><td>zero error-level roadmap findings</td><td><code>hanney</code>, <code>imas-efit</code></td><td>taken from repositories that had none; 1→1 and 16→16 preserved is proof of preservation, not damage</td></tr>
+      </tbody>
+    </table>
+
+    <p>The corrected form of each is a <em>delta</em> rather than an absolute: paths the
+      run changed rather than paths git reports; dependency-finding count unchanged rather
+      than zero; out-of-corpus reported rather than matched. <strong>Two pre-existing
+      defect sets are now visible and belong to their own repositories:</strong>
+      <code>hanney</code> carries one <code>non-executable-hard-dependency</code> error
+      and <code>imas-efit</code> sixteen error-level wiring findings, each unchanged
+      across migration and none caused by it.</p>
+
     <h2 id="s3-nova">§3 — nova migrated, verified and committed</h2>
 
     <p>Run <code>r-20260824T114220392869</code> produced the state; run

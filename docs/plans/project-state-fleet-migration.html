@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="13">
+<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="16">
 </head>
 <body>
   <main class="plan-doc">
@@ -209,11 +209,38 @@
 
     </details>
 
-    <h2 id="s4">§4 — The remaining eight</h2>
+    <section id="s4" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+        <h2>§4 — The remaining eight</h2></header>
+      <p class="landed-summary"><strong>12 of 12 mounted projects distributed, 125 typed
+      resources fleet-wide, 0 documents moved.</strong> Ten repositories migrated and
+      committed this session, none pushed: <code>imas-efit</code> 40, <code>imas-ambix</code>
+      28, <code>nova</code> 21, then <code>imas-standard-names</code> and <code>norma</code>
+      3 each and <code>hanney</code>, <code>helix</code>, <code>tessera</code>,
+      <code>vv</code>, <code>L2G</code> 2 each. <code>L2G</code> reached distributed form
+      through §5's native creation with no <code>index.json</code> ever written — the case
+      that would have stranded had the tools been deleted on fleet-completion alone.
+      <code>imas-codex</code> and <code>reckon</code> were repaired in place by the read-time
+      ordering fix. Full record:
+      <a href="/reckon/evidence/archive/project-state-fleet-migration-landed#s4-complete">§4
+      landed</a>.</p>
+    </section>
+
+    <details><summary>Original design detail — the eight, the grouping check, and the corrected scoping</summary>
 
     <p><code>L2G</code>, <code>hanney</code>, <code>helix</code>, <code>imas-efit</code>,
     <code>imas-standard-names</code>, <code>norma</code>, <code>tessera</code>,
     <code>vv</code>. Same transaction shape, same per-repository verification, no new mechanism.</p>
+
+    <p><strong>Measured afterwards, the section was much less uniform than "the remaining
+    eight" suggests.</strong> Four of them — <code>hanney</code>, <code>helix</code>,
+    <code>tessera</code>, <code>vv</code> — hold an entirely empty aggregate and migrate to
+    two resources each. <code>L2G</code> is not a migration at all. And this section's own
+    sequencing rationale was wrong: it reserved last place for
+    <code>imas-standard-names</code> as the corpus most likely to exceed the gate, but that
+    repository holds an ordinary two-file legacy state and migrated to three resources
+    without incident. The corpus that actually exceeded the gate was <code>nova</code>, the
+    first live target.</p>
 
     <p><strong>None of the ten carries topical grouping this migration could damage, and that
     was checked rather than assumed.</strong> The 73 standard-names documents live in
@@ -249,6 +276,8 @@
 
     <p><strong>Done when</strong> all 12 mounted projects report distributed state and the §2
     harness passes against every one of them.</p>
+
+    </details>
 
     <section id="s5" class="section-landed">
       <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
@@ -352,6 +381,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1300-probe" data-who="reckon-ship" data-when="2026-08-24T13:00:00+00:00">
     <div class="r-comment-body">Fleet shape-readiness now measured rather than assumed, and this de-risks this section substantially. A prospective non-mutating composed-parity probe across every mounted legacy project reports 0 deltas for all 8 remaining migrations after the derivation set was declared; L2G is explicitly classified no-legacy-index and reaches distributed state through native creation instead. The probe found imas-efit's 16 blockers-omit-next deltas BEFORE that repository was ever dispatched, which is the difference between one node and up to eight sequential failed migrations. Remaining validation findings are recorded as evidence rather than parity failures: imas-ambix 1 and imas-efit 15 unresolved-historical-sprint-item warnings. Also measured: four of the ten legacy repositories (hanney, helix, tessera, vv) hold zero sprints, so their migrations are near-trivial, while imas-ambix 23, nova 15 and imas-efit 13 sprints were the corpora exposed to the lexicographic ordering defect now fixed.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260824T1400-s4-complete" data-who="reckon-ship" data-when="2026-08-24T14:00:00+00:00">
+    <div class="r-comment-body">SECTION COMPLETE — 12 of 12 mounted projects distributed, 125 typed resources fleet-wide, zero documents moved anywhere. Ten repositories migrated and committed this session, none pushed: imas-efit 40 resources (cfdcdd20), imas-ambix 28 (6503254), nova 21 (5acde3e0), imas-standard-names 3 (f7ed697), norma 3 (2c131c4), hanney 2 (da9829c), helix 2 (a6be845), tessera 2 (ba92030), vv 2 (2283545), L2G 2 (b118fa6). imas-codex 13 and reckon 7 were already migrated and were repaired in place by the read-time ordering fix without being touched. L2G is the case that justifies the oneshot-deletion-gate decision: it held no aggregate state, so migrate-project-state could never apply, and it reached distributed form through reckon sync alone with no index.json written at any point — had the tools been deleted on fleet-completion alone it would have been the first repository to strand. Two pre-existing defect sets are now visible and owned by their own repositories, unchanged across migration: hanney 1 non-executable-hard-dependency error, imas-efit 16 error-level wiring findings. Also recorded: four of my own node criteria were wrong in exactly the way this plan's s2 exclusion was — generalised from one corpus and asserted as universal — each surfaced by a worker refusing a clean result rather than widening its own fence. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s4-complete.</div>
 </div>
 </section>
 </main>
