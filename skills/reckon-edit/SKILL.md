@@ -23,6 +23,16 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 
 Full detail below.
 
+## Canonical authoring exemplar
+
+Read `docs/_exemplar-plan.html` in the Reckon repository before restructuring a
+resource or adding semantic elements. It is the canonical annotated exemplar
+for plan, research, and evidence resources: the file itself is a schema-valid
+plan, and it contains complete copyable research and evidence documents. Match
+its visible HTML and typed relationships, then make structured changes through
+the write path appropriate to the edit. Validate the result with
+`reckon audit-doc <path>`.
+
 ## When to invoke
 
 | Signal | Intent path |

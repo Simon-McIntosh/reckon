@@ -6,7 +6,15 @@ import os
 from datetime import date, datetime
 from pathlib import Path
 
+from bs4 import BeautifulSoup
+
+from reckon import _plan_html
+from reckon._schema import PlanState
 from reckon.doccheck import audit_html, audit_links, derived_plan_age
+
+
+ROOT = Path(__file__).parents[1]
+CANONICAL_EXEMPLAR = ROOT / "docs" / "_exemplar-plan.html"
 
 
 # ── audit_html (single-file checks) ──────────────────────────────────────────
@@ -26,6 +34,41 @@ def _bare(body: str = "") -> str:
 def test_audit_html_clean():
     findings = audit_html(_bare())
     assert findings == []
+
+
+def test_canonical_authoring_exemplar_stays_valid():
+    html = CANONICAL_EXEMPLAR.read_text(encoding="utf-8")
+
+    assert audit_html(html) == []
+    PlanState.model_validate(_plan_html.read_state(html)).validate_for_write()
+
+    soup = BeautifulSoup(html, "html.parser")
+    for resource_type in ("research", "evidence"):
+        specimen = soup.select_one(
+            f'section[data-exemplar="{resource_type}"] pre code'
+        )
+        assert specimen is not None
+        specimen_html = specimen.get_text()
+        assert audit_html(specimen_html) == []
+        PlanState.model_validate(
+            _plan_html.read_state(specimen_html)
+        ).validate_for_write()
+
+
+def test_canonical_authoring_exemplar_covers_every_semantic_collection():
+    html = CANONICAL_EXEMPLAR.read_text(encoding="utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    state = _plan_html.read_state(html)
+
+    sections = {
+        section.get("data-reckon") for section in soup.select("section[data-reckon]")
+    }
+    assert sections == set(_plan_html.SECTION_IDS)
+    assert all(state[collection] for collection in _plan_html.SECTION_IDS)
+    assert {
+        section.get("data-exemplar")
+        for section in soup.select("section[data-exemplar]")
+    } == {"plan", "research", "evidence"}
 
 
 def test_audit_html_missing_meta():
