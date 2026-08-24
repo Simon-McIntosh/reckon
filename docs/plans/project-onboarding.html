@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="project-onboarding">
+  <meta name="plan-title" content="Onboard a Repository Without Taking Its Website">
+  <meta name="plan-summary" content="Extend reckon sync so onboarding a repository is one command: register it, generate a publish workflow, and add a README badge linking to its plans. The binding constraint is that a repository gets exactly one GitHub Pages site, and a measured example already serves one — so reckon must detect the existing publisher and occupy a subpath rather than take it over.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-depends-on" content="pypi-release">
+  <meta name="plan-blocks" content="sprint-scope-and-surface">
+  <title>Onboard a Repository Without Taking Its Website | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — One Pages site per repository, and one is already taken</h2>
+
+    <p><strong>This is the constraint that shapes everything else.</strong> GitHub gives a
+    repository exactly one Pages site with one source. Measured on the two repositories at
+    hand:</p>
+
+    <table>
+      <thead><tr><th>Repository</th><th>Pages</th><th>Source</th><th>Build type</th></tr></thead>
+      <tbody>
+        <tr><td><code>Simon-McIntosh/reckon</code></td><td>none</td><td>—</td><td>—</td></tr>
+        <tr><td><code>Simon-McIntosh/imas-codex</code></td><td><strong>active, built</strong></td><td><code>main</code> at <code>/</code></td><td><code>legacy</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>A workflow using <code>actions/deploy-pages</code> requires the build type to be
+    <code>workflow</code>. Switching it on a repository serving <code>legacy</code> from a
+    branch <strong>replaces that site</strong>. So a naive generated workflow would silently
+    take over a repository's existing documentation — the exact failure the lead asked to be
+    guarded against, and it is live on the first repository anyone would test with.</p>
+
+    <p><strong>The measured case also shows the way out.</strong> Because that repository
+    already serves <code>main</code> at the root, files under <code>docs/</code> are already
+    reachable — verified: a plan HTML file returns <strong>200</strong> at
+    <code>simon-mcintosh.github.io/imas-codex/docs/plans/…</code> while the site root returns
+    404 for want of an index. So for a repository already publishing from a branch root,
+    reckon needs <em>no workflow at all</em>: committing the build output under a subpath makes
+    the SPA live, alongside whatever else that site serves.</p>
+
+    <h2 id="s2">§2 — Detect, then choose a strategy per case</h2>
+
+    <p>Onboarding must read the repository's actual Pages configuration and pick a
+    non-destructive strategy, refusing rather than guessing when it cannot tell:</p>
+
+    <table>
+      <thead><tr><th>Existing Pages state</th><th>Strategy</th></tr></thead>
+      <tbody>
+        <tr><td>None</td><td>reckon may own the site; generate a deploying workflow</td></tr>
+        <tr><td>Legacy, branch root</td><td>No workflow — commit the build under a subpath; it is already served</td></tr>
+        <tr><td>Legacy, <code>/docs</code> folder</td><td>Build into a subdirectory of <code>docs/</code> so the existing site keeps its root</td></tr>
+        <tr><td>Legacy, <code>gh-pages</code> branch</td><td>Commit the build to a subpath of that branch, never its root</td></tr>
+        <tr><td>Actions-based</td><td>Refuse and report — the existing artifact must absorb reckon's output; merging two deploys is the repository owner's call</td></tr>
+        <tr><td>Cannot be determined</td><td>Refuse and report, never assume the site is free</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Refusal is the default, not the exception.</strong> The cost asymmetry is
+    extreme: failing to onboard costs one command and a message, while taking over a live
+    documentation site is a visible outage someone else has to notice and diagnose.</p>
+
+    <h2 id="s3">§3 — Publication is opt-in, declared in the repository</h2>
+
+    <p>The locked guard on the parent plan is that private information stays private and a fork
+    of an upstream repository counts as personal. Measured, a visibility predicate cannot
+    express that: <code>Simon-McIntosh/imas-codex</code> reports
+    <code>isPrivate: false</code>, <code>isFork: true</code>, <code>visibility: PUBLIC</code>,
+    so "publish unless private" would publish a personal fork and report itself correct.</p>
+
+    <p>So onboarding never enables publication as a side effect. Registering a project,
+    copying UI assets and adding a badge are local acts; publishing is a separate, explicit
+    opt-in recorded in the repository being onboarded. A repository that never opts in has no
+    publish job, so there is nothing for a central list to get wrong.</p>
+
+    <p><strong>One fact worth recording plainly rather than leaving implicit.</strong> A public
+    fork's committed plans are already world-readable through the ordinary repository view —
+    verified, the blob route returns 200 — independently of any Pages site or reckon feature.
+    Declining to publish a reckon site does not make that content private, and anyone reasoning
+    about disclosure should know the two are separate questions.</p>
+
+    <h2 id="s4">§4 — The badge, and what it must not do</h2>
+
+    <p>Onboarding adds a badge to the repository README linking to that repository's plans,
+    with a compass mark — the instrument that tells you where you are and which way you are
+    pointed, which is what a plan does and what the name already implies.</p>
+
+    <p><strong>Constraints that matter more than the artwork.</strong> The mark ships as an
+    inline SVG or a committed asset in the repository, never a third-party badge service:
+    a remote badge endpoint makes every README render a request to someone else's
+    infrastructure and rots when that service changes. The badge is idempotent — running
+    onboarding twice must not produce two badges, which means detecting its own prior
+    insertion rather than appending blindly. And it degrades honestly: if the repository has
+    not opted into publication there is no site to link, so the badge is not added at all
+    rather than pointing at a 404.</p>
+
+    <p><strong>Done when</strong> onboarding a repository with no Pages site produces a
+    registered project, a deploying workflow, and exactly one badge resolving to a live plan
+    index; running it a second time changes nothing; onboarding the measured legacy-root
+    repository produces no workflow, a subpath build and a badge to that subpath, with its
+    existing site still serving; and onboarding a repository with Actions-based Pages refuses
+    with a message naming the conflict. Each case asserted by a test against a recorded Pages
+    configuration rather than against live GitHub.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="onboarding-surface" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does onboarding extend reckon sync or become its own command?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="extend-sync">Extend sync , since it already registers and already writes CI behind a flag</button>
+      <button class="r-opt" data-value="new-onboard-command">A separate command, keeping sync to asset refresh</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="pages-detection-source" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does onboarding learn a repository&#x27;s Pages configuration?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="query-api">Query the GitHub API at onboarding time, refusing when unauthenticated</button>
+      <button class="r-opt" data-value="declared-locally">Require the operator to declare it, so onboarding needs no network</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-onb-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:project-onboarding" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Detect the existing Pages publisher before writing any workflow</h4>
+    <div class="r-fu-body"><p>Build the detection and the per-case strategy table first, because the destructive path is the default one: a generated <code>deploy-pages</code> workflow replaces a legacy branch-served site. Then the badge, idempotent and with a locally committed compass mark rather than a third-party endpoint. Publication stays a separate explicit opt-in so onboarding never enables it as a side effect. Every case asserted against a recorded Pages configuration rather than live GitHub.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship reckon:project-onboarding</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

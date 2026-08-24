@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="pypi-release">
+  <meta name="plan-title" content="A Version to Pin, Not a Commit">
+  <meta name="plan-summary" content="Publish reckon-plans to PyPI so every consuming repository&#x27;s CI pins a released version instead of a git ref. Without it, federated publication costs N repositories to bump on each reckon change, or leaves them tracking a moving branch that can break their builds with no signal.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-blocks" content="sprint-scope-and-surface">
+  <title>A Version to Pin, Not a Commit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this is a prerequisite rather than a nicety</h2>
+
+    <p>Measured: <code>pip index versions reckon-plans</code> returns <em>no matching
+    distribution</em>. So a consuming repository's CI can only install reckon from a git URL,
+    and that forces a choice between two bad options. An unpinned ref means any reckon change
+    can break a consumer's build with no signal and no release note. A pinned SHA means every
+    reckon change requires a commit in every consuming repository to adopt it.</p>
+
+    <p>Federated publication multiplies that cost by the number of participating repositories,
+    which is the one genuine argument against the federated shape. A released version on PyPI
+    converts it into ordinary dependency management: consumers write
+    <code>reckon-plans&gt;=X.Y</code>, adopt on their own schedule, and a breaking change is
+    announced by a major version rather than discovered by a red build.</p>
+
+    <h2 id="s2">§2 — What the package already has, and the four gaps</h2>
+
+    <p>Packaging is closer than the absence from PyPI suggests. <code>pyproject.toml</code>
+    already declares the hatchling backend with <code>hatch-vcs</code> for versioning, the
+    distribution name, a dynamic version, description, readme, <code>requires-python</code>,
+    authors, an MIT license with <code>license-files</code>, keywords, runtime dependencies and
+    the <code>reckon</code> console script. <code>LICENSE</code> and <code>README.md</code>
+    both exist.</p>
+
+    <table>
+      <thead><tr><th>Gap</th><th>Consequence if shipped as-is</th></tr></thead>
+      <tbody>
+        <tr><td>No <code>[project.urls]</code></td><td>The PyPI page carries no repository or documentation link, so a reader cannot reach the source</td></tr>
+        <tr><td>One classifier (license only)</td><td>Not discoverable by Python version, audience, topic or maturity; PyPI shows it as uncategorised</td></tr>
+        <tr><td>No publish workflow</td><td>Release is a manual local build, which is where credentials leak and unreproducible artifacts come from</td></tr>
+        <tr><td><code>hatch-vcs</code> plus a shallow CI checkout</td><td>The version is derived from git tags, and <code>actions/checkout</code> defaults to depth 1 — so the build either fails or produces a junk version</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last one is the trap worth stating explicitly because it fails <em>late</em>: the
+    workflow runs, the build appears to succeed, and the artifact carries a version derived
+    from no tag. The fix is one line — <code>fetch-depth: 0</code> — and it is invisible until
+    someone inspects the published version string.</p>
+
+    <h2 id="s3">§3 — Trusted publishing, not an API token</h2>
+
+    <p>Publish through PyPI's OIDC trusted-publisher flow rather than a long-lived API token
+    in repository secrets. The workflow requests a short-lived identity token from GitHub, PyPI
+    verifies it against a publisher registered as this repository plus this workflow filename
+    plus a named environment, and no credential is ever stored. A leaked secret cannot be
+    leaked if it does not exist.</p>
+
+    <p>That registration is a one-time action on PyPI's side and is the only step that cannot
+    be automated from here, because it requires an authenticated session as the project
+    owner.</p>
+
+    <p><strong>Deliverable:</strong> the four gaps closed; a release workflow triggered by a
+    version tag that checks out with full history, builds a wheel and sdist, and publishes via
+    trusted publishing with <code>id-token: write</code>; and a TestPyPI dry run before the
+    first real upload. <strong>Done when</strong> a fresh environment can
+    <code>pip install reckon-plans</code> from PyPI, the installed
+    <code>reckon --version</code> matches the git tag exactly, and the console script runs
+    <code>reckon build</code> on a scratch project without the repository present.</p>
+
+    <p>That last assertion matters more than it looks: it proves the distribution ships the UI
+    assets and shared CSS it needs, rather than reaching for files that only exist in a
+    checkout. A wheel that works only where the source tree is also present would pass a naive
+    import test and fail every consumer.</p>
+
+    <h2 id="s4">§4 — Versioning commitment</h2>
+
+    <p>Once consumers pin a version, the version numbers become a contract rather than a
+    label. Two commitments follow, and they are cheap to make now and expensive to
+    retrofit: the plan HTML format and the MCP tool surface are the public interfaces, so a
+    breaking change to either takes a major version; and the SPA assets shipped in the wheel
+    are part of the distribution, so a consumer upgrading reckon gets new UI, which is exactly
+    why the static build must be reproducible from a pinned version.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="version-scheme" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What versioning scheme does the published package commit to?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="semver-strict">Semantic versioning, with the plan format and MCP surface as the public interface</button>
+      <button class="r-opt" data-value="calver">Calendar versioning, treating every release as potentially breaking</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-pypi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:pypi-release" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the four packaging gaps and publish through trusted publishing</h4>
+    <div class="r-fu-body"><p>Add <code>[project.urls]</code> and real classifiers, register the PyPI trusted publisher, and add a tag-triggered release workflow that checks out with <code>fetch-depth: 0</code> so <code>hatch-vcs</code> can see the tag. TestPyPI first. The acceptance that matters is not an import test but running <code>reckon build</code> from the installed wheel on a scratch project with no checkout present, which proves the distribution actually ships its UI assets.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship reckon:pypi-release</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
