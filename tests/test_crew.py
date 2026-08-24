@@ -2286,11 +2286,75 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
 def test_resume_answers_in_the_same_session(home, repo) -> None:
     """Advice only makes sense to a worker that remembers what it tried."""
     record = _dispatched(home, repo, "codex-turn.jsonl")
-    crew.observe(record["run_id"])
     plan = crew.resume_plan(record["run_id"], "take the second option")
     subcommand = plan.argv.index("resume")
     assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
     assert plan.stdin_text == "take the second option"
+    assert crew.read_pointer(record["run_id"])["session_id"] == (
+        "019ff509-8a60-7723-94fd-65942a6d8faa"
+    )
+
+
+def test_resumed_attempt_owns_its_stream_phase_and_manifest(home, repo) -> None:
+    manifest = home / "resume-manifest.md"
+    record = _dispatched(
+        home,
+        repo,
+        "codex-turn.jsonl",
+        manifest_path=str(manifest),
+    )
+    _deliver_manifest(record, "blocked", blockers="waiting for direction")
+    manifest_baseline = manifest.stat().st_mtime_ns
+
+    plan = crew.resume_plan(record["run_id"], "continue")
+    assert "resume" in plan.argv
+
+    resumed_stream = crew.run_dir(record["run_id"]) / "resume-1.jsonl"
+    resumed_stream.write_text(
+        "".join(
+            (FIXTURES / "codex-turn.jsonl").read_text().splitlines(keepends=True)[:2]
+        )
+    )
+    resumed_stderr = crew.run_dir(record["run_id"]) / "resume-1.stderr.log"
+    resumed = crew.record_resumption(
+        record["run_id"],
+        pid=os.getpid(),
+        turn=1,
+        log_path=resumed_stream,
+        stderr_path=resumed_stderr,
+        manifest_baseline_mtime_ns=manifest_baseline,
+    )
+
+    assert resumed["attempt"] == 2
+    assert resumed["attempt_kind"] == "resume"
+    assert resumed["log_path"] == str(resumed_stream)
+    assert resumed["phase"] == "working"
+    observed = crew.observe(record["run_id"])
+    assert observed["phase"] == "working"
+    assert observed["process_alive"] is True
+    assert observed["manifest_file_present"] is True
+    assert observed["manifest_fresh"] is False
+
+    sleeps = 0
+
+    def deliver_current_manifest(_seconds: float) -> None:
+        nonlocal sleeps
+        sleeps += 1
+        _deliver_manifest(resumed, "complete", commits="HEAD")
+        fresh = manifest_baseline + 1_000_000
+        os.utime(manifest, ns=(fresh, fresh))
+
+    event = crew.watch(
+        "proj",
+        stall_window="1h",
+        poll_interval=0,
+        sleeper=deliver_current_manifest,
+    )
+
+    assert sleeps == 1
+    assert event["event"] == "terminal"
+    assert event["manifest_status"] == "complete"
+    assert event["manifest_fresh"] is True
 
 
 def test_cli_resume_resolves_the_run_projects_budget_policy(
@@ -2369,11 +2433,13 @@ def test_read_only_resume_reuses_the_manifest_delivery_directory(home, repo) -> 
     assert "--skip-git-repo-check" in plan.argv
 
 
-def test_resume_before_a_session_id_exists_says_to_observe_first(home, repo) -> None:
+def test_resume_without_a_session_in_the_stream_names_the_missing_evidence(
+    home, repo
+) -> None:
     record = _dispatched(home, repo)
     with pytest.raises(crew.CrewError) as excinfo:
         crew.resume_plan(record["run_id"], "advice")
-    assert "observe it first" in str(excinfo.value)
+    assert "no session id in its current stream" in str(excinfo.value)
 
 
 # ── Prompt composition ──────────────────────────────────────────────────────
@@ -2497,6 +2563,39 @@ def test_redispatched_node_records_its_run_lineage(home, repo) -> None:
     assert (
         crew.complete(second["run_id"], gate="passed")["record"]["lineage"] == expected
     )
+
+
+def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
+    manifest = home / "shared-node-manifest.md"
+    first = crew.dispatch(
+        node=_node(manifest_path=str(manifest)),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="first",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    _deliver_manifest(first, "complete", commits="HEAD")
+    crew.complete(first["run_id"], gate="passed")
+
+    second = crew.dispatch(
+        node=_node(manifest_path=str(manifest)),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="second",
+        launcher=lambda *args, **kwargs: os.getpid(),
+    )
+    row = crew.classify_pointer(second)
+
+    assert second["attempt"] == 2
+    assert second["attempt_kind"] == "redispatch"
+    assert second["phase"] == "starting"
+    assert second["log_path"] != first["log_path"]
+    assert row["classification"] == "running"
+    assert row["manifest_file_present"] is True
+    assert row["manifest_fresh"] is False
+    assert row["manifest_status"] is None
 
 
 def test_unresolvable_commit_records_a_typed_diff_absence(home, repo) -> None:

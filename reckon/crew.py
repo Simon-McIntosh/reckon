@@ -653,6 +653,31 @@ def pointer_path(run_id: str) -> Path:
     return live_dir() / f"{run_id}.json"
 
 
+def _manifest_mtime_ns(path: str | Path) -> int:
+    """Return the manifest generation visible before an attempt begins."""
+    manifest = Path(str(path or ""))
+    if not str(path or "") or not manifest.is_file():
+        return 0
+    return manifest.stat().st_mtime_ns
+
+
+def _manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool]:
+    """Return physical presence and whether delivery belongs to this attempt."""
+    manifest = Path(str(record.get("manifest_path") or ""))
+    file_present = bool(str(record.get("manifest_path") or "")) and manifest.is_file()
+    if not file_present:
+        return False, False
+    baseline = record.get("manifest_baseline_mtime_ns")
+    if baseline is None:
+        # Pointers written before attempt identity existed remain readable.
+        return True, True
+    try:
+        fresh = manifest.stat().st_mtime_ns > int(baseline)
+    except (OSError, TypeError, ValueError):
+        fresh = False
+    return True, fresh
+
+
 def watch_lock_path(project: str) -> Path:
     """Stable advisory-lock path for one project's fleet watcher."""
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
@@ -2195,12 +2220,18 @@ def dispatch(
         if str(item.get("node") or "") == node.id
     ]
     lineage = None
+    attempt = 1
     if prior_node_runs:
         previous = prior_node_runs[-1]
         previous_lineage = previous.get("lineage") or {}
+        previous_attempt = previous.get("attempt") or previous_lineage.get("attempt")
+        try:
+            attempt = int(previous_attempt) + 1
+        except (TypeError, ValueError):
+            attempt = len(prior_node_runs) + 1
         lineage = {
             "kind": "redispatch",
-            "attempt": len(prior_node_runs) + 1,
+            "attempt": attempt,
             "root_run_id": previous_lineage.get("root_run_id")
             or str(prior_node_runs[0].get("run_id") or ""),
             "previous_run_id": str(previous.get("run_id") or ""),
@@ -2260,8 +2291,12 @@ def dispatch(
             "stderr_path": str(stderr_path),
             "final_message_path": str(final_path),
             "manifest_path": node.manifest_path,
+            "manifest_baseline_mtime_ns": _manifest_mtime_ns(node.manifest_path),
             "peer_scopes": {name: sorted(paths) for name, paths in peers.items()},
             "created_at": _utc_now(),
+            "attempt": attempt,
+            "attempt_kind": "redispatch" if lineage else "dispatch",
+            "attempt_started_at": _utc_now(),
             "phase": "starting",
             "session_id": reuse_session,
             "task": None,
@@ -2418,7 +2453,10 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     def fold(record: dict[str, Any]) -> dict[str, Any]:
         backend_name = str(record.get("backend") or "")
         manifest = Path(record.get("manifest_path") or "")
-        record["manifest_present"] = manifest.is_file()
+        manifest_file_present, manifest_fresh = _manifest_freshness(record)
+        record["manifest_file_present"] = manifest_file_present
+        record["manifest_fresh"] = manifest_fresh
+        record["manifest_present"] = manifest_fresh
         record["process_alive"] = process_alive(record.get("pid"))
         record["observed_at"] = _utc_now()
         stopped = record.get("phase") == "stopped"
@@ -2436,6 +2474,13 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["phase"] = "stopped" if stopped else data["phase"]
+            if (
+                not stopped
+                and record.get("attempt_kind") == "resume"
+                and record["process_alive"] is True
+                and record["phase"] in _TERMINAL_RUN_PHASES
+            ):
+                record["phase"] = "working"
             record["session_id"] = data["session_id"] or record.get("session_id")
             if data["detail"]:
                 record["detail"] = data["detail"]
@@ -2544,9 +2589,10 @@ def resume_plan(
         )
     session_id = record.get("session_id")
     if not session_id:
-        raise CrewError(
-            f"run {run_id!r} has no captured session id yet; observe it first"
-        )
+        record = observe(run_id, config=config)
+        session_id = record.get("session_id")
+    if not session_id:
+        raise CrewError(f"run {run_id!r} has no session id in its current stream")
     backend = _backend_settings(record, config)
     verdict = _budget_verdict(
         project=str(record.get("project") or ""),
@@ -2596,16 +2642,32 @@ def record_resumption(
     turn: int,
     log_path: str | Path,
     stderr_path: str | Path,
+    attempt_started_at: str = "",
+    manifest_baseline_mtime_ns: int | None = None,
 ) -> dict[str, Any]:
     """Record a launched resumption without overwriting newer observations."""
 
     def resume(record: dict[str, Any]) -> dict[str, Any]:
+        current_attempt = bool(
+            attempt_started_at or manifest_baseline_mtime_ns is not None
+        )
         record.update(
             {
                 "pid": pid,
                 "pid_start_time": _process_start_time(pid),
                 "phase": "working",
+                "attempt": int(record.get("attempt") or 1) + 1,
+                "attempt_kind": "resume",
+                "attempt_started_at": attempt_started_at or _utc_now(),
+                "manifest_baseline_mtime_ns": (
+                    _manifest_mtime_ns(record.get("manifest_path") or "")
+                    if manifest_baseline_mtime_ns is None
+                    else manifest_baseline_mtime_ns
+                ),
                 "resumed_turn": turn,
+                "log_path": (
+                    str(log_path) if current_attempt else record.get("log_path")
+                ),
                 "stderr_path": str(stderr_path),
             }
         )
@@ -2708,10 +2770,11 @@ def _wall_exceeded_budget(wall_seconds: int | None, time_budget: Any) -> bool:
 
 def _run_streams(path: Path) -> list[Path]:
     """Return the original stream followed by resumes in numeric turn order."""
+    original = path.parent / "stream.jsonl" if path.name.startswith("resume-") else path
     resumes = sorted(
         path.parent.glob("resume-*.jsonl"), key=ledger._resume_stream_order
     )
-    return [candidate for candidate in (path, *resumes) if candidate.is_file()]
+    return [candidate for candidate in (original, *resumes) if candidate.is_file()]
 
 
 @dataclass(frozen=True)
@@ -2954,6 +3017,8 @@ def _complete_locked(
         lineage=record.get("lineage"),
         unreconciled_override=record.get("unreconciled_override"),
     )
+    run["attempt"] = int(record.get("attempt") or 1)
+    run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
         run["execution_fit"] = dict(execution_fit)
@@ -3123,7 +3188,7 @@ def classify_pointer(
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
     manifest = Path(str(record.get("manifest_path") or ""))
-    manifest_present = manifest.is_file()
+    manifest_file_present, manifest_present = _manifest_freshness(record)
     manifest_data: dict[str, Any] = {}
     manifest_error = ""
     if manifest_present:
@@ -3236,6 +3301,8 @@ def classify_pointer(
         "phase": phase,
         "process_alive": alive,
         "manifest_present": manifest_present,
+        "manifest_file_present": manifest_file_present,
+        "manifest_fresh": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
         "manifest_status": manifest_status or None,
         "manifest_commits": manifest_commits,
