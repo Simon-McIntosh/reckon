@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-24T13:52:56",
+  "updated": "2026-08-24T14:04:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -8685,9 +8685,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260824T114704432278-derived-field-parity",
+        "plan": "project-state-fleet-migration",
+        "section": "\u00a73",
+        "node": "derived-field-parity",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-24T11:47:05Z",
+        "completed_at": "2026-08-24T11:56:35Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 570,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 570,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "9a12a4e4f365927a555887af3240fe2308a72dbf",
+        "commits": [
+          "38f4557"
+        ],
+        "changed_lines": {
+          "added": 72,
+          "removed": 4,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "outcome": "MIGRATION_COMPOSED_DERIVATIONS declares blockers[].id, blockers[].next, timeline[].id in one place; both parity projections apply it. Fleet probe: 12 projects inspected, 8 prospective legacy migrations each delta_count=0, L2G classified no-legacy-index, 0 total deltas. A changed authored blocker summary still compares unequal. Full suite 2037 passed, same 7 known environment-coupled failures",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260824T114704432278-derived-field-parity/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03398-7b39-7282-834d-643dcb8d66cc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4302080,
+            "cached_input_tokens_cumulative": 4302080,
+            "input_tokens": 4452289,
+            "input_tokens_cumulative": 4452289,
+            "output_tokens": 14618,
+            "output_tokens_cumulative": 14618,
+            "reasoning_output_tokens": 4322,
+            "reasoning_output_tokens_cumulative": 4322
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260824T115711103124-sprint-order-fidelity",
+        "plan": "project-state-fleet-migration",
+        "section": "\u00a73",
+        "node": "sprint-order-fidelity",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-24T11:57:12Z",
+        "completed_at": "2026-08-24T12:03:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 391,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 391,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "1556b4c02e376e748970761d7fab24dffa028a7e",
+        "commits": [
+          "70c74f9"
+        ],
+        "changed_lines": {
+          "added": 73,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "outcome": "Read-time fix, so no marker regeneration needed. imas-codex and nova both compose in natural numeric order with S2 at index 1 and S10 at index 9; imas-codex sprint-order-inversion findings 2 to 0, nova 7 to 0, both with zero error-level wiring findings; suite 2048 passed with zero failures against a 2046-passed zero-failure base",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260824T115711103124-sprint-order-fidelity/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a033a1-bdbd-7e31-9980-38bae2e31a34",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2740992,
+            "cached_input_tokens_cumulative": 2740992,
+            "input_tokens": 2863067,
+            "input_tokens_cumulative": 2863067,
+            "output_tokens": 11469,
+            "output_tokens_cumulative": 11469,
+            "reasoning_output_tokens": 3411,
+            "reasoning_output_tokens_cumulative": 3411
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 188
+    "_version": 190
   }
 }

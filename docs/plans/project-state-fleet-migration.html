@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.42">
-<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -316,8 +316,14 @@
 <div class="r-comment" data-section="s3" data-id="c-20260824T1215-triage" data-who="reckon-ship" data-when="2026-08-24T12:15:00+00:00">
     <div class="r-comment-body">ambix-worktree-triage landed — run r-20260824T110756057460, gate passed; 7 of 7 worktrees classified, 6 safe to remove, 1 needing human review, all HEADs reachable from main. The three June trees that block the migration each stage an identical 1645-path rollback-shaped snapshot whose cached tree exactly matches reachable ancestor 9dae38ba, so no staged path is unpublished and removing them would lose nothing — the blocker is real by the check's definition and empty in substance. The only recovery candidate is cdw-ship-01/motion-readout's five untracked files, each differing from reachable commit eaf8e31b, and that tree does not block the migration. Removing worktrees in a foreign repository is the lead's call, so imas-ambix stays held. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#ambix-triage.</div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1300-nova" data-who="reckon-ship" data-when="2026-08-24T13:00:00+00:00">
+    <div class="r-comment-body">nova MIGRATED, VERIFIED AND COMMITTED as 5acde3e0 in that repository, not pushed per the lead's commit-only instruction. Marker complete/distributed with 21 resources and 0 findings; 15 sprints, 4 blockers, project manifest, timeline. Parity 225 compared / 225 matched / 0 mismatches / 0 drift. Sprint-order findings 7 to 0. 25 files staged, all under state/sprints/blockers/marker, 0 lock files committed, 0 documents moved. Four Reckon repairs were required first, all merged: 20f0cf2 coerces bare-string sprint items and resolves archived identities via a migration-only inventory; 38f4557 declares MIGRATION_COMPOSED_DERIVATIONS so a synthesised blocker id or next is not read as a loss; 70c74f9 orders composed sprints numerically, a read-time fix so no already-migrated repository needed regenerating -- which is why imas-codex went 2 inversions to 0 untouched. Suite 2048 passed, zero failures. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s3-nova.</div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1215-s4" data-who="reckon-ship" data-when="2026-08-24T12:15:00+00:00">
     <div class="r-comment-body">Fleet readiness measured across all 12 mounted projects after the preflight narrowing: of the ten legacy repositories, 7 now pass with zero blockers (hanney, helix, imas-efit, norma, nova, tessera, vv) and 3 block for three unrelated reasons — imas-ambix on dirty-alternate-worktrees, imas-standard-names on upstream-behind (a fast-forward pull in that checkout), and L2G on missing-project-index. L2G is the case §5 just solved: it has no state directory and therefore no legacy index to migrate, so it reaches distributed state through sync creating typed state natively rather than through migration at all — the first evidence that sequencing the born-distributed change ahead of the deletion was right. This also corrects this section's sequencing rationale: imas-standard-names holds an ordinary two-file legacy state, while the structural outliers are L2G with no state and imas-efit with six extra legacy sidecar JSON documents, and imas-efit passes cleanly. Execution of this section remains gated by the locked migration-order decision, which requires both priority repositories confirmed complete first. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#fleet-readiness.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260824T1300-probe" data-who="reckon-ship" data-when="2026-08-24T13:00:00+00:00">
+    <div class="r-comment-body">Fleet shape-readiness now measured rather than assumed, and this de-risks this section substantially. A prospective non-mutating composed-parity probe across every mounted legacy project reports 0 deltas for all 8 remaining migrations after the derivation set was declared; L2G is explicitly classified no-legacy-index and reaches distributed state through native creation instead. The probe found imas-efit's 16 blockers-omit-next deltas BEFORE that repository was ever dispatched, which is the difference between one node and up to eight sequential failed migrations. Remaining validation findings are recorded as evidence rather than parity failures: imas-ambix 1 and imas-efit 15 unresolved-historical-sprint-item warnings. Also measured: four of the ten legacy repositories (hanney, helix, tessera, vv) hold zero sprints, so their migrations are near-trivial, while imas-ambix 23, nova 15 and imas-efit 13 sprints were the corpora exposed to the lexicographic ordering defect now fixed.</div>
 </div>
 </section>
 </main>

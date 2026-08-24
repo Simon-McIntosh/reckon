@@ -144,6 +144,61 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="s3-nova">§3 — nova migrated, verified and committed</h2>
+
+    <p>Run <code>r-20260824T114220392869</code> produced the state; run
+      <code>r-20260824T115711103124</code> (commit <code>70c74f9</code>) cleared the
+      last gate. Committed in <code>nova</code> as <code>5acde3e0</code>,
+      <strong>not pushed</strong>, per the lead's commit-only instruction.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Marker</td><td><code>complete</code> / <code>distributed</code>, 21 resources, 0 findings</td></tr>
+        <tr><td>Typed resources</td><td>15 sprints, 4 blockers, project manifest, timeline</td></tr>
+        <tr><td>Field parity</td><td><strong>225 compared, 225 matched, 0 mismatches, 0 drift</strong></td></tr>
+        <tr><td>Sprint-order findings</td><td><strong>7 → 0</strong> after the ordering fix</td></tr>
+        <tr><td>Scope</td><td>25 files staged, all under state / sprints / blockers / marker; 0 locks committed</td></tr>
+        <tr><td>Documents moved</td><td><strong>0</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Sprint ordering was manufactured by the reader, not present in the
+      authored state.</strong> <code>compose_project_state</code> sorted sprint ids as
+      strings, so <code>S10</code> preceded <code>S2</code> and consumers landed before
+      prerequisites already complete. A distinguishable authored sequence in the marker
+      stays authoritative; only a generated lexicographic sequence falls back to natural
+      numeric order. <strong>The fix is read-time</strong>, so no already-migrated
+      repository needed its marker regenerated — which is why <code>imas-codex</code>
+      went from 2 inversions to 0 without being touched at all. Both corpora now compose
+      <code>S1 … S15</code> in order. Suite 2048 passed, zero failures.</p>
+
+    <p><strong>Five defects surfaced before this landed, and the pattern is one
+      pattern.</strong> Every one was the migration refusing a legitimate legacy shape —
+      the reader rejecting a value the writer produced, or rejecting history for not
+      looking like the present. None was reachable by the §2 gate as specified, because
+      that gate ran only on corpora already known to migrate cleanly; the plan recorded
+      exactly this as its accepted limit, and it bound on the first live target rather
+      than on the corpus §4 predicted.</p>
+
+    <table>
+      <thead><tr><th>Defect</th><th>Fix</th><th>Found by</th></tr></thead>
+      <tbody>
+        <tr><td>Fleet command also flattens layout</td><td>redirected to the per-project command</td><td>currency audit, before execution</td></tr>
+        <tr><td>Bare-string sprint item vs composed object</td><td><code>20f0cf2</code> coercion</td><td>nova, rolled back byte-for-byte</td></tr>
+        <tr><td>Archived-plan sprint items refused</td><td><code>20f0cf2</code> migration-only inventory</td><td>imas-ambix, unmutated</td></tr>
+        <tr><td>Synthesised <code>blocker.id</code> / <code>blocker.next</code> read as loss</td><td><code>38f4557</code> declared derivation set</td><td>fleet probe — <strong>imas-efit's 16 deltas found with no failed migration</strong></td></tr>
+        <tr><td>Lexicographic sprint order</td><td><code>70c74f9</code> numeric fallback</td><td>a worker refusing its own gate</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The probe is the transferable lesson.</strong> Fixing shape defects one
+      repository at a time would have meant up to eight failed migrations discovered
+      sequentially. One prospective non-mutating parity probe across every mounted legacy
+      project reported <strong>0 deltas across all 8 remaining migrations</strong> after
+      the derivation set was declared — and it found the <code>imas-efit</code> case
+      before that repository was ever dispatched.</p>
+
     <h2 id="s3-defects">§3 — Three defects the gate could not have caught, all found before a repository changed</h2>
 
     <p>The plan's locked <code>robustness-evidence-source</code> decision recorded an
