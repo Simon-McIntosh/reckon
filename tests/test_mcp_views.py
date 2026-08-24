@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+from copy import deepcopy
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -23,7 +24,53 @@ from reckon.mcp_views import (
     resource_view,
     storage_schema_for,
 )
+from reckon.project_state import (
+    _apply_migration_composed_derivations,
+    _identity_manifest,
+    _sha256_path,
+    _write_staged_resource,
+    marker_path,
+)
 from reckon.roadmap import build_roadmap
+
+
+def _receipt_payloads(project: str, legacy: dict) -> dict[tuple[str, str], dict]:
+    state = _apply_migration_composed_derivations(legacy)
+    payloads = {}
+    for sprint in state.get("sprints", []):
+        record = deepcopy(sprint)
+        for item in record.get("items", []):
+            if isinstance(item, dict):
+                item.pop("status", None)
+                item.pop("impl", None)
+        payloads[("sprint", record["id"])] = {
+            **record,
+            "type": "sprint",
+            "version": 0,
+        }
+    for milestone in state.get("milestones", []):
+        record = deepcopy(milestone)
+        payloads[("milestone", record["id"])] = {
+            **record,
+            "type": "milestone",
+            "version": 0,
+        }
+    for blocker in state.get("blockers", []):
+        record = deepcopy(blocker)
+        record.pop("n", None)
+        payloads[("blocker", record["id"])] = {
+            **record,
+            "type": "blocker",
+            "version": 0,
+        }
+    payloads[("timeline", "timeline")] = {
+        "id": "timeline",
+        "type": "timeline",
+        "version": 0,
+        "events": deepcopy(state.get("timeline", [])),
+    }
+    payloads[("project", "project")] = _identity_manifest(project, state)
+    return payloads
 
 
 @pytest.fixture()
@@ -659,8 +706,6 @@ def test_storage_schema_matches_selected_resource_type():
 
 
 def test_schema_view_routes_to_every_selected_storage_contract(setup):
-    from reckon.project_state import migrate_project_state
-
     docs_dir, project = setup
     _plan(docs_dir, "typed-plan", relative="plans/typed-plan.html")
     _plan(
@@ -745,7 +790,50 @@ def test_schema_view_routes_to_every_selected_storage_contract(setup):
     assert (
         "legacy aggregate index" in legacy_sprint["data"]["compatibility_warnings"][0]
     )
-    migrate_project_state(docs_dir, project)
+    source_bytes = index.read_bytes()
+    legacy = json.loads(source_bytes)["data"]
+    source_sha = _sha256_path(index)
+    snapshot = (
+        docs_dir
+        / ".reckon"
+        / "snapshots"
+        / "project-state"
+        / source_sha
+        / "index.json"
+    )
+    snapshot.parent.mkdir(parents=True, exist_ok=True)
+    snapshot.write_bytes(source_bytes)
+    rows = []
+    for (resource_type, resource_id), payload in sorted(
+        _receipt_payloads(project, legacy).items()
+    ):
+        path = _write_staged_resource(
+            docs_dir, project, resource_type, resource_id, payload
+        )
+        rows.append(
+            {
+                "type": resource_type,
+                "id": resource_id,
+                "path": str(path.relative_to(docs_dir)),
+                "sha256": _sha256_path(path),
+                "version": int(payload.get("version", 0)),
+            }
+        )
+    marker = {
+        "format": "distributed",
+        "status": "complete",
+        "project": project,
+        "source": str(index.relative_to(docs_dir)),
+        "source_sha256": source_sha,
+        "source_version": int(legacy.get("_version", 0)),
+        "snapshot": str(snapshot.relative_to(docs_dir)),
+        "snapshot_sha256": _sha256_path(snapshot),
+        "resources": rows,
+        "completed_at": "2026-08-24T00:00:00+00:00",
+    }
+    target = marker_path(docs_dir)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
     selectors = {
         "plan": "typed-plan",
         "research": "typed-research",

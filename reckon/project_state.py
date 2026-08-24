@@ -1,4 +1,4 @@
-"""Distributed project-state resources and explicit legacy-index migration.
+"""Distributed project-state resources and legacy-index compatibility.
 
 Project workflow state is stored in independently versioned resources:
 
@@ -8,10 +8,10 @@ Project workflow state is stored in independently versioned resources:
 * ``docs/state/<project>/timeline.html``
 * ``docs/state/<project>/project.json``
 
-The legacy ``index.json`` remains a byte-for-byte migration source and
-compatibility snapshot.  A completion marker is the format switch: without it,
-the legacy index is canonical; with it, distributed resources are canonical
-and missing or malformed resources are errors.  There are no dual writes.
+The legacy ``index.json`` remains canonical only for an unmarked compatibility
+corpus and is retained byte-for-byte in historical receipts.  A completion
+marker is the format switch: with it, distributed resources are canonical and
+missing or malformed resources are errors.  There are no dual writes.
 """
 
 from __future__ import annotations
@@ -43,7 +43,6 @@ from reckon._schema import (
 from reckon.lifecycle import COMPLETED_STATUSES
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
-SNAPSHOT_ROOT = Path(".reckon/snapshots/project-state")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
 RESOURCE_TYPES = frozenset({"sprint", "milestone", "blocker", "timeline", "project"})
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
@@ -518,22 +517,6 @@ def _live_plan_slugs(docs_dir: Path, project: str) -> set[str]:
     }
 
 
-def _migration_plan_slugs(docs_dir: Path, project: str) -> set[str]:
-    """Return every plan identity that historical sprint state may reference."""
-    from reckon.resources import resource_map
-
-    return {
-        resource.slug
-        for resource in resource_map(
-            docs_dir,
-            project,
-            include_archived=True,
-            ignore_invalid=True,
-        ).values()
-        if resource.type == "plan"
-    }
-
-
 def _distributed_ids(docs_dir: Path, root_name: str) -> set[str]:
     root = docs_dir / root_name
     return {path.stem for path in root.glob("*.html")} if root.is_dir() else set()
@@ -593,8 +576,8 @@ def write_resource(
     mode = project_state_mode(docs_dir)
     if mode.format != "distributed":
         raise ProjectStateError(
-            "distributed_resource_inactive: explicit migration must complete "
-            "before distributed writes"
+            "distributed_resource_inactive: a complete distributed marker is "
+            "required before distributed writes"
         )
     with _resource_lock(docs_dir, project, resource_type, resource_id):
         return _write_resource_unlocked(
@@ -707,7 +690,7 @@ def _event_id(event: dict[str, Any], position: int) -> str:
 def _apply_migration_composed_derivations(
     data: dict[str, Any],
 ) -> dict[str, Any]:
-    """Apply every deterministic field synthesis shared by migration and parity."""
+    """Apply deterministic field synthesis declared by historical receipts."""
     derived = deepcopy(data)
     for position, blocker in enumerate(derived.get("blockers", [])):
         if "blockers[].id" in MIGRATION_COMPOSED_DERIVATIONS and isinstance(
@@ -741,115 +724,6 @@ def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
     if "north_stars" in legacy:
         retained["north_stars"] = deepcopy(legacy["north_stars"])
     return {**retained, "project": project, "version": 0}
-
-
-def _migration_payloads(
-    project: str, legacy: dict[str, Any]
-) -> dict[tuple[str, str], dict[str, Any]]:
-    legacy = _apply_migration_composed_derivations(legacy)
-    payloads: dict[tuple[str, str], dict[str, Any]] = {}
-    for sprint in legacy.get("sprints", []):
-        record = dict(sprint)
-        sid = str(record.get("id", ""))
-        _safe_segment(sid, "sprint id")
-        for item in record.get("items", []):
-            if isinstance(item, dict):
-                for field in LIFECYCLE_ITEM_FIELDS:
-                    item.pop(field, None)
-        record.update({"id": sid, "type": "sprint", "version": 0})
-        payloads[("sprint", sid)] = record
-    for milestone in legacy.get("milestones", []):
-        record = dict(milestone)
-        mid = str(record.get("id", ""))
-        _safe_segment(mid, "milestone id")
-        record.update({"id": mid, "type": "milestone", "version": 0})
-        payloads[("milestone", mid)] = record
-    for position, blocker in enumerate(legacy.get("blockers", [])):
-        record = dict(blocker)
-        bid = str(record["id"])
-        _safe_segment(bid, "blocker id")
-        record.pop("n", None)
-        record.update({"id": bid, "type": "blocker", "version": 0})
-        payloads[("blocker", bid)] = record
-    events = []
-    for event in legacy.get("timeline", []):
-        record = dict(event)
-        events.append(record)
-    payloads[("timeline", "timeline")] = {
-        "id": "timeline",
-        "type": "timeline",
-        "version": 0,
-        "events": events,
-    }
-    payloads[("project", "project")] = _identity_manifest(project, legacy)
-    return payloads
-
-
-def _validate_migration_payloads(
-    docs_dir: Path,
-    project: str,
-    legacy: dict[str, Any],
-    payloads: dict[tuple[str, str], dict[str, Any]],
-) -> list[dict[str, str]]:
-    """Validate the complete split corpus before writing any destination."""
-    validated = {
-        key: _validate_resource(key[0], value) for key, value in payloads.items()
-    }
-    sprints = [
-        data
-        for (resource_type, _), data in validated.items()
-        if resource_type == "sprint"
-    ]
-    plan_slugs = _migration_plan_slugs(docs_dir, project)
-    findings: list[dict[str, str]] = []
-    blocker_ids = {
-        resource_id
-        for resource_type, resource_id in validated
-        if resource_type == "blocker"
-    }
-    milestone_ids = {
-        resource_id
-        for resource_type, resource_id in validated
-        if resource_type == "milestone"
-    }
-    for sprint in sprints:
-        for item in sprint.get("items", []):
-            slug = str(item["slug"])
-            if slug not in plan_slugs:
-                findings.append(
-                    {
-                        "code": "unresolved-historical-sprint-item",
-                        "severity": "warning",
-                        "sprint": str(sprint["id"]),
-                        "slug": slug,
-                        "message": (
-                            f"sprint {sprint['id']!r} item {slug!r} does not "
-                            "resolve to a plan or archived plan"
-                        ),
-                    }
-                )
-            missing = set(item.get("blocked_by", [])) - blocker_ids
-            if missing:
-                raise ProjectStateError(
-                    f"sprint item {slug!r} references missing blockers: "
-                    + ", ".join(sorted(missing))
-                )
-            milestone_id = item.get("milestone")
-            if milestone_id and milestone_id not in milestone_ids:
-                raise ProjectStateError(
-                    f"sprint item {slug!r} references missing milestone "
-                    f"{milestone_id!r}"
-                )
-    for (resource_type, resource_id), milestone in validated.items():
-        if resource_type != "milestone":
-            continue
-        missing = set(milestone.get("depends_on") or []) - milestone_ids
-        if missing:
-            raise ProjectStateError(
-                f"milestone {resource_id!r} references missing milestones: "
-                + ", ".join(sorted(missing))
-            )
-    return findings
 
 
 def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any]]:
@@ -1215,7 +1089,7 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     """
     docs_dir = docs_dir.resolve()
     _safe_segment(project, "project")
-    with _resource_lock(docs_dir, project, "migration", "project-state"):
+    with _resource_lock(docs_dir, project, "creation", "project-state"):
         mode = project_state_mode(docs_dir)
         if mode.format == "distributed":
             compose_project_state(docs_dir, project)
@@ -1229,8 +1103,15 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                 "project-state creation refuses an existing legacy index"
             )
 
-        payloads = _migration_payloads(project, {})
-        _validate_migration_payloads(docs_dir, project, {}, payloads)
+        payloads = {
+            ("project", "project"): _identity_manifest(project, {}),
+            ("timeline", "timeline"): {
+                "id": "timeline",
+                "type": "timeline",
+                "version": 0,
+                "events": [],
+            },
+        }
         stage_root = Path(
             tempfile.mkdtemp(
                 prefix="project-state-create-", dir=docs_dir / ".reckon"
@@ -1308,241 +1189,6 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
             raise
         finally:
             shutil.rmtree(stage_root, ignore_errors=True)
-
-
-def migrate_project_state(
-    docs_dir: Path,
-    project: str,
-    *,
-    before_install: Callable[[], None] | None = None,
-    before_marker: Callable[[], None] | None = None,
-    install_hook: Callable[[int, Path, Path], None] | None = None,
-) -> dict[str, Any]:
-    """Explicitly split the legacy index and publish the format marker last.
-
-    ``before_install`` and ``install_hook`` are test seams for source mutation
-    and injected installation failure.  A failed install leaves the marker
-    absent, therefore legacy mode remains canonical.
-    """
-    docs_dir = docs_dir.resolve()
-    _safe_segment(project, "project")
-    with _resource_lock(docs_dir, project, "migration", "project-state"):
-        return _migrate_project_state_locked(
-            docs_dir,
-            project,
-            before_install=before_install,
-            before_marker=before_marker,
-            install_hook=install_hook,
-        )
-
-
-def _migrate_project_state_locked(
-    docs_dir: Path,
-    project: str,
-    *,
-    before_install: Callable[[], None] | None = None,
-    before_marker: Callable[[], None] | None = None,
-    install_hook: Callable[[int, Path, Path], None] | None = None,
-) -> dict[str, Any]:
-    """Migration body protected by the project-wide migration lock."""
-    _safe_segment(project, "project")
-    legacy, source_bytes = _load_legacy_index(docs_dir, project)
-    if not source_bytes:
-        raise ProjectStateError("legacy index does not exist")
-    source_sha = _sha256_bytes(source_bytes)
-    mode = project_state_mode(docs_dir)
-    if mode.format == "distributed":
-        marker = mode.marker or {}
-        if marker.get("source_sha256") != source_sha:
-            raise ProjectStateError(
-                "legacy index changed after distributed activation; "
-                "restore the recorded source or perform a new reviewed migration"
-            )
-        # Validate that every declared resource still exists and has the
-        # recorded identity.  Resource hashes/versions are migration evidence,
-        # not immutable runtime checks: normal distributed edits change them.
-        compose_project_state(docs_dir, project)
-        return {"ok": True, "changed": False, **marker}
-
-    snapshot = docs_dir / SNAPSHOT_ROOT / source_sha / "index.json"
-    snapshot.parent.mkdir(parents=True, exist_ok=True)
-    if snapshot.exists() and snapshot.read_bytes() != source_bytes:
-        raise ProjectStateError(f"snapshot collision: {snapshot}")
-    if not snapshot.exists():
-        snapshot.write_bytes(source_bytes)
-        _fsync_file(snapshot)
-        _fsync_directory(snapshot.parent)
-
-    payloads = _migration_payloads(project, deepcopy(legacy))
-    findings = _validate_migration_payloads(docs_dir, project, legacy, payloads)
-    stage_root = Path(
-        tempfile.mkdtemp(prefix="project-state-", dir=docs_dir / ".reckon")
-    )
-    staging_docs = stage_root / "docs"
-    staged: list[tuple[str, str, Path]] = []
-    try:
-        for (resource_type, resource_id), payload in sorted(payloads.items()):
-            staged_path = _write_staged_resource(
-                staging_docs, project, resource_type, resource_id, payload
-            )
-            _read_resource_unchecked(staging_docs, project, resource_type, resource_id)
-            staged.append((resource_type, resource_id, staged_path))
-
-        # Compose a temporary distributed view and prove durable parity.
-        temp_rows = [
-            {
-                "type": resource_type,
-                "id": resource_id,
-                "sha256": _sha256_path(path),
-                "version": int(
-                    payloads[(resource_type, resource_id)].get("version", 0)
-                ),
-            }
-            for resource_type, resource_id, path in staged
-        ]
-        temp_marker = {
-            "format": "distributed",
-            "status": "complete",
-            "source_sha256": source_sha,
-            "resources": temp_rows,
-        }
-        temp_marker_path = marker_path(staging_docs)
-        temp_marker_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_marker_path.write_text(json.dumps(temp_marker), encoding="utf-8")
-        composed = compose_project_state(staging_docs, project)
-        old_parity = _sha256_bytes(_canonical_json(_parity_projection(legacy, project)))
-        new_parity = _sha256_bytes(
-            _canonical_json(_parity_projection(composed, project))
-        )
-        if old_parity != new_parity:
-            raise ProjectStateError("composed distributed state failed parity check")
-
-        if before_install:
-            before_install()
-        if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
-            raise ProjectStateError("legacy index changed while migration was staged")
-
-        destination_snapshot_root = snapshot.parent / "destinations"
-        destination_records: list[dict[str, Any]] = []
-        for resource_type, resource_id, _ in staged:
-            destination = resource_path(docs_dir, project, resource_type, resource_id)
-            relative = destination.relative_to(docs_dir)
-            record: dict[str, Any] = {
-                "type": resource_type,
-                "id": resource_id,
-                "path": str(relative),
-                "existed": destination.exists(),
-            }
-            if destination.exists():
-                backup = destination_snapshot_root / relative
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                backup.write_bytes(destination.read_bytes())
-                _fsync_file(backup)
-                _fsync_directory(backup.parent)
-                record["snapshot"] = str(backup.relative_to(docs_dir))
-                record["sha256"] = _sha256_path(backup)
-            destination_records.append(record)
-        destination_manifest = snapshot.parent / "destinations.json"
-        destination_manifest.write_text(
-            json.dumps(destination_records, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        _fsync_file(destination_manifest)
-        _fsync_directory(destination_manifest.parent)
-
-        installed: list[tuple[str, str, Path]] = []
-        try:
-            for position, (resource_type, resource_id, source) in enumerate(staged):
-                destination = resource_path(
-                    docs_dir, project, resource_type, resource_id
-                )
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                if install_hook:
-                    install_hook(position, source, destination)
-                _durable_replace(source, destination)
-                installed.append((resource_type, resource_id, destination))
-
-            rows = [
-                {
-                    "type": resource_type,
-                    "id": resource_id,
-                    "path": str(path.relative_to(docs_dir)),
-                    "sha256": _sha256_path(path),
-                    "version": _read_resource_unchecked(
-                        docs_dir, project, resource_type, resource_id
-                    )[1],
-                }
-                for resource_type, resource_id, path in installed
-            ]
-            marker = {
-                "format": "distributed",
-                "status": "complete",
-                "project": project,
-                "source": str(
-                    legacy_index_path(docs_dir, project).relative_to(docs_dir)
-                ),
-                "source_sha256": source_sha,
-                "source_version": int(legacy.get("_version", 0) or 0),
-                "snapshot": str(snapshot.relative_to(docs_dir)),
-                "snapshot_sha256": _sha256_path(snapshot),
-                "destination_snapshot_manifest": str(
-                    destination_manifest.relative_to(docs_dir)
-                ),
-                "parity_sha256": old_parity,
-                "findings": findings,
-                "resources": rows,
-                "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
-            }
-            target = marker_path(docs_dir)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if before_marker:
-                before_marker()
-            if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
-                raise ProjectStateError(
-                    "legacy index changed before migration marker publication"
-                )
-            fd, marker_tmp_name = tempfile.mkstemp(
-                prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
-            )
-            os.close(fd)
-            marker_tmp = Path(marker_tmp_name)
-            try:
-                marker_tmp.write_text(
-                    json.dumps(marker, indent=2) + "\n", encoding="utf-8"
-                )
-                # Recheck immediately before the marker is the canonical switch.
-                if legacy_index_path(docs_dir, project).read_bytes() != source_bytes:
-                    raise ProjectStateError(
-                        "legacy index changed during marker publication"
-                    )
-                _durable_replace(marker_tmp, target)
-            finally:
-                marker_tmp.unlink(missing_ok=True)
-            return {"ok": True, "changed": True, **marker}
-        except BaseException:
-            _durable_unlink(marker_path(docs_dir))
-            records_by_path = {record["path"]: record for record in destination_records}
-            for _, _, destination in reversed(installed):
-                record = records_by_path[str(destination.relative_to(docs_dir))]
-                if record["existed"]:
-                    backup = docs_dir / record["snapshot"]
-                    fd, restore_name = tempfile.mkstemp(
-                        prefix=f".{destination.name}.",
-                        suffix=".rollback",
-                        dir=destination.parent,
-                    )
-                    os.close(fd)
-                    restore = Path(restore_name)
-                    try:
-                        restore.write_bytes(backup.read_bytes())
-                        _durable_replace(restore, destination)
-                    finally:
-                        restore.unlink(missing_ok=True)
-                else:
-                    _durable_unlink(destination)
-            raise
-    finally:
-        shutil.rmtree(stage_root, ignore_errors=True)
 
 
 def append_timeline_event(
