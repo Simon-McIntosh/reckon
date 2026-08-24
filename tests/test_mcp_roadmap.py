@@ -41,6 +41,7 @@ def _write_plan(
     *,
     status: str = "active",
     depends_on: list[str] | None = None,
+    decisions: dict[str, dict] | None = None,
     body: str = "",
 ) -> Path:
     bare = (
@@ -59,6 +60,7 @@ def _write_plan(
                 "title": slug.title(),
                 "status": status,
                 "depends_on": depends_on or [],
+                "decisions": decisions or {},
                 "gates": [
                     {
                         "id": "verified-input",
@@ -95,6 +97,98 @@ def test_mcp_roadmap_scans_mounted_project(mounted_project) -> None:
     assert foundation["dispatchable"] is True
     assert "open_followup" not in foundation["missing_dispatchability"]
     assert result["critical_path"]["plans"] == ["foundation", "consumer"]
+
+
+def test_mcp_roadmap_preserves_named_decision_readiness(mounted_project) -> None:
+    project, docs = mounted_project
+    _write_plan(
+        docs,
+        "deciding",
+        decisions={
+            "transport": {
+                "title": "Which transport should carry the payload?",
+                "choice": "",
+                "rationale": "",
+            },
+            "retention": {
+                "title": "How long should records remain?",
+                "choice": "",
+                "rationale": "Deferred until retention policy is published.",
+            },
+        },
+    )
+    _write_plan(docs, "endpoint", depends_on=["deciding"])
+
+    blocked = mcp_module._roadmap(project)
+    rows = {row["slug"]: row for row in blocked["pending_work"]}
+
+    assert [row["slug"] for row in blocked["pending_work"]] == [
+        "deciding",
+        "endpoint",
+    ]
+    assert rows["deciding"]["decision_blockers"] == [
+        {
+            "kind": "decision",
+            "plan": "deciding",
+            "id": "transport",
+            "question": "Which transport should carry the payload?",
+            "status": "open",
+            "choice": "",
+            "rationale": "",
+        }
+    ]
+    assert rows["deciding"]["depends_on"] == []
+    assert rows["deciding"]["explicit_blockers"] == []
+    assert rows["deciding"]["gate_blockers"] == []
+    assert rows["deciding"]["readiness"] == "blocked"
+    assert rows["deciding"]["deferred_decisions"] == [
+        {
+            "kind": "decision",
+            "plan": "deciding",
+            "id": "retention",
+            "question": "How long should records remain?",
+            "status": "deferred",
+            "choice": "",
+            "rationale": "Deferred until retention policy is published.",
+        }
+    ]
+    assert rows["endpoint"]["depends_on"][0]["ref"] == "deciding"
+    assert rows["deciding"]["decision_blockers"][0]["kind"] == "decision"
+    assert blocked["decision_readiness"] == {
+        "ready": False,
+        "open": 1,
+        "deferred": 1,
+    }
+
+    lock = mcp_module._edit_plan_tool(
+        project,
+        "deciding",
+        expected_version=0,
+        mode="state",
+        ops=[
+            {
+                "op": "lock",
+                "key": "transport",
+                "choice": "socket",
+                "rationale": "Selected for bounded delivery.",
+                "by": "reviewer",
+            }
+        ],
+    )
+    assert lock["ok"] is True
+
+    released = mcp_module._roadmap(project)
+    released_rows = {row["slug"]: row for row in released["pending_work"]}
+
+    assert released_rows["deciding"]["readiness"] == "ready"
+    assert released_rows["deciding"]["decision_blockers"] == []
+    assert released_rows["deciding"]["decisions"][0]["status"] == "locked"
+    assert released_rows["deciding"]["deferred_decisions"][0]["id"] == "retention"
+    assert released["decision_readiness"] == {
+        "ready": True,
+        "open": 0,
+        "deferred": 1,
+    }
 
 
 def test_fastmcp_registers_one_edit_tool_and_roadmap() -> None:

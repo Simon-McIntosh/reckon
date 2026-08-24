@@ -168,6 +168,39 @@ def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
     return not missing, missing
 
 
+def _decision_rows(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return decisions with an explicit readiness state for roadmap consumers."""
+
+    raw_decisions = plan.get("decisions") or []
+    if isinstance(raw_decisions, dict):
+        decisions = [
+            {"key": key, **(value if isinstance(value, dict) else {})}
+            for key, value in raw_decisions.items()
+        ]
+    else:
+        decisions = [item for item in raw_decisions if isinstance(item, dict)]
+
+    rows: list[dict[str, Any]] = []
+    plan_slug = str(plan.get("slug") or "")
+    for decision in decisions:
+        key = str(decision.get("key") or "").strip()
+        choice = str(decision.get("choice") or decision.get("chosen") or "").strip()
+        rationale = str(decision.get("rationale") or "").strip()
+        status = "locked" if choice else "deferred" if rationale else "open"
+        rows.append(
+            {
+                "kind": "decision",
+                "plan": plan_slug,
+                "id": key,
+                "question": str(decision.get("title") or key),
+                "status": status,
+                "choice": choice,
+                "rationale": rationale,
+            }
+        )
+    return rows
+
+
 def _authorisation_age(
     project: str,
     plan: dict[str, Any],
@@ -701,6 +734,8 @@ def build_roadmap(
     blocked: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
     schedule_deferred: list[dict[str, Any]] = []
+    decision_blockers_report: list[dict[str, Any]] = []
+    deferred_decisions_report: list[dict[str, Any]] = []
     unauthorised: list[dict[str, Any]] = []
     for slug, plan in plans.items():
         status = _status(plan)
@@ -715,11 +750,19 @@ def build_roadmap(
             if isinstance(row, dict) and row.get("kind") == "explicit"
         ]
         gate_blockers = unpassed_gate_blockers(plan.get("gates") or [])
+        decisions = _decision_rows(plan)
+        decision_blockers = [
+            decision for decision in decisions if decision["status"] == "open"
+        ]
+        deferred_decisions = [
+            decision for decision in decisions if decision["status"] == "deferred"
+        ]
         if (
             status == "blocked"
             and not explicit_blockers
             and not dependency_blockers
             and not gate_blockers
+            and not decision_blockers
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)
@@ -730,12 +773,14 @@ def build_roadmap(
             and not dependency_blockers
             and not explicit_blockers
             and not gate_blockers
+            and not decision_blockers
             and slug not in cycle_members
         )
         is_blocked = bool(
             dependency_blockers
             or explicit_blockers
             or gate_blockers
+            or decision_blockers
             or slug in cycle_members
         )
         readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
@@ -759,7 +804,13 @@ def build_roadmap(
             "missing_dispatchability": missing_dispatchability,
             "authorised": authorised,
             "effective_status": effective_status(
-                status, [*dependency_blockers, *explicit_blockers, *gate_blockers]
+                status,
+                [
+                    *dependency_blockers,
+                    *explicit_blockers,
+                    *gate_blockers,
+                    *decision_blockers,
+                ],
             ),
             "sprint": plan_sprint,
             "roi": plan.get("roi") or "mid",
@@ -773,6 +824,9 @@ def build_roadmap(
             "depends_on": dependency_rows.get(slug, []),
             "explicit_blockers": explicit_blockers,
             "gate_blockers": gate_blockers,
+            "decision_blockers": decision_blockers,
+            "deferred_decisions": deferred_decisions,
+            "decisions": decisions,
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,
@@ -813,6 +867,8 @@ def build_roadmap(
             deferred.append(row)
         if is_schedule_deferred:
             schedule_deferred.append(row)
+        decision_blockers_report.extend(decision_blockers)
+        deferred_decisions_report.extend(deferred_decisions)
 
     def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
         if node in visiting or node in cycle_members:
@@ -1021,6 +1077,13 @@ def build_roadmap(
             "deferred": len(schedule_deferred),
         },
         "schedule_deferred": schedule_deferred,
+        "decision_blockers": decision_blockers_report,
+        "deferred_decisions": deferred_decisions_report,
+        "decision_readiness": {
+            "ready": not decision_blockers_report,
+            "open": len(decision_blockers_report),
+            "deferred": len(deferred_decisions_report),
+        },
         "authorisation": {
             "authored_but_unauthorised": unauthorised,
             "count": len(unauthorised),
