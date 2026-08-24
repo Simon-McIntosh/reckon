@@ -656,9 +656,19 @@ def live_dir() -> Path:
     return crew_home() / "live"
 
 
+def runs_dir() -> Path:
+    """Directory holding durable per-run delivery and event artifacts."""
+    return crew_home() / "runs"
+
+
+def reports_dir() -> Path:
+    """Directory holding durable reports that are not tied to one run."""
+    return crew_home() / "reports"
+
+
 def run_dir(run_id: str) -> Path:
     """Directory holding one run's prompt, event log and default manifest."""
-    return crew_home() / "runs" / run_id
+    return runs_dir() / run_id
 
 
 def pointer_path(run_id: str) -> Path:
@@ -881,6 +891,9 @@ def _expanded_scope_paths(
     for raw_path in paths:
         declared = _repository_relative_scope(str(raw_path), repo)
         if declared is None:
+            raw = Path(str(raw_path)).expanduser()
+            absolute = (raw if raw.is_absolute() else repo / raw).resolve().as_posix()
+            expanded[absolute] = (absolute, None)
             continue
         expanded[declared] = (declared, None)
         pending = [declared]
@@ -1355,10 +1368,11 @@ def watch(
     project: str,
     *,
     stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
+    exit_on_empty: bool = False,
     poll_interval: float = 1.0,
     sleeper: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
-    """Block on one fleet until its first terminal delivery, stall, or drain."""
+    """Block for a fleet event, optionally treating an empty fleet as a drain."""
     stall_seconds = parse_duration(stall_window)
     with _project_watch_claim(project, stall_window) as (acquired, watcher):
         if not acquired:
@@ -1373,7 +1387,7 @@ def watch(
             }
         while True:
             event = _watch_event(project, stall_seconds=stall_seconds)
-            if event is not None:
+            if event is not None and (event["event"] != "empty" or exit_on_empty):
                 return event
             sleeper(poll_interval)
 
@@ -2001,16 +2015,20 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
 def _require_write_paths_in_repository(
     node: TaskNode, authority: Mapping[str, Any]
 ) -> None:
-    """Refuse any declared write that escapes the detached worktree's repo."""
+    """Confine writes to the worktree or Reckon's durable delivery roots."""
     work_repo = Path(str(authority["write"]["repository"])).resolve()
+    delivery_roots = (runs_dir().resolve(), reports_dir().resolve())
     for declared in node.write_paths:
         raw = Path(declared).expanduser()
         resolved = (raw if raw.is_absolute() else work_repo / raw).resolve()
-        if not resolved.is_relative_to(work_repo):
+        if not resolved.is_relative_to(work_repo) and not any(
+            resolved.is_relative_to(root) for root in delivery_roots
+        ):
             raise CrewError(
                 f"write path {declared!r} resolves outside the authorised work "
-                f"repository {work_repo}; dispatch a separate node rooted in "
-                "that mounted repository"
+                f"repository {work_repo} and Reckon delivery directories "
+                f"{delivery_roots[0]} and {delivery_roots[1]}; declare a path "
+                "inside one of them"
             )
 
 

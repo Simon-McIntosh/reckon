@@ -869,12 +869,21 @@ def crew_observe(run_id, project, pretty):
     show_default=True,
     help="Exit when a non-terminal run's stream stays quiet this long.",
 )
+@click.option(
+    "--exit-on-empty",
+    is_flag=True,
+    help="Exit when no live pointers remain instead of waiting for the first one.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_watch(project, stall_window, pretty):
-    """Block until one project run delivers, stalls, or the fleet is empty."""
+def crew_watch(project, stall_window, exit_on_empty, pretty):
+    """Block until one project run delivers or stalls."""
     crew_module, _ = _crew_modules()
     try:
-        result = crew_module.watch(project, stall_window=stall_window)
+        result = crew_module.watch(
+            project,
+            stall_window=stall_window,
+            exit_on_empty=exit_on_empty,
+        )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **result}, pretty)
