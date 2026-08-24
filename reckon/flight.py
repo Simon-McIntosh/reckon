@@ -136,23 +136,59 @@ def project_config_path(project: str, checkout_path: str | Path | None = None) -
     return docs_root / "state" / project / "flight.yaml"
 
 
-def _project_docs_root(project: str) -> Path:
-    """Resolve a mounted project's docs directory, or its state symlink."""
-    from reckon._store import _mounts_path, _state_root
+def mounted_project_docs() -> dict[str, Path]:
+    """Return every registered project's resolved docs directory.
+
+    Mount registration is the host's repository-authority boundary.  Callers
+    making a write decision need the lossless set, not the state-directory
+    fallback used when an optional project flight layer is absent.  Invalid
+    mount data therefore fails closed and names the offending entry.
+    """
+    from reckon._store import _mounts_path
+
+    import json
 
     mounts_file = _mounts_path()
-    if mounts_file.exists():
-        import json
+    if not mounts_file.is_file():
+        return {}
+    try:
+        payload = json.loads(mounts_file.read_text())
+    except (OSError, ValueError) as exc:
+        raise FlightConfigError(
+            mounts_file, "", "must contain a readable JSON object"
+        ) from exc
+    if not isinstance(payload, Mapping):
+        raise FlightConfigError(mounts_file, "", "must contain a JSON object")
+    entries = payload.get("mounts") if "mounts" in payload else payload
+    if not isinstance(entries, Mapping):
+        raise FlightConfigError(
+            mounts_file, "mounts", "must be an object keyed by project"
+        )
 
-        try:
-            mounts = json.loads(mounts_file.read_text())
-        except (OSError, ValueError):
-            mounts = {}
-        entry = (mounts.get("mounts") or mounts).get(project)
+    resolved: dict[str, Path] = {}
+    for project, entry in sorted(entries.items(), key=lambda item: str(item[0])):
         if isinstance(entry, Mapping):
             entry = entry.get("docs") or entry.get("path")
-        if entry:
-            return Path(str(entry)).expanduser()
+        if not isinstance(entry, str) or not entry.strip():
+            raise FlightConfigError(
+                mounts_file,
+                str(project),
+                "must name a docs directory with a string path",
+            )
+        resolved[str(project)] = Path(entry).expanduser().resolve()
+    return resolved
+
+
+def _project_docs_root(project: str) -> Path:
+    """Resolve a mounted project's docs directory, or its state symlink."""
+    from reckon._store import _state_root
+
+    try:
+        entry = mounted_project_docs().get(project)
+    except FlightConfigError:
+        entry = None
+    if entry is not None:
+        return entry
     # No mount: the state root is symlinked into the repo, so its parent of the
     # project directory is the same docs/state tree the mount would have named.
     return _state_root().parent

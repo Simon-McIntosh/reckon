@@ -32,6 +32,7 @@ from reckon.flight import (
     FlightConfigError,
     deep_merge,
     flight_report,
+    mounted_project_docs,
     parse_overrides,
     probe_availability,
     resolve,
@@ -74,6 +75,32 @@ def resolve_files(layers, *, overrides=None):
         host_path=layers["host"],
         project_path=layers["project"],
     )
+
+
+def test_mounted_project_docs_resolves_flat_and_structured_entries(
+    monkeypatch, tmp_path
+):
+    first = tmp_path / "first" / "docs"
+    second = tmp_path / "second" / "docs"
+    first.mkdir(parents=True)
+    second.mkdir(parents=True)
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(
+        json.dumps(
+            {
+                "mounts": {
+                    "first": str(first),
+                    "second": {"docs": str(second)},
+                }
+            }
+        )
+    )
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    assert mounted_project_docs() == {
+        "first": first.resolve(),
+        "second": second.resolve(),
+    }
 
 
 # ── 1. Generated artifacts match their LinkML source ────────────────────────

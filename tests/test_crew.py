@@ -57,7 +57,7 @@ def home(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def repo(tmp_path):
+def repo(tmp_path, home):
     """A throwaway git repository carrying the worktree fleet script."""
     root = tmp_path / "repo"
     (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
@@ -88,6 +88,32 @@ def repo(tmp_path):
         ["config", "user.name", "Worker"],
         ["add", "seed.txt", "skills", "docs/plans/plan-a.html"],
         ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+    (home / "mounts.json").write_text(json.dumps({"proj": str(root / "docs")}))
+    return root
+
+
+@pytest.fixture()
+def remote_plan_repo(tmp_path):
+    """A committed plan repository that is not registered by default."""
+    root = tmp_path / "remote-plan-repo"
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "docs" / "plans" / "remote-plan.html").write_text(
+        """<!doctype html>
+<html><head>
+<meta name="docs-project" content="authority-project">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="remote-plan">
+</head><body><h2 id="s3">§3 — Remote dispatch</h2></body></html>
+"""
+    )
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "docs/plans/remote-plan.html"],
+        ["commit", "-q", "-m", "chore: seed remote plan"],
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
     return root
@@ -861,6 +887,92 @@ def test_dispatch_refuses_a_plan_absent_from_the_base(home, repo) -> None:
         )
 
     assert "not readable at base" in str(excinfo.value)
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_resolves_a_plan_from_another_mounted_repository(
+    home, repo, remote_plan_repo
+) -> None:
+    mounts = json.loads((home / "mounts.json").read_text())
+    mounts["authority-project"] = str(remote_plan_repo / "docs")
+    (home / "mounts.json").write_text(json.dumps(mounts))
+
+    record = crew.dispatch(
+        node=_node(plan="remote-plan"),
+        project="authority-project",
+        repo=repo,
+        config=CONFIG,
+        session="cross-repository-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    plan_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=remote_plan_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert crew.pointer_path(record["run_id"]).is_file()
+    assert Path(record["worktree"]).is_dir()
+    assert record["repo"] == str(repo.resolve())
+    assert record["authority"] == {
+        "plan": {
+            "project": "authority-project",
+            "docs": str((remote_plan_repo / "docs").resolve()),
+            "repository": str(remote_plan_repo.resolve()),
+            "source": "mount",
+            "base_sha": plan_sha,
+        },
+        "write": {
+            "projects": ["proj"],
+            "repository": str(repo.resolve()),
+            "source": "mount",
+        },
+        "repositories": sorted({str(remote_plan_repo.resolve()), str(repo.resolve())}),
+    }
+
+
+def test_dispatch_names_the_missing_mount_for_an_unregistered_plan_repository(
+    home, repo, remote_plan_repo
+) -> None:
+    assert (remote_plan_repo / "docs" / "plans" / "remote-plan.html").is_file()
+
+    with pytest.raises(crew.PlanVisibilityError) as excinfo:
+        crew.dispatch(
+            node=_node(plan="remote-plan"),
+            project="authority-project",
+            repo=repo,
+            config=CONFIG,
+            session="cross-repository-session",
+            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
+        )
+
+    assert "authority-project" in str(excinfo.value)
+    assert "missing from mounts.json" in str(excinfo.value)
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_dispatch_refuses_a_write_outside_the_mounted_authority_set(
+    home, repo, remote_plan_repo, tmp_path
+) -> None:
+    mounts = json.loads((home / "mounts.json").read_text())
+    mounts["authority-project"] = str(remote_plan_repo / "docs")
+    (home / "mounts.json").write_text(json.dumps(mounts))
+    outside = tmp_path / "unregistered-repository" / "source.py"
+
+    with pytest.raises(crew.CrewError) as excinfo:
+        crew.dispatch(
+            node=_node(plan="remote-plan", write_paths=[str(outside)]),
+            project="authority-project",
+            repo=repo,
+            config=CONFIG,
+            session="cross-repository-session",
+            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
+        )
+
+    assert str(outside) in str(excinfo.value)
+    assert "outside the authorised work repository" in str(excinfo.value)
     _assert_no_dispatch_artifacts(repo)
 
 

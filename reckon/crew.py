@@ -59,7 +59,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from reckon import _backends, _plan_html, capabilities, capability, ledger
+from reckon import _backends, _plan_html, capabilities, capability, flight, ledger
 from reckon._store import _config_home
 from reckon.calibration import agent_configuration_key
 
@@ -1863,20 +1863,29 @@ def _contains_plan_section(html_text: str, section: str) -> bool:
 
 
 def require_plan_section_visible(
-    *, node: TaskNode, project: str, repo: str | Path, base: str
-) -> None:
-    """Refuse when a named section is not identical and readable at ``base``."""
-    if not node.section.strip():
-        return
+    *,
+    node: TaskNode,
+    project: str,
+    repo: str | Path,
+    base: str,
+    authority: Mapping[str, Any],
+) -> str:
+    """Return the plan commit after proving its mounted file is committed."""
 
     from reckon.resources import ResourceCollision, resolve_resource
 
     repo_root = Path(repo).resolve()
-    docs_dir = repo_root / "docs"
-    if not docs_dir.is_dir() or not any(docs_dir.rglob("*.html")):
-        # Dispatch remains usable before a repository adopts HTML plan authority.
-        # Once it does, every named section must be visible from the worker base.
-        return
+    plan_data = authority["plan"]
+    plan_repo = Path(str(plan_data["repository"])).resolve()
+    docs_dir = Path(str(plan_data["docs"])).resolve()
+    plan_base = base if plan_repo == repo_root else "HEAD"
+    if plan_data.get("source") == "repository" and (
+        not docs_dir.is_dir() or not any(docs_dir.rglob("*.html"))
+    ):
+        # Repositories that have not adopted HTML plans retain the original
+        # local dispatch path.  This is not cross-repository authority: both
+        # semantic and write roots are the explicitly supplied repository.
+        return _base_commit(plan_repo, plan_base)
     try:
         resource = resolve_resource(
             docs_dir, project, node.plan, "plan", include_archived=False
@@ -1887,39 +1896,122 @@ def require_plan_section_visible(
             "commit one unambiguous plan before dispatching"
         ) from exc
     if resource is None:
-        expected = Path("docs") / "plans" / f"{node.plan}.html"
+        if plan_data.get("source") == "repository":
+            raise PlanVisibilityError(
+                f"project {project!r} is missing from mounts.json and plan "
+                f"{node.plan!r} is not readable in local repository {plan_repo}; "
+                "register the plan repository with `reckon sync`"
+            )
         raise PlanVisibilityError(
-            f"plan file {expected.as_posix()} is not readable in the working tree; "
-            "commit the plan and named section before dispatching"
+            f"plan {node.plan!r} is not readable through project {project!r} mount "
+            f"{docs_dir}; commit the plan and named section before dispatching"
         )
 
-    relative_path = resource.path.resolve().relative_to(repo_root)
-    commit = _base_commit(repo_root, base)
+    try:
+        relative_path = resource.path.resolve().relative_to(plan_repo)
+    except ValueError as exc:
+        raise PlanVisibilityError(
+            f"project {project!r} mount {docs_dir} is outside its repository "
+            f"{plan_repo}"
+        ) from exc
+    commit = _base_commit(plan_repo, plan_base)
     blob = subprocess.run(
         ["git", "show", f"{commit}:{relative_path.as_posix()}"],
-        cwd=str(repo_root),
+        cwd=str(plan_repo),
         capture_output=True,
         check=False,
     )
     if blob.returncode:
         raise PlanVisibilityError(
-            f"plan file {relative_path.as_posix()} is not readable at base {base!r}; "
+            f"plan file {relative_path.as_posix()} is not readable at base "
+            f"{plan_base!r}; "
             "commit the plan and named section before dispatching"
         )
 
     working_bytes = resource.path.read_bytes()
     if working_bytes != blob.stdout:
         raise PlanVisibilityError(
-            f"plan file {relative_path.as_posix()} differs from base {base!r}; "
+            f"plan file {relative_path.as_posix()} differs from base "
+            f"{plan_base!r}; "
             "commit the plan before dispatching"
         )
     base_html = blob.stdout.decode("utf-8", errors="replace")
-    if not _contains_plan_section(base_html, node.section):
+    if node.section.strip() and not _contains_plan_section(base_html, node.section):
         raise PlanVisibilityError(
             f"plan file {relative_path.as_posix()} does not contain section "
-            f"{node.section!r} at base {base!r}; commit the named section before "
-            "dispatching"
+            f"{node.section!r} at base {plan_base!r}; commit the named section "
+            "before dispatching"
         )
+    return commit
+
+
+def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]:
+    """Resolve semantic and write repositories from the registered mounts."""
+    try:
+        mounts = flight.mounted_project_docs()
+    except flight.FlightConfigError as exc:
+        raise PlanVisibilityError(str(exc)) from exc
+    work_repo = Path(repo).expanduser().resolve()
+    if project not in mounts:
+        return {
+            "plan": {
+                "project": project,
+                "docs": str(work_repo / "docs"),
+                "repository": str(work_repo),
+                "source": "repository",
+            },
+            "write": {
+                "projects": [project],
+                "repository": str(work_repo),
+                "source": "repository",
+            },
+            "repositories": [str(work_repo)],
+        }
+
+    plan_docs = mounts[project]
+    if not plan_docs.is_dir():
+        raise PlanVisibilityError(
+            f"project {project!r} mount {plan_docs} is not a readable directory"
+        )
+    plan_repo = plan_docs.parent.resolve()
+    work_projects = sorted(
+        name for name, docs in mounts.items() if docs.parent.resolve() == work_repo
+    )
+    if not work_projects:
+        raise CrewError(
+            f"repository {work_repo} is outside the resolved mount authority set; "
+            "register its project with `reckon sync` before dispatching writes"
+        )
+    return {
+        "plan": {
+            "project": project,
+            "docs": str(plan_docs),
+            "repository": str(plan_repo),
+            "source": "mount",
+        },
+        "write": {
+            "projects": work_projects,
+            "repository": str(work_repo),
+            "source": "mount",
+        },
+        "repositories": sorted({str(plan_repo), str(work_repo)}),
+    }
+
+
+def _require_write_paths_in_repository(
+    node: TaskNode, authority: Mapping[str, Any]
+) -> None:
+    """Refuse any declared write that escapes the detached worktree's repo."""
+    work_repo = Path(str(authority["write"]["repository"])).resolve()
+    for declared in node.write_paths:
+        raw = Path(declared).expanduser()
+        resolved = (raw if raw.is_absolute() else work_repo / raw).resolve()
+        if not resolved.is_relative_to(work_repo):
+            raise CrewError(
+                f"write path {declared!r} resolves outside the authorised work "
+                f"repository {work_repo}; dispatch a separate node rooted in "
+                "that mounted repository"
+            )
 
 
 def _agent_configuration(
@@ -2117,8 +2209,11 @@ def _competence_verdict(
         resolution.backend, resolution.launch, resolution.backend_settings
     )
     key = agent_configuration_key({"agent": agent})
+    plan_repo = repo
+    if resolution.authority is not None:
+        plan_repo = Path(resolution.authority["plan"]["repository"])
     estimated_hours, estimate_provenance = _estimated_hours(
-        repo, project, resolution.node
+        plan_repo, project, resolution.node
     )
     cache = capabilities.load_capabilities()
     cache_status = capabilities.project_cache_status(cache, project, root=repo)
@@ -2206,6 +2301,7 @@ class DispatchPlan:
     execution_fit: capability.ExecutionFit
     warnings: list[str] = field(default_factory=list)
     competence: dict[str, Any] | None = None
+    authority: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
@@ -2221,6 +2317,8 @@ class DispatchPlan:
         }
         if self.competence is not None:
             payload["competence"] = dict(self.competence)
+        if self.authority is not None:
+            payload["authority"] = dict(self.authority)
         return payload
 
 
@@ -2259,6 +2357,7 @@ def plan_dispatch(
     repo: str | Path | None = None,
     base: str = "HEAD",
     execution_override: bool = False,
+    authority: Mapping[str, Any] | None = None,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -2317,8 +2416,23 @@ def plan_dispatch(
                 },
             ],
         )
+    resolved_authority: dict[str, Any] | None = None
     if verdict.ok and repo is not None:
-        require_plan_section_visible(node=node, project=project, repo=repo, base=base)
+        resolved_authority = dict(
+            authority or resolve_dispatch_authority(project, repo)
+        )
+        _require_write_paths_in_repository(node, resolved_authority)
+        plan_commit = require_plan_section_visible(
+            node=node,
+            project=project,
+            repo=repo,
+            base=base,
+            authority=resolved_authority,
+        )
+        resolved_authority["plan"] = {
+            **resolved_authority["plan"],
+            "base_sha": plan_commit,
+        }
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -2329,6 +2443,7 @@ def plan_dispatch(
         validation=verdict,
         execution_fit=execution_fit,
         warnings=warnings,
+        authority=resolved_authority,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -2391,15 +2506,7 @@ def dispatch(
     dispatch gate.
     """
     repo_root = Path(repo).resolve()
-    script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
-    if not script.is_file():
-        raise CrewError(
-            f"worktree fleet script is missing: {script}; run `reckon sync` "
-            "for this repository to install it"
-        )
-    _workspace_roots(repo_root)
-    derivations = _project_derivations(project, repo_root)
-    live_claims = _live_scope_claims(project, repo_root, derivations)
+    authority = resolve_dispatch_authority(project, repo_root)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -2409,6 +2516,7 @@ def dispatch(
         repo=repo_root,
         base=base,
         execution_override=execution_override,
+        authority=authority,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -2418,6 +2526,17 @@ def dispatch(
                 for finding in resolution.validation.findings
             )
         )
+
+    script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    if not script.is_file():
+        raise CrewError(
+            f"worktree fleet script is missing: {script}; run `reckon sync` "
+            "for this repository to install it"
+        )
+    _workspace_roots(repo_root)
+    work_projects = authority["write"]["projects"]
+    derivations = _project_derivations(work_projects[0], repo_root)
+    live_claims = _live_scope_claims(project, repo_root, derivations)
 
     competence = resolution.competence or _competence_verdict(
         resolution=resolution, project=project, repo=repo_root
@@ -2576,6 +2695,7 @@ def dispatch(
             "run_id": run_id,
             "project": project,
             "repo": str(repo_root),
+            "authority": resolution.authority,
             "session": session,
             "node": node.as_dict(),
             "role": node.role,
