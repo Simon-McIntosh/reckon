@@ -145,10 +145,23 @@
 
     <p><code>L2G</code>, <code>hanney</code>, <code>helix</code>, <code>imas-efit</code>,
     <code>imas-standard-names</code>, <code>norma</code>, <code>tessera</code>,
-    <code>vv</code>. Same transaction shape, same per-repository verification, no new mechanism.
-    <code>imas-standard-names</code> is the one to sequence last and watch: it carries the 73
-    flattened standard-names documents that motivate the tagging work, so it is the corpus most
-    likely to expose an organisational-metadata fault.</p>
+    <code>vv</code>. Same transaction shape, same per-repository verification, no new mechanism.</p>
+
+    <p><strong>None of the ten carries topical grouping this migration could damage, and that
+    was checked rather than assumed.</strong> The 73 standard-names documents live in
+    <code>imas-codex</code> — across <code>research/standard-names/</code>,
+    <code>archive/standard-names/</code> and <code>archive/research/standard-names/</code>, which
+    is the three interleaved numbered sequences the tagging work describes — and
+    <code>imas-codex</code> is already project-state migrated.
+    <code>imas-standard-names</code> carries none of them, despite its name.
+    <code>imas-ambix</code> has no topical subdirectory under a typed root at all, and
+    <code>nova</code> has exactly one, <code>evidence/logs/biot-element-conditioning</code>.</p>
+
+    <p>That exposure belongs to the <em>layout</em> migration in any case, which moves files;
+    this one does not. <code>project_state.py</code> contains no document mover — its only
+    <code>os.replace</code> is inside <code>_durable_replace</code>, the atomic-write helper that
+    fsyncs a temporary file, replaces the target and fsyncs the directory entry. Directory
+    grouping is untouched by everything in this plan.</p>
 
     <p><strong>Done when</strong> all 12 mounted projects report distributed state and the §2
     harness passes against every one of them.</p>
