@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="completion-is-not-silent">
-  <meta name="plan-title"     content="Finished Work Should Not Wait to Be Noticed">
-  <meta name="plan-summary"   content="A worker that finishes changes a file and tells nobody. If the coordinator did not arm a watch, the finished node sits unpromoted until someone asks what is running. Reckon already detects this exactly and reports it to nobody: the live view classifies the run completed_unpromoted, computes its budget overrun and names the next action. Make that existing signal load-bearing instead of decorative.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="completion-is-not-silent">
+  <meta name="plan-title" content="Finished Work Should Not Wait to Be Noticed">
+  <meta name="plan-summary" content="A worker that finishes changes a file and tells nobody. If the coordinator did not arm a watch, the finished node sits unpromoted until someone asks what is running. Reckon already detects this exactly and reports it to nobody: the live view classifies the run completed_unpromoted, computes its budget overrun and names the next action. Make that existing signal load-bearing instead of decorative.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S13">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
   <title>Finished Work Should Not Wait to Be Noticed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -128,7 +130,7 @@
     recorded reason is visible as such in its own artifact.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">&#167;</span> Decisions</h2>
+<h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="guard-placement" data-choice="refuse-at-dispatch" data-by="reckon-ship" data-when="2026-08-24T12:55:00+00:00">
     <p class="r-dec-q">Where does the guard against unreconciled finished work fire?</p>
     <p class="r-dec-ctx">The detection already exists in the live view. The question is what consumes it, given that the coordinator who needs telling is the one not looking.</p>
@@ -142,14 +144,19 @@
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-<h2><span class="sec">&#167;</span> Followups</h2>
+<h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cns-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship completion-is-not-silent" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Make the signal that already exists load-bearing, at both ends of the loop</h4>
-    <div class="r-fu-body"><p>Nothing here needs new detection. The live view already classifies a finished-and-unpromoted run, computes how far past its budget it has drifted, and prints the command that clears it &mdash; and nothing reads any of it. Start with the dispatch refusal, because it reuses the guard class that already refuses a member holding a live pointer and fires at the one moment the coordinator is provably awake; keep it thresholded so ordinary concurrency is untouched, nameable so clearing it is a paste, and overridable with the override recorded on the run. Then extend the closure drain from followups to run state, because a refusal at dispatch cannot reach a session that simply stops, and that is the case where finished work is lost rather than delayed.</p></div>
+    <div class="r-fu-body"><p>Nothing here needs new detection. The live view already classifies a finished-and-unpromoted run, computes how far past its budget it has drifted, and prints the command that clears it — and nothing reads any of it. Start with the dispatch refusal, because it reuses the guard class that already refuses a member holding a live pointer and fires at the one moment the coordinator is provably awake; keep it thresholded so ordinary concurrency is untouched, nameable so clearing it is a paste, and overridable with the override recorded on the run. Then extend the closure drain from followups to run state, because a refusal at dispatch cannot reach a session that simply stops, and that is the case where finished work is lost rather than delayed.</p></div>
     <pre class="r-fu-prompt">/reckon-ship completion-is-not-silent</pre>
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260824T1315" data-who="reckon-ship" data-when="2026-08-24T13:15:00+00:00">
+    <div class="r-comment-body">prior-art-scout landed — no commit (read-only reconnaissance at 4dddca0); gate passed; measure five capability areas classified, one suffices as-is and four need bounded extension, none absent, with 22 symbols and 15 tests bound to file:line; artifact ~/.config/reckon/crew/reports/cns-prior-art-scout.md, recorded at docs/evidence/archive/completion-is-not-silent-landed.html#reuse-map. Negative finding: budget_overrun_seconds measures from dispatch, not from terminal, so it cannot drive the promotion grace.</div>
+</div>
+</section>
+</main>
 </body>
 </html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="completion-is-not-silent-landed">
+  <meta name="plan-title" content="Finished Work Should Not Wait to Be Noticed — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the completion-is-not-silent plan: the reuse map that preceded implementation, then one anchor per landed node carrying its commit, gate measure, tests and negative findings.">
+  <meta name="plan-evidence-for" content="completion-is-not-silent">
+  <title>Finished Work Should Not Wait to Be Noticed — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Finished Work Should Not Wait to Be Noticed — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="reuse-map">Reuse map — what already existed before a line was written</h2>
+    <p>
+      Reconnaissance node, no commit (2026-08-24, worker codex-k, read-only sandbox, source
+      inspected at <code>4dddca0</code>). Report:
+      <code>~/.config/reckon/crew/reports/cns-prior-art-scout.md</code>.
+      Five capability areas classified: <strong>one suffices as-is, four need bounded
+      extension, none absent</strong> — 12 implementation or configuration files, 22 symbols
+      and schema seams, and 15 tests, helpers and fixtures, each bound to <code>file:line</code>
+      with a one-line fitness verdict. Five foundation tests re-run green in 1.22&nbsp;s.
+    </p>
+    <ul>
+      <li><strong>Dispatch-time refusal — extend.</strong> <code>MemberInFlight</code> and
+        <code>BudgetHold</code> are the typed pre-worktree precedents; every existing hold fires
+        before <code>_create_worktree</code>, which is where a backlog guard belongs so a refusal
+        creates nothing.</li>
+      <li><strong>Terminal-unpromoted backlog — extend.</strong> <code>list_live</code> and
+        <code>classify_pointer</code> already yield the classification and the paste-ready
+        <code>next_action</code>. What is missing is a thresholded, project-and-repo-scoped
+        selector over them.</li>
+      <li><strong>Recorded override — extend.</strong> The execution-fit flag already persists
+        structured exception evidence from pointer through to committed ledger record; the guard
+        needs its own block on the same seam.</li>
+      <li><strong>Duration threshold — extend.</strong> One fence slot in
+        <code>reckon/schema/flight.yaml</code> inherits four-layer resolution, provenance and
+        duration validation for free. Both generated artifacts move through
+        <code>scripts/regen_flight_schema.py</code>, never by hand.</li>
+      <li><strong>Pointer-directory test isolation — suffices.</strong> <code>RECKON_HOME</code>
+        is the single seam; the existing <code>home</code> and <code>repo</code> fixtures already
+        confine every pointer path to a temporary directory.</li>
+    </ul>
+    <p>
+      <strong>Negative finding that changed the node contract.</strong>
+      <code>budget_overrun_seconds</code> measures elapsed time <em>since dispatch</em>, not since
+      the run turned terminal, so it cannot drive the promotion grace — a short-budget run and a
+      long-budget run must receive the same grace. The node's measure was rewritten to pin the
+      discriminating case: a run dispatched long ago whose manifest turned terminal moments ago
+      must <em>not</em> be refused.
+    </p>
+
+  </main>
+</body>
+</html>
