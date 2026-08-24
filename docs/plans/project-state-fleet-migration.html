@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -66,7 +66,23 @@
     is structural, not a scheduling accident. This plan proceeds on the lead's direct
     instruction, not on that argument.</p>
 
-    <h2 id="s2">§2 — The robustness gate: field-by-field, before anything live is touched</h2>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+        <h2>§2 — The robustness gate: field-by-field, green</h2></header>
+      <p class="landed-summary">Built <code>reckon/project_state_parity.py</code>, runnable as
+      <code>python -m reckon.project_state_parity</code> against any project carrying a
+      distributed marker. <strong>Gate passed:</strong> <code>imas-codex</code> 84 compared /
+      84 matched / <strong>0 mismatches</strong>; <code>reckon</code> 44 compared / 43 exact /
+      <strong>0 mismatches</strong> / 1 named current-state drift; the synthetic corpus proves
+      all 18 field reports with nonzero counters; plan files byte-identical 2/2; full suite
+      2010 passed. A field the snapshot cannot evidence is reported out-of-corpus rather than
+      credited as matched, and drift is separated from loss — so a freshly migrated repository
+      can require zero drift. Full record:
+      <a href="/reckon/evidence/archive/project-state-fleet-migration-landed#s2">§2 landed</a>
+      (commit <code>24a118a</code>).</p>
+    </section>
+
+    <details><summary>Original design detail — the bar, the enumerated fields, and the two named false positives</summary>
 
     <p><strong>The bar is the lead's and it is specific:</strong> the migration must not drop
     plan linking or other relational and organisational metadata. Existing evidence does not
@@ -123,6 +139,8 @@
     two false positives excluded by explicit name rather than by a loosened comparison, and the
     run emits a per-field count of compared and matched values so a silent no-op cannot pass as
     a proof.</p>
+
+    </details>
 
     <h2 id="s3">§3 — imas-ambix and nova</h2>
 
@@ -247,6 +265,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260824T1030-scout" data-who="reckon-ship" data-when="2026-08-24T10:30:00+00:00">
     <div class="r-comment-body">Prior-art scout landed — run r-20260824T095640145230, gate passed; 3 of 3 capability areas need extension, 17 symbols and 11 tests mapped. Material finding that bounds this section: the frozen pre-migration snapshot is index.json only, and its .data carries no inventory key, so the already-migrated corpora can evidence every aggregate project-state field but cannot evidence plan relations or the nested collections. The harness therefore proves plan-level preservation by asserting byte identity of every plan file across a real migration, and reports field classes the snapshot cannot evidence as out-of-corpus rather than counting them as matched. This bounds the locked robustness-evidence-source decision without reopening it. Recorded at docs/evidence/archive/project-state-fleet-migration-landed.html#reuse-map.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260824T1130-s2" data-who="reckon-ship" data-when="2026-08-24T11:30:00+00:00">
+    <div class="r-comment-body">parity-harness landed — worker commit 24a118a, merged; gate PASSED, so §3 is open. Measure: imas-codex 84 compared / 84 matched / 0 mismatches / 0 drift / 14 out-of-corpus; reckon 44 compared / 43 exact / 0 mismatches / 1 named drift / 14 out-of-corpus; synthetic full corpus proves all 18 required field reports with nonzero counters and no mismatch; plan files byte-identical 2/2; full suite 2010 passed, 0 failed; 5 tests added. Three classifications keep the claim honest: a field the snapshot cannot evidence is out-of-corpus rather than credited as matched; a blocker cleared after migration is current-state drift rather than a mismatch, and since drift needs elapsed time a freshly migrated repository can require current_state_drift=0; and comparison is directional so the 204 fields reckon gained since July are additions that cannot mask a removal. Both false positives stay excluded by name while authored blocks values are still compared exactly. Artifacts: reckon/project_state_parity.py, tests/test_project_state_parity.py, imas-codex-parity.json, reckon-parity.json, docs/evidence/archive/project-state-fleet-migration-landed.html#s2.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824T1030-s3" data-who="reckon-ship" data-when="2026-08-24T10:30:00+00:00">
     <div class="r-comment-body">Preflight measured on both priority repositories: active-alternate-worktrees is the only blocker on either, and fleet_migration.py:1053 defers hard on it, so the fleet command as shipped would defer exactly the two repositories the locked migration order prioritises. nova has 49 alternate worktrees, all detached, none touching docs/*.html, docs/state/ or docs/.reckon/ — so none can interact with what the migration writes. imas-ambix has 7, of which three under .claude/worktrees/ dated 5 June each hold a staged never-committed 1645-file restructure (1516 deletions, 120 modifications, 9 additions; 188 docs/*.html) while on main. No live crew run exists in either repository. Lead decision 2026-08-24: migrate nova now, and triage the imas-ambix trees in a separate worker to establish whether any work is recoverable; commit the migrated state in each repository without pushing. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s3-preflight.</div>

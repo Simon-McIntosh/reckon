@@ -83,6 +83,67 @@
       stranded every future project. That path is now reachable only for a project
       that already has a legacy index.</p>
 
+    <h2 id="s2">§2 — The robustness gate: field-by-field, green</h2>
+
+    <p>Run <code>r-20260824T100437193838-parity-harness</code>, worker commit
+      <code>24a118a</code> (485 lines of module, 359 of test, 5 tests added). Gate
+      <strong>passed</strong>. Delivered
+      <code>reckon/project_state_parity.py</code>, runnable as
+      <code>python -m reckon.project_state_parity</code> against any project docs
+      directory carrying a distributed marker; it resolves the marker-named frozen
+      snapshot itself and validates that snapshot's path and hash before comparing.</p>
+
+    <table>
+      <thead><tr><th>Corpus</th><th>Verdict</th><th>Compared</th><th>Matched</th><th>Mismatches</th><th>Drift</th><th>Out-of-corpus</th></tr></thead>
+      <tbody>
+        <tr><td><code>imas-codex</code></td><td>ok</td><td>84</td><td>84</td><td><strong>0</strong></td><td>0</td><td>14</td></tr>
+        <tr><td><code>reckon</code></td><td>ok</td><td>44</td><td>43 exact</td><td><strong>0</strong></td><td>1 named</td><td>14</td></tr>
+        <tr><td>synthetic full corpus</td><td>ok</td><td colspan="2">all 18 required field reports, nonzero</td><td><strong>0</strong></td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Three classifications are what make the proof honest rather than
+      merely green,</strong> and each closes a way a weaker harness would have
+      passed while proving nothing.</p>
+
+    <p><em>Out-of-corpus, not matched.</em> Both live snapshots lack historical plan
+      inventory, so all six relation families, all five nested collections, and
+      <code>milestone</code>, <code>north_star</code> and <code>tier</code> report
+      <code>compared=0 matched=0</code> against them — reported as out-of-corpus
+      rather than silently credited. Sprint membership and every sprint item's
+      <code>why_now</code> and <code>done_when</code> are nonzero and exact there.
+      The synthetic corpus carries all six relation families and a long
+      entity-bearing rationale, and proves every one of the 18 reports with nonzero
+      counters. Plan-level preservation is additionally proven structurally:
+      <strong>byte identity of 2/2 plan files</strong> across a real migration, which
+      is a stronger claim than a field diff because the migration writes no plan HTML
+      at all.</p>
+
+    <p><em>Current-state drift, not mismatch.</em> Reckon's one non-exact field is
+      <code>sprint:S5/item:reckon-ci-build</code> <code>field=blocked_by</code>,
+      <code>before=[s5-project-state-contract]</code>, <code>after</code> missing.
+      Verified as drift, not loss: that blocker resource no longer exists and
+      <code>reckon-ci-build</code> is now <code>shipped</code>, so the condition was
+      resolved in the four weeks after the 29 July migration. It is still compared,
+      printed in <code>drift_details</code>, and counted in
+      <code>current_state_drift</code>. The classification costs nothing because
+      drift requires elapsed time — a repository verified immediately after migrating
+      can require <code>current_state_drift=0</code>, so a genuine migration-time
+      loss is still caught at full strength.</p>
+
+    <p><em>Directional preservation, not symmetric equality.</em> Frozen state must
+      be a subset of current state; the 204 fields reckon has gained since July are
+      counted as additions rather than reported as mismatches, and additions cannot
+      mask a removal or mutation of any frozen path. The two measured false positives
+      remain excluded by explicit name — <code>blocks-descriptive-not-gating</code>
+      and <code>new-wiring-visibility</code> — while authored <code>blocks</code>
+      values are still compared exactly, so the exclusion is a named observation
+      rather than a loosened comparison.</p>
+
+    <p>Full suite <strong>2010 passed, 0 failed</strong>. Reports retained as
+      <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
+      run directory.</p>
+
     <h2 id="s3-preflight">§3 — What actually blocks the two priority repositories</h2>
 
     <p>Measured with <code>preflight_repository</code> against both mounted
