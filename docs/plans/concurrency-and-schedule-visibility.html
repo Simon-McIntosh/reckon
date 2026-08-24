@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="15">
 <meta name="plan-impl" content="0.63">
 </head>
 <body>
@@ -398,6 +398,47 @@
     live peer claim is still refused; and the channel is wired without the coordinator naming it, for
     a node pair whose adjacency &#167;3 computed.</p>
 
+    <h2 id="s7">&#167;7 &mdash; Two dispatch targets, because they optimise different things</h2>
+
+    <p><strong>A sprint and a dependency closure are not competing units, they are opposite
+    optimisations, and this session measured both.</strong> A sprint concentrates work on one area
+    &mdash; and therefore on one set of files, which is why the two plans inside one sprint collided
+    on four paths while pairs drawn from different sprints were disjoint. A closure follows
+    dependency edges rather than topic, so it picks up disjoint work naturally and crosses
+    repositories without trying.</p>
+
+    <table>
+      <thead><tr><th></th><th>Sprint</th><th>Endpoint closure</th></tr></thead>
+      <tbody>
+        <tr><td>Shape</td><td>breadth over a theme</td><td>depth to one outcome</td></tr>
+        <tr><td>Optimises</td><td>closure of a region</td><td>latency to a feature</td></tr>
+        <tr><td>Headline number</td><td>items resolved of total</td><td>critical path, average width</td></tr>
+        <tr><td>Parallelises</td><td>poorly &mdash; shared theme means shared modules</td><td>as well as its width allows</td></tr>
+        <tr><td>Owns lifecycle</td><td>yes</td><td>no &mdash; it is a lens</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Nothing about a closure is stored except the name of its endpoint.</strong> Depth,
+    the ready frontier, <code>feeds N</code>, the critical path, shipped-of-total and the repository
+    set are all reads over <code>depends_on</code>, and average width is arithmetic over two of
+    them. Realisable width is the lane partition from &#167;3 applied to the frontier. A handle
+    lives on the endpoint plan itself, so it cannot dangle: delete the plan and the handle goes with
+    it.</p>
+
+    <p><strong>The one interaction to settle deliberately.</strong> A closure ignores sprint order
+    by construction &mdash; that is the point of shipping an outcome quickly &mdash; while
+    &#167;4's window will mark part of that closure deferred behind an earlier sprint. Shipping a
+    closure is therefore an explicit override of the schedule window, recorded like any other, and
+    the view states its cost: how many of its members the window would have deferred. Two
+    mechanisms that disagree silently are worse than either alone.</p>
+
+    <p><strong>Done when</strong> a ship target resolves an endpoint handle to its transitive
+    closure across every mounted repository the closure reaches, with no membership stored anywhere;
+    the closure reports ready, realisable, average width and critical path from derived state alone;
+    an open decision inside the closure refuses the ship until it is locked or explicitly deferred;
+    and shipping a closure whose members the schedule window would defer records that override on
+    the run rather than proceeding silently.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="scope-declaration-site" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
@@ -450,6 +491,45 @@
       <button class="r-opt" data-value="all-concurrent-peers">Every concurrent node in the session, since the prompt already lists them</button>
       </p>
     <p class="r-dec-rat">Locked 2026-08-24 by the lead. An import or call edge captures the actual reason two workers need each other: one owns the definition and the other the caller, which is the case measured on three consecutive nodes whose names the coordinator had to write into every node contract by hand. Shared-parent-directory was rejected as too coarse in a flat package, where every node touching the same directory becomes every other node&#x27;s peer. Same-plan-or-section was rejected because it misses the cross-plan case entirely, which is the case that prompted the section. All-concurrent-peers was rejected as a roster with no signal in it. The accepted cost is static analysis, and that the edge computation is language-specific.</p>
+    </div>
+<div class="r-dec" data-key="graph-identity" data-choice="" data-by="lead" data-when="2026-08-24T15:34:41+00:00">
+    <p class="r-dec-q">What is stored for a dependency graph?</p>
+    <p class="r-dec-ctx">The view needs a stable short handle for quick dispatch, but stored membership rots the moment a plan joins the DAG later.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="endpoint-handle">A handle on the endpoint plan; membership is its transitive closure</button>
+      <button class="r-opt" data-value="stored-membership">A graph resource listing its member plans</button>
+      <button class="r-opt" data-value="no-handle">No handle at all, always name the endpoint plan directly</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. Stored membership was rejected because a hand-picked list silently misses a plan that joins the DAG afterwards, which is the same rot an authored sprint edge has and the reason feeds_sprints is derived. No handle at all was rejected on ergonomics: the lead wants a short quick-dispatch target, and typing the endpoint slug each time is friction on the pattern the graph exists to make fast. A handle carried on the endpoint plan cannot dangle, because deleting the plan deletes the handle, and it costs one meta field exactly parallel to the sprint one.</p>
+    </div>
+<div class="r-dec" data-key="dispatch-target-selection" data-choice="" data-by="lead" data-when="2026-08-24T15:34:41+00:00">
+    <p class="r-dec-q">When is a sprint the dispatch target and when is a closure?</p>
+    <p class="r-dec-ctx">Both were measured this session: two plans inside one sprint collided on four files, while pairs drawn across sprints were disjoint.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="sprint-for-closure-graph-for-latency">Sprint when concentrating on an area to finish it; closure when one outcome is wanted soon</button>
+      <button class="r-opt" data-value="graph-only">Retire sprints as a dispatch target and always ship closures</button>
+      <button class="r-opt" data-value="sprint-only">Keep sprints as the only dispatch target</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead on measured behaviour rather than preference. A sprint concentrates work on one area and therefore on one set of modules, which buys coherent review and clean closure at the cost of width; a closure follows dependency edges rather than topic, so it selects disjoint work and crosses repositories naturally, buying latency to one outcome without closing any region. Retiring either would lose the property the other provides. The sprint keeps lifecycle ownership so plan and sprint accounting stay in one place; the closure is a selection lens over the same plans and owns no state.</p>
+    </div>
+<div class="r-dec" data-key="graph-schedule-override" data-choice="" data-by="lead" data-when="2026-08-24T15:34:41+00:00">
+    <p class="r-dec-q">What happens when a closure spans plans the schedule window defers?</p>
+    <p class="r-dec-ctx">A closure ignores sprint order by construction, which is its purpose. The schedule window added this session will mark part of most closures deferred.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="explicit-recorded-override">Shipping a closure overrides the window explicitly and records it, stating how many members were deferred</button>
+      <button class="r-opt" data-value="window-wins">Refuse to ship a closure that reaches outside the window</button>
+      <button class="r-opt" data-value="silently-ignore-window">Closures simply do not consult the window</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. Letting the window win would defeat the whole reason for shipping a closure, since the fast path to an outcome almost always reaches past the current sprint. Ignoring the window silently is worse than either: two mechanisms disagreeing without saying so leaves the coordinator following whichever it read last. Recording the override keeps both honest and makes the cost visible at the moment of choosing, exactly as the unreconciled-runs waiver does.</p>
+    </div>
+<div class="r-dec" data-key="decision-blocks-closure" data-choice="" data-by="lead" data-when="2026-08-24T15:34:41+00:00">
+    <p class="r-dec-q">Does an unresolved decision inside a closure block shipping it?</p>
+    <p class="r-dec-ctx">roadmap computes dependency, explicit and gate blockers today and never reads decisions, so an open decision costs nothing and can be scrolled past.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="block-until-locked-or-deferred">An open decision refuses the closure&#x27;s ship until it is locked or explicitly deferred</button>
+      <button class="r-opt" data-value="report-only">Surface open decisions on the view without blocking</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. A decision that only displays is a warning with no adjacent cost, and this repository has already paid twice for warnings that were scrolled past. Making it refuse gives an open decision a price, which is what causes it to be answered. Explicit deferral is what stops the mechanism deadlocking: a decision the lead judges non-blocking is said so once and recorded, rather than being worked around silently.</p>
     </div>
 </section>
 
