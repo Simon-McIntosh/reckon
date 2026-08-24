@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="derivable-dispatch-contract-landed">
+  <meta name="plan-title" content="Derivable Dispatch — Execution Record">
+  <meta name="plan-summary" content="Execution evidence for making dispatch derive what it previously required the coordinator to supply: session-scoped member provisioning that removes the shared free list, and the refusal of a node whose measure its role cannot run.">
+  <meta name="plan-evidence-for" content="derivable-dispatch-contract">
+  <meta name="plan-verifies" content="derivable-dispatch-contract#s2">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Derivable Dispatch — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s2">§2 — Session-scoped provisioning</h2>
+
+    <p>Commit <code>632712f</code>. A dispatch naming no member now derives one from the
+    dispatching coordinator's session — a stable <code>session-&lt;digest-prefix&gt;</code>
+    identity — so two coordinators cannot select the same row. Concurrent roster registration
+    retries optimistic write conflicts, and the session-owned row is written <em>after</em>
+    pointer preparation so a failed setup still unwinds cleanly. Named members keep their
+    existing validation and reuse path untouched.</p>
+
+    <p><strong>The measure is the collision itself, reproduced and shown absent:</strong> two
+    concurrent unnamed dispatches produced <strong>two distinct derived members and zero
+    refusals</strong>, and a follow-up dispatch from the same session <strong>reused captured
+    session <code>019ff509-8a60-7723-94fd-65942a6d8faa</code></strong> — so anonymity and warm-session
+    continuity hold at once, which was the tension the plan had to resolve rather than trade.
+    <strong>136 passed, 0 failed</strong> across the crew, ephemeral-member, gc and routes suites.</p>
+
+    <h3 id="provenance">The defect was measured three times in the session that fixed it</h3>
+
+    <p><strong>This plan was written from a live collision and then produced two more instances
+    of its sibling defect while being executed.</strong> All three are the same shape — a node
+    fenced out of a file it structurally requires — and none was caught by the seven-property
+    check, because every property it tests is about the node in isolation.</p>
+
+    <table>
+      <thead><tr><th>Instance</th><th>Node</th><th>File it needed and was fenced from</th><th>How it surfaced</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>tag-field-on-resources</code></td><td><code>docs/_shared/plan.schema.json</code>, the artifact generated from the schema source it was editing</td><td>worker refused before writing anything</td></tr>
+        <tr><td>2</td><td><code>execution-fit-refusal</code></td><td><code>reckon/crew.py</code>, where dispatch validation actually lives</td><td>worker refused before writing anything</td></tr>
+        <tr><td>3</td><td><code>idle-member-reaping</code></td><td><code>reckon/crew.py</code>, held by the node in instance 2</td><td>caught at dry-run by the coordinator, never dispatched</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Two things worth reading off that table rather than leaving implicit.</strong> The
+    workers behaved correctly every time — each refused rather than writing outside its scope, so
+    the fence did its job even when the fence was wrong. And the third instance was caught only
+    because a stale <code>--peer</code> declaration happened to be reviewed by hand: dispatch
+    accepted it, because a peer list is supplied by the same coordinator that got the scope wrong
+    and is therefore no independent check at all.</p>
+
+    <p>That last point is a finding this plan did not start with. Auto-provisioning removes the
+    contention between <em>coordinators</em>; it does nothing about a single coordinator fencing
+    its own concurrent nodes off each other's files. The scope a node needs is derivable from the
+    files it is asked to change far more reliably than from a hand-written peer list.</p>
+
+  </main>
+</body>
+</html>

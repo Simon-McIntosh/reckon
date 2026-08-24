@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
 <meta name="plan-impl" content="0.42">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -48,7 +48,7 @@
     <table>
       <thead><tr><th>Migration</th><th>What it does</th><th>Owner</th></tr></thead>
       <tbody>
-        <tr><td><strong>Project state</strong></td><td>Converts a project's monolithic <code>index.json</code> into typed per-resource HTML. Moves no files.</td><td><strong>This plan</strong></td></tr>
+        <tr><td><strong>Project state</strong></td><td>Converts a project's monolithic <code>index.json</code> into typed per-resource HTML. The <em>function</em> moves no files — but <code>migrate-fleet</code> runs it inside a transaction that also runs the layout stage, so only the per-project <code>migrate-project-state</code> command is confined to this row. See §4.</td><td><strong>This plan</strong></td></tr>
         <tr><td>Layout</td><td>Flattens 149 nested resources into typed roots and rewrites 119 links.</td><td><code>sprint-scope-and-surface</code> §3</td></tr>
         <tr><td>Frozen-index redundancy</td><td>The legacy copy at <code>state/&lt;project&gt;/index.json</code> duplicates a byte-identical digest-named snapshot.</td><td>Nobody yet — cleanup, not a blocker</td></tr>
       </tbody>
@@ -178,11 +178,27 @@
     <code>imas-ambix</code> has no topical subdirectory under a typed root at all, and
     <code>nova</code> has exactly one, <code>evidence/logs/biot-element-conditioning</code>.</p>
 
-    <p>That exposure belongs to the <em>layout</em> migration in any case, which moves files;
-    this one does not. <code>project_state.py</code> contains no document mover — its only
-    <code>os.replace</code> is inside <code>_durable_replace</code>, the atomic-write helper that
-    fsyncs a temporary file, replaces the target and fsyncs the directory entry. Directory
-    grouping is untouched by everything in this plan.</p>
+    <p><strong>Correction, 2026-08-24 — this paragraph previously argued the opposite and was
+    wrong in a way that would have caused damage at fleet scale.</strong> It said the exposure
+    belonged to the layout migration alone because <code>project_state.py</code> contains no
+    document mover. That statement about the module is true and irrelevant: the command this
+    plan directs a worker to run is <code>reckon migrate-fleet</code>, and
+    <code>fleet_migration.py:877</code> <code>migrate_repository</code> executes
+    <code>migrate_capabilities</code> → <strong><code>migrate_typed_layout</code></strong> →
+    <code>migrate_project_state</code> as one transaction. The fleet command therefore
+    <em>does</em> flatten layout.</p>
+
+    <p><strong>What that would have cost.</strong> Running it across the ten repositories would
+    have executed the flattening unannounced — 23 staged moves in <code>nova</code>, 162 in
+    <code>imas-ambix</code> — and done so before any tag exists to catch the grouping, which is
+    precisely what the locked <code>tags-first</code> decision forbids. A locked decision would
+    have been violated at fleet scale by a plan that believed it was moving nothing.</p>
+
+    <p><strong>The error was a currency audit that checked the wrong thing:</strong> the module
+    named in passing rather than the command the plan tells a worker to run. Caught by the
+    executing session before any repository was touched. §3 and §4 now use per-project
+    <code>migrate-project-state</code>, which never enters the layout stage, and the layout work
+    stays with <code>sprint-scope-and-surface</code> §3 behind its tag prerequisite.</p>
 
     <p><strong>Done when</strong> all 12 mounted projects report distributed state and the §2
     harness passes against every one of them.</p>

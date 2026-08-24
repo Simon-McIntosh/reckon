@@ -4,24 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="derivable-dispatch-contract">
-  <meta name="plan-title"     content="Dispatch Should Not Require What It Can Derive">
-  <meta name="plan-summary"   content="Two measured defects with one shape: dispatch makes the coordinator supply facts it could work out itself. Which member is free is unknowable to a second coordinator, so two of them collide over a shared list that only ever grows. And a node whose measure is running a test suite validates clean onto a role declaring it cannot execute anything, surfacing two runs later as a sandbox error nobody reads as a routing mistake.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="mid">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="derivable-dispatch-contract">
+  <meta name="plan-title" content="Dispatch Should Not Require What It Can Derive">
+  <meta name="plan-summary" content="Two measured defects with one shape: dispatch makes the coordinator supply facts it could work out itself. Which member is free is unknowable to a second coordinator, so two of them collide over a shared list that only ever grows. And a node whose measure is running a test suite validates clean onto a role declaring it cannot execute anything, surfacing two runs later as a sandbox error nobody reads as a routing mistake.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S13">
-  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags"      content="reckon-tooling,crew">
   <title>Dispatch Should Not Require What It Can Derive | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -131,7 +134,7 @@
     <p class="r-dec-rat">Locked by the lead 2026-08-24. Documenting the protocol was tried implicitly and failed: the execution skill already states that members are cheap and that concurrency is raised by registering more, and a coordinator that had read it still drew from a pool it had itself announced as free. A rule with no mechanism behind it is guidance, and this one is contended by construction because intent is invisible between sessions. Scoping an auto-provisioned member to the dispatching session removes the shared resource rather than adding etiquette around it.</p>
     </div>
 <div class="r-dec" data-key="execution-fit-refusal" data-choice="refuse-with-override" data-by="reckon-ship" data-when="2026-08-24T11:22:00+00:00">
-    <p class="r-dec-q">What does dispatch do when a node's measure implies execution but its role declares it cannot execute?</p>
+    <p class="r-dec-q">What does dispatch do when a node&#x27;s measure implies execution but its role declares it cannot execute?</p>
     <p class="r-dec-ctx">A done-when is free text, so matching it against execution intent is a heuristic and will sometimes be wrong in both directions.</p>
     <p class="r-dec-opts">
       <button class="r-opt chosen" data-value="refuse-with-override">Refuse as a node-contract failure naming the measure and the role, with an explicit recorded override</button>
@@ -151,6 +154,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20260824-provisioning-landed" data-who="reckon-ship" data-when="2026-08-24T11:35:00+00:00">
+    <div class="r-comment-body"><p><strong>ephemeral-member-provisioning landed</strong> — commit <code>632712f</code>; gate collision-free-provisioning <strong>passed</strong>; measure: <strong>136 passed, 0 failed</strong>, with two concurrent unnamed dispatches producing <strong>two distinct derived members and zero refusals</strong>, and a follow-up from the same session reusing captured session <code>019ff509</code>. Anonymity and warm-session continuity hold together rather than trading off, which was the tension §1 identified. Named members keep their existing path untouched. The roster row is written after pointer preparation so a failed setup unwinds.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20260824-third-instance" data-who="reckon-ship" data-when="2026-08-24T11:36:00+00:00">
+    <div class="r-comment-body"><p><strong>The sibling defect was measured three times in the session that fixed the first one, and the third instance changes what §3 should cover.</strong> All three are one shape — a node fenced out of a file it structurally requires: <code>tag-field-on-resources</code> fenced from the schema artifact it generates, <code>execution-fit-refusal</code> fenced from <code>reckon/crew.py</code> where dispatch validation lives, and <code>idle-member-reaping</code> fenced against a peer list that was already stale. The workers refused correctly every time; the third was caught only by hand at dry-run. <strong>That exposes something auto-provisioning does not fix:</strong> it removes contention between coordinators, but a single coordinator fencing its own concurrent nodes off each other's files is unchecked, because the <code>--peer</code> list is supplied by the same coordinator that got the scope wrong and is therefore no independent check. A node's required scope is derivable from the files it is asked to change far more reliably than from a hand-written peer declaration. Recorded here rather than folded, because it widens §3 rather than fitting inside it. Full record: <a href="/reckon/evidence/archive/derivable-dispatch-contract-landed">execution evidence</a>.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
