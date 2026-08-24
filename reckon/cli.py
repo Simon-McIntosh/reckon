@@ -1400,68 +1400,19 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     else:
         click.echo(f"  warning: {symlink} exists but is not a symlink — skipping")
 
-    # ── Seed project.json (sprint/milestone definitions) ──────────────────
-    proj_json = state_dir / "project.json"
-    if not proj_json.exists():
-        seed = {
-            "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
-            "project": proj_name,
-            "doc": "project",
-            "data": {"sprints": [], "milestones": [], "blockers": []},
-        }
-        proj_json.write_text(json.dumps(seed, indent=2) + "\n")
-        click.echo(f"  seeded state/{proj_name}/project.json")
-
-    # ── Seed legacy index state (distributed projects remain immutable) ───────
-    # Inventory is discovered live by the server on every request — writing it
-    # here would create stale data that the MCP tools read instead of the live view.
+    # ── Initialise project state without converting existing state ────────────
     index_json = state_dir / "index.json"
-    from reckon.project_state import project_state_mode
+    from reckon.project_state import create_project_state, project_state_mode
 
     if project_state_mode(docs_dir).format == "distributed":
         click.echo("  preserved frozen index.json (distributed project state)")
+    elif index_json.is_file():
+        click.echo("  preserved existing legacy index.json")
     else:
-        from reckon.serve import discover_plans
-
-        discovered = discover_plans(docs_dir, proj_name, state_dir.parent)
-        idx_data: dict = {}
-        if index_json.is_file():
-            try:
-                env = json.loads(index_json.read_text())
-                idx_data = env.get("data", {})
-            except json.JSONDecodeError:
-                pass
-
-        if not idx_data.get("sprints") and discovered.get("sprints"):
-            idx_data["sprints"] = discovered["sprints"]
-        if not idx_data.get("milestones") and discovered.get("milestones"):
-            idx_data["milestones"] = discovered["milestones"]
-        if not idx_data.get("active_sprint_id"):
-            active = next(
-                (
-                    s
-                    for s in (idx_data.get("sprints") or [])
-                    if s.get("status") == "active"
-                ),
-                None,
-            )
-            if active:
-                idx_data["active_sprint_id"] = active["id"]
-
-        idx_data.pop("inventory", None)
-        idx_data["_version"] = (idx_data.get("_version") or 0) + 1
-        envelope = {
-            "updated": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S"),
-            "project": proj_name,
-            "doc": "index",
-            "data": idx_data,
-        }
-        index_json.write_text(json.dumps(envelope, indent=2) + "\n")
-        n_sprints = len(idx_data.get("sprints") or [])
-        n_miles = len(idx_data.get("milestones") or [])
+        created = create_project_state(docs_dir, proj_name)
         click.echo(
-            f"  seeded index.json (sprints={n_sprints} milestones={n_miles}) "
-            "— inventory discovered live"
+            "  created distributed project state "
+            f"(resources={len(created['resources'])})"
         )
 
     # ── Register in mounts.json ────────────────────────────────────────────

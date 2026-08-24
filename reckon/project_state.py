@@ -1110,6 +1110,109 @@ def _write_staged_resource(
     return path
 
 
+def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
+    """Create an empty distributed project-state corpus as one transaction.
+
+    The complete marker is published only after every typed resource is
+    installed. Existing legacy state is never converted by this entrypoint.
+    """
+    docs_dir = docs_dir.resolve()
+    _safe_segment(project, "project")
+    with _resource_lock(docs_dir, project, "migration", "project-state"):
+        mode = project_state_mode(docs_dir)
+        if mode.format == "distributed":
+            compose_project_state(docs_dir, project)
+            return {"ok": True, "changed": False, **(mode.marker or {})}
+        if marker_path(docs_dir).exists():
+            raise ProjectStateError(
+                "project-state creation requires no existing marker"
+            )
+        if legacy_index_path(docs_dir, project).exists():
+            raise ProjectStateError(
+                "project-state creation refuses an existing legacy index"
+            )
+
+        payloads = _migration_payloads(project, {})
+        _validate_migration_payloads(docs_dir, project, {}, payloads)
+        stage_root = Path(
+            tempfile.mkdtemp(
+                prefix="project-state-create-", dir=docs_dir / ".reckon"
+            )
+        )
+        staging_docs = stage_root / "docs"
+        staged: list[tuple[str, str, Path]] = []
+        installed: list[Path] = []
+        try:
+            for (resource_type, resource_id), payload in sorted(payloads.items()):
+                staged_path = _write_staged_resource(
+                    staging_docs, project, resource_type, resource_id, payload
+                )
+                _read_resource_unchecked(
+                    staging_docs, project, resource_type, resource_id
+                )
+                staged.append((resource_type, resource_id, staged_path))
+
+            destinations = [
+                resource_path(docs_dir, project, resource_type, resource_id)
+                for resource_type, resource_id, _ in staged
+            ]
+            collisions = [path for path in destinations if path.exists()]
+            if collisions:
+                raise ProjectStateError(
+                    "project-state creation refuses existing typed resources: "
+                    + ", ".join(str(path.relative_to(docs_dir)) for path in collisions)
+                )
+
+            for (_, _, source), destination in zip(staged, destinations, strict=True):
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                _durable_replace(source, destination)
+                installed.append(destination)
+
+            rows = [
+                {
+                    "type": resource_type,
+                    "id": resource_id,
+                    "path": str(destination.relative_to(docs_dir)),
+                    "sha256": _sha256_path(destination),
+                    "version": _read_resource_unchecked(
+                        docs_dir, project, resource_type, resource_id
+                    )[1],
+                }
+                for (resource_type, resource_id, _), destination in zip(
+                    staged, destinations, strict=True
+                )
+            ]
+            marker = {
+                "format": "distributed",
+                "status": "complete",
+                "project": project,
+                "resources": rows,
+                "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+            target = marker_path(docs_dir)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            fd, marker_tmp_name = tempfile.mkstemp(
+                prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
+            )
+            os.close(fd)
+            marker_tmp = Path(marker_tmp_name)
+            try:
+                marker_tmp.write_text(
+                    json.dumps(marker, indent=2) + "\n", encoding="utf-8"
+                )
+                _durable_replace(marker_tmp, target)
+            finally:
+                marker_tmp.unlink(missing_ok=True)
+            return {"ok": True, "changed": True, **marker}
+        except BaseException:
+            _durable_unlink(marker_path(docs_dir))
+            for destination in reversed(installed):
+                _durable_unlink(destination)
+            raise
+        finally:
+            shutil.rmtree(stage_root, ignore_errors=True)
+
+
 def migrate_project_state(
     docs_dir: Path,
     project: str,
