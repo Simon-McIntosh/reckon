@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -236,21 +236,39 @@
     failure mode is retry rather than corruption. What is missing is a stated rule for who pushes,
     and a retry that does not surprise the loser.</p>
 
-    <p><strong>A terminal manifest that predates the current attempt is not an event, and the watch
-    currently treats it as one.</strong> Measured while dispatching this plan's own first node: the
-    worker stopped at its scope fence and wrote <code>status: blocked</code>, the coordinator
-    answered and resumed the same session, and the freshly armed watch exited immediately on the
-    manifest still sitting on disk from before the resume. It reported a blocker that had already
-    been answered. The same hazard applies to any redispatch of a node id that has run before, and
-    it gets worse with lanes, because every stale manifest in the fleet is a false wake-up
-    competing with the real ones.</p>
+    <p><strong>A resumed run is invisible to observation, in three ways with one cause: nothing in
+    the run record points at the current attempt.</strong> All three were measured on this plan's
+    own first node, which stopped at its scope fence, was answered, and was resumed in the same
+    session.</p>
+
+    <table>
+      <thead><tr><th>What was read</th><th>What it said</th><th>What was true</th></tr></thead>
+      <tbody>
+        <tr><td>the manifest, by a freshly armed watch</td><td><code>blocked</code>, fired instantly</td><td>that blocker had already been answered; it was written before the resume</td></tr>
+        <tr><td><code>log_path</code>, for stream freshness</td><td><code>stream.jsonl</code>, quiet 5 minutes</td><td>the resumed attempt writes <code>resume-1.jsonl</code>, modified seconds earlier</td></tr>
+        <tr><td><code>phase</code>, on the stored record</td><td><code>complete</code></td><td>the process was alive and working</td></tr>
+      </tbody>
+    </table>
+
+    <p>Each reading is individually defensible and together they make a working run look finished,
+    stalled and already-reported at the same time. A coordinator that trusts any one of them stops
+    watching a live worker. The hazard is not confined to resume: any redispatch of a node id that
+    has run before inherits the stale manifest, and it worsens with lanes, because every stale
+    artifact in the fleet is a false wake-up competing with the real ones.</p>
+
+    <p><strong>The fix is one concept, not three patches.</strong> An attempt is the unit: resuming
+    or redispatching starts a new one, and the record names its stream, resets its phase, and
+    carries a counter a manifest must beat to be read as fresh. Every reader then asks the same
+    question &mdash; what does the <em>current</em> attempt say &mdash; instead of three readers
+    each trusting a different stale field.</p>
 
     <p><strong>Done when</strong> follow mode emits one event per terminal run over a multi-run fleet
-    and ends when the last pointer is reconciled; a watch armed after a resume or a redispatch does
-    not fire on a manifest written before that attempt began, demonstrated by a test that resumes a
-    blocked run and asserts the watch waits; and two concurrent sessions promoting runs into the
-    same ledger both succeed, with the contended write retried rather than failed, demonstrated by a
-    test that runs the two promotions concurrently.</p>
+    and ends when the last pointer is reconciled; a resumed run reports the current attempt's stream
+    as its log, a non-terminal phase while its process is alive, and a watch that does not fire on
+    the previous attempt's manifest, all three demonstrated by one test that resumes a blocked run
+    and asserts the watch waits while the stream stays fresh; and two concurrent sessions promoting
+    runs into the same ledger both succeed, with the contended write retried rather than failed,
+    demonstrated by a test that runs the two promotions concurrently.</p>
 
     <h2 id="s6">&#167;6 &mdash; Peers are named so they can be avoided, never so they can be asked</h2>
 
