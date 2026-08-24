@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-impl" content="0.72">
 </head>
 <body>
@@ -347,6 +347,34 @@
     start time so pid reuse cannot redirect the signal, and it is what <code>crew stop</code>
     already uses for workers. A watcher deserves the same, so the dangerous general-purpose form
     is never the only way to do an ordinary thing.</p>
+
+    <p><strong>The watch's output is for a person, and it is currently unreadable.</strong>
+    Follow mode emits one JSON object per event on a single line, so the lead's terminal shows one
+    truncated blob and nothing else &mdash; observed live, where a blocked run's reason was cut
+    mid-word and the blocker went unnoticed until the coordinator looked elsewhere. What the
+    surface should be is a ticker: one compact line per <em>transition</em>, carrying the node, the
+    state it moved between, and the fleet's current counts, so the box reads as a running account
+    rather than a wall.</p>
+
+    <pre>19:42:03  peer-channel           starting &rarr; working    3 live &middot; 0 blocked &middot; 0 unpromoted
+19:51:17  single-landing-record  working  &rarr; blocked    3 live &middot; 1 blocked &middot; 0 unpromoted
+19:58:44  peer-channel           working  &rarr; complete   3 live &middot; 1 blocked &middot; 1 unpromoted
+20:01:12  peer-channel                    &rarr; promoted   2 live &middot; 1 blocked &middot; 0 unpromoted</pre>
+
+    <p><strong>Three properties keep it useful rather than noisy.</strong> It emits on a state
+    <em>change</em> and never on a poll, so a five-lane wave produces perhaps twenty lines rather
+    than a flood that gets the stream throttled. Every line carries the current counts, which is
+    the ambient in-flight number that was lost when per-run shells collapsed into one &mdash;
+    restored with strictly more information than the shell list had. And any free-text reason is
+    truncated hard to one clause, because the failure being fixed is precisely a detail long
+    enough to push everything else out of view.</p>
+
+    <p><strong>The two audiences do not compete, which is what makes this cheap.</strong> A watch
+    armed as a host background command accumulates its lines where the lead reads them live, while
+    the coordinator is woken only when the process exits. So the ticker costs the coordinator
+    nothing per line: the human gets the running account, the coordinator gets the terminal event.
+    Machine-readable output stays available behind a flag for the reader that wants objects rather
+    than prose.</p>
 
     <p><strong>Done when</strong> a dispatch into a project with no live watcher is refused before
     any worktree exists, naming the arming command, while <code>--no-watch</code> dispatches and
