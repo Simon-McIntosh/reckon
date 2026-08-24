@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import zipfile
+from importlib.metadata import version
 from pathlib import Path
 
 import pytest
@@ -13,9 +14,21 @@ from click.testing import CliRunner
 
 import reckon.cli as cli
 import reckon.serve as serve
+from reckon import __version__
 
 
 REPO_ROOT = Path(__file__).parents[1]
+
+
+def test_cli_version_matches_installed_distribution():
+    expected = version("reckon-plans")
+
+    result = CliRunner().invoke(cli.main, ["--version"])
+
+    assert expected != "dev"
+    assert __version__ == expected
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == f"reckon, version {expected}"
 
 
 def _write_plan(
@@ -421,11 +434,40 @@ def installed_static_site(tmp_path_factory, built_wheel):
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    return docs_dir, index_path, result
+    version_result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from reckon.cli import main; main()",
+            "--version",
+        ],
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=120,
+    )
+    metadata_result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from importlib.metadata import version; print(version('reckon-plans'))",
+        ],
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=120,
+    )
+    assert version_result.returncode == 0, version_result.stdout + version_result.stderr
+    assert metadata_result.returncode == 0, (
+        metadata_result.stdout + metadata_result.stderr
+    )
+    return docs_dir, index_path, result, version_result, metadata_result
 
 
 def test_installed_wheel_build_emits_complete_static_site(installed_static_site):
-    docs_dir, _, result = installed_static_site
+    docs_dir, _, result, version_result, metadata_result = installed_static_site
 
     assert len(list((docs_dir / "_ui").iterdir())) == len(
         list((REPO_ROOT / "docs" / "ui").iterdir())
@@ -436,10 +478,13 @@ def test_installed_wheel_build_emits_complete_static_site(installed_static_site)
     assert (docs_dir / "_shared" / "state.js").is_file()
     assert (docs_dir / ".nojekyll").is_file()
     assert "Build complete" in result.stdout
+    installed_version = metadata_result.stdout.strip()
+    assert installed_version != "dev"
+    assert version_result.stdout.strip() == f"reckon, version {installed_version}"
 
 
 def test_installed_wheel_build_emits_usable_state(installed_static_site):
-    docs_dir, index_path, _ = installed_static_site
+    docs_dir, index_path, _, _, _ = installed_static_site
     index_html = (docs_dir / "index.html").read_text()
     state = json.loads(index_path.read_text())["data"]
 
