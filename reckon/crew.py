@@ -1661,9 +1661,9 @@ def dispatch(
                 "with `reckon crew member add` before dispatching to it"
             )
     if roster_member is not None:
-        for pointer in list_live():
+        for pointer in list_live(project=project):
             if (
-                pointer.get("project") == project
+                Path(str(pointer.get("repo") or "")).resolve() == repo_root
                 and pointer.get("member") == effective_member
                 and pointer.get("phase") not in _TERMINAL_RUN_PHASES
             ):
