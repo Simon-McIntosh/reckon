@@ -881,18 +881,29 @@ def crew_observe(run_id, project, pretty):
 @click.option(
     "--follow",
     is_flag=True,
-    help="Stream each newly terminal or stalled run until the fleet empties.",
+    help="Print a baseline and each fleet transition until the fleet empties.",
+)
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    help="With --follow, emit machine-readable transition objects.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_watch(project, stall_window, exit_on_empty, follow, pretty):
+def crew_watch(project, stall_window, exit_on_empty, follow, json_output, pretty):
     """Block for one project event, or follow a fleet through reconciliation."""
     crew_module, _ = _crew_modules()
     try:
         if follow:
-            from reckon.crew.recovery import watch_follow
+            from reckon.crew.recovery import format_watch_transition, watch_follow
 
-            for result in watch_follow(project, stall_window=stall_window):
-                _emit({"ok": True, **result}, pretty)
+            for result in watch_follow(
+                project, stall_window=stall_window, transitions=True
+            ):
+                if json_output or result.get("event") not in {"baseline", "transition"}:
+                    _emit({"ok": True, **result}, pretty)
+                else:
+                    click.echo(format_watch_transition(result))
             return
         result = crew_module.watch(
             project,

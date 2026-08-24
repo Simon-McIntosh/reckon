@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -287,20 +288,258 @@ def _utc_seconds() -> float:
     return datetime.now(tz=timezone.utc).timestamp()
 
 
-def watch_follow(
+def _single_clause(value: Any, *, limit: int = 96) -> str:
+    """Collapse free text to one bounded clause suitable for a ticker."""
+    compact = " ".join(str(value or "").split())
+    clause = re.split(
+        r";|(?<=[.!?])\s+|\s+[\N{EM DASH}\N{EN DASH}]\s+", compact, maxsplit=1
+    )[0].strip()
+    if len(clause) <= limit:
+        return clause
+    boundary = clause.rfind(" ", 0, limit)
+    if boundary < limit // 2:
+        boundary = limit - 1
+    return clause[:boundary].rstrip(" ,:") + "…"
+
+
+def _watch_snapshot(
+    pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
+) -> dict[str, Any]:
+    """Reduce one pointer to the state and reason a ticker compares."""
+    row = classify_pointer(pointer, now_seconds=moment)
+    manifest_status = str(row.get("manifest_status") or "")
+    phase = str(pointer.get("phase") or "")
+    classification = str(row.get("classification") or "")
+
+    if manifest_status in {"complete", "blocked", "failed"}:
+        state = manifest_status
+    elif phase == "starting":
+        state = "dispatched"
+    elif phase in {"working", "running"} or classification == "running":
+        state = "working"
+    elif phase == "stopped":
+        state = "stopped"
+    else:
+        state = classification or phase or "unknown"
+
+    detail = str(row.get("detail") or "")
+    for prefix in (
+        "the worker manifest reports blocked: ",
+        "the worker manifest reports failed: ",
+    ):
+        if detail.startswith(prefix):
+            detail = detail[len(prefix) :]
+            break
+
+    if state == "working":
+        quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
+        if quiet > stall_seconds:
+            state = "stalled"
+            detail = f"stream quiet for {quiet}s"
+        else:
+            detail = ""
+    elif state in {"dispatched", "complete"}:
+        detail = ""
+
+    return {
+        "run_id": str(row.get("run_id") or ""),
+        "node": str(row.get("node") or row.get("run_id") or "unknown"),
+        "state": state,
+        "reason": _single_clause(detail),
+    }
+
+
+def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
+    """Count the ambient fleet posture included on every transition."""
+    states = [str(snapshot.get("state") or "") for snapshot in snapshots.values()]
+    return {
+        "live": len(states),
+        "blocked": states.count("blocked"),
+        "unpromoted": states.count("complete"),
+    }
+
+
+def _watch_transition(
+    project: str,
+    *,
+    kind: str,
+    snapshot: Mapping[str, Any],
+    previous: str | None,
+    current: str,
+    counts: Mapping[str, int],
+) -> dict[str, Any]:
+    """Build one lossless transition object for text or JSON rendering."""
+    event = {
+        "project": project,
+        "event": kind,
+        "observed_at": _utc_now(),
+        "run_id": snapshot.get("run_id"),
+        "node": snapshot.get("node"),
+        "from_state": previous,
+        "to_state": current,
+        "live": counts["live"],
+        "blocked": counts["blocked"],
+        "unpromoted": counts["unpromoted"],
+    }
+    reason = _single_clause(snapshot.get("reason"))
+    if reason:
+        event["reason"] = reason
+    return event
+
+
+def format_watch_transition(event: Mapping[str, Any]) -> str:
+    """Render one transition as the compact human-facing watch line."""
+    observed = str(event.get("observed_at") or "")
+    clock = observed[11:19] if len(observed) >= 19 else observed or "--:--:--"
+    node = str(event.get("node") or event.get("run_id") or "unknown")
+    previous = str(event.get("from_state") or "")
+    current = str(event.get("to_state") or "unknown")
+    movement = f"{previous} → {current}" if previous else f"→ {current}"
+    line = (
+        f"{clock}  {node:<28}  {movement:<24}  "
+        f"{int(event.get('live') or 0)} live · "
+        f"{int(event.get('blocked') or 0)} blocked · "
+        f"{int(event.get('unpromoted') or 0)} unpromoted"
+    )
+    reason = _single_clause(event.get("reason"))
+    return f"{line} · {reason}" if reason else line.rstrip()
+
+
+def watch_ticker(
     project: str,
     *,
     stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
     poll_interval: float = 1.0,
     sleeper: Callable[[float], None] = time.sleep,
 ) -> Iterator[dict[str, Any]]:
-    """Yield each newly terminal run while one watcher owns the project.
+    """Yield a baseline and then every observed fleet state transition."""
+    stall_seconds = parse_duration(stall_window)
+    known: dict[str, dict[str, Any]] = {}
+    fleet_seen = False
+
+    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+        if not acquired:
+            yield {
+                "project": project,
+                "event": "watcher-live",
+                "run_id": None,
+                "classification": "watcher_live",
+                "next_action": "wait for the live project watcher to report",
+                "watcher_live": True,
+                "watcher": watcher,
+            }
+            return
+
+        while True:
+            pointers = list_live(project=project)
+            moment = _utc_seconds()
+            current = {
+                str(pointer.get("run_id") or ""): _watch_snapshot(
+                    pointer, moment=moment, stall_seconds=stall_seconds
+                )
+                for pointer in pointers
+                if pointer.get("run_id")
+            }
+            if not current and not fleet_seen:
+                sleeper(poll_interval)
+                continue
+
+            counts = _fleet_counts(current)
+            if not fleet_seen:
+                fleet_seen = True
+                known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
+                for snapshot in current.values():
+                    yield _watch_transition(
+                        project,
+                        kind="baseline",
+                        snapshot=snapshot,
+                        previous=None,
+                        current=str(snapshot["state"]),
+                        counts=counts,
+                    )
+                continue
+
+            events: list[dict[str, Any]] = []
+            next_known = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
+            for run_id in (item for item in known if item not in current):
+                snapshot = known[run_id]
+                next_known.pop(run_id, None)
+                events.append(
+                    _watch_transition(
+                        project,
+                        kind="transition",
+                        snapshot=snapshot,
+                        previous=str(snapshot["state"]),
+                        current="promoted",
+                        counts=counts,
+                    )
+                )
+
+            for run_id in (item for item in current if item not in known):
+                snapshot = current[run_id]
+                dispatched = {**snapshot, "state": "dispatched", "reason": ""}
+                next_known[run_id] = dispatched
+                events.append(
+                    _watch_transition(
+                        project,
+                        kind="transition",
+                        snapshot=dispatched,
+                        previous=None,
+                        current="dispatched",
+                        counts=counts,
+                    )
+                )
+
+            for run_id in (item for item in current if item in known):
+                snapshot = current[run_id]
+                previous = str(known[run_id]["state"])
+                current_state = str(snapshot["state"])
+                if current_state != previous:
+                    next_known[run_id] = dict(snapshot)
+                    events.append(
+                        _watch_transition(
+                            project,
+                            kind="transition",
+                            snapshot=snapshot,
+                            previous=previous,
+                            current=current_state,
+                            counts=counts,
+                        )
+                    )
+
+            known = next_known
+            if events:
+                yield from events
+                if not current:
+                    return
+                continue
+            sleeper(poll_interval)
+
+
+def watch_follow(
+    project: str,
+    *,
+    stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
+    poll_interval: float = 1.0,
+    sleeper: Callable[[float], None] = time.sleep,
+    transitions: bool = False,
+) -> Iterator[dict[str, Any]]:
+    """Yield each newly terminal run, or the full transition stream on request.
 
     An empty project remains armed until its first pointer appears. Once a
     fleet has appeared, removing its last pointer ends the stream. Terminal
     and stalled run ids are remembered so an unreconciled pointer cannot
     repeatedly wake the watcher or hide a later run.
     """
+    if transitions:
+        yield from watch_ticker(
+            project,
+            stall_window=stall_window,
+            poll_interval=poll_interval,
+            sleeper=sleeper,
+        )
+        return
+
     stall_seconds = parse_duration(stall_window)
     reported_runs: set[str] = set()
     fleet_seen = False

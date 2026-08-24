@@ -1,0 +1,209 @@
+"""Hermetic state-transition ticker contracts for a watched fleet."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+
+from reckon import cli as cli_module
+from reckon import crew
+from reckon.crew import recovery
+
+
+@pytest.fixture()
+def home(tmp_path, monkeypatch):
+    """Move all pointers and watcher records into a temporary home."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
+    stream = home / "streams" / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "node": {"id": node, "plan": "plan-a", "time_budget": "20m"},
+            "phase": phase,
+            "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            "manifest_path": str(home / "manifests" / f"{run_id}.md"),
+            "log_path": str(stream),
+            "process_alive": None,
+        },
+    )
+
+
+def _set_phase(run_id: str, phase: str) -> None:
+    pointer = crew.read_pointer(run_id)
+    pointer["phase"] = phase
+    crew._write_json(crew.pointer_path(run_id), pointer)
+
+
+def _deliver(home: Path, run_id: str, status: str, *, blocker: str = "") -> None:
+    manifest = home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"node: ticker-node\nstatus: {status}\ncommits: HEAD\n"
+        f"blockers: {blocker or 'none'}\n"
+    )
+
+
+def _event(**overrides) -> dict:
+    event = {
+        "project": "proj",
+        "event": "transition",
+        "observed_at": "2026-08-24T19:35:45Z",
+        "run_id": "r-ticker",
+        "node": "ticker-node",
+        "from_state": "working",
+        "to_state": "blocked",
+        "live": 3,
+        "blocked": 1,
+        "unpromoted": 0,
+        "reason": "first clause",
+    }
+    event.update(overrides)
+    return event
+
+
+def test_ticker_opens_with_one_baseline_per_live_run(home) -> None:
+    _write_pointer(home, "r-first", "first-node", phase="starting")
+    _write_pointer(home, "r-second", "second-node", phase="working")
+    stream = recovery.watch_ticker("proj", stall_window="1h")
+
+    try:
+        baseline = [next(stream), next(stream)]
+    finally:
+        stream.close()
+
+    assert [event["event"] for event in baseline] == ["baseline", "baseline"]
+    assert [event["node"] for event in baseline] == ["first-node", "second-node"]
+    assert [event["from_state"] for event in baseline] == [None, None]
+    assert [event["to_state"] for event in baseline] == ["dispatched", "working"]
+    assert {
+        (event["live"], event["blocked"], event["unpromoted"]) for event in baseline
+    } == {(2, 0, 0)}
+
+
+def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> None:
+    _write_pointer(home, "r-existing", "existing-node", phase="starting")
+    sleeps = 0
+
+    def advance(_seconds: float) -> None:
+        nonlocal sleeps
+        sleeps += 1
+        if sleeps == 1:
+            return
+        if sleeps == 2:
+            _write_pointer(home, "r-new", "new-node", phase="starting")
+        elif sleeps == 3:
+            _set_phase("r-new", "working")
+        elif sleeps == 4:
+            _deliver(
+                home,
+                "r-new",
+                "blocked",
+                blocker="dependency unavailable; retry after configuration changes",
+            )
+        elif sleeps == 5:
+            _deliver(home, "r-new", "complete")
+        elif sleeps == 6:
+            crew.pointer_path("r-new").unlink()
+        elif sleeps == 7:
+            crew.pointer_path("r-existing").unlink()
+        else:
+            pytest.fail("ticker did not end after the last pointer was reconciled")
+
+    stream = recovery.watch_ticker(
+        "proj", stall_window="1h", poll_interval=0, sleeper=advance
+    )
+    baseline = next(stream)
+    transitions = list(stream)
+
+    assert baseline["event"] == "baseline"
+    assert [
+        (event["node"], event["from_state"], event["to_state"]) for event in transitions
+    ] == [
+        ("new-node", None, "dispatched"),
+        ("new-node", "dispatched", "working"),
+        ("new-node", "working", "blocked"),
+        ("new-node", "blocked", "complete"),
+        ("new-node", "complete", "promoted"),
+        ("existing-node", "dispatched", "promoted"),
+    ]
+    assert [
+        (event["live"], event["blocked"], event["unpromoted"]) for event in transitions
+    ] == [
+        (2, 0, 0),
+        (2, 0, 0),
+        (2, 1, 0),
+        (2, 0, 1),
+        (1, 0, 0),
+        (0, 0, 0),
+    ]
+    assert transitions[2]["reason"] == "dependency unavailable"
+    assert sleeps == 7
+
+
+def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
+    line = recovery.format_watch_transition(
+        _event(reason="first clause; second clause that must not reach the terminal")
+    )
+
+    assert line.startswith("19:35:45  ticker-node")
+    assert "working → blocked" in line
+    assert "3 live · 1 blocked · 0 unpromoted" in line
+    assert line.endswith("· first clause")
+    assert "second clause" not in line
+    assert "\n" not in line
+
+
+def test_cli_follow_prints_compact_transition_lines_by_default(
+    home, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--follow"],
+    )
+
+    assert result.exit_code == 0
+    assert result.output.count("\n") == 1
+    assert "ticker-node" in result.output
+    assert "working → blocked" in result.output
+    assert not result.output.startswith("{")
+
+
+def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) -> None:
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--follow", "--json"],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["node"] == "ticker-node"
+    assert payload["from_state"] == "working"
+    assert payload["to_state"] == "blocked"
+    assert (payload["live"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
