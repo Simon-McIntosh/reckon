@@ -481,16 +481,40 @@ def preflight_repository(docs_dir: Path, project: str) -> dict[str, Any]:
                 "detail": "mounted checkout has no current branch",
             }
         )
-    alternate_worktrees = [
-        row
-        for row in repository["worktrees"]
-        if Path(str(row["path"])).resolve() != repo_root
-    ]
-    if alternate_worktrees:
+    alternate_worktree_blockers: list[dict[str, Any]] = []
+    for row in repository["worktrees"]:
+        alternate = Path(str(row["path"])).resolve()
+        if alternate == repo_root:
+            continue
+        alternate_docs = alternate / "docs"
+        if not alternate_docs.is_dir():
+            continue
+        try:
+            alternate_status = _run_git(
+                alternate,
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+            ).splitlines()
+        except FleetMigrationError:
+            continue
+        overlap = [
+            _status_path(line)
+            for line in alternate_status
+            if _overlaps_migration_path(
+                alternate, alternate_docs, _status_path(line)
+            )
+        ]
+        if overlap:
+            alternate_worktree_blockers.append(
+                {"path": str(alternate), "paths": sorted(set(overlap))}
+            )
+    if alternate_worktree_blockers:
         blockers.append(
             {
-                "code": "active-alternate-worktrees",
-                "detail": ", ".join(str(row["path"]) for row in alternate_worktrees),
+                "code": "dirty-alternate-worktrees",
+                "worktrees": alternate_worktree_blockers,
+                "detail": "alternate worktrees have migration-relevant uncommitted changes",
             }
         )
     overlap = [
