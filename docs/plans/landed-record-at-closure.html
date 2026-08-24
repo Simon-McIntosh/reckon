@@ -4,24 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="landed-record-at-closure">
-  <meta name="plan-title"     content="A Landed Record Should Mean Landed">
-  <meta name="plan-summary"   content="Execution evidence is written into a file whose name says landed and whose directory says archive, while the plan is a third done and the file is rewritten every twenty minutes. Move the per-step record to where it already lives — section-anchored plan comments and the committed run ledger — and make the landed document a synthesis written once, at closure, from both.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="mid">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="landed-record-at-closure">
+  <meta name="plan-title" content="A Landed Record Should Mean Landed">
+  <meta name="plan-summary" content="Execution evidence is written into a file whose name says landed and whose directory says archive, while the plan is a third done and the file is rewritten every twenty minutes. Move the per-step record to where it already lives — section-anchored plan comments and the committed run ledger — and make the landed document a synthesis written once, at closure, from both.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S13">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,evidence">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,evidence">
   <title>A Landed Record Should Mean Landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -122,7 +125,7 @@
     <p class="r-dec-q">Where does per-step execution evidence live while a plan is in progress?</p>
     <p class="r-dec-ctx">Today it is written twice: into a section-anchored plan comment, and into a cumulative file under docs/evidence/archive/ whose name and directory both assert completion.</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="plan-comments-and-ledger">In the plan's own comments plus the committed run ledger, with no third file until closure</button>
+      <button class="r-opt chosen" data-value="plan-comments-and-ledger">In the plan&#x27;s own comments plus the committed run ledger, with no third file until closure</button>
       <button class="r-opt" data-value="keep-cumulative-file">Keep the cumulative evidence file, and rename it so it does not claim to be landed</button>
       </p>
     <p class="r-dec-rat">Locked by the lead 2026-08-24. Both replacements already exist and are already written: plan comments carry the anchored narrative and are committed with the plan, and crew.json run records carry commit, gate, tests added, worker seconds, changed lines and scope-changed per run. Writing a third record of the same facts creates a drift surface with nothing keeping the copies equal, and the drift is discovered by whoever quotes the stale one. Renaming the cumulative file would fix the false claim but keep the duplication, which is the more consequential of the two problems.</p>
@@ -147,6 +150,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260824T190702466362-single-landing-record" data-who="codex-y" data-when="2026-08-24T19:25:28Z">
+    <div class="r-comment-body"><p>One record per landing: narrative to the plan comment, measurements to the ledger; a plan-terminal write is refused when no evidence record claims it, enforced at the store rather than at one caller.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260824T2005" data-who="reckon-ship" data-when="2026-08-24T20:05:00+00:00">
+    <div class="r-comment-body">evidence-path-repair landed — commit a9f32b9, merged; gate passed; measure fifteen records moved with the diff showing one insertion and one deletion across fifteen files, fourteen byte-identical and the fifteenth changed only in its type line, fifteen of fifteen back-links resolving, zero intra-document anchor failures, zero records belonging to a terminal plan moved, and the twenty-four records left under the archive path all verified terminal; audit-doc reported zero errors across every destination and the suite held at 2152 with no new failures; 1119 worker-seconds, run recorded --scope-changed. The worker blocked twice rather than move fourteen of fifteen and call it done, and its second refusal corrected the coordinator: a document named -landed carrying reckon-type=plan is evidence wearing a plan type, so moving it into the live plan root would have been worse than leaving it. The byte-identity rule was lifted for that one file and replaced with a narrower one, its type and back-link only, reported separately so the exception stays visible rather than folded into a count. This comment is written by hand because the promotion predates the invariant that now writes these automatically — which is itself the evidence that the invariant was the right shape.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
