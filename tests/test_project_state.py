@@ -109,8 +109,11 @@ def _concurrent_status_update(
         queue.put(("rejected", sprint_id, str(exc)))
 
 
-def _write_plan(docs: Path, slug: str, status: str, impl: float) -> None:
-    path = docs / "plans" / f"{slug}.html"
+def _write_plan(
+    docs: Path, slug: str, status: str, impl: float, *, archived: bool = False
+) -> None:
+    root = docs / "plans" / "archive" if archived else docs / "plans"
+    path = root / f"{slug}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     bare = (
         "<!doctype html><html><head>"
@@ -223,6 +226,67 @@ def test_migration_preserves_index_snapshot_and_composed_parity(migrated):
     assert manifest["owner"] == "owner"
     assert "path" not in manifest
     assert "plans_count" not in manifest
+
+
+def test_migration_coerces_bare_string_sprint_item(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, "alpha", "active", 0.4)
+    index = _legacy_index(docs)
+    envelope = json.loads(index.read_text(encoding="utf-8"))
+    envelope["data"]["sprints"][1]["items"] = ["alpha"]
+    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+
+    result = migrate_project_state(docs, "sample")
+
+    stored, _ = read_resource(docs, "sample", "sprint", "current")
+    assert stored["items"] == [{"slug": "alpha"}]
+    composed = compose_project_state(docs, "sample")
+    current = next(item for item in composed["sprints"] if item["id"] == "current")
+    assert current["items"][0]["slug"] == "alpha"
+    assert result["findings"] == []
+
+
+def test_migration_accepts_sprint_item_for_archived_plan(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, "retired", "done", 1.0, archived=True)
+    index = _legacy_index(docs)
+    envelope = json.loads(index.read_text(encoding="utf-8"))
+    envelope["data"]["sprints"][1]["items"][0]["slug"] = "retired"
+    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+
+    result = migrate_project_state(docs, "sample")
+
+    assert result["findings"] == []
+    stored, _ = read_resource(docs, "sample", "sprint", "current")
+    assert stored["items"][0]["slug"] == "retired"
+
+
+def test_migration_reports_unresolved_historical_sprint_item(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    index = _legacy_index(docs)
+    envelope = json.loads(index.read_text(encoding="utf-8"))
+    envelope["data"]["sprints"][1]["items"][0]["slug"] = "missing-history"
+    index.write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+
+    result = migrate_project_state(docs, "sample")
+
+    assert result["findings"] == [
+        {
+            "code": "unresolved-historical-sprint-item",
+            "severity": "warning",
+            "sprint": "current",
+            "slug": "missing-history",
+            "message": (
+                "sprint 'current' item 'missing-history' does not resolve to a plan "
+                "or archived plan"
+            ),
+        }
+    ]
+    stored, _ = read_resource(docs, "sample", "sprint", "current")
+    assert stored["items"][0]["slug"] == "missing-history"
 
 
 def test_legacy_item_lifecycle_reads_from_plan_with_compatibility_warning(tmp_path):

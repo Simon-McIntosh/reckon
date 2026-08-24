@@ -511,6 +511,22 @@ def _live_plan_slugs(docs_dir: Path, project: str) -> set[str]:
     }
 
 
+def _migration_plan_slugs(docs_dir: Path, project: str) -> set[str]:
+    """Return every plan identity that historical sprint state may reference."""
+    from reckon.resources import resource_map
+
+    return {
+        resource.slug
+        for resource in resource_map(
+            docs_dir,
+            project,
+            include_archived=True,
+            ignore_invalid=True,
+        ).values()
+        if resource.type == "plan"
+    }
+
+
 def _distributed_ids(docs_dir: Path, root_name: str) -> set[str]:
     root = docs_dir / root_name
     return {path.stem for path in root.glob("*.html")} if root.is_dir() else set()
@@ -745,7 +761,7 @@ def _validate_migration_payloads(
     project: str,
     legacy: dict[str, Any],
     payloads: dict[tuple[str, str], dict[str, Any]],
-) -> None:
+) -> list[dict[str, str]]:
     """Validate the complete split corpus before writing any destination."""
     validated = {
         key: _validate_resource(key[0], value) for key, value in payloads.items()
@@ -755,7 +771,8 @@ def _validate_migration_payloads(
         for (resource_type, _), data in validated.items()
         if resource_type == "sprint"
     ]
-    plan_slugs = _live_plan_slugs(docs_dir, project)
+    plan_slugs = _migration_plan_slugs(docs_dir, project)
+    findings: list[dict[str, str]] = []
     blocker_ids = {
         resource_id
         for resource_type, resource_id in validated
@@ -770,8 +787,17 @@ def _validate_migration_payloads(
         for item in sprint.get("items", []):
             slug = str(item["slug"])
             if slug not in plan_slugs:
-                raise ProjectStateError(
-                    f"sprint item {slug!r} does not resolve to a live plan"
+                findings.append(
+                    {
+                        "code": "unresolved-historical-sprint-item",
+                        "severity": "warning",
+                        "sprint": str(sprint["id"]),
+                        "slug": slug,
+                        "message": (
+                            f"sprint {sprint['id']!r} item {slug!r} does not "
+                            "resolve to a plan or archived plan"
+                        ),
+                    }
                 )
             missing = set(item.get("blocked_by", [])) - blocker_ids
             if missing:
@@ -794,6 +820,7 @@ def _validate_migration_payloads(
                 f"milestone {resource_id!r} references missing milestones: "
                 + ", ".join(sorted(missing))
             )
+    return findings
 
 
 def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any]]:
@@ -1038,7 +1065,9 @@ def _parity_projection(
         for field in ("description", "starts", "ends", "summary"):
             if not record.get(field):
                 record.pop(field, None)
-        for item in record.get("items", []):
+        items = []
+        for raw_item in record.get("items", []):
+            item = {"slug": raw_item} if isinstance(raw_item, str) else raw_item
             if isinstance(item, dict):
                 for field in (
                     *LIFECYCLE_ITEM_FIELDS,
@@ -1047,6 +1076,8 @@ def _parity_projection(
                     "effort_calibrated",
                 ):
                     item.pop(field, None)
+            items.append(item)
+        record["items"] = items
         result["sprints"].append(record)
     for key in ("milestones", "blockers"):
         for row in data.get(key, []):
@@ -1277,7 +1308,7 @@ def _migrate_project_state_locked(
         _fsync_directory(snapshot.parent)
 
     payloads = _migration_payloads(project, deepcopy(legacy))
-    _validate_migration_payloads(docs_dir, project, legacy, payloads)
+    findings = _validate_migration_payloads(docs_dir, project, legacy, payloads)
     stage_root = Path(
         tempfile.mkdtemp(prefix="project-state-", dir=docs_dir / ".reckon")
     )
@@ -1392,6 +1423,7 @@ def _migrate_project_state_locked(
                     destination_manifest.relative_to(docs_dir)
                 ),
                 "parity_sha256": old_parity,
+                "findings": findings,
                 "resources": rows,
                 "completed_at": datetime.now(UTC).isoformat(timespec="seconds"),
             }
