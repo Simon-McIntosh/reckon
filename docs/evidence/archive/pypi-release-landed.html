@@ -142,6 +142,42 @@
     manual trigger exists and that a dry run cannot reach PyPI; the original 6 structural cases
     stay green, 8 passed 0 failed.</p>
 
+    <h2 id="published">Published, and verified against the real index</h2>
+
+    <p><strong><code>reckon-plans 0.2.0</code> is on PyPI.</strong> The lead registered trusted
+    publishers on both indexes, and the tag <code>v0.2.0</code> ran all three jobs green: build,
+    TestPyPI, then PyPI. No credential was stored at any point.</p>
+
+    <p><strong>The rehearsal earned its place before that, by failing usefully.</strong> A manual
+    <code>testpypi-only</code> run authenticated through OIDC, generated attestations, reached the
+    upload endpoint and was rejected on content rather than credentials:
+    <code>400 The use of local versions in &#x27;0.2.0rc26.dev382+g61bf24948&#x27; is not
+    allowed</code>. That proved the registration end to end without spending the version number,
+    and it isolated a real defect — an untagged build carries a local segment no index accepts, so
+    the rehearsal could never have uploaded. Commit <code>8b66c23</code> removes the local segment
+    from untagged builds while leaving a tagged build at exactly its tag.</p>
+
+    <p><strong>The plan&#x27;s own acceptance, run against the published artifact.</strong> A fresh
+    Python 3.14 environment outside the repository installed <code>reckon-plans==0.2.0</code> from
+    <code>pypi.org/simple</code>; with a fresh <code>HOME</code>, no <code>PYTHONPATH</code> and no
+    checkout, <code>reckon --version</code> printed exactly <code>reckon, version 0.2.0</code> and
+    <code>reckon build</code> emitted <strong>25 static-site files</strong>, exit 0. The build&#x27;s
+    own git lookup returned <em>not a git repository</em>, independently confirming no source tree
+    was present — which is the assertion §3 says matters more than it looks.</p>
+
+    <h2 id="suite">Absolute suite verdict, once the role was right</h2>
+
+    <p>The earlier sandbox-qualified reading is superseded. At integrated <code>61bf249</code> the
+    full suite is <strong>1991 passed, 0 failed, 0 errors, exit 0</strong> in 79.96 s. All four
+    tests that shell out to <code>uv build</code> executed and passed rather than aborting.</p>
+
+    <p><strong>The earlier 45 non-passing outcomes were an orchestration error, not a product
+    signal.</strong> Those suite runs were dispatched with <code>--role review</code>, which is
+    configured <code>execution_capable: false</code> and resolves to the read-only tier; reckon
+    carries a <code>test</code> role at <code>worktree-full</code>, which runs unsandboxed
+    precisely because a sandbox is inherited by child processes and breaks the test runners a
+    gate depends on. The role was wrong, and the dispatch honoured it faithfully.</p>
+
     <h2 id="authority">What remains, and why this session cannot finish it</h2>
 
     <p><strong>The chain is complete up to the point where it leaves this machine.</strong>

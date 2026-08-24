@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="pypi-release">
   <meta name="plan-title" content="A Version to Pin, Not a Commit">
   <meta name="plan-summary" content="Publish reckon-plans to PyPI so every consuming repository&#x27;s CI pins a released version instead of a git ref. Without it, federated publication costs N repositories to bump on each reckon change, or leaves them tracking a moving branch that can break their builds with no signal.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="4">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -42,56 +42,34 @@
     <code>reckon-plans&gt;=X.Y</code>, adopt on their own schedule, and a breaking change is
     announced by a major version rather than discovered by a red build.</p>
 
-    <h2 id="s2">§2 — What the package already has, and the four gaps</h2>
+    <section id="s2" class="section-landed">
+  <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+    <h2>§2 — Distribution metadata</h2></header>
+  <p class="landed-summary">Closed both metadata gaps in <code>pyproject.toml</code>:
+    <strong>Project-URL entries 0 → 4</strong>, <strong>classifiers 1 → 7</strong>, asserted
+    against the built wheel's METADATA rather than the source so packaging cannot drop them in
+    transit. Wheel 486,535 B and sdist both build. The <code>fetch-depth</code> trap this section
+    names is closed in §3's workflow. Full record:
+    <a href="/reckon/evidence/archive/pypi-release-landed#s2">§2 landed</a>
+    (commit <code>dff9e38</code>).</p>
+</section>
 
-    <p>Packaging is closer than the absence from PyPI suggests. <code>pyproject.toml</code>
-    already declares the hatchling backend with <code>hatch-vcs</code> for versioning, the
-    distribution name, a dynamic version, description, readme, <code>requires-python</code>,
-    authors, an MIT license with <code>license-files</code>, keywords, runtime dependencies and
-    the <code>reckon</code> console script. <code>LICENSE</code> and <code>README.md</code>
-    both exist.</p>
+<section id="s3" class="section-landed">
+  <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+    <h2>§3 — Trusted publishing, and the version it must assert</h2></header>
+  <p class="landed-summary"><strong><code>reckon-plans 0.2.0</code> is published on PyPI</strong>,
+    all three jobs green, no credential stored anywhere. Acceptance run against the real index:
+    fresh environment with no checkout, <code>reckon --version</code> printed exactly
+    <code>reckon, version 0.2.0</code>, <code>reckon build</code> emitted <strong>25 files</strong>
+    with its git lookup confirming no source tree. Suite <strong>1991 passed / 0 failed / 0
+    errors</strong>. A TestPyPI rehearsal that cannot reach PyPI verified the registration before
+    the tag was spent, and exposed the local-version defect a tagged build would have hidden.
+    Full record: <a href="/reckon/evidence/archive/pypi-release-landed#published">§3 landed</a>
+    (commits <code>6616c6d</code>, <code>b9732eb</code>, <code>026c8cd</code>,
+    <code>8b66c23</code>).</p>
+</section>
 
-    <table>
-      <thead><tr><th>Gap</th><th>Consequence if shipped as-is</th></tr></thead>
-      <tbody>
-        <tr><td>No <code>[project.urls]</code></td><td>The PyPI page carries no repository or documentation link, so a reader cannot reach the source</td></tr>
-        <tr><td>One classifier (license only)</td><td>Not discoverable by Python version, audience, topic or maturity; PyPI shows it as uncategorised</td></tr>
-        <tr><td>No publish workflow</td><td>Release is a manual local build, which is where credentials leak and unreproducible artifacts come from</td></tr>
-        <tr><td><code>hatch-vcs</code> plus a shallow CI checkout</td><td>The version is derived from git tags, and <code>actions/checkout</code> defaults to depth 1 — so the build either fails or produces a junk version</td></tr>
-      </tbody>
-    </table>
-
-    <p>The last one is the trap worth stating explicitly because it fails <em>late</em>: the
-    workflow runs, the build appears to succeed, and the artifact carries a version derived
-    from no tag. The fix is one line — <code>fetch-depth: 0</code> — and it is invisible until
-    someone inspects the published version string.</p>
-
-    <h2 id="s3">§3 — Trusted publishing, not an API token</h2>
-
-    <p>Publish through PyPI's OIDC trusted-publisher flow rather than a long-lived API token
-    in repository secrets. The workflow requests a short-lived identity token from GitHub, PyPI
-    verifies it against a publisher registered as this repository plus this workflow filename
-    plus a named environment, and no credential is ever stored. A leaked secret cannot be
-    leaked if it does not exist.</p>
-
-    <p>That registration is a one-time action on PyPI's side and is the only step that cannot
-    be automated from here, because it requires an authenticated session as the project
-    owner.</p>
-
-    <p><strong>Deliverable:</strong> the four gaps closed; a release workflow triggered by a
-    version tag that checks out with full history, builds a wheel and sdist, and publishes via
-    trusted publishing with <code>id-token: write</code>; and a TestPyPI dry run before the
-    first real upload. <strong>Done when</strong> a fresh environment can
-    <code>pip install reckon-plans</code> from PyPI, the installed
-    <code>reckon --version</code> matches the git tag exactly, and the console script runs
-    <code>reckon build</code> on a scratch project without the repository present.</p>
-
-    <p>That last assertion matters more than it looks: it proves the distribution ships the UI
-    assets and shared CSS it needs, rather than reaching for files that only exist in a
-    checkout. A wheel that works only where the source tree is also present would pass a naive
-    import test and fail every consumer.</p>
-
-    <h2 id="s4">§4 — Versioning commitment</h2>
+<h2 id="s4">§4 — Versioning commitment</h2>
 
     <p>Once consumers pin a version, the version numbers become a contract rather than a
     label. Two commitments follow, and they are cheap to make now and expensive to
@@ -114,10 +92,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-pypi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:pypi-release" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-pypi-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship reckon:pypi-release" data-resolved-at="2026-08-24T10:10:37+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the four packaging gaps and publish through trusted publishing</h4>
     <div class="r-fu-body"><p>Add <code>[project.urls]</code> and real classifiers, register the PyPI trusted publisher, and add a tag-triggered release workflow that checks out with <code>fetch-depth: 0</code> so <code>hatch-vcs</code> can see the tag. TestPyPI first. The acceptance that matters is not an import test but running <code>reckon build</code> from the installed wheel on a scratch project with no checkout present, which proves the distribution actually ships its UI assets.</p></div>
     <pre class="r-fu-prompt">/reckon-ship reckon:pypi-release</pre>
+    <p class="r-fu-outcome">done — no followup. reckon-plans 0.2.0 is published and verified against the real index. All four packaging gaps closed (commit dff9e38: 4 project URLs, 7 classifiers); trusted publishing landed with no stored credential (6616c6d) plus a rehearsal trigger that cannot reach PyPI (026c8cd); the version an installed wheel reports was repaired (b9732eb) after the scout found the plan's stated acceptance could never have passed; and untagged builds no longer carry an index-rejected local segment (8b66c23). Acceptance run against the published artifact: fresh environment outside the repository, reckon --version printed exactly 'reckon, version 0.2.0', reckon build emitted 25 files with the git lookup confirming no checkout present. Full suite 1991 passed / 0 failed / 0 errors. What comes next is owned by other live plans that already carry their own followups — project-onboarding and sprint-scope-and-surface both depended on this and are surfaced by roadmap.</p>
     </article>
 </section>
 
@@ -142,6 +121,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824-publisher-registered" data-who="reckon-ship" data-when="2026-08-24T10:00:00+00:00">
     <div class="r-comment-body"><p><strong>Trusted publishers registered by the lead on both PyPI and TestPyPI.</strong> That clears the half of the authority boundary that could never be automated from here. One owner-only action remains and it is irreversible: pushing <code>v0.2.0</code>. A rehearsal is now available first — run the workflow manually with <code>testpypi-only</code> left at its default, which publishes to TestPyPI and cannot reach PyPI.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824-published" data-who="reckon-ship" data-when="2026-08-24T10:10:00+00:00">
+    <div class="r-comment-body"><p><strong>Published — <code>reckon-plans 0.2.0</code> is live on PyPI</strong>, all three jobs green under the lead's registered trusted publishers, with no credential stored anywhere. <strong>The rehearsal earned its keep by failing usefully first:</strong> a manual TestPyPI-only run authenticated through OIDC and reached the upload endpoint, then was rejected on content rather than credentials — <code>400 The use of local versions in '0.2.0rc26.dev382+g61bf24948' is not allowed</code>. That verified the registration end to end without spending the version number, and exposed a defect the tag would have hidden: an untagged build carries a local segment no index accepts. Commit <code>8b66c23</code> removes it while leaving a tagged build at exactly its tag. <strong>Acceptance against the published artifact:</strong> fresh Python 3.14 environment, fresh HOME, no PYTHONPATH, no checkout — <code>reckon --version</code> printed exactly <code>reckon, version 0.2.0</code> and <code>reckon build</code> emitted 25 files, exit 0, with the build's own git lookup reporting <em>not a git repository</em>. <strong>Suite at integrated HEAD: 1991 passed, 0 failed, 0 errors.</strong> The earlier 45 non-passing outcomes were my orchestration error — those runs used <code>--role review</code> (<code>execution_capable: false</code>) instead of the <code>test</code> role, and dispatch honoured that faithfully.</p></div>
 </div>
 </section>
 </main>
