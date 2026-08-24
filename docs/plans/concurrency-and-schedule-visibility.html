@@ -4,25 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="concurrency-and-schedule-visibility">
-  <meta name="plan-title"     content="What May Run Together, and What Should Run Next">
-  <meta name="plan-summary"   content="An orchestrator can ask which plans have their prerequisites met and gets a good answer. It cannot ask which nodes may safely run at the same time, because file claims are never compared, and it cannot ask what it should start next, because readiness ignores the sprint order it already computes. Both answers are derivable from data already on disk.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="concurrency-and-schedule-visibility">
+  <meta name="plan-title" content="What May Run Together, and What Should Run Next">
+  <meta name="plan-summary" content="An orchestrator can ask which plans have their prerequisites met and gets a good answer. It cannot ask which nodes may safely run at the same time, because file claims are never compared, and it cannot ask what it should start next, because readiness ignores the sprint order it already computes. Both answers are derivable from data already on disk.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S13">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,crew">
-  <meta name="plan-informs"   content="agent-fleet-orchestration,crew-fleet-rox-review">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="agent-fleet-orchestration,crew-fleet-rox-review">
   <title>What May Run Together, and What Should Run Next | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -291,73 +293,68 @@
     a node pair whose adjacency &#167;3 computed.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&#167;</span> Decisions</h2>
-
-      <div class="r-dec" data-key="scope-declaration-site" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where are candidate write paths declared, so a wave can be planned before launch?</p>
-        <p class="r-dec-ctx">Planning a wave needs paths one step earlier than dispatch, where they are currently invented per node. The coordinator knows its own nodes; it does not know another plan's.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="wave-manifest">A submitted wave manifest of candidate nodes, planned against live claims &mdash; no plan-authoring change</button>
-          <button class="r-opt" data-value="plan-sections-declare-scope">Plan sections declare their write scope in the HTML, so waves can be planned across plans and sprints with no coordinator</button>
-          <button class="r-opt" data-value="both-staged">Wave manifest now, section-declared scope only if something needs it</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="derivation-group-home" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where does the per-project source-to-generated map live?</p>
-        <p class="r-dec-ctx">Claiming a schema source must claim its generated artifacts, or two nodes will be judged disjoint and collide on a regenerated file. The map is per project because the derivations are.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="project-resource">The project resource beside its scope policy</button>
-          <button class="r-opt" data-value="flight-config">A flight-config layer, resolved like every other per-project setting</button>
-          <button class="r-opt" data-value="repo-file">A file in the repository the generator already lives in</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="schedule-horizon-width" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How wide is the schedule horizon that schedule-readiness enforces?</p>
-        <p class="r-dec-ctx">Strictly applied to a project with five sprints open, an earliest-open-sprint rule defers nearly everything. The width is a policy choice about how much work may be in flight, not a derivation.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="earliest-open-sprint">Only the earliest sprint holding open work is schedule-ready</button>
-          <button class="r-opt" data-value="all-active-sprints">Every sprint marked active is schedule-ready, and the label is repaired to mean it</button>
-          <button class="r-opt" data-value="sliding-window">A declared window of N sprints from the earliest open one</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="concurrent-sprint-integration" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How do two sessions shipping two sprints share the primary branch?</p>
-        <p class="r-dec-ctx">Sprint state is already per-sprint, so the contention is the run ledger and the primary branch. Both are version-paired, so this decides who waits, not whether anything is lost.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="single-pusher">One session owns pushes for the window, the other hands it merged commits</button>
-          <button class="r-opt" data-value="per-sprint-branch">Each sprint integrates on its own branch, merged to primary at sprint close</button>
-          <button class="r-opt" data-value="retry-and-race">Both push, with the ledger write retried on version conflict</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-
-      <div class="r-dec" data-key="adjacency-definition" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What makes two nodes adjacent enough to be wired together by default?</p>
-        <p class="r-dec-ctx">Too narrow and the channel is never on when it would have helped; too broad and every worker is handed a roster of peers it has no reason to talk to. Overlapping scope is already refused, so adjacency is about near-misses.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="shared-parent-directory">Declared scopes share a parent directory</button>
-          <button class="r-opt" data-value="import-or-call-edge">A declared dependency between the nodes' modules, read from the code rather than the paths</button>
-          <button class="r-opt" data-value="same-plan-or-section">Same plan, or same section, regardless of path distance</button>
-          <button class="r-opt" data-value="all-concurrent-peers">Every concurrent node in the session, since the prompt already lists them</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="scope-declaration-site" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
+    <p class="r-dec-q">Where are candidate write paths declared, so a wave can be planned before launch?</p>
+    <p class="r-dec-ctx">Planning a wave needs paths one step earlier than dispatch, where they are currently invented per node. The coordinator knows its own nodes; it does not know another plan&#x27;s.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="wave-manifest">A submitted wave manifest of candidate nodes, planned against live claims — no plan-authoring change</button>
+      <button class="r-opt" data-value="plan-sections-declare-scope">Plan sections declare their write scope in the HTML, so waves can be planned across plans and sprints with no coordinator</button>
+      <button class="r-opt" data-value="both-staged">Wave manifest now, section-declared scope only if something needs it</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. The coordinator knows its own candidate nodes, which is enough to partition the wave it is about to run, and it needs no plan-authoring change to start. Section-declared scope was rejected on maintenance rather than capability: scopes written into plan HTML rot as code moves, and nothing verifies them, so the project would be hand-maintaining a second map of itself. The accepted limit is that a wave manifest cannot answer whether a plan nobody is running would collide.</p>
+    </div>
+<div class="r-dec" data-key="derivation-group-home" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
+    <p class="r-dec-q">Where does the per-project source-to-generated map live?</p>
+    <p class="r-dec-ctx">Claiming a schema source must claim its generated artifacts, or two nodes will be judged disjoint and collide on a regenerated file. The map is per project because the derivations are.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="project-resource">The project resource beside its scope policy</button>
+      <button class="r-opt" data-value="flight-config">A flight-config layer, resolved like every other per-project setting</button>
+      <button class="r-opt" data-value="repo-file">A file in the repository the generator already lives in</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead, against the recommendation of a flight-config layer. A source-to-generated map is a fact about repository structure, and the project resource already carries the other one - the scope policy naming what a repository owns, excludes and routes elsewhere. Putting it in flight config would buy layered resolution and per-host override for a fact that has no reason to vary by host, at the cost of blurring runtime routing with repository structure. The accepted limit is a single unlayered answer per project.</p>
+    </div>
+<div class="r-dec" data-key="schedule-horizon-width" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
+    <p class="r-dec-q">How wide is the schedule horizon that schedule-readiness enforces?</p>
+    <p class="r-dec-ctx">Strictly applied to a project with five sprints open, an earliest-open-sprint rule defers nearly everything. The width is a policy choice about how much work may be in flight, not a derivation.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="earliest-open-sprint">Only the earliest sprint holding open work is schedule-ready</button>
+      <button class="r-opt" data-value="all-active-sprints">Every sprint marked active is schedule-ready, and the label is repaired to mean it</button>
+      <button class="r-opt" data-value="sliding-window">A declared window of N sprints from the earliest open one</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. The window makes how much work may be in flight an explicit policy number rather than a consequence of the rule&#x27;s shape. Earliest-open-sprint was rejected because with five sprints holding open work it would defer almost everything behind S5 on the day it shipped, which reads as the tool breaking rather than the horizon being five deep. Every-active-sprint was rejected because the active label cannot currently be evaluated - S5, S9 and S12 are all active while active_sprint_id names S5 - making it a two-step change gated on a sprint cleanup. The accepted cost is that N must be justified.</p>
+    </div>
+<div class="r-dec" data-key="concurrent-sprint-integration" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How do two sessions shipping two sprints share the primary branch?</p>
+    <p class="r-dec-ctx">Sprint state is already per-sprint, so the contention is the run ledger and the primary branch. Both are version-paired, so this decides who waits, not whether anything is lost.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="single-pusher">One session owns pushes for the window, the other hands it merged commits</button>
+      <button class="r-opt" data-value="per-sprint-branch">Each sprint integrates on its own branch, merged to primary at sprint close</button>
+      <button class="r-opt" data-value="retry-and-race">Both push, with the ledger write retried on version conflict</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="adjacency-definition" data-choice="" data-by="lead" data-when="2026-08-24T14:27:36+00:00">
+    <p class="r-dec-q">What makes two nodes adjacent enough to be wired together by default?</p>
+    <p class="r-dec-ctx">Too narrow and the channel is never on when it would have helped; too broad and every worker is handed a roster of peers it has no reason to talk to. Overlapping scope is already refused, so adjacency is about near-misses.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="shared-parent-directory">Declared scopes share a parent directory</button>
+      <button class="r-opt" data-value="import-or-call-edge">A declared dependency between the nodes&#x27; modules, read from the code rather than the paths</button>
+      <button class="r-opt" data-value="same-plan-or-section">Same plan, or same section, regardless of path distance</button>
+      <button class="r-opt" data-value="all-concurrent-peers">Every concurrent node in the session, since the prompt already lists them</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead. An import or call edge captures the actual reason two workers need each other: one owns the definition and the other the caller, which is the case measured on three consecutive nodes whose names the coordinator had to write into every node contract by hand. Shared-parent-directory was rejected as too coarse in a flat package, where every node touching the same directory becomes every other node&#x27;s peer. Same-plan-or-section was rejected because it misses the cross-plan case entirely, which is the case that prompted the section. All-concurrent-peers was rejected as a roster with no signal in it. The accepted cost is static analysis, and that the edge computation is language-specific.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&#167;</span> Followups</h2>
-      <article class="r-fu" data-id="f-csv-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §3" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Start with the claim registry, because it is the gate that already cost a session its parallelism</h4>
-        <div class="r-fu-body"><p>&#167;3 is first on evidence rather than preference: the file-scope gate is what forced a three-node wave into one lane while fifteen members sat idle, and it is the only one of the three gates with no representation at all in the model. It also needs no new store &mdash; the claims are already in the live pointers and already expire with them. Take the derived peer scopes and the containment rule before the planner, since a refusal that names the owning run is useful on its own and the planner is only worth building once the comparison it depends on is trusted. &#167;4 can run in parallel with it: <code>roadmap</code> readiness shares no file with the dispatch guard. &#167;6 follows &#167;3, since the channel is wired from the adjacency &#167;3 computes. Settle <code>scope-declaration-site</code> before the planner and <code>schedule-horizon-width</code> before &#167;4 lands, because both change what the deliverable is rather than how it is written.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship concurrency-and-schedule-visibility §3</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-csv-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Start with the claim registry, because it is the gate that already cost a session its parallelism</h4>
+    <div class="r-fu-body"><p>§3 is first on evidence rather than preference: the file-scope gate is what forced a three-node wave into one lane while fifteen members sat idle, and it is the only one of the three gates with no representation at all in the model. It also needs no new store — the claims are already in the live pointers and already expire with them. Take the derived peer scopes and the containment rule before the planner, since a refusal that names the owning run is useful on its own and the planner is only worth building once the comparison it depends on is trusted. §4 can run in parallel with it: <code>roadmap</code> readiness shares no file with the dispatch guard. §6 follows §3, since the channel is wired from the adjacency §3 computes. Settle <code>scope-declaration-site</code> before the planner and <code>schedule-horizon-width</code> before §4 lands, because both change what the deliverable is rather than how it is written.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship concurrency-and-schedule-visibility §3</pre>
+    </article>
+</section>
 
   </main>
 </body>
