@@ -872,13 +872,27 @@ def crew_observe(run_id, project, pretty):
 @click.option(
     "--exit-on-empty",
     is_flag=True,
-    help="Exit when no live pointers remain instead of waiting for the first one.",
+    help=(
+        "In single-event mode, exit when no live pointers remain instead of "
+        "waiting for the first one."
+    ),
+)
+@click.option(
+    "--follow",
+    is_flag=True,
+    help="Stream each newly terminal or stalled run until the fleet empties.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_watch(project, stall_window, exit_on_empty, pretty):
-    """Block until one project run delivers or stalls."""
+def crew_watch(project, stall_window, exit_on_empty, follow, pretty):
+    """Block for one project event, or follow a fleet through reconciliation."""
     crew_module, _ = _crew_modules()
     try:
+        if follow:
+            from reckon.crew.recovery import watch_follow
+
+            for result in watch_follow(project, stall_window=stall_window):
+                _emit({"ok": True, **result}, pretty)
+            return
         result = crew_module.watch(
             project,
             stall_window=stall_window,

@@ -1,13 +1,27 @@
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Iterator, Mapping
 
-from reckon.crew.node import CrewError, LOG_STALE_AFTER_SECONDS, _TERMINAL_RUN_PHASES, parse_duration
+from reckon.crew.node import (
+    DEFAULT_WATCH_STALL_WINDOW,
+    CrewError,
+    LOG_STALE_AFTER_SECONDS,
+    _TERMINAL_RUN_PHASES,
+    parse_duration,
+)
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
-from reckon.crew.runs import _manifest_freshness, _utc_now, list_live, process_alive
+from reckon.crew.runs import (
+    _manifest_freshness,
+    _project_watch_claim,
+    _stream_quiet_seconds,
+    _utc_now,
+    list_live,
+    process_alive,
+)
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
 
@@ -22,6 +36,7 @@ RECOVERY_CLASSES = (
     "failed",
     "abandoned",
 )
+
 
 def _budget_timing(
     record: Mapping[str, Any], *, now_seconds: float | None = None
@@ -270,6 +285,81 @@ def overdue_unreconciled_runs(
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
     return datetime.now(tz=timezone.utc).timestamp()
+
+
+def watch_follow(
+    project: str,
+    *,
+    stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
+    poll_interval: float = 1.0,
+    sleeper: Callable[[float], None] = time.sleep,
+) -> Iterator[dict[str, Any]]:
+    """Yield each newly terminal run while one watcher owns the project.
+
+    An empty project remains armed until its first pointer appears. Once a
+    fleet has appeared, removing its last pointer ends the stream. Terminal
+    and stalled run ids are remembered so an unreconciled pointer cannot
+    repeatedly wake the watcher or hide a later run.
+    """
+    stall_seconds = parse_duration(stall_window)
+    reported_runs: set[str] = set()
+    fleet_seen = False
+
+    with _project_watch_claim(project, stall_window) as (acquired, watcher):
+        if not acquired:
+            yield {
+                "project": project,
+                "event": "watcher-live",
+                "run_id": None,
+                "classification": "watcher_live",
+                "next_action": "wait for the live project watcher to report",
+                "watcher_live": True,
+                "watcher": watcher,
+            }
+            return
+
+        while True:
+            pointers = list_live(project=project)
+            if not pointers:
+                if fleet_seen:
+                    return
+                sleeper(poll_interval)
+                continue
+            fleet_seen = True
+
+            moment = _utc_seconds()
+            classified = [
+                (pointer, classify_pointer(pointer, now_seconds=moment))
+                for pointer in pointers
+            ]
+            for _pointer, row in classified:
+                run_id = str(row.get("run_id") or "")
+                if run_id not in reported_runs and row.get("manifest_status") in {
+                    "complete",
+                    "blocked",
+                    "failed",
+                }:
+                    reported_runs.add(run_id)
+                    yield {"project": project, "event": "terminal", **row}
+                    break
+            else:
+                for pointer, row in classified:
+                    run_id = str(row.get("run_id") or "")
+                    if run_id not in reported_runs and row.get(
+                        "manifest_status"
+                    ) not in {"complete", "blocked", "failed"}:
+                        quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
+                        if quiet > stall_seconds:
+                            reported_runs.add(run_id)
+                            yield {
+                                "project": project,
+                                "event": "stalled",
+                                **row,
+                                "stalled_for_seconds": quiet,
+                            }
+                            break
+                else:
+                    sleeper(poll_interval)
 
 
 def recover(
