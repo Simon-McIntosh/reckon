@@ -139,8 +139,31 @@ _EVIDENCE_SIGNALS = re.compile(
 )
 
 _UNSPECIFIED = re.compile(
-    r"\bTBD\b|\bTODO\b|\bFIXME\b|\?\?\?|\bdecide\b|\bfigure out\b|\bsomehow\b"
+    r"\bTBD\b|\bTODO\b|\bFIXME\b|\?\?\?|\bfigure out\b|\bsomehow\b"
     r"|\bas appropriate\b|<[a-z-]+>",
+    re.IGNORECASE,
+)
+
+# ``decide`` is only unspecified intent when the node hands the choice to the
+# WORKER. Describing machinery that decides something ("the resolver decides
+# whether the relation reproduces its unit") is a specification, not a gap, so
+# matching the bare verb refused well-formed nodes while missing "decides".
+_DECISION_DEFERRED = re.compile(
+    r"\b(?:you|worker|agent|implementer)\s+(?:\w+\s+){0,2}?decides?\b"
+    r"|\bdecides?\s+(?:as\s+appropriate|for\s+yourself|at\s+your\s+discretion)\b"
+    r"|(?:^|[.;]\s*)decide\b",
+    re.IGNORECASE,
+)
+
+# A flagged adjective is the MEASURE only when it completes a copula: "is clean",
+# "reads better", "is correctly formatted". The same word qualifying an input
+# beside a counted result ("a correctly spelled property produces no row") leaves
+# the measure intact, and refusing it teaches wording rather than measurability.
+_SUBJECTIVE_PREDICATE = re.compile(
+    r"\b(?:is|are|was|were|be|been|being|look|looks|feel|feels|seem|seems"
+    r"|read|reads)\s+(?:\w+\s+){0,1}?(?:"
+    + "|".join(re.escape(term) for term in SUBJECTIVE_TERMS)
+    + r")\b",
     re.IGNORECASE,
 )
 
@@ -342,11 +365,12 @@ def validate_node(
 
     if not node.plan.strip():
         fail("fully-specified", "no plan is named as the semantic authority")
-    unspecified = _UNSPECIFIED.search(f"{goal} {node.done_when}")
+    combined = f"{goal} {node.done_when}"
+    unspecified = _UNSPECIFIED.search(combined) or _DECISION_DEFERRED.search(combined)
     if unspecified:
         fail(
             "fully-specified",
-            f"{unspecified.group(0)!r} leaves the worker to infer intent; "
+            f"{unspecified.group(0).strip()!r} leaves the worker to infer intent; "
             "state the input or add a decision node before this one",
         )
 
@@ -354,16 +378,19 @@ def validate_node(
     if not done_when:
         fail("demonstrable", "no done-when measure is stated")
     else:
-        subjective = [
-            term
-            for term in SUBJECTIVE_TERMS
-            if re.search(rf"(?<!-)\b{re.escape(term)}\b", done_when, re.I)
-        ]
-        if subjective:
+        predicate = _SUBJECTIVE_PREDICATE.search(done_when)
+        if predicate:
+            present = sorted(
+                term
+                for term in SUBJECTIVE_TERMS
+                if re.search(rf"(?<!-)\b{re.escape(term)}\b", done_when, re.I)
+            )
             fail(
                 "demonstrable",
-                f"done-when rests on the subjective term(s) "
-                f"{', '.join(sorted(subjective))}; name what would be observed",
+                f"the measure itself is {predicate.group(0).strip()!r} "
+                f"(subjective term(s): {', '.join(present)}); replace that clause "
+                "with what would be observed. The same word qualifying an input is "
+                "fine when the verdict beside it is concrete.",
             )
         if not _EVIDENCE_SIGNALS.search(done_when):
             fail(

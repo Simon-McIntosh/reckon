@@ -2133,3 +2133,67 @@ def test_an_axis_may_not_run_past_two_lines() -> None:
 
 def test_the_reflex_has_four_axes() -> None:
     assert crew.SUMMARY_AXES == ("WHAT", "WHY", "HOW", "WHEN")
+
+
+def test_a_subjective_word_qualifying_an_input_is_not_the_measure() -> None:
+    """An adjective on an input does not erase a concrete measure beside it.
+
+    The refusal exists to stop a done-when whose *verdict* is a feeling. When the
+    verdict is a counted row and the flagged word merely describes the fixture that
+    produces it, refusing is ceremony: it teaches wording, not measurability.
+    """
+    verdict = crew.validate_node(
+        _node(
+            done_when=(
+                "a correctly spelled property produces no violation row and a "
+                "misspelled one produces exactly 1"
+            )
+        ),
+        budget_ceiling="25m",
+    )
+    assert verdict.ok, verdict.findings
+
+
+def test_a_subjective_word_as_the_predicate_is_still_refused() -> None:
+    """A copula complement is the measure itself, so it must still fail."""
+    for spoiled in (
+        "the dispatch path is clean",
+        "exit code 0 is readable",
+        "the replacement reads better than 3 prior revisions",
+        "the emitted file is correctly formatted",
+    ):
+        verdict = crew.validate_node(_node(done_when=spoiled), budget_ceiling="25m")
+        assert "demonstrable" in verdict.failed_properties, spoiled
+
+
+def test_a_subjective_done_when_with_no_observable_still_fails() -> None:
+    """Without any evidence signal the adjective is all there is."""
+    verdict = crew.validate_node(
+        _node(done_when="the resulting module feels tidy and appropriate"),
+        budget_ceiling="25m",
+    )
+    assert "demonstrable" in verdict.failed_properties
+
+
+def test_describing_machinery_that_decides_is_not_unspecified_intent() -> None:
+    """``decide`` describing code under test does not hand the worker a choice."""
+    verdict = crew.validate_node(
+        _node(
+            done_when=(
+                "the report states whether the resolver decides a relation "
+                "reproduces its declared unit, citing 2 file:line pairs"
+            )
+        ),
+        budget_ceiling="25m",
+    )
+    assert verdict.ok, verdict.findings
+
+
+def test_handing_the_decision_to_the_worker_is_still_unspecified() -> None:
+    for spoiled in (
+        "you decide which model to use and report 3 rows",
+        "decide as appropriate and record the exit code",
+        "the worker decides the threshold, then reports 5 counts",
+    ):
+        verdict = crew.validate_node(_node(done_when=spoiled), budget_ceiling="25m")
+        assert "fully-specified" in verdict.failed_properties, spoiled
