@@ -144,6 +144,46 @@
       <code>imas-codex-parity.json</code> and <code>reckon-parity.json</code> in the
       run directory.</p>
 
+    <h2 id="design-findings">Design findings worth more than the code that carried them</h2>
+
+    <p>Two of this session's results are about how to write a check, not about the
+      checks themselves. Both are recorded here because the code expressing them is
+      deleted in §6, and reasoning that lives only in a deleted function dies with it.</p>
+
+    <p><strong>A blocker predicate should name the specific overlapping paths, not the
+      category.</strong> The alternate-worktree preflight blocked on the mere existence
+      of any alternate worktree. That is a category test, and its output is unactionable:
+      it reported that <code>imas-ambix</code> had seven worktrees and <code>nova</code>
+      forty-nine, which tells the reader nothing about whether any of them can interact
+      with the operation being guarded. Inspecting each worktree independently through a
+      path-overlap predicate turned the same question into <em>exactly three trees, and
+      here are the 188 paths</em> — which is what made the authorisation decidable at all,
+      and what let <code>nova</code> proceed untouched. The general form: <strong>a gate
+      that reports a category forces the reader to redo the analysis; a gate that reports
+      the overlapping paths hands them the decision.</strong> The narrowing was also not a
+      loosening — the protection that mattered was kept, which is why one repository still
+      blocked after it.</p>
+
+    <p><strong>An exclusion or an allowlist must carry its measurement, not its
+      rationale.</strong> Stated in §2 of the plan after a named exclusion masked a real
+      defect for weeks, and then demonstrated four more times at node level in this same
+      session — an output-path allowlist, a clean-tree requirement, a nonzero-match
+      requirement and a zero-findings requirement, each generalised from one corpus and
+      asserted as universal. The corrected form of every one is a <em>delta</em>: paths the
+      run changed rather than paths git reports, finding count unchanged rather than zero,
+      out-of-corpus reported rather than matched. Five instances of one mistake in one day
+      suggests the shape is easy to reach, not that the authors were careless.</p>
+
+    <p><strong>And a correction on how the deletion gate came to be right.</strong> The
+      <code>oneshot-deletion-gate</code> decision — requiring native creation before the
+      tools go, rather than fleet-completion alone — was reached by reading the code and
+      finding that <code>sync</code> seeds a legacy index rather than writing the marker.
+      It was an argument from mechanism. That the fleet actually contained a repository
+      with no aggregate state at all, which would have been the first to strand, was not
+      anticipated; the mechanism simply turned out to have a live instance in
+      <code>L2G</code>. Recorded that way rather than as foresight, because the
+      distinction is what makes the mechanism worth trusting next time.</p>
+
     <h2 id="s4-complete">§4 — The fleet, complete: 12 of 12 distributed</h2>
 
     <p>Ten repositories migrated in this session, <strong>125 typed resources</strong>
