@@ -492,6 +492,14 @@ def _write_state(
             f"state type {state_type!r} does not match selected resource type "
             f"{selected_resource_type!r}"
         )
+    current_status = str(cur_state.get("status") or "").strip().lower()
+    requested_status = str(new_data.get("status") or "").strip().lower()
+    if (
+        state_type == "plan"
+        and current_status not in TERMINAL_STATUSES
+        and requested_status in TERMINAL_STATUSES
+    ):
+        _require_terminal_evidence(project, slug, requested_status, root)
     new_data.pop("_version", None)  # never allow the old JSON key in the state
     new_data["modified"] = date.today().isoformat()
     new_data["version"] = cur_version + 1
@@ -1609,10 +1617,35 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
     """
     if str(state.get("type", "plan") or "plan") != "plan":
         return
-    if str(patch.get("status", "")).lower() not in _LANDED_STATUSES:
+    requested_status = str(patch.get("status", "")).lower()
+    if requested_status in TERMINAL_STATUSES:
+        project = str(state.get("project") or "")
+        slug = str(state.get("slug") or "")
+        if project and slug:
+            _require_terminal_evidence(project, slug, requested_status)
+    if requested_status not in _LANDED_STATUSES:
         return
     if not continuation_present(state):
         raise OpError(CONTINUATION_REQUIRED)
+
+
+def _require_terminal_evidence(
+    project: str,
+    slug: str,
+    status: str,
+    root: str | Path | None = None,
+) -> None:
+    """Refuse closure until a typed evidence resource claims the plan."""
+    from reckon import ledger
+
+    if ledger.evidence_records_for_plan(project, slug, root):
+        return
+    expected = f"docs/evidence/archive/{slug}-landed.html"
+    raise OpError(
+        f"terminal status {status!r} refused for plan {slug!r}: missing "
+        f"evidence record {expected}; add "
+        f'<meta name="plan-evidence-for" content="{slug}">'
+    )
 
 
 def _validate_continuation(working: dict, ops: list[dict]) -> None:

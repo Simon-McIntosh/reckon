@@ -161,6 +161,14 @@ def test_a_landing_that_appends_the_next_invocation_is_accepted(setup) -> None:
 def test_a_landing_may_instead_record_that_the_chain_closes(setup) -> None:
     docs_dir, _, project = setup
     _plan_html(docs_dir, "plan-a", {"version": 0, "followups": [_followup("f1")]})
+    evidence_dir = docs_dir / "evidence" / "archive"
+    evidence_dir.mkdir(parents=True)
+    _plan_html(
+        evidence_dir,
+        "plan-a-landed",
+        {"version": 0, "evidence_for": ["plan-a"]},
+        artifact_type="evidence",
+    )
 
     result = mcp_module._edit_plan(
         project,

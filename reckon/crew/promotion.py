@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import html
+import re
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import _backends, ledger
+from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
 from reckon.crew.runs import _pointer_lock, _utc_now, pointer_path, process_alive, read_pointer
@@ -123,6 +125,78 @@ class StreamMeasures:
     session_id: str | None
 
 
+def _section_anchor(section: Any) -> str:
+    """Map a numbered section reference to its semantic HTML anchor."""
+    normalized = ledger.normalize_section(section)
+    numbered = re.fullmatch(r"§(\d+(?:\.\d+)*)", normalized)
+    if numbered:
+        return f"s{numbered.group(1).replace('.', '-')}"
+    return normalized.removeprefix("#") or "_top"
+
+
+def _record_landing_comment(
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    run_id: str,
+    narrative: str,
+    author: str,
+    when: str,
+    root: str | Path | None,
+) -> dict[str, Any]:
+    """Append one idempotent section comment for a promoted run."""
+    narrative = str(narrative).strip()
+    if not narrative or not plan:
+        return {"recorded": False, "reason": "empty_narrative"}
+    comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
+    anchor = _section_anchor(section)
+    for _attempt in range(4):
+        state, version = _store.read_plan(project, plan, root, artifact_type="plan")
+        if not state or state.get("type") != "plan":
+            return {"recorded": False, "reason": "plan_unavailable"}
+        comments = {
+            key: list(items) for key, items in (state.get("comments") or {}).items()
+        }
+        items = comments.setdefault(anchor, [])
+        if any(str(item.get("id") or "") == comment_id for item in items):
+            return {
+                "recorded": True,
+                "comment_id": comment_id,
+                "section": anchor,
+                "already_recorded": True,
+            }
+        items.append(
+            {
+                "id": comment_id,
+                "who": author,
+                "when": when,
+                "body": f"<p>{html.escape(narrative)}</p>",
+            }
+        )
+        try:
+            _store.write_plan(
+                project,
+                plan,
+                {**state, "comments": comments},
+                version,
+                root,
+                artifact_type="plan",
+            )
+        except _store.VersionConflict:
+            continue
+        return {
+            "recorded": True,
+            "comment_id": comment_id,
+            "section": anchor,
+            "already_recorded": False,
+        }
+    raise CrewError(
+        f"could not record landing comment for plan {plan!r}: "
+        "the plan changed during four consecutive write attempts"
+    )
+
+
 def _terminal_stream_data(
     record: Mapping[str, Any],
 ) -> StreamMeasures:
@@ -234,10 +308,9 @@ def _complete_locked(
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
-    The ledger append happens first and the pointer is deleted second. That
-    order is the whole recovery story: an interruption between the two leaves a
-    pointer :func:`recover` classifies as completed-but-unpromoted, whereas the
-    reverse order would lose the record outright.
+    The plan comment and ledger append both happen before the pointer is
+    deleted. The comment uses a stable run-derived id, so a retry after an
+    interruption cannot duplicate the narrative.
 
     Worker-time spans the first and last timestamped stream events. A healthy
     timestamp-less stream falls back to wall duration with an explicit source;
@@ -258,6 +331,16 @@ def _complete_locked(
         None,
     )
     if existing is not None:
+        comment = _record_landing_comment(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            section=str(node.get("section") or ""),
+            run_id=run_id,
+            narrative=outcome,
+            author=str(record.get("member") or record.get("role") or "reckon"),
+            when=str(existing.get("completed_at") or _utc_now()),
+            root=ledger_root,
+        )
         capture = _capture_member_session(record)
         path = pointer_path(run_id)
         path.unlink(missing_ok=True)
@@ -270,6 +353,7 @@ def _complete_locked(
             "record": dict(existing),
             "already_promoted": True,
             "session_capture": capture,
+            "plan_comment": comment,
         }
 
     stream = _terminal_stream_data(record)
@@ -319,6 +403,16 @@ def _complete_locked(
     else:
         worker_seconds_source = "unavailable"
 
+    comment = _record_landing_comment(
+        project=project,
+        plan=str(node.get("plan") or ""),
+        section=str(node.get("section") or ""),
+        run_id=run_id,
+        narrative=outcome,
+        author=str(record.get("member") or record.get("role") or "reckon"),
+        when=finished,
+        root=ledger_root,
+    )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -344,7 +438,7 @@ def _complete_locked(
         changed_lines=changed_lines,
         tests_added=tests_added,
         gate=gate,
-        outcome=outcome,
+        outcome="" if comment.get("recorded") else outcome,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=session_id,
@@ -398,6 +492,7 @@ def _complete_locked(
         "record": written["run"],
         "already_promoted": already_promoted,
         "session_capture": capture,
+        "plan_comment": comment,
     }
 
 
