@@ -401,6 +401,7 @@ repair the request, not as a worker failure:
 | `plan-unavailable` | 4 | Commit the plan before dispatching so its named section exists identically at the base revision. |
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
+| `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
 
 Three node-contract refusals are easy to mistake for infrastructure failures:
 
@@ -431,9 +432,15 @@ per-task deviation is an override on the same call rather than a different call:
 ```bash
 reckon crew dispatch --project P --plan L --section §N --role implement \
   --node <id> --goal "<one deliverable>" --done-when "<measure>" \
-  --write-path <path> --peer <other-node>=<their-paths> \
+  --write-path <path> \
   --time-budget 25m --session <session> [--set backends.<name>.effort=high]
 ```
+
+Peer scopes come from live pointers in the same project and repository. Dispatch
+refuses containing or contained path claims before creating a worktree and names
+the owning run. `--peer <other-node>=<their-paths>` is optional: use it only to
+supplement peers that do not yet have a live pointer, never as the source of the
+live claim registry.
 
 **Branch once, on the returned `launch` kind, and never on anything else:**
 

@@ -830,12 +830,20 @@ def test_a_live_process_is_running(home, repo) -> None:
 
 
 def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
-    running = _dispatch(repo, node_kwargs={"id": "node-live"})
+    running = _dispatch(
+        repo,
+        node_kwargs={"id": "node-live", "write_paths": ["reckon/live.py"]},
+    )
     delivered = _dispatch(
-        repo, fixture="codex-turn.jsonl", node_kwargs={"id": "node-done"}
+        repo,
+        fixture="codex-turn.jsonl",
+        node_kwargs={"id": "node-done", "write_paths": ["reckon/delivered.py"]},
     )
     _deliver(delivered)
-    dead = _dispatch(repo, node_kwargs={"id": "node-dead"})
+    dead = _dispatch(
+        repo,
+        node_kwargs={"id": "node-dead", "write_paths": ["reckon/dead.py"]},
+    )
     _kill(dead)
 
     report = crew.recover()
@@ -1006,7 +1014,11 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
     first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
     crew.observe(first["run_id"])
 
-    second = _dispatch(repo, member="worker-a", node_kwargs={"id": "node-b"})
+    second = _dispatch(
+        repo,
+        member="worker-a",
+        node_kwargs={"id": "node-b", "write_paths": ["reckon/session.py"]},
+    )
 
     assert second["session_id"] == SESSION_ID
     resumed = second["argv"][second["argv"].index("resume") + 1]
@@ -1085,8 +1097,14 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
 
 
 def test_the_scope_changed_flag_defaults_false_and_is_settable(home, repo) -> None:
-    honest = _dispatch(repo, node_kwargs={"id": "node-honest"})
-    widened = _dispatch(repo, node_kwargs={"id": "node-widened"})
+    honest = _dispatch(
+        repo,
+        node_kwargs={"id": "node-honest", "write_paths": ["reckon/honest.py"]},
+    )
+    widened = _dispatch(
+        repo,
+        node_kwargs={"id": "node-widened", "write_paths": ["reckon/widened.py"]},
+    )
 
     assert (
         crew.complete(honest["run_id"], gate="passed")["record"]["scope_changed"]
