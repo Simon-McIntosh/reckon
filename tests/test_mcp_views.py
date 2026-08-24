@@ -18,10 +18,10 @@ from reckon.mcp_views import (
     ResourceSelector,
     audit_view,
     compact_size,
-    discovery_view,
+    discovery_view as _discovery_view,
     error_response,
     in_flight_by_plan,
-    resource_view,
+    resource_view as _resource_view,
     storage_schema_for,
 )
 from reckon.project_state import (
@@ -32,6 +32,26 @@ from reckon.project_state import (
     marker_path,
 )
 from reckon.roadmap import build_roadmap
+
+_VIEW_PROVENANCE = {
+    "checkout": "/tmp/test-checkout",
+    "branch": "main",
+    "content_digest": f"sha256:{'0' * 64}",
+}
+
+
+def resource_view(*args, **kwargs):
+    """Supply provenance to direct response-view unit tests."""
+
+    kwargs.setdefault("provenance", _VIEW_PROVENANCE)
+    return _resource_view(*args, **kwargs)
+
+
+def discovery_view(*args, **kwargs):
+    """Supply provenance to direct discovery-view unit tests."""
+
+    kwargs.setdefault("provenance", _VIEW_PROVENANCE)
+    return _discovery_view(*args, **kwargs)
 
 
 def _receipt_payloads(project: str, legacy: dict) -> dict[tuple[str, str], dict]:
@@ -234,7 +254,10 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert result["next"]["id"] == "next"
     assert "prompt" not in result["next"]
     assert compact_size(result) <= 2048
-    assert compact_size(result) <= compact_size(raw) * 0.60
+    response_without_provenance = {
+        key: value for key, value in result.items() if key != "provenance"
+    }
+    assert compact_size(response_without_provenance) <= compact_size(raw) * 0.60
 
 
 def test_version_view_returns_only_identity_and_concurrency_token(setup):
@@ -254,8 +277,16 @@ def test_version_view_returns_only_identity_and_concurrency_token(setup):
         },
         "version": 3,
         "view": "version",
+        "provenance": version["provenance"],
     }
-    assert compact_size(version) < compact_size(raw) * 0.20
+    assert version["provenance"]["checkout"] == str(docs_dir.parent)
+    assert version["provenance"]["branch"] == "unknown"
+    assert version["provenance"]["content_digest"].startswith("sha256:")
+    assert version["provenance"] == raw["provenance"]
+    version_without_provenance = {
+        key: value for key, value in version.items() if key != "provenance"
+    }
+    assert compact_size(version_without_provenance) < compact_size(raw) * 0.20
 
 
 def test_live_runs_are_grouped_by_target_plan_and_project():
@@ -315,6 +346,18 @@ def test_plan_data_views_keep_the_same_live_run(monkeypatch):
     ]
 
     assert all(result["in_flight"] == results[0]["in_flight"] for result in results)
+
+
+def test_resource_view_returns_one_provenance_block():
+    result = resource_view(
+        ResourceSelector("proj", "plan", "readable"),
+        3,
+        {"title": "Readable", "status": "active"},
+        view="summary",
+    )
+
+    assert result["provenance"] == _VIEW_PROVENANCE
+    assert not {"checkout", "branch", "content_digest"} & result.keys()
 
 
 def test_unmatched_and_non_plan_resources_have_no_live_key(monkeypatch):
@@ -670,11 +713,12 @@ def test_raw_and_schema_are_explicit_layers(setup):
     schema = mcp_module._read_plan(resource=selector, view="schema")
 
     assert raw["data"]["followups"][0]["prompt"].startswith("Project:")
-    assert schema["schema_version"] == 1
+    assert schema["schema_version"] == 2
     assert schema["response_schema"]["type"] == "object"
     assert schema["storage_schema"]["title"] == "reckon PlanState"
     response_schemas = schema["response_schemas"]
     assert "data" in response_schemas["raw"]["required"]
+    assert "provenance" in response_schemas["raw"]["required"]
     assert response_schemas["summary"]["properties"]["in_flight"]["type"] == "array"
     assert {"records", "pagination"} <= set(response_schemas["history"]["required"])
     assert {"metadata", "relations", "followups", "questions"} <= set(

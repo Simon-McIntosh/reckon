@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
@@ -112,6 +113,59 @@ class MigrationMove:
     destination: PurePosixPath
     identity: ResourceIdentity
     sha256: str
+
+
+def _checkout_provenance(checkout: Path, content: bytes) -> dict[str, str]:
+    """Describe a checkout and content without requiring a working branch."""
+
+    checkout = checkout.expanduser().resolve()
+    branch = "unknown"
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(checkout), "symbolic-ref", "--short", "-q", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if completed.returncode == 0 and completed.stdout.strip():
+            branch = completed.stdout.strip()
+        else:
+            detached = subprocess.run(
+                ["git", "-C", str(checkout), "rev-parse", "--short", "HEAD"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=2,
+            )
+            if detached.returncode == 0 and detached.stdout.strip():
+                branch = detached.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return {
+        "checkout": str(checkout),
+        "branch": branch,
+        "content_digest": f"sha256:{_sha256(content)}",
+    }
+
+
+def content_provenance(checkout: Path, content_path: Path) -> dict[str, str]:
+    """Describe the checkout and exact file content used by an operation."""
+
+    content_path = content_path.expanduser().resolve()
+    return _checkout_provenance(checkout, content_path.read_bytes())
+
+
+def composed_provenance(checkout: Path, content: object) -> dict[str, str]:
+    """Describe a checkout and a deterministic composed read payload."""
+
+    encoded = json.dumps(
+        content,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return _checkout_provenance(checkout, encoded)
 
 
 def canonical_type(value: str | None) -> str:

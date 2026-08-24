@@ -408,6 +408,52 @@ def _read_archived_resource(
     return data, int(data.get("version", 0) or 0)
 
 
+def _typed_resource_provenance(
+    selector: Any,
+    checkout_path: str | None,
+    composed_content: dict[str, Any] | None = None,
+) -> dict[str, str]:
+    """Return provenance for the canonical file selected by a typed read."""
+
+    from reckon.project_state import legacy_index_path, resource_path
+    from reckon.resources import (
+        composed_provenance,
+        content_provenance,
+        resource_map,
+    )
+
+    docs_dir = _docs_dir_for_project(selector.project, checkout_path)
+    if docs_dir is None:
+        raise FileNotFoundError(f"no docs dir for project {selector.project!r}")
+    if selector.type in {"plan", "research", "evidence"}:
+        resource = resource_map(
+            docs_dir,
+            selector.project,
+            include_archived=True,
+        ).get((selector.type, selector.id, selector.archived))
+        if resource is None:
+            raise FileNotFoundError(
+                f"{selector.type} resource {selector.project}:{selector.id} was not found"
+            )
+        content_path = resource.path
+    else:
+        content_path = resource_path(
+            docs_dir,
+            selector.project,
+            selector.type,
+            selector.id,
+        )
+        if not content_path.is_file():
+            content_path = legacy_index_path(docs_dir, selector.project)
+        if not content_path.is_file() and checkout_path is None:
+            from reckon._store import state_path
+
+            content_path = state_path(selector.project, "index")
+    if not content_path.is_file() and composed_content is not None:
+        return composed_provenance(docs_dir.parent, composed_content)
+    return content_provenance(docs_dir.parent, content_path)
+
+
 def _read_legacy_project_resource(
     project: str,
     resource_type: str,
@@ -524,10 +570,18 @@ def _read_plan_view(
                 include_followups=include_followups,
                 include_questions=include_questions,
             )
+            discovery_selector = ResourceSelector(
+                project=project,
+                type="project",
+                id="project",
+            )
             return discovery_view(
                 project,
                 raw,
                 view=selected_view,
+                provenance=_typed_resource_provenance(
+                    discovery_selector, checkout_path, raw
+                ),
                 cursor=cursor,
                 limit=limit,
                 include_prompts=include_prompts,
@@ -575,6 +629,9 @@ def _read_plan_view(
                 selector.project,
                 raw_discovery,
                 view=selected_view,
+                provenance=_typed_resource_provenance(
+                    selector, checkout_path, raw_discovery
+                ),
                 cursor=cursor,
                 limit=limit,
                 include_prompts=include_prompts,
@@ -676,6 +733,7 @@ def _read_plan_view(
             version,
             data,
             view=selected_view,
+            provenance=_typed_resource_provenance(selector, checkout_path),
             deps=deps,
             cursor=cursor,
             limit=limit,
@@ -2156,6 +2214,11 @@ def _edit_plan(
             result["path"] = str(
                 resource_path(docs_dir, project, canonical_doc_type, slug)
             )
+            from reckon.resources import content_provenance
+
+            result["provenance"] = content_provenance(
+                docs_dir.parent, Path(result["path"])
+            )
             if warnings:
                 result["warnings"] = warnings
             if create:
@@ -2357,6 +2420,14 @@ def _edit_plan(
         created=create,
     )
     result["path"] = _written_path(project, slug, root, selected_type)
+    if result["path"] is not None:
+        from reckon.resources import content_provenance
+
+        written_docs_dir = _docs_dir_for_project(project, root)
+        if written_docs_dir is not None:
+            result["provenance"] = content_provenance(
+                written_docs_dir.parent, Path(result["path"])
+            )
     if warnings:
         result["warnings"] = warnings
     if create:
@@ -2400,6 +2471,11 @@ def _edit_plan_prose(
         )
         result["operation"] = "edit_text"
         result["path"] = str(path)
+        from reckon.resources import content_provenance
+
+        docs_dir = _docs_dir_for_project(project, checkout_path)
+        if docs_dir is not None:
+            result["provenance"] = content_provenance(docs_dir.parent, path)
         return result
     except VersionConflict as exc:
         return _conflict_response(

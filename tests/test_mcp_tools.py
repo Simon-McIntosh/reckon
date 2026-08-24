@@ -14,7 +14,9 @@ Test setup:
 from __future__ import annotations
 
 import importlib
+import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -120,6 +122,92 @@ def _seed_index(state_root: Path, project: str, data: dict) -> None:
         "data": {"_version": 0, **data},
     }
     (proj_dir / "index.json").write_text(json.dumps(envelope, indent=2))
+
+
+def _init_checkout(root: Path, branch: str) -> None:
+    subprocess.run(
+        ["git", "init", "-q", "-b", branch, str(root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _content_digest(path: Path) -> str:
+    return f"sha256:{hashlib.sha256(path.read_bytes()).hexdigest()}"
+
+
+def test_typed_read_write_provenance_tracks_selected_checkout(setup, tmp_path):
+    docs_dir, _, project = setup
+    mounted_root = docs_dir.parent
+    _init_checkout(mounted_root, "mounted")
+    mounted_plan = _make_plan_html(
+        docs_dir,
+        "tracked",
+        {
+            "slug": "tracked",
+            "title": "Tracked",
+            "summary": "Mounted content.",
+            "status": "draft",
+            "version": 0,
+        },
+    )
+    selector = {"project": project, "type": "plan", "id": "tracked"}
+
+    first = mcp_module._read_plan(resource=selector, view="raw")
+    unchanged = mcp_module._read_plan(resource=selector, view="version")
+
+    assert first["provenance"] == {
+        "checkout": str(mounted_root.resolve()),
+        "branch": "mounted",
+        "content_digest": _content_digest(mounted_plan),
+    }
+    assert unchanged["provenance"] == first["provenance"]
+
+    written = mcp_module._edit_plan(
+        project,
+        "tracked",
+        [{"op": "set", "path": "summary", "value": "Written content."}],
+        expected_version=0,
+        doc_type="plan",
+    )
+    after = mcp_module._read_plan(resource=selector, view="raw")
+
+    assert written["ok"] is True
+    assert written["provenance"] == after["provenance"]
+    assert written["provenance"]["content_digest"] == _content_digest(mounted_plan)
+    assert (
+        written["provenance"]["content_digest"] != first["provenance"]["content_digest"]
+    )
+
+    alternate_root = tmp_path / "alternate"
+    alternate_docs = alternate_root / "docs"
+    alternate_docs.mkdir(parents=True)
+    _init_checkout(alternate_root, "alternate")
+    alternate_plan = _make_plan_html(
+        alternate_docs,
+        "tracked",
+        {
+            "slug": "tracked",
+            "title": "Tracked",
+            "summary": "Alternate content.",
+            "status": "active",
+            "version": 0,
+        },
+    )
+
+    alternate = mcp_module._read_plan(
+        resource=selector,
+        view="raw",
+        checkout_path=str(alternate_root),
+    )
+
+    assert alternate["provenance"] == {
+        "checkout": str(alternate_root.resolve()),
+        "branch": "alternate",
+        "content_digest": _content_digest(alternate_plan),
+    }
+    assert alternate["data"]["summary"] == "Alternate content."
 
 
 # ── _list_sprints ──────────────────────────────────────────────────────────
