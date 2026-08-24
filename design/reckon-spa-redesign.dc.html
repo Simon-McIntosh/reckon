@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#ffffff; --bg-2:#f7f8fa; --bg-3:#eef0f4;
+    --ink:#0c0d10; --ink-2:#2a2c33; --muted:#6e7282; --faint:#a1a4b0;
+    --line:#e6e8ec; --line-2:#d6d9df;
+    --accent:oklch(0.52 0.18 264); --accent-2:oklch(0.68 0.12 264); --accent-3:oklch(0.96 0.025 264);
+    --ok:oklch(0.62 0.13 155); --warn:oklch(0.72 0.15 75); --bad:oklch(0.58 0.20 25);
+    --warn-ink:oklch(0.48 0.12 75); --warn-bg:oklch(0.975 0.025 75);
+    --sans:"Geist","Hanken Grotesk",-apple-system,system-ui,sans-serif;
+    --mono:"Geist Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#e9ebef; color:#0c0d10; font-family:var(--sans); font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased; font-feature-settings:"ss01","cv11"; }
+  a { color:oklch(0.52 0.18 264); text-decoration:none; }
+  a:hover { color:oklch(0.42 0.16 264); }
+  @keyframes livepulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.3; transform:scale(.8); } }
+</style>
+</helmet>
+
+<section style="padding:56px 60px 100px;display:flex;flex-direction:column;gap:60px">
+
+  <div style="max-width:1540px">
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Turn 1 · annotated redesign</div>
+    <h1 style="font-family:var(--sans);font-weight:600;font-size:34px;line-height:1.1;letter-spacing:-0.018em;margin:10px 0 12px;color:var(--ink)">Six degraded surfaces, redrawn in reckon's own language</h1>
+    <p style="max-width:78ch;margin:0;font-size:15px;line-height:1.6;color:var(--muted)">Grounded in <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">Simon-McIntosh/reckon@fc424d3</span> — <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">shell.jsx</span>, <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">plan.jsx</span>, <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">sprint.jsx</span>, <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">crew.jsx</span> — and on the existing <span style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">foundation.css</span> tokens, so nothing here needs a new visual system. Each block quotes the complaint and shows the surface as it should read. Name an id in chat (<a href="#1e">1e</a>) and I'll build it as a live prototype.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px">
+      <a href="#1a" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1a in-flight band</a>
+      <a href="#1b" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1b list + rail</a>
+      <a href="#1c" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1c evidence rail</a>
+      <a href="#1d" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1d sprint cards</a>
+      <a href="#1e" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1e sprint overview</a>
+      <a href="#1f" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1f live runs</a>
+      <a href="#1g" style="font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg);color:var(--ink-2)">1g G-labels</a>
+    </div>
+  </div>
+
+  <!-- ════════ 1A · IN-FLIGHT BAND ════════ -->
+  <div id="1a" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1a</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">In-flight band</span>
+        <span style="font-size:13px;color:var(--muted)">plan header · <span style="font-family:var(--mono);font-size:12px">PlanInFlightBand</span></span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:22px 24px 26px">
+        <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <span style="font-weight:600;font-size:17px;letter-spacing:-0.01em;color:var(--ink)">Finished Work Should Not Wait to Be Noticed</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">/completion-is-not-silent</span>
+          <span style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)"><span style="padding:1px 6px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2)">reckon</span> · S13 · 0%</span>
+        </div>
+
+        <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:18px 0 8px">one run</div>
+
+        <div style="display:grid;grid-template-columns:104px 208px minmax(0,1fr) 158px 78px 68px;align-items:center;gap:16px;padding:12px 14px;border:1px solid var(--accent-2);border-radius:8px;background:var(--accent-3)">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite"></span>
+            <span style="font-size:12px;font-weight:600;letter-spacing:.03em;color:var(--accent)">In flight</span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:6px">
+              <span style="font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink)">codex-cli</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">gpt-5.6 sol</span>
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px">implement · high · <span title="roster member — reuses one session" style="color:var(--ink-2)">@lead</span></div>
+          </div>
+          <div style="min-width:0">
+            <div style="font-family:var(--mono);font-size:11.5px;color:var(--accent)">§5</div>
+            <div style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Run state is pull-only, so completion is silent</div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:5px"><span style="color:var(--ink)">10m 26s</span><span>of 20m</span></div>
+            <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:52%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:11px;text-align:center;padding:3px 0;border-radius:999px;background:var(--accent);color:#fff">working</span>
+          <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 8px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">Run ⌄</button>
+        </div>
+
+        <sc-if value="{{ inflightDetail }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:20px;padding:8px 14px;margin-top:-1px;border:1px solid var(--accent-2);border-top:0;border-radius:0 0 8px 8px;background:var(--bg-2);font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+            <span><span style="color:var(--faint)">run</span> <span style="color:var(--ink-2)">…fleet-watch</span> <span style="color:var(--accent);cursor:pointer" title="r-20260824T132735038806-single-fleet-watch">copy id</span></span>
+            <span><span style="color:var(--faint)">pid</span> <span style="color:var(--ink-2)">481920</span></span>
+            <span><span style="color:var(--faint)">worktree</span> <span style="color:var(--ink-2)">wt/single-fleet-watch</span></span>
+            <span style="margin-left:auto;color:var(--accent);cursor:pointer">log ↗</span>
+          </div>
+        </sc-if>
+
+        <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:24px 0 8px">two runs · one needs help</div>
+
+        <div style="border:1px solid var(--line-2);border-radius:8px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--bg-2);border-bottom:1px solid var(--line)" data-comment-anchor="718dbd2443-div">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite"></span>
+            <span style="font-size:12px;font-weight:500;color:var(--ink-2)">In flight</span>
+            <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">2 runs</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--warn-ink)">1 needs help</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted)">
+            <span style="color:var(--faint)">S13 elsewhere</span>
+            <span style="padding:0 5px;border:1px solid var(--line);border-radius:3px">nova</span><span style="color:var(--accent)">1 ●</span>
+            <span style="padding:0 5px;border:1px solid var(--line);border-radius:3px">imas-codex</span><span style="color:var(--accent)">2 ●</span>
+            <span style="margin-left:auto;color:var(--accent)">crew ↗</span>
+          </div>
+          <div style="display:grid;grid-template-columns:104px 208px minmax(0,1fr) 158px 78px 68px;align-items:center;gap:16px;padding:12px 14px;background:var(--accent-3)">
+            <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">§5</span>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:6px" data-comment-anchor="8863a6f049-div">
+                <span style="font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink)">codex-cli</span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">gpt-5.6 sol</span>
+              </div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px">implement · high · <span style="color:var(--ink-2)">@lead</span></div>
+            </div>
+            <div style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Run state is pull-only, so completion is silent</div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:5px"><span style="color:var(--ink)">10m 26s</span><span>of 20m</span></div>
+              <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:52%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+            </div>
+            <span style="font-family:var(--mono);font-size:11px;text-align:center;padding:3px 0;border-radius:999px;background:var(--accent);color:#fff">working</span>
+            <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 8px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">Run ⌄</button>
+          </div>
+          <div style="display:grid;grid-template-columns:104px 208px minmax(0,1fr) 158px 78px 68px;align-items:center;gap:16px;padding:12px 14px;background:var(--warn-bg);border-top:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">§2</span>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:6px">
+                <span style="font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink)">claude-code</span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">sonnet-4.8</span>
+              </div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px">implement · medium · <span style="color:var(--ink-2)">@session-9c2f</span></div>
+            </div>
+            <div style="font-size:13px;color:var(--warn-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">NEEDS-HELP: promotion order is ambiguous when the pointer is stale</div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:5px"><span style="color:var(--warn-ink)">21m 04s</span><span>of 20m</span></div>
+              <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:100%;height:100%;border-radius:2px;background:var(--warn)"></div></div>
+            </div>
+            <span style="font-family:var(--mono);font-size:11px;text-align:center;padding:3px 0;border-radius:999px;background:var(--warn);color:#fff">asking</span>
+            <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 8px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">Resume</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“The inflight bar is useful, but could be designed in a cleaner way — does the user need to know the exact worker hash?”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">No hash by default.</strong> Identity is <span style="font-family:var(--mono);font-size:12.5px">member · §section · elapsed</span> — the three things you act on. pid, worktree and log sit behind <em>Run ⌄</em> — and even there the run id is a tail (<span style="font-family:var(--mono);font-size:12.5px">…fleet-watch</span>) with <em>copy id</em> beside it, since the full 42-character hash is something you paste, never read.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Elapsed became a budget.</strong> A bare duration says nothing; <span style="font-family:var(--mono);font-size:12.5px">10m 26s of 20m</span> with a hairline meter is exactly the overrun signal that let two nodes sit unnoticed for 55 minutes.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The saturated bar is gone.</strong> An <span style="font-family:var(--mono);font-size:12.5px">--accent-3</span> plate with a keyline, not a solid blue slab — it no longer outweighs the plan title above it.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Runs stack.</strong> One header, one row per run, section as the key. An overrun or <span style="font-family:var(--mono);font-size:12.5px">NEEDS-HELP:</span> run takes the warn treatment and the only real button on the surface — <em>Resume</em>.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">“codex-m” was my invention, and that was the bug.</strong> The <span style="font-family:var(--mono);font-size:12.5px">-m</span> meant nothing. In <span style="font-family:var(--mono);font-size:12.5px">ledger.py</span> a member is a roster row of <span style="font-family:var(--mono);font-size:12.5px">id · harness · role · session_id</span>, and the id is whatever string you passed to <span style="font-family:var(--mono);font-size:12.5px">crew member add --member</span> — arbitrary by design, and auto-generated as <span style="font-family:var(--mono);font-size:12.5px">session-…</span> for ephemeral seats. Leading with it puts a name with no meaning in the loudest slot.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">So the identity now leads with what actually dispatched the work:</strong> harness (<span style="font-family:var(--mono);font-size:12.5px">codex-cli</span>, <span style="font-family:var(--mono);font-size:12.5px">claude-code</span>) and the agent it ran (<span style="font-family:var(--mono);font-size:12.5px">gpt-5.6 sol</span>) — both already on the run record as <span style="font-family:var(--mono);font-size:12.5px">backend</span> and <span style="font-family:var(--mono);font-size:12.5px">agent</span>. Role and effort follow, and the member id trails as <span style="font-family:var(--mono);font-size:12.5px">@lead</span> — a session handle, not a name.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The <span style="font-family:var(--mono);font-size:12.5px">@</span> earns its keep</strong> on ephemeral seats: <span style="font-family:var(--mono);font-size:12.5px">@session-9c2f</span> reads instantly as a throwaway that will be reaped, while <span style="font-family:var(--mono);font-size:12.5px">@lead</span> is a registered seat holding a long-lived session you can resume into.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The header lost its slab.</strong> Grey bar, hairline rule, warn-coloured “1 needs help” — the run rows carry the colour, the header just counts them.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">Scope: this band is one plan, so it is one repo.</strong> It only ever shows runs against the plan you're reading — the repo tag in the header names which. Fleet-wide is Crew (<a href="#1f">1f</a>), where every run leads with its own repo tag.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The cross-repo case gets one line, not a second view.</strong> When the plan's sprint has runs in other repos, a thin lane under the header counts them per repo (<span style="font-family:var(--mono);font-size:12.5px">S13 elsewhere · nova 1 ● · imas-codex 2 ●</span>) and links to Crew — so you learn the sprint is live elsewhere without the band pretending to own those runs.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1B · LIST + RAIL ════════ -->
+  <div id="1b" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1b</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">Filter rail + plan list</span>
+        <span style="font-size:13px;color:var(--muted)">sort control · always-on timestamps · no rail scrollbar</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;display:flex;height:690px;overflow:hidden">
+        <div style="width:272px;flex:none;border-right:1px solid var(--line);padding:16px 14px;display:flex;flex-direction:column;gap:18px;background:var(--bg-2)">
+          <div>
+            <div style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Status</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+              <button type="button" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--accent);border:1px solid var(--accent);border-radius:6px;color:#fff;font:inherit;font-size:12.5px;cursor:pointer;text-align:left"><span style="width:6px;height:6px;border-radius:50%;background:#fff"></span>Active<span style="margin-left:auto;font-family:var(--mono);font-size:11.5px">10</span></button>
+              <button type="button" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer;text-align:left" style-hover="background:var(--bg-3)"><span style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span>Blocked<span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)">2</span></button>
+              <button type="button" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer;text-align:left" style-hover="background:var(--bg-3)"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok)"></span>Shipped<span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)">27</span></button>
+              <button type="button" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer;text-align:left" style-hover="background:var(--bg-3)"><span style="width:6px;height:6px;border-radius:50%;background:var(--faint)"></span>Draft<span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)">3</span></button>
+            </div>
+            <button type="button" style="margin-top:5px;width:100%;padding:4px 8px;background:transparent;border:1px dashed var(--line-2);border-radius:6px;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;text-align:left" style-hover="color:var(--ink)">Historical 1 · Reference 0</button>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+              <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Sprint</span>
+              <a href="#1e" style="margin-left:auto;font-size:12px">overview →</a>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S4<span style="margin-left:5px;color:var(--faint)">1</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S5<span style="margin-left:5px;color:var(--faint)">8</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S6<span style="margin-left:5px;color:var(--faint)">2</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S7<span style="margin-left:5px;color:var(--faint)">2</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S8<span style="margin-left:5px;color:var(--faint)">3</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S9<span style="margin-left:5px;color:var(--faint)">4</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S10<span style="margin-left:5px;color:var(--faint)">3</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S11<span style="margin-left:5px;color:var(--faint)">3</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--muted)">S12<span style="margin-left:5px;color:var(--faint)">5</span></span>
+              <span style="font-family:var(--mono);font-size:11.5px;padding:3px 7px;border:1px solid var(--accent);border-radius:5px;background:var(--accent);color:#fff">S13<span style="margin-left:5px;color:rgba(255,255,255,.75)">3</span></span>
+            </div>
+          </div>
+
+          <div data-comment-anchor="109189bad7-div">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+              <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Projects</span>
+              <button type="button" title="Add or hide projects" style="margin-left:auto;font:inherit;font-size:12px;padding:1px 7px;background:transparent;border:1px solid var(--line-2);border-radius:5px;color:var(--muted);cursor:pointer" style-hover="background:var(--bg-3);color:var(--ink)">Manage</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--accent-3)">
+                <span style="font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:500">reckon</span>
+                <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">84</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer" style-hover="border-color:var(--line-2);background:var(--bg-3)">
+                <span style="font-family:var(--mono);font-size:12px;color:var(--ink-2)">nova</span>
+                <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--accent)">1 ●</span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">144</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer" style-hover="border-color:var(--line-2);background:var(--bg-3)">
+                <span style="font-family:var(--mono);font-size:12px;color:var(--ink-2)">imas-codex</span>
+                <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">22</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:426px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">84</span>
+            <div style="display:inline-flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden">
+              <button type="button" style="font:inherit;font-size:12.5px;font-weight:500;padding:4px 12px;background:var(--ink);border:0;color:var(--bg);cursor:pointer">Created</button>
+              <button type="button" style="font:inherit;font-size:12.5px;font-weight:500;padding:4px 12px;background:var(--bg);border:0;border-left:1px solid var(--line-2);color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">Edited</button>
+            </div>
+            <button type="button" title="Newest first" style="width:26px;height:26px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer;font-size:12px" style-hover="background:var(--bg-2);color:var(--ink)">↓</button>
+            <button type="button" title="Status · progress · priority · title" style="margin-left:auto;width:26px;height:26px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer;font-size:13px" style-hover="background:var(--bg-2);color:var(--ink)">⋯</button>
+          </div>
+
+          <div style="flex:1;overflow:hidden">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line);border-left:2px solid var(--accent);background:var(--accent-3)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none"></span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:14px;line-height:1.3;color:var(--ink)">Finished Work Should Not Wait to Be Noticed</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">Dispatch is fire-and-forget, so a finished node stays unnoticed until someone looks.</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">reckon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                <span style="color:var(--accent)">● in flight</span><span>0%</span>
+                <span style="margin-left:auto">edited 13:27</span>
+              </div>
+            </div>
+
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--ok);margin-top:6px;flex:none"></span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:14px;line-height:1.3;color:var(--ink)">Dispatch Should Not Require What It Can Derive</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">Every argument the node contract can infer is inferred, not demanded at the call site.</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">reckon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                <span>shipped</span><span>100%</span><span style="margin-left:auto">edited 11:02</span>
+              </div>
+            </div>
+
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--bad);margin-top:6px;flex:none"></span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:14px;line-height:1.3;color:var(--ink)">A Sprint Should Span Repositories, and Be Legible</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">One sprint, several repos, one board — without a per-repo copy of the plan.</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">reckon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                <span style="color:var(--bad)">blocked · !2</span><span>0%</span><span style="margin-left:auto">edited 09:48</span>
+              </div>
+            </div>
+
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none"></span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:14px;line-height:1.3;color:var(--ink)">Topical Grouping That Survives Its Authors</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">Tags derived from what a plan touches, not from what its author remembered to type.</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">reckon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                <span>active</span><span>71%</span><span style="margin-left:auto">edited 08:15</span>
+              </div>
+            </div>
+
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:6px;flex:none"></span>
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:14px;line-height:1.3;color:var(--ink)">Onboard a Repository Without Taking Its Website</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">Mount a repo's docs without claiming the pages it already publishes.</div>
+                </div>
+                <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">reckon</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                <span>draft</span><span>0%</span><span style="margin-left:auto">edited 2026-08-23</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1;background:var(--bg-2);display:flex;align-items:center;justify-content:center" data-comment-anchor="d05f3a2a80-div">
+          <span style="font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">plan reader → 1c</span>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“The dropdown is overly verbose… I typically have it set to just created and rarely edited. It would be useful to see an edited timestamp on all plan interactions.” · “I don't find myself using the left hand scroll bar — an indication that the design could be better.”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Six sort options became two.</strong> Created / Edited as a segmented control — one click, no menu, state visible without opening anything. Status, progress, priority and title move under <em>⋯</em>; they were never the default.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Edited is always shown.</strong> Today <span style="font-family:var(--mono);font-size:12.5px">fmtPlanDate</span> only prints the date for the sort you chose. Now every row carries <span style="font-family:var(--mono);font-size:12.5px">edited …</span> whatever the sort — same-day rows show the time, older rows the date.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Rows say something.</strong> One line of plan description replaces the <span style="font-family:var(--mono);font-size:12.5px">— · 0% ·</span> dash soup, and in-flight surfaces here too, so the list doubles as the fleet view.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The rail stopped scrolling.</strong> Sprints became a chip grid, statuses a 2-up grid, archive left entirely — it now fits without its own scroll region.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">Projects became first-class — and the rail only lists live ones.</strong> No tickboxes, no greyed-out rows: visibility is set once in <em>Manage</em>, and a hidden project vanishes from the rail, the switcher and every surface. Mounts stay registered; the SPA just stops carrying repos you aren't developing. The set persists per browser.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Two scopes, stated once.</strong> <em>Focus</em> (one project, set by clicking a row) drives Plans, Sprints and Graph — those are per-repo objects, and interleaving them would repeat the mistake evidence made. Crew and Overview span every visible project, because that's where you want the whole fleet at once.</div>
+          <div>Open question for you: should a cross-repo <em>sprint</em> (<a href="#1d">1d</a>) force multi-project scope while it's active, or stay under focus with a repo badge? I've drawn the latter.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1C · EVIDENCE RAIL ════════ -->
+  <div id="1c" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1c</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">Evidence &amp; research rail</span>
+        <span style="font-size:13px;color:var(--muted)">attached to the plan · out of the plan list</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;display:flex;overflow:hidden">
+        <div style="flex:1;min-width:0;padding:24px 28px 28px">
+          <div style="display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+            <span>/plateau-input-attribution</span><span>·</span><span>nova</span><span>·</span><span>S15</span><span>·</span><span style="color:var(--accent)">active 29%</span>
+          </div>
+          <h3 style="font-weight:600;font-size:24px;line-height:1.2;letter-spacing:-0.015em;margin:10px 0 16px;color:var(--ink)">Plateau Input Attribution — the physical root exists, so which substituted input moved it?</h3>
+          <div style="font-weight:600;font-size:15px;color:var(--ink-2);margin-bottom:8px"><span style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px">§5</span>The assertions that routed two sessions down navigated paths</div>
+          <p style="max-width:66ch;margin:0 0 12px;font-size:15px;line-height:1.7;color:var(--ink-2)"><strong style="font-weight:600;color:var(--ink)">Two names asserting a state of ignorance the tree no longer holds are gone, without aliases.</strong> <span style="font-family:var(--mono);font-size:13.5px">OMITTED_POLOIDAL_CONDUCTORS</span> and <span style="font-family:var(--mono);font-size:13.5px">UNKNOWN_POLOIDAL_CONDUCTORS</span> are replaced by <span style="font-family:var(--mono);font-size:13.5px">CIRCUIT_DRIVEN_CONDUCTORS</span>, which production already declares, constructs and validates against.</p>
+          <p style="max-width:66ch;margin:0;font-size:15px;line-height:1.7;color:var(--ink-2)">A compatibility alias was explicitly refused: an alias would have left the false assertion standing in the shipped tree — the very defect being corrected.</p>
+          <div style="margin-top:22px;height:1px;background:var(--line)"></div>
+          <div style="margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--faint)">…plan body continues</div>
+        </div>
+
+        <div style="width:336px;flex:none;border-left:1px solid var(--line);padding:20px 18px;display:flex;flex-direction:column;gap:14px;background:var(--bg-2)">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Archive</span>
+            <span style="font-family:var(--mono);font-size:11.5px;color:var(--faint)">3</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:-6px">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite"></span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)">accruing</span>
+            <span style="flex:1;height:1px;background:var(--line)"></span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">1</span>
+          </div>
+
+          <div style="border:1px solid var(--accent-2);border-radius:8px;background:var(--accent-3);padding:12px 13px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:var(--accent);color:#fff">EVIDENCE</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--accent)">@nova-1 · §3</span>
+            </div>
+            <div style="font-weight:600;font-size:13.5px;line-height:1.3;margin-top:8px;color:var(--ink)">Cumulative execution evidence</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">26 of 26 touched-module tests passing in 15.46 s; 20 corrected assertion entries.</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+              <span style="padding:1px 6px;border-radius:4px;border:1px solid var(--accent-2);color:var(--accent)">gate pending</span>
+              <span style="margin-left:auto">grew 40s ago</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:7px;margin:2px 0 -6px">
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">landed</span>
+            <span style="flex:1;height:1px;background:var(--line)"></span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">2</span>
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:12px 13px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:2px 6px;border-radius:4px;border:1px solid var(--accent-2);color:var(--accent)">RESEARCH</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint)">read</span>
+            </div>
+            <div style="font-weight:600;font-size:13.5px;line-height:1.3;margin-top:8px;color:var(--ink)">Curved Clip from the Global Surface</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">The one condition the prior refutation named.</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted)"><span style="color:var(--faint)">no gate</span><span style="margin-left:auto">10:58</span></div>
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:12px 13px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:2px 6px;border-radius:4px;background:var(--accent);color:#fff">EVIDENCE</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">c20392dc</span>
+            </div>
+            <div style="font-weight:600;font-size:13.5px;line-height:1.3;margin-top:8px;color:var(--ink)">Coefficient-Space Newton — cumulative</div>
+            <div style="font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45">Smooth-basis solve; the per-cell fallback retired.</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted)"><span style="color:var(--ok)">gate passed</span><span style="margin-left:auto">08:05</span></div>
+          </div>
+
+          <button type="button" style="font:inherit;font-size:12.5px;font-weight:500;padding:7px 12px;background:transparent;border:1px dashed var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer" style-hover="border-color:var(--accent-2);color:var(--accent)">+ Attach a doc</button>
+
+          <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+            <span>unattached</span><span style="margin-left:auto;color:var(--ink-2)">6</span><span style="color:var(--accent)">↗</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“We have duplicated the wiring for evidence and research docs, they do not block or enable. We need to design another visibility surface.” · “I don't like it interleaved with our plans — an evidence doc is not a plan.”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Docs leave the plan list.</strong> No archived rows in the middle column, no <span style="font-family:var(--mono);font-size:12.5px">Archive 39</span> button competing with the status filters, no <span style="font-family:var(--mono);font-size:12.5px">evidence:archive:</span> nav keys in the plan stream.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">A rail, not a node.</strong> Evidence appears beside the plan it evidences, as a reading list rather than a graph member. That is the second visibility surface you asked for: <em>attachment</em>, not dependency.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">"They record; they never gate" is stated, not implied</strong> — so the empty <span style="font-family:var(--mono);font-size:12.5px">depends-on / blocks</span> wiring for docs can be deleted from the dependency panel instead of rendering as a dangling edge.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">Yes — accruing and landed are now separate groups.</strong> They were indistinguishable before, which is the worse half of the problem: a doc a live worker is still appending to was rendered exactly like a terminal record, so “26 of 26 passing” read as a result when it was a running total.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Accruing carries the live dot, the run that owns it (<span style="font-family:var(--mono);font-size:12.5px">@nova-1 · §3</span>), <em>gate pending</em>, and “grew 40s ago”</strong> instead of a timestamp — and no verdict control, because reviewing a document that is still moving isn't a thing you can do.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Landed carries the commit and the gate verdict.</strong> That's the terminal form <span style="font-family:var(--mono);font-size:12.5px">crew complete</span> promotes — immutable, citable, reviewable. Research has no gate at all, and says so rather than borrowing evidence's vocabulary.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1D · SPRINT CARDS ════════ -->
+  <div id="1d" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1d</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">Sprint board cards</span>
+        <span style="font-size:13px;color:var(--muted)">no Why-now / Done-when pills</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:20px 22px 24px">
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">sprint</span>
+          <span style="font-weight:600;font-size:17px;letter-spacing:-0.01em;color:var(--ink)">S15 · Reach the root, then run the catalog</span>
+          <span style="font-family:var(--mono);font-size:11.5px;padding:2px 7px;border-radius:999px;background:var(--accent-3);color:var(--accent)">active</span>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">5 items · 2 repos · 1 in flight</span>
+          <button type="button" style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:500;padding:5px 11px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:6px;color:var(--warn-ink);cursor:pointer" style-hover="background:oklch(0.95 0.05 75)" data-comment-anchor="d75c1a92e0-button"><span style="width:6px;height:6px;border-radius:50%;background:var(--warn)"></span>Needs you<span style="font-family:var(--mono);font-size:11.5px;padding:0 5px;border-radius:3px;background:var(--warn);color:#fff">3</span><span style="color:var(--muted);font-weight:400">⌃</span></button>
+          <button type="button" disabled="disabled" title="3 decisions must be locked or deferred first" style="font:inherit;font-size:12.5px;font-weight:500;padding:5px 11px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--faint);cursor:not-allowed">Generate prompt</button>
+        </div>
+
+        <div style="margin-top:14px;border:1px solid var(--warn);border-radius:8px;overflow:hidden">
+          <div style="display:flex;align-items:baseline;gap:10px;padding:9px 14px;background:var(--warn-bg);border-bottom:1px solid oklch(0.88 0.08 75)">
+            <span style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--warn-ink)">Needs you</span>
+            <span style="font-size:12.5px;color:var(--warn-ink)">3 decisions are open, so this sprint cannot generate a prompt or dispatch a wave.</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)">5 more resolved this week</span>
+          </div>
+          <div style="display:grid;grid-template-columns:180px minmax(0,1fr) 130px 190px;gap:14px;align-items:center;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line)">
+            <div style="min-width:0">
+              <div style="font-size:12.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">MAST Catalog GPU Solve</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">nova · D2</div>
+            </div>
+            <div style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Batch width: fix at 64 for reproducibility, or tune per device?</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">raised by codex-l<br>2 days ago</div>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">Lock</button>
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Defer to run</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:180px minmax(0,1fr) 130px 190px;gap:14px;align-items:center;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line)">
+            <div style="min-width:0">
+              <div style="font-size:12.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Plateau Input Attribution</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">nova · D1</div>
+            </div>
+            <div style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Keep a compatibility alias for the renamed conductors, or refuse one?</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">raised by Simon<br>4 hours ago</div>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">Lock</button>
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Defer to run</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:180px minmax(0,1fr) 130px 190px;gap:14px;align-items:center;padding:10px 14px;background:var(--bg)">
+            <div style="min-width:0">
+              <div style="font-size:12.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Versioned Label Store</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">imas-codex · D1</div>
+            </div>
+            <div style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Does IMAS egress ship in this sprint, or follow as its own plan?</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">raised by claude-s<br>yesterday</div>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">Lock</button>
+              <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Defer to run</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px">
+          <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">To do</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--faint)">2</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px" style-hover="border-color:var(--line-2)">
+                <div style="display:flex;align-items:flex-start;gap:7px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:6px;flex:none"></span>
+                  <div style="font-weight:600;font-size:13.5px;line-height:1.3;color:var(--ink);flex:1">Same-Device Label Determinism</div>
+                  <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">nova</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45">A route that disagrees with itself on a rerun.</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:0%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">0%</span>
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px" style-hover="border-color:var(--line-2)">
+                <div style="display:flex;align-items:flex-start;gap:7px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--faint);margin-top:6px;flex:none"></span>
+                  <div style="font-weight:600;font-size:13.5px;line-height:1.3;color:var(--ink);flex:1">Versioned Label Store Release</div>
+                  <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">imas-codex</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45">Publish the label store with provenance the catalog can cite.</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:0%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Doing</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--faint)">3</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="background:var(--bg);border:1px solid var(--bad);border-radius:8px;padding:11px 12px">
+                <div style="display:flex;align-items:flex-start;gap:7px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--bad);margin-top:6px;flex:none"></span>
+                  <div style="font-weight:600;font-size:13.5px;line-height:1.3;color:var(--ink);flex:1">MAST Catalog GPU Solve</div>
+                  <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">nova</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45">Full-catalog equilibria in ~1 hour on 8×H200.</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:50%;height:100%;border-radius:2px;background:var(--bad)"></div></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">50%</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--bad)">blocked</span>
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--accent-2);border-radius:8px;padding:11px 12px">
+                <div style="display:flex;align-items:flex-start;gap:7px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none;animation:livepulse 1.7s ease-in-out infinite"></span>
+                  <div style="font-weight:600;font-size:13.5px;line-height:1.3;color:var(--ink);flex:1">Plateau Input Attribution</div>
+                  <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">nova</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45">The physical root exists — which substituted input moved it?</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:29%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">29%</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">● codex-m 4m</span>
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 12px" style-hover="border-color:var(--line-2)">
+                <div style="display:flex;align-items:flex-start;gap:7px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none"></span>
+                  <div style="font-weight:600;font-size:13.5px;line-height:1.3;color:var(--ink);flex:1">Coefficient-Space Newton</div>
+                  <span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--muted);flex:none">nova</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45">Solve for a smooth basis, not for every cell.</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+                  <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:70%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">70%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Done</span>
+              <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--faint)">0</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;height:120px;border:1px dashed var(--line-2);border-radius:8px;color:var(--faint);font-size:12.5px">No items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“The content given on the sprint plans (why now, done when) is FAR too verbose. All plan cards should come with a brief description and nothing else — forcing more into the pills makes them too large and hides other information.”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">The two justification pills are gone.</strong> A card is title + one description line. <span style="font-family:var(--mono);font-size:12.5px">why_now</span> and <span style="font-family:var(--mono);font-size:12.5px">done_when</span> still exist in the sprint contract — they render in the plan, and in the generated prompt, where they're read once.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Five cards fit a column.</strong> The current board shows barely one; the whole sprint is now visible without scrolling a column.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">What survived is what you picked:</strong> status dot, progress, in-flight, repo badge. Gate summary and the <span style="font-family:var(--mono);font-size:12.5px">D n / ! n</span> counters moved to the card's hover state — they were noise at rest.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The repo badge earns its place</strong> on a cross-repo sprint: three repos on one board, legible at a glance.</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:22px">Resolve, rethought</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">The old button was a number with no noun.</strong> <em>Resolve 8</em> didn't say what the 8 were, where they lived, or what they cost you — and in the code the answer is specific: open decisions <span style="font-family:var(--mono);font-size:12.5px">block prompt generation</span> (<span style="font-family:var(--mono);font-size:12.5px">graph.jsx</span>: “resolve before generating prompt”). The button hid its own consequence.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">It becomes a queue with the consequence attached.</strong> One row per decision — plan, the actual question, who raised it, how long it's been sitting — and <em>Generate prompt</em> sits next to it visibly disabled, so cause and effect are adjacent instead of two clicks apart.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Two verbs, because there are two outcomes.</strong> <em>Lock</em> records the answer on the plan; <em>Defer to run</em> marks it as decidable during the work — which the prompt builder already supports (“surfaced in the prompt, to resolve during the work”) but the UI never offered. Deferring unblocks dispatch without pretending the question is answered.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The count dropped from 8 to 3</strong> because 8 conflated open decisions with unreviewed evidence and stale gates. Only decisions actually hold a wave; the rest were never yours to resolve here.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1E · SPRINT OVERVIEW ════════ -->
+  <div id="1e" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1e</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">Sprint overview</span>
+        <span style="font-size:13px;color:var(--muted)">dependency gantt · replaces <span style="font-family:var(--mono);font-size:12px">&lt; &gt;</span> paging</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:20px 22px 24px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;color:var(--ink)">All sprints</span>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">S7 → S16 · nova · 4 repos</span>
+          <div style="margin-left:auto;display:inline-flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden">
+            <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 11px;background:var(--ink);border:0;color:var(--bg);cursor:pointer">Overview</button>
+            <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 11px;background:var(--bg);border:0;border-left:1px solid var(--line-2);color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">Board</button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">horizon</span>
+          <div style="display:inline-flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden;background:var(--bg)">
+            <button type="button" style="font:inherit;font-size:12px;padding:3px 10px;background:var(--bg);border:0;color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">4w</button>
+            <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:3px 10px;background:var(--ink);border:0;border-left:1px solid var(--line-2);color:var(--bg);cursor:pointer">8w</button>
+            <button type="button" style="font:inherit;font-size:12px;padding:3px 10px;background:var(--bg);border:0;border-left:1px solid var(--line-2);color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">6m</button>
+            <button type="button" style="font:inherit;font-size:12px;padding:3px 10px;background:var(--bg);border:0;border-left:1px solid var(--line-2);color:var(--muted);cursor:pointer" style-hover="background:var(--bg-2);color:var(--ink)">all</button>
+          </div>
+          <label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer">
+            <span style="width:13px;height:13px;border-radius:3px;background:var(--accent);color:#fff;font-size:9px;display:grid;place-items:center">✓</span>
+            Fold sprints with nothing open
+          </label>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-bottom:8px;border-bottom:1px solid var(--line)" data-comment-anchor="97602f4601-div">
+          <div>sprint</div>
+          <div style="display:grid;grid-template-columns:repeat(6,1fr)"><span>aug 10</span><span>aug 17</span><span style="color:var(--accent)">aug 24 · today</span><span>aug 31</span><span>sep 7</span><span>sep 14</span></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);background:var(--bg-2)" style-hover="background:var(--bg-3)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">S1–S6</span>
+            <span style="font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">folded · all shipped</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ok)">41/41</span>
+          </div>
+          <div style="position:relative;height:16px">
+            <div style="position:absolute;left:0;width:100%;top:7px;height:2px;background:repeating-linear-gradient(90deg,var(--line-2) 0 4px,transparent 4px 8px)"></div>
+            <span style="position:absolute;left:0;top:-1px;font-family:var(--mono);font-size:11px;color:var(--faint);background:var(--bg-2);padding-right:6px">◂</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--ink)">S7</span>
+            <span style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Prove the physics spine</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ok)">16/16</span>
+          </div>
+          <div style="position:relative;height:22px">
+            <div style="position:absolute;left:0%;width:26%;top:4px;height:14px;border-radius:3px;background:var(--ok);opacity:.85"></div>
+            <div style="position:absolute;left:26%;top:2px;height:18px;width:1px;background:var(--line-2)"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--ink)">S8</span>
+            <span style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">H200 production run</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">3/5</span>
+          </div>
+          <div style="position:relative;height:22px">
+            <div style="position:absolute;left:22%;width:24%;top:4px;height:14px;border-radius:3px;background:var(--accent);opacity:.85"></div>
+            <div style="position:absolute;left:20%;top:9px;width:2%;height:1px;background:var(--line-2)"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--ink)">S9</span>
+            <span style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Transport forward seam</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">0/1</span>
+          </div>
+          <div style="position:relative;height:22px">
+            <div style="position:absolute;left:44%;width:18%;top:4px;height:14px;border-radius:3px;border:1px dashed var(--line-2);background:var(--bg-2)"></div>
+            <div style="position:absolute;left:42%;top:9px;width:2%;height:1px;background:var(--line-2)"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);background:var(--accent-3)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500">S15</span>
+            <span style="font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Reach the root, then run the catalog</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--accent)">0/5 · 1 ●</span>
+          </div>
+          <div style="position:relative;height:22px">
+            <div style="position:absolute;left:38%;width:28%;top:4px;height:14px;border-radius:3px;background:var(--accent)"></div>
+            <div style="position:absolute;left:38%;width:28%;top:4px;height:14px;border-radius:3px;border:1px solid var(--accent)"></div>
+            <div style="position:absolute;left:66%;top:2px;bottom:2px;width:1px;background:var(--bad)"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:0 16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)" style-hover="background:var(--bg-2)">
+          <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+            <span style="font-family:var(--mono);font-size:12px;color:var(--ink)">S16</span>
+            <span style="font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">DIII-D forward onboarding</span>
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">0/4</span>
+          </div>
+          <div style="position:relative;height:22px">
+            <div style="position:absolute;left:68%;width:22%;top:4px;height:14px;border-radius:3px;border:1px dashed var(--line-2);background:var(--bg-2)"></div>
+            <div style="position:absolute;left:66%;top:9px;width:2%;height:1px;background:var(--line-2)"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:18px;margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:8px;border-radius:2px;background:var(--ok);opacity:.85"></span>done</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:8px;border-radius:2px;background:var(--accent)"></span>active</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:8px;border-radius:2px;border:1px dashed var(--line-2)"></span>planned</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:1px;height:12px;background:var(--bad)"></span>blocked handoff</span>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“The navigation of the sprints is 'clunky'. It is hard to get an overview of the sprints and how they depend on one another without scrolling left and right <span style="font-family:var(--mono)">&lt; &gt;</span>.”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Sprints get a home view.</strong> <span style="font-family:var(--mono);font-size:12.5px">&lt; &gt;</span> stepped through one sprint at a time and never showed a second one; the gantt puts every sprint on one screen with its real window.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Dependency is drawn, not implied.</strong> Handoff ties (S7 feeds S8; S15 feeds S16) are hairlines between bars — a blocked handoff is a red tick, so “what is S16 waiting on” is answered without opening S16.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Overview / Board is a toggle,</strong> not a different page. Click a bar to drop into <a href="#1d">1d</a>; the arrows survive there for step-through, where they make sense.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Progress reads as a fraction</strong> (<span style="font-family:var(--mono);font-size:12.5px">16/16</span>, <span style="font-family:var(--mono);font-size:12.5px">0/5 · 1 ●</span>), not a percentage — items shipped is what you track at sprint scale.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">It won't clog at S40.</strong> The chart is a window on an unbounded timeline, not a list of everything: a configurable horizon (4w / 8w / 6m / all) centred on today, scrolling in both directions, with the date axis re-scaling rather than the rows multiplying.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Anything closed folds itself.</strong> Sprints with nothing open collapse into one dashed lane (<span style="font-family:var(--mono);font-size:12.5px">S1–S6 · 41/41</span>) that expands on click — so the row count tracks <em>live work</em>, which stays roughly constant, instead of project age, which never stops growing.</div>
+          <div>Rule of thumb behind it: vertical space is spent on sprints that can still change, horizontal space on the horizon you asked for. Old sprints stay reachable, never resident.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1F · LIVE RUNS ════════ -->
+  <div id="1f" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1f</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">Live runs</span>
+        <span style="font-size:13px;color:var(--muted)">crew view · primary read: progress toward gates</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:20px 22px 24px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:16px">
+          <span style="font-weight:600;font-size:17px;letter-spacing:-0.01em;color:var(--ink)">Live runs</span>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">3 running · 1 asking · polls 3s · 15:38:02</span>
+          <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted)">headroom codex 62% · claude 88%</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="border:1px solid var(--accent-2);border-radius:8px;background:var(--accent-3);padding:13px 15px" data-comment-anchor="99ca96f9e9-div">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 150px 200px;gap:18px;align-items:start">
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite"></span>
+                  <span style="color:var(--ink);font-weight:500">codex-cli</span><span>gpt-5.6 sol</span><span>·</span><span>implement · high</span><span>·</span><span style="color:var(--ink-2)">@lead</span>
+                  <span style="padding:1px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:10.5px">working</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="font-family:var(--mono);font-size:11px;padding:1px 6px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2)">reckon</span><span style="font-weight:600;font-size:14px;color:var(--ink)">completion-is-not-silent</span><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">§5</span></div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.45;max-width:62ch;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Targeted tests pass against a temporary RECKON_HOME: watch exits on the first pointer with a terminal manifest, on a quiet stream past the stall window, and immediately when the project holds no live pointers.</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">budget</div>
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink);margin-bottom:5px"><span>10m 26s</span><span style="color:var(--muted)">/ 20m</span></div>
+                <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:52%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px">active 8s ago</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">gates 3 / 5</div>
+                <div style="display:flex;gap:4px;margin-bottom:6px">
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--accent-2)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--bg-3)"></span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.4">now: <span style="color:var(--ink-2)">full suite vs base fc424d3</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid oklch(0.90 0.03 264)">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">zellij <span style="color:var(--ink-2)">reckon-fleet</span> · tab <span style="color:var(--ink-2)">completion-is-not-silent</span> · sol@fusion-01</span>
+              <span style="margin-left:auto;display:inline-flex;gap:6px">
+                <button type="button" style="display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Copy attach<span style="font-family:var(--mono);font-size:10.5px;color:var(--muted)">⌘⇧A</span></button>
+                <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Tail log</button>
+                <button type="button" style="font:inherit;font-size:12px;font-weight:500;padding:4px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Worktree</button>
+              </span>
+            </div>
+            <div style="margin-top:8px;padding:7px 10px;border-radius:6px;background:var(--bg-2);border:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:10px">
+              <span style="color:var(--faint)">$</span>
+              <span>ssh sol@fusion-01 -t 'zellij -s reckon-fleet attach' <span style="color:var(--muted)"># tab: completion-is-not-silent</span></span>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--warn);border-radius:8px;background:var(--warn-bg);padding:13px 15px">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 150px 200px;gap:18px;align-items:start">
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--warn)"></span>
+                  <span style="color:var(--ink);font-weight:500">claude-code</span><span>sonnet-4.8</span><span>·</span><span>implement · medium</span><span>·</span><span style="color:var(--ink-2)">@session-9c2f</span>
+                  <span style="padding:1px 7px;border-radius:999px;background:var(--warn);color:#fff;font-size:10.5px">asking</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="font-family:var(--mono);font-size:11px;padding:1px 6px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2)">reckon</span><span style="font-weight:600;font-size:14px;color:var(--ink)">completion-is-not-silent</span><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">§2</span></div>
+                <div style="font-size:12.5px;color:var(--warn-ink);margin-top:4px;line-height:1.45">NEEDS-HELP: promotion order is ambiguous when the pointer is stale — promote then delete, or delete then promote?</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">budget</div>
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--warn-ink);margin-bottom:5px"><span>21m 04s</span><span>/ 20m</span></div>
+                <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:100%;height:100%;border-radius:2px;background:var(--warn)"></div></div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--warn-ink);margin-top:5px">waiting 6m</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">gates 1 / 4 · held</div>
+                <div style="display:flex;gap:4px">
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--warn)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--bg-3)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--bg-3)"></span>
+                </div>
+                <button type="button" style="font:inherit;font-size:12.5px;font-weight:500;padding:5px 10px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">Answer &amp; resume</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:13px 15px">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 150px 200px;gap:18px;align-items:start">
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--muted)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite"></span>
+                  <span style="color:var(--ink);font-weight:500">codex-cli</span><span>gpt-5.6 sol</span><span>·</span><span>implement · high</span><span>·</span><span style="color:var(--ink-2)">@nova-1</span>
+                  <span style="padding:1px 7px;border-radius:999px;background:var(--accent);color:#fff;font-size:10.5px">working</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px"><span style="font-family:var(--mono);font-size:11px;padding:1px 6px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2)">nova</span><span style="font-weight:600;font-size:14px;color:var(--ink)">plateau-input-attribution</span><span style="font-family:var(--mono);font-size:12px;color:var(--accent)">§3</span></div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.45;max-width:62ch;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Sweeping substituted inputs against the recorded plateau; two candidates remain after the circuit-driven rename.</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">budget</div>
+                <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink);margin-bottom:5px"><span>3m 41s</span><span style="color:var(--muted)">/ 45m</span></div>
+                <div style="height:3px;border-radius:2px;background:var(--bg-3)"><div style="width:8%;height:100%;border-radius:2px;background:var(--accent)"></div></div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px">active 2s ago</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">gates 0 / 3</div>
+                <div style="display:flex;gap:4px;margin-bottom:6px">
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--accent-2)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--bg-3)"></span>
+                  <span style="flex:1;height:5px;border-radius:2px;background:var(--bg-3)"></span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.4">now: <span style="color:var(--ink-2)">attribution sweep reproduces</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The complaint</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“The clarity of the live runs needs to be improved. The formatting is poor and we need to communicate the information required whilst using the screen space wisely — the current text is squashed and maybe too verbose.”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">What changed</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Eleven columns became a row card.</strong> The table forced <span style="font-family:var(--mono);font-size:12.5px">codex-<br>m</span> and <span style="font-family:var(--mono);font-size:12.5px">gpt-<br>5.6-<br>sol</span> to wrap into 40px columns while <em>Gate</em> ran 400 words wide. Identity, plan and section now share one line at full width.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Three fixed zones.</strong> <em>Who &amp; what</em> flexes; <em>budget</em> and <em>gates</em> are fixed-width, so every row's meters align down the page and can be compared vertically.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Gates are the primary read</strong> you asked for: <span style="font-family:var(--mono);font-size:12.5px">3 / 5</span> as a segment strip plus the one gate currently in progress — not the worker's prose narration.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">The narration is clamped to two lines.</strong> Full text on expand. A run that needs help gets warn colour and the one action; nothing else on the page is a button.</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:22px">Can I attach to it?</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Yes — and it's a small ask, because the pointer already knows.</strong> The in-flight pointer holds pid, worktree and log; adding the zellij session and tab name at dispatch is one more field on a record reckon already writes.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">A browser can't open your terminal, so it hands you the exact line.</strong> Expanding a run shows <span style="font-family:var(--mono);font-size:12.5px">ssh sol@fusion-01 -t 'zellij -s reckon-fleet attach'</span> with the tab named, one keystroke to the clipboard (<span style="font-family:var(--mono);font-size:12.5px">⌘⇧A</span>) — paste and you're in the pane the worker is running in.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Three destinations, not one:</strong> attach (the live pane), tail log (read-only, streams in the SPA — safe when you don't want to touch the session), and worktree (the path, for a diff).</div>
+          <div><strong style="font-weight:600;color:var(--ink)">If you ever want true one-click,</strong> a registered <span style="font-family:var(--mono);font-size:12.5px">reckon://attach/&lt;run-id&gt;</span> URL handler on the client would launch the terminal for you. That's a real but separate piece of work — say the word and I'll spec it.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ════════ 1G · G LABELS ════════ -->
+  <div id="1g" style="display:flex;gap:34px;align-items:flex-start">
+    <div style="width:1150px;flex:none">
+      <div style="display:flex;align-items:baseline;gap:11px;margin-bottom:14px">
+        <span style="font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;background:var(--ink);color:var(--bg)">1g</span>
+        <span style="font-weight:600;font-size:19px;letter-spacing:-0.012em;color:var(--ink)">G-labels — a named subgraph you can ship</span>
+        <span style="font-size:13px;color:var(--muted)">sketch · not in your six</span>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:20px 22px 24px">
+        <div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:4px;background:var(--ink);color:var(--bg)">G3</span>
+          <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;color:var(--ink)">Forward-model spine</span>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">7 plans · 2 repos · 5 shipped · depth 4</span>
+          <button type="button" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:500;padding:5px 11px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);cursor:pointer" style-hover="background:var(--bg-2)">Generate prompt</button>
+          <button type="button" style="font:inherit;font-size:12.5px;font-weight:500;padding:5px 11px;background:var(--ink);border:1px solid var(--ink);border-radius:6px;color:var(--bg);cursor:pointer" style-hover="background:var(--ink-2)">reckon-ship G3</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:270px minmax(0,1fr);gap:20px;margin-top:16px">
+          <div>
+            <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:8px">graphs in nova</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2)"><span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">G1</span><span style="font-size:13px;color:var(--ink-2)">Equilibrium reconstruction</span><span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ok)">shipped</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2)"><span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">G2</span><span style="font-size:13px;color:var(--ink-2)">Label determinism</span><span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">3/6</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--accent);border-radius:6px;background:var(--accent-3)"><span style="font-family:var(--mono);font-size:11.5px;color:var(--accent);font-weight:500">G3</span><span style="font-size:13px;color:var(--ink);font-weight:500">Forward-model spine</span><span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--accent)">5/7</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2)"><span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">G4</span><span style="font-size:13px;color:var(--ink-2)">Catalog egress</span><span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)">0/4</span></div>
+              <button type="button" style="margin-top:3px;font:inherit;font-size:12.5px;padding:7px 9px;background:transparent;border:1px dashed var(--line-2);border-radius:6px;color:var(--muted);cursor:pointer;text-align:left" style-hover="border-color:var(--accent-2);color:var(--accent)">+ Label selection as G5</button>
+            </div>
+
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:8px;background:var(--bg-2);padding:18px;min-height:250px" data-comment-anchor="aa9f3296c6-div">
+            <div style="display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr;gap:0 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:9px">
+              <span>depth 1</span><span></span><span>depth 2</span><span></span><span>depth 3</span><span></span><span>depth 4</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr;align-items:center">
+              <div style="border:1px solid var(--ok);border-radius:6px;background:var(--bg);padding:9px 10px"><div style="font-size:12.5px;font-weight:500;color:var(--ink);line-height:1.3">Nova Spine Refactor</div><div style="font-family:var(--mono);font-size:10.5px;color:var(--ok);margin-top:4px">shipped</div></div>
+              <div style="display:flex;align-items:center"><span style="flex:1;height:1px;background:var(--line-2)"></span><span style="font-size:10px;color:var(--muted);margin-left:-1px">▶</span></div>
+              <div style="border:1px solid var(--ok);border-radius:6px;background:var(--bg);padding:9px 10px"><div style="font-size:12.5px;font-weight:500;color:var(--ink);line-height:1.3">3D-Native Field Tier</div><div style="font-family:var(--mono);font-size:10.5px;color:var(--ok);margin-top:4px">shipped</div></div>
+              <div style="display:flex;align-items:center"><span style="flex:1;height:1px;background:var(--line-2)"></span><span style="font-size:10px;color:var(--muted);margin-left:-1px">▶</span></div>
+              <div style="border:1px solid var(--accent);border-radius:6px;background:var(--accent-3);padding:9px 10px"><div style="font-size:12.5px;font-weight:500;color:var(--ink);line-height:1.3">MAST Non-axisymmetric</div><div style="font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-top:4px">active 0%</div></div>
+              <div style="display:flex;align-items:center"><span style="flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--line-2) 0 3px,transparent 3px 6px)"></span><span style="font-size:10px;color:var(--faint);margin-left:-1px">▶</span></div>
+              <div style="border:1px dashed var(--line-2);border-radius:6px;background:var(--bg);padding:9px 10px"><div style="font-size:12.5px;font-weight:500;color:var(--muted);line-height:1.3">Catalog GPU Solve</div><div style="font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:4px">planned</div></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr;height:30px">
+              <div></div><div></div>
+              <div style="position:relative"><span style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--bad)"></span><span style="position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:10px;color:var(--bad)">▲</span></div>
+              <div></div>
+              <div style="position:relative"><span style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--bad)"></span><span style="position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:10px;color:var(--bad)">▲</span></div>
+              <div></div><div></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr;align-items:center">
+              <div></div><div></div>
+              <div style="grid-column:3 / 6;border:1px solid var(--bad);border-radius:6px;background:var(--bg);padding:9px 10px">
+                <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+                  <span style="font-size:12.5px;font-weight:500;color:var(--ink);line-height:1.3">Plateau Input Attribution</span>
+                  <span style="font-family:var(--mono);font-size:10.5px;color:var(--bad)">blocked · 2 open decisions</span>
+                  <span style="margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted)">feeds 2 above</span>
+                </div>
+              </div>
+              <div></div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:16px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted);flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:1px;background:var(--line-2)"></span>▶ depends on</span>
+              <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:1px;background:repeating-linear-gradient(90deg,var(--line-2) 0 3px,transparent 3px 6px)"></span>unstarted</span>
+              <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:16px;height:1px;background:var(--bad)"></span>blocking</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+      <div style="width:326px;flex:none;padding-top:46px">
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The question</div>
+        <p style="margin:7px 0 20px;font-size:13.5px;line-height:1.5;color:var(--muted);border-left:2px solid var(--line-2);padding-left:12px">“Should we consider a G* label for all of our graphs so that we could reckon-ship a particular graph like we can do for sprints?”</p>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">The proposal</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-2)">
+          <div><strong style="font-weight:600;color:var(--ink)">Yes — and it's a resource, not a view.</strong> <span style="font-family:var(--mono);font-size:12.5px">docs/graphs/G3.html</span> beside <span style="font-family:var(--mono);font-size:12.5px">docs/sprints/</span>, independently versioned, so <span style="font-family:var(--mono);font-size:12.5px">reckon ship G3</span> is the same code path as shipping a sprint.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Sprint cuts by time; G cuts by dependency.</strong> A sprint answers “what are we doing for two weeks”; a G answers “what has to be true for this capability to exist”. Both are shippable, both generate prompts, and a plan can belong to several Gs but one sprint.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Shipping a G means its closure shipped</strong> — every plan it transitively depends on, across repos. That's the check the Graph tab can't express today.</div>
+          <div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-weight:600;color:var(--ink)">Wiring is explicit, not implied by position.</strong> Left-to-right <em>is</em> the convention — columns are dependency depth from the G's roots — but position alone was doing too much work, so every edge is now drawn: a hairline with a ▶ head, dashed into unstarted work, red where the edge is blocking. The fan-in below the lane shows a node feeding two upstream siblings, which a pure left-to-right row can't express.</div>
+          <div><strong style="font-weight:600;color:var(--ink)">Depth, not time.</strong> Stated on the chart, because the sprint gantt next door <em>is</em> time — two horizontal axes meaning different things is exactly the kind of thing that degrades quietly.</div>
+          <div style="color:var(--muted)">Agreed on scope: this is a sketch, not a spec. Wiring it for real needs a <span style="font-family:var(--mono);font-size:12.5px">docs/graphs/</span> resource type, a G membership field on plans, closure computation and a ship path — a follow-up chain, not a UI change. Say the word and I'll write those plans.</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAnnotations&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;},&quot;inflightDetail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showAnnotations: this.props.showAnnotations ?? true,
+      inflightDetail: this.props.inflightDetail ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>
