@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="sprint-scope-and-surface">
+  <meta name="plan-title" content="A Sprint Should Span Repositories, and Be Legible">
+  <meta name="plan-summary" content="Four findings from a live migration: sprint items carry a bare slug while dependency refs are already project-qualified, so a sprint cannot span repositories; the layout migration destroys the only topical grouping and no tag field replaces it; two sprint-order inversions and a membership gap sit unrepaired; and the SPA&#x27;s design tokens are sound while its shell and cascade are not. Plus a public static build so the surface can be designed against a real URL.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-context" content="extended">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>A Sprint Should Span Repositories, and Be Legible | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-24">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Where this came from</h2>
+
+    <p>Every item below was found by running the project-state migration on a live
+    repository rather than by reading reckon's own code for defects. That matters for
+    priority: these are the things that bite an operator mid-session, measured on a project
+    carrying 22 plans, 11 sprints and 149 flat resources.</p>
+
+    <p>The migration itself succeeded and is not in question — 13 resources, source
+    <code>b9fc8216ed3b</code>, composed parity <code>46b93fe68018</code>, byte-identical
+    snapshot, marker published last. What it exposed is the surrounding surface.</p>
+
+    <h2 id="s2">§2 — A sprint cannot span repositories, and the fix is narrow</h2>
+
+    <p><strong>The asymmetry is exact.</strong> Dependency refs are already
+    project-qualified. <code>_schema.py:172-190</code> defines
+    <code>_PLAN_REF_RE</code> with an optional <code>project:</code> segment and states the
+    contract plainly: a bare slug is local, a qualified ref is external into another mounted
+    project, both travel in the same comma-separated meta lists, resolution of external refs
+    is the server's job, and files stay portable because nothing in the HTML depends on
+    another checkout being present. <code>read_plan</code> already resolves
+    <code>depends_on</code> into a <code>deps</code> list carrying <code>scope</code>,
+    <code>found</code>, <code>status</code> and <code>impl</code> per ref.</p>
+
+    <p><strong>Sprint items got none of it.</strong> A migrated sprint item is
+    <code>{slug, why_now, done_when}</code> with a bare slug and no project segment. So a
+    sprint — the unit that means "this is the work we are doing now" — is confined to one
+    repository, while the dependency graph it orders is not. That is backwards: a topic
+    routinely splits across repositories, and the sprint is precisely the object that should
+    hold it together.</p>
+
+    <p><strong>What already works, so it is not rebuilt.</strong>
+    <code>/reckon-ship &lt;project&gt;:S1</code> selects which project's sprint to execute,
+    and the external-prerequisite stop already refuses to implement another project's plan in
+    this checkout — it surfaces <code>/reckon-ship &lt;project&gt;:&lt;slug&gt;</code>
+    instead. The execution side understands cross-repository work. Only sprint
+    <em>membership</em> does not.</p>
+
+    <p><strong>Deliverable:</strong> a sprint item's slug accepts the same optional
+    <code>project:</code> qualifier as every other ref, resolved through the existing
+    external-ref machinery rather than a second implementation. <strong>Done when</strong> a
+    sprint holding items from two mounted projects reports per-item scope, found, status and
+    impl the way <code>deps</code> already does; <code>roadmap</code> orders across both; a
+    qualified item whose project equals the owner reads as local; and an unmounted or
+    dangling qualified item is an audit finding rather than a silent omission.</p>
+
+    <p><strong>Two design questions this raises</strong>, recorded as decisions rather than
+    assumed: whether a cross-repository sprint resource lives in one repository or is
+    composed from a sprint resource in each, and what a sprint's completion means when one
+    member repository is not checked out.</p>
+
+    <h2 id="s3">§3 — The layout migration destroys grouping with nowhere to put it</h2>
+
+    <p>Measured on the live project. <code>migrate-layout --check</code> reports
+    <strong>149</strong> moves, <strong>113</strong> of them out of a nested source
+    directory, and zero colliding targets — so it is mechanically safe. It is
+    semantically lossy:</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>Standard-names documents flattened</td><td>73</td></tr>
+        <tr><td>Of those, whose slug already carries the topic</td><td><strong>2</strong></td></tr>
+        <tr><td>Grouping irrecoverable from the slug</td><td><strong>71</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The slugs are bare numbered sequences — <code>09-llm-compose</code>,
+    <code>42-polling-workers</code>, <code>DD-03-multiplicity-unit</code>,
+    <code>37-docs-generation-design</code>. After flattening, <code>09-llm-compose.html</code>
+    sits in one flat <code>research/</code> beside <code>gpu-cluster-scoping.html</code> with
+    nothing marking it as standard-names work. Worse, <strong>three independent numbered
+    sequences</strong> — from <code>research/standard-names/</code>,
+    <code>archive/standard-names/</code> and <code>archive/research/standard-names/</code> —
+    each run their own 01..46 and interleave into meaninglessness.</p>
+
+    <p><strong>The flattening is not arbitrary.</strong> Resource identity is
+    <code>{project, type, id}</code> with <code>id</code> the slug, so a flat typed root makes
+    slug-to-path a pure function. Nested directories would either make it ambiguous or force
+    the subdirectory into the identity. The design is right; the migration simply has no
+    destination for the information it discards.</p>
+
+    <p><strong>The published schema has 41 properties and no tag field.</strong> The only
+    grouping axes are <code>sprint</code>, <code>milestone</code>, <code>tier</code> and
+    <code>north_star</code> — all single-valued and lifecycle-shaped. None expresses "this is
+    standard-names work". So directories are currently the only topical grouping in the
+    system, and the layout migration deletes them.</p>
+
+    <p><strong>Deliverable, in order:</strong> add a multivalued tag field following the
+    established comma-separated meta pattern that <code>depends_on</code> and
+    <code>informs</code> already use; backfill it mechanically from the pre-migration paths,
+    which need no judgement because the source directory <em>is</em> the tag; then run the
+    layout migration. A document can carry two tags and cannot live in two directories, so
+    the result is strictly better than what it replaces. <strong>Done when</strong> the
+    layout migration runs with zero grouping loss provable by comparing tags against the
+    saved move pre-image.</p>
+
+    <p>The pre-image is already preserved at
+    <code>~/.local/share/imas-codex/receipts/reckon-migration/layout-moves-preimage.txt</code>,
+    so this is recoverable whenever it is taken.</p>
+
+    <h2 id="s4">§4 — Wiring findings the migration surfaced, and one that predates it</h2>
+
+    <p>With state split into typed resources, <code>roadmap</code> reports more than it
+    could against a single index:</p>
+
+    <table>
+      <thead><tr><th>Severity</th><th>Finding</th></tr></thead>
+      <tbody>
+        <tr><td>WARN</td><td><code>plan-sprint-missing-item</code> — a plan declares a sprint but is absent from that sprint's items</td></tr>
+        <tr><td>ERROR</td><td><code>sprint-order-inversion</code> — a plan is scheduled before a prerequisite, twice</td></tr>
+      </tbody>
+    </table>
+
+    <p>The membership warning is a straightforward scoped write now that sprints are
+    independently versioned. The two inversions share one root cause and are the more
+    interesting finding: both name the same prerequisite, a plan sitting <code>active</code>
+    at 96.5% with <strong>every followup resolved, no blockers and no open decisions</strong>.
+    It is finished and unclosed, and because it is unclosed it holds two downstream sprints in
+    an inverted order. A plan that is done but not marked done is not a bookkeeping nit — it
+    propagates into the graph as an error.</p>
+
+    <p><strong>Deliverable:</strong> repair the three findings, and separately ask whether
+    <code>roadmap</code> should distinguish <em>a prerequisite that is genuinely incomplete</em>
+    from <em>a prerequisite whose own state says it is finished</em>. The second is a
+    lifecycle-hygiene signal and reporting it as a sprint-order error sends the reader to the
+    wrong repair.</p>
+
+    <h2 id="s5">§5 — The SPA: the tokens are good, the shell and the cascade are not</h2>
+
+    <p>Read before recommending. <strong>The design foundation is genuinely considered and
+    should not be redesigned.</strong> <code>foundation.css</code> establishes semantic tokens
+    — <code>--ink</code>, <code>--muted</code>, <code>--faint</code>, <code>--line</code> —
+    with oklch accents, a single hairline border primitive, a restrained shadow, Geist and
+    Geist Mono, and a complete light and dark pair. That is a deliberate system, not
+    templated defaults, and it is the part worth keeping.</p>
+
+    <p><strong>What needs work is structure, in this order:</strong></p>
+
+    <table>
+      <thead><tr><th>File</th><th>Lines</th><th>Problem</th></tr></thead>
+      <tbody>
+        <tr><td><code>shell.jsx</code></td><td>1,544</td><td>20 top-level components in one file</td></tr>
+        <tr><td><code>styles.css</code></td><td>2,256</td><td>498 selectors, no stated layering contract</td></tr>
+        <tr><td><code>graph.jsx</code></td><td>742</td><td>the most valuable view, the least legible file</td></tr>
+        <tr><td><code>styles-base.css</code></td><td>1,163</td><td>200 selectors; ownership versus <code>styles.css</code> undefined</td></tr>
+      </tbody>
+    </table>
+
+    <p><code>shell.jsx</code> holds the route parser, the top bar, the filter column, the list
+    column with its own sort model, the status menu, the title bar, the app root, the command
+    palette, the cockpit body and two modals. It is the file every change touches, which makes
+    it a merge magnet — and concurrent sessions are the normal operating mode here, so that is
+    a practical hazard rather than an aesthetic one.</p>
+
+    <p>Across four stylesheets there are <strong>1,239 selectors in 5,990 lines</strong>, and
+    <code>dashboard.css</code> exists twice — once under <code>docs/_shared/</code> and again
+    under <code>skills/reckon-sync/assets/</code>. Without a layering contract stating which
+    file owns tokens, primitives, layout and view-specific rules, the cascade is doing work
+    nobody can reason about.</p>
+
+    <p><strong>Recommendation for the design pass.</strong> Do not spend it on colour and
+    type; that layer is done. Spend it on <em>information architecture</em> — what earns
+    primary space. The present layout is a conventional three-column dashboard with a hash
+    router, and the content most specific to this tool, the dependency graph and sprint DAG,
+    is compressed into a strip component while filters and list chrome take the width. The
+    question worth designing against is which view a person opens when they want to know what
+    to do next, and whether that view is the graph rather than a filtered list.</p>
+
+    <p><strong>Sequencing constraint:</strong> decompose <code>shell.jsx</code> and state the
+    CSS layering contract <em>before</em> the visual redesign lands, or the design work
+    arrives as a diff to a 1,544-line file and a 2,256-line stylesheet that no one can
+    review.</p>
+
+    <h2 id="s6">§6 — Make the surface designable against a real URL</h2>
+
+    <p>The capability already exists and is one step from being useful.
+    <code>reckon build docs</code> is documented as bundling the UI and generating a portable
+    static site for CI and GitHub Pages: it copies JSX and CSS into <code>docs/_ui/</code> and
+    <code>docs/_shared/</code>, writes an <code>index.html</code> with relative asset paths,
+    and writes a complete <code>index.json</code> with live-discovered inventory, sprints and
+    milestones <strong>so the SPA works without a running reckon server</strong>.</p>
+
+    <p><strong>And CI already runs it — then throws the result away.</strong>
+    <code>.github/workflows/reckon-pages.yml</code> is named "Validate reckon static build",
+    runs <code>uv run --frozen reckon build docs</code> on every push and pull request to
+    main, and declares <code>permissions: contents: read</code> with no
+    <code>pages: write</code> and no deploy step. So the artifact is built, proven to build,
+    and discarded.</p>
+
+    <p><strong>Deliverable:</strong> add a deploy job to that existing workflow, publishing to
+    GitHub Pages on main. That yields a public URL a browser-based design tool can fetch
+    directly, with no exposure of the host that currently serves the private instance — the
+    static build reads its own <code>index.json</code> and needs no server, so nothing internal
+    is reachable through it. Reckon's own <code>docs/</code> becomes the example, which is the
+    honest form of a demo: the tool's own planning state, not a fixture.</p>
+
+    <p><strong>Two things to settle before publishing rather than after.</strong> Reckon's own
+    plans would become public, so their content is a disclosure decision, not a technical one.
+    And a static build must be a genuine snapshot of the same SPA rather than a divergent
+    second path, or the surface being designed is not the surface being shipped —
+    <strong>done when</strong> the deployed build renders from the same JSX and CSS sources as
+    the served instance, asserted by a test rather than by inspection.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="cross-repo-sprint-residence" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does a sprint spanning repositories live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="one-owning-repo">One owning repository holds the sprint; items carry qualified refs outward</button>
+      <button class="r-opt" data-value="composed-per-repo">Each repository holds its own sprint resource and the view composes them</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="absent-member-repo" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What does a cross-repository sprint report when a member repository is not mounted?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="explicit-unresolved">An explicit unresolved row, never counted as complete or omitted</button>
+      <button class="r-opt" data-value="audit-error">An audit error that blocks sprint closure outright</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="tags-before-layout" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Must the tag field and its backfill precede the layout migration?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="tags-first">Yes — tags and backfill first, then flatten with provable zero grouping loss</button>
+      <button class="r-opt" data-value="flatten-now">No — flatten now and accept that 71 documents lose their programme</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="public-pages-disclosure" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Do reckon&#x27;s own plans go public as the GitHub Pages example?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="own-docs-public">Yes — reckon&#x27;s own planning state is the example</button>
+      <button class="r-opt" data-value="fixture-project">No — publish a synthetic fixture project instead</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="shell-decomposition-timing" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the shell decomposition precede the visual redesign or land with it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="decompose-first">Decompose and state the CSS layering contract first</button>
+      <button class="r-opt" data-value="together">One pass — restructure and redesign together</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-sss-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship sprint-scope-and-surface" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Qualify sprint items, give grouping a destination, then design the surface</h4>
+    <div class="r-fu-body"><p>Order matters and each step removes risk from the next. The three wiring findings first, since two are ERROR-level and one traces to a plan that is finished and unclosed. Then the tag field and its mechanical backfill from the saved move pre-image, so the layout migration can run with provable zero grouping loss rather than discarding 71 documents' programme. Then sprint items accepting the same <code>project:</code> qualifier every other ref already takes, resolved through the existing external-ref machinery. Then the GitHub Pages deploy job, which turns an already-validated static build into a URL a browser design tool can reach. The <code>shell.jsx</code> decomposition and the CSS layering contract precede the visual redesign, or the design lands as a diff to a 1,544-line file nobody can review.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship sprint-scope-and-surface</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
