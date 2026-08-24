@@ -7,7 +7,7 @@
   <meta name="reckon-type"    content="plan">
   <meta name="plan-slug"      content="resource-tagging-system">
   <meta name="plan-title"     content="Topical Grouping That Survives Its Authors">
-  <meta name="plan-summary"   content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with counts, filterable queries, corpus-wide rename, and an audit that surfaces near-duplicates.">
+  <meta name="plan-summary"   content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with usage counts placed in front of the author at the moment of choosing, corpus-wide rename, and an audit that surfaces near-duplicates beside the command that repairs them.">
   <meta name="plan-status"    content="draft">
   <meta name="plan-roi"       content="high">
   <meta name="plan-effort-hours" content="11.0">
@@ -227,25 +227,25 @@
       </p>
     <p class="r-dec-rat">Locked by the lead 2026-08-24, cutting the filter as scope. Retrieval is already free: read_plan(project) returns a discovery envelope carrying every resource with its parsed metadata, so once resources carry tags an agent already holds the whole corpus and selects over it - a list comprehension, not a request. A filter parameter would be a second way to obtain what the payload already contains, and a second way is a second thing to keep consistent. Directories did two jobs, telling an author where a thing belonged and letting a reader enumerate a programme, and only the first was ever hard: enumeration was always cheap and stays cheap, while an author choosing a value with no view of existing usage is what produced four spellings. The inventory with counts answers that completely and query surface does not improve it. One property from the cut draft is retained in §3 rather than lost - a resource must appear under every tag it carries, not only the first.</p>
     </div>
-<div class="r-dec" data-key="tag-grammar-headroom" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="tag-grammar-headroom" data-choice="reserve-only" data-by="Simon McIntosh" data-when="2026-08-24T09:50:00+00:00">
     <p class="r-dec-q">Does the grammar reserve a facet separator now, and does it accept facets on day one?</p>
     <p class="r-dec-ctx">Every tag known today is a topic, so a flat vocabulary is sufficient. The question is headroom: reserving <code>:</code> now costs one validation rule, while retrofitting a separator later costs a rewrite of every tagged document. Accepting facets on day one costs more than reserving and may never be used.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="reserve-only">Flat tags now, <code>:</code> reserved and refused, so facets are additive later</button>
+      <button class="r-opt chosen" data-value="reserve-only">Flat tags now, <code>:</code> reserved and refused, so facets are additive later</button>
       <button class="r-opt" data-value="facets-now">Accept <code>facet:value</code> immediately, with a bare value meaning topic</button>
       <button class="r-opt" data-value="no-reservation">Flat tags with no reservation — treat <code>:</code> as an ordinary character</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. Reserving the separator costs one validation rule today and makes a faceted form purely additive later; retrofitting a separator once the corpus is tagged means rewriting every tagged document, so this is cheap now and never cheap again. Accepting facets on day one was rejected as design paid for before any evidence a second facet is wanted, and because a facet vocabulary needs its own inventory and governance, doubling the surface this plan is trying to keep small. A tag containing a colon is refused with a message stating the character is reserved, so the refusal teaches the rule rather than merely failing.</p>
     </div>
-<div class="r-dec" data-key="near-duplicate-response" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="near-duplicate-response" data-choice="report-and-suggest" data-by="Simon McIntosh" data-when="2026-08-24T09:50:00+00:00">
     <p class="r-dec-q">When the audit finds two tags whose identities differ by a small edit distance, what does it do?</p>
     <p class="r-dec-ctx">Normalisation handles spelling variance mechanically because that is decidable. A near-duplicate such as <code>standrd-names</code> beside <code>standard-names</code> is a suspected typo, which is a guess about intent rather than a derivable fact.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="report-only">Report the pair with both counts and leave both in place</button>
-      <button class="r-opt" data-value="report-and-suggest">Report the pair and emit the exact rename command that would merge them</button>
+      <button class="r-opt chosen" data-value="report-and-suggest">Report the pair and emit the exact rename command that would merge them</button>
       <button class="r-opt" data-value="auto-merge-singletons">Merge a singleton into an established near-neighbour automatically</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-24. A warning with no adjacent action is the kind that gets scrolled past, and the entire argument for observed-usage-with-counts over a curated allow-list was that governance would be near-zero cost - which only holds if the repair is one paste rather than a research task. Emitting the exact rename invocation beside both tags and their counts turns a finding into a fix. Auto-merge was rejected because it is a guess about intent with no undo, and it fails precisely where the author was right: a genuinely new tag that happens to resemble an established one.</p>
     </div>
 </section>
 
