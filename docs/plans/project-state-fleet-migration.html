@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="11">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="13">
 </head>
 <body>
   <main class="plan-doc">
@@ -164,7 +164,30 @@
 
     </details>
 
-    <h2 id="s3">§3 — imas-ambix and nova</h2>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-08-24</span>
+        <h2>§3 — imas-ambix and nova</h2></header>
+      <p class="landed-summary">Both priority repositories are
+      <code>distributed</code>/<code>complete</code> and committed — <code>nova</code>
+      21 resources at <code>5acde3e0</code>, <code>imas-ambix</code> 28 at
+      <code>6503254</code>, neither pushed. Field parity <strong>225/225</strong> and
+      <strong>195/195</strong>, zero mismatches and zero drift each; roadmap error
+      findings 7→0 and 0→0; <strong>0 documents moved</strong>. Fleet 4 of 12.
+      Five Reckon defects had to be fixed first, all of them the reader refusing a
+      legitimate legacy shape rather than the corpus being wrong: the fleet command
+      also flattened layout, so §3/§4 moved to the per-project command
+      (<code>20f0cf2</code>, <code>38f4557</code>, <code>70c74f9</code>). Full record:
+      <a href="/reckon/evidence/archive/project-state-fleet-migration-landed#priority-two">§3
+      landed</a>.</p>
+    </section>
+
+    <details><summary>Original design detail — the transaction shape and per-repository verification</summary>
+
+    <p><strong>Corrected 2026-08-24:</strong> the transaction below describes
+    <code>reckon migrate-fleet</code>, which also runs the layout migration and the
+    capability migration. §3 and §4 were redirected to the per-project
+    <code>reckon migrate-project-state</code>, which moves no files, so this plan keeps
+    the scope its §1 table claims. Verification came from the §2 reporter as intended.</p>
 
     <p>With the gate green, migrate the lead's two priority repositories. Each is a separate
     transaction: <code>reckon migrate-fleet</code> resolves the mounts registry at runtime, fixes
@@ -183,6 +206,8 @@
     resolves in both, and the resulting state is committed in each repository — with any new
     wiring finding classified as pre-existing-and-now-visible or as a genuine defect, never left
     ambiguous.</p>
+
+    </details>
 
     <h2 id="s4">§4 — The remaining eight</h2>
 
@@ -318,6 +343,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260824T1300-nova" data-who="reckon-ship" data-when="2026-08-24T13:00:00+00:00">
     <div class="r-comment-body">nova MIGRATED, VERIFIED AND COMMITTED as 5acde3e0 in that repository, not pushed per the lead's commit-only instruction. Marker complete/distributed with 21 resources and 0 findings; 15 sprints, 4 blockers, project manifest, timeline. Parity 225 compared / 225 matched / 0 mismatches / 0 drift. Sprint-order findings 7 to 0. 25 files staged, all under state/sprints/blockers/marker, 0 lock files committed, 0 documents moved. Four Reckon repairs were required first, all merged: 20f0cf2 coerces bare-string sprint items and resolves archived identities via a migration-only inventory; 38f4557 declares MIGRATION_COMPOSED_DERIVATIONS so a synthesised blocker id or next is not read as a loss; 70c74f9 orders composed sprints numerically, a read-time fix so no already-migrated repository needed regenerating -- which is why imas-codex went 2 inversions to 0 untouched. Suite 2048 passed, zero failures. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s3-nova.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1320-ambix" data-who="reckon-ship" data-when="2026-08-24T13:20:00+00:00">
+    <div class="r-comment-body">imas-ambix MIGRATED, VERIFIED AND COMMITTED as 6503254, not pushed. Marker complete/distributed with 28 resources (23 sprints, 2 milestones, 1 blocker, project, timeline); parity 195 compared / 195 matched / 0 mismatches / 0 drift; roadmap 0 error-level findings before and after; 1 recorded warning for sprint S3 item plans-migration-ambix, retained rather than dropped. The node reported NEEDS-HELP and was right to: I had enumerated the permitted output roots from nova, which holds no milestones, so migration correctly emitted docs/milestones/M4.html and M5.html and failed my own changed-path check. Same failure shape as the s2 exclusion one level down — an allowlist derived from one corpus and asserted as general, invisible for exactly the reason the sprint-ordering defect was. SECTION CLOSED: both priority repositories are distributed and committed, so the locked migration-order condition that their completion be confirmed before the rest proceed is satisfied. Fleet 4 of 12 distributed. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#s3-ambix and #priority-two.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1215-s4" data-who="reckon-ship" data-when="2026-08-24T12:15:00+00:00">
     <div class="r-comment-body">Fleet readiness measured across all 12 mounted projects after the preflight narrowing: of the ten legacy repositories, 7 now pass with zero blockers (hanney, helix, imas-efit, norma, nova, tessera, vv) and 3 block for three unrelated reasons — imas-ambix on dirty-alternate-worktrees, imas-standard-names on upstream-behind (a fast-forward pull in that checkout), and L2G on missing-project-index. L2G is the case §5 just solved: it has no state directory and therefore no legacy index to migrate, so it reaches distributed state through sync creating typed state natively rather than through migration at all — the first evidence that sequencing the born-distributed change ahead of the deletion was right. This also corrects this section's sequencing rationale: imas-standard-names holds an ordinary two-file legacy state, while the structural outliers are L2G with no state and imas-efit with six extra legacy sidecar JSON documents, and imas-efit passes cleanly. Execution of this section remains gated by the locked migration-order decision, which requires both priority repositories confirmed complete first. Detail at docs/evidence/archive/project-state-fleet-migration-landed.html#fleet-readiness.</div>

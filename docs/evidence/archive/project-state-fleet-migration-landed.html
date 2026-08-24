@@ -199,6 +199,55 @@
       the derivation set was declared — and it found the <code>imas-efit</code> case
       before that repository was ever dispatched.</p>
 
+    <h2 id="s3-ambix">§3 — imas-ambix migrated, and a fence I got wrong</h2>
+
+    <p>Run <code>r-20260824T120449648471</code>. Committed as <code>6503254</code>,
+      not pushed. Marker <code>complete</code> / <code>distributed</code> with
+      <strong>28 resources</strong> — 23 sprints, 2 milestones, a blocker, the project
+      manifest and the timeline. Field parity <strong>195 compared, 195 matched, 0
+      mismatches, 0 drift</strong>. Roadmap error-level findings 0 before and 0 after.
+      One recorded warning: sprint <code>S3</code> item
+      <code>plans-migration-ambix</code> resolves to no plan or archived plan, retained
+      as a finding rather than dropped.</p>
+
+    <p><strong>The node reported <code>NEEDS-HELP</code> and it was right to — the
+      defect was in my node specification, not in the migration.</strong> I enumerated
+      the permitted output roots as state, marker, sprints and blockers, taken from
+      nova's result. nova's legacy index has no milestones; imas-ambix's does, so
+      migration correctly emitted <code>docs/milestones/M4.html</code> and
+      <code>M5.html</code> and the worker's changed-path check failed on exactly those
+      two files. Its leaning was to widen the fence, which was correct: dropping them
+      would have discarded authored milestone state and the 195-of-195 parity proof
+      depends on preserving them.</p>
+
+    <p>This is the same failure shape as the §2 exclusion, one level down: <strong>an
+      allowlist derived from one corpus, asserted as if it were general.</strong> Four
+      roots looked exhaustive because neither already-migrated corpus contained a
+      milestone — the same blind spot that made the sprint-ordering defect invisible.
+      The worker refusing a clean result rather than quietly widening its own fence is
+      what surfaced it; a node that had simply committed would have looked identical
+      and taught nothing.</p>
+
+    <h2 id="priority-two">§3 — Both priority repositories, closed</h2>
+
+    <table>
+      <thead><tr><th>Measure</th><th><code>nova</code></th><th><code>imas-ambix</code></th></tr></thead>
+      <tbody>
+        <tr><td>State</td><td><code>distributed</code> / <code>complete</code></td><td><code>distributed</code> / <code>complete</code></td></tr>
+        <tr><td>Typed resources</td><td>21</td><td>28</td></tr>
+        <tr><td>Field parity</td><td>225 / 225, 0 mismatches, 0 drift</td><td>195 / 195, 0 mismatches, 0 drift</td></tr>
+        <tr><td>Roadmap error findings</td><td>7 → 0</td><td>0 → 0</td></tr>
+        <tr><td>Marker findings</td><td>0</td><td>1 warning, named</td></tr>
+        <tr><td>Documents moved</td><td>0</td><td>0</td></tr>
+        <tr><td>Commit</td><td><code>5acde3e0</code></td><td><code>6503254</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>Fleet now <strong>4 of 12 distributed</strong>: <code>imas-ambix</code>,
+      <code>imas-codex</code>, <code>nova</code>, <code>reckon</code>. Neither commit is
+      pushed, per the lead's commit-only instruction — the served state is the working
+      tree, so both repositories are live locally and publication stays the lead's call.</p>
+
     <h2 id="s3-defects">§3 — Three defects the gate could not have caught, all found before a repository changed</h2>
 
     <p>The plan's locked <code>robustness-evidence-source</code> decision recorded an
