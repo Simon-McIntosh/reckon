@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import copy
+import re
 from typing import Any, Iterable, Mapping
 
 CAPABILITY_SCHEMA_VERSION = "1.0"
@@ -34,6 +35,92 @@ LEGACY_TIER_TO_CLASS = {
     "sonnet": "general",
     "opus": "orchestrator",
 }
+
+_EXECUTION_MEASURE_PATTERNS = (
+    re.compile(
+        r"\b(?:run|runs|running)\s+(?:(?:a|the)\s+)?"
+        r"(?:(?:focused|full|targeted)\s+)?(?:test\s+suite|tests?|suite)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:uv\s+run\s+)?pytest(?:\s+[^\s,;]+)?",
+        re.IGNORECASE,
+    ),
+)
+
+
+@dataclass(frozen=True)
+class ExecutionFit:
+    """Compatibility between an evidence measure and its resolved role."""
+
+    role: str
+    execution_capable: bool | None
+    matched_measure: str | None
+    override: bool
+
+    @property
+    def conflict(self) -> bool:
+        """Return whether the measure requires execution the role disallows."""
+        return self.matched_measure is not None and self.execution_capable is False
+
+    @property
+    def allowed(self) -> bool:
+        """Return whether dispatch may proceed, including an explicit exception."""
+        return not self.conflict or self.override
+
+    @property
+    def status(self) -> str:
+        """Return the audit label persisted with a dispatch resolution."""
+        if self.conflict:
+            return "overridden" if self.override else "refused"
+        if self.matched_measure is None:
+            return "no-execution-measure"
+        if self.execution_capable is None:
+            return "capability-undeclared"
+        return "compatible"
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return stable JSON-ready evidence for the dispatch record."""
+        return {
+            "allowed": self.allowed,
+            "execution_capable": self.execution_capable,
+            "matched_measure": self.matched_measure,
+            "override": self.override,
+            "role": self.role,
+            "status": self.status,
+        }
+
+    def refusal_detail(self) -> str:
+        """Name both sides of a mismatch so the request can be corrected."""
+        return (
+            f"done-when matched execution measure {self.matched_measure!r}, but "
+            f"role {self.role!r} declares execution_capable false; correct the "
+            "role or pass an explicit execution override"
+        )
+
+
+def assess_execution_fit(
+    done_when: str,
+    *,
+    role: str,
+    execution_capable: bool | None,
+    override: bool = False,
+) -> ExecutionFit:
+    """Compare a narrowly matched execution measure with its resolved role."""
+    measure = next(
+        (
+            match.group(0)
+            for pattern in _EXECUTION_MEASURE_PATTERNS
+            if (match := pattern.search(done_when)) is not None
+        ),
+        None,
+    )
+    return ExecutionFit(
+        role=role,
+        execution_capable=execution_capable,
+        matched_measure=measure,
+        override=bool(override),
+    )
 
 
 def capability_request(

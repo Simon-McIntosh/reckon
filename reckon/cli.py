@@ -538,6 +538,14 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     help="Flight override for this task; always wins over config layers.",
 )
 @click.option(
+    "--allow-execution-mismatch",
+    is_flag=True,
+    help=(
+        "Dispatch despite an execution measure routed to a role declaring it "
+        "cannot execute; the exception is recorded on the run."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -565,6 +573,7 @@ def crew_dispatch(
     repo,
     checkout_path,
     overrides,
+    allow_execution_mismatch,
     dry_run,
     pretty,
 ):
@@ -604,6 +613,7 @@ def crew_dispatch(
                 project=project,
                 repo=_repo_root(repo),
                 base=base,
+                execution_override=allow_execution_mismatch,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -647,6 +657,7 @@ def crew_dispatch(
             locked_decisions=locked_decisions,
             peer_scopes=node.peer_scopes,
             member=member,
+            execution_override=allow_execution_mismatch,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
