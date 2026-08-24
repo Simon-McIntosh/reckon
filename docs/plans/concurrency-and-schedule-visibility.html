@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="17">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-version" content="18">
+<meta name="plan-impl" content="0.72">
 </head>
 <body>
   <main class="plan-doc">
@@ -563,6 +563,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260824T1835" data-who="reckon-ship" data-when="2026-08-24T18:35:00+00:00">
     <div class="r-comment-body">Two defects in the watcher guard, both found by using it within the hour and both recorded before repair. FIRST, a bootstrap deadlock: crew watch on an empty project exits immediately with no_live_pointers, and dispatch refuses when no watcher is live, so the first dispatch of any wave can never have one. The waiver therefore becomes routine, and a waiver used every time is not a waiver — it is a speed bump that trains the coordinator to pass the flag without reading the message, which is the failure this guard exists to prevent, reproduced by the guard itself. Exit-on-empty is correct for drain detection and wrong for arming; the repair is for an empty fleet to be a waiting state with the terminal form kept behind an explicit flag. SECOND, the cross-repository authority node tightened write-path validation to refuse any path outside the work repository, which also refuses the reckon run and report directories under the config home — the sanctioned delivery scope for a node with no tracked repository output, used by five nodes in this session including every scout and both integration suites. The refusal is right in principle and wrong in extent. Both are in flight as watcher-guard-usability, dispatched with the waiver for exactly the bootstrap case it was written for.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260824T1855" data-who="reckon-ship" data-when="2026-08-24T18:55:00+00:00">
+    <div class="r-comment-body">decisions-block-closure landed — commit 1119a08, merged; gate passed; measure 41 targeted cases then the dispatch-tree suite at 2190 passed with zero failures; 945 worker-seconds against a 35m budget, scope widened so the run records --scope-changed. An open decision is now a blocker kind of its own, distinct from dependency, explicit and gate blockers, naming both the decision and the plan carrying it; locking it clears the block, and explicit deferral clears it while the decision stays visible in the report so deferral cannot hide it. The worker blocked first and chose correctly between two paths: decision identity is plumbed through the inventory its callers build, rather than teaching roadmap.py to parse plan HTML, which would have broken the analyser's storage-neutral contract and this repository's rule that a test must not read state outside the repo under test. That refusal cost one resume and saved an architectural regression that would have passed its own tests. Denominator note: impl moves 0.70 to 0.72 rather than further, because sections 6 and 7 were added to this plan after the earlier figures were set, so the denominator grew from seven nodes to thirteen while eight have now landed.</div>
 </div>
 </section>
 </main>
