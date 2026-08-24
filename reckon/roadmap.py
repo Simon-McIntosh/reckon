@@ -11,7 +11,12 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Mapping
 
-from reckon._schema import LEGACY_EFFORT_HOURS, parse_plan_ref
+from reckon._schema import (
+    GRAPH_HANDLE_GRAMMAR,
+    LEGACY_EFFORT_HOURS,
+    is_graph_handle,
+    parse_plan_ref,
+)
 from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
@@ -441,6 +446,51 @@ def _qualified_plan(project: str, slug: str) -> str:
     return f"{project}:{slug}"
 
 
+def _claims_graph_handle(
+    handle: str,
+    projects: Mapping[str, Mapping[str, Any] | list[dict[str, Any]]],
+) -> bool:
+    for raw_state in projects.values():
+        inventory = (
+            raw_state
+            if isinstance(raw_state, list)
+            else raw_state.get("inventory") or []
+        )
+        if any(
+            isinstance(plan, dict)
+            and plan.get("type", "plan") == "plan"
+            and plan.get("slug")
+            and not plan.get("archived")
+            and str(plan.get("graph_handle") or "").strip() == handle
+            for plan in inventory
+        ):
+            return True
+    return False
+
+
+def resolve_ship_target(
+    target: str,
+    projects: Mapping[str, Mapping[str, Any] | list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Resolve a plan-or-graph ship token without making plan slugs ambiguous.
+
+    ``graph:`` is the explicit graph form. A bare token resolves as a graph only
+    when it matches the closed handle grammar and a live endpoint claims it;
+    otherwise it remains a plan slug. Duplicate claims still fail through the
+    canonical graph resolver.
+    """
+
+    token = str(target or "").strip()
+    if token.startswith("graph:"):
+        return resolve_graph_target(token.removeprefix("graph:").strip(), projects)
+    if token.startswith("plan:"):
+        token = token.removeprefix("plan:").strip()
+        return {"target": f"plan:{token}", "kind": "plan", "slug": token}
+    if is_graph_handle(token) and _claims_graph_handle(token, projects):
+        return resolve_graph_target(token, projects)
+    return {"target": f"plan:{token}", "kind": "plan", "slug": token}
+
+
 def resolve_graph_target(
     handle: str,
     projects: Mapping[str, Mapping[str, Any] | list[dict[str, Any]]],
@@ -457,6 +507,11 @@ def resolve_graph_target(
     target_handle = str(handle or "").strip()
     if not target_handle:
         raise GraphTargetError(target_handle, "a non-empty handle is required")
+    if not is_graph_handle(target_handle):
+        raise GraphTargetError(
+            target_handle,
+            f"must match {GRAPH_HANDLE_GRAMMAR}",
+        )
 
     project_state: dict[str, dict[str, Any]] = {}
     plans: dict[tuple[str, str], dict[str, Any]] = {}

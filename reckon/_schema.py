@@ -118,6 +118,15 @@ SPRINT_STATUS_ENUM = ["planned", "active", "done", "shipped"]
 _RESOURCE_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _OPTIONAL_IDENTIFIER_PATTERN = r"^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$"
 _OPTIONAL_IDENTIFIER_RE = re.compile(_OPTIONAL_IDENTIFIER_PATTERN)
+GRAPH_HANDLE_GRAMMAR = r"[A-Za-z0-9][A-Za-z0-9._-]*"
+GRAPH_HANDLE_PATTERN = rf"^(?:{GRAPH_HANDLE_GRAMMAR})?$"
+_GRAPH_HANDLE_RE = re.compile(rf"^{GRAPH_HANDLE_GRAMMAR}$")
+
+
+def is_graph_handle(value: Any) -> bool:
+    """Return whether *value* is a non-empty graph-handle identifier."""
+
+    return isinstance(value, str) and _GRAPH_HANDLE_RE.fullmatch(value) is not None
 
 
 def _enum(values: list[Any] | tuple[Any, ...]) -> dict[str, Any]:
@@ -517,7 +526,7 @@ class PlanState(BaseModel):
             "Stable ship-target handle carried by this endpoint plan. Membership "
             "is always derived from depends_on and is never stored."
         ),
-        json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
+        json_schema_extra={"pattern": GRAPH_HANDLE_PATTERN},
     )
     north_star: str | None = None
     capability: CapabilityRequest | None = None
@@ -710,11 +719,14 @@ class PlanState(BaseModel):
             errors.append(
                 f"milestone: {self.milestone!r} must be an identifier or empty"
             )
-        if self.type == "plan" and not _OPTIONAL_IDENTIFIER_RE.fullmatch(
-            self.graph_handle or ""
+        if (
+            self.type == "plan"
+            and self.graph_handle
+            and not is_graph_handle(self.graph_handle)
         ):
             errors.append(
-                f"graph_handle: {self.graph_handle!r} must be an identifier or empty"
+                f"graph_handle: {self.graph_handle!r} must match "
+                f"{GRAPH_HANDLE_GRAMMAR} or be empty"
             )
         if self.type == "plan" and self.capability:
             errors.extend(
