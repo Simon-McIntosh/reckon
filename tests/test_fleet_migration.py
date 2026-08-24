@@ -229,22 +229,24 @@ def test_dirty_migration_path_is_deferred_with_exact_path(tmp_path):
 
 def test_detached_alternate_worktree_with_no_migration_changes_is_ignored(tmp_path):
     _, docs = _repository(tmp_path, "sample")
-    _git(docs.parent, "worktree", "add", "--detach", str(tmp_path / "alternate-clean"), "HEAD")
-    (tmp_path / "alternate-clean" / "notes.txt").write_text("ignore")
+    alternate = docs.parent / "alternate-clean"
+    _git(docs.parent, "worktree", "add", "--detach", str(alternate), "HEAD")
+    (alternate / "notes.txt").write_text("ignore")
 
     result = preflight_repository(docs, "sample")
 
     assert result["ok"] is True, result["blockers"]
-    assert not any(
-        item["code"] == "dirty-alternate-worktrees" for item in result["blockers"]
-    )
+    assert result["blockers"] == []
 
 
 def test_detached_alternate_worktree_with_dirty_html_blocks_preflight(tmp_path):
     _, docs = _repository(tmp_path, "sample")
-    _git(docs.parent, "worktree", "add", "--detach", str(tmp_path / "alternate-html"), "HEAD")
-    alternate = tmp_path / "alternate-html" / "docs" / "work.html"
-    alternate.write_text((alternate.read_text()).replace("Migration fixture", "Alternate edit"))
+    alternate = docs.parent / "alternate-html"
+    _git(docs.parent, "worktree", "add", "--detach", str(alternate), "HEAD")
+    alternate_worktree_work_html = alternate / "docs" / "work.html"
+    alternate_worktree_work_html.write_text(
+        (alternate_worktree_work_html.read_text()).replace("Migration fixture", "Alternate edit")
+    )
 
     result = preflight_repository(docs, "sample")
 
@@ -253,7 +255,7 @@ def test_detached_alternate_worktree_with_dirty_html_blocks_preflight(tmp_path):
         item for item in result["blockers"] if item["code"] == "dirty-alternate-worktrees"
     )
     assert blocker["worktrees"] == [
-        {"path": str(tmp_path / "alternate-html"), "paths": ["docs/work.html"]}
+        {"path": str(alternate), "paths": ["docs/work.html"]}
     ]
 
 
