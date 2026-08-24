@@ -23,7 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -73,7 +74,18 @@
     <p>The lesson is already written down twice in this repository from two separate incidents.
     Writing it a third time is not the repair.</p>
 
-    <h2 id="s3">&#167;3 &mdash; Refuse at the moment a coordinator is provably present</h2>
+    <h2 id="s3">&#167;3 &mdash; Refuse at the moment a coordinator is provably present <span class="badge badge-shipped">&#10003; landed 2026-08-24</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong> Dispatch refuses a project holding
+    <code>completed_unpromoted</code> or <code>blocked</code> pointers past
+    <code>fences.unreconciled_run_grace</code> &mdash; shipped at 5m &mdash; naming every run with
+    its reconciliation command, as CLI error <code>unreconciled-runs</code> at exit 6.
+    <code>--allow-unreconciled-runs</code> waives it and stores the waived rows on both the pointer
+    and the promoted ledger record. The grace runs from manifest mtime rather than dispatch time,
+    so a run that turned terminal moments ago is never refused however long ago it was dispatched.
+    Full suite 2100 passed with 0 failures, 6 tests added, 327 insertions over 12 files. Full
+    record: <a href="/reckon/evidence/archive/completion-is-not-silent-landed#dispatch-refusal">&#167;3 landed</a>
+    (commit <code>cb656ad</code>). The three properties below remain the standing contract.</p>
 
     <p><strong>The deliverable is a guard on dispatch, because dispatch is the one moment the
     coordinator is demonstrably awake and able to act.</strong> A coordinator asking to start new
@@ -129,6 +141,50 @@
     from the live view rather than from memory, and a session ending with a nonzero count and no
     recorded reason is visible as such in its own artifact.</p>
 
+    <h2 id="s5">&#167;5 &mdash; The coordinator that waits by asking again</h2>
+
+    <p><strong>Measured while this plan was being executed, which is how it was found.</strong>
+    The coordinator armed a correct watch at dispatch and then asked the same question every turn
+    anyway, ending with <strong>eight overlapping background watches on one run</strong>. The lead
+    saw a screen of poll noise before the single real signal arrived. Nothing was lost, and that
+    is the point: the loop worked and was still unusable.</p>
+
+    <p><strong>This is the third case at the same seam, and the first two do not reach it.</strong>
+    &#167;3 catches the coordinator who keeps dispatching. &#167;4 catches the one who stops.
+    Neither catches the one who waits, because waiting badly produces no refusal, no stranded run
+    and no missing artifact &mdash; only noise, which no fence measures.</p>
+
+    <p>The cause is the same shape as &#167;2. The execution skill's own watch recipe <em>is</em> a
+    poll loop, and it never says how many watches a wait needs. The host harness reference already
+    records that this host re-invokes the session when a backgrounded command exits, so the
+    capability was present and unused. A recipe the coordinator retypes per dispatch is a recipe
+    it can get wrong once per dispatch.</p>
+
+    <p><strong>Deliverable:</strong> one command, one watch, for the whole fleet.
+    <code>reckon crew watch --project &lt;project&gt;</code> blocks until the first live pointer in
+    that project reaches a terminal manifest or its stream goes quiet past a resolved window, then
+    exits printing that run's id, classification and <code>next_action</code>. A per-run watch
+    scales with the fleet and reproduces the noise it is meant to prevent, so the watch is
+    project-wide and there is exactly one. Every crew command that leaves live pointers behind
+    returns the arming line and whether a watcher is already live, so <em>is the fleet watched</em>
+    stops being a question the coordinator answers from memory.</p>
+
+    <p><strong>The recorded pid is not the liveness signal.</strong> Reading it misled this
+    session, and an in-harness run has no pid at all. Stream quiet is both simpler and correct for
+    every launch kind.</p>
+
+    <p><strong>Arming without the coordinator acting at all is host-local, and stays quarantined.</strong>
+    Reckon can reduce the wait to a single line and report whether it is live; only the host
+    harness can arm that line unprompted, which for this host means a settings hook on the dispatch
+    call. That belongs in the harness reference beside the wake-on-completion capability it depends
+    on, never in the portable skill.</p>
+
+    <p><strong>Done when</strong> the watch exits on the first terminal run in a project naming its
+    classification and resolving command, exits on a stalled stream without waiting out any time
+    budget, cannot reach two live watchers for one project, and reports its live state back through
+    the dispatch payload; the execution skill's recipe is replaced by that one command; and the
+    harness reference carries the host-local arming form.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="guard-placement" data-choice="refuse-at-dispatch" data-by="reckon-ship" data-when="2026-08-24T12:55:00+00:00">
@@ -140,6 +196,16 @@
       <button class="r-opt" data-value="background-daemon">A background process that promotes finished runs automatically</button>
       </p>
     <p class="r-dec-rat">Locked 2026-08-24 on measured failure rather than preference. The skill rule already exists and already gives the reason; it was followed on about eight dispatches and skipped on two in one session, with no signal distinguishing them, which is the same way the member-collision rule failed earlier in the same sprint. Restating it a third time repairs nothing. A background promoter was rejected for a stronger reason than cost: promotion is the moment a human or coordinator judges the gate, audits the scoped diff and decides the verdict, so automating it would replace a judgement with a default and produce a ledger full of unexamined passes. Refusing at dispatch keeps the judgement where it belongs and fires it exactly when someone is there to make it.</p>
+    </div>
+<div class="r-dec" data-key="watch-arming" data-choice="" data-by="lead" data-when="2026-08-24T13:25:56+00:00">
+    <p class="r-dec-q">How many watches does a wave need, and who arms them?</p>
+    <p class="r-dec-ctx">Nothing currently arms a watch; the skill asks the coordinator to. Executing this plan produced eight overlapping watches on a single run, so the question is both how many and who.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="single-fleet-watch-armed-by-dispatch">One project-wide watch, whose arming line dispatch returns and whose live state it reports</button>
+      <button class="r-opt" data-value="per-run-watch-armed-by-coordinator">One watch per run, armed by the coordinator from the skill&#x27;s recipe</button>
+      <button class="r-opt" data-value="reckon-spawns-the-watcher-itself">Reckon spawns a detached watcher process on every dispatch</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-08-24 by the lead on measured noise. A per-run watch scales with the fleet, so an eight-node wave owes eight wake-ups for events nobody needed separately, and it is the form that produced the incident. Project-wide is one process whatever the fleet size, and it exits on the first event that matters. Reckon spawning the watcher itself was rejected on a hard constraint rather than preference: in this host the wake primitive is a harness-launched background command exiting, and a process Reckon detaches is not one the harness watches, so it would run forever and wake nobody. What Reckon can own portably is the single command plus the report of whether it is live; arming it with no coordinator action is host-local and belongs in the harness reference as a settings hook.</p>
     </div>
 </section>
 
@@ -155,6 +221,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-20260824T1315" data-who="reckon-ship" data-when="2026-08-24T13:15:00+00:00">
     <div class="r-comment-body">prior-art-scout landed — no commit (read-only reconnaissance at 4dddca0); gate passed; measure five capability areas classified, one suffices as-is and four need bounded extension, none absent, with 22 symbols and 15 tests bound to file:line; artifact ~/.config/reckon/crew/reports/cns-prior-art-scout.md, recorded at docs/evidence/archive/completion-is-not-silent-landed.html#reuse-map. Negative finding: budget_overrun_seconds measures from dispatch, not from terminal, so it cannot drive the promotion grace.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260824T1330" data-who="reckon-ship" data-when="2026-08-24T13:30:00+00:00">
+    <div class="r-comment-body">unreconciled-dispatch-refusal landed — commit cb656ad; gate passed; measure targeted contract 8 passed then full suite 2100 passed in 58.48s with 0 failures against base 4dddca0, generated Pydantic and JSON schemas byte-identical to the LinkML source; 327 insertions over 12 files, 6 tests added, 755 worker-seconds against a 45m budget. Shipped fences.unreconciled_run_grace=5m, CLI error unreconciled-runs at exit 6, waiver --allow-unreconciled-runs storing the waived rows on the pointer and the promoted ledger record. Grace derives from manifest mtime, not dispatch time, so a run dispatched long ago whose manifest turned terminal moments ago is not refused. Artifacts recorded at docs/evidence/archive/completion-is-not-silent-landed.html#dispatch-refusal.</div>
 </div>
 </section>
 </main>

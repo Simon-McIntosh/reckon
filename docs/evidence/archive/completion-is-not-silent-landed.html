@@ -62,6 +62,38 @@
       must <em>not</em> be refused.
     </p>
 
+    <h2 id="dispatch-refusal">Dispatch refusal on an unreconciled backlog</h2>
+    <p>
+      Commit <code>cb656ad</code> (2026-08-24, worker codex-l, 755&nbsp;worker-seconds against a
+      45&nbsp;m budget, 327 insertions / 6 deletions over 12 files, merged no-ff as
+      <code>8e124f9</code>).
+    </p>
+    <ul>
+      <li><strong>The guard.</strong> Dispatch scans only the requested project's live pointers,
+        before worktree creation, and refuses when a <code>complete</code> or <code>blocked</code>
+        manifest has been terminal longer than the resolved grace. Nothing is created and the node
+        stays ready, matching the budget-hold precedent rather than the malformed-node one.</li>
+      <li><strong>The grace is measured from the manifest, not the dispatch.</strong> Shipped at
+        <code>fences.unreconciled_run_grace=5m</code>, resolved through all four flight layers with
+        provenance. Terminal age derives from manifest mtime, so it is independent of whether
+        anyone ran <code>observe</code> &mdash; which is the whole failure being repaired.</li>
+      <li><strong>Nameable.</strong> The refusal prints every offending run id with its existing
+        <code>next_action</code>, so clearing it is a paste.</li>
+      <li><strong>Waivable and recorded.</strong> <code>--allow-unreconciled-runs</code> stores
+        <code>requested</code>, the grace in force, and the exact waived rows on the live pointer
+        and again on the promoted ledger record, so the exception outlives the request that made
+        it. CLI surface: <code>error=unreconciled-runs</code> at exit&nbsp;6.</li>
+    </ul>
+    <p>
+      Gate: <strong>passed</strong>. Targeted contract 8 passed in 4.08&nbsp;s; final full suite
+      <strong>2100 passed in 58.48&nbsp;s, 0 failures</strong> against base <code>4dddca0</code>;
+      both generated schema artifacts byte-identical to their LinkML source. 6 tests added,
+      including the discriminating case &mdash; a run dispatched long ago whose manifest turned
+      terminal moments ago is <em>not</em> refused &mdash; and <code>RECKON_HOME</code> isolation
+      asserted as <code>&lt;temporary-home&gt;/crew/live</code>. Logs:
+      <code>~/.config/reckon/crew/runs/r-20260824T130935083877-unreconciled-dispatch-refusal/</code>.
+    </p>
+
   </main>
 </body>
 </html>
