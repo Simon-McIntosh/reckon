@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="11">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="12">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -636,6 +636,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s9" data-id="c-20260825-probe" data-who="reckon-ship" data-when="2026-08-25T07:10:00+00:00">
     <div class="r-comment-body">model-id-probe landed — run r-20260825T070329601294, gate passed, 178 worker-seconds: gpt-5.6-luna and gpt-5.6-terra BOTH ACCEPT on this account (bare → resolves xhigh from the user's interactive config, and with model_reasoning_effort=medium), codex-cli 0.149.1, 4/4 variants exited 0. Artifact: ~/.config/reckon/crew/reports/model-id-probe.md. Both backends now enter the host flight layer defined-not-defaulted.</div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260825-fence" data-who="reckon-ship" data-when="2026-08-25T07:35:00+00:00">
+    <div class="r-comment-body">session-reuse-model-fence (§9.4) landed — run r-20260825T070934797271, gate passed, commit f65ea4c merged as 98e0ef4; affected suites 260/260, full suite 2324/2324, 2 focused tests added, 853 worker-seconds. Sessions are now looked up only under the exact resolved backend model and captured per model, so cross-model dispatch starts clean while both sessions stay reusable. Run promoted with scope-changed: the worker correctly blocked at its original fence (the reuse logic lives in reckon/crew/dispatch.py, not the crew.py facade) and the coordinator widened the scope via resume — the blocked-then-resumed path worked exactly as designed.</div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260825-scout" data-who="reckon-ship" data-when="2026-08-25T07:10:00+00:00">
     <div class="r-comment-body">shadow-prior-art-scout landed — run r-20260825T070250261493, gate passed (6/6 capability areas, 6/6 fitness verdicts), 292 worker-seconds. Verdict: 0/6 absent, 1/6 runtime-sufficient, 5/6 bounded extensions of existing primitives. Key findings: fixed-SHA worktree creation already refuses HEAD fallback; lineage storage round-trips arbitrary mappings but dispatch must inject shadow lineage without incrementing attempts; commitless promotion exists but shadow completion must refuse commits and derive changed_lines from shadow.patch; capability derivation currently ADMITS shadow records into live competence curves — the partition is mandatory. Reuse map: ~/.config/reckon/crew/reports/shadow-prior-art-scout.md (30 candidate entries).</div>
