@@ -232,6 +232,36 @@
   killed it mid-run rather than let it write four sandbox artifacts down as pre-existing failures.
   Two dispatches spent, nothing promoted, and that was the correct outcome.</p>
 
+  <p><strong>The class is wider than test suites, and a third instance the same day proved
+  it.</strong> The peer session re-ran a shadow pair that had recorded one model producing markedly
+  thinner work than another, this time holding every condition of the primary equal and substituting
+  only the model:</p>
+
+  <table>
+    <thead>
+      <tr><th>Run</th><th>Time fence</th><th>Files</th><th>Insertions</th><th>Tests</th><th>Suite</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>primary</td><td>40 min</td><td>8</td><td>809</td><td>10</td><td>2357/2357</td></tr>
+      <tr><td>shadow, same node and base</td><td>40 min</td><td>8</td><td>806</td><td>8</td><td>2355/2355</td></tr>
+      <tr><td>the earlier recorded comparison</td><td>8 min</td><td>5</td><td>115</td><td>0</td><td>focused only</td></tr>
+    </tbody>
+  </table>
+
+  <p>115 insertions at an eight-minute fence against 806 at a forty-minute one, from the same model
+  on the same node at the same base. The earlier record had read that thinness as a property of the
+  model; it was a property of the budget. So a whole recorded model comparison had been resting on an
+  uncontrolled variable &mdash; the same defect as four sandbox rows read as code failures and one
+  already-fixed row read as pre-existing.</p>
+
+  <p><strong>Three instances in one day gives the general form, and it is not about tests at
+  all: a measurement can be internally consistent and be measuring something other than what it
+  names.</strong> None of the three was sloppy, none contained a false number, and each would have
+  survived review, because reviewing a measurement checks its arithmetic rather than its attribution.
+  What separates them from sound measurements is only whether the thing being varied is the thing in
+  the label. That is why all three were caught by re-measuring under changed conditions rather than
+  by anyone re-reading the record.</p>
+
   <p><strong>A related finding, surfaced by workers rather than by tests.</strong> Several nodes
   reported that they could not lint, because <code>ruff</code> is absent from the project
   environment as both an executable and a module. The repository configures it &mdash; there is a
