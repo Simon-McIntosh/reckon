@@ -140,6 +140,12 @@ def _loaded_stylesheets(html: str) -> tuple[str, ...]:
     )
 
 
+def _extract_component(source: str, start: str, end: str) -> str:
+    start_anchor = source.index(start)
+    end_anchor = source.index(end, start_anchor)
+    return source[start_anchor:end_anchor]
+
+
 @pytest.fixture()
 def built_source_site(tmp_path):
     docs_dir = tmp_path / "docs"
@@ -245,20 +251,57 @@ def test_plan_and_sprint_views_surface_only_matching_live_work():
     plan = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
     sprint = (REPO_ROOT / "docs" / "ui" / "sprint.jsx").read_text()
 
-    band_anchor = plan.find('className="r-inflight-band"')
-    assert band_anchor != -1
-    assert "run.member" in plan[band_anchor:]
-    assert "run.section" in plan[band_anchor:]
-    assert 'aria-label="Work in flight"' in plan
+    band = _extract_component(
+        plan,
+        "function PlanInFlightBand",
+        "function ReaderSourceFailure",
+    )
+    assert 'className="r-inflight-band"' in band
+    assert 'aria-label="Work in flight"' in band
+    assert "run.member || \"unassigned\"" in band
+    assert "run.section || \"whole plan\"" in band
+    assert "Copy run command" in band
+    assert "reckon crew observe --run ${run.run_id}" in band
 
-    live_summary_anchor = sprint.find("liveSummary =")
-    assert live_summary_anchor != -1
-    assert "run.member" in sprint[live_summary_anchor:]
-    assert "run.section" in sprint[live_summary_anchor:]
+    assert 'if (liveRuns.length) return `in flight · ${liveRuns.length}`;' in sprint
 
-    badge_anchor = sprint.find('className="r-inflight-badge"')
-    assert badge_anchor != -1
-    assert live_summary_anchor < badge_anchor
+    # Prove the sprint summary still contracts around a live run on a plan item.
+    plan_flag = _extract_component(
+        sprint,
+        "function openGateCount",
+        "function Sprint(",
+    )
+    script = (
+        "const sprintSource = "
+        + json.dumps(plan_flag)
+        + ";\n"
+        + """
+const plan = {
+  slug: "focus",
+  effective_status: "active",
+  status: "active",
+  gates: [],
+};
+const runs = [{
+  run_id: "run-1",
+  plan: "focus",
+  member: "runner",
+  section: "test-plan",
+  elapsed_seconds: 30,
+  budget_ceiling: 120,
+  phase: "working",
+}];
+eval(sprintSource);
+console.log(planFlag(plan, runs));
+"""
+    )
+    rendered = subprocess.run(
+        ["node", "-e", script],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert rendered.stdout.strip() == "in flight · 1"
 
 
 def test_build_bakes_discovery_and_preserves_authored_project_state(
