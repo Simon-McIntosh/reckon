@@ -1359,8 +1359,8 @@ function App() {
         {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
         <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
           {!readingMode && <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
-          <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>
-            <div className="r-body">
+          <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`} style={readingMode ? { display: "block" } : undefined}>
+            <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
               {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
               {route.view === "plan" && !readingMode && (
                 <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
@@ -1503,39 +1503,47 @@ function overviewProjectRows(projects, currentState, fleetRuns) {
 function OverviewFleet({ projects, fleetRuns }) {
   const rows = overviewProjectRows(projects, window.STATE, fleetRuns);
   const blockers = rows.flatMap(row => row.blockers.map(blocker => ({ ...blocker, project: row.project })));
-  const totals = {
-    projects: rows.length,
-    plans: rows.reduce((count, row) => count + row.plans, 0),
-    live: rows.reduce((count, row) => count + row.live, 0),
-    held: rows.reduce((count, row) => count + row.held, 0),
-  };
+  const totals = [
+    { label: "projects", value: rows.length, note: "mounted" },
+    { label: "plans", value: rows.reduce((count, row) => count + row.plans, 0), note: "in view" },
+    { label: "live", value: rows.reduce((count, row) => count + row.live, 0), note: "runs" },
+    { label: "held", value: rows.reduce((count, row) => count + row.held, 0), note: "decisions" },
+  ];
   return (
     <section className="r-overview-fleet" aria-labelledby="fleet-overview-heading">
       <div className="r-ck-h"><span className="r-eyebrow" id="fleet-overview-heading">Fleet</span></div>
       <div className="r-overview-stats">
-        {Object.entries(totals).map(([label, value]) => (
-          <div key={label}><strong>{value}</strong><span>{label}</span></div>
+        {totals.map(metric => (
+          <div className="r-overview-stat" key={metric.label}>
+            <div className="r-overview-stat-label">{metric.label}</div>
+            <div className="r-overview-stat-value"><strong>{metric.value}</strong><span>{metric.note}</span></div>
+          </div>
         ))}
       </div>
 
       {blockers.length > 0 && (
         <section className="r-overview-blockers" aria-labelledby="overview-blockers-heading">
           <h2 id="overview-blockers-heading">Unresolved blockers</h2>
-          {blockers.map(blocker => (
-            <article key={`${blocker.project}:${blocker.id}`}>
-              <div className="r-overview-blocker-meta">
-                <span>{blocker.project}</span>
-                <span>Owner: {blocker.owner || "unassigned"}</span>
-                <span>{Number(blocker.n || 0)} gated</span>
-              </div>
-              <strong>{blocker.summary || blocker.id}</strong>
-              <div className="r-overview-blocker-next"><span>Next</span>{blocker.next || "No next action recorded"}</div>
-            </article>
-          ))}
+          <div className="r-overview-blocker-list">
+            {blockers.map(blocker => (
+              <article key={`${blocker.project}:${blocker.id}`}>
+                <div className="r-overview-blocker-meta">
+                  <span className="r-overview-blocker-id">{blocker.id}</span>
+                  <span className="r-overview-blocker-project">{blocker.project}</span>
+                  <span>{Number(blocker.n || 0)} gated</span>
+                  <span className="r-overview-blocker-owner">Owner: {blocker.owner || "unassigned"}</span>
+                </div>
+                <div className="r-overview-blocker-summary">{blocker.summary || blocker.id}</div>
+                <div className="r-overview-blocker-next"><span>Next</span>{blocker.next || "No next action recorded"}</div>
+              </article>
+            ))}
+          </div>
         </section>
       )}
 
-      <div className="r-overview-projects" role="table" aria-label="Project roll-up">
+      <section className="r-overview-project-rollup" aria-labelledby="overview-projects-heading">
+        <h2 id="overview-projects-heading">Projects</h2>
+        <div className="r-overview-projects" role="table" aria-label="Project roll-up">
         <div className="r-overview-project-head" role="row">
           <span>Project</span><span>Active sprints</span><span>Plans</span><span>Active</span><span>Live</span><span>Held</span>
         </div>
@@ -1565,7 +1573,8 @@ function OverviewFleet({ projects, fleetRuns }) {
             <span role="cell">{row.held}</span>
           </div>
         ))}
-      </div>
+        </div>
+      </section>
     </section>
   );
 }
