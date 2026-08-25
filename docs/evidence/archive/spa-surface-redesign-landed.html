@@ -270,6 +270,17 @@
   to carry a user-level install. A tool that is configured but not declared is worse than one that
   is absent: the configuration implies a guarantee the environment does not provide.</p>
 
+  <p><strong>Resolved, and the resolution produced the number that shows what it cost.</strong>
+  <code>ruff</code> is now declared, with a check that enumerates every configured namespace,
+  resolves each through an explicit distribution alias table, and fails closed on one it cannot
+  place &mdash; proven failing before the declaration and passing after. The first successful run of
+  the documented command reports <strong>322 pre-existing findings</strong>, none of which was
+  reachable through it before. That count is the measure of how long a rule can decay while its
+  prose stays correct. The thesis and the remaining half &mdash; whether an assertion stating a
+  snapshot rather than a contract can be checked at all &mdash; moved to
+  <code>binding-rules-need-bound-checks</code>, because a repository-wide rules-without-checks
+  concern is not this plan's subject and a followup on this page would have hidden it.</p>
+
   <p><strong>A reach path a user cannot see is not a reach path.</strong> An earlier landing asserted
   that hiding a project excluded it &ldquo;from aggregates and from the shortcut list but never from
   reach&rdquo;, and its test passed, because the palette and the route genuinely worked. The lead
