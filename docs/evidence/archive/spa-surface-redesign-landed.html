@@ -530,6 +530,33 @@
   &mdash; rather than starting a run it could not finish or claiming a delta it had not measured.
   One suite over the merged tree is also strictly better evidence than a rerun on its own base.</p>
 
+
+  <h2 id="merged-suite">A qualified pass is the honest one</h2>
+
+  <p><strong>Node <code>n-s18-merged-suite</code>, verification-only, gate PASSED, 2026-08-25.</strong>
+  Five section-18 commits merged separately, each measured against its own base; this is the one run
+  that measured them together, at merged <code>51baeb4</code> with all five commits confirmed as
+  ancestors.</p>
+
+  <p><strong>2435 passed, 6 failed, 1362.94s.</strong> All six failures are classified pre-existing
+  at <code>638603b</code> &mdash; the failing tests and the Crew and execution-fit paths beneath them
+  have an <em>empty diff</em> against that revision, which is the strongest available form of the
+  claim. Introduced-failure delta for the five nodes is <strong>0</strong>. Every failure is a
+  watcher startup or registration deadline: four producer starts, one five-second orphan ready-file
+  wait, and one capable dispatch returning <code>watcher-required</code>.</p>
+
+  <p><strong>The load attribution is measured rather than asserted.</strong> The suite consumed
+  126.08 CPU-seconds over 1362.94 wall-seconds; at a liveness sample its pytest had accumulated 11
+  CPU-seconds after seventeen minutes while an unrelated training pytest held about 280% CPU and
+  roughly 119 CPU-minutes. Deadline-based tests on a host in that state measure the host. The node
+  reported a qualified pass rather than an absolute one, which is the only honest reading &mdash; and
+  the same discipline three nodes before it applied when they reported deltas instead of green
+  suites.</p>
+
+  <p>The remaining defect is real and belongs elsewhere: watcher startup and registration tests that
+  fail under load are Crew-owned, not surface-owned, and are routed to
+  <code>inflight-visibility</code> rather than carried here.</p>
+
 </main>
 </body>
 </html>
