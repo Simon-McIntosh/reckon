@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -147,15 +147,15 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="git-creation-source" data-choice="head-keyed-cache" data-by="reckon-ship" data-when="2026-08-21T13:49:28+00:00">
+<div class="r-dec" data-key="git-creation-source" data-choice="persist-under-config-home" data-by="Simon McIntosh" data-when="2026-08-25T07:02:45+00:00">
     <p class="r-dec-q">How should a document&#x27;s creation date be sourced once the full-history walk is removed from the request path?</p>
     <p class="r-dec-ctx">The current call recovers true first-commit time but costs 89% of a cold scan. The alternatives trade accuracy for latency differently, and the choice determines whether the &quot;created&quot; column stays trustworthy.</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="head-keyed-cache">Cache the map keyed on HEAD; incremental tip query when HEAD moves</button>
+      <button class="r-opt" data-value="head-keyed-cache">Cache the map keyed on HEAD; incremental tip query when HEAD moves</button>
       <button class="r-opt" data-value="persist-to-disk">Persist the map under the config home so a server restart does not re-pay</button>
       <button class="r-opt" data-value="drop-git-use-ctime">Drop git entirely; accept inode ctime as the creation date</button>
       </p>
-    <p class="r-dec-rat">Keeps the creation dates accurate, which drop-git-use-ctime would silently degrade: a fresh clone or a rsync gives every file the same ctime, so the created column would become meaningless exactly where history is most useful. Keying on HEAD is sound because a file&#x27;s first-commit timestamp is immutable and history only grows at the tip, so an unchanged HEAD provably needs no requery. Disk persistence was not taken now because it optimises the server-restart path only, and restarts are rare next to the per-request cost this plan is removing; it stays available as a followup if cold-start after restart proves painful.</p>
+    <p class="r-dec-rat">Reopened 2026-08-25 on the lead&#x27;s explicit authorisation, superseding the head-keyed-cache choice locked 2026-08-21. The superseded choice and its reasoning are preserved here rather than discarded: it kept creation dates accurate by keying on repository HEAD, correctly rejected inode ctime because a fresh clone or rsync gives every file the same ctime, and declined disk persistence on the stated ground that it optimises only the server-restart path while restarts are rare next to the per-request cost being removed. What changed is that premise. Restarts are not rare on this workstation: the server was restarted twice within twelve hours during this session alone, and each restart re-pays the full history walk — imas-efit 14.8 s and nova 7.1 s on the first call after one. That is the unmet criterion in §2, which was authored in the same session as the decision it contradicts, and the plan is explicit that the criterion must not be quietly amended to match the outcome. Persisting the map under the config home resolves the contradiction in the direction that keeps the criterion true rather than the direction that redefines it. The accuracy argument that killed drop-git-use-ctime is untouched: a persisted map stores the same first-commit timestamps, keyed on the same HEAD, and a file&#x27;s first-commit time is immutable, so persistence changes only where the map lives between processes.</p>
     </div>
 <div class="r-dec" data-key="cold-scan-budget" data-choice="block" data-by="reckon-ship" data-when="2026-08-21T13:49:28+00:00">
     <p class="r-dec-q">Should a cold discovery scan be allowed to block the request, or should the endpoint serve a stale-but-immediate result and refresh behind it?</p>
