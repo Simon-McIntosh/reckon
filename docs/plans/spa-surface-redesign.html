@@ -475,8 +475,8 @@
     <p class="r-gate-required-evidence">One named test per rank, each failing against the literal canvas behaviour and passing against the shipped surface, listed with its rank in the execution record.</p>
     </div>
 <div class="r-gate" data-id="no-parallel-component-family" data-section="s4" data-gated-sections="s12" data-status="open" data-verdict="">
-    <h4 class="r-gate-measure">No surface has two implementations: the module split leaves one authority per surface and the legacy overview component is gone or unreferenced.</h4>
-    <p class="r-gate-required-evidence">A search over the loaded module list showing one definition per surface, and the static build bundling exactly that set.</p>
+    <h4 class="r-gate-measure">No surface has two implementations: exactly one component owns each redrawn surface, the unused legacy overview component is gone or unreferenced, and the four asset lists agree.</h4>
+    <p class="r-gate-required-evidence">A search over the loaded module list showing one definition per surface, the static build bundling exactly that set, and the asset-list agreement test passing.</p>
     </div>
 </section>
 
@@ -517,7 +517,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ssr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship spa-surface-redesign" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Redraw the seven surfaces and carry the nine outstanding audit ranks through them</h4>
-    <div class="r-fu-body"><p>§3 runs first and alone: three of the four canvas contradictions are the state boundary discarding a distinction the server already makes, and no redraw fixes that downstream. §4's module split is the other gate on width — five of the redrawn surfaces share one 1,544-line file today, so the surface sections serialise on it until it is split in place.</p><p>After those two, §5 to §11 are file-disjoint and run wide. Each carries its own audit ranks from the §2 table; a section that lands its canvas surface without them has re-opened a ranked defect rather than closed one.</p></div>
+    <div class="r-fu-body"><p>§3 runs first and alone: three of the four canvas contradictions are the state boundary discarding a distinction the server already makes, and no redraw fixes that downstream. §4's surface stylesheets are the other gate on width — every surface's rules sit interleaved in two files today, so any two concurrent surface workers collide there until each surface owns its own.</p><p>After those two, §5 to §11 are file-disjoint and run wide. Each carries its own audit ranks from the §2 table; a section that lands its canvas surface without them has re-opened a ranked defect rather than closed one.</p></div>
     <pre class="r-fu-prompt">/reckon-ship spa-surface-redesign</pre>
     </article>
 </section>
