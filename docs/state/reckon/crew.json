@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T10:32:34",
+  "updated": "2026-08-25T10:37:44",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -100,7 +100,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a033e4-05e4-7de1-b031-000c219c2d94",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-luna": "01a0380d-6f40-7001-8029-b4afa891699f"
+        }
       },
       {
         "id": "codex-m",
@@ -16893,9 +16896,86 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260825T083318691111-crew-list-classification-fields",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a75",
+        "node": "crew-list-classification-fields",
+        "node_definition": {
+          "done_when": "Measured: crew list returns nine fields per run \u2014 backend, launch, manifest_path, node, phase, plan, project, run_id, worktree \u2014 while crew(view='live') returns those plus classification, process_alive, elapsed_seconds, log_age_seconds, budget_seconds, budget_overrun, manifest_status and next_action. The live pointer carries strictly more again, so nothing is missing from the record and the CLI projection drops it. That matters because the recovery ladder points a fresh coordinator at crew list to recover ownership of runs it did not dispatch, and a shell loop cannot reach the MCP tool, so the only script-reachable surface is also the one omitting the six fields that constitute the decision, and a fleet in trouble reads identically to a healthy one. Widen the CLI projection to carry those fields, reusing the live view's computation rather than reimplementing it, and pin the two projections against each other in a new tests/test_crew_surface_parity.py so they cannot diverge again. A prior attempt at this node was stopped before it finished and left a 60-line start on that test at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/cnv-spa/crew-list-carries-the-classification/tests/test_crew_surface_parity.py, which already declares the eight deciding field names; read it and reuse what is sound rather than starting blank. SECOND HALF, WITH A HARD CONSTRAINT TO READ BEFORE EDITING PROSE. skills/reckon-ship/SKILL.md line 544 states that list omits those exact fields, which this change falsifies, and it must be corrected in the same commit because code and its documentation are two halves that must be specified together or neither is owned. That file is at 14314 estimated tokens against a 14400 budget enforced by test_engine_generated_dispatch_keeps_fixed_read_set_bounded, measured as word count times four plus two then floor-divided by three, leaving 86 tokens or roughly 64 words. Your edit must make that paragraph SHORTER rather than longer, because the enumeration of what list omits is most of its length and widening the verb removes the reason to enumerate anything at all. Widening should buy tokens back. Do NOT raise FIXED_READ_SET_TOKEN_BUDGET and do NOT shave an unrelated rule for room, since the test's own failure message forbids both; if your wording does not fit, the wording is too long rather than the bound too small. Report the before and after token estimate. Do not touch tests/test_crew.py or reckon/crew/routing.py. The existing suite passes unchanged.",
+          "estimated_hours": 3.0,
+          "goal": "Give reckon crew list the deciding fields the live view already computes, and shorten the guidance that enumerates their absence",
+          "id": "crew-list-classification-fields",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T083318691111-crew-list-classification-fields/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_crew_surface_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-e",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T08:33:31Z",
+        "completed_at": "2026-08-25T08:34:02Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 31,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 31,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "134d7705958c9f29e40f1ddca77d6730453891ce",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T083318691111-crew-list-classification-fields/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0380d-ab4a-7963-90d3-008242813df9",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 326
+    "_version": 328
   }
 }
