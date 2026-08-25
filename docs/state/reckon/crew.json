@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:39:16",
+  "updated": "2026-08-25T14:45:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29,7 +29,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "019ff69f-3f50-7762-9e47-ece7bb791e5a",
-        "created": "2026-08-12"
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-sol": "01a038ea-cf6c-7593-a14e-22bef4824038"
+        }
       },
       {
         "id": "codex-d",
@@ -54,7 +57,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03323-76a4-7b00-8615-f759539e83d8",
-        "created": "2026-08-12"
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-luna": "01a038de-1aba-7f40-ae3e-7d59258fe3da"
+        }
       },
       {
         "id": "codex-g",
@@ -19939,9 +19945,302 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T122112217644-shadow-sidecar-dispatch",
+        "plan": "crew-effort-routing",
+        "section": "\u00a78",
+        "node": "shadow-sidecar-dispatch",
+        "node_definition": {
+          "done_when": "Focused tests cover shadow node derivation from a committed record, unreachable-base refusal, shadow lineage on pointer and promoted record without attempt increment, complete refusing --commit and deriving changed_lines from shadow.patch, and capabilities excluding shadow rows from live slices while exposing a shadow slice; PYTHONPATH=$PWD python -m pytest tests/ -q fully green",
+          "estimated_hours": null,
+          "goal": "Implement the \u00a78 shadow sidecar: a reckon crew shadow CLI command that re-dispatches a committed run's node to a candidate backend in a worktree at the primary's base_sha with shadow lineage, commitless completion capturing shadow.patch, and capability slicing that partitions shadow observations out of live competence curves",
+          "id": "shadow-sidecar-dispatch",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122112217644-shadow-sidecar-dispatch/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew.py",
+            "reckon/ledger.py",
+            "reckon/capabilities.py",
+            "tests/test_crew.py",
+            "tests/test_ledger.py",
+            "tests/test_capabilities.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-f",
+        "backend": "codex-luna",
+        "agent": {
+          "backend": "codex-luna",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:21:14Z",
+        "completed_at": "2026-08-25T12:44:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1393,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1393,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "14cd4889dcae5f9235c1628b832ae929c0c08202",
+        "commits": [],
+        "changed_lines": {
+          "added": 806,
+          "removed": 79,
+          "files": 8
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122112217644-shadow-sidecar-dispatch/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038de-1aba-7f40-ae3e-7d59258fe3da",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 14497536,
+            "cached_input_tokens_cumulative": 14497536,
+            "input_tokens": 14759572,
+            "input_tokens_cumulative": 14759572,
+            "output_tokens": 38713,
+            "output_tokens_cumulative": 38713,
+            "reasoning_output_tokens": 9365,
+            "reasoning_output_tokens_cumulative": 9365
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "high",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "codex-luna",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "gpt-5.6-luna",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260825T072832542100-shadow-sidecar-dispatch"
+        },
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122112217644-shadow-sidecar-dispatch/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260825T124039432000-integrated-suite-at-head",
+        "plan": "crew-effort-routing",
+        "section": "\u00a711.6",
+        "node": "integrated-suite-at-head",
+        "node_definition": {
+          "done_when": "A report at the write path states git rev-parse HEAD, confirms git status --short is empty, records the full-suite pass/fail/error counts with every FAILED and ERROR node id, and states whether reckon/crew/dispatch.py still contains the identifier agent_overrides.",
+          "estimated_hours": 0.3,
+          "goal": "Record the full-suite result at the current integrated head.",
+          "id": "integrated-suite-at-head",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124039432000-integrated-suite-at-head/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a711.6",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/integrated-suite-at-head.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "codex-j",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:40:45Z",
+        "completed_at": "2026-08-25T12:45:06Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 261,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 261,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "248b98b77addf7fa91eaff8cdd1bae6c9308cde5",
+        "commits": [
+          "248b98b77addf7fa91eaff8cdd1bae6c9308cde5"
+        ],
+        "changed_lines": {
+          "available": false,
+          "reason": "diff_unavailable"
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124039432000-integrated-suite-at-head/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a037d2-4e07-79e1-a7a1-7b2c63dca81d",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T123502433689-n-harness-profile-cleanup",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-harness-profile-cleanup",
+        "node_definition": {
+          "done_when": "the two rendered-semantics tests that reported ENOTEMPTY pass in the same run as the composition tests across three consecutive full-file executions, and the harness leaves no profile directory behind afterwards",
+          "estimated_hours": 0.75,
+          "goal": "The browser harness cleans up its temporary profile without racing another rendered check, so concurrent browser tests do not report a directory-not-empty error",
+          "id": "n-harness-profile-cleanup",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T123502433689-n-harness-profile-cleanup/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/spa_browser_harness.py",
+            "tests/test_spa_rendered_semantics.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:35:07Z",
+        "completed_at": "2026-08-25T12:44:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 584,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 584,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "22d53e6df6e4345216e5de8e40876fc69bf4306f",
+        "commits": [
+          "e55d536"
+        ],
+        "changed_lines": {
+          "added": 59,
+          "removed": 28,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T123502433689-n-harness-profile-cleanup/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038ea-cf6c-7593-a14e-22bef4824038",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3295488,
+            "cached_input_tokens_cumulative": 3295488,
+            "input_tokens": 3428819,
+            "input_tokens_cumulative": 3428819,
+            "output_tokens": 11401,
+            "output_tokens_cumulative": 11401,
+            "reasoning_output_tokens": 3855,
+            "reasoning_output_tokens_cumulative": 3855
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 377
+    "_version": 382
   }
 }
