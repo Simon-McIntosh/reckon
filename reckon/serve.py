@@ -34,6 +34,7 @@ POST versioned write contract — see reckon/serve.py for full details.
 from __future__ import annotations
 
 import html.parser
+import hashlib
 import json
 import logging
 import mimetypes
@@ -41,6 +42,7 @@ import os
 import re
 import socket
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -442,6 +444,121 @@ class _GitCreationEntry:
 
 _DISC_CACHE: dict[tuple[str, str], _DiscoveryCacheEntry] = {}
 _GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
+_GIT_CREATION_SCHEMA = "reckon.git-creation-map"
+_GIT_CREATION_SCHEMA_VERSION = 1
+
+
+def _git_creation_cache_path(cache_key: tuple[str, str]) -> Path:
+    """Return the disposable persisted-map path for one repository docs root."""
+
+    identity = "\0".join(cache_key).encode("utf-8")
+    digest = hashlib.sha256(identity).hexdigest()
+    return _config_home() / "cache" / "git-creation" / f"{digest}.json"
+
+
+def _git_creation_payload(
+    cache_key: tuple[str, str], entry: _GitCreationEntry
+) -> dict:
+    repo, rel_docs = cache_key
+    core = {
+        "schema": _GIT_CREATION_SCHEMA,
+        "version": _GIT_CREATION_SCHEMA_VERSION,
+        "repository": repo,
+        "docs": rel_docs,
+        "head": entry.head,
+        "times": entry.times,
+    }
+    checksum = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {**core, "checksum": checksum}
+
+
+def _load_git_creation_cache(
+    cache_key: tuple[str, str],
+) -> _GitCreationEntry | None:
+    """Load a complete, current-schema persisted map or decline it entirely."""
+
+    if not (Path(cache_key[0]) / ".git").exists():
+        return None
+    path = _git_creation_cache_path(cache_key)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, json.JSONDecodeError) as exc:
+        LOGGER.warning("Ignoring unreadable Git creation cache %s: %s", path, exc)
+        return None
+    if not isinstance(raw, dict):
+        LOGGER.warning("Ignoring invalid Git creation cache %s", path)
+        return None
+
+    times = raw.get("times")
+    valid_times = isinstance(times, dict) and all(
+        isinstance(name, str)
+        and isinstance(timestamp, int)
+        and not isinstance(timestamp, bool)
+        and timestamp >= 0
+        for name, timestamp in times.items()
+    )
+    valid_identity = (
+        raw.get("schema") == _GIT_CREATION_SCHEMA
+        and raw.get("version") == _GIT_CREATION_SCHEMA_VERSION
+        and raw.get("repository") == cache_key[0]
+        and raw.get("docs") == cache_key[1]
+        and isinstance(raw.get("head"), str)
+        and bool(raw["head"])
+    )
+    if not valid_times or not valid_identity:
+        LOGGER.warning("Ignoring incompatible Git creation cache %s", path)
+        return None
+
+    core = {key: raw[key] for key in raw if key != "checksum"}
+    checksum = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if raw.get("checksum") != checksum:
+        LOGGER.warning("Ignoring corrupt Git creation cache %s", path)
+        return None
+    return _GitCreationEntry(head=raw["head"], times=dict(times))
+
+
+def _store_git_creation_cache(
+    cache_key: tuple[str, str], entry: _GitCreationEntry
+) -> None:
+    """Atomically persist one validated creation map without affecting service."""
+
+    if not (Path(cache_key[0]) / ".git").exists():
+        return
+    path = _git_creation_cache_path(cache_key)
+    temporary: Path | None = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            json.dump(
+                _git_creation_payload(cache_key, entry),
+                handle,
+                indent=2,
+                sort_keys=True,
+            )
+            handle.write("\n")
+            temporary = Path(handle.name)
+        temporary.replace(path)
+    except OSError as exc:
+        LOGGER.warning("Could not persist Git creation cache %s: %s", path, exc)
+    finally:
+        if temporary is not None and temporary.exists():
+            try:
+                temporary.unlink()
+            except OSError:
+                pass
 
 
 def _run_git(
@@ -514,6 +631,10 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
 
     cache_key = (str(repo_dir.resolve()), rel_docs)
     cached = _GIT_CREATION_CACHE.get(cache_key)
+    if cached is None:
+        cached = _load_git_creation_cache(cache_key)
+        if cached is not None:
+            _GIT_CREATION_CACHE[cache_key] = cached
     head = _git_head(repo_dir)
     if head is None:
         return dict(cached.times) if cached else {}
@@ -540,7 +661,9 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     additions = _parse_first_committed(result.stdout)
     for path, timestamp in additions.items():
         times.setdefault(path, timestamp)
-    _GIT_CREATION_CACHE[cache_key] = _GitCreationEntry(head=head, times=times)
+    entry = _GitCreationEntry(head=head, times=times)
+    _GIT_CREATION_CACHE[cache_key] = entry
+    _store_git_creation_cache(cache_key, entry)
     return dict(times)
 
 
