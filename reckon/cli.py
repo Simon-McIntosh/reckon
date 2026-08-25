@@ -1118,21 +1118,32 @@ def crew_list(project, phase, pretty):
 
     crew_module, _ = _crew_modules()
     project_records = crew_module.list_live(project=project)
-    runs = [
-        {
-            "run_id": record.get("run_id"),
-            "node": (record.get("node") or {}).get("id"),
-            "project": record.get("project"),
-            "plan": (record.get("node") or {}).get("plan"),
-            "backend": record.get("backend"),
-            "launch": record.get("launch"),
-            "phase": record.get("phase"),
-            "worktree": record.get("worktree"),
-            "manifest_path": record.get("manifest_path"),
-        }
-        for record in project_records
-        if phase is None or str(record.get("phase") or "") == phase
-    ]
+    runs = []
+    for record in project_records:
+        if phase is not None and str(record.get("phase") or "") != phase:
+            continue
+        classified = crew_module.classify_pointer(record)
+        runs.append(
+            {
+                "run_id": record.get("run_id"),
+                "node": (record.get("node") or {}).get("id"),
+                "project": record.get("project"),
+                "plan": (record.get("node") or {}).get("plan"),
+                "backend": record.get("backend"),
+                "launch": record.get("launch"),
+                "phase": record.get("phase"),
+                "worktree": record.get("worktree"),
+                "manifest_path": record.get("manifest_path"),
+                "classification": classified.get("classification"),
+                "process_alive": classified.get("process_alive"),
+                "elapsed_seconds": classified.get("elapsed_seconds"),
+                "log_age_seconds": classified.get("log_age_seconds"),
+                "budget_seconds": classified.get("budget_seconds"),
+                "budget_overrun": classified.get("budget_overrun"),
+                "manifest_status": classified.get("manifest_status"),
+                "next_action": classified.get("next_action"),
+            }
+        )
     payload = {"ok": True, "runs": runs}
     if project is not None:
         payload["watcher"] = project_watch_visibility(project)
