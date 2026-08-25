@@ -268,7 +268,7 @@ function ListFilterControls({ filters, setFilters, onClearFilters }) {
   return (
     <div className="r-list-filter-controls" aria-label="Plan filters">
       <label className="r-list-filter">
-        <span>Status</span>
+        <span>Status · total plans</span>
         <select aria-label="Filter plans by status" value={(filters.status || [])[0] || ""} onChange={event => select("status", event.target.value)}>
           <option value="">All · {actionable.length}</option>
           {statusList.map(status => {
@@ -280,7 +280,7 @@ function ListFilterControls({ filters, setFilters, onClearFilters }) {
       </label>
       {sprintsWithPlans.length > 0 && (
         <label className="r-list-filter">
-          <span>Sprint</span>
+          <span>Sprint · assigned plans</span>
           <select aria-label="Filter plans by sprint" value={(filters.sprint || [])[0] || ""} onChange={event => select("sprint", event.target.value)}>
             <option value="">All · {actionable.filter(plan => plan.sprint).length}</option>
             {sprintsWithPlans.map(sprint => {
@@ -451,7 +451,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
   return (
     <div className="r-list">
       <div className="r-sort-bar">
-        <span className="r-sort-n">{sorted.length} plans</span>
+        <span className="r-sort-n">{sorted.length} shown</span>
         <div className="r-sort-segments" aria-label="Sort plans by">
           {SORT_OPTIONS.map(option => (
             <button type="button" key={option.value} className={sortBy === option.value ? "active" : ""} aria-pressed={sortBy === option.value} onClick={() => setSortBy(option.value)}>
@@ -503,6 +503,18 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         const gates = openGateCount(p);
         const edited = p.last || null;
         const identity = [p.roi, p.effort].filter(value => value && value !== "—");
+        const editedValue = <>{edited && <span className="date" title={`Edited ${edited}`}>edited {edited}</span>}</>;
+        const metadata = [
+          ...identity.map((value, index) => <span key={`identity-${value}-${index}`}>{value}</span>),
+          <button key="implementation" className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>,
+          edited ? editedValue : null,
+          authored !== effective ? (
+            <button key="transition" className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
+              <span>{authored}</span><span aria-hidden="true">→</span><span>{effective}</span><span>{gates} open {gates === 1 ? "gate" : "gates"}</span>
+            </button>
+          ) : null,
+          (p.blockers || 0) > 0 ? <button key="blockers" className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button> : null,
+        ].filter(Boolean);
         return (
           <div
             key={navKey}
@@ -513,17 +525,12 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
             <div>
               <div className="t" title={p.title}>{p.title}</div>
               <div className="meta">
-                {identity.map((value, index) => <React.Fragment key={`${value}-${index}`}><span>{value}</span><span className="sp">·</span></React.Fragment>)}
-                <button className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>
-                {edited && <><span className="sp">·</span><span className="date" title={`Edited ${edited}`}>edited {edited}</span></>}
-                {authored !== effective && <span className="sp">·</span>}
-                {authored !== effective ? (
-                  <button className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
-                  <span>{authored}</span><span aria-hidden="true">→</span><span>{effective}</span><span>{gates} open {gates === 1 ? "gate" : "gates"}</span>
-                  </button>
-                ) : null}
-                {(p.blockers || 0) > 0 && <span className="sp">·</span>}
-                {(p.blockers || 0) > 0 && <button className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button>}
+                {metadata.map((item, index) => (
+                  <React.Fragment key={`metadata-${index}`}>
+                    {index > 0 && <span className="sp" aria-hidden="true">·</span>}
+                    {item}
+                  </React.Fragment>
+                ))}
               </div>
             </div>
           </div>

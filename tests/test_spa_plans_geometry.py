@@ -281,8 +281,9 @@ def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
     assert result["baseline"] > result["sprintCount"] > 0, result
 
 
-def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
-    tmp_path: Path,
+@pytest.mark.parametrize("viewport_width", [1280, 1440, 1920])
+def test_rendered_plan_rows_and_controls_are_legible(
+    tmp_path: Path, viewport_width: int
 ) -> None:
     browser = installed_browser()
     if browser is None:
@@ -294,43 +295,60 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
     probe = r"""(() => {
       const list = document.querySelector(".r-list-body");
       const rows = [...list.querySelectorAll(":scope > .r-row")];
-      const metadata = rows.map(row => row.querySelector(":scope > div > .meta"));
-      const metadataGeometry = metadata.map(element => {
-        const style = getComputedStyle(element);
+      const transitions = [...list.querySelectorAll(".r-status-transition")];
+      const clippedTransitions = transitions.map(element => {
+        const row = element.closest(".r-row").getBoundingClientRect();
+        const rect = element.getBoundingClientRect();
         return {
-          height: element.getBoundingClientRect().height,
-          lineHeight: Number.parseFloat(style.lineHeight),
+          clippedContent: element.scrollWidth > element.clientWidth,
+          outsideRow: rect.left < row.left || rect.right > row.right,
         };
-      });
-      const rowHeights = rows.map(row => row.getBoundingClientRect().height);
-      const northStarPhrases = (window.STATE?.north_stars || [])
-        .flatMap(direction => [direction.name, direction.statement])
-        .filter(Boolean);
-      const listText = list.textContent;
+      }).filter(result => result.clippedContent || result.outsideRow).length;
+      const trailingSeparators = rows.filter(row =>
+        row.querySelector(":scope > div > .meta")?.lastElementChild?.classList.contains("sp")
+      ).length;
+      const shown = document.querySelector(".r-sort-n")?.textContent.trim() || "";
+      const statusControl = document.querySelector('[aria-label="Filter plans by status"]');
+      const sprintControl = document.querySelector('[aria-label="Filter plans by sprint"]');
+      const status = statusControl?.selectedOptions[0]?.textContent.trim() || "";
+      const sprint = sprintControl?.selectedOptions[0]?.textContent.trim() || "";
+      const emptyState = document.querySelector(".r-reader-empty-state");
       return {
-        metadataCount: metadata.length,
-        metadataGeometry,
-        rowHeights,
-        rowHeightRange: Math.max(...rowHeights) - Math.min(...rowHeights),
-        northStarMatches: northStarPhrases.filter(phrase => listText.includes(phrase)),
+        transitionCount: transitions.length,
+        clippedTransitions,
+        trailingSeparators,
+        counts: {
+          shown,
+          status,
+          sprint,
+          statusLabel: statusControl?.closest("label")?.querySelector("span")?.textContent.trim() || "",
+          sprintLabel: sprintControl?.closest("label")?.querySelector("span")?.textContent.trim() || "",
+        },
+        emptyState: emptyState?.textContent.trim() || "",
+        notFoundOccurrences: (document.body.textContent.toLowerCase().match(/not found/g) || []).length,
       };
     })()"""
 
     with served_spa(tmp_path, browser, route="#plans") as context:
         geometry = context.run_probe(
             probe,
-            viewport=(1374, 900),
-            ready_expression='Boolean(document.querySelector(".r-list-body > .r-row .meta"))',
+            viewport=(viewport_width, 900),
+            ready_expression=(
+                'Boolean(document.querySelector(".r-list-body > .r-row .meta") '
+                '&& document.querySelector(".r-reader-empty-state"))'
+            ),
         )
 
-    print(json.dumps(geometry, sort_keys=True))
-    assert geometry["metadataCount"] >= 10
-    assert all(
-        item["height"] == pytest.approx(item["lineHeight"], abs=0.5)
-        for item in geometry["metadataGeometry"]
-    )
-    assert geometry["northStarMatches"] == []
-    assert geometry["rowHeightRange"] < 20
+    assert geometry["transitionCount"] > 0, geometry
+    assert geometry["clippedTransitions"] == 0, geometry
+    assert geometry["trailingSeparators"] == 0, geometry
+    assert geometry["counts"]["shown"].endswith(" shown"), geometry
+    assert geometry["counts"]["statusLabel"] == "Status · total plans", geometry
+    assert geometry["counts"]["sprintLabel"] == "Sprint · assigned plans", geometry
+    assert geometry["counts"]["status"].startswith("All · "), geometry
+    assert geometry["counts"]["sprint"].startswith("All · "), geometry
+    assert "Select a plan to read" in geometry["emptyState"], geometry
+    assert geometry["notFoundOccurrences"] == 0, geometry
 
 
 def test_project_visibility_defaults_to_all_and_respects_stored_hiding() -> None:
