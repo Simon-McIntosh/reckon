@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="31">
-<meta name="plan-impl" content="0.889">
+<meta name="plan-version" content="33">
+<meta name="plan-impl" content="0.8">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
@@ -706,6 +706,39 @@
       focused test asserts a shadow worktree is not reported as unintegrated. Full suite
       green.</p>
 
+    <h3 id="s11.5">§11.5 — The time budget is part of the configuration a shadow must inherit</h3>
+    <p>
+      §11.1 was necessary but not sufficient, and the shortfall was found the only way it
+      could be — by dispatching a pair and reading the fences before trusting it. A shadow
+      now inherits the primary's <code>agent</code> block, but <code>time_budget</code> is
+      not in that block: it is a separate field on the run record. So the shadow falls back
+      to the role default, and the measured pair is
+      <strong>(luna, 8 minutes) against (sol, 40 minutes)</strong>.
+    </p>
+    <p>
+      This is not a small residual confound. A worker sizes its work to the budget it is
+      told it has, so the fence is one of the strongest determinants of what a run
+      produces. It also means <strong>the §8 first pair must be re-read</strong>: that
+      shadow was given 8 minutes against the primary's 40 and used 4.3 minutes against
+      33. Its thinner output — 115 insertions against 809, zero tests added — was
+      attributed in the §8 record to the candidate model, and a five-fold budget
+      difference is at least as good an explanation. No conclusion about
+      <code>gpt-5.6-luna</code> survives that, in either direction.
+    </p>
+    <p>
+      The general rule is the one §11.1 already stated and this section extends: a shadow
+      reproduces every recorded condition of its primary and substitutes only what the
+      caller names. <code>time_budget</code> is such a condition, and it belongs in
+      <code>lineage.configuration</code> beside the rest so a reader can see it was held
+      equal rather than assume it.
+    </p>
+    <p><strong>Done-when:</strong> a shadow of a primary recorded at one time budget
+      resolves that same budget rather than the role default; an explicit budget override
+      is used and recorded as substituted; <code>lineage.configuration</code> carries
+      <code>time_budget</code> in its inherited or substituted half accordingly; a primary
+      with no recorded time budget falls back to the role default and records that it did;
+      focused tests cover all four and the full suite is green.</p>
+
     <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
     <p class="landed-summary"><span class="badge badge-shipped">→ owned elsewhere 2026-08-25</span>
       Reallocated to <code>concurrency-and-schedule-visibility</code> §5, which owns the
@@ -832,6 +865,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20260825-s114-discovered" data-who="reckon-ship" data-when="2026-08-25T12:02:30Z">
     <div class="r-comment-body">§11.4 added as a same-plan section, found by running the programme rather than reviewing it. With §11.1 merged, re-shadowing the primary that motivated it failed with 'worktree path already exists'. The deterministic per-primary path is the surface cause; the real one is that crew gc classifies a shadow worktree as unintegrated — correct, since a shadow never merges by design — so conservative cleanup can never reclaim it and every shadow leaks a worktree permanently. It bites hardest on the measurement the programme needs most: qualifying candidate tiers against each other means shadowing the same primary repeatedly, which is currently impossible without manual git worktree remove. The locked shadow-sidecar decision already settled the semantics — the shadow's evidence is its patch artifact in the durable run directory, not a merged commit — so classification should read lineage, exactly as §11.3 had to for gate counts. impl re-scored to 8 of 9 executable sections.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260825-s115-budget-confound" data-who="reckon-ship" data-when="2026-08-25T12:08:10Z">
+    <div class="r-comment-body">§11.5 added, and the §8 pair reading corrected. Dispatching the first supposedly-controlled pair exposed that §11.1 was necessary but not sufficient: time_budget is a top-level field on the run record, not part of the agent block a shadow inherits, so the shadow fell back to the role default and the pair was (luna, 8 minutes) against (sol, 40 minutes). The run was stopped and discarded rather than promoted — it would have looked like a controlled comparison and was not, which is the exact failure §11.1 existed to prevent, one field over. Consequence for the record: the §8 first pair was given 8 minutes against the primary's 40 and used 4.3 against 33, so its thinner output (115 insertions against 809, zero tests added) cannot be attributed to the candidate model — a worker sizes its work to the budget it is told it has. The §8 evidence anchor now says so explicitly and no longer reads as a model comparison. impl re-scored to 8 of 10 executable sections: the denominator grew because execution discovered §11.4 and §11.5, so the fraction is re-based rather than advanced.</div>
 </div>
 </section>
 </main>

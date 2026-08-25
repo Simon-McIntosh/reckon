@@ -220,12 +220,21 @@
       independently of the unit tests: luna appears in
       <code>capabilities.shadow_slices</code> with <code>success: false</code> and is
       absent from live configurations, which stayed at 4.</p>
-    <p><strong>Read this pair as calibration input, not a verdict.</strong> It is
-      n=1 <em>and</em> confounded: routing was re-derived from current flight config at
-      shadow time, so the recorded pair compares (luna, medium) against (sol, high)
-      and cannot attribute the difference to the model. That defect is §11.1, and it
-      had to be repaired before the qualification programme could produce science —
-      every pair collected until then carries the same confound.</p>
+    <p><strong>This pair supports no conclusion about the model, in either
+      direction.</strong> It is n=1 and confounded twice over, and the second confound
+      was only found later, in §11.5. Routing was re-derived from current flight config
+      at shadow time, so the pair compares (luna, <em>medium</em>) against (sol,
+      <em>high</em>) — that is §11.1. And the shadow was given a
+      <strong>time budget of 8 minutes against the primary's 40</strong>, because
+      <code>time_budget</code> is not part of the <code>agent</code> block a shadow
+      inherits — that is §11.5. It used 4.3 minutes against the primary's 33.</p>
+    <p>So the thinner output recorded above — 115 insertions against 809, zero tests
+      added against a measure naming five behaviours — was attributed here to the
+      candidate model, and a five-fold difference in the stated fence is at least as
+      good an explanation. A worker sizes its work to the budget it is told it has.
+      <strong>Treat the numbers in this section as a record of what the two runs did,
+      not as a comparison of the two models.</strong> The qualification programme's
+      first usable pair comes after §11.5.</p>
 
     <h2 id="s9">§9 — Host-layer defaults and backend widening (2026-08-25)</h2>
     <p><strong>Probe (§9.1)</strong> — run
