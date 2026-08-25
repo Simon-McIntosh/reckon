@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -197,6 +197,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260824T210925979076-spa-prototype-reuse-map" data-who="codex-a" data-when="2026-08-24T21:18:35Z">
     <div class="r-comment-body"><p>Reuse map delivered: 8/8 prototype surfaces mapped to existing modules (8 extend, 0 replace), 10/10 sub-surfaces, 9/9 audit ranks 3+6+9-15 mapped; found the canvas contradicts ranks 3, 6, 9 and 10 outright and only partly addresses 13 and 14. Report written to the run directory and published by the coordinator after the assigned reports directory proved unwritable in the read-only sandbox — a coordinator fence error, not a worker failure.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260825T070504487661-crew-route-cold-cost" data-who="codex-x" data-when="2026-08-25T07:17:23Z">
+    <div class="r-comment-body"><p>Attribution: discover_plans is 33.923 s of a 34.007 s cold GET /crew — 99.75 percent — called twelve times, once per mounted project, by _crew_rows before crew.list_live is even read. Live-pointer work is 0.062 s in total across 12 ledger reads, one directory enumeration, 15 log tails and 15 terminal classifications, so pointers are not the problem. Cold reproduced twice at 46.804 s and 34.007 s; the 12.8 s spread came with one MORE live pointer, which rules pointer count out. The finding that matters more than the cold number: the warm route is also discovery-bound at 2.115 s of 2.186 s, 96.75 percent, and the SPA Crew view polls this route every three seconds — so the served surface pays a full twelve-project discovery scan every three seconds indefinitely. Same class as the discovery cold-start this plan already repaired, amplified by a caller mistake rather than a second cache: the route calls the same discover_plans and fills the same module-level cache twelve times before examining the pointers the response describes. Method note, and a legitimate substitution: the read-only investigate sandbox refuses to create a loopback socket with EPERM, so the worker timed the exact handler body in fresh interpreters, which have the same empty module-level cache as a fresh server process.</p></div>
 </div>
 </section>
 </main>
