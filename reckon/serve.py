@@ -1165,7 +1165,6 @@ def _render_spa_html(project: str) -> str:
   <script type="text/babel" src="/_ui/ui.jsx"></script>
   <script type="text/babel" src="/_ui/bits.jsx"></script>
   <script type="text/babel" src="/_ui/decision.jsx"></script>
-  <script type="text/babel" src="/_ui/cockpit.jsx"></script>
   <script type="text/babel" src="/_ui/plan.jsx"></script>
   <script type="text/babel" src="/_ui/sprint.jsx"></script>
   <script type="text/babel" src="/_ui/graph.jsx"></script>
