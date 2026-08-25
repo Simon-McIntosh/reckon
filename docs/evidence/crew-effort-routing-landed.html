@@ -211,6 +211,38 @@
       (probe → defined-not-defaulted → shadow ≥ 10 pairs → gated pilot →
       slice-lock).</p>
 
+    <h2 id="s10">§10 — Shadow authority at the base revision (2026-08-25)</h2>
+    <p>Found by executing §8 rather than by reviewing it: with the unit tests all
+      green, the first real <code>reckon crew shadow</code> invocation was refused
+      <code>plan-unavailable</code>, and so was every shadow of any landed node.
+      <code>_require_plan_at_base</code> compares the working tree against the
+      dispatch base; for a live dispatch that base is head, so the check means "the
+      plan is committed and clean" and is load-bearing. A shadow passes the
+      <em>primary's recorded</em> base, so the same line demanded byte-equality with
+      a historical revision — false for every plan that has moved on, and §6b makes
+      collapsing a section on landing mandatory, so the feature was unusable for
+      precisely the nodes worth measuring. The shadow worker reads the plan from a
+      worktree at that base regardless of the coordinator's tree, so the check
+      protected nothing there.</p>
+    <p>Run <code>r-20260825T082306311144-shadow-authority-at-base</code>, gate passed,
+      523 worker-seconds at sol/medium, commit <code>cc4c686</code> merged as
+      <code>5ccaa44</code>. Equality now runs only when the resolved base equals the
+      plan repository's head; readability and section presence at the base stay
+      enforced; the live dirty-plan refusal keeps its production error string.
+      Focused gate 4/4 (shadow with a since-changed plan resolves; shadow refused when
+      the plan is unreadable at the primary base; shadow refused when the section is
+      absent there; live dirty-plan still refused), full suite <strong>2372/2372</strong>,
+      149 insertions across exactly the two authorised paths.</p>
+    <p><strong>First qualification evidence.</strong> After the merge, a
+      <code>codex-luna</code> shadow of primary
+      <code>r-20260825T072832542100</code> — whose §8 section had since been collapsed
+      — resolved with lineage kind <code>shadow</code> at base <code>14cd488</code>
+      and launched as <code>r-20260825T083313351944</code>, opening the paired
+      evidence the qualification ladder needs. Only records promoted after
+      <code>4656c7a</code> carry a stored node definition, so shadowable primaries
+      begin from that commit; earlier records refuse with a clear message rather than
+      re-authoring a contract.</p>
+
     <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
     <p>The full-suite verification surfaced a pre-existing failure:
       <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code>

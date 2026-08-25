@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -591,6 +591,17 @@
       suite green.</p>
 
     <h2 id="s10">§10 — Shadow authority reads the base revision, not the working tree</h2>
+    <p class="landed-summary"><span class="badge badge-shipped">✓ landed 2026-08-25</span>
+      The plan working-tree equality check now runs only when the resolved base is the
+      plan repository's head; a historical shadow base keeps readability and
+      section validation and skips equality alone, and a live dirty-plan dispatch is
+      refused with unchanged text. Gate passed: focused 4/4, full suite
+      <strong>2372/2372</strong> (commit <code>cc4c686</code>, merged <code>5ccaa44</code>).
+      Verified past the suite — a luna shadow of a primary whose §8 section has since
+      collapsed now resolves where it was refused, and the first real qualification
+      pair is running.
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s10">§10 landed</a>.
+    </p>
     <p>
       Found by running §8 for real immediately after it landed: every shadow of a
       landed node is refused with <code>plan-unavailable</code>, so the measurement
@@ -711,6 +722,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260825-shadow" data-who="reckon-ship" data-when="2026-08-25T08:05:00+00:00">
     <div class="r-comment-body">shadow-sidecar-dispatch landed — run r-20260825T072832542100, gate passed, commit 4656c7a merged as c82cf57; focused suites 244/244, full suite 2357/2357, 7 substantive tests added, 1983 worker-seconds at sol/high, 46.9k output tokens. Delivered: reckon crew shadow deriving a committed record's node at its recorded base revision (unreachable base refused before worktree creation), shadow lineage on pointer and promoted record carrying the primary's attempt number without incrementing live attempts, candidate backend forced through role and spec overlays, commitless completion refusing --commit under the pointer lock before mutation and capturing the full tracked-and-untracked worktree diff as shadow.patch with changed_lines derived from that artifact, ledger summaries labelling live versus shadow rows, and capability derivation excluding shadow observations from live competence configurations while exposing paired shadow_slices. Promoted with scope-changed: the worker blocked correctly at its fence (the atomic completion transaction lives in reckon/crew/promotion.py after the crew-package refactor) and the coordinator widened the scope via resume.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260825-authority" data-who="reckon-ship" data-when="2026-08-25T08:35:00+00:00">
+    <div class="r-comment-body">shadow-authority-at-base landed — run r-20260825T082306311144, gate passed, commit cc4c686 merged as 5ccaa44; focused gate 4/4, full suite 2372/2372, 523 worker-seconds at sol/medium, 149 insertions across exactly the two authorised paths. The working-tree equality check now runs only when the resolved plan base equals the plan repository head at dispatch; a historical shadow base skips equality alone and keeps blob readability and section validation, and a live dispatch with a dirty plan is refused with its production error string unchanged. Verified beyond the suite: a luna shadow of the r-20260825T072832542100 primary, whose §8 section has since been collapsed, now resolves (ok, lineage kind shadow, base 14cd488) where it was refused plan-unavailable before the fix — the measurement path is usable.</div>
 </div>
 </section>
 </main>
