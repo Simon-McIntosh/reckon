@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="104">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076,ac3b103,9931ec9,4650658,ddb86b6,bee5f08,236de49,c81a3fd,6283a32,a0890ce,a99b5d8,a58f9a0,416e2d6,ecd10c7,b3b7920,55e492a,fed719c,75cd164,9c129e3,e55d536,967b12d,819e63d,04b3823,2db0606,9921f22,e37ce4d,b093d5c,780869a">
 <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/sprint.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/_shared/foundation.css,docs/index.html,reckon/serve.py,reckon/_store.py,reckon/doccheck.py,tests/test_spa_composition.py,tests/spa_render_capture.mjs,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_spa_project_visibility.py,tests/test_spa_sprints_geometry.py,tests/test_shared_token_contrast.py,tests/test_serve_finished_runs.py,tests/test_plan_summary_bound.py,tests/test_build.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html,design/canvas-layout-spec.md,docs/evidence/archive/spa-surface-redesign-landed.html,docs/figures/spa-surface-redesign/before/plans.png">
@@ -1001,6 +1001,15 @@
 
     <h3 id="s18d">&#167;18d &mdash; The composition check covers the window, not just the values</h3>
 
+    <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-25</span>
+    Commit <code>6d561c6</code>, gate PASSED. <code>test_plans_surface_never_exceeds_its_window</code>
+    passes at 1280, 1440 and 1920 with document scrollWidth equal to clientWidth and 0 elements
+    outside the viewport; the paired control injecting a 1374px floor is rejected at each width with
+    16 exceeding elements; an absent browser returns skip code 77. Six captures with paired geometry
+    committed under <code>docs/figures/spa-surface-redesign/window-composition/</code>. Full record:
+    <a href="/reckon/evidence/archive/spa-surface-redesign-landed#window-gate">a gate that fails
+    when the floor comes back</a>.</p>
+
     <p>&#167;15 built the browser harness precisely because declaration-site assertions cannot see
     whether values compose. A page that scrolls sideways is the same class of defect one level up:
     every width in this plan was declared correctly and the document still exceeded its window.</p>
@@ -1009,6 +1018,65 @@
     an assertion fails when a width floor is reintroduced, and before/after captures of this
     section's work are committed as figures under
     <code>docs/figures/spa-surface-redesign/</code>.</p>
+
+    <h3 id="s18e">&#167;18e &mdash; What the capture found that the containment gate could not</h3>
+
+    <p><strong>The window gate passed at all three widths and the captures it produced show four
+    defects.</strong> That is this plan's recurring lesson arriving for the fourth time: a measure
+    proves the property it names and says nothing about the ones it does not. The difference now is
+    that the instrument is committed, so the findings below were read off checked-in captures rather
+    than off a screenshot the lead had to send.</p>
+
+    <table>
+      <thead>
+        <tr><th>What the capture shows</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>The status-transition pill is clipped by the row &mdash; <code>active &rarr; b</code>
+          at 1280px, <code>active &rarr; blocked&nbsp;.</code> at 1440px.</td>
+          <td>That pill is audit rank 6's whole remedy: a row must render the transition and its
+          open-gate count rather than the flattened status. Truncated mid-word it carries less than
+          the flat status it replaced.</td>
+        </tr>
+        <tr>
+          <td>Rows without a transition end in a separator with nothing after it &mdash;
+          <code>high &middot; M &middot; 50% &middot;</code> then a gap.</td>
+          <td>&#167;13 already settled this class: resolve the value or omit the element, never
+          render a placeholder. A dangling separator is a placeholder for an absent field.</td>
+        </tr>
+        <tr>
+          <td>Three counts disagree in one control row: the header says <code>44 plans</code>, the
+          status control says <code>All &middot; 46</code>, the sprint control says
+          <code>All &middot; 37</code>.</td>
+          <td>Adjacent numbers describing one list must either agree or say what they each count.
+          This is rank 14 &mdash; every compact signal gets a label &mdash; in the controls that
+          replaced the rail.</td>
+        </tr>
+        <tr>
+          <td>The reader with nothing selected renders <code>Artifact "" not found.</code></td>
+          <td>An error string standing in for an empty state, in the region that now occupies 70%
+          of the window. It reads as a failure of the surface rather than as an invitation.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Done when</strong> the committed captures at 1280, 1440 and 1920 show the transition
+    pill rendered whole in every row that has one, no row ending in a trailing separator, the
+    header and control counts either equal or individually labelled with what they count, and the
+    unselected reader rendering a stated empty state rather than a not-found error.</p>
+
+    <h3 id="s18f">&#167;18f &mdash; The suite nothing has run since the merges</h3>
+
+    <p>Three surface nodes each measured a delta against its own base and each merged separately.
+    No run has measured the four merged together, and the last node deliberately stopped its
+    optional full-suite run at 50% to respect its time fence, reporting one unclassified failure
+    marker at 11% rather than a result. The composition suite alone takes 175&nbsp;s, so this is a
+    node, not a coordinator afterthought.</p>
+
+    <p><strong>Done when</strong> the full suite has run once against merged main with every failure
+    classified as pre-existing at the section's base revision or as introduced by one of the four
+    merges, and any introduced failure has a named owning node.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
@@ -1418,6 +1486,15 @@
 </div>
 <div class="r-comment" data-section="s18c" data-id="c-20260825-s18c-landed" data-who="reckon-ship" data-when="2026-08-25T17:55:00+02:00">
     <div class="r-comment-body">n-s18-reader-attachments landed - commit 0a76481; gate rendered-attachment-bars PASSED; measure exactly 2 populated bars ordered Resources before Evidence with typed counts 2 and 1, 0 elements matching .r-attachment-rail, route activation reaching /research:resource-a, 0 bars on an unattached plan; focused 17 passed, full suite 2429 passed and 7 failed of which 1 was this diff (repaired and proven by its exact rerun) and 6 are byte-identical base failures, so the new-failure delta against 681dba9 is 0; artifacts docs/ui/reader.css, docs/ui/plans.css, docs/ui/shell.jsx, docs/ui/plan.jsx and five test modules; 292 insertions against 241 deletions. Scope widened mid-flight, so excluded from effort calibration. The duplicate plan-local attachment selector was removed, leaving attachmentGroups as the sole relation authority.</div>
+</div>
+<div class="r-comment" data-section="§18d" data-id="c-run-r-20260825T175503448824-n-s18-window-composition" data-who="codex-e" data-when="2026-08-25T18:24:01Z">
+    <div class="r-comment-body"><p>3 shipped-surface widths pass with scrollWidth equal to clientWidth and 0 exceeding elements; injected 1374px floor rejected with 16 exceeding elements; absent browser returns skip code 77; 6 PNG captures with paired geometry committed</p></div>
+</div>
+<div class="r-comment" data-section="s18d" data-id="c-20260825-s18d-landed" data-who="reckon-ship" data-when="2026-08-25T18:30:00+02:00">
+    <div class="r-comment-body">n-s18-window-composition landed - commit 6d561c6; gate rendered-window-containment PASSED; measure test_plans_surface_never_exceeds_its_window passes at 1280, 1440 and 1920 with scrollWidth equal to clientWidth and 0 exceeding elements, the paired control injecting a 1374px floor is rejected at each width with 16 exceeding elements (1265/1374, 1425/1534, 1905/2014), and an absent browser returns skip code 77; focused 5 passed in 175s; artifacts six PNG captures with paired geometry JSON under docs/figures/spa-surface-redesign/window-composition/. Its own full-suite run was stopped at 50% against the time fence with one unclassified failure marker, which is why section 18f exists as a node rather than a claim.</div>
+</div>
+<div class="r-comment" data-section="s18e" data-id="c-20260825-s18e-open" data-who="reckon-ship" data-when="2026-08-25T18:32:00+02:00">
+    <div class="r-comment-body">Opened by folding the window gate's own captures back into the queue. Four defects visible in the committed 1280 and 1440 captures that no containment measure covers: the rank 6 status-transition pill clipped mid-word by the row, a trailing separator on rows with no transition, three disagreeing counts in one control row (44 plans / status All 46 / sprint All 37), and the unselected reader rendering an artifact-not-found error where an empty state belongs. Section 18f covers the merged suite, which no run has measured since the four merges.</div>
 </div>
 </section>
 </main>

@@ -447,6 +447,49 @@
   delta against base, which is the only figure a worker sharing a loaded host can honestly
   produce.</p>
 
+
+  <h2 id="window-gate">A gate that fails when the floor comes back</h2>
+
+  <p><strong>Node <code>n-s18-window-composition</code>, commit <code>6d561c6</code>, gate PASSED,
+  2026-08-25.</strong> Three defect waves in this plan were invisible to every gate because every
+  gate read a declaration. This one renders.</p>
+
+  <table>
+    <thead>
+      <tr><th>Viewport</th><th>Shipped surface — client / scroll</th><th>With a 1374px floor injected</th><th>Exceeding elements</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1280</td><td>1280 / 1280</td><td>1265 / 1374</td><td>0 → 16</td></tr>
+      <tr><td>1440</td><td>1440 / 1440</td><td>1425 / 1534</td><td>0 → 16</td></tr>
+      <tr><td>1920</td><td>1920 / 1920</td><td>1905 / 2014</td><td>0 → 16</td></tr>
+    </tbody>
+  </table>
+
+  <p>The paired control is what makes the gate a gate: <code>test_window_containment_fails_when_a_width_floor_returns</code>
+  reintroduces the exact floor this section removed and requires the probe to exit 1 with both
+  document-overflow and off-viewport-element diagnostics. A third case proves the no-browser path
+  exits 77 with a clean skip, so the check costs nothing where no browser exists.</p>
+
+  <figure>
+    <img src="/reckon/figures/spa-surface-redesign/window-composition/fluid-1440.png"
+         alt="The Plans surface at 1440px: one header row with no receipt strip, no left filter rail, status and sprint controls in the list header, and a two-column split." style="max-width:100%">
+    <figcaption>The shipped surface at 1440px. The header carries no receipt, the filter rail is
+    gone with status and sprint in the list header, and the index sits at 432px against a reader
+    that takes the rest.</figcaption>
+  </figure>
+
+  <p><strong>And the capture immediately found four defects the gate cannot see.</strong> The
+  status-transition pill &mdash; audit rank 6's entire remedy &mdash; is clipped by the row, reading
+  <code>active &rarr; b</code> at 1280px. Rows without a transition end in a separator with nothing
+  after it. Three counts describing one list disagree in a single control row: 44 plans, status
+  <code>All &middot; 46</code>, sprint <code>All &middot; 37</code>. The unselected reader renders
+  <code>Artifact "" not found.</code> in the region that now occupies 70% of the window.</p>
+
+  <p>This is the fourth time in this plan that a measure proved its own property and missed the ones
+  beside it, and the first time the finding came from a committed artifact rather than from a
+  screenshot the lead had to send. The instrument does not remove the need to look; it removes the
+  need for a human to be the only one who can.</p>
+
 </main>
 </body>
 </html>
