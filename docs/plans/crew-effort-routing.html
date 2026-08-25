@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -643,11 +643,18 @@
     <h2 id="s11">§11 — Make the shadow pair a controlled comparison</h2>
     <p>
       The first real shadow ran on <code>gpt-5.6-luna</code> against the
-      <code>shadow-sidecar-dispatch</code> primary and produced usable evidence
-      immediately (§8 anchor in the evidence record). It also exposed three defects
-      in §8 that the unit tests could not, because each one only appears when a
-      shadow runs beside live work. All three are cheap, and the first is the one
-      that decides whether the qualification programme produces science.
+      <code>shadow-sidecar-dispatch</code> primary. It did <em>not</em> produce usable
+      evidence — it produced a pair confounded on two dimensions at once — and that is
+      the more valuable result. Every defect below appears only when a shadow runs beside
+      live work, so none was reachable by unit test or by review; §8 shipped with 7
+      passing tests and a green suite and had all of them.
+    </p>
+    <p>
+      Five in total, and they arrived in two rounds, which is itself the lesson: three
+      from reading the first pair, then two more from <em>running the fix</em> and
+      reading the next one. §11.1 and §11.5 are the same defect one field apart — a
+      recorded condition of the primary that the shadow failed to reproduce — and the
+      second was invisible until the first was repaired.
     </p>
 
     <h3 id="s11.1" class="section-landed">§11.1 — A shadow must reproduce its primary's configuration except the dimension under test
