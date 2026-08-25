@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -203,6 +203,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260825T070425064855-persist-the-creation-map" data-who="codex-w" data-when="2026-08-25T07:18:48Z">
     <div class="r-comment-body"><p>One atomic checksummed schema-versioned map per repository/docs identity under config-home/cache/git-creation, carrying the exact HEAD and first-commit timestamps. An unchanged HEAD after a simulated restart runs git rev-parse HEAD and no git log while returning identical dates; a moved HEAD issues one old..new range query and retains the immutable earlier timestamps; missing, unreadable, partial, foreign-schema and corrupt caches all rebuild rather than serve wrong dates or fail. Measured cold discovery before and after on two mounted repositories: imas-efit 18.186 s to 8.753 s over 843 inventory rows, nova 6.930 s to 2.469 s over 149. Partial against the section criterion and recorded as such: nova now clears the 3 s cold target, imas-efit does not, because persistence removed the history-walk component and the residual 8.75 s is document parsing rather than git. Full suite 2327 passed / 0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260825T072816984915-crew-route-stops-discovering" data-who="codex-z" data-when="2026-08-25T07:37:51Z">
+    <div class="r-comment-body"><p>Discovery is out of the crew route&#x27;s path. Measured in the same fresh-interpreter way the attribution used: 43.8142 s cold and 3.8612 s warm before, 0.04012 s cold and 0.03701 s warm after — 1092x cold and 104x warm. Confirmed against a restarted live server: 0.086 s on the first call of a fresh process and 0.036 to 0.040 s thereafter, scoped and unscoped alike. The route now reads what it exists to describe rather than enumerating the corpus first, and the SPA Crew tab&#x27;s three-second poll costs 0.04 s instead of 2.1 s of twelve-project discovery. Every response field is preserved, and a test asserts the route returns its full field set for a synthesised pointer set without calling discover_plans at all and that its cost does not scale with mount count. Full suite 2352 passed.</p></div>
 </div>
 </section>
 </main>
