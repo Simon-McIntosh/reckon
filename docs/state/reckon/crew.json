@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T10:09:46",
+  "updated": "2026-08-25T10:31:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -16720,9 +16720,86 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260825T082800471206-crew-list-carries-the-classification",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a75",
+        "node": "crew-list-carries-the-classification",
+        "node_definition": {
+          "done_when": "Measured: reckon crew list returns nine fields per run \u2014 backend, launch, manifest_path, node, phase, plan, project, run_id, worktree \u2014 while crew(view='live') returns those plus classification, process_alive, elapsed_seconds, log_age_seconds, budget_seconds, budget_overrun, manifest_status and next_action. The live pointer carries strictly more again, including attempt, attempt_kind, budget and execution_fit, so nothing is missing from the record and the CLI projection simply drops it. That matters because the skill's own recovery ladder points a fresh coordinator at crew list to recover ownership of runs it did not dispatch, and a shell loop cannot reach the MCP tool at all \u2014 so the only script-reachable surface is also the one omitting the six fields that constitute the decision, and a fleet in trouble reads identically to a fleet in perfect health. Widen the CLI projection to carry the classification, liveness, elapsed, log age, budget, overrun, manifest status and next action the live view computes, reusing that computation rather than reimplementing it, and pin the two projections against each other in a new test at tests/test_crew_surface_parity.py so they cannot diverge again. SECOND HALF, and it is not optional: skills/reckon-ship/SKILL.md line 544 currently states that list omits those exact fields, which this change falsifies. Correct that paragraph in the same commit \u2014 list becomes the script-reachable surface that does carry the classification, while the reason to prefer the live view at turn time stays whatever remains true after the widening. Widening the code and leaving its documentation asserting the narrow shape is the same defect as a prohibition without an affordance: two halves that must be specified together or neither is owned. Do not touch tests/test_crew.py or reckon/crew/routing.py \u2014 a concurrent node holds both. The existing suite passes unchanged.",
+          "estimated_hours": 3.0,
+          "goal": "Give reckon crew list the deciding fields the MCP live view already computes, and correct the guidance that enumerates their absence",
+          "id": "crew-list-carries-the-classification",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T082800471206-crew-list-carries-the-classification/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_crew_surface_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T08:28:15Z",
+        "completed_at": "2026-08-25T08:30:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 148,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 148,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "683cffdcaab49528ddb1a8c360deddae197b7576",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T082800471206-crew-list-carries-the-classification/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff70f-e564-7391-a681-b1c4d92d8ece",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 323
+    "_version": 324
   }
 }
