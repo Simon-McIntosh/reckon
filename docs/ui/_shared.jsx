@@ -73,7 +73,7 @@ function ProjectVisibilityPanel({projects, visibleProjects, onToggleProject}) {
   );
 }
 
-function SettingsMenu({theme, setTheme, density, setDensity, projects, visibleProjects, onToggleProject, requestedPanel, onPanelOpened}) {
+function SettingsMenu({theme, setTheme, density, setDensity, projects, visibleProjects, onToggleProject, requestedPanel, onPanelOpened, snapshot, onRefresh}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -109,6 +109,26 @@ function SettingsMenu({theme, setTheme, density, setDensity, projects, visiblePr
             visibleProjects={visibleProjects}
             onToggleProject={onToggleProject}
           />
+          {snapshot && (
+            <section className="settings-snapshot" aria-labelledby="settings-snapshot-title">
+              <div className="settings-title" id="settings-snapshot-title">Snapshot</div>
+              <div className="r-snapshot-receipt" role="status">
+                <div className="settings-snapshot-field">
+                  <span>Source</span>
+                  <span>{snapshot.sourceFormat}</span>
+                </div>
+                <div className="settings-snapshot-field">
+                  <span>Resources</span>
+                  <span>{snapshot.resourceCount} resources</span>
+                </div>
+                <div className="settings-snapshot-field">
+                  <span>Loaded</span>
+                  <span>loaded {snapshot.loadedAt}</span>
+                </div>
+                <button type="button" className="settings-item" onClick={onRefresh}>Refresh</button>
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>

@@ -15,7 +15,6 @@ import pytest
 
 from tests.spa_browser_harness import temporary_browser_profile
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
 
@@ -266,9 +265,11 @@ async function main() {
     });
 
     await navigateAndWait(devtools, 1);
+    await evaluate(devtools, input.prepareSignal || "undefined");
     const baseline = await evaluate(devtools, input.probe);
 
     await navigateAndWait(devtools, 2);
+    await evaluate(devtools, input.prepareSignal || "undefined");
     await evaluate(devtools, input.removeSignal);
     const removed = await evaluate(devtools, input.probe);
 
@@ -334,8 +335,11 @@ def _served_fixture(tmp_path: Path, route: str):
         [
             sys.executable,
             "-c",
-            "from reckon.serve import main; main(port=int(__import__('sys').argv[1]), "
-            "host='127.0.0.1', mounts_file=__import__('pathlib').Path(__import__('sys').argv[2]))",
+            (
+                "from reckon.serve import main; main(port=int(__import__('sys').argv[1]), "
+                "host='127.0.0.1', "
+                "mounts_file=__import__('pathlib').Path(__import__('sys').argv[2]))"
+            ),
             str(port),
             str(mounts),
         ],
@@ -377,33 +381,38 @@ def _rendered_probe(
     probe: str,
     remove_signal: str,
     fail_plan_html: bool = False,
+    prepare_signal: str = "undefined",
 ) -> dict[str, dict[str, object]]:
-    with temporary_browser_profile(tmp_path) as profile:
-        with _served_fixture(tmp_path, route) as url:
-            result = subprocess.run(
-                [
-                    "node",
-                    "--input-type=module",
-                    "-e",
-                    NODE_PROBE,
-                    json.dumps(
-                        {
-                            "browser": _installed_browser(),
-                            "profile": str(profile),
-                            "url": url,
-                            "waitSelector": wait_selector,
-                            "probe": probe,
-                            "removeSignal": remove_signal,
-                            "failPlanHtml": fail_plan_html,
-                            "fixtureIndex": INDEX_STATE,
-                        }
-                    ),
-                ],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                timeout=90,
-            )
+    with (
+        temporary_browser_profile(tmp_path) as profile,
+        _served_fixture(tmp_path, route) as url,
+    ):
+        result = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                NODE_PROBE,
+                json.dumps(
+                    {
+                        "browser": _installed_browser(),
+                        "profile": str(profile),
+                        "url": url,
+                        "waitSelector": wait_selector,
+                        "probe": probe,
+                        "prepareSignal": prepare_signal,
+                        "removeSignal": remove_signal,
+                        "failPlanHtml": fail_plan_html,
+                        "fixtureIndex": INDEX_STATE,
+                    }
+                ),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
     assert not profile.exists()
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout)
@@ -507,13 +516,23 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
     result = _rendered_probe(
         tmp_path,
         route="#cockpit",
-        wait_selector=".r-snapshot-receipt",
+        wait_selector=".r-topbar .settings",
+        prepare_signal="""(async () => {
+          document.querySelector('.r-topbar .settings > button')?.click();
+          const deadline = Date.now() + 5000;
+          while (Date.now() < deadline
+              && !document.querySelector('.settings-menu .r-snapshot-receipt')) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        })()""",
         probe="""(() => {
-          const receipt = document.querySelector(".r-snapshot-receipt[role='status']");
+          const headerReceipt = document.querySelector(".r-topbar > .r-snapshot-receipt");
+          const receipt = document.querySelector(".settings-menu .r-snapshot-receipt[role='status']");
           const text = receipt?.textContent.replace(/\\s+/g, " ").trim() || "";
           const count = Number(text.match(/(\\d+) resources/)?.[1] || 0);
           return {
-            ok: !text.includes("unknown source")
+            ok: !headerReceipt
+              && !text.includes("unknown source")
               && count > 0
               && /loaded (?!unknown)/.test(text)
               && [...(receipt?.querySelectorAll("button") || [])]
@@ -522,7 +541,7 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
             count,
           };
         })()""",
-        remove_signal="document.querySelector('.r-snapshot-receipt')?.remove()",
+        remove_signal="document.querySelector('.settings-menu .r-snapshot-receipt')?.remove()",
     )
 
     _assert_rendered_signal(result["baseline"], "snapshot receipt")

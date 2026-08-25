@@ -193,15 +193,15 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           Crew
         </button>
       </div>
-      <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="7" cy="7" r="4.5"/>
-          <path d="M13 13l-2.5-2.5"/>
-        </svg>
-        <span>Search</span>
-        <span className="kbd">⌘K</span>
-      </button>
       <div className="top-r">
+        <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <circle cx="7" cy="7" r="4.5"/>
+            <path d="M13 13l-2.5-2.5"/>
+          </svg>
+          <span>Search</span>
+          <span className="kbd">⌘K</span>
+        </button>
         {SM ? (
           <SM
             theme={theme}
@@ -213,6 +213,8 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             onToggleProject={onToggleProject}
             requestedPanel={requestedSettingsPanel}
             onPanelOpened={() => setRequestedSettingsPanel(null)}
+            snapshot={snapshot}
+            onRefresh={() => window.location.reload()}
           />
         ) : null}
         {view === "plan" && (
@@ -228,12 +230,6 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             </svg>
           </button>
         )}
-      </div>
-      <div className="r-snapshot-receipt" role="status">
-        <span>{snapshot.sourceFormat}</span>
-        <span>{snapshot.resourceCount} resources</span>
-        <span>loaded {snapshot.loadedAt}</span>
-        <button type="button" onClick={() => window.location.reload()}>Refresh</button>
       </div>
     </div>
   );
