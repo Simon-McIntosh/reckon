@@ -49,7 +49,31 @@ function ProjectPicker({current, projects, onNav}) {
   );
 }
 
-function SettingsMenu({theme, setTheme, density, setDensity}) {
+function ProjectVisibilityPanel({projects, visibleProjects, onToggleProject}) {
+  const visible = new Set((visibleProjects || []).map(project => project.project));
+  return (
+    <section className="settings-project-visibility" aria-labelledby="settings-project-visibility-title">
+      <div className="settings-title" id="settings-project-visibility-title">Project visibility</div>
+      <div className="settings-project-count">
+        {visible.size} shown · {(projects || []).length} mounted
+      </div>
+      {(projects || []).map(project => (
+        <button
+          type="button"
+          key={project.project}
+          className={`settings-item settings-project-row ${visible.has(project.project) ? "on" : ""}`}
+          aria-pressed={visible.has(project.project)}
+          onClick={() => onToggleProject(project.project)}
+        >
+          <span>{project.project}</span>
+          <span>{visible.has(project.project) ? "visible" : "hidden"}</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function SettingsMenu({theme, setTheme, density, setDensity, projects, visibleProjects, onToggleProject, requestedPanel, onPanelOpened}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -57,6 +81,11 @@ function SettingsMenu({theme, setTheme, density, setDensity}) {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
+  useEffect(() => {
+    if (requestedPanel !== "visibility") return;
+    setOpen(true);
+    onPanelOpened?.();
+  }, [requestedPanel, onPanelOpened]);
   return (
     <div className="settings" ref={ref}>
       <button className="icon-btn" onClick={() => setOpen(v => !v)} title="Settings">
@@ -75,6 +104,11 @@ function SettingsMenu({theme, setTheme, density, setDensity}) {
             <button key={d} className={`settings-item ${density === d ? "on" : ""}`}
                     onClick={() => setDensity(d)} style={{textTransform: "capitalize"}}>{d}</button>
           ))}
+          <ProjectVisibilityPanel
+            projects={projects}
+            visibleProjects={visibleProjects}
+            onToggleProject={onToggleProject}
+          />
         </div>
       )}
     </div>
@@ -140,6 +174,7 @@ function ProjectCard({p, onOpen}) {
 }
 
 window.ProjectPicker = ProjectPicker;
+window.ProjectVisibilityPanel = ProjectVisibilityPanel;
 window.SettingsMenu = SettingsMenu;
 window.Sparkline = Sparkline;
 window.Chip = Chip;

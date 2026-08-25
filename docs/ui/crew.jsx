@@ -139,7 +139,13 @@ function CrewRunCard({ run }) {
   );
 }
 
-function CrewView() {
+function crewRunsForVisibleProjects(runs, visibleProjects) {
+  if (!Array.isArray(visibleProjects)) return runs || [];
+  const visible = new Set(visibleProjects);
+  return (runs || []).filter(run => visible.has(run.project));
+}
+
+function CrewView({ visibleProjects, mountedProjectCount }) {
   const [runs, setRuns] = useState([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -174,13 +180,15 @@ function CrewView() {
     };
   }, []);
 
+  const visibleRuns = crewRunsForVisibleProjects(runs, visibleProjects);
+
   return (
     <div className="r-crew-view">
       <style>{CREW_CARD_STYLES}</style>
       <div className="r-crew-heading">
         <h1>Live runs</h1>
         <span>
-          {runs.length} visible · polls every {CREW_POLL_INTERVAL_MS / 1000}s
+          {visibleRuns.length} visible · {(visibleProjects || []).length} shown / {mountedProjectCount || 0} mounted · polls every {CREW_POLL_INTERVAL_MS / 1000}s
           {refreshedAt ? ` · refreshed ${refreshedAt.toLocaleTimeString()}` : ""}
         </span>
       </div>
@@ -189,11 +197,11 @@ function CrewView() {
 
       {!loaded ? (
         <div className="r-crew-empty">Loading live runs…</div>
-      ) : runs.length === 0 ? (
+      ) : visibleRuns.length === 0 ? (
         <div className="r-crew-empty">No live runs.</div>
       ) : (
         <div className="r-crew-list" aria-label="Live crew runs">
-          {runs.map(run => <CrewRunCard key={`${run.project || ""}:${run.run_id}`} run={run} />)}
+          {visibleRuns.map(run => <CrewRunCard key={`${run.project || ""}:${run.run_id}`} run={run} />)}
         </div>
       )}
     </div>

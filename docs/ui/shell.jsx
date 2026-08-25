@@ -119,9 +119,11 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
     || (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
     || null;
 
+  const [requestedSettingsPanel, setRequestedSettingsPanel] = useState(null);
   const mountedProjects = mountedProjectRows(projects);
   const manageableProjects = manageableProjectRows(projects);
   const visibleProjects = visibleProjectRows(projects, hiddenProjects);
+  const current = manageableProjects.find(project => project.project === currentProject);
   const snapshot = snapshotReceipt(M);
 
   // Assign the window global to a local var so JSX can use it as a component.
@@ -142,64 +144,39 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
         <span className="r-topbar-mark">r</span>
         <span>reckon</span>
       </button>
-      <div className="r-project-strip" aria-label="Visible projects">
-        {visibleProjects.map(project => (
+      <details className="r-project-manage">
+        <summary>
+          <span className={`r-live-dot ${current?.live ? "is-live" : ""}`} aria-hidden="true"></span>
+          <span>{currentProject || "Fleet"}</span>
+          <span className="r-project-caret" aria-hidden="true">▾</span>
+        </summary>
+        <div className="r-project-menu">
+          <div className="r-project-menu-count">{visibleProjects.length} shown · {manageableProjects.length} mounted</div>
+          {visibleProjects.map(project => (
+            <button
+              type="button"
+              key={project.project}
+              className={project.project === currentProject ? "active" : ""}
+              onClick={() => navProject(project.project)}
+              aria-current={project.project === currentProject ? "page" : undefined}
+            >
+              <span className={`r-live-dot ${project.live ? "is-live" : ""}`} aria-hidden="true"></span>
+              <strong>{project.project}</strong>
+              <span>{project.plans_count} plans</span>
+              <span>{project.live_count || 0} live</span>
+            </button>
+          ))}
           <button
-            key={project.project}
-            className={`r-project-chip ${project.project === currentProject ? "active" : ""}`}
-            onClick={() => navProject(project.project)}
-            aria-current={project.project === currentProject ? "page" : undefined}
-          >
-            <span className={`r-live-dot ${project.live ? "is-live" : ""}`} aria-hidden="true"></span>
-            {project.project}
-          </button>
-        ))}
-        <details className="r-project-manage">
-          <summary>Manage</summary>
-          <div className="r-project-manage-panel">
-            <div className="r-project-manage-count">
-              {manageableProjects.length} mounted
-            </div>
-            {manageableProjects.map(project => {
-              const hasPlanState = mountedProjects.some(row => row.project === project.project);
-              const visible = visibleProjects.some(row => row.project === project.project);
-              const lastVisible = visible && visibleProjects.length === 1;
-              return (
-                <button
-                  key={project.project}
-                  className={`r-project-manage-row ${visible ? "is-visible" : ""}`}
-                  onClick={() => onToggleProject(project.project)}
-                  disabled={lastVisible || !hasPlanState}
-                  title={lastVisible
-                    ? "The last visible project cannot be hidden"
-                    : (!hasPlanState ? "No mounted plan state is available" : undefined)}
-                  aria-pressed={visible}
-                >
-                  <span>{project.project}</span>
-                  <span>{visible ? "visible" : "hidden"}</span>
-                </button>
-              );
-            })}
-          </div>
-        </details>
-      </div>
-      <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="7" cy="7" r="4.5"/>
-          <path d="M13 13l-2.5-2.5"/>
-        </svg>
-        <span>Search</span>
-        <span className="kbd">⌘K</span>
-      </button>
-      <span className="sp"></span>
+            type="button"
+            className="r-project-configure"
+            onClick={() => {
+              document.querySelector(".r-project-manage")?.removeAttribute("open");
+              setRequestedSettingsPanel("visibility");
+            }}
+          >Configure visibility…</button>
+        </div>
+      </details>
       <div className="r-glyph-tabs">
-        <button className={`r-glyph ${view === "cockpit" ? "active" : ""}`} onClick={() => onNav({ view: "cockpit" })} title="Overview">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M2 12 V8"/><path d="M5.5 12 V5"/><path d="M9 12 V9"/><path d="M12.5 12 V3"/>
-            <circle cx="12.5" cy="3" r="1.2" fill="currentColor" stroke="none"/>
-          </svg>
-          Overview
-        </button>
         <button className={`r-glyph ${view === "plan" ? "active" : ""}`} onClick={goPlans} title="Plans">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M3 4h10M3 8h10M3 12h7"/>
@@ -228,9 +205,27 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           Crew
         </button>
       </div>
+      <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="7" cy="7" r="4.5"/>
+          <path d="M13 13l-2.5-2.5"/>
+        </svg>
+        <span>Search</span>
+        <span className="kbd">⌘K</span>
+      </button>
       <div className="top-r">
         {SM ? (
-          <SM theme={theme} setTheme={setTheme} density={density} setDensity={setDensity} />
+          <SM
+            theme={theme}
+            setTheme={setTheme}
+            density={density}
+            setDensity={setDensity}
+            projects={manageableProjects.map(project => project)}
+            visibleProjects={visibleProjects}
+            onToggleProject={onToggleProject}
+            requestedPanel={requestedSettingsPanel}
+            onPanelOpened={() => setRequestedSettingsPanel(null)}
+          />
         ) : null}
         {view === "plan" && (
           <button
@@ -1175,7 +1170,10 @@ function App() {
       .then(([data, crew]) => {
         setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []);
         if (!data?.projects) return;
-        const liveProjects = new Set((crew?.runs || []).map(run => run.project));
+        const liveCounts = (crew?.runs || []).reduce((counts, run) => {
+          counts.set(run.project, (counts.get(run.project) || 0) + 1);
+          return counts;
+        }, new Map());
         setProjects(data.projects.map(project => {
           const state = project.data || {};
           const summary = Array.isArray(state.projects) ? state.projects[0] : null;
@@ -1185,7 +1183,8 @@ function App() {
             project: project.project,
             accent: summary?.accent || state.accent || window.ACCENTS?.[project.project] || "var(--accent)",
             plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
-            live: liveProjects.has(project.project),
+            live: liveCounts.has(project.project),
+            live_count: liveCounts.get(project.project) || 0,
             state,
           };
         }));
@@ -1236,18 +1235,6 @@ function App() {
     if (change.focus && change.focus !== currentProject) navProject(change.focus);
   }, [projects, hiddenProjects, navProject]);
 
-  useEffect(() => {
-    const currentProject = window.STATE?.project || null;
-    const visible = visibleProjectRows(projects, hiddenProjects);
-    if (
-      currentProject
-      && visible.length
-      && !visible.some(project => project.project === currentProject)
-    ) {
-      navProject(visible[0].project);
-    }
-  }, [projects, hiddenProjects, navProject]);
-
   const M = window.STATE;
   const items = useMemo(() => {
     if (!M) return [];
@@ -1278,6 +1265,8 @@ function App() {
     [M, items, groupBy, sortDir]
   );
   const searchItems = useMemo(() => paletteItems(M, projects), [M, projects]);
+  const shownProjects = useMemo(() => visibleProjectRows(projects, hiddenProjects), [projects, hiddenProjects]);
+  const shownProjectNames = useMemo(() => shownProjects.map(project => project.project), [shownProjects]);
   const readPosition = Math.max(0, readQueue.indexOf(route.slug));
 
   const onSelectPlan = useCallback((slug) => {
@@ -1383,10 +1372,10 @@ function App() {
             <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
             <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`}>
               <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
-                {canvasView === "cockpit" && <CockpitBody onNav={nav} projects={projects} fleetRuns={fleetRuns} />}
+                {canvasView === "cockpit" && <CockpitBody onNav={nav} projects={shownProjects} fleetRuns={fleetRuns} mountedProjectCount={projects.length} />}
                 {canvasView === "sprint" && <><FleetPrompt sprintId={route.sprint} /><Sprint sprintId={route.sprint} onNav={nav} /></>}
                 {canvasView === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-                {canvasView === "crew" && <CrewView />}
+                {canvasView === "crew" && <CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} />}
               </div>
             </div>
           </div>
@@ -1478,13 +1467,13 @@ function projectActiveSprints(state) {
   return { active, focus, conflict };
 }
 
-function overviewProjectRows(projects, currentState, fleetRuns) {
+function overviewProjectRows(projects, currentState, fleetRuns, includeCurrent = true) {
   const currentProject = currentState?.project || null;
   const sources = (projects || []).map(project => ({
     ...project,
     state: project.project === currentProject ? currentState : (project.state || {}),
   }));
-  if (currentProject && !sources.some(project => project.project === currentProject)) {
+  if (includeCurrent && currentProject && !sources.some(project => project.project === currentProject)) {
     sources.unshift({ project: currentProject, state: currentState });
   }
   return sources.map(project => {
@@ -1507,11 +1496,11 @@ function overviewProjectRows(projects, currentState, fleetRuns) {
   });
 }
 
-function OverviewFleet({ projects, fleetRuns }) {
-  const rows = overviewProjectRows(projects, window.STATE, fleetRuns);
+function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
+  const rows = overviewProjectRows(projects, window.STATE, fleetRuns, false);
   const blockers = rows.flatMap(row => row.blockers.map(blocker => ({ ...blocker, project: row.project })));
   const totals = [
-    { label: "projects", value: rows.length, note: "mounted" },
+    { label: "projects", value: rows.length, note: `${rows.length} shown / ${mountedProjectCount} mounted` },
     { label: "plans", value: rows.reduce((count, row) => count + row.plans, 0), note: "in view" },
     { label: "live", value: rows.reduce((count, row) => count + row.live, 0), note: "runs" },
     { label: "held", value: rows.reduce((count, row) => count + row.held, 0), note: "decisions" },
@@ -1586,7 +1575,7 @@ function OverviewFleet({ projects, fleetRuns }) {
   );
 }
 
-function CockpitBody({ onNav, projects, fleetRuns }) {
+function CockpitBody({ onNav, projects, fleetRuns, mountedProjectCount }) {
   const M = window.STATE;
   if (!M) return null;
   const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
@@ -1605,7 +1594,7 @@ function CockpitBody({ onNav, projects, fleetRuns }) {
 
   return (
     <>
-      <OverviewFleet projects={projects} fleetRuns={fleetRuns} />
+      <OverviewFleet projects={projects} fleetRuns={fleetRuns} mountedProjectCount={mountedProjectCount} />
       {northStars.length > 0 && (
         <>
           <div className="r-ck-h">
