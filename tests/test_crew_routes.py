@@ -25,6 +25,7 @@ def _add_project(root: Path, name: str, mounts: dict[str, str]) -> Path:
         '<meta name="plan-slug" content="visible-work">'
         '<meta name="plan-status" content="active">'
         '<meta name="plan-sprint" content="current">'
+        '<meta name="plan-effort-hours" content="3.25">'
         "<title>Visible work</title>"
         '</head><body><main class="plan-doc"></main></body></html>',
         encoding="utf-8",
@@ -174,6 +175,9 @@ def test_project_route_filters_other_mounted_runs(crew_server) -> None:
 
     assert all_status == status == 200
     assert {row["project"] for row in all_payload["runs"]} == {"reckon", "other"}
+    other_run = next(row for row in all_payload["runs"] if row["project"] == "other")
+    assert other_run["effort_hours"] == 3.25
+    assert other_run["backend"] == "local"
     assert payload["project"] == "reckon"
     assert [row["run_id"] for row in payload["runs"]] == ["run-reckon"]
 
