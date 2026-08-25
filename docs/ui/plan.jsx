@@ -108,7 +108,7 @@ function GateTable({ gates }) {
               <td>{gate.measure || gate.id}</td>
               <td>{gate.status || "open"}</td>
               <td>{gate.verdict || "pending"}</td>
-              <td>{gate.evidence ? <a href={gate.evidence}>Evidence</a> : "—"}</td>
+              <td>{gate.evidence ? <a href={gate.evidence}>Evidence</a> : "Not recorded"}</td>
             </tr>
           ))}
         </tbody>
@@ -127,7 +127,7 @@ function PlanInFlightBand({ runs, effortHours }) {
     return Number(match[1]) * ({ s: 1, m: 60, h: 3600 })[match[2].toLowerCase()];
   };
   const durationLabel = (seconds) => {
-    if (seconds == null) return "unknown";
+    if (seconds == null) return "not reported";
     if (seconds >= 3600) return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
     if (seconds >= 60) return `${Math.floor(seconds / 60)}m`;
     return `${Math.floor(seconds)}s`;
@@ -152,12 +152,12 @@ function PlanInFlightBand({ runs, effortHours }) {
           <span>{run.section || "whole plan"}</span>
         </div>
         <div className="r-inflight-progress" style={{ display: "grid", gap: 4, color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 10 }}>
-          <span>{durationLabel(elapsed)} / {budget == null ? (run.time_budget || "budget unknown") : durationLabel(budget)}</span>
+          <span>{durationLabel(elapsed)} / {budget == null ? (run.time_budget || "budget not reported") : durationLabel(budget)}</span>
           <span className="r-inflight-track" aria-label={`${progress}% of time budget`} style={{ overflow: "hidden", height: 4, borderRadius: 2, background: "var(--border)" }}>
             <span style={{ display: "block", width: `${progress}%`, height: "100%", background: "var(--accent)" }} />
           </span>
         </div>
-        <span className={`r-inflight-phase ${run.phase || "unknown"}`} style={{ color: run.phase === "working" ? "var(--accent)" : "var(--muted)", fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase" }}>{run.phase || "unknown"}</span>
+        <span className={`r-inflight-phase ${run.phase || "unreported"}`} style={{ color: run.phase === "working" ? "var(--accent)" : "var(--muted)", fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase" }}>{run.phase || "phase not reported"}</span>
         <button className="btn ghost r-inflight-action" style={{ whiteSpace: "nowrap" }} onClick={() => copyRunCommand(run)}>Copy run command</button>
       </li>
     );
@@ -360,6 +360,9 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
 
   const author = window.STATE?.projects?.[0]?.owner || "user";
   const loadedPlanVersion = fullState?.version ?? P.version ?? "unavailable";
+  const implementationLabel = P.impl !== null && P.impl !== undefined && P.impl !== "" && Number.isFinite(Number(P.impl))
+    ? `${Math.round(Number(P.impl) * 100)}%`
+    : null;
   const readerAttachments = (() => {
     if (isResearch || isEvidence) return [];
     const target = P.nav_key || P.slug || slug;
@@ -496,9 +499,9 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
               <>
                 <span className="r-reading-path">/{slug}</span>
                 <button type="button" onClick={onToggleFocus} aria-pressed="false" title="Enter focus mode (f)">Read <span aria-hidden="true">f</span></button>
-                <span className="r-reading-project">{project}</span>
+                {project && <span className="r-reading-project">{project}</span>}
                 {P.sprint && <span>{P.sprint}</span>}
-                <span>{Math.round((P.impl || 0) * 100)}%</span>
+                {implementationLabel && <span>{implementationLabel}</span>}
               </>
             )}
           </nav>
@@ -506,7 +509,7 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
             <div className="r-reading-content">
           {focusMode && (
             <header className="r-reading-focus-title">
-              <div>/{slug} · {P.sprint || "unscheduled"} · {Math.round((P.impl || 0) * 100)}%</div>
+              <div>{[`/${slug}`, P.sprint, implementationLabel].filter(Boolean).join(" · ")}</div>
               <h1>{P.title || slug}</h1>
             </header>
           )}
@@ -728,7 +731,7 @@ function LockedDecisionsBlock({ lockedMap }) {
           {entries.map(([key, val]) => (
             <tr key={key}>
               <td><code>{key}</code></td>
-              <td className="dec-choice chosen">{val.choice || "—"}</td>
+              <td className="dec-choice chosen">{val.choice || "Not recorded"}</td>
               <td>{val.rationale || ""}</td>
               <td style={{ whiteSpace: "nowrap" }}>{val.by ? `${val.by} · ` : ""}{val.when || ""}</td>
             </tr>
