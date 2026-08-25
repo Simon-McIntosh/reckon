@@ -818,13 +818,25 @@ def _derive_blocker_counts(
     blockers: list[dict[str, Any]], sprints: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
     counts: dict[str, int] = {}
+    gated_plans: dict[str, set[str]] = {}
     for sprint in sprints:
         for item in sprint.get("items", []):
             if not isinstance(item, dict):
                 continue
             for blocker_id in item.get("blocked_by", []):
-                counts[str(blocker_id)] = counts.get(str(blocker_id), 0) + 1
-    return [{**item, "n": counts.get(str(item.get("id")), 0)} for item in blockers]
+                key = str(blocker_id)
+                counts[key] = counts.get(key, 0) + 1
+                slug = str(item.get("slug") or "")
+                if slug:
+                    gated_plans.setdefault(key, set()).add(slug)
+    return [
+        {
+            **item,
+            "n": counts.get(str(item.get("id")), 0),
+            "gated_plans": sorted(gated_plans.get(str(item.get("id")), set())),
+        }
+        for item in blockers
+    ]
 
 
 def _hydrate_items(
