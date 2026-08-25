@@ -1,0 +1,376 @@
+LIVE INSTANCE MEASURES
+======================
+
+Source checkout: bedfab71e085cae39b1276aad58ae974f297ec10
+Server endpoint: http://127.0.0.1:8765/crew
+Observer run: r-20260825T045037677168-live-instance-measures
+Observer rule: this observer does not dispatch a crew run.
+
+The raw event log below is written by a 100 ms poller. A dispatch timestamp is
+reported both from the microsecond timestamp embedded by new_run_id and from
+the live pointer's second-resolution created_at field. For Codex streams the
+terminal event has no authored timestamp, so terminal_event_stream_mtime_ns is
+the filesystem timestamp used by Reckon's own completion fallback and is the
+raw terminal-event time used for the done-latency calculation.
+
+RESULT SUMMARY
+--------------
+
+Selected independently dispatched run:
+  run_id: r-20260825T051116083921-merged-suite-gate
+  project: reckon
+  node: merged-suite-gate
+
+Dispatch to working:
+  run_id allocated:             2026-08-25T05:11:16.083921Z
+  live pointer created_at:      2026-08-25T05:11:20.000000000Z
+  live pointer first detected:  2026-08-25T05:11:20.251038484Z
+  GET /crew first working:      2026-08-25T05:11:20.387756139Z
+  pointer created -> working:   0.387756139 s  PASS (<= 3 s)
+  pointer detected -> working:  0.136717655 s
+  run-id allocation -> working: 4.303835139 s  FAIL if pre-pointer
+                                dispatch preparation is included
+
+The live pointer's created_at is Reckon's authoritative publication time for a
+dispatch that the server can read. The microsecond run-id time is also retained
+because new_run_id is allocated earlier, before worktree preparation and live
+pointer publication; that earlier boundary adds 3.916079 s and changes the gate
+verdict. The evidence therefore does not hide the boundary choice.
+
+Terminal event to done:
+  terminal event type:          turn.completed
+  terminal stream mtime:        2026-08-25T05:17:18.645734652Z
+  GET /crew first done:         2026-08-25T05:17:18.655497577Z
+  terminal event -> done:       0.009762925 s  PASS
+
+Watcher/socket result:
+  project watcher live:         yes, throughout both measured transitions
+  watcher PID at final sample:  4045514
+  watcher listening sockets:    0
+  127.0.0.1:8765 listeners:     exactly 1 at start, end, and terminal sample
+  127.0.0.1:8765 owner:         reckon PID 3004165
+  second watcher daemon port:   none
+
+Sampling caveat:
+  configured interval:          0.100 s
+  global observation polls:     3,391 over 901.751117260 s
+  terminal-follow polls:        390 over 100.934470144 s
+  maximum global poll gap:      5.105984538 s
+  maximum terminal poll gap:    1.726459855 s
+
+The global route produced two 5 s client timeouts while several streams were
+active. They did not overlap either recorded transition, but they show that the
+route can exceed the 3 s budget under load even though this run's pointer-to-
+working and terminal-to-done transitions passed.
+
+RAW EVENT LOG
+-------------
+{"baseline_endpoint_run_count": 11, "baseline_live_pointer_count": 11, "baseline_request_at": "2026-08-25T04:54:35.194418207Z", "baseline_response_at": "2026-08-25T04:54:38.781379053Z", "event": "observation_start", "observer_at": "2026-08-25T04:54:35.194417814Z", "poll_interval_seconds": 0.1, "timeout_seconds": 1200.0, "watcher_lock": {"parent_pid": 3864005, "parent_start_time": "144867602", "pid": 3864008, "pid_start_time": "144867606", "project": "reckon", "stall_window": "15m", "started_at": "2026-08-25T04:33:54Z"}}
+SS_LTN_START_BEGIN
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                                     
+LISTEN 0      256    127.0.0.53%lo:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:61523      0.0.0.0:*    users:(("srun",pid=974337,fd=3),("srun",pid=974335,fd=3))  
+LISTEN 0      256          0.0.0.0:61524      0.0.0.0:*    users:(("srun",pid=974335,fd=4))                           
+LISTEN 0      256          0.0.0.0:61525      0.0.0.0:*    users:(("srun",pid=974335,fd=10))                          
+LISTEN 0      256          0.0.0.0:61526      0.0.0.0:*    users:(("srun",pid=974335,fd=13))                          
+LISTEN 0      256          0.0.0.0:60621      0.0.0.0:*    users:(("srun",pid=3914643,fd=3),("srun",pid=3914640,fd=3))
+LISTEN 0      256          0.0.0.0:60622      0.0.0.0:*    users:(("srun",pid=3914640,fd=4))                          
+LISTEN 0      256          0.0.0.0:60623      0.0.0.0:*    users:(("srun",pid=3914640,fd=10))                         
+LISTEN 0      256          0.0.0.0:60624      0.0.0.0:*    users:(("srun",pid=3914640,fd=13))                         
+LISTEN 0      256          0.0.0.0:60273      0.0.0.0:*    users:(("srun",pid=981039,fd=3),("srun",pid=981037,fd=3))  
+LISTEN 0      256          0.0.0.0:60274      0.0.0.0:*    users:(("srun",pid=981037,fd=4))                           
+LISTEN 0      256          0.0.0.0:60275      0.0.0.0:*    users:(("srun",pid=981037,fd=10))                          
+LISTEN 0      256          0.0.0.0:60276      0.0.0.0:*    users:(("srun",pid=981037,fd=13))                          
+LISTEN 0      64         127.0.0.1:36231      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:52433      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25011      0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:27182      0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:28896      0.0.0.0:*                                                               
+LISTEN 0      256       127.0.0.54:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:5355       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20000      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20001      0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7011       0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7004       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:6818       0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:21702      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:1191       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:111        0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*                                                               
+LISTEN 0      100          0.0.0.0:4000       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:23792      0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8843       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8880       0.0.0.0:*                                                               
+LISTEN 0      5          127.0.0.1:8765       0.0.0.0:*    users:(("reckon",pid=3004165,fd=5))                        
+LISTEN 0      100        127.0.0.1:12011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:12004      0.0.0.0:*                                                               
+LISTEN 0      256        127.0.0.1:199        0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2490       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2222       0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:2680       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:18400      0.0.0.0:*    users:(("python",pid=3006015,fd=13))                       
+LISTEN 0      256             [::]:44959         [::]:*                                                               
+LISTEN 0      128            [::1]:8843          [::]:*                                                               
+LISTEN 0      128            [::1]:8880          [::]:*                                                               
+LISTEN 0      256             [::]:5355          [::]:*                                                               
+LISTEN 0      50                 *:8080             *:*                                                               
+LISTEN 0      128             [::]:7011          [::]:*                                                               
+LISTEN 0      128             [::]:7004          [::]:*                                                               
+LISTEN 0      128            [::1]:2222          [::]:*                                                               
+LISTEN 0      128            [::1]:2490          [::]:*                                                               
+LISTEN 0      256             [::]:111           [::]:*                                                               
+LISTEN 0      128             [::]:22            [::]:*                                                               
+LISTEN 0      100             [::]:4000          [::]:*
+SS_LTN_START_END
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.354616493, "observer_at": "2026-08-25T04:55:08.957401281Z", "poll_count": 156, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:55:39.082341924Z", "poll_count": 240, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:56:09.104475304Z", "poll_count": 411, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:56:39.255440793Z", "poll_count": 587, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:57:09.276201062Z", "poll_count": 754, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:57:39.512731381Z", "poll_count": 862, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:58:09.662786639Z", "poll_count": 1018, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.780249628, "observer_at": "2026-08-25T04:58:39.720854278Z", "poll_count": 1154, "selected_run": null}
+Traceback (most recent call last):
+  File "<stdin>", line 199, in <module>
+KeyboardInterrupt
+{"baseline_endpoint_run_count": 11, "baseline_live_pointer_count": 11, "baseline_request_at": "2026-08-25T04:59:57.147587421Z", "baseline_response_at": "2026-08-25T04:59:58.778108527Z", "event": "observation_restart_global_route", "observer_at": "2026-08-25T04:59:58.829817458Z", "poll_interval_seconds": 0.1, "started_at": "2026-08-25T04:59:57.147587061Z", "timeout_seconds": 900.0, "watcher_lock": {"parent_pid": 3864005, "parent_start_time": "144867602", "pid": 3864008, "pid_start_time": "144867606", "project": "reckon", "stall_window": "15m", "started_at": "2026-08-25T04:33:54Z"}}
+SS_LTN_GLOBAL_START_BEGIN
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                                     
+LISTEN 0      256    127.0.0.53%lo:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:61523      0.0.0.0:*    users:(("srun",pid=974337,fd=3),("srun",pid=974335,fd=3))  
+LISTEN 0      256          0.0.0.0:61524      0.0.0.0:*    users:(("srun",pid=974335,fd=4))                           
+LISTEN 0      256          0.0.0.0:61525      0.0.0.0:*    users:(("srun",pid=974335,fd=10))                          
+LISTEN 0      256          0.0.0.0:61526      0.0.0.0:*    users:(("srun",pid=974335,fd=13))                          
+LISTEN 0      256          0.0.0.0:60621      0.0.0.0:*    users:(("srun",pid=3914643,fd=3),("srun",pid=3914640,fd=3))
+LISTEN 0      256          0.0.0.0:60622      0.0.0.0:*    users:(("srun",pid=3914640,fd=4))                          
+LISTEN 0      256          0.0.0.0:60623      0.0.0.0:*    users:(("srun",pid=3914640,fd=10))                         
+LISTEN 0      256          0.0.0.0:60624      0.0.0.0:*    users:(("srun",pid=3914640,fd=13))                         
+LISTEN 0      256          0.0.0.0:60273      0.0.0.0:*    users:(("srun",pid=981039,fd=3),("srun",pid=981037,fd=3))  
+LISTEN 0      256          0.0.0.0:60274      0.0.0.0:*    users:(("srun",pid=981037,fd=4))                           
+LISTEN 0      256          0.0.0.0:60275      0.0.0.0:*    users:(("srun",pid=981037,fd=10))                          
+LISTEN 0      256          0.0.0.0:60276      0.0.0.0:*    users:(("srun",pid=981037,fd=13))                          
+LISTEN 0      64         127.0.0.1:36231      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:52433      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25011      0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:27182      0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:28896      0.0.0.0:*                                                               
+LISTEN 0      256       127.0.0.54:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:5355       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20000      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20001      0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7011       0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7004       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:6818       0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:21702      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:1191       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:111        0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*                                                               
+LISTEN 0      100          0.0.0.0:4000       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:23792      0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8843       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8880       0.0.0.0:*                                                               
+LISTEN 0      5          127.0.0.1:8765       0.0.0.0:*    users:(("reckon",pid=3004165,fd=5))                        
+LISTEN 0      100        127.0.0.1:12011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:12004      0.0.0.0:*                                                               
+LISTEN 0      256        127.0.0.1:199        0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2490       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2222       0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:2680       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:18400      0.0.0.0:*    users:(("python",pid=3006015,fd=13))                       
+LISTEN 0      256             [::]:44959         [::]:*                                                               
+LISTEN 0      128            [::1]:8843          [::]:*                                                               
+LISTEN 0      128            [::1]:8880          [::]:*                                                               
+LISTEN 0      256             [::]:5355          [::]:*                                                               
+LISTEN 0      50                 *:8080             *:*                                                               
+LISTEN 0      128             [::]:7011          [::]:*                                                               
+LISTEN 0      128             [::]:7004          [::]:*                                                               
+LISTEN 0      128            [::1]:2222          [::]:*                                                               
+LISTEN 0      128            [::1]:2490          [::]:*                                                               
+LISTEN 0      256             [::]:111           [::]:*                                                               
+LISTEN 0      128             [::]:22            [::]:*                                                               
+LISTEN 0      100             [::]:4000          [::]:*
+SS_LTN_GLOBAL_START_END
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.794896536, "observer_at": "2026-08-25T05:00:29.318763023Z", "poll_count": 131, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:00:59.815764736Z", "poll_count": 216, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:01:29.975777903Z", "poll_count": 353, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:02:00.685937886Z", "poll_count": 493, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:02:30.725100703Z", "poll_count": 601, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:03:00.743593264Z", "poll_count": 733, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:03:30.932550677Z", "poll_count": 832, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 1.973214145, "observer_at": "2026-08-25T05:04:01.019188696Z", "poll_count": 924, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:04:31.045784179Z", "poll_count": 1065, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:05:01.076994445Z", "poll_count": 1176, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:05:31.217121542Z", "poll_count": 1324, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:06:01.281390342Z", "poll_count": 1456, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:06:34.099818262Z", "poll_count": 1542, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:07:04.229839027Z", "poll_count": 1688, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:07:34.251813246Z", "poll_count": 1824, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:08:04.384190144Z", "poll_count": 1991, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:08:34.537663104Z", "poll_count": 2132, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:09:04.587588492Z", "poll_count": 2283, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:09:34.649612059Z", "poll_count": 2445, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:10:04.750714613Z", "poll_count": 2603, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:10:34.763462491Z", "poll_count": 2778, "selected_run": null}
+{"candidate_count": 0, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:11:04.778885909Z", "poll_count": 2933, "selected_run": null}
+{"attempt_started_at": "2026-08-25T05:11:20Z", "created_at": "2026-08-25T05:11:20Z", "event": "new_dispatch_pointer", "member": "codex-f", "node": "merged-suite-gate", "observer_at": "2026-08-25T05:11:20.295884670Z", "path": "/home/ITER/mcintos/.config/reckon/crew/live/r-20260825T051116083921-merged-suite-gate.json", "pointer_detected_ns": 1787634680251038484, "project": "reckon", "run_id": "r-20260825T051116083921-merged-suite-gate", "run_id_allocated_at": "2026-08-25T05:11:16.083921Z", "session": "cnv-spa"}
+{"event": "candidate_first_endpoint_seen", "observer_at": "2026-08-25T05:11:20.387803466Z", "phase": "working", "request_at": "2026-08-25T05:11:20.295951636Z", "response_at": "2026-08-25T05:11:20.387756139Z", "run_id": "r-20260825T051116083921-merged-suite-gate"}
+{"elapsed_seconds": 0, "event": "candidate_first_working", "last_activity": "2026-08-25T05:11:20Z", "observer_at": "2026-08-25T05:11:20.387864967Z", "request_at": "2026-08-25T05:11:20.295951636Z", "response_at": "2026-08-25T05:11:20.387756139Z", "run_id": "r-20260825T051116083921-merged-suite-gate"}
+{"event": "selected_run", "node": "merged-suite-gate", "observer_at": "2026-08-25T05:11:20.387881405Z", "project": "reckon", "run_id": "r-20260825T051116083921-merged-suite-gate"}
+{"candidate_count": 1, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.076675397, "observer_at": "2026-08-25T05:11:35.978134784Z", "poll_count": 3016, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"attempt_started_at": "2026-08-25T05:11:35Z", "created_at": "2026-08-25T05:11:35Z", "event": "new_dispatch_pointer", "member": "codex-g", "node": "unwatched-fleet-visibility", "observer_at": "2026-08-25T05:11:36.078727170Z", "path": "/home/ITER/mcintos/.config/reckon/crew/live/r-20260825T051131483430-unwatched-fleet-visibility.json", "pointer_detected_ns": 1787634696078655948, "project": "reckon", "run_id": "r-20260825T051131483430-unwatched-fleet-visibility", "run_id_allocated_at": "2026-08-25T05:11:31.483430Z", "session": "cnv-spa"}
+{"event": "candidate_first_endpoint_seen", "observer_at": "2026-08-25T05:11:37.860280645Z", "phase": "working", "request_at": "2026-08-25T05:11:36.078796587Z", "response_at": "2026-08-25T05:11:37.860235653Z", "run_id": "r-20260825T051131483430-unwatched-fleet-visibility"}
+{"elapsed_seconds": 2, "event": "candidate_first_working", "last_activity": "2026-08-25T05:11:36Z", "observer_at": "2026-08-25T05:11:37.860339843Z", "request_at": "2026-08-25T05:11:36.078796587Z", "response_at": "2026-08-25T05:11:37.860235653Z", "run_id": "r-20260825T051131483430-unwatched-fleet-visibility"}
+{"error": "TimeoutError('timed out')", "event": "crew_poll_error", "observer_at": "2026-08-25T05:11:49.953490579Z", "poll_count": 3022}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105449035, "observer_at": "2026-08-25T05:12:07.054974910Z", "poll_count": 3031, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"error": "TimeoutError('timed out')", "event": "crew_poll_error", "observer_at": "2026-08-25T05:12:26.686165409Z", "poll_count": 3040}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105984538, "observer_at": "2026-08-25T05:12:37.491303242Z", "poll_count": 3063, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105984538, "observer_at": "2026-08-25T05:13:08.462204057Z", "poll_count": 3173, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105984538, "observer_at": "2026-08-25T05:13:38.873143776Z", "poll_count": 3305, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105984538, "observer_at": "2026-08-25T05:14:10.434416725Z", "poll_count": 3324, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+{"candidate_count": 2, "event": "poll_heartbeat", "max_poll_gap_seconds": 5.105984538, "observer_at": "2026-08-25T05:14:41.659630955Z", "poll_count": 3342, "selected_run": "r-20260825T051116083921-merged-suite-gate"}
+SS_LTN_GLOBAL_END_BEGIN
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                                     
+LISTEN 0      256    127.0.0.53%lo:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:62656      0.0.0.0:*    users:(("srun",pid=4075763,fd=13))                         
+LISTEN 0      256          0.0.0.0:62653      0.0.0.0:*    users:(("srun",pid=4075770,fd=3),("srun",pid=4075763,fd=3))
+LISTEN 0      256          0.0.0.0:62654      0.0.0.0:*    users:(("srun",pid=4075763,fd=4))                          
+LISTEN 0      256          0.0.0.0:62655      0.0.0.0:*    users:(("srun",pid=4075763,fd=10))                         
+LISTEN 0      256          0.0.0.0:61523      0.0.0.0:*    users:(("srun",pid=974337,fd=3),("srun",pid=974335,fd=3))  
+LISTEN 0      256          0.0.0.0:61524      0.0.0.0:*    users:(("srun",pid=974335,fd=4))                           
+LISTEN 0      256          0.0.0.0:61525      0.0.0.0:*    users:(("srun",pid=974335,fd=10))                          
+LISTEN 0      256          0.0.0.0:61526      0.0.0.0:*    users:(("srun",pid=974335,fd=13))                          
+LISTEN 0      256          0.0.0.0:60621      0.0.0.0:*    users:(("srun",pid=3914643,fd=3),("srun",pid=3914640,fd=3))
+LISTEN 0      256          0.0.0.0:60622      0.0.0.0:*    users:(("srun",pid=3914640,fd=4))                          
+LISTEN 0      256          0.0.0.0:60623      0.0.0.0:*    users:(("srun",pid=3914640,fd=10))                         
+LISTEN 0      256          0.0.0.0:60624      0.0.0.0:*    users:(("srun",pid=3914640,fd=13))                         
+LISTEN 0      256          0.0.0.0:60259      0.0.0.0:*    users:(("srun",pid=4075772,fd=3),("srun",pid=4075766,fd=3))
+LISTEN 0      256          0.0.0.0:60260      0.0.0.0:*    users:(("srun",pid=4075766,fd=4))                          
+LISTEN 0      256          0.0.0.0:60261      0.0.0.0:*    users:(("srun",pid=4075766,fd=10))                         
+LISTEN 0      256          0.0.0.0:60262      0.0.0.0:*    users:(("srun",pid=4075766,fd=13))                         
+LISTEN 0      256          0.0.0.0:60273      0.0.0.0:*    users:(("srun",pid=981039,fd=3),("srun",pid=981037,fd=3))  
+LISTEN 0      256          0.0.0.0:60274      0.0.0.0:*    users:(("srun",pid=981037,fd=4))                           
+LISTEN 0      256          0.0.0.0:60275      0.0.0.0:*    users:(("srun",pid=981037,fd=10))                          
+LISTEN 0      256          0.0.0.0:60276      0.0.0.0:*    users:(("srun",pid=981037,fd=13))                          
+LISTEN 0      64         127.0.0.1:36231      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:52433      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25011      0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:27182      0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:28896      0.0.0.0:*                                                               
+LISTEN 0      256       127.0.0.54:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:5355       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20000      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20001      0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7011       0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7004       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:6818       0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:21702      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:1191       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:111        0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*                                                               
+LISTEN 0      100          0.0.0.0:4000       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:23792      0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8843       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8880       0.0.0.0:*                                                               
+LISTEN 0      5          127.0.0.1:8765       0.0.0.0:*    users:(("reckon",pid=3004165,fd=5))                        
+LISTEN 0      100        127.0.0.1:12011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:12004      0.0.0.0:*                                                               
+LISTEN 0      256        127.0.0.1:199        0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2490       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2222       0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:2680       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:18400      0.0.0.0:*    users:(("python",pid=3006015,fd=13))                       
+LISTEN 0      256             [::]:44959         [::]:*                                                               
+LISTEN 0      128            [::1]:8843          [::]:*                                                               
+LISTEN 0      128            [::1]:8880          [::]:*                                                               
+LISTEN 0      256             [::]:5355          [::]:*                                                               
+LISTEN 0      50                 *:8080             *:*                                                               
+LISTEN 0      128             [::]:7011          [::]:*                                                               
+LISTEN 0      128             [::]:7004          [::]:*                                                               
+LISTEN 0      128            [::1]:2222          [::]:*                                                               
+LISTEN 0      128            [::1]:2490          [::]:*                                                               
+LISTEN 0      256             [::]:111           [::]:*                                                               
+LISTEN 0      128             [::]:22            [::]:*                                                               
+LISTEN 0      100             [::]:4000          [::]:*
+SS_LTN_GLOBAL_END_END
+{"candidate_count": 2, "event": "observation_summary", "listen_8765_count_end": 1, "listen_8765_count_start": 1, "max_poll_gap_seconds": 5.105984538, "measurement_complete": false, "missing": {"crew_done": true, "selected_working_run": false, "terminal_event": true}, "observation_elapsed_seconds": 901.75111726, "observation_ended_at": "2026-08-25T05:14:58.898704321Z", "observation_started_at": "2026-08-25T04:59:57.147587061Z", "observer_at": "2026-08-25T05:14:58.898704321Z", "poll_count": 3391, "poll_interval_seconds": 0.1, "selected_run": "r-20260825T051116083921-merged-suite-gate", "watcher_live_at_end": true, "watcher_live_at_start": true, "watcher_pid": 4045514, "watcher_pid_listen_count_end": 0, "watcher_pid_listen_count_start": 0}
+{"event": "terminal_follow_start", "observer_at": "2026-08-25T05:15:37.721566453Z", "run_id": "r-20260825T051116083921-merged-suite-gate", "started_at": "2026-08-25T05:15:37.721540711Z", "timeout_seconds": 240.0}
+{"event": "terminal_event_observed_follow", "observer_at": "2026-08-25T05:17:18.655928752Z", "run_id": "r-20260825T051116083921-merged-suite-gate", "stream_size_bytes": 127973, "terminal_event_at": "2026-08-25T05:17:18.645734652Z", "terminal_event_stream_mtime_ns": 1787635038645734652, "terminal_event_type": "turn.completed"}
+{"elapsed_seconds": 358, "event": "crew_first_done_follow", "last_activity": "2026-08-25T05:17:18Z", "observer_at": "2026-08-25T05:17:18.655992874Z", "request_at": "2026-08-25T05:17:17.857017625Z", "response_at": "2026-08-25T05:17:18.655497577Z", "run_id": "r-20260825T051116083921-merged-suite-gate"}
+SS_LTN_TERMINAL_END_BEGIN
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                                     
+LISTEN 0      256    127.0.0.53%lo:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:62656      0.0.0.0:*    users:(("srun",pid=4075763,fd=13))                         
+LISTEN 0      256          0.0.0.0:62653      0.0.0.0:*    users:(("srun",pid=4075770,fd=3),("srun",pid=4075763,fd=3))
+LISTEN 0      256          0.0.0.0:62654      0.0.0.0:*    users:(("srun",pid=4075763,fd=4))                          
+LISTEN 0      256          0.0.0.0:62655      0.0.0.0:*    users:(("srun",pid=4075763,fd=10))                         
+LISTEN 0      256          0.0.0.0:61523      0.0.0.0:*    users:(("srun",pid=974337,fd=3),("srun",pid=974335,fd=3))  
+LISTEN 0      256          0.0.0.0:61524      0.0.0.0:*    users:(("srun",pid=974335,fd=4))                           
+LISTEN 0      256          0.0.0.0:61525      0.0.0.0:*    users:(("srun",pid=974335,fd=10))                          
+LISTEN 0      256          0.0.0.0:61526      0.0.0.0:*    users:(("srun",pid=974335,fd=13))                          
+LISTEN 0      256          0.0.0.0:60621      0.0.0.0:*    users:(("srun",pid=3914643,fd=3),("srun",pid=3914640,fd=3))
+LISTEN 0      256          0.0.0.0:60622      0.0.0.0:*    users:(("srun",pid=3914640,fd=4))                          
+LISTEN 0      256          0.0.0.0:60623      0.0.0.0:*    users:(("srun",pid=3914640,fd=10))                         
+LISTEN 0      256          0.0.0.0:60624      0.0.0.0:*    users:(("srun",pid=3914640,fd=13))                         
+LISTEN 0      256          0.0.0.0:60259      0.0.0.0:*    users:(("srun",pid=4075772,fd=3),("srun",pid=4075766,fd=3))
+LISTEN 0      256          0.0.0.0:60260      0.0.0.0:*    users:(("srun",pid=4075766,fd=4))                          
+LISTEN 0      256          0.0.0.0:60261      0.0.0.0:*    users:(("srun",pid=4075766,fd=10))                         
+LISTEN 0      256          0.0.0.0:60262      0.0.0.0:*    users:(("srun",pid=4075766,fd=13))                         
+LISTEN 0      256          0.0.0.0:60273      0.0.0.0:*    users:(("srun",pid=981039,fd=3),("srun",pid=981037,fd=3))  
+LISTEN 0      256          0.0.0.0:60274      0.0.0.0:*    users:(("srun",pid=981037,fd=4))                           
+LISTEN 0      256          0.0.0.0:60275      0.0.0.0:*    users:(("srun",pid=981037,fd=10))                          
+LISTEN 0      256          0.0.0.0:60276      0.0.0.0:*    users:(("srun",pid=981037,fd=13))                          
+LISTEN 0      64         127.0.0.1:36231      0.0.0.0:*                                                               
+LISTEN 0      5          127.0.0.1:34989      0.0.0.0:*    users:(("python",pid=4080741,fd=15))                       
+LISTEN 0      256          0.0.0.0:52433      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:26004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25004      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:25011      0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:27182      0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:28896      0.0.0.0:*                                                               
+LISTEN 0      256       127.0.0.54:53         0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:5355       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20000      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:20001      0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7011       0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:7004       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:6818       0.0.0.0:*                                                               
+LISTEN 0      64         127.0.0.1:21702      0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:1191       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:111        0.0.0.0:*                                                               
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*                                                               
+LISTEN 0      100          0.0.0.0:4000       0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:23792      0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8843       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:8880       0.0.0.0:*                                                               
+LISTEN 0      5          127.0.0.1:8765       0.0.0.0:*    users:(("reckon",pid=3004165,fd=5))                        
+LISTEN 0      100        127.0.0.1:12011      0.0.0.0:*                                                               
+LISTEN 0      100        127.0.0.1:12004      0.0.0.0:*                                                               
+LISTEN 0      256        127.0.0.1:199        0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2490       0.0.0.0:*                                                               
+LISTEN 0      128        127.0.0.1:2222       0.0.0.0:*                                                               
+LISTEN 0      200        127.0.0.1:2680       0.0.0.0:*                                                               
+LISTEN 0      256          0.0.0.0:18400      0.0.0.0:*    users:(("python",pid=3006015,fd=13))                       
+LISTEN 0      256             [::]:44959         [::]:*                                                               
+LISTEN 0      128            [::1]:8843          [::]:*                                                               
+LISTEN 0      128            [::1]:8880          [::]:*                                                               
+LISTEN 0      256             [::]:5355          [::]:*                                                               
+LISTEN 0      50                 *:8080             *:*                                                               
+LISTEN 0      128             [::]:7011          [::]:*                                                               
+LISTEN 0      128             [::]:7004          [::]:*                                                               
+LISTEN 0      128            [::1]:2222          [::]:*                                                               
+LISTEN 0      128            [::1]:2490          [::]:*                                                               
+LISTEN 0      256             [::]:111           [::]:*                                                               
+LISTEN 0      128             [::]:22            [::]:*                                                               
+LISTEN 0      100             [::]:4000          [::]:*
+SS_LTN_TERMINAL_END_END
+{"crew_done_observed": true, "crew_first_done_at": "2026-08-25T05:17:18.655497577Z", "done_latency_from_terminal_event_seconds": 0.009762925, "elapsed_seconds": 100.934470144, "ended_at": "2026-08-25T05:17:18.656010855Z", "event": "terminal_follow_summary", "listen_8765_count": 1, "max_poll_gap_seconds": 1.726459855, "observer_at": "2026-08-25T05:17:18.656010855Z", "poll_count": 390, "run_id": "r-20260825T051116083921-merged-suite-gate", "started_at": "2026-08-25T05:15:37.721540711Z", "stream_size_bytes": 127973, "terminal_event_at": "2026-08-25T05:17:18.645734652Z", "terminal_event_stream_mtime_ns": 1787635038645734652, "terminal_event_type": "turn.completed", "terminal_observed": true, "watcher_live": true, "watcher_pid": 4045514, "watcher_pid_listen_count": 0}
