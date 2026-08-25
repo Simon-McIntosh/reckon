@@ -1,1 +1,62 @@
 /* Surface owner: sprints. */
+.r-sprint-surface { min-width: 0; overflow-x: clip; }
+.r-sprint-surface .r-sp-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
+.r-sprint-surface .r-sp-head h1 { margin: 3px 0 0; font-size: 26px; }
+.r-sprint-tabs { display: flex; padding: 3px; border: 1px solid var(--hair); border-radius: 8px; background: var(--bg-2); }
+.r-sprint-tabs button, .r-horizon button { border: 0; border-radius: 5px; padding: 7px 13px; background: transparent; color: var(--muted); cursor: pointer; }
+.r-sprint-tabs button[aria-selected="true"], .r-horizon button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.r-sprint-overview { border: 1px solid var(--hair); border-radius: 12px; background: #fff; padding: 16px; min-width: 0; }
+.r-overview-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; color: var(--ink-2); font-size: 12px; }
+.r-horizon { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: var(--bg-2); font-family: var(--mono); }
+.r-time-axis, .r-timeline-row { display: grid; grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr); gap: 12px; }
+.r-time-axis > div { position: relative; height: 24px; border-bottom: 1px solid var(--hair); }
+.r-time-axis i { position: absolute; bottom: -1px; height: 7px; border-left: 1px solid var(--hair); font-style: normal; }
+.r-time-axis b { position: absolute; bottom: 9px; transform: translateX(-50%); white-space: nowrap; font: 10px var(--mono); color: var(--muted); }
+.r-folded-band { margin: 12px 0; padding: 9px 12px; border-radius: 7px; background: var(--bg-2); color: var(--muted); font-size: 12px; }
+.r-folded-band strong { color: var(--ink); }
+.r-timeline-row { align-items: center; min-height: 48px; border-bottom: 1px solid var(--hair); }
+.r-timeline-row > a { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-width: 0; color: var(--ink); text-decoration: none; }
+.r-timeline-row > a strong { font: 600 12px var(--mono); }
+.r-timeline-row > a span { flex: 1 1 100%; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.r-timeline-row em { padding: 2px 5px; border-radius: 3px; background: var(--accent-2, #fff3e7); color: var(--accent); font: normal 9px var(--mono); text-transform: uppercase; }
+.r-timeline-row em.focus { background: var(--bg-2); color: var(--ink-2); }
+.r-timeline-track { position: relative; height: 26px; border-radius: 5px; background: linear-gradient(90deg, transparent 24.8%, var(--hair) 25%, transparent 25.2%, transparent 49.8%, var(--hair) 50%, transparent 50.2%, transparent 74.8%, var(--hair) 75%, transparent 75.2%); }
+.r-sprint-mark { position: absolute; top: 4px; height: 18px; min-width: 4px; overflow: hidden; border-radius: 4px; background: var(--warn); color: #fff; text-decoration: none; }
+.r-sprint-mark.active { background: var(--accent); }
+.r-sprint-mark.shipped, .r-sprint-mark.done { background: var(--good); }
+.r-sprint-mark span { display: block; padding: 2px 5px; overflow: hidden; font: 9px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.r-sprint-legend { display: flex; flex-wrap: wrap; gap: 14px; padding-top: 14px; color: var(--muted); font: 10px var(--mono); }
+.r-sprint-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.r-sprint-legend i { width: 9px; height: 9px; border-radius: 2px; background: var(--warn); }
+.r-sprint-legend i.active { background: var(--accent); }
+.r-sprint-legend i.shipped { background: var(--good); }
+.r-sprint-legend b { padding: 2px 4px; background: var(--bg-2); color: var(--ink-2); font-weight: 400; }
+.r-sprint-board .r-sp-switcher { flex-wrap: wrap; }
+.r-sprint-board .gen-prompt { margin-left: auto; }
+.r-sprint-board .gen-prompt:disabled { opacity: .45; cursor: not-allowed; }
+.r-needs-you { margin-bottom: 18px; padding: 14px 16px; border: 1px solid var(--warn); border-radius: 10px; background: var(--warn-2); }
+.r-needs-you h2 { margin: 0 0 8px; font-size: 14px; }
+.r-needs-you h2 span { margin-left: 5px; font: 11px var(--mono); }
+.r-needs-you ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.r-needs-you li { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.r-needs-you li span { color: var(--muted); }
+.r-sprint-surface .r-kanban { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.r-sprint-surface .r-kcard { cursor: default; }
+.r-card-title { color: var(--ink); font-size: 13px; font-weight: 600; line-height: 1.35; text-decoration: none; }
+.r-card-description { margin: 5px 0 8px; overflow: hidden; color: var(--ink-2); font-size: 12px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.r-card-progress { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 10px var(--mono); text-decoration: none; }
+.r-card-progress .bar { flex: 1; height: 4px; overflow: hidden; border-radius: 3px; background: var(--bg-3); }
+.r-card-progress .bar i { display: block; height: 100%; background: var(--accent); }
+.r-card-flag { display: inline-block; max-width: 100%; margin-top: 8px; padding: 3px 6px; overflow: hidden; border-radius: 4px; background: var(--bg-2); color: var(--ink-2); font: 10px var(--mono); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.r-card-contract { margin-top: 8px; border-top: 1px solid var(--hair); padding-top: 6px; color: var(--muted); font-size: 11px; }
+.r-card-contract summary { cursor: pointer; font-family: var(--mono); }
+.r-card-contract dl { margin: 8px 0 0; }
+.r-card-contract dt { color: var(--ink); font-weight: 600; }
+.r-card-contract dd { margin: 2px 0 7px; color: var(--ink-2); line-height: 1.4; }
+.r-empty-column { padding: 20px 0; color: var(--muted); font-size: 12px; text-align: center; }
+@media (max-width: 760px) {
+  .r-overview-controls, .r-sprint-surface .r-sp-head { align-items: stretch; flex-direction: column; }
+  .r-time-axis, .r-timeline-row { grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr); }
+  .r-sprint-surface .r-kanban { grid-template-columns: 1fr; }
+  .r-sprint-board .gen-prompt { margin-left: 0; }
+}
