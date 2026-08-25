@@ -3221,7 +3221,7 @@ def test_shadow_explicit_effort_override_is_used_and_recorded(home, repo) -> Non
         candidate_backend="candidate",
         config=_candidate_config_with_distinct_agent(),
         repo=repo,
-        agent_overrides={"effort"},
+        configuration_overrides={"effort"},
         launcher=lambda *args, **kwargs: 0,
     )
 
