@@ -676,6 +676,75 @@ def watch_state(project: str) -> dict[str, Any]:
     return {"arming_line": arming_line, "watcher_live": False, "watcher": {}}
 
 
+def project_watch_visibility(project: str) -> dict[str, Any]:
+    """Describe whether a project's pointers have a live watcher."""
+    arming_line = _watch_arming_line(project)
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            seat_held = True
+            registration = _read_watch_record(handle)
+        else:
+            seat_held = False
+            registration = _read_watch_record(handle)
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    pid = registration.get("pid")
+    expected_start = registration.get("pid_start_time")
+    actual_start = _process_start_time(pid)
+    registering_process_alive = process_alive(pid)
+    if expected_start is not None:
+        registering_process_alive = bool(
+            registering_process_alive is True and actual_start == expected_start
+        )
+
+    observer_alive: bool | None = None
+    if "parent_pid" in registration:
+        parent_pid = registration.get("parent_pid")
+        try:
+            parent_pid_value = int(parent_pid)
+        except (TypeError, ValueError):
+            parent_pid_value = 0
+        observer_alive = bool(
+            process_alive(parent_pid) is True
+            and _process_start_time(parent_pid)
+            == registration.get("parent_start_time")
+            and parent_pid_value > 1
+        )
+
+    pointer_count = len(list_live(project=project))
+    watcher_live = bool(
+        seat_held
+        and registering_process_alive is True
+        and observer_alive is not False
+    )
+    watcher_required = pointer_count > 0
+    unwatched = watcher_required and not watcher_live
+    if unwatched:
+        status = "unwatched"
+    elif watcher_live:
+        status = "watched"
+    else:
+        status = "idle"
+    return {
+        "project": project,
+        "status": status,
+        "seat_held": seat_held,
+        "pid": pid,
+        "armed_at": registration.get("started_at"),
+        "process_alive": registering_process_alive,
+        "observer_alive": observer_alive,
+        "watcher_live": watcher_live,
+        "watcher_required": watcher_required,
+        "unwatched": unwatched,
+        "pointer_count": pointer_count,
+        "arming_line": arming_line,
+    }
+
+
 def _watch_arming_line(project: str) -> str:
     """Return the exact shell-safe command a dispatch payload carries."""
     return f"reckon crew watch --project {shlex.quote(project)}"

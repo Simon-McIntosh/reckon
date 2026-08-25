@@ -960,7 +960,10 @@ def crew_unwatch(project, pretty):
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_list(project, phase, pretty):
     """List matching live run pointers, so a fresh session can pick them up."""
+    from reckon.crew.runs import project_watch_visibility
+
     crew_module, _ = _crew_modules()
+    project_records = crew_module.list_live(project=project)
     runs = [
         {
             "run_id": record.get("run_id"),
@@ -973,9 +976,24 @@ def crew_list(project, phase, pretty):
             "worktree": record.get("worktree"),
             "manifest_path": record.get("manifest_path"),
         }
-        for record in crew_module.list_live(project=project, phase=phase)
+        for record in project_records
+        if phase is None or str(record.get("phase") or "") == phase
     ]
-    _emit({"ok": True, "runs": runs}, pretty)
+    payload = {"ok": True, "runs": runs}
+    if project is not None:
+        payload["watcher"] = project_watch_visibility(project)
+    else:
+        projects = sorted(
+            {
+                str(record.get("project") or "")
+                for record in project_records
+                if record.get("project")
+            }
+        )
+        payload["watchers"] = [
+            project_watch_visibility(project_name) for project_name in projects
+        ]
+    _emit(payload, pretty)
 
 
 @crew.command(name="drain")
