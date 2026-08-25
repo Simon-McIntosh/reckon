@@ -53,9 +53,16 @@ def _budget_timing(
     """Measure one live run against its declared allowance without mutating it."""
     node = record.get("node") or {}
     try:
-        budget_seconds = parse_duration(str(node.get("time_budget") or ""))
+        if "attempt_budget_seconds" in record:
+            budget_seconds = int(record["attempt_budget_seconds"])
+        else:
+            budget_seconds = parse_duration(str(node.get("time_budget") or ""))
         started = datetime.fromisoformat(
-            str(record.get("created_at") or "").replace("Z", "+00:00")
+            str(
+                record.get("attempt_started_at")
+                or record.get("created_at")
+                or ""
+            ).replace("Z", "+00:00")
         )
     except (CrewError, TypeError, ValueError):
         return {
@@ -160,6 +167,19 @@ def classify_pointer(
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
+    if (
+        manifest_status == "blocked"
+        and alive is True
+        and log.is_file()
+        and manifest.is_file()
+        and log.stat().st_mtime_ns > manifest.stat().st_mtime_ns
+    ):
+        manifest_present = False
+        manifest_data = {}
+        manifest_status = ""
+        manifest_commits = []
+        manifest_blockers = []
+        needs_help = None
     terminal = phase in ("complete", "failed")
     terminal_at = None
     terminal_age_seconds = None
