@@ -50,11 +50,15 @@ def test_topbar_is_one_row_with_four_within_project_tabs() -> None:
     assert [f"\n          {label}\n" in source for label in ("Plans", "Sprints", "Graph", "Crew")] == [True] * 4
 
 
-def test_project_dropdown_uses_only_shown_projects_and_offers_configure() -> None:
+def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_entry() -> None:
     projects = [
         {"project": "alpha", "plans_count": 4},
         {"project": "beta", "plans_count": 7},
     ]
+    mounted = _evaluate(
+        [(SHELL, "manageableProjectRows")],
+        f"manageableProjectRows({json.dumps(projects)}).map(project => project.project)",
+    )
     shown = _evaluate(
         [
             (SHELL, "mountedProjectRows"),
@@ -66,8 +70,12 @@ def test_project_dropdown_uses_only_shown_projects_and_offers_configure() -> Non
     )
     source = _function_source(SHELL, "TopBar")
 
+    assert mounted == ["alpha", "beta"]
     assert shown == ["alpha"]
-    assert "visibleProjects.map(project" in source
+    assert "manageableProjects.map(project" in source
+    assert "{visibleProjects.map(project => (" not in source
+    assert "onClick={() => navProject(project.project)}" in source
+    assert "visibleProjectNames.has(project.project)" in source
     assert "project.plans_count" in source
     assert "project.live_count" in source
     assert "Configure visibility…" in source
