@@ -119,33 +119,70 @@ function GateTable({ gates }) {
 
 function PlanInFlightBand({ runs }) {
   if (!runs.length) return null;
+
+  const durationSeconds = (value) => {
+    if (typeof value === "number") return value;
+    const match = String(value || "").trim().match(/^(\d+(?:\.\d+)?)\s*([smh])$/i);
+    if (!match) return null;
+    return Number(match[1]) * ({ s: 1, m: 60, h: 3600 })[match[2].toLowerCase()];
+  };
+  const durationLabel = (seconds) => {
+    if (seconds == null) return "unknown";
+    if (seconds >= 3600) return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+    if (seconds >= 60) return `${Math.floor(seconds / 60)}m`;
+    return `${Math.floor(seconds)}s`;
+  };
+  const copyRunCommand = (run) => {
+    const command = `reckon crew observe --run ${run.run_id}`;
+    navigator.clipboard?.writeText(command);
+    if (window.flashSaved) window.flashSaved("run command copied");
+  };
+  const renderRun = (run) => {
+    const elapsed = run.elapsed_seconds;
+    const budget = durationSeconds(run.time_budget || run.budget_ceiling);
+    const progress = budget && elapsed != null ? Math.min(100, Math.round((elapsed / budget) * 100)) : 0;
+    return (
+      <li className="r-inflight-run" style={{ display: "grid", gridTemplateColumns: "minmax(260px, 1fr) minmax(170px, .45fr) auto auto", alignItems: "center", gap: 14 }} key={`${run.member || "member"}:${run.section || "plan"}:${run.created_at || run.elapsed_seconds || "active"}`}>
+        <div className="r-inflight-identity" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 10px" }}>
+          <strong>{run.backend || run.harness || "harness"}</strong>
+          {run.model && <span>{run.model}</span>}
+          <span>{run.role || "worker"} · {run.effort || "default effort"}</span>
+          <span>@{run.member || "unassigned"}</span>
+          <span>{run.section || "whole plan"}</span>
+        </div>
+        <div className="r-inflight-progress" style={{ display: "grid", gap: 4, color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 10 }}>
+          <span>{durationLabel(elapsed)} / {budget == null ? (run.time_budget || "budget unknown") : durationLabel(budget)}</span>
+          <span className="r-inflight-track" aria-label={`${progress}% of time budget`} style={{ overflow: "hidden", height: 4, borderRadius: 2, background: "var(--border)" }}>
+            <span style={{ display: "block", width: `${progress}%`, height: "100%", background: "var(--accent)" }} />
+          </span>
+        </div>
+        <span className={`r-inflight-phase ${run.phase || "unknown"}`} style={{ color: run.phase === "working" ? "var(--accent)" : "var(--muted)", fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase" }}>{run.phase || "unknown"}</span>
+        <button className="btn ghost r-inflight-action" style={{ whiteSpace: "nowrap" }} onClick={() => copyRunCommand(run)}>Copy run command</button>
+      </li>
+    );
+  };
+
   return (
-    <aside
-      className="r-inflight-band"
-      role="status"
-      aria-label="Work in flight"
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: 12,
-        marginBottom: 18,
-        padding: "9px 12px",
-        borderLeft: "3px solid var(--accent)",
-        background: "var(--accent-2)",
-        fontSize: 12,
-      }}
-    >
-      <strong style={{ whiteSpace: "nowrap" }}>In flight</strong>
-      <ul style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", margin: 0, paddingLeft: 18 }}>
+    <aside className="r-inflight-band" role="status" aria-label="Work in flight" style={{ marginBottom: 18, padding: "12px 14px", border: "1px solid var(--border)", borderLeft: "3px solid var(--accent)", background: "var(--accent-2)", fontSize: 12 }}>
+      <div className="r-inflight-heading" style={{ marginBottom: 8, color: "var(--muted)", fontSize: 10, fontWeight: 750, letterSpacing: ".12em", textTransform: "uppercase" }}>In flight</div>
+      <ul className="r-inflight-runs" style={{ display: "grid", gap: 9, margin: 0, padding: 0, listStyle: "none" }}>
         {runs.map(run => (
-          <li key={run.run_id}>
-            <code>{run.run_id || "run"}</code>
-            {" · "}{run.member || "unassigned"}
-            {" · "}{run.section || "whole plan"}
-          </li>
+          renderRun(run)
         ))}
       </ul>
     </aside>
+  );
+}
+
+function ReaderSourceFailure({ source, status, missing, onRetry }) {
+  return (
+    <div className="r-reader-source-failure" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--surface)" }}>
+      <div style={{ display: "grid", gap: 3 }}>
+        <strong>Partial plan — {source} failed</strong>
+        <span style={{ color: "var(--muted)", fontSize: 12 }}>Status: {status}. Missing: {missing.join(", ")}.</span>
+      </div>
+      <button className="btn ghost" onClick={onRetry}>Retry</button>
+    </div>
   );
 }
 
@@ -188,6 +225,8 @@ function Plan({ slug, onNav }) {
   // fetched from /plan/<project>/<slug> when the doc opens.
   const [decs, setDecs] = useState([]);
   const [fullState, setFullState] = useState(null);
+  const [stateFailure, setStateFailure] = useState(null);
+  const [stateRetry, setStateRetry] = useState(0);
   const [showPrompt, setShowPrompt] = useState(false);
   const [composingAt, setComposingAt] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
@@ -195,17 +234,23 @@ function Plan({ slug, onNav }) {
   // ── Fetch HTML plan body ────────────────────────────────────────────────
   const [planHtml, setPlanHtml] = useState(null);
   const [htmlReady, setHtmlReady] = useState(false);
+  const [htmlFailure, setHtmlFailure] = useState(null);
+  const [htmlRetry, setHtmlRetry] = useState(0);
   const htmlRef = useRef(null);
 
   useEffect(() => {
     setHtmlReady(false);
     setPlanHtml(null);
+    setHtmlFailure(null);
     if (!project) { setHtmlReady(true); return; }
 
     // Use plan's href (may include subdir e.g. "curated/slug") if available
     const href = PG.href || slug;
     fetch(`/${project}/${href}.html`, { cache: "no-store" })
-      .then(r => r.ok ? r.text() : null)
+      .then(r => {
+        if (!r.ok) throw { responseStatus: `HTTP ${r.status}` };
+        return r.text();
+      })
       .then(html => {
         if (!html) { setHtmlReady(true); return; }
         const doc = new DOMParser().parseFromString(html, "text/html");
@@ -236,18 +281,25 @@ function Plan({ slug, onNav }) {
         setPlanHtml(article.innerHTML);
         setHtmlReady(true);
       })
-      .catch(() => setHtmlReady(true));
-  }, [project, slug]);
+      .catch(error => {
+        setHtmlFailure({ status: error?.responseStatus || "network error" });
+        setHtmlReady(true);
+      });
+  }, [project, slug, htmlRetry]);
 
   // ── Fetch full doc state (decisions, followups) ─────────────────────────
   useEffect(() => {
     setFullState(null);
     setDecs([]);
+    setStateFailure(null);
     if (!project) return;
     const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[PG.type || "plan"];
     const statePath = `${stateRoot}/${PG.slug}`;
     fetch(`/plan/${project}/${statePath}`, { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) throw { responseStatus: `HTTP ${r.status}` };
+        return r.json();
+      })
       .then(rec => {
         if (!rec) return;
         setFullState(rec);
@@ -270,8 +322,8 @@ function Plan({ slug, onNav }) {
             : d;
         }));
       })
-      .catch(() => {});
-  }, [project, slug, PG.type]);
+      .catch(error => setStateFailure({ status: error?.responseStatus || "network error" }));
+  }, [project, slug, PG.type, stateRetry]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
@@ -306,6 +358,7 @@ function Plan({ slug, onNav }) {
   const [sel, clearSel] = window.reckon.useSelectionToComment(articleRef, slug);
 
   const author = window.STATE?.projects?.[0]?.owner || "user";
+  const loadedPlanVersion = fullState?.version ?? P.version ?? "unavailable";
 
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
@@ -420,6 +473,22 @@ function Plan({ slug, onNav }) {
     <div className="r-page">
       <article className="r-reading" ref={articleRef}>
           <PlanInFlightBand runs={liveRuns} />
+          {htmlFailure && (
+            <ReaderSourceFailure
+              source="authored plan HTML"
+              status={htmlFailure.status}
+              missing={["authored body", "authored followups", "authored comments"]}
+              onRetry={() => setHtmlRetry(value => value + 1)}
+            />
+          )}
+          {stateFailure && (
+            <ReaderSourceFailure
+              source="structured plan state"
+              status={stateFailure.status}
+              missing={["interactive decisions", "evidence gates", "structured followups", "loaded plan version"]}
+              onRetry={() => setStateRetry(value => value + 1)}
+            />
+          )}
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
@@ -557,9 +626,11 @@ function Plan({ slug, onNav }) {
       {showPrompt && (
         <window.reckon.PromptModal
           planSlug={slug}
+          planVersion={loadedPlanVersion}
           initialPrompt={
-            window.buildFleetPrompt
-              ? window.buildFleetPrompt(
+            window.reckon.withHandoffProvenance(
+              window.buildFleetPrompt
+                ? window.buildFleetPrompt(
                   [Object.assign({}, P, {
                     decisions: decs,
                     followups: fullState?.followups || [],
@@ -569,8 +640,10 @@ function Plan({ slug, onNav }) {
                   // Single requested item → the builder emits fleet framing for
                   // this one plan; its dependencies are called out softly (never
                   // auto-dispatched). Same builder/format as the sprint surface.
-                )
-              : "(prompts.js not loaded)"
+                  )
+                : "(prompts.js not loaded)",
+              loadedPlanVersion
+            )
           }
           onClose={() => setShowPrompt(false)}
         />

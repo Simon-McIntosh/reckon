@@ -115,7 +115,12 @@ Recommended skill
 
 // ─── Prompt modal: EDITABLE textarea, auto-close on Copy ────────────────
 
-function PromptModal({ initialPrompt, planSlug, onClose }) {
+function withHandoffProvenance(prompt, planVersion) {
+  const version = planVersion == null || planVersion === "" ? "unavailable" : String(planVersion);
+  return `${String(prompt || "").trimEnd()}\n\nHandoff provenance\n  Built from live plan HTML and project discovery.\n  Loaded plan version: ${version}\n`;
+}
+
+function PromptModal({ initialPrompt, planSlug, planVersion, onClose }) {
   const [text, setText] = useState(initialPrompt);
   const textareaRef = useRef(null);
 
@@ -152,7 +157,7 @@ function PromptModal({ initialPrompt, planSlug, onClose }) {
         />
         <div className="foot">
           <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 11 }}>
-            built from <code>{planSlug}.json</code> · {text.length} chars
+            built from live plan HTML + project discovery · plan version <code>{planVersion ?? "unavailable"}</code> · {text.length} chars
           </span>
           <span style={{ flex: 1 }}></span>
           <button className="btn primary" onClick={copy}>Copy to clipboard</button>
@@ -349,7 +354,7 @@ function SectionComments({ comments }) {
 // window.planUtils is kept as a backward-compat alias for shell.jsx / plan.jsx (other agents' files).
 const _reckonUtils = {
   fmtPct, whenShort, planSave, planLoad,
-  buildHandoffPrompt,
+  buildHandoffPrompt, withHandoffProvenance,
   PromptModal, CommentPopover, CommentReviewPopover, useSelectionToComment, SectionComments,
 };
 
@@ -357,5 +362,5 @@ Object.assign(window, {
   reckon:    _reckonUtils,
   planUtils: _reckonUtils,  // backward-compat alias
   // Top-level window properties for cross-Babel-script access
-  planSave, planLoad, PromptModal, CommentPopover, CommentReviewPopover, useSelectionToComment, SectionComments,
+  planSave, planLoad, withHandoffProvenance, PromptModal, CommentPopover, CommentReviewPopover, useSelectionToComment, SectionComments,
 });
