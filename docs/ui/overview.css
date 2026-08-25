@@ -1,46 +1,75 @@
 /* Surface owner: overview. */
 
+.r-overview-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.r-reader-with-attachments > .r-body.r-overview-view {
+  flex: 1;
+  max-width: none;
+  overflow: auto;
+  padding: 20px 26px 40px;
+}
+
 .r-overview-fleet {
   margin-bottom: 24px;
 }
 
 .r-overview-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
+  gap: 0;
   margin-bottom: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--card);
+  background: var(--bg);
   overflow: hidden;
 }
 
-.r-overview-stats > div {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
+.r-overview-stat {
+  min-width: 130px;
   padding: 11px 16px;
   border-right: 1px solid var(--line);
 }
 
-.r-overview-stats > div:last-child {
+.r-overview-stat:last-child {
   border-right: 0;
 }
 
-.r-overview-stats strong {
+.r-overview-stat-label {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.r-overview-stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.r-overview-stat-value strong {
+  color: var(--ink);
   font: 500 20px var(--mono);
 }
 
-.r-overview-stats span {
+.r-overview-stat-value span {
   color: var(--muted);
   font-size: 11.5px;
-  text-transform: capitalize;
 }
 
 .r-overview-blockers {
   margin-bottom: 20px;
 }
 
-.r-overview-blockers h2 {
+.r-overview-blockers h2,
+.r-overview-project-rollup > h2 {
   margin: 0 0 8px;
   color: var(--muted);
   font: 10.5px var(--mono);
@@ -48,31 +77,54 @@
   text-transform: uppercase;
 }
 
+.r-overview-blocker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .r-overview-blockers article {
-  margin-top: 8px;
   padding: 12px 14px;
   border: 1px solid var(--bad);
   border-radius: 8px;
-  background: var(--card);
+  background: var(--bg);
 }
 
 .r-overview-blocker-meta {
   display: flex;
-  gap: 8px;
-  margin-bottom: 7px;
+  align-items: baseline;
+  gap: 9px;
   color: var(--muted);
   font: 11px var(--mono);
 }
 
-.r-overview-blocker-meta span:first-child {
+.r-overview-blocker-id,
+.r-overview-blocker-project {
   padding: 1px 6px;
-  border: 1px solid var(--line-2);
   border-radius: 4px;
+}
+
+.r-overview-blocker-id {
+  background: var(--bad);
+  color: #fff;
+}
+
+.r-overview-blocker-project {
+  border: 1px solid var(--line-2);
   color: var(--ink-2);
 }
 
-.r-overview-blocker-meta span:last-child {
+.r-overview-blocker-owner {
   margin-left: auto;
+  color: var(--faint);
+}
+
+.r-overview-blocker-summary {
+  max-width: 110ch;
+  margin-top: 7px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
 .r-overview-blocker-next {
@@ -95,20 +147,19 @@
 .r-overview-projects {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--card);
+  background: var(--bg);
   overflow: hidden;
 }
 
 .r-overview-project-head,
 .r-overview-project-row {
   display: grid;
-  grid-template-columns: 130px minmax(240px, 1fr) repeat(4, 58px);
+  grid-template-columns: 130px minmax(0, 1fr) 70px 70px 60px 60px;
   gap: 12px;
-  align-items: start;
-  padding: 9px 12px;
 }
 
 .r-overview-project-head {
+  padding: 8px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-2);
   color: var(--faint);
@@ -118,6 +169,8 @@
 }
 
 .r-overview-project-row {
+  align-items: center;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   font: 12px var(--mono);
@@ -127,11 +180,26 @@
   border-bottom: 0;
 }
 
+.r-overview-project-row > strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.r-overview-project-row > span {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
 .r-overview-sprints {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   min-width: 0;
+  color: var(--ink-2);
+  font-family: var(--sans);
+  font-size: 13px;
 }
 
 .r-overview-sprints > a {
@@ -143,7 +211,7 @@
   border-radius: 5px;
   background: var(--bg);
   color: var(--ink-2);
-  font: 11.5px var(--mono);
+  font: inherit;
 }
 
 .r-overview-sprints em {
@@ -175,10 +243,6 @@
 }
 
 @media (max-width: 980px) {
-  .r-overview-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .r-overview-projects {
     overflow-x: auto;
   }
