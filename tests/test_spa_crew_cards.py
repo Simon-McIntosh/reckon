@@ -9,12 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 
 
-def _project_run(run: dict) -> dict:
+def _project_run(run: dict, state: dict | None = None) -> dict:
     source = CREW.read_text(encoding="utf-8")
     helpers = source.split("function CrewRunCard", 1)[0]
     script = f"""
 {helpers}
-console.log(JSON.stringify(crewCardProjection({json.dumps(run)})));
+console.log(JSON.stringify(crewCardProjection({json.dumps(run)}, {json.dumps(state)})));
 """
     result = subprocess.run(
         ["node", "-e", script],
@@ -23,6 +23,40 @@ console.log(JSON.stringify(crewCardProjection({json.dumps(run)})));
         text=True,
     )
     return json.loads(result.stdout)
+
+
+def test_collapsed_card_shows_plan_worker_hours_without_runtime_model_strings() -> None:
+    runtime_strings = ("codex", "gpt-5.6-sol")
+    run = {
+        "run_id": "run-visible",
+        "project": "reckon",
+        "plan": "work",
+        "role": "implement",
+        "backend": runtime_strings[0],
+        "model": runtime_strings[1],
+        "effort": "high",
+    }
+    state = {
+        "project": "reckon",
+        "inventory": [{"slug": "work", "type": "plan", "effort_hours": 3.25}],
+    }
+
+    card = _project_run(run, state)
+    source = CREW.read_text(encoding="utf-8")
+    card_source = source.split("function CrewRunCard", 1)[1]
+    collapsed_source, expanded_source = card_source.split(
+        '<details className="r-crew-connect">', 1
+    )
+    collapsed_face = json.dumps(
+        [card["identity"], card["role"], card["planEffort"], card["phase"]]
+    )
+
+    assert sum(value in collapsed_face for value in runtime_strings) == 0
+    assert card["planEffort"] == "3.25 worker-hours"
+    assert "run.model" not in collapsed_source
+    assert "run.backend" not in collapsed_source
+    assert "run.model" in expanded_source
+    assert "run.backend" in expanded_source
 
 
 def test_long_done_when_is_one_line_without_hiding_phase_or_activity() -> None:

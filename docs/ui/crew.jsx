@@ -49,7 +49,24 @@ function crewGateProgress(run) {
   return { total, completed, current: String(current), verdict: String(verdict) };
 }
 
-function crewCardProjection(run) {
+function crewPlanEffortHours(run, state) {
+  const direct = Number(run.plan_effort_hours ?? run.effort_hours);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+
+  const inventory = Array.isArray(state?.inventory) ? state.inventory : [];
+  const stateProject = state?.project || "";
+  if (run.project && stateProject && run.project !== stateProject) return null;
+  const plan = inventory.find(item => item.slug === run.plan && (item.type || "plan") === "plan");
+  const hours = Number(plan?.effort_hours);
+  return Number.isFinite(hours) && hours > 0 ? hours : null;
+}
+
+function formatCrewPlanEffort(run, state) {
+  const hours = crewPlanEffortHours(run, state);
+  return hours == null ? "worker-hours unavailable" : `${hours} worker-hours`;
+}
+
+function crewCardProjection(run, state) {
   const elapsed = Number(run.elapsed_seconds);
   const budgetSeconds = crewDurationSeconds(run.budget_seconds ?? run.time_budget);
   const budgetRatio = budgetSeconds && Number.isFinite(elapsed)
@@ -57,6 +74,8 @@ function crewCardProjection(run) {
     : 0;
   return {
     identity: run.member || run.run_id || "unassigned",
+    role: run.role || "—",
+    planEffort: formatCrewPlanEffort(run, state),
     phase: run.phase || "idle",
     doneWhen: run.done_when || run.gate || "No done-when recorded.",
     lastActivity: formatCrewActivity(run.last_activity),
@@ -71,7 +90,7 @@ function crewCardProjection(run) {
 }
 
 function CrewRunCard({ run }) {
-  const card = crewCardProjection(run);
+  const card = crewCardProjection(run, window.STATE);
   const concerning = ["asking", "blocked", "failed", "idle", "stalled"].includes(card.phase.toLowerCase());
 
   const copyAttach = () => {
@@ -86,8 +105,8 @@ function CrewRunCard({ run }) {
         <div className="r-crew-identity">
           <span className="r-crew-phase-dot" aria-hidden="true"></span>
           <strong>{card.identity}</strong>
-          <code>{run.model || run.backend || "—"}</code>
-          <span>{run.role || "—"}{run.effort ? ` · ${run.effort}` : ""}</span>
+          <span>{card.role}</span>
+          <span className="r-crew-plan-effort">{card.planEffort}</span>
           <span className="r-crew-phase">{card.phase}</span>
         </div>
         <div className="r-crew-location">
@@ -127,6 +146,9 @@ function CrewRunCard({ run }) {
       <details className="r-crew-connect">
         <summary>Session and attach</summary>
         <div className="r-crew-connect-grid">
+          <span><span className="r-crew-label">backend</span><code>{run.backend || run.harness || "—"}</code></span>
+          <span><span className="r-crew-label">model</span><code>{run.model || "—"}</code></span>
+          <span><span className="r-crew-label">runtime effort</span><code>{run.effort || "—"}</code></span>
           <span><span className="r-crew-label">session</span><code>{card.session}</code></span>
           <span><span className="r-crew-label">host</span><code>{card.host}</code></span>
         </div>
