@@ -540,13 +540,15 @@ def require_plan_section_visible(
             "commit the plan and named section before dispatching"
         )
 
-    working_bytes = resource.path.read_bytes()
-    if working_bytes != blob.stdout:
-        raise PlanVisibilityError(
-            f"plan file {relative_path.as_posix()} differs from base "
-            f"{plan_base!r}; "
-            "commit the plan before dispatching"
-        )
+    head_commit = _base_commit(plan_repo, "HEAD")
+    if commit == head_commit:
+        working_bytes = resource.path.read_bytes()
+        if working_bytes != blob.stdout:
+            raise PlanVisibilityError(
+                f"plan file {relative_path.as_posix()} differs from base "
+                f"{plan_base!r}; "
+                "commit the plan before dispatching"
+            )
     base_html = blob.stdout.decode("utf-8", errors="replace")
     if node.section.strip() and not _contains_plan_section(base_html, node.section):
         raise PlanVisibilityError(
