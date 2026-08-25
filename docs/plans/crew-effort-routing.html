@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="22">
-<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="23">
+<meta name="plan-impl" content="0.75">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
@@ -680,44 +680,17 @@
       why; focused tests cover all three and the full suite is green.</p>
 
     <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
-    <p>
-      The claim relationship is asymmetric, and only one half is right. A shadow
-      correctly does <em>not consume</em> the registry — dispatch reads
-      <code>live_claims = [] if shadow_lineage else …</code>, so a shadow is never
-      refused against live work. But it still <em>publishes</em>: the luna shadow
-      held claims on eight repository paths including <code>reckon/cli.py</code>,
-      and the reader a live dispatch consults (<code>_repository_scope_claims</code>)
-      applies no lineage filter, so those claims are visible to peers. A shadow
-      writes only inside its own worktree and merges nowhere, so nothing it declares
-      can collide with anything.
+    <p class="landed-summary"><span class="badge badge-shipped">→ owned elsewhere 2026-08-25</span>
+      Reallocated to <code>concurrency-and-schedule-visibility</code> §5, which owns the
+      dispatch and scope machinery; this plan owns routing and calibration. The finding:
+      a shadow correctly never consumes the claim registry
+      (<code>live_claims = [] if shadow_lineage else …</code>) but still publishes into
+      the one live dispatch reads (<code>_repository_scope_claims</code> applies no
+      lineage filter), so it advertises claims it can never write. Repair the publishing
+      side, not the consuming side, and assert the admission case directly — nothing has
+      ever exercised it, so pinning current behaviour would freeze an accident. No peer
+      is known to have been blocked; the race first reported was withdrawn at its source.
     </p>
-    <p>
-      <strong>Scope of the evidence, stated precisely:</strong> the asymmetry is
-      verified in code, the consequence is not reproduced. A peer dispatch
-      overlapping <code>reckon/cli.py</code> eighteen seconds after the shadow was
-      <em>admitted</em>, not refused, and the session that first reported a
-      scope-fence race withdrew it — its run stopped voluntarily and wrote nothing,
-      and its supporting <code>live_conflicts</code> reading came from a scopes view
-      queried without candidate nodes, which returns empty however many claims
-      exist. So no peer is known to have been blocked. What remains is a latent
-      defect worth closing before shadowing runs at scale: the point of sampled
-      shadows is to run <em>alongside</em> live work, and a measurement that
-      advertises a lock it cannot need will eventually refuse or deter a peer that
-      could have proceeded.
-    </p>
-    <p>
-      <strong>Design (fixed):</strong> make the publishing side match the consuming
-      side that is already correct. A shadow run's pointer keeps its write paths for
-      provenance, but <code>_repository_scope_claims</code> excludes shadow-lineage
-      pointers, so a shadow neither takes a claim nor is blocked by one.
-    </p>
-    <p><strong>Done-when:</strong> a live dispatch against paths a running shadow
-      declares is admitted rather than refused — asserted directly, since this is
-      the behaviour that was never reproduced; a shadow against paths a live run
-      holds is likewise admitted; two live runs on the same path are still refused
-      with the unchanged conflict message; <code>crew</code> scope reads still show
-      the shadow's paths labelled as shadow provenance; focused tests cover each and
-      the full suite is green.</p>
 
     <h3 id="s11.3">§11.3 — Ledger gate counts pool shadow rows with live</h3>
     <p>
@@ -821,6 +794,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260825-authority" data-who="reckon-ship" data-when="2026-08-25T08:35:00+00:00">
     <div class="r-comment-body">shadow-authority-at-base landed — run r-20260825T082306311144, gate passed, commit cc4c686 merged as 5ccaa44; focused gate 4/4, full suite 2372/2372, 523 worker-seconds at sol/medium, 149 insertions across exactly the two authorised paths. The working-tree equality check now runs only when the resolved plan base equals the plan repository head at dispatch; a historical shadow base skips equality alone and keeps blob readability and section validation, and a live dispatch with a dirty plan is refused with its production error string unchanged. Verified beyond the suite: a luna shadow of the r-20260825T072832542100 primary, whose §8 section has since been collapsed, now resolves (ok, lineage kind shadow, base 14cd488) where it was refused plan-unavailable before the fix — the measurement path is usable.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260825-s112-realloc" data-who="reckon-ship" data-when="2026-08-25T08:52:00+00:00">
+    <div class="r-comment-body">§11.2 reallocated to concurrency-and-schedule-visibility §5 by agreement with the session already running shadow-claims-inbound-asymmetry against it — that plan owns dispatch and scope machinery, this one owns routing and calibration, and two live plans describing one fix is the failure the allocation rule exists to prevent. Raised while their node was mid-flight rather than after it landed. Two points carried across: repair the publishing side (_repository_scope_claims applying no lineage filter) rather than adding a second inbound special case, which makes the two halves agree with one change; and assert the admission case directly in a test, because nothing has ever exercised it and pinning current behaviour would freeze an accident. Their node was cut after the race framing was withdrawn, so it targets the asymmetry rather than the retracted incident. impl re-scored to 6 of 8 executable sections with §11.1 and §11.3 remaining.</div>
 </div>
 </section>
 </main>
