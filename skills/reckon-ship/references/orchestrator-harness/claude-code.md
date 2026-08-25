@@ -24,18 +24,23 @@ config.
 ## Arming the fleet watch after dispatch
 
 Every successful dispatch returns `watch.arming_line` and
-`watch.watcher_live`. When the latter is false, pass the returned line to
-`Bash` with `run_in_background: true`; when it is true, launch nothing. The
-background command exiting is the wake event this harness already observes, so
-the portable watcher must stay harness-owned rather than detaching itself.
+`watch.watcher_live`. When the latter is false, arm the returned line as a
+harness `Monitor`; when it is true, attach to the monitor the CLI lists for that
+project. The seat holder's stdout is the monitor signal: each line becomes a
+chat notification, so a blocked or terminal transition wakes the orchestrator
+while the watch continues to hold the project seat until the fleet drains.
 
-A settings automation uses the same two-field contract: a `PostToolUse` hook
-matching `Bash` inspects successful `reckon crew dispatch` JSON, ignores results
-whose `watch.watcher_live` is true, and submits the exact `watch.arming_line` as
-a background `Bash` call. The hook does not reconstruct the command from the
-dispatch arguments and does not create one watcher per run. Keep this automation
-in Claude Code settings; it depends on this host's wake-on-background-completion
-behavior and does not belong in the portable skill.
+Other sessions in the same repository do not compete for that seat. They run
+`reckon crew follow --project <project>`, which prints the current fleet and
+then follows the same durable transition stream without registering a watcher.
+Each session may therefore keep its own view and attach or leave independently.
+
+Do not launch the watcher as a detached shell background command. Its process
+can remain live and satisfy the dispatch guard while no session reads its
+stdout. This admitted four runs behind a seat armed eight hours earlier by a
+different session; three terminal events then went unnoticed for more than two
+hours. The monitor form prevents that measured failure by making every ticker
+line observable instead of waiting only for process exit.
 
 ## Resuming a held wave without a human
 

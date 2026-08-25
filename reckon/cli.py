@@ -1,5 +1,6 @@
 import json
 import shutil
+import time
 from datetime import datetime, UTC
 from pathlib import Path
 
@@ -862,6 +863,67 @@ def crew_observe(run_id, project, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **record}, pretty)
+
+
+def _follow_watch_lines(
+    project: str,
+    *,
+    poll_interval: float = 0.1,
+    sleeper=time.sleep,
+):
+    """Yield the current fleet and future lines from its durable watch stream."""
+    from reckon.crew import runs
+
+    visibility = runs.project_watch_visibility(project)
+    if not visibility["watcher_live"]:
+        raise runs.CrewError(
+            f"project {project!r} has no live watcher; "
+            f"arm it with {visibility['arming_line']}"
+        )
+
+    cursor = runs.watch_stream_cursor(project)
+    yield from cursor["baseline"]
+    stream_path = Path(cursor["stream_path"])
+
+    while not stream_path.exists():
+        if not runs.project_watch_visibility(project)["watcher_live"]:
+            return
+        sleeper(poll_interval)
+
+    with stream_path.open(encoding="utf-8") as stream:
+        stream.seek(cursor["offset"])
+        while True:
+            line = stream.readline()
+            if line:
+                yield line.rstrip("\n")
+                continue
+            if not runs.project_watch_visibility(project)["watcher_live"]:
+                final_line = stream.readline()
+                if final_line:
+                    yield final_line.rstrip("\n")
+                    continue
+                return
+            sleeper(poll_interval)
+
+
+def _echo_follow_line(line: str, *, stream=None) -> None:
+    """Write and flush one ticker line so pipe readers receive it immediately."""
+    output = stream or click.get_text_stream("stdout")
+    click.echo(line, file=output)
+    output.flush()
+
+
+@crew.command(name="follow")
+@click.option("--project", required=True, help="Project whose watch stream to follow.")
+def crew_follow(project):
+    """Follow a project's ticker without acquiring its watcher seat."""
+    from reckon.crew.runs import CrewError
+
+    try:
+        for line in _follow_watch_lines(project):
+            _echo_follow_line(line)
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @crew.command(name="watch")
