@@ -23,8 +23,8 @@
   <title>What May Run Together, and What Should Run Next | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-version" content="48">
 <meta name="plan-impl" content="0.94">
 </head>
 <body>
@@ -551,6 +551,37 @@
     can now legitimately declare a delivery scope inside a repository whose own project has three
     workers running in it, and neither side will see the other. The registry that arbitrated every
     lane assignment tonight would simply not fire.</p>
+
+    <p><strong>A second coordinator's runs count against this one's closure, because the drain is
+    scoped to the project rather than to the coordinator.</strong> Measured with two sessions
+    working the same project: <code>crew drain --project reckon</code> reported one live and one
+    unreconciled run, and both belonged to another session's blocked scout. Reconciling it is not
+    this coordinator's to do &mdash; promoting or resuming another coordinator's run is the
+    interference the whole session has been careful to avoid &mdash; yet under the closure fence as
+    written, a session cannot end while that count is nonzero. So the fence either blocks on work
+    it must not touch, or is waived routinely, and a waiver used routinely is the failure this plan
+    already recorded twice.</p>
+
+    <p>It is the same shape as the claim blindness fixed above and the same shape as the guard
+    predicate before it: a filter keyed on the wrong thing. Collisions depend on the repository;
+    closure depends on the <em>coordinator</em>. A run carries its dispatching session already, so
+    the drain can distinguish this session's outstanding work from a peer's without new state.
+    <strong>Done when</strong> the drain separates runs dispatched by this session from those
+    dispatched by another, the closure fence counts only the former, a peer's run is reported for
+    visibility without blocking closure, and a session that genuinely leaves its own run
+    unreconciled is still refused exactly as it is today.</p>
+
+    <p><strong>A read-only role cannot write the delivery path it is given, and finds out only
+    after launching.</strong> The <code>investigate</code> role resolves to the read-only sandbox
+    tier, which grants writes to the run directory and temporary paths; nodes are routinely handed
+    a manifest under the shared reports directory, which that tier does not grant. Every scout this
+    session dispatched used that path, so the mismatch is version-sensitive rather than
+    longstanding, and it now blocks any investigate node given a shared report path in either
+    session. The narrow repair is to grant reckon's own delivery directories to the tier that is
+    expected to deliver into them. The repair that prevents the class is to refuse at dispatch: a
+    node whose declared write path is unreachable in its own resolved sandbox is malformed, and
+    that is knowable before a worker is spawned rather than after it has burned a launch
+    discovering it.</p>
 
     <p><strong>A manifest may report completion and omit the commit that proves it, and nothing
     notices.</strong> Measured on the landing that closed this very gap: the worker committed its
