@@ -82,6 +82,11 @@ def watch_lock_path(project: str) -> Path:
     return crew_home() / "watch" / f"{readable}-{digest}.lock"
 
 
+def watch_stream_path(project: str) -> Path:
+    """Stable append-only transition stream for one project's watcher."""
+    return watch_lock_path(project).with_suffix(".events")
+
+
 def _utc_now() -> str:
     return (
         datetime.now(tz=timezone.utc)
@@ -158,10 +163,10 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     return data
 
 
-def list_live(
+def _list_live_records(
     *, project: str | None = None, phase: str | None = None
 ) -> list[dict[str, Any]]:
-    """Return matching live pointers, newest run id last."""
+    """Read matching live pointers without publishing watcher transitions."""
     directory = live_dir()
     if not directory.is_dir():
         return []
@@ -178,6 +183,16 @@ def list_live(
         if phase is not None and str(data.get("phase") or "") != phase:
             continue
         records.append(data)
+    return records
+
+
+def list_live(
+    *, project: str | None = None, phase: str | None = None
+) -> list[dict[str, Any]]:
+    """Return matching live pointers, newest run id last."""
+    records = _list_live_records(project=project, phase=phase)
+    if project is not None and phase is None:
+        _publish_watch_stream(project, records)
     return records
 
 
@@ -632,6 +647,186 @@ def _write_watch_record(handle, record: Mapping[str, Any]) -> None:
     os.fsync(handle.fileno())
 
 
+@dataclass
+class _WatchStreamProducer:
+    """In-process transition memory owned by the kernel-backed watcher seat."""
+
+    path: Path
+    known: dict[str, dict[str, Any]]
+    stall_window: str
+    fleet_seen: bool = False
+
+
+_WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
+
+
+def _watch_stream_snapshots(
+    records: Iterable[Mapping[str, Any]], *, stall_window: str
+) -> dict[str, dict[str, Any]]:
+    """Reduce live pointers to the state carried by the human ticker."""
+    from reckon.crew.recovery import _utc_seconds, _watch_snapshot
+
+    moment = _utc_seconds()
+    stall_seconds = parse_duration(stall_window)
+    return {
+        str(record.get("run_id") or ""): _watch_snapshot(
+            record, moment=moment, stall_seconds=stall_seconds
+        )
+        for record in records
+        if record.get("run_id")
+    }
+
+
+def _append_watch_lines(path: Path, events: Iterable[Mapping[str, Any]]) -> None:
+    """Durably append complete ticker lines without replacing prior history."""
+    from reckon.crew.recovery import format_watch_transition
+
+    payload = "".join(f"{format_watch_transition(event)}\n" for event in events)
+    if not payload:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _stream_transition(
+    project: str,
+    *,
+    snapshot: Mapping[str, Any],
+    previous: str | None,
+    current: str,
+    counts: Mapping[str, int],
+) -> dict[str, Any]:
+    """Build the transition object consumed by the established formatter."""
+    from reckon.crew.recovery import _watch_transition
+
+    return _watch_transition(
+        project,
+        kind="baseline" if previous is None else "transition",
+        snapshot=snapshot,
+        previous=previous,
+        current=current,
+        counts=counts,
+    )
+
+
+def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
+    """Append each fleet state transition once for the active producer."""
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return
+
+    from reckon.crew.recovery import _fleet_counts
+
+    current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
+    if not current and not producer.fleet_seen:
+        return
+
+    counts = _fleet_counts(current)
+    if not producer.fleet_seen:
+        producer.fleet_seen = True
+        producer.known = {
+            run_id: dict(snapshot) for run_id, snapshot in current.items()
+        }
+        _append_watch_lines(
+            producer.path,
+            (
+                _stream_transition(
+                    project,
+                    snapshot=snapshot,
+                    previous=None,
+                    current=str(snapshot["state"]),
+                    counts=counts,
+                )
+                for snapshot in current.values()
+            ),
+        )
+        return
+
+    events: list[dict[str, Any]] = []
+    next_known = {run_id: dict(snapshot) for run_id, snapshot in producer.known.items()}
+    for run_id in (item for item in producer.known if item not in current):
+        snapshot = producer.known[run_id]
+        next_known.pop(run_id, None)
+        events.append(
+            _stream_transition(
+                project,
+                snapshot=snapshot,
+                previous=str(snapshot["state"]),
+                current="promoted",
+                counts=counts,
+            )
+        )
+
+    for run_id in (item for item in current if item not in producer.known):
+        snapshot = current[run_id]
+        dispatched = {**snapshot, "state": "dispatched", "reason": ""}
+        next_known[run_id] = dispatched
+        events.append(
+            _stream_transition(
+                project,
+                snapshot=dispatched,
+                previous=None,
+                current="dispatched",
+                counts=counts,
+            )
+        )
+
+    for run_id in (item for item in current if item in producer.known):
+        snapshot = current[run_id]
+        previous = str(producer.known[run_id]["state"])
+        current_state = str(snapshot["state"])
+        if current_state == previous:
+            continue
+        next_known[run_id] = dict(snapshot)
+        events.append(
+            _stream_transition(
+                project,
+                snapshot=snapshot,
+                previous=previous,
+                current=current_state,
+                counts=counts,
+            )
+        )
+
+    producer.known = next_known
+    _append_watch_lines(producer.path, events)
+
+
+def watch_stream_cursor(
+    project: str, *, stall_window: str = DEFAULT_WATCH_STALL_WINDOW
+) -> dict[str, Any]:
+    """Return a current fleet baseline and the byte offset for future lines."""
+    from reckon.crew.recovery import _fleet_counts, format_watch_transition
+
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    effective_window = producer.stall_window if producer is not None else stall_window
+    snapshots = _watch_stream_snapshots(
+        _list_live_records(project=project), stall_window=effective_window
+    )
+    counts = _fleet_counts(snapshots)
+    baseline = [
+        format_watch_transition(
+            _stream_transition(
+                project,
+                snapshot=snapshot,
+                previous=None,
+                current=str(snapshot["state"]),
+                counts=counts,
+            )
+        )
+        for snapshot in snapshots.values()
+    ]
+    path = watch_stream_path(project)
+    try:
+        offset = path.stat().st_size
+    except FileNotFoundError:
+        offset = 0
+    return {"stream_path": str(path), "offset": offset, "baseline": baseline}
+
+
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
     """Claim the one kernel-tracked watcher seat for a project, if free."""
@@ -650,11 +845,20 @@ def _project_watch_claim(project: str, stall_window: str):
             "pid_start_time": _process_start_time(os.getpid()),
             "stall_window": stall_window,
             "started_at": _utc_now(),
+            "stream_path": str(watch_stream_path(project)),
         }
         _write_watch_record(handle, record)
+        producer = _WatchStreamProducer(
+            path=watch_stream_path(project),
+            known={},
+            stall_window=stall_window,
+        )
+        _WATCH_STREAM_PRODUCERS[project] = producer
+        _publish_watch_stream(project, _list_live_records(project=project))
         try:
             yield True, record
         finally:
+            _WATCH_STREAM_PRODUCERS.pop(project, None)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
@@ -742,6 +946,7 @@ def project_watch_visibility(project: str) -> dict[str, Any]:
         "unwatched": unwatched,
         "pointer_count": pointer_count,
         "arming_line": arming_line,
+        "stream_path": str(watch_stream_path(project)),
     }
 
 
@@ -831,6 +1036,7 @@ def watch(
                 "next_action": "wait for the live project watcher to report",
                 "watcher_live": True,
                 "watcher": watcher,
+                "stream_path": str(watch_stream_path(project)),
             }
         while True:
             event = _watch_event(project, stall_seconds=stall_seconds)
