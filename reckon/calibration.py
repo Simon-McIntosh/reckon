@@ -36,6 +36,7 @@ class CalibrationResult:
     agent_speed_factors: dict[str, CalibrationFigure]
     included_runs: int
     excluded: dict[str, int]
+    excluded_worker_hours: dict[str, float]
 
 
 def agent_configuration_key(run: Mapping[str, Any]) -> str:
@@ -77,6 +78,13 @@ def _observation(
     exclusion = ledger.measurement_exclusion_reason(run)
     if exclusion:
         return exclusion
+    try:
+        attempt = int(run.get("attempt") or 1)
+    except (TypeError, ValueError):
+        return "invalid_measurement"
+    duration_source = str(run.get("worker_seconds_source") or "").strip()
+    if attempt > 1 and duration_source in {"", "wall_fallback"}:
+        return "untrustworthy_duration"
     plan = str(run.get("plan") or "").strip()
     agent = agent_configuration_key(run)
     try:
@@ -113,22 +121,39 @@ def _aggregate(samples: Sequence[float]) -> CalibrationFigure:
 
 def _eligible_runs(
     runs: Sequence[Mapping[str, Any]],
-) -> tuple[list[tuple[str, str, float]], dict[str, int]]:
+) -> tuple[
+    list[tuple[str, str, float]],
+    dict[str, int],
+    dict[str, float],
+]:
     included: list[tuple[str, str, float]] = []
     excluded = {
         "scope_changed": 0,
         "stalled": 0,
         "unusable_completion": 0,
+        "untrustworthy_duration": 0,
         "invalid_measurement": 0,
         "missing_counterpart": 0,
     }
+    excluded_worker_hours = {reason: 0.0 for reason in excluded}
     for run in runs:
         observation = _observation(run)
         if isinstance(observation, str):
             excluded[observation] += 1
+            try:
+                worker_seconds = float(run.get("worker_seconds"))
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(worker_seconds) and worker_seconds > 0:
+                excluded_worker_hours[observation] += worker_seconds / 3600.0
         else:
             included.append(observation)
-    return included, excluded
+    return included, excluded, excluded_worker_hours
+
+
+def _reported_excluded_hours(values: Mapping[str, float]) -> dict[str, float]:
+    """Return stable worker-hour totals beside exclusion counts."""
+    return {reason: round(hours, 6) for reason, hours in values.items()}
 
 
 def calibrate_agent_speeds(
@@ -146,19 +171,26 @@ def calibrate_agent_speeds(
 
     estimates = _figures(plan_estimates)
     factors = _figures(agent_speed_factors or {})
-    observations, excluded = _eligible_runs(runs)
+    observations, excluded, excluded_worker_hours = _eligible_runs(runs)
     samples: dict[str, list[float]] = defaultdict(list)
     included = 0
     for plan, agent, actual_hours in observations:
         estimate = estimates.get(plan)
         if estimate is None:
             excluded["missing_counterpart"] += 1
+            excluded_worker_hours["missing_counterpart"] += actual_hours
             continue
         samples[agent].append(estimate.value / actual_hours)
         included += 1
     for agent, values in samples.items():
         factors[agent] = _aggregate(values)
-    return CalibrationResult(estimates, factors, included, excluded)
+    return CalibrationResult(
+        estimates,
+        factors,
+        included,
+        excluded,
+        _reported_excluded_hours(excluded_worker_hours),
+    )
 
 
 def calibrate_plan_estimates(
@@ -171,16 +203,23 @@ def calibrate_plan_estimates(
 
     estimates = _figures(plan_estimates)
     factors = _figures(agent_speed_factors)
-    observations, excluded = _eligible_runs(runs)
+    observations, excluded, excluded_worker_hours = _eligible_runs(runs)
     samples: dict[str, list[float]] = defaultdict(list)
     included = 0
     for plan, agent, actual_hours in observations:
         factor = factors.get(agent)
         if factor is None:
             excluded["missing_counterpart"] += 1
+            excluded_worker_hours["missing_counterpart"] += actual_hours
             continue
         samples[plan].append(actual_hours * factor.value)
         included += 1
     for plan, values in samples.items():
         estimates[plan] = _aggregate(values)
-    return CalibrationResult(estimates, factors, included, excluded)
+    return CalibrationResult(
+        estimates,
+        factors,
+        included,
+        excluded,
+        _reported_excluded_hours(excluded_worker_hours),
+    )
