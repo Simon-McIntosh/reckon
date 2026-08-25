@@ -186,7 +186,7 @@ function ReaderSourceFailure({ source, status, missing, onRetry }) {
   );
 }
 
-function Plan({ slug, onNav }) {
+function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
@@ -471,7 +471,13 @@ function Plan({ slug, onNav }) {
 
   return (
     <div className="r-page">
-      <article className="r-reading" ref={articleRef}>
+      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={focusMode ? "true" : "false"}>
+          <nav className="r-reading-controls" aria-label="Reading controls" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+            {focusMode && <button type="button" className="btn ghost" onClick={() => onPage?.(-1)} aria-label="Previous item in reading queue">Previous</button>}
+            {focusMode && <span role="status" style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 11 }}>{focusPosition?.current || 0} / {focusPosition?.total || 0}</span>}
+            {focusMode && <button type="button" className="btn ghost" onClick={() => onPage?.(1)} aria-label="Next item in reading queue">Next</button>}
+            <button type="button" className="btn ghost" onClick={onToggleFocus} aria-pressed={focusMode} title={focusMode ? "Leave focus mode (f or Escape)" : "Enter focus mode (f)"}>{focusMode ? "Exit focus" : "Read"} <span aria-hidden="true">f</span></button>
+          </nav>
           <PlanInFlightBand runs={liveRuns} />
           {htmlFailure && (
             <ReaderSourceFailure

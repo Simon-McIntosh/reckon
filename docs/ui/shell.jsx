@@ -366,6 +366,67 @@ function attachmentGroups(state, selectedKey) {
   };
 }
 
+function readingQueue(state, filteredPlans, sortBy, sortDir) {
+  const queue = [];
+  const seen = new Set();
+  const append = (item) => {
+    const key = item?.nav_key || item?.slug;
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    queue.push(key);
+  };
+  sortItems(filteredPlans, sortBy, sortDir).forEach(plan => {
+    append(plan);
+    const groups = attachmentGroups(state, plan.nav_key || plan.slug);
+    groups.research.forEach(append);
+    groups.evidence.forEach(append);
+  });
+  return queue;
+}
+
+function readingQueueStep(queue, selectedKey, direction) {
+  const index = queue.indexOf(selectedKey);
+  if (index < 0) return null;
+  return queue[index + direction] || null;
+}
+
+function nextReadingMode(current, key, canRead) {
+  if (!canRead) return false;
+  if (key.toLowerCase() === "f") return !current;
+  if (key === "Escape") return false;
+  return current;
+}
+
+function paletteItems(currentState, projects) {
+  const rows = [];
+  const seen = new Set();
+  const appendState = (repository, state) => {
+    const inventory = Array.isArray(state?.inventory)
+      ? state.inventory
+      : Array.isArray(state?.plans)
+        ? state.plans
+        : Object.values(state?.plans || {});
+    inventory.forEach(item => {
+      const navKey = item.nav_key || item.slug;
+      if (!navKey) return;
+      const key = `${repository}:${navKey}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push({
+        ...item,
+        nav_key: navKey,
+        kind: item.type || "plan",
+        label: item.title || item.slug,
+        repository,
+        status: item.effective_status || item.status || "unknown",
+      });
+    });
+  };
+  appendState(currentState?.project || "current", currentState);
+  (projects || []).forEach(project => appendState(project.project, project.state));
+  return rows;
+}
+
 function selectPlanSection(event, onSelectPlan, slug, sectionId) {
   event.stopPropagation();
   onSelectPlan(slug);
@@ -1058,6 +1119,7 @@ function App() {
     setSortDirs(prev => ({ ...prev, [groupBy]: next }));
   };
   const [cmdKOpen, setCmdKOpen] = useState(false);
+  const [readingMode, setReadingMode] = useState(false);
 
   const [projects, setProjects] = useState([]);
   const [fleetRuns, setFleetRuns] = useState([]);
@@ -1175,6 +1237,13 @@ function App() {
     // without requiring a full inventory reload.
   }, [M, filters, showArchived, invRev]);
 
+  const readQueue = useMemo(
+    () => readingQueue(M, items, groupBy, sortDir),
+    [M, items, groupBy, sortDir]
+  );
+  const searchItems = useMemo(() => paletteItems(M, projects), [M, projects]);
+  const readPosition = Math.max(0, readQueue.indexOf(route.slug));
+
   const onSelectPlan = useCallback((slug) => {
     nav({ view: "plan", slug });
   }, [nav]);
@@ -1189,25 +1258,50 @@ function App() {
     window.dispatchEvent(new CustomEvent("r-open-prompt"));
   }, [promptOpen]);
 
-  // Cmd/Ctrl+B — hides both filter + list columns; Plans view only
+  // Cmd/Ctrl+B hides both list columns. Focus keys share this lifecycle so
+  // selection and palette state stay owned by App.
   useEffect(() => {
     const onKey = (e) => {
+      const editable = e.target?.matches?.("input, textarea, select, [contenteditable='true']");
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setCmdKOpen(true);
+        return;
       }
       if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         if (route.view === "plan") setFiltersHidden(c => !c); // Plans only — hides filter + list cols
+        return;
+      }
+      const canRead = route.view === "plan" && !!route.slug;
+      if (e.key === "Escape" && readingMode) {
+        e.preventDefault();
+        setReadingMode(current => nextReadingMode(current, e.key, canRead));
+        return;
+      }
+      if (editable || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.toLowerCase() === "f" && canRead) {
+        e.preventDefault();
+        setReadingMode(current => nextReadingMode(current, e.key, canRead));
+        return;
+      }
+      if (readingMode && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        e.preventDefault();
+        const next = readingQueueStep(readQueue, route.slug, e.key === "ArrowRight" ? 1 : -1);
+        if (next) nav({ view: "plan", slug: next });
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [route.view]);
+  }, [nav, readQueue, readingMode, route.slug, route.view]);
+
+  useEffect(() => {
+    if (route.view !== "plan" || !route.slug) setReadingMode(false);
+  }, [route.view, route.slug]);
 
   return (
-    <div className="r-app">
-      <TopBar
+    <div className={`r-app ${readingMode ? "r-focus-mode" : ""}`}>
+      {!readingMode && <TopBar
           route={route}
           onNav={nav}
           navProject={navProject}
@@ -1221,37 +1315,57 @@ function App() {
           projects={projects}
           hiddenProjects={hiddenProjects}
           onToggleProject={toggleProject}
-        />
-      <div className={`r-3col ${filtersHidden ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}>
-        <button
+        />}
+      <div
+        className={`r-3col ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}
+        style={readingMode ? { gridTemplateColumns: "minmax(0, 1fr)", height: "100vh" } : undefined}
+      >
+        {!readingMode && <button
           className="r-filter-handle"
           onClick={() => setFiltersHidden(c => !c)}
           title={filtersHidden ? "Show filters · ⌘B" : "Hide filters · ⌘B"}
           aria-label="Toggle filters"
         >
           <span></span><span></span>
-        </button>
-        <FiltersCol filters={filters} setFilters={setFilters} />
-        <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />
-        <div className="r-content">
-          <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
-          <div className="r-reader-with-attachments">
+        </button>}
+        {!readingMode && <FiltersCol filters={filters} setFilters={setFilters} />}
+        {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
+        <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
+          {!readingMode && <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
+          <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>
             <div className="r-body">
               {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-              {route.view === "plan" && (
+              {route.view === "plan" && !readingMode && (
                 <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
               )}
               {route.view === "cockpit" && <CockpitBody onNav={nav} projects={projects} fleetRuns={fleetRuns} />}
-              {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
+              {route.view === "plan" && <Plan
+                slug={route.slug}
+                onNav={nav}
+                focusMode={readingMode}
+                onToggleFocus={() => setReadingMode(current => !current)}
+                focusPosition={{ current: readPosition + 1, total: readQueue.length }}
+                onPage={(direction) => {
+                  const next = readingQueueStep(readQueue, route.slug, direction);
+                  if (next) nav({ view: "plan", slug: next });
+                }}
+              />}
               {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
               {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
               {route.view === "crew" && <CrewView />}
             </div>
-            {route.view === "plan" && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
+            {route.view === "plan" && !readingMode && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
           </div>
         </div>
       </div>
-      {cmdKOpen && <CmdKPalette items={M?.inventory || []} onClose={() => setCmdKOpen(false)} onPick={(slug) => { setCmdKOpen(false); nav({ view: "plan", slug }); }} />}
+      {cmdKOpen && <CmdKPalette items={searchItems} onClose={() => setCmdKOpen(false)} onPick={(result) => {
+        setCmdKOpen(false);
+        if (result.repository && result.repository !== M?.project) {
+          window.location.href = `/${result.repository}/#plan/${encodeURIComponent(result.nav_key)}`;
+        } else {
+          nav({ view: "plan", slug: result.nav_key });
+        }
+      }} />}
     </div>
   );
 }
@@ -1265,8 +1379,11 @@ function CmdKPalette({ items, onClose, onPick }) {
     if (!q.trim()) return items.slice(0, 30);
     const needle = q.toLowerCase();
     return items.filter(p =>
-      p.title?.toLowerCase().includes(needle) ||
+      p.label?.toLowerCase().includes(needle) ||
       p.slug?.toLowerCase().includes(needle) ||
+      p.kind?.toLowerCase().includes(needle) ||
+      p.repository?.toLowerCase().includes(needle) ||
+      p.status?.toLowerCase().includes(needle) ||
       (p.ms || "").toLowerCase().includes(needle) ||
       (p.summary || "").toLowerCase().includes(needle)
     ).slice(0, 30);
@@ -1277,7 +1394,7 @@ function CmdKPalette({ items, onClose, onPick }) {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(filtered.length - 1, i + 1)); }
       if (e.key === "ArrowUp")   { e.preventDefault(); setIdx(i => Math.max(0, i - 1)); }
-      if (e.key === "Enter" && filtered[idx]) onPick(filtered[idx].nav_key || filtered[idx].slug);
+      if (e.key === "Enter" && filtered[idx]) onPick(filtered[idx]);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -1285,16 +1402,16 @@ function CmdKPalette({ items, onClose, onPick }) {
   return (
     <div className="r-cmdk-scrim" onMouseDown={onClose}>
       <div className="r-cmdk" onMouseDown={(e) => e.stopPropagation()}>
-        <input ref={inputRef} placeholder="Search plans by title, slug, milestone…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input ref={inputRef} placeholder="Search plans, research and evidence across projects…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="list">
           {filtered.map((p, i) => (
-            <button key={p.nav_key || p.slug} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p.nav_key || p.slug)}>
+            <button key={`${p.repository}:${p.nav_key}`} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p)}>
               <span className={`dot ${p.status}`}></span>
-              <span><strong>{p.title}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.slug}</span></span>
-              <span className="meta">{p.ms || "—"} · {Math.round((p.impl || 0) * 100)}%</span>
+              <span><strong>{p.label}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.nav_key}</span></span>
+              <span className="meta">{p.kind} · {p.repository} · {p.status}</span>
             </button>
           ))}
-          {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No plans match.</div>}
+          {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No resources match.</div>}
         </div>
         <div className="r-cmdk-foot">
           <span>↑↓ navigate</span><span>↵ open</span><span>esc close</span>
