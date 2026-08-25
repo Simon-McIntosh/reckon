@@ -893,6 +893,18 @@
       1374px floor that produced the scrollbar goes with them.</figcaption>
     </figure>
 
+    <p><strong>A node that removes a surface owns the tests that pin it.</strong> Three of the four
+    nodes below refused their first dispatch for one reason: this repository's geometry suites
+    encode the retiring layout as a contract, so a node scoped to implementation files alone cannot
+    produce a zero-failure delta without editing a test it does not own. Measured here &mdash;
+    <code>test_spa_shell_geometry</code> and <code>test_spa_plans_geometry</code> require the width
+    floors and the 192/390px rails, <code>test_build</code> waits on <code>.r-filters</code> to
+    decide the built page is ready, <code>test_spa_reader_geometry</code> requires the duplicate
+    focus-mode Reads component. Each refusal came before any implementation file was touched, which
+    is the escape hatch working; the authoring defect was upstream of every one of them. Scope a
+    removal node by grepping the suite for the selector being retired, not by listing the modules
+    that render it.</p>
+
     <h3 id="s18a">&#167;18a &mdash; The Plans surface becomes one fluid two-column layout</h3>
 
     <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-25</span>
