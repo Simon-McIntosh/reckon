@@ -585,6 +585,44 @@
       was measuring were sandbox artifacts. Both were specification errors, not worker
       failures.</p>
 
+    <h2 id="general-form">What the three misattributions have in common</h2>
+    <p>Three measurements in one session were internally consistent and were measuring
+      something other than what they named. Stated as one claim, jointly with the
+      <code>spa-surface-redesign</code> session, which supplied two of the three:</p>
+    <blockquote>
+      <p><strong>A measurement can be internally consistent and be measuring something
+        other than what it names.</strong></p>
+    </blockquote>
+    <table>
+      <thead><tr><th>What it named</th><th>What it measured</th></tr></thead>
+      <tbody>
+        <tr><td>a model comparison: <code>luna</code> produces thinner work than
+          <code>sol</code></td><td>an 8-minute fence against a 40-minute one — 115
+          insertions against 806, same model, same node, same base</td></tr>
+        <tr><td>four failures in the code under test</td><td>four properties of a
+          restricted worker tier that cannot build a wheel offline or resolve an
+          executable</td></tr>
+        <tr><td>a pre-existing failure at a base revision</td><td>a row a later commit had
+          already fixed, reported from a tree that did not have it</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The corollary is the uncomfortable half.</strong> None of the three contained
+      a false number, and all three would have survived review — because reviewing a
+      measurement checks its arithmetic, not its attribution. Every one was caught by
+      re-measuring under a changed condition, and none by anyone re-reading the record. A
+      fourth was avoided the same way and not by inspection: a green suite at
+      <code>819e63d</code> was about to be read as evidence for a change that came down a
+      sibling line, and an ancestry check rather than a careful reading is what stopped it.</p>
+    <p>So the operational rule is not "be careful with baselines". Prose telling a reader to
+      be careful cannot catch this class, because the reader has nothing to compare against.
+      <strong>Vary one condition and see which recorded conclusion fails to survive.</strong>
+      The shadow re-run in this plan is the worked precedent: holding every recorded
+      condition of the primary equal and substituting only the model turned a confident
+      model verdict into a budget artifact in a single dispatch. This is the same argument
+      as <code>AGENTS.md</code>'s own — a rule without a bound check decays — applied to
+      measurements rather than to naming, and it is why both halves of that finding went to
+      <code>binding-rules-need-bound-checks</code> rather than becoming four repairs.</p>
+
     <h2 id="drain-s11">Drain ledger — §11 execution session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T12:46Z
 
