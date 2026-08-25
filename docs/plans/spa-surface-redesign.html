@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="12">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
-<meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3">
-<meta name="plan-artifacts" content="docs/ui/state-loader.js,tests/test_spa_state_boundary.py,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/index.html,tests/test_build.py,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html">
-<meta name="plan-impl" content="0.17">
+<meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365">
+<meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/index.html,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_build.py,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -545,6 +545,15 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260825T051116083921-merged-suite-gate" data-who="codex-f" data-when="2026-08-25T05:17:18Z">
     <div class="r-comment-body"><p>Full suite at merged tip bcbbbee: exit 0, 2265 passed / 0 failed / 0 errors in 111.61 s; focused 19/19 across the three wave-zero test files. This is the green evidence the two not-run gates on state-boundary and surface-stylesheets were waiting for, so both scoped measures are now backed by a green suite at the integrated head.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260825T055258554825-reader-band-and-provenance" data-who="codex-k" data-when="2026-08-25T06:06:56Z">
+    <div class="r-comment-body"><p>The in-flight band renders no run hash: identity is harness, model, role and effort, member and section, with the run id reachable only as a copyable command. Audit rank 9 landed as the one requirement with no canvas to copy — a failed authored-HTML fetch or a failed structured-state fetch each raise a persistent banner naming the failed source, the sections consequently missing, the response status and a retry, so a reduced rendering can no longer pass for a complete plan. Audit rank 13: the copied handoff states it was built from live plan HTML and project discovery and carries the loaded plan version. 4 scoped tests; full suite 2270 passed / 0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20260825T055447564359-crew-cards" data-who="codex-m" data-when="2026-08-25T06:07:35Z">
+    <div class="r-comment-body"><p>Rows became cards: identity and phase on one line, repository/plan/section on the next, budget as an elapsed-against-total bar, gate marks with the current gate named, and session, host and attach command behind an expansion with a copy action. Audit rank 12 landed: the completion contract, whose live cells ran 189 to 1,346 characters, is relabelled as a done-when collapsed to one line with a disclosure, and the gate column carries a measured verdict where one exists; the three-second poll and the elapsed/activity calculations are unchanged. 4 scoped tests; full suite 2269 passed. Gap to close: the node did not fill docs/ui/crew.css, because the build test still pins every surface stylesheet to its one-line placeholder, so the card layout rides existing rules until assert-contract-not-source-text defuses that assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-fuse-20260825" data-who="reckon-ship" data-when="2026-08-25">
+    <div class="r-comment-body"><p><strong>The stylesheet node left a fuse under the whole wave, and it is the same defect class as this morning's date assertion.</strong> Its build test pinned each of the seven surface stylesheets to its exact one-line owner marker, and a sibling test pinned literal implementation strings inside <code>plan.jsx</code> and <code>sprint.jsx</code> &mdash; the very files five concurrent nodes were rewriting. Both are snapshots of values that exist in order to change. Three surface nodes blocked on it within four minutes of each other; <code>crew-cards</code> shipped its cards but left <code>docs/ui/crew.css</code> unfilled to get past it, so that surface still rides the legacy rules.</p><p>Defused by <code>assert-contract-not-source-text</code>, which replaces byte equality with the contract those bytes stood in for: the stylesheet exists, is registered in all four asset lists, and is copied by the build; and the in-flight region identifies member and section. The replacement has to bite &mdash; the node proves the suite still fails when a stylesheet is dropped from one asset list.</p><p>The general rule this wave earned: <strong>a test that pins source text is a fuse on any planned change to that source.</strong> It passes when written, which is why review never catches it, and it fails for whoever touches the file next rather than for its author.</p></div>
 </div>
 </section>
 </main>

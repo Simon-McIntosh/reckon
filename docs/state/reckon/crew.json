@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T08:05:35",
+  "updated": "2026-08-25T08:07:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -14200,9 +14200,190 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T055258554825-reader-band-and-provenance",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a76",
+        "node": "reader-band-and-provenance",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T05:53:08Z",
+        "completed_at": "2026-08-25T06:06:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 828,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 828,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "7f082ad89abcb8f4a46bd1d40ba60cfe688ed4aa",
+        "commits": [
+          "fc585f1202f99ee9171faae42366ba779f10523f"
+        ],
+        "changed_lines": {
+          "added": 173,
+          "removed": 36,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T055258554825-reader-band-and-provenance/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a033dc-bfb3-7473-8e51-e05b0f27dadb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4690688,
+            "cached_input_tokens_cumulative": 46639616,
+            "input_tokens": 5025845,
+            "input_tokens_cumulative": 48880343,
+            "output_tokens": 21399,
+            "output_tokens_cumulative": 167103,
+            "reasoning_output_tokens": 5432,
+            "reasoning_output_tokens_cumulative": 59702
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T055447564359-crew-cards",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a710",
+        "node": "crew-cards",
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-m",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T05:54:56Z",
+        "completed_at": "2026-08-25T06:07:35Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 759,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 759,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "7f082ad89abcb8f4a46bd1d40ba60cfe688ed4aa",
+        "commits": [
+          "63be365"
+        ],
+        "changed_lines": {
+          "added": 222,
+          "removed": 62,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T055447564359-crew-cards/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a033f4-804b-7452-885c-25a8c88b11d7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4976128,
+            "cached_input_tokens_cumulative": 44276992,
+            "input_tokens": 5335439,
+            "input_tokens_cumulative": 45879458,
+            "output_tokens": 21623,
+            "output_tokens_cumulative": 158533,
+            "reasoning_output_tokens": 3779,
+            "reasoning_output_tokens_cumulative": 55356
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: unanswered peer question Please provide the durable stream reader API you are landing in reckon/crew/runs.py: public function names/signatures; event schema; offset semantics; and how a follower blocks/wakes. I own CLI/tests only and need to bind without guessing.",
+              "elapsed_seconds": 609,
+              "log_age_seconds": 34,
+              "log_fresh": true,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T054443446189-monitor-attach-without-the-seat/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "reckon crew resume --run r-20260825T054443446189-monitor-attach-without-the-seat --advice <answer>",
+              "node": "monitor-attach-without-the-seat",
+              "phase": "starting",
+              "plan": "concurrency-and-schedule-visibility",
+              "process_alive": true,
+              "project": "reckon",
+              "run_id": "r-20260825T054443446189-monitor-attach-without-the-seat",
+              "terminal_age_seconds": 369,
+              "terminal_at": "2026-08-25T05:48:45Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/cnv-spa/monitor-attach-without-the-seat"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 287
+    "_version": 289
   }
 }
