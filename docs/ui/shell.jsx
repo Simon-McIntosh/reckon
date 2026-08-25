@@ -1,6 +1,6 @@
-// Reckon shell — top bar + three-column body.
+// Reckon shell — top bar + plan workspace.
 // Top bar: brand, search, view tabs and settings.
-// Body: filters · plans list · content (with two-row title bar).
+// Body: filters · plans list · reader · attachments.
 
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
@@ -39,8 +39,27 @@ function mountedProjectRows(projects) {
   return (projects || []).filter(project => Number(project.plans_count) > 0);
 }
 
+function projectHasOpenWork(project) {
+  const state = project?.state || {};
+  const rows = Array.isArray(state.inventory)
+    ? state.inventory
+    : (Array.isArray(state.plans) ? state.plans : []);
+  const terminal = new Set(["shipped", "done", "archived", "superseded", "abandoned", "historical"]);
+  return rows.some(row =>
+    (row.type || "plan") === "plan"
+    && !terminal.has(String(row.effective_status || row.status || "pending").toLowerCase())
+  );
+}
+
+function effectiveHiddenProjects(projects, hiddenProjects) {
+  if (Array.isArray(hiddenProjects)) return hiddenProjects;
+  return mountedProjectRows(projects)
+    .filter(project => !projectHasOpenWork(project))
+    .map(project => project.project);
+}
+
 function visibleProjectRows(projects, hiddenProjects) {
-  const hidden = new Set(hiddenProjects || []);
+  const hidden = new Set(effectiveHiddenProjects(projects, hiddenProjects));
   const mounted = mountedProjectRows(projects);
   if (mounted.length && mounted.every(project => hidden.has(project.project))) {
     hidden.delete(mounted[0].project);
@@ -49,7 +68,7 @@ function visibleProjectRows(projects, hiddenProjects) {
 }
 
 function projectVisibilityChange(projects, hiddenProjects, focusedProject, targetProject) {
-  const hidden = new Set(hiddenProjects || []);
+  const hidden = new Set(effectiveHiddenProjects(projects, hiddenProjects));
   if (hidden.has(targetProject)) {
     hidden.delete(targetProject);
     return { changed: true, hidden: [...hidden], focus: focusedProject };
@@ -251,12 +270,6 @@ function FiltersCol({ filters, setFilters }) {
 
   return (
     <aside className="r-filters" aria-label="Plan filters">
-      {anyActive && (
-        <button className="r-clear-top" onClick={() => setFilters({})}>
-          × clear filters
-        </button>
-      )}
-
       <div className="r-filter-group" aria-label="Status filters">
         {statusList.map(s => {
           const n = actionable.filter(p => (p.effective_status || p.status) === s).length;
@@ -271,6 +284,24 @@ function FiltersCol({ filters, setFilters }) {
           );
         })}
       </div>
+
+      <div className="r-filter-divider" aria-hidden="true"></div>
+
+      {sprintsWithPlans.length > 0 && (
+        <div className="r-filter-group r-sprint-filters" aria-label="Sprint filters">
+          {sprintsWithPlans.map(s => {
+            const n = actionable.filter(p => p.sprint === s.id).length;
+            const on = (filters.sprint || []).includes(s.id);
+            return (
+              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={s.theme || s.id}>
+                <span className="r-chip-sprint-id">{s.id}</span>
+                <span className="r-chip-sprint-theme">{s.theme}</span>
+                <span className="n">{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {northStars.length > 0 && (
         <div className="r-filter-group" aria-label="North stars">
@@ -287,20 +318,10 @@ function FiltersCol({ filters, setFilters }) {
         </div>
       )}
 
-      {sprintsWithPlans.length > 0 && (
-        <div className="r-filter-group" aria-label="Sprint filters">
-          {sprintsWithPlans.map(s => {
-            const n = actionable.filter(p => p.sprint === s.id).length;
-            const on = (filters.sprint || []).includes(s.id);
-            return (
-              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={s.theme || s.id}>
-                <span className="r-chip-sprint-id">{s.id}</span>
-                <span className="r-chip-sprint-theme">{s.theme}</span>
-                <span className="n">{n}</span>
-              </button>
-            );
-          })}
-        </div>
+      {anyActive && (
+        <button className="r-clear-top" onClick={() => setFilters({})}>
+          × clear filters
+        </button>
       )}
 
     </aside>
@@ -475,6 +496,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         >
           {sortDir === "asc" ? <SortAscIcon /> : <SortDescIcon />}
         </button>
+        <button type="button" className="r-sort-more" aria-label="More plan list options" disabled>⋯</button>
       </div>
 
       {/* Context / Related filter — explicit opt-in, not auto-applied */}
@@ -491,14 +513,15 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         </div>
       )}
 
-      {items.length === 0 ? (
-        <div className="r-list-empty">
-          No plans match.
-          {(filters?.status?.length || filters?.sprint?.length) && (
-            <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
-          )}
-        </div>
-      ) : sorted.map(p => {
+      <div className="r-list-body">
+        {items.length === 0 ? (
+          <div className="r-list-empty">
+            No plans match.
+            {(filters?.status?.length || filters?.sprint?.length) && (
+              <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
+            )}
+          </div>
+        ) : sorted.map(p => {
         const navKey = p.nav_key || p.slug;
         const active = route.view === "plan" && route.slug === navKey;
         const isArchived = p.archived === "1" || p.archived === true || p.archived === "true";
@@ -538,7 +561,8 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
             </div>
           </div>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 }
@@ -549,10 +573,11 @@ function AttachmentRail({ selectedKey, onSelect }) {
     ["research", "Research", groups.research],
     ["evidence", "Evidence", groups.evidence],
   ];
-  if (!groups.planKey || rows.every(([, , items]) => items.length === 0)) return null;
+  const empty = !groups.planKey || rows.every(([, , items]) => items.length === 0);
   return (
     <aside className="r-attachment-rail" aria-label="Plan attachments">
       <div className="r-attachment-heading">Attached</div>
+      {empty && <p className="r-attachment-empty">No attachments</p>}
       {rows.map(([type, label, items]) => items.length > 0 && (
         <section key={type} className="r-attachment-group" aria-labelledby={`attachment-${type}`}>
           <h2 id={`attachment-${type}`}>{label}<span>{items.length}</span></h2>
@@ -1125,9 +1150,11 @@ function App() {
   const [fleetRuns, setFleetRuns] = useState([]);
   const [hiddenProjects, setHiddenProjects] = useState(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem(PROJECT_VISIBILITY_STORAGE) || "[]");
-      return Array.isArray(stored) ? stored : [];
-    } catch { return []; }
+      const raw = localStorage.getItem(PROJECT_VISIBILITY_STORAGE);
+      if (raw === null) return null;
+      const stored = JSON.parse(raw);
+      return Array.isArray(stored) ? stored : null;
+    } catch { return null; }
   });
   useEffect(() => {
     Promise.all([
@@ -1317,7 +1344,7 @@ function App() {
           onToggleProject={toggleProject}
         />}
       <div
-        className={`r-3col ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}
+        className={`r-3col ${route.view === "plan" ? "plans-mode" : ""} ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}
         style={readingMode ? { gridTemplateColumns: "minmax(0, 1fr)", height: "100vh" } : undefined}
       >
         {!readingMode && <button
