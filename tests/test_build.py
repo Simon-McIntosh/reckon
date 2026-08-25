@@ -11,12 +11,9 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
+from tests.spa_browser_harness import installed_browser, served_spa
 
-import reckon.cli as cli
-import reckon.pages as pages
-import reckon.serve as serve
-from reckon import __version__
-
+from reckon import __version__, cli, pages, serve
 
 REPO_ROOT = Path(__file__).parents[1]
 
@@ -128,9 +125,7 @@ def _invoke_build(docs_dir: Path, project: str = "fixture"):
 def _loaded_spa_modules(html: str) -> tuple[str, ...]:
     return tuple(
         reference.lstrip("/")
-        for reference in re.findall(
-            r'<script[^>]+src="([^"]+\.(?:js|jsx))"', html
-        )
+        for reference in re.findall(r'<script[^>]+src="([^"]+\.(?:js|jsx))"', html)
         if reference.lstrip("/").startswith("_ui/")
     )
 
@@ -141,6 +136,40 @@ def _loaded_stylesheets(html: str) -> tuple[str, ...]:
         for reference in re.findall(r'<link[^>]+href="([^"]+\.css)"', html)
         if not reference.startswith(("https://", "http://"))
     )
+
+
+def _rendered_north_star_state(tmp_path: Path, docs_dir: Path) -> dict:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+
+    with served_spa(
+        tmp_path,
+        browser,
+        docs=docs_dir,
+        project="fixture",
+        route="#plan/alpha",
+    ) as spa:
+        return spa.run_probe(
+            """
+          (() => {
+            const group = document.querySelector('[aria-label="North stars"]');
+            const badge = document.querySelector('.r-north-star-badge');
+            return {
+              filterTitles: group
+                ? [...group.querySelectorAll('button')].map(button => button.title)
+                : [],
+              filterCounts: group
+                ? [...group.querySelectorAll('.n')].map(count => count.textContent.trim())
+                : [],
+              badgeName: badge?.querySelector('.v')?.textContent.trim() || null,
+              badgeStatement: badge?.title || null,
+            };
+          })()
+            """,
+            viewport=(1374, 900),
+            ready_expression="Boolean(document.querySelector('.r-filters'))",
+        )
 
 
 def _extract_component(source: str, start: str, end: str) -> str:
@@ -233,9 +262,7 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
         "synced": (synced_docs / "index.html").read_text(),
         "built": (docs_dir / "index.html").read_text(),
     }
-    loaded = {
-        name: _loaded_spa_modules(html) for name, html in entry_points.items()
-    }
+    loaded = {name: _loaded_spa_modules(html) for name, html in entry_points.items()}
 
     assert loaded == {name: expected_modules for name in entry_points}
     assert all("_ui/cockpit.jsx" not in modules for modules in loaded.values())
@@ -304,12 +331,12 @@ def test_plan_and_sprint_views_surface_only_matching_live_work():
     )
     assert 'className="r-inflight-band"' in band
     assert 'aria-label="Work in flight"' in band
-    assert "run.member || \"unassigned\"" in band
-    assert "run.section || \"whole plan\"" in band
+    assert 'run.member || "unassigned"' in band
+    assert 'run.section || "whole plan"' in band
     assert "Copy run command" in band
     assert "reckon crew observe --run ${run.run_id}" in band
 
-    assert 'if (liveRuns.length) return `in flight · ${liveRuns.length}`;' in sprint
+    assert "if (liveRuns.length) return `in flight · ${liveRuns.length}`;" in sprint
 
     # Prove the sprint summary still contracts around a live run on a plan item.
     plan_flag = _extract_component(
@@ -402,31 +429,36 @@ def test_build_carries_directions_into_the_project_surfaces(tmp_path):
     assert result.exit_code == 0, result.output
     data = json.loads(index_path.read_text())["data"]
     alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
-    shell = (docs_dir / "_ui" / "shell.jsx").read_text()
-    loader = (docs_dir / "_ui" / "state-loader.js").read_text()
+    rendered = _rendered_north_star_state(tmp_path, docs_dir)
     assert data["north_stars"] == directions
     assert alpha["north_star"] == "reliable-delivery"
-    assert 'aria-label="North stars"' in shell
-    assert "northStars.map(direction =>" in shell
-    assert "{direction.statement}" in shell
-    assert "{liveCount} live" in shell
-    assert "r-north-star-badge" in shell
-    assert 'toggle("north_star", direction.id)' in shell
-    assert "filters.north_star.includes(p.north_star)" in shell
-    assert "north_stars:       northStars" in loader
+    assert rendered == {
+        "filterTitles": [
+            "Reliable delivery · Every release remains reproducible and observable.",
+            "Clear work · Every active plan states what it advances.",
+        ],
+        "filterCounts": ["1", "0"],
+        "badgeName": "Reliable delivery",
+        "badgeStatement": "Every release remains reproducible and observable.",
+    }
 
 
-def test_build_without_directions_preserves_the_unlabelled_shape(built_source_site):
-    _, index_path, _ = built_source_site
+def test_build_without_directions_preserves_the_unlabelled_shape(
+    tmp_path, built_source_site
+):
+    docs_dir, index_path, _ = built_source_site
     data = json.loads(index_path.read_text())["data"]
     alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
-    shell = (REPO_ROOT / "docs" / "ui" / "shell.jsx").read_text()
+    rendered = _rendered_north_star_state(tmp_path, docs_dir)
 
     assert "north_stars" not in data
     assert "north_star" not in alpha
-    assert "{northStars.length > 0 && (" in shell
-    assert "{p.north_star && <>" in shell
-    assert "(M.north_stars || []).length && filters.north_star?.length" in shell
+    assert rendered == {
+        "filterTitles": [],
+        "filterCounts": [],
+        "badgeName": None,
+        "badgeStatement": None,
+    }
 
 
 @pytest.mark.parametrize("destination", ["_ui", "_shared"])
