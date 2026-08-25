@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="binding-rules-need-bound-checks">
+  <meta name="plan-title"     content="Binding Rules Need Bound Checks">
+  <meta name="plan-summary"   content="Binding rules with no bound check decay. Two measured instances: four snapshot assertions in one day, and a tool configured but never declared.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S13">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling">
+  <meta name="plan-informs"   content="spa-surface-redesign">
+  <title>Binding Rules Need Bound Checks | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; The repository already diagnosed this about itself</h2>
+
+    <p><strong>Two sessions shipping in this repository on the same day hit two unrelated defect
+    classes, and both turned out to be violations of rules that are already written down, already
+    binding, and already argued.</strong> Nobody had to be persuaded of either rule. Nothing
+    checked either one.</p>
+
+    <p>The user-space guidance says so in as many words, in the section that governs naming: <em>a
+    rule without a check decays.</em> It then does something about it &mdash; it pairs each ban with
+    a runnable command bound to a moment that always happens, which for that section is
+    <code>git add</code>. The AI-attribution rule holds in practice for the same reason: it carries
+    a one-line <code>grep</code> and a moment to run it at. The rules that decay here are precisely
+    the ones with prose and no command.</p>
+
+    <p>This plan takes the two classes measured on 2026-08-25 and gives each a check bound to a
+    moment. It is not a proposal to write more rules. Both rules already exist.</p>
+
+    <h2 id="s2">&#167;2 &mdash; The two measured instances</h2>
+
+    <p><strong>Both were found by work colliding with them, not by review.</strong> That is the
+    signature of this class: the rule reads as obviously correct, the violation passes every gate,
+    and the cost lands on whoever touches the file next.</p>
+
+    <table>
+      <thead>
+        <tr><th>Class</th><th>The rule that already forbids it</th><th>What was measured</th><th>Why review never caught it</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A snapshot asserted as a contract</strong></td>
+          <td><em>&ldquo;any recorded absolute that moves on its own &hellip; State the delta or
+          derive the figure; a snapshot of a moving number is a fuse.&rdquo;</em></td>
+          <td>Four instances in one day across four unrelated files and two sessions: a
+          byte-equality assertion on seven stylesheet placeholders, literal implementation strings
+          inside two components five workers were rewriting, a positional source scan standing in
+          for a rendering contract, and a closed exact-key-set assertion on a served payload that
+          broke when two fields were added on purpose.</td>
+          <td>It passes when written. Its author sees green; the next person to touch the file sees
+          red and cannot tell a regression from a superseded requirement.</td>
+        </tr>
+        <tr>
+          <td><strong>A tool configured but never declared</strong></td>
+          <td>The pre-stage protocol is literally <code>uv run ruff check --fix .</code> and
+          <code>uv run ruff format .</code></td>
+          <td><code>pyproject.toml</code> carries a real <code>[tool.ruff]</code> block with a
+          considered <code>extend-exclude</code>; the <code>dev</code> dependency group is
+          <code>linkml</code> and <code>pytest</code> only; <code>ruff</code> is absent from the
+          project environment as both executable and module. Every clean lint either session has
+          ever recorded here came through a user-level install resolved by absolute path.</td>
+          <td>It fails open. The documented command could never run, and the protocol appeared to
+          work for exactly as long as everyone happened to have a user-level install on PATH.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The second one is the more alarming of the two,</strong> because a configured tool is
+    a stated guarantee. A tool that is merely absent announces itself the first time someone reaches
+    for it; a tool that is configured and absent implies a guarantee the environment does not
+    provide, and the configuration is what stops anyone looking.</p>
+
+    <h2 id="s3">&#167;3 &mdash; Declared tools must match configured tools</h2>
+
+    <p><strong>This half is a set comparison and needs no environment.</strong> Every
+    <code>[tool.X]</code> namespace in <code>pyproject.toml</code> must be satisfied by something
+    the project declares: a runtime dependency, a dependency group, or
+    <code>[build-system].requires</code>. Measured against the current tree, three namespaces exist
+    and exactly one fails.</p>
+
+    <table>
+      <thead><tr><th>Configured namespace</th><th>Resolves through</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><code>[tool.hatch.*]</code></td><td><code>[build-system].requires</code> &mdash; <code>hatchling</code>, <code>hatch-vcs</code></td><td>satisfied</td></tr>
+        <tr><td><code>[tool.pytest.*]</code></td><td><code>dependency-groups.dev</code></td><td>satisfied</td></tr>
+        <tr><td><code>[tool.ruff]</code></td><td>nothing</td><td><strong>unsatisfied</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The namespace-to-distribution mapping is not always the identity &mdash;
+    <code>hatch</code> resolves through two differently-named distributions &mdash; so the check
+    needs a small explicit alias table rather than a string match, and an unknown namespace should
+    fail loudly rather than be assumed satisfied.</p>
+
+    <p><strong>Done when</strong> a test enumerates every configured namespace, resolves each
+    against the declared sets, and fails on any that resolves to nothing; the check is shown to fail
+    on the current tree before the declaration is added and to pass after; and
+    <code>uv run ruff check</code> resolves.</p>
+
+    <h2 id="s4">&#167;4 &mdash; An assertion must state a contract, not a snapshot</h2>
+
+    <p><strong>This half is genuinely harder, and pretending otherwise is how it would get a check
+    that fires on the wrong things.</strong> A closed-set assertion and a legitimate exact-value
+    assertion look identical to a linter. The existing guidance already carves out cases where the
+    exact figure is correct and must be kept &mdash; a measurement that stops someone undoing the
+    code, runtime state described in the past tense, tool codes and dependency pins &mdash; and a
+    naive pattern match would flag every one of them.</p>
+
+    <p><strong>The promising mechanism is not static at all: it is to perturb and observe.</strong>
+    A test that pins a closed set is detectable by adding a benign extra member to what it observes
+    &mdash; one additional field on a payload, one additional file in a listing &mdash; and seeing
+    which assertions break. A contract survives the addition; a snapshot does not. That is a
+    property of the assertion's shape rather than of its text, which is exactly the distinction no
+    grep can make.</p>
+
+    <p>The cost is that it needs somewhere to inject the benign member, and the injection has to be
+    honest &mdash; a field nothing consumes, added in one place, reverted after. Whether that is
+    worth its machinery is the open decision below.</p>
+
+    <p><strong>Done when</strong> the chosen mechanism is shown to flag at least three of the four
+    instances recorded in &#167;2 when run against their pre-repair revisions, and to flag none of
+    the carve-out cases the guidance already names.</p>
+
+    <h2 id="s5">&#167;5 &mdash; Out of scope</h2>
+
+    <p><strong>Writing more rules.</strong> Both rules exist and are well argued. If a check cannot
+    be built for one of them, the honest outcome is a recorded negative result, not a stronger
+    restatement of the prose.</p>
+
+    <p><strong>Repairing the four recorded instances.</strong> All four were repaired the day they
+    were found, in the plans that hit them. This plan owns the mechanism that would have caught
+    them, not their remediation.</p>
+
+    <p><strong>Other repositories.</strong> The configured-versus-declared gap plausibly exists
+    wherever a project configures a tool it does not declare, and this plan does not survey for it.
+    A check that lands here can be carried outward later by whoever owns that sweep.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="snapshot-detection-mechanism" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How should a check tell a closed-set snapshot from a legitimate exact-value assertion?</p>
+        <p class="r-dec-ctx">Four instances in one day across two sessions makes the class real. But the guidance's own carve-outs — a measurement that stops someone undoing the code, runtime state in the past tense, tool codes and version pins — are exactly what a text-matching check would flag, so a noisy check would be worse than none.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="perturb-and-observe">Add a benign member and see which assertions break</button>
+          <button class="r-opt" data-value="source-lint-with-marker">Lint test source, with an explicit marker for the carve-outs</button>
+          <button class="r-opt" data-value="review-only">Leave it to review; record that no mechanism was found</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-brnbc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks §3" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land the declared-versus-configured check, then settle how a snapshot is detected</h4>
+        <div class="r-fu-body"><p>&#167;3 is a set comparison over <code>pyproject.toml</code> with no environment dependency and one known failing namespace, so it can run first and alone. &#167;4 needs its decision settled before a node is cut &mdash; a mechanism that flags the guidance's own carve-outs would be worse than no mechanism, which is why the option to record a negative result is on the ballot rather than a formality.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks §3</pre>
+      </article>
+    </section>
+
+    <section data-reckon="research" id="research" class="r-research-list">
+      <h2><span class="sec">§</span> Research</h2>
+      <div class="r-research" data-id="r-red-suite" data-type="report" data-source="reckon" data-added-by="reckon-create" data-when="2026-08-25" data-url="/reckon/evidence/archive/spa-surface-redesign-landed">
+        <span class="r-research-title"><a href="/reckon/evidence/archive/spa-surface-redesign-landed">Surface-redraw evidence — carries the four snapshot instances, the configured-not-declared finding, and the three-kinds-of-red-suite taxonomy that separates a defect from a sandbox artifact from a stale base.</a></span>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
