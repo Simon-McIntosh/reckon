@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T13:58:19",
+  "updated": "2026-08-25T14:02:44",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -64,8 +64,12 @@
         "id": "codex-h",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "created": "2026-08-12"
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-sol": "01a038c1-24dc-7c10-820e-64636e1efd3e"
+        },
+        "session_model": "gpt-5.6-sol"
       },
       {
         "id": "codex-i",
@@ -17637,9 +17641,101 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T114933912285-n-render-evidence",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-render-evidence",
+        "node_definition": {
+          "done_when": "the capture command exits 0 having written at least 5 screenshot files at viewport widths 1374 and 1920, and the report names for every enumerated defect its element selector and its computed value",
+          "estimated_hours": 1.0,
+          "goal": "A rendering-evidence report enumerating every readability or formatting defect visible in the served SPA, each citing a headless-browser screenshot and the computed CSS value that produces it",
+          "id": "n-render-evidence",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114933912285-n-render-evidence/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a715",
+          "spec_level": "open",
+          "time_budget": "35m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/spa-render-evidence.md",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/spa-render"
+          ]
+        },
+        "role": "test",
+        "spec_level": "open",
+        "member": "codex-h",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T11:49:36Z",
+        "completed_at": "2026-08-25T12:02:40Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 784,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 784,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "a8b501de9e510c5759ad6e3a0b5cc6b724a79bc9",
+        "commits": [
+          "a8b501d"
+        ],
+        "changed_lines": {
+          "available": false,
+          "reason": "diff_unavailable"
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114933912285-n-render-evidence/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6248704,
+            "cached_input_tokens_cumulative": 6248704,
+            "input_tokens": 6442356,
+            "input_tokens_cumulative": 6442356,
+            "output_tokens": 30852,
+            "output_tokens_cumulative": 30852,
+            "reasoning_output_tokens": 13080,
+            "reasoning_output_tokens_cumulative": 13080
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 336
+    "_version": 338
   }
 }
