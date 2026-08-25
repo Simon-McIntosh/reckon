@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:11:57",
+  "updated": "2026-08-25T14:15:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -148,21 +148,30 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03431-716d-7bf1-a6d2-9860293c7c36",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038d1-bbfe-7343-a316-eeff6ebd712e"
+        }
       },
       {
         "id": "codex-q",
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03380-aad4-70d0-8784-cab02931ebe8",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038d2-690e-7992-be49-fad4f0f9c67e"
+        }
       },
       {
         "id": "codex-r",
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03431-7897-7180-81e8-0163745c11f0",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038d3-e76a-7eb2-b852-18e1de1077ab"
+        }
       },
       {
         "id": "codex-s",
@@ -18399,9 +18408,386 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T120731166125-n-inflight-effort-not-model",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-inflight-effort-not-model",
+        "node_definition": {
+          "done_when": "a rendered check asserts the band's scrollWidth does not exceed its clientWidth at 1374, no runtime model string appears in the band, the plan's worker-hours do, and the test that required run.model is inverted to forbid it",
+          "estimated_hours": 0.75,
+          "goal": "The reader in-flight band identifies work by the plan's own effort rather than a runtime model name, in a row that fits the reader without hiding its action column at the minimum width",
+          "id": "n-inflight-effort-not-model",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120731166125-n-inflight-effort-not-model/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/plan.jsx",
+            "docs/ui/reader.css",
+            "tests/test_spa_reader_provenance.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-p",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:07:43Z",
+        "completed_at": "2026-08-25T12:12:53Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 310,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 310,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "c9fed033ed484efd24d521af6192da55fa26ec0a",
+        "commits": [
+          "c81a3fd"
+        ],
+        "changed_lines": {
+          "added": 94,
+          "removed": 7,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120731166125-n-inflight-effort-not-model/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d1-bbfe-7343-a316-eeff6ebd712e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2346496,
+            "cached_input_tokens_cumulative": 2346496,
+            "input_tokens": 2471775,
+            "input_tokens_cumulative": 2471775,
+            "output_tokens": 11552,
+            "output_tokens_cumulative": 11552,
+            "reasoning_output_tokens": 4140,
+            "reasoning_output_tokens_cumulative": 4140
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T120819852072-n-crew-card-effort-not-model",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-crew-card-effort-not-model",
+        "node_definition": {
+          "done_when": "a named test in tests/test_spa_crew_cards.py asserts 0 runtime model strings on the collapsed card face and a non-empty plan worker-hours figure present, and the existing crew-card tests still pass",
+          "estimated_hours": 0.75,
+          "goal": "The Crew run card carries the plan's own effort on its face, with backend and runtime model detail reachable only behind its existing expansion",
+          "id": "n-crew-card-effort-not-model",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120819852072-n-crew-card-effort-not-model/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/crew.jsx",
+            "docs/ui/crew.css",
+            "tests/test_spa_crew_cards.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-q",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:08:28Z",
+        "completed_at": "2026-08-25T12:11:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 207,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 207,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "c9fed033ed484efd24d521af6192da55fa26ec0a",
+        "commits": [
+          "6283a32"
+        ],
+        "changed_lines": {
+          "added": 67,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120819852072-n-crew-card-effort-not-model/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d2-690e-7992-be49-fad4f0f9c67e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1597440,
+            "cached_input_tokens_cumulative": 1597440,
+            "input_tokens": 1712076,
+            "input_tokens_cumulative": 1712076,
+            "output_tokens": 8604,
+            "output_tokens_cumulative": 8604,
+            "reasoning_output_tokens": 3211,
+            "reasoning_output_tokens_cumulative": 3211
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T120957053955-n-hidden-project-reach",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-hidden-project-reach",
+        "node_definition": {
+          "done_when": "a named test asserts the primary project control lists every mounted project including one hidden by the visibility setting, that activating a hidden entry routes to it, and the existing visibility tests still pass",
+          "estimated_hours": 0.75,
+          "goal": "Every mounted project is switchable from the primary project control, so a hidden project is reachable without knowing the palette or typing a URL",
+          "id": "n-hidden-project-reach",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120957053955-n-hidden-project-reach/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/_shared.jsx",
+            "docs/ui/topbar.css",
+            "tests/test_spa_project_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-r",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:10:06Z",
+        "completed_at": "2026-08-25T12:12:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 169,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 169,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "ec56bafd101988d816c8a0a06efb2f4612e51643",
+        "commits": [
+          "a0890ce"
+        ],
+        "changed_lines": {
+          "added": 24,
+          "removed": 5,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120957053955-n-hidden-project-reach/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d3-e76a-7eb2-b852-18e1de1077ab",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1078272,
+            "cached_input_tokens_cumulative": 1078272,
+            "input_tokens": 1166867,
+            "input_tokens_cumulative": 1166867,
+            "output_tokens": 6766,
+            "output_tokens_cumulative": 6766,
+            "reasoning_output_tokens": 1732,
+            "reasoning_output_tokens_cumulative": 1732
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T120606250542-n-sprint-label-legibility",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-sprint-label-legibility",
+        "node_definition": {
+          "done_when": "a rendered check asserts no sprint title span and no sprint mark label has a scrollWidth exceeding its clientWidth at 1374 and at 1920, and the timeline consumes the available width rather than a fixed 1216px",
+          "estimated_hours": 0.75,
+          "goal": "Sprint names and gantt marks render their full text instead of clipping inside fixed columns that leave wide-viewport space unused",
+          "id": "n-sprint-label-legibility",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120606250542-n-sprint-label-legibility/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_sprints_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-o",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:06:14Z",
+        "completed_at": "2026-08-25T12:13:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 442,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 442,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "3dbe3f3428da51c06f90ba53534fc7b469fd689e",
+        "commits": [
+          "a99b5d8"
+        ],
+        "changed_lines": {
+          "added": 90,
+          "removed": 7,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120606250542-n-sprint-label-legibility/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d0-5d85-7691-9167-daf9166044e6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 857856,
+            "cached_input_tokens_cumulative": 857856,
+            "input_tokens": 962678,
+            "input_tokens_cumulative": 962678,
+            "output_tokens": 5042,
+            "output_tokens_cumulative": 5042,
+            "reasoning_output_tokens": 2072,
+            "reasoning_output_tokens_cumulative": 2072
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 349
+    "_version": 356
   }
 }
