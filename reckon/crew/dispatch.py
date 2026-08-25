@@ -770,6 +770,7 @@ class DispatchPlan:
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
     live_conflicts: list[dict[str, Any]] | None = None
+    sandbox_write_roots: tuple[Path, ...] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
@@ -778,6 +779,14 @@ class DispatchPlan:
             "launch": self.launch,
             "node": self.node.as_dict(),
             "run_id": self.run_id,
+            "sandbox": {
+                "tier": self.backend_settings.get("sandbox"),
+                "write_roots": (
+                    None
+                    if self.sandbox_write_roots is None
+                    else [str(path) for path in self.sandbox_write_roots]
+                ),
+            },
             "time_budget": self.node.time_budget,
             "validation": self.validation.as_dict(),
             "write_paths": list(self.node.write_paths),
@@ -843,6 +852,46 @@ def _require_write_paths_in_authority(
             f"{delivery_roots[1]}; the repository containing this path is missing from "
             "mounts.json or outside the resolved plan authority"
         )
+
+
+def _sandbox_reachability(
+    node: TaskNode,
+    *,
+    backend: Mapping[str, Any],
+    repository: Path,
+    run_directory: Path,
+) -> tuple[tuple[Path, ...] | None, list[dict[str, str]]]:
+    """Resolve writable roots and report declared paths outside every grant."""
+    roots = _backends.sandbox_write_roots(
+        backend,
+        repository=repository,
+        run_directory=run_directory,
+        reports_directory=reports_dir(),
+        manifest_path=node.manifest_path,
+    )
+    if "execution_capable" not in backend:
+        return roots, []
+    tier = str(backend.get("sandbox") or _backends.READ_ONLY)
+    unreachable = [
+        str(path)
+        for path in node.write_paths
+        if not _backends.sandbox_can_write(
+            path,
+            repository=repository,
+            write_roots=roots,
+        )
+    ]
+    grants = "unrestricted" if roots is None else ", ".join(str(root) for root in roots)
+    return roots, [
+        {
+            "property": "scoped",
+            "detail": (
+                f"write path {path!r} is unreachable in resolved sandbox tier "
+                f"{tier!r}; writable grants: {grants or 'none'}"
+            ),
+        }
+        for path in unreachable
+    ]
 
 
 def plan_dispatch(
@@ -917,6 +966,7 @@ def plan_dispatch(
             ],
         )
     resolved_authority: dict[str, Any] | None = None
+    sandbox_write_roots: tuple[Path, ...] | None = None
     if verdict.ok and repo is not None:
         resolved_authority = dict(
             authority or resolve_dispatch_authority(project, repo)
@@ -933,6 +983,17 @@ def plan_dispatch(
             **resolved_authority["plan"],
             "base_sha": plan_commit,
         }
+        sandbox_write_roots, sandbox_findings = _sandbox_reachability(
+            node,
+            backend=backend,
+            repository=Path(repo).resolve(),
+            run_directory=run_dir(resolved_run_id),
+        )
+        if sandbox_findings:
+            verdict = NodeValidation(
+                ok=False,
+                findings=[*verdict.findings, *sandbox_findings],
+            )
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -958,6 +1019,7 @@ def plan_dispatch(
                 authority=resolved_authority,
                 claims=_repository_scope_claims(),
             )
+    resolution.sandbox_write_roots = sandbox_write_roots
     return resolution
 
 
@@ -1244,6 +1306,11 @@ def dispatch(
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
+            "sandbox_write_roots": (
+                None
+                if resolution.sandbox_write_roots is None
+                else [str(path) for path in resolution.sandbox_write_roots]
+            ),
             "session_reuse": bool(backend.get("session_reuse")),
             "member": effective_member,
             # The configuration that actually ran the node, recorded now because
@@ -1295,6 +1362,7 @@ def dispatch(
                 prompt=prompt,
                 worktree=worktree["path"],
                 manifest_path=node.manifest_path,
+                writable_directories=resolution.sandbox_write_roots or (),
                 final_message_path=str(final_path),
                 resume_session=reuse_session,
             )
@@ -1324,6 +1392,10 @@ def dispatch(
                     "time": node.time_budget,
                 },
                 "prompt_path": str(prompt_path),
+                "sandbox": {
+                    "tier": backend.get("sandbox"),
+                    "write_roots": record["sandbox_write_roots"],
+                },
                 "worktree": worktree["path"],
             }
 
@@ -1595,6 +1667,7 @@ def resume_plan(
         prompt=advice,
         worktree=str(record.get("worktree") or "."),
         manifest_path=str(record.get("manifest_path") or ""),
+        writable_directories=record.get("sandbox_write_roots") or (),
         resume_session=str(session_id),
     )
 

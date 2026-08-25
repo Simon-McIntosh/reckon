@@ -45,6 +45,7 @@ from __future__ import annotations
 import json
 import queue
 import subprocess
+import tempfile
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -56,6 +57,47 @@ from typing import Any, Callable, Iterable, Mapping
 READ_ONLY = "read-only"
 WORKSPACE_WRITE = "workspace-write"
 WORKTREE_FULL = "worktree-full"
+
+
+def sandbox_write_roots(
+    backend: Mapping[str, Any],
+    *,
+    repository: str | Path,
+    run_directory: str | Path,
+    reports_directory: str | Path,
+    manifest_path: str | Path | None = None,
+) -> tuple[Path, ...] | None:
+    """Return writable roots for a resolved sandbox, or None if unrestricted."""
+    tier = str(backend.get("sandbox") or READ_ONLY)
+    if tier == WORKTREE_FULL:
+        return None
+    roots = {
+        Path(run_directory).expanduser().resolve(),
+        Path(reports_directory).expanduser().resolve(),
+        Path(tempfile.gettempdir()).expanduser().resolve(),
+    }
+    if manifest_path:
+        manifest = Path(manifest_path).expanduser()
+        if manifest.is_absolute():
+            roots.add(manifest.resolve().parent)
+    if tier == WORKSPACE_WRITE:
+        roots.add(Path(repository).expanduser().resolve())
+    return tuple(sorted(roots, key=lambda path: path.as_posix()))
+
+
+def sandbox_can_write(
+    path: str | Path,
+    *,
+    repository: str | Path,
+    write_roots: tuple[Path, ...] | None,
+) -> bool:
+    """Return whether a declared path is reachable through resolved grants."""
+    if write_roots is None:
+        return True
+    repository_root = Path(repository).expanduser().resolve()
+    raw = Path(path).expanduser()
+    resolved = (raw if raw.is_absolute() else repository_root / raw).resolve()
+    return any(resolved.is_relative_to(root) for root in write_roots)
 
 
 class BackendError(Exception):
@@ -232,6 +274,7 @@ class Dialect:
         backend: Mapping[str, Any],
         worktree: str,
         working_directory: str,
+        writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
@@ -279,11 +322,19 @@ class _CodexDialect(Dialect):
         backend: Mapping[str, Any],
         worktree: str,
         working_directory: str,
+        writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
         argv += self._sandbox_flags(backend.get("sandbox"))
+        if backend.get("sandbox") in (READ_ONLY, WORKSPACE_WRITE):
+            working_root = Path(working_directory).resolve()
+            for directory in writable_directories:
+                root = Path(directory).resolve()
+                if root == working_root or root.is_relative_to(working_root):
+                    continue
+                argv += ["--add-dir", str(root)]
         model = backend.get("model")
         if model:
             argv += ["-m", str(model)]
@@ -460,6 +511,7 @@ class _ClaudeDialect(Dialect):
         backend: Mapping[str, Any],
         worktree: str,
         working_directory: str,
+        writable_directories: Iterable[str] = (),
         final_message_path: str | None,
         resume_session: str | None,
     ) -> list[str]:
@@ -475,7 +527,7 @@ class _ClaudeDialect(Dialect):
         argv += self._sandbox_flags(backend.get("sandbox"))
         # --add-dir is variadic, so it goes last and the prompt goes on stdin;
         # a prompt argument after it is read as another directory.
-        argv += ["--add-dir", worktree]
+        argv += ["--add-dir", worktree, *writable_directories]
         return argv
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -652,6 +704,7 @@ def launch_plan(
     prompt: str,
     worktree: str | Path,
     manifest_path: str | Path | None = None,
+    writable_directories: Iterable[str | Path] = (),
     final_message_path: str | Path | None = None,
     resume_session: str | None = None,
 ) -> LaunchPlan:
@@ -682,6 +735,7 @@ def launch_plan(
         backend=backend,
         worktree=worktree_path,
         working_directory=working_directory,
+        writable_directories=tuple(str(path) for path in writable_directories),
         final_message_path=final_path,
         resume_session=resume_session,
     )
