@@ -557,23 +557,20 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
           >
             <span className={`dot ${authored === effective ? effective : "transition"}`} title={authored === effective ? effective : `${authored} to ${effective}`}></span>
             <div>
-              <div className="t">{p.title}</div>
+              <div className="t" title={p.title}>{p.title}</div>
               <div className="meta">
                 {identity.map((value, index) => <React.Fragment key={`${value}-${index}`}><span>{value}</span><span className="sp">·</span></React.Fragment>)}
                 <button className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>
-                {p.north_star && <><span className="sp">·</span><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span></>}
                 {edited && <><span className="sp">·</span><span className="date" title={`Edited ${edited}`}>edited {edited}</span></>}
-              </div>
-              {authored !== effective ? (
-                <button className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
+                {authored !== effective && <span className="sp">·</span>}
+                {authored !== effective ? (
+                  <button className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
                   <span>{authored}</span><span aria-hidden="true">→</span><span>{effective}</span><span>{gates} open {gates === 1 ? "gate" : "gates"}</span>
-                </button>
-              ) : null}
-              {(p.blockers || 0) > 0 && (
-                <div className="sigs">
-                  {(p.blockers || 0) > 0 && <button className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button>}
-                </div>
-              )}
+                  </button>
+                ) : null}
+                {(p.blockers || 0) > 0 && <span className="sp">·</span>}
+                {(p.blockers || 0) > 0 && <button className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button>}
+              </div>
             </div>
           </div>
         );

@@ -3,6 +3,11 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
+
+from tests.spa_browser_harness import BROWSER_NAMES, installed_browser, served_spa
+from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
@@ -166,6 +171,78 @@ def test_reader_typography_and_topbar_hold_the_declared_geometry() -> None:
     shell = SHELL.read_text()
     assert 'className="r-sort-more"' in shell
     assert 'className="r-attachment-empty"' in shell
+
+
+def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
+    tmp_path: Path,
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip(
+            "rendered plan-list check requires an installed browser; tried "
+            + ", ".join(BROWSER_NAMES)
+        )
+
+    probe = r"""(() => {
+      const list = document.querySelector(".r-list-body");
+      const rows = [...list.querySelectorAll(":scope > .r-row")];
+      const metadata = rows.map(row => row.querySelector(":scope > div > .meta"));
+      const metadataGeometry = metadata.map(element => {
+        const style = getComputedStyle(element);
+        return {
+          height: element.getBoundingClientRect().height,
+          lineHeight: Number.parseFloat(style.lineHeight),
+        };
+      });
+      const rowHeights = rows.map(row => row.getBoundingClientRect().height);
+      const northStarPhrases = (window.STATE?.north_stars || [])
+        .flatMap(direction => [direction.name, direction.statement])
+        .filter(Boolean);
+      const listText = list.textContent;
+      return {
+        metadataCount: metadata.length,
+        metadataGeometry,
+        rowHeights,
+        rowHeightRange: Math.max(...rowHeights) - Math.min(...rowHeights),
+        northStarMatches: northStarPhrases.filter(phrase => listText.includes(phrase)),
+      };
+    })()"""
+
+    with served_spa(tmp_path, browser, route="#plans") as context:
+        result = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                NODE_PROBE,
+                json.dumps(
+                    {
+                        "browser": browser,
+                        "url": context.url,
+                        "waitSelector": ".r-list-body > .r-row .meta",
+                        "probe": probe,
+                        "removeSignal": "undefined",
+                        "failPlanHtml": False,
+                        "fixtureIndex": INDEX_STATE,
+                    }
+                ),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+
+    assert result.returncode == 0, result.stderr
+    geometry = json.loads(result.stdout)["baseline"]
+    print(json.dumps(geometry, sort_keys=True))
+    assert geometry["metadataCount"] >= 10
+    assert all(
+        item["height"] == pytest.approx(item["lineHeight"], abs=0.5)
+        for item in geometry["metadataGeometry"]
+    )
+    assert geometry["northStarMatches"] == []
+    assert geometry["rowHeightRange"] < 20
 
 
 def test_idle_projects_are_hidden_until_the_browser_records_an_override() -> None:
