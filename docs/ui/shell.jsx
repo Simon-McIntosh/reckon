@@ -33,15 +33,67 @@ function useHashRoute() {
 
 // ─── Top bar ────────────────────────────────────────────────────────────
 
-function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleFilters, theme, setTheme, density, setDensity, projects }) {
+const PROJECT_VISIBILITY_STORAGE = "reckon:hidden-projects";
+
+function mountedProjectRows(projects) {
+  return (projects || []).filter(project => Number(project.plans_count) > 0);
+}
+
+function visibleProjectRows(projects, hiddenProjects) {
+  const hidden = new Set(hiddenProjects || []);
+  const mounted = mountedProjectRows(projects);
+  if (mounted.length && mounted.every(project => hidden.has(project.project))) {
+    hidden.delete(mounted[0].project);
+  }
+  return mounted.filter(project => !hidden.has(project.project));
+}
+
+function projectVisibilityChange(projects, hiddenProjects, focusedProject, targetProject) {
+  const hidden = new Set(hiddenProjects || []);
+  if (hidden.has(targetProject)) {
+    hidden.delete(targetProject);
+    return { changed: true, hidden: [...hidden], focus: focusedProject };
+  }
+  const survivors = visibleProjectRows(projects, hiddenProjects)
+    .filter(project => project.project !== targetProject);
+  if (!survivors.length) {
+    return { changed: false, hidden: [...hidden], focus: focusedProject };
+  }
+  hidden.add(targetProject);
+  return {
+    changed: true,
+    hidden: [...hidden],
+    focus: focusedProject === targetProject ? survivors[0].project : focusedProject,
+  };
+}
+
+function snapshotTime(loadedAt) {
+  if (!loadedAt) return "unknown time";
+  const loaded = new Date(loadedAt);
+  if (Number.isNaN(loaded.getTime())) return "unknown time";
+  return loaded.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function snapshotReceipt(state) {
+  return {
+    sourceFormat: state?.source_format || "unknown source",
+    resourceCount: Object.keys(state?.resource_versions || {}).length,
+    loadedAt: snapshotTime(state?.loaded_at),
+  };
+}
+
+function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleFilters, theme, setTheme, density, setDensity, projects, hiddenProjects, onToggleProject }) {
   const M = window.STATE;
   const view = route.view;
   const currentProject = M?.project
     || (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
     || null;
 
-  // Assign window globals to local vars so JSX can use them as components
-  const PP = window.ProjectPicker;
+  const mountedProjects = mountedProjectRows(projects);
+  const visibleProjects = visibleProjectRows(projects, hiddenProjects);
+  const snapshot = snapshotReceipt(M);
+
+  // Assign the window global to a local var so JSX can use it as a component.
   const SM = window.SettingsMenu;
 
   const goPlans = () => {
@@ -55,13 +107,48 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
   return (
     <div className="r-topbar">
-      {PP ? (
-        <PP current={currentProject} projects={projects} onNav={navProject} />
-      ) : (
-        <div className="brand" onClick={() => navProject(null)} style={{ cursor: "pointer" }}>
-          <span className="name">{currentProject || "fleet"}</span>
-        </div>
-      )}
+      <button className="r-topbar-brand" onClick={() => navProject(null)} title="All projects">
+        <span className="r-topbar-mark">r</span>
+        <span>reckon</span>
+      </button>
+      <div className="r-project-strip" aria-label="Visible projects">
+        {visibleProjects.map(project => (
+          <button
+            key={project.project}
+            className={`r-project-chip ${project.project === currentProject ? "active" : ""}`}
+            onClick={() => navProject(project.project)}
+            aria-current={project.project === currentProject ? "page" : undefined}
+          >
+            <span className={`r-live-dot ${project.live ? "is-live" : ""}`} aria-hidden="true"></span>
+            {project.project}
+          </button>
+        ))}
+        <details className="r-project-manage">
+          <summary>Manage</summary>
+          <div className="r-project-manage-panel">
+            <div className="r-project-manage-count">
+              {visibleProjects.length} of {mountedProjects.length} mounted
+            </div>
+            {mountedProjects.map(project => {
+              const visible = visibleProjects.some(row => row.project === project.project);
+              const lastVisible = visible && visibleProjects.length === 1;
+              return (
+                <button
+                  key={project.project}
+                  className={`r-project-manage-row ${visible ? "is-visible" : ""}`}
+                  onClick={() => onToggleProject(project.project)}
+                  disabled={lastVisible}
+                  title={lastVisible ? "The last visible project cannot be hidden" : undefined}
+                  aria-pressed={visible}
+                >
+                  <span>{project.project}</span>
+                  <span>{visible ? "visible" : "hidden"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      </div>
       <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="7" cy="7" r="4.5"/>
@@ -124,6 +211,12 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             </svg>
           </button>
         )}
+      </div>
+      <div className="r-snapshot-receipt" role="status">
+        <span>{snapshot.sourceFormat}</span>
+        <span>{snapshot.resourceCount} resources</span>
+        <span>loaded {snapshot.loadedAt}</span>
+        <button type="button" onClick={() => window.location.reload()}>Refresh</button>
       </div>
     </div>
   );
@@ -1060,16 +1153,34 @@ function App() {
   const [cmdKOpen, setCmdKOpen] = useState(false);
 
   const [projects, setProjects] = useState([]);
+  const [hiddenProjects, setHiddenProjects] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(PROJECT_VISIBILITY_STORAGE) || "[]");
+      return Array.isArray(stored) ? stored : [];
+    } catch { return []; }
+  });
   useEffect(() => {
-    fetch("/_projects/index.json")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+    Promise.all([
+      fetch("/_projects/index.json").then(response => response.ok ? response.json() : null),
+      fetch("/crew")
+        .then(response => response.ok ? response.json() : null)
+        .catch(() => ({ runs: [] })),
+    ])
+      .then(([data, crew]) => {
         if (!data?.projects) return;
-        setProjects(data.projects.map(p => ({
-          project: p.project,
-          accent: p.data?.accent || window.ACCENTS?.[p.project] || "var(--accent)",
-          plans_count: p.data?.counts?.total || 0,
-        })));
+        const liveProjects = new Set((crew?.runs || []).map(run => run.project));
+        setProjects(data.projects.map(project => {
+          const state = project.data || {};
+          const summary = Array.isArray(state.projects) ? state.projects[0] : null;
+          const inventory = Array.isArray(state.inventory) ? state.inventory : [];
+          const plans = Array.isArray(state.plans) ? state.plans : inventory;
+          return {
+            project: project.project,
+            accent: summary?.accent || state.accent || window.ACCENTS?.[project.project] || "var(--accent)",
+            plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
+            live: liveProjects.has(project.project),
+          };
+        }));
       })
       .catch(() => {});
   }, []);
@@ -1107,6 +1218,27 @@ function App() {
     }
     window.location.href = `/${destProject}/${hash}`;
   }, [route]);
+
+  const toggleProject = useCallback((targetProject) => {
+    const currentProject = window.STATE?.project || null;
+    const change = projectVisibilityChange(projects, hiddenProjects, currentProject, targetProject);
+    if (!change.changed) return;
+    setHiddenProjects(change.hidden);
+    try { localStorage.setItem(PROJECT_VISIBILITY_STORAGE, JSON.stringify(change.hidden)); } catch {}
+    if (change.focus && change.focus !== currentProject) navProject(change.focus);
+  }, [projects, hiddenProjects, navProject]);
+
+  useEffect(() => {
+    const currentProject = window.STATE?.project || null;
+    const visible = visibleProjectRows(projects, hiddenProjects);
+    if (
+      currentProject
+      && visible.length
+      && !visible.some(project => project.project === currentProject)
+    ) {
+      navProject(visible[0].project);
+    }
+  }, [projects, hiddenProjects, navProject]);
 
   const M = window.STATE;
   const items = useMemo(() => {
@@ -1183,6 +1315,8 @@ function App() {
           density={density}
           setDensity={setDensity}
           projects={projects}
+          hiddenProjects={hiddenProjects}
+          onToggleProject={toggleProject}
         />
       <div className={`r-3col ${filtersHidden ? "filters-collapsed" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}>
         <button
