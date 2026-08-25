@@ -488,7 +488,7 @@ Only author fields that a view downstream consumes:
 | `plan-capability-tool-autonomy` | (empty) | `guided` / `autonomous` |
 | `plan-capability-verification` | (empty) | `standard` / `strict` |
 | `plan-capability-risk` | (empty) | `low` / `moderate` / `elevated` / `critical` |
-| `plan-summary` | (empty) | One-line synopsis |
+| `plan-summary` | (empty) | One-line synopsis, at most 160 characters |
 | `plan-milestone` | (empty) | e.g. `M2` |
 | `plan-sprint` | (empty) | e.g. `S4` |
 | `plan-tags` | (empty) | Comma-separated canonical identities chosen from discovery's live `tag_inventory` |
