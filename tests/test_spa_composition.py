@@ -15,7 +15,11 @@ from tests.spa_browser_harness import (
 
 def test_browser_harness_reports_an_absent_binary_as_a_clean_skip(tmp_path: Path) -> None:
     absent = tmp_path / "browser-is-not-installed"
-    context = ServedSpa(browser=str(absent), url="http://127.0.0.1:1/")
+    context = ServedSpa(
+        browser=str(absent),
+        url="http://127.0.0.1:1/",
+        tmp_path=tmp_path,
+    )
     result = context.run_composition_probe()
 
     assert result.returncode == 77
