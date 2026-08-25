@@ -192,7 +192,9 @@ def _candidate_config() -> dict:
 def _candidate_config_with_distinct_agent() -> dict:
     """Route to a candidate whose defaults differ from the primary agent."""
     config = _candidate_config()
-    config["backends"]["candidate"].update({"effort": "medium", "sandbox": "read-only"})
+    config["backends"]["candidate"].update(
+        {"effort": "medium", "sandbox": "read-only", "time_budget": "8m"}
+    )
     return config
 
 
@@ -3231,6 +3233,74 @@ def test_shadow_explicit_effort_override_is_used_and_recorded(home, repo) -> Non
     }
 
 
+def test_shadow_inherits_primary_time_budget_instead_of_role_default(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config_with_distinct_agent(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert primary["time_budget"] == "20m"
+    assert shadow["node"]["time_budget"] == "20m"
+    assert shadow["lineage"]["configuration"]["inherited"]["time_budget"] == "20m"
+
+
+def test_shadow_explicit_time_budget_override_is_used_and_recorded(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    config = _candidate_config_with_distinct_agent()
+    config["backends"]["candidate"]["time_budget"] = "12m"
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=config,
+        repo=repo,
+        configuration_overrides={"time_budget"},
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert shadow["node"]["time_budget"] == "12m"
+    assert shadow["lineage"]["configuration"]["substituted"]["time_budget"] == {
+        "primary": "20m",
+        "shadow": "12m",
+        "via": "override",
+    }
+
+
+def test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallback(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    data, version = ledger.load("proj", repo)
+    data["runs"][0].pop("time_budget")
+    ledger.write("proj", data, version, repo)
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config_with_distinct_agent(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    comparison = shadow["lineage"]["configuration"]
+    assert shadow["node"]["time_budget"] == "8m"
+    assert comparison["inherited"]["time_budget"] == "8m"
+    assert comparison["fallbacks"]["time_budget"] == {
+        "source": "resolved_role_default",
+        "value": "8m",
+    }
+
+
 def test_shadow_refuses_primary_without_recorded_agent_configuration(
     home, repo
 ) -> None:
@@ -3424,7 +3494,9 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
         observed_overrides.extend(overrides)
         assert project == "proj"
         assert checkout_path == repo
-        return _candidate_config_with_distinct_agent()
+        config = _candidate_config_with_distinct_agent()
+        config["backends"]["candidate"]["time_budget"] = "12m"
+        return config
 
     monkeypatch.chdir(repo)
     monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
@@ -3439,6 +3511,8 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
             "candidate",
             "--set",
             "roles.implement.effort=medium",
+            "--set",
+            "roles.implement.time_budget=12m",
             "--dry-run",
         ],
     )
@@ -3451,6 +3525,12 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
     assert payload["lineage"]["configuration"]["substituted"]["effort"] == {
         "primary": "high",
         "shadow": "medium",
+        "via": "override",
+    }
+    assert payload["time_budget"] == "12m"
+    assert payload["lineage"]["configuration"]["substituted"]["time_budget"] == {
+        "primary": "20m",
+        "shadow": "12m",
         "via": "override",
     }
     assert observed_overrides[-2:] == [
@@ -3515,6 +3595,7 @@ def test_shadow_completion_refuses_commits_and_measures_the_retained_patch(
         == "candidate"
     )
     assert stored["lineage"]["configuration"]["inherited"]["effort"] == "high"
+    assert stored["lineage"]["configuration"]["inherited"]["time_budget"] == "20m"
     assert stored["attempt"] == primary["attempt"]
     assert stored["attempt_kind"] == "shadow"
     assert (
