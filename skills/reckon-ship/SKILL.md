@@ -539,14 +539,11 @@ reads `starting` until an `observe` folds its stream; `process_alive` and
 `log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
 promoting without it records `tokens: null`.
 
-**The read split governs a turn, not a shell loop.** A background script cannot
-call an MCP tool, so in-loop only `reckon crew follow` (transitions) and `reckon
-crew list` (the one script-reachable classifier) remain. `list` omits the live
-view's classification, liveness, elapsed, log age, budget and next action, so a
-loop grepping it has not established that a worker is alive. Let `follow` wake
-the session, then read `crew(project, view="live")` at turn time. Grepping a
-manifest is weaker again: a worker that dies without writing one emits nothing,
-and that silence reads as progress.
+**The read split governs a turn, not a shell loop.** Background scripts cannot
+call MCP, so use `reckon crew follow` for transitions and `reckon crew list` for
+classified snapshots. Let `follow` wake the session, then read
+`crew(project, view="live")` at turn time; manifest polling remains weaker
+because a worker can die without writing one.
 
 ### Keep one project-wide watch live while dispatching
 
