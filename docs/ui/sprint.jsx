@@ -200,8 +200,8 @@ function Sprint({ sprintId, onNav }) {
               const focus = row.id === M.active_sprint_id;
               const label = `${row.id}, ${row.status}, ${openCount} open item${openCount === 1 ? "" : "s"}${focus ? ", legacy focus" : ""}`;
               return <div className="r-timeline-row" key={row.id}>
-                <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span>{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">legacy focus</em>}</a>
-                <div className="r-timeline-track"><a className={`r-sprint-mark ${row.status}`} href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }} title={`Open ${label}`} aria-label={`Open ${label}`}><span>{row.id}</span></a></div>
+                <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span className="r-sprint-title">{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">legacy focus</em>}</a>
+                <div className="r-timeline-track"><a className={`r-sprint-mark ${row.status}`} href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }} title={`Open ${label}`} aria-label={`Open ${label}`}><span className="r-sprint-mark-label">{row.id}</span></a></div>
               </div>;
             })}
           </div>
