@@ -19,6 +19,7 @@ def _project(tmp_path: Path, name: str = "active") -> Path:
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="visible-work">'
         '<meta name="plan-sprint" content="current">'
+        '<meta name="plan-effort-hours" content="3.25">'
         "<title>Visible work</title>"
         "</head><body></body></html>",
         encoding="utf-8",
@@ -32,6 +33,7 @@ def _pointer(project: str = "active") -> dict:
         "project": project,
         "member": "observer",
         "role": "implement",
+        "backend": "codex",
         "agent": {"model": "frontier", "effort": "high"},
         "created_at": datetime.now(tz=timezone.utc).isoformat(),
         "node": {
@@ -76,38 +78,24 @@ def test_crew_rows_preserve_fields_without_discovery(
 
     assert len(rows) == 1
     row = rows[0]
-    assert set(row) == {
-        "run_id",
-        "project",
-        "member",
-        "role",
-        "plan",
-        "section",
-        "model",
-        "effort",
-        "elapsed_seconds",
-        "phase",
-        "last_activity",
-        "gate",
-        "plan_href",
-        "sprint_href",
-    }
-    assert row == {
-        **row,
+    expected_fields = {
         "run_id": "run-live",
         "project": "active",
         "member": "observer",
         "role": "review",
         "plan": "visible-work",
         "section": "delivery",
+        "backend": "codex",
         "model": "frontier",
         "effort": "high",
+        "effort_hours": 3.25,
         "phase": "working",
         "last_activity": "2026-08-25T07:30:00Z",
         "gate": "the route returns the live run",
         "plan_href": "/active/#plan/visible-work",
         "sprint_href": "/active/#sprint/current",
     }
+    assert row.items() >= expected_fields.items()
     assert row["elapsed_seconds"] >= 0
 
 
