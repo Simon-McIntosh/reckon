@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:23:28",
+  "updated": "2026-08-25T14:29:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -228,7 +228,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03444-dea1-7550-aaff-d2ea9329f229",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038dd-76bb-7c70-aa01-783b38dab1da"
+        }
       },
       {
         "id": "codex-y",
@@ -246,7 +249,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03448-fc9b-7000-918e-8a393a14942c",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038e1-4bd7-7260-8a43-207a7c9ab134"
+        }
       },
       {
         "id": "sandbox-fix",
@@ -19268,9 +19274,293 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T121640064205-n-overview-blocker-scope",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a78",
+        "node": "n-overview-blocker-scope",
+        "node_definition": {
+          "done_when": "a rendered check asserts the blocker region occupies less than one viewport height at 1374 where it previously measured 1930.5px in a 1033px view, that changing the plan scope removes unrelated blockers from the rendered set, and that summary owner gated-count and next-action survive for a scoped blocker",
+          "estimated_hours": 1.0,
+          "goal": "The Overview presents blockers scoped to a chosen plan rather than flattening every unresolved blocker in the portfolio into one stream",
+          "id": "n-overview-blocker-scope",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121640064205-n-overview-blocker-scope/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/overview.css",
+            "reckon/project_state.py",
+            "tests/test_spa_overview_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-t",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:16:45Z",
+        "completed_at": "2026-08-25T12:26:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 559,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 559,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "3168292e62efffc4cbf67957d6fd6e1210d88c4d",
+        "commits": [
+          "55e492a"
+        ],
+        "changed_lines": {
+          "added": 370,
+          "removed": 7,
+          "files": 4
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121640064205-n-overview-blocker-scope/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d9-ff9f-7570-b35d-ddbf75625529",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1876992,
+            "cached_input_tokens_cumulative": 1876992,
+            "input_tokens": 2013418,
+            "input_tokens_cumulative": 2013418,
+            "output_tokens": 7147,
+            "output_tokens_cumulative": 7147,
+            "reasoning_output_tokens": 1880,
+            "reasoning_output_tokens_cumulative": 1880
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T122438257742-n-browser-check-is-importable",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-browser-check-is-importable",
+        "node_definition": {
+          "done_when": "a second test module imports the harness context and drives one rendered assertion through it, the existing composition tests still pass, and the harness still skips with exit reason when no browser is present",
+          "estimated_hours": 0.75,
+          "goal": "The browser composition harness is importable by other test modules so a second rendered check reuses its served-SPA context instead of reimplementing one",
+          "id": "n-browser-check-is-importable",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122438257742-n-browser-check-is-importable/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_spa_composition.py",
+            "tests/spa_browser_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-z",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:24:43Z",
+        "completed_at": "2026-08-25T12:27:53Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 190,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 190,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "f4523a732469c097df3e9fd3e2ae7aad60490fdd",
+        "commits": [
+          "fed719c"
+        ],
+        "changed_lines": {
+          "added": 123,
+          "removed": 91,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122438257742-n-browser-check-is-importable/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e1-4bd7-7260-8a43-207a7c9ab134",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1010944,
+            "cached_input_tokens_cumulative": 1010944,
+            "input_tokens": 1099219,
+            "input_tokens_cumulative": 1099219,
+            "output_tokens": 7262,
+            "output_tokens_cumulative": 7262,
+            "reasoning_output_tokens": 1638,
+            "reasoning_output_tokens_cumulative": 1638
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T122025627583-n-retire-unused-overview-component",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a74",
+        "node": "n-retire-unused-overview-component",
+        "node_definition": {
+          "done_when": "a test asserts the retired module appears in none of the four asset lists and that the four lists agree with each other, the static build bundles exactly the remaining modules, and the full suite passes",
+          "estimated_hours": 0.75,
+          "goal": "The unused legacy overview component is removed from the tree and from every asset list that loads the SPA, so exactly one component owns each redrawn surface",
+          "id": "n-retire-unused-overview-component",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122025627583-n-retire-unused-overview-component/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/cockpit.jsx",
+            "docs/index.html",
+            "reckon/serve.py",
+            "reckon/cli.py",
+            "tests/test_build.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-x",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:20:32Z",
+        "completed_at": "2026-08-25T12:26:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 372,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 372,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "5e85bdfb2feec9995dad703b40e1159d4f544142",
+        "commits": [
+          "75cd164"
+        ],
+        "changed_lines": {
+          "added": 60,
+          "removed": 145,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122025627583-n-retire-unused-overview-component/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038dd-76bb-7c70-aa01-783b38dab1da",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2756352,
+            "cached_input_tokens_cumulative": 2756352,
+            "input_tokens": 2893890,
+            "input_tokens_cumulative": 2893890,
+            "output_tokens": 10705,
+            "output_tokens_cumulative": 10705,
+            "reasoning_output_tokens": 3135,
+            "reasoning_output_tokens_cumulative": 3135
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 366
+    "_version": 371
   }
 }
