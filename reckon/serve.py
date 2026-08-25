@@ -23,6 +23,8 @@ Routes:
                                   (falls back to ~/.claude/skills/html-docs/assets/)
   GET /_projects/index.json     → cross-project rollup
   GET /_projects/<file>         → ~/docs-server/<file>
+  GET /crew/<project>/finished[/<plan>]
+                                → committed completed runs, newest first
   GET /state/<project>/<doc>    → ~/docs-server/state/<project>/<doc>.json
   POST /state/<project>/<doc>   → write the same path (versioned)
   GET /_discover/<project>      → scan docs dir for HTML plan pages (meta tag opt-in)
@@ -293,6 +295,28 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
             }
         )
     return rows
+
+
+def _finished_crew_rows(
+    mounts: dict[str, Path], project: str, plan: str | None = None
+) -> list[dict]:
+    """Return one project's committed runs ordered by completion time."""
+
+    records = ledger.runs(project, mounts[project].parent, plan=plan)
+
+    def completion_key(record: dict) -> datetime:
+        for field in ("completed_at", "dispatched_at"):
+            value = str(record.get(field) or "")
+            if not value:
+                continue
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+    return sorted(records, key=completion_key, reverse=True)
 
 
 def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> bytes:
@@ -1330,13 +1354,36 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/crew" or path.startswith("/crew/"):
-            project = None if path == "/crew" else path[len("/crew/") :]
+            parts = path.strip("/").split("/")
+            project = parts[1] if len(parts) >= 2 else None
+            finished = len(parts) in (3, 4) and parts[2] == "finished"
+            plan = parts[3] if len(parts) == 4 and finished else None
+            if len(parts) > 2 and not finished:
+                self._send(HTTPStatus.BAD_REQUEST, b"bad crew path")
+                return
             if project is not None and not SAFE_NAME.fullmatch(project):
                 self._send(HTTPStatus.BAD_REQUEST, b"bad project name")
+                return
+            if plan is not None and not SAFE_NAME.fullmatch(plan):
+                self._send(HTTPStatus.BAD_REQUEST, b"bad plan name")
                 return
             mounts = load_mounts()
             if project is not None and project not in mounts:
                 self._send(HTTPStatus.NOT_FOUND, b"project not found")
+                return
+            if finished:
+                try:
+                    records = _finished_crew_rows(mounts, project, plan)
+                except (OSError, ledger.LedgerError) as exc:
+                    self._send_json(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        {"error": "ledger_error", "detail": str(exc)},
+                    )
+                    return
+                self._send_json(
+                    HTTPStatus.OK,
+                    {"project": project, "plan": plan, "runs": records},
+                )
                 return
             self._send_json(
                 HTTPStatus.OK,
