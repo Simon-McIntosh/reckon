@@ -144,9 +144,52 @@ def _mutate_pointer(
 ) -> dict[str, Any]:
     """Apply one pointer mutation while holding its per-run lock."""
     with _pointer_lock(run_id):
-        record = mutation(read_pointer(run_id))
+        previous = read_pointer(run_id)
+        previous_attempt = int(previous.get("attempt") or 1)
+        record = mutation(previous)
+        current_attempt = int(record.get("attempt") or 1)
+        if current_attempt > previous_attempt:
+            record["attempt_budget_seconds"] = _attempt_budget_seconds(
+                run_id, record
+            )
         _write_json(pointer_path(run_id), record)
         return record
+
+
+_RESUME_BUDGET = re.compile(
+    r"\b(?:time\s+)?(?:budget|fence)\s+(?:is\s+)?"
+    r"(?:extended|extends?)\s+(?:to|by)\s+"
+    r"(?P<amount>\d+(?:\.\d+)?)\s*"
+    r"(?P<unit>seconds?|minutes?|hours?|[smh])\b",
+    re.IGNORECASE,
+)
+
+
+def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | None:
+    """Resolve the finite allowance stated for the newly launched attempt."""
+    node = record.get("node") or {}
+    try:
+        default = parse_duration(str(node.get("time_budget") or ""))
+    except CrewError:
+        default = None
+    if record.get("attempt_kind") != "resume":
+        return default
+    turn = record.get("resumed_turn")
+    try:
+        advice = (run_dir(run_id) / f"resume-{int(turn)}-advice.txt").read_text()
+    except (OSError, TypeError, ValueError):
+        return default
+    match = _RESUME_BUDGET.search(advice)
+    if match is None:
+        return default
+    amount = float(match.group("amount"))
+    unit = match.group("unit").lower()
+    multiplier = 1
+    if unit.startswith("m"):
+        multiplier = 60
+    elif unit.startswith("h"):
+        multiplier = 3600
+    return int(amount * multiplier)
 
 
 def read_pointer(run_id: str) -> dict[str, Any]:
