@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -681,24 +681,39 @@
 
     <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
     <p>
-      A shadow registers live path claims on its primary's declared write paths, yet
-      by construction it writes only inside its own worktree and merges nowhere.
-      Measured 2026-08-25: the luna shadow held claims on eight repository paths
-      including <code>reckon/cli.py</code>, and a peer session dispatching against
-      the same file eighteen seconds later stopped its own run and yielded to a
-      claim that could never have collided with it. Since the point of sampled
-      shadows is to run <em>alongside</em> live work, a shadow that reserves the
-      live scope registry is self-defeating: it converts a free measurement into a
-      lock on the paths the fleet is actively working.
+      The claim relationship is asymmetric, and only one half is right. A shadow
+      correctly does <em>not consume</em> the registry — dispatch reads
+      <code>live_claims = [] if shadow_lineage else …</code>, so a shadow is never
+      refused against live work. But it still <em>publishes</em>: the luna shadow
+      held claims on eight repository paths including <code>reckon/cli.py</code>,
+      and the reader a live dispatch consults (<code>_repository_scope_claims</code>)
+      applies no lineage filter, so those claims are visible to peers. A shadow
+      writes only inside its own worktree and merges nowhere, so nothing it declares
+      can collide with anything.
     </p>
     <p>
-      <strong>Design (fixed):</strong> a shadow run's pointer records its write
-      paths for provenance but is excluded from the live claim registry that peer
-      derivation and the scope-conflict refusal consult. A shadow neither takes a
-      claim nor is blocked by one.
+      <strong>Scope of the evidence, stated precisely:</strong> the asymmetry is
+      verified in code, the consequence is not reproduced. A peer dispatch
+      overlapping <code>reckon/cli.py</code> eighteen seconds after the shadow was
+      <em>admitted</em>, not refused, and the session that first reported a
+      scope-fence race withdrew it — its run stopped voluntarily and wrote nothing,
+      and its supporting <code>live_conflicts</code> reading came from a scopes view
+      queried without candidate nodes, which returns empty however many claims
+      exist. So no peer is known to have been blocked. What remains is a latent
+      defect worth closing before shadowing runs at scale: the point of sampled
+      shadows is to run <em>alongside</em> live work, and a measurement that
+      advertises a lock it cannot need will eventually refuse or deter a peer that
+      could have proceeded.
+    </p>
+    <p>
+      <strong>Design (fixed):</strong> make the publishing side match the consuming
+      side that is already correct. A shadow run's pointer keeps its write paths for
+      provenance, but <code>_repository_scope_claims</code> excludes shadow-lineage
+      pointers, so a shadow neither takes a claim nor is blocked by one.
     </p>
     <p><strong>Done-when:</strong> a live dispatch against paths a running shadow
-      declares is admitted rather than refused; a shadow against paths a live run
+      declares is admitted rather than refused — asserted directly, since this is
+      the behaviour that was never reproduced; a shadow against paths a live run
       holds is likewise admitted; two live runs on the same path are still refused
       with the unchanged conflict message; <code>crew</code> scope reads still show
       the shadow's paths labelled as shadow provenance; focused tests cover each and
