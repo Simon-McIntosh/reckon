@@ -1,8 +1,10 @@
 const SPRINT_HORIZONS = {
-  "4w": 28,
-  "8w": 56,
-  "6m": 183,
-  all: null,
+  "1hr": { milliseconds: 60 * 60 * 1000, subDay: true },
+  "1D": { milliseconds: 24 * 60 * 60 * 1000, subDay: true },
+  "4w": { days: 28 },
+  "8w": { days: 56 },
+  "6m": { days: 183 },
+  all: {},
 };
 
 const CLOSED_ITEM_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
@@ -44,13 +46,41 @@ function parseSprintDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function sprintAxis(sprints, horizon, todayValue) {
+function completedRunTime(run) {
+  for (const field of ["completed_at", "dispatched_at"]) {
+    const timestamp = Date.parse(run?.[field] || "");
+    if (!Number.isNaN(timestamp)) return timestamp;
+  }
+  return null;
+}
+
+function sprintCompletedRuns(sprint, runsByPlan) {
+  const memberPlans = new Set((sprint?.items || []).map(item => typeof item === "string" ? item : item.slug));
+  return Object.entries(runsByPlan || {})
+    .filter(([slug]) => memberPlans.has(slug))
+    .flatMap(([, runs]) => Array.isArray(runs) ? runs : [])
+    .sort((left, right) => (completedRunTime(right) || 0) - (completedRunTime(left) || 0));
+}
+
+function sprintAxis(sprints, horizon, todayValue, completedRuns = []) {
   const starts = (sprints || []).map(row => parseSprintDate(row.starts)).filter(Boolean);
   const ends = (sprints || []).map(row => parseSprintDate(row.ends)).filter(Boolean);
   const today = parseSprintDate(todayValue) || new Date();
-  const days = SPRINT_HORIZONS[horizon];
-  let start = days ? new Date(today.getTime() - 7 * 86400000) : new Date(Math.min(...starts.map(d => d.getTime()), today.getTime()));
-  let end = days ? new Date(start.getTime() + days * 86400000) : new Date(Math.max(...ends.map(d => d.getTime()), today.getTime()));
+  const setting = SPRINT_HORIZONS[horizon] || SPRINT_HORIZONS["8w"];
+  const recordedTimes = completedRuns.map(completedRunTime).filter(value => value !== null);
+  const latestRecorded = recordedTimes.length ? Math.max(...recordedTimes) : today.getTime();
+  let start;
+  let end;
+  if (setting.subDay) {
+    end = new Date(latestRecorded);
+    start = new Date(end.getTime() - setting.milliseconds);
+  } else if (setting.days) {
+    start = new Date(today.getTime() - 7 * 86400000);
+    end = new Date(start.getTime() + setting.days * 86400000);
+  } else {
+    start = new Date(Math.min(...starts.map(date => date.getTime()), today.getTime()));
+    end = new Date(Math.max(...ends.map(date => date.getTime()), today.getTime()));
+  }
   if (end <= start) end = new Date(start.getTime() + 86400000);
   const span = end - start;
   const position = sprint => {
@@ -60,12 +90,20 @@ function sprintAxis(sprints, horizon, todayValue) {
     const right = Math.max(left + 1.5, Math.min(100, ((itemEnd - start) / span) * 100));
     return { left, width: Math.max(1.5, right - left) };
   };
+  const timestampPosition = run => {
+    const timestamp = completedRunTime(run);
+    if (timestamp === null || timestamp < start.getTime() || timestamp > end.getTime()) return null;
+    return Math.max(0, Math.min(100, ((timestamp - start) / span) * 100));
+  };
   const tickCount = 6;
   const ticks = Array.from({ length: tickCount }, (_, index) => {
     const date = new Date(start.getTime() + span * index / (tickCount - 1));
-    return { left: index * 100 / (tickCount - 1), label: date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }) };
+    const format = setting.subDay
+      ? { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }
+      : { month: "short", day: "numeric", timeZone: "UTC" };
+    return { left: index * 100 / (tickCount - 1), label: date.toLocaleString(undefined, format) };
   });
-  return { position, ticks };
+  return { position, timestampPosition, ticks, start: start.toISOString(), end: end.toISOString(), subDay: Boolean(setting.subDay) };
 }
 
 function openGateCount(plan) {
@@ -98,8 +136,15 @@ function Sprint({ sprintId, onNav }) {
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
   const [sprintPromptText, setSprintPromptText] = useState(null);
   const [liveRuns, setLiveRuns] = useState([]);
+  const [finishedRunsByPlan, setFinishedRunsByPlan] = useState({});
+  const [finishedRunsState, setFinishedRunsState] = useState("loading");
   const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const items = sprintInventoryItems(sprint, M.inventory);
+  const sprintPlanSlugs = useMemo(
+    () => (sprint.items || []).map(item => typeof item === "string" ? item : item.slug).filter(Boolean),
+    [sprint]
+  );
+  const sprintPlanKey = sprintPlanSlugs.join("\u0000");
 
   useEffect(() => {
     if (!project) { setLiveRuns([]); return; }
@@ -116,6 +161,27 @@ function Sprint({ sprintId, onNav }) {
     const timer = window.setInterval(poll, 3000);
     return () => { active = false; window.clearInterval(timer); };
   }, [project]);
+
+  useEffect(() => {
+    if (!project) { setFinishedRunsByPlan({}); setFinishedRunsState("empty"); return; }
+    let active = true;
+    setFinishedRunsState("loading");
+    setFinishedRunsByPlan({});
+    Promise.all(sprintPlanSlugs.map(async slug => {
+      const response = await fetch(`/crew/${encodeURIComponent(project)}/finished/${encodeURIComponent(slug)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Finished work request failed with ${response.status}`);
+      const payload = await response.json();
+      return [slug, Array.isArray(payload.runs) ? payload.runs : []];
+    })).then(entries => {
+      if (!active) return;
+      const records = Object.fromEntries(entries);
+      setFinishedRunsByPlan(records);
+      setFinishedRunsState(sprintCompletedRuns(sprint, records).length ? "ready" : "empty");
+    }).catch(() => {
+      if (active) setFinishedRunsState("error");
+    });
+    return () => { active = false; };
+  }, [project, sprint.id, sprintPlanKey]);
 
   useEffect(() => {
     if (!showSprintPrompt) { setSprintPromptText(null); return; }
@@ -146,7 +212,8 @@ function Sprint({ sprintId, onNav }) {
     return Array.from({ length: plan.dec_open || 0 }, (_, index) => ({ plan, label: `Open decision ${index + 1}` }));
   });
   const overview = sprintOverviewRows(allSprints, M.inventory, foldClosed);
-  const axis = sprintAxis(allSprints, horizon, M.today);
+  const finishedRuns = useMemo(() => sprintCompletedRuns(sprint, finishedRunsByPlan), [sprint, finishedRunsByPlan]);
+  const axis = sprintAxis(allSprints, horizon, M.today, finishedRuns);
   const activeIds = new Set((M.active_sprints || allSprints.filter(row => row.status === "active")).map(row => typeof row === "string" ? row : row.id));
 
   const navigateSprint = (event, id) => {
@@ -201,11 +268,27 @@ function Sprint({ sprintId, onNav }) {
               const label = `${row.id}, ${row.status}, ${openCount} open item${openCount === 1 ? "" : "s"}${focus ? ", legacy focus" : ""}`;
               return <div className="r-timeline-row" key={row.id}>
                 <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span className="r-sprint-title">{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">legacy focus</em>}</a>
-                <div className="r-timeline-track"><a className={`r-sprint-mark ${row.status}`} href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }} title={`Open ${label}`} aria-label={`Open ${label}`}><span className="r-sprint-mark-label">{row.id}</span></a></div>
+                <div className="r-timeline-track">{axis.subDay ? (
+                  row.id === sprint.id && finishedRuns.map(run => {
+                    const left = axis.timestampPosition(run);
+                    return left === null ? null : <i className={`r-completed-run-mark ${run.gate || "unknown"}`} key={run.run_id} style={{ left: `${left}%` }} title={`${run.node || run.plan} completed ${run.completed_at || run.dispatched_at}`} />;
+                  })
+                ) : <a className={`r-sprint-mark ${row.status}`} href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }} title={`Open ${label}`} aria-label={`Open ${label}`}><span className="r-sprint-mark-label">{row.id}</span></a>}</div>
               </div>;
             })}
           </div>
           <div className="r-sprint-legend" aria-label="Timeline legend"><span><i className="active"></i> Active</span><span><i className="planned"></i> Planned</span><span><i className="shipped"></i> Shipped</span><span><b>legacy focus</b> Stored board focus</span></div>
+          <section className="r-completed-work" aria-live="polite" aria-label={`${sprint.id} completed work`}>
+            <header><div><span className="r-eyebrow">Recorded work</span><h2>{sprint.id} · {sprint.theme || sprint.summary}</h2></div><span>{finishedRuns.length} completed {finishedRuns.length === 1 ? "run" : "runs"}</span></header>
+            {finishedRunsState === "loading" && <p className="r-completed-work-state">Loading completed work…</p>}
+            {finishedRunsState === "error" && <p className="r-completed-work-state bad">Completed work could not be loaded.</p>}
+            {finishedRunsState === "empty" && <p className="r-completed-work-state">No completed work is recorded for this sprint.</p>}
+            {finishedRunsState === "ready" && <ol>{finishedRuns.map(run => <li key={run.run_id}>
+              <div className="r-completed-work-primary"><strong>{run.node || run.plan}</strong><span className={`r-run-verdict ${run.gate || "unknown"}`}>{run.gate || "not recorded"}</span></div>
+              <div className="r-completed-work-stamps"><time dateTime={run.dispatched_at}>dispatched {run.dispatched_at || "not recorded"}</time><time dateTime={run.completed_at}>completed {run.completed_at || "not recorded"}</time></div>
+              <div className="r-completed-work-meta"><a href={`#plan/${run.plan}`}>{run.plan}</a><span>{run.section || "unsectioned"}</span><code>{(run.commits || [])[0] || "no commit"}</code></div>
+            </li>)}</ol>}
+          </section>
         </section>
       ) : (
         <section className="r-sprint-board" aria-label={`${sprint.id} board`}>
