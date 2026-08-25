@@ -73,6 +73,21 @@ from typing import Any
 from reckon.lifecycle import TERMINAL_STATUSES
 
 
+PLAN_SUMMARY_MAX_LENGTH = 160
+
+
+def _validate_plan_summary(value: Any) -> str:
+    """Return a summary within the authored display bound or refuse it."""
+    summary = str(value or "")
+    measured = len(summary)
+    if measured > PLAN_SUMMARY_MAX_LENGTH:
+        raise OpError(
+            f"plan summary is {measured} characters; "
+            f"the maximum is {PLAN_SUMMARY_MAX_LENGTH}"
+        )
+    return summary
+
+
 class VersionConflict(Exception):
     """Raised when expected_version doesn't match the file's current version."""
 
@@ -494,6 +509,10 @@ def _write_state(
         )
     current_status = str(cur_state.get("status") or "").strip().lower()
     requested_status = str(new_data.get("status") or "").strip().lower()
+    current_summary = str(cur_state.get("summary") or "")
+    requested_summary = str(new_data.get("summary") or "")
+    if requested_summary != current_summary:
+        _validate_plan_summary(requested_summary)
     if (
         state_type == "plan"
         and current_status not in TERMINAL_STATUSES
@@ -1211,6 +1230,9 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         working["capability"] = value
         if working.pop("tier", None):
             warnings.append("legacy tier removed because capability was set explicitly")
+        return
+    if head == "summary":
+        working[head] = _validate_plan_summary(value)
         return
     working[head] = value
 

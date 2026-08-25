@@ -45,7 +45,7 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 
 from reckon import _plan_html
-from reckon._store import _mounts_path
+from reckon._store import PLAN_SUMMARY_MAX_LENGTH, _mounts_path
 
 # Required scalar meta tags for plan-family documents. Research, evidence, and
 # general documents relax ``status``. Distributed project-state resources use
@@ -92,6 +92,7 @@ class LifecycleFinding:
     age_days: int
     impl: float | None
     last_modified: str
+    summary_length: int | None = None
 
 
 def modified_age_days(
@@ -213,7 +214,13 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return {"slug": path.stem, "type": "plan", "status": "", "impl": None}
+        return {
+            "slug": path.stem,
+            "type": "plan",
+            "status": "",
+            "impl": None,
+            "summary": "",
+        }
     state = _plan_html.read_state(text)
     impl = state.get("impl")
     return {
@@ -221,6 +228,7 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
         "type": ((state.get("type") or "plan").strip().lower()),
         "status": ((state.get("status") or "").strip().lower()),
         "impl": float(impl) if impl is not None else None,
+        "summary": str(state.get("summary") or ""),
     }
 
 
@@ -243,7 +251,12 @@ def audit_lifecycle(
 
     current_ts = time.time() if now_ts is None else now_ts
     findings: list[LifecycleFinding] = []
-    flag_order = {"MISSING_IMPL": 0, "STALE": 1, "STALE_RCA": 2}
+    flag_order = {
+        "MISSING_IMPL": 0,
+        "SUMMARY_TOO_LONG": 1,
+        "STALE": 2,
+        "STALE_RCA": 3,
+    }
 
     for project_name, docs_dir in mounts.items():
         if not docs_dir.is_dir():
@@ -256,6 +269,7 @@ def audit_lifecycle(
             status = state["status"]
             doc_type = state["type"]
             impl = state["impl"]
+            summary_length = len(state["summary"])
 
             staleness = lifecycle_staleness(
                 doc_type=doc_type,
@@ -279,6 +293,19 @@ def audit_lifecycle(
                 continue
             if doc_type == "evidence":
                 continue
+
+            if summary_length > PLAN_SUMMARY_MAX_LENGTH:
+                findings.append(
+                    LifecycleFinding(
+                        project=project_name,
+                        slug=state["slug"],
+                        flag="SUMMARY_TOO_LONG",
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                        summary_length=summary_length,
+                    )
+                )
 
             if staleness == "stale":
                 findings.append(
@@ -332,6 +359,18 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                     "error", "meta-missing", f'missing required <meta name="{req}">'
                 )
             )
+
+    summary_meta = soup.find("meta", attrs={"name": "plan-summary"})
+    summary = ((summary_meta.get("content") if summary_meta else "") or "")
+    if doc_type == "plan" and len(summary) > PLAN_SUMMARY_MAX_LENGTH:
+        out.append(
+            Finding(
+                "warn",
+                "summary-too-long",
+                f"plan summary is {len(summary)} characters; "
+                f"the maximum is {PLAN_SUMMARY_MAX_LENGTH}",
+            )
+        )
 
     # Landed/evidence records must carry the plan -> evidence back-link;
     # without it the graph shows research->plan (informs) but never which

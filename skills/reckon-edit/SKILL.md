@@ -121,6 +121,9 @@ The SPA renders the authored body by **raw-HTML passthrough** — there is **no
 markdown processor**. When you edit prose, a comment body, or a followup
 body/outcome, author **HTML, never markdown**:
 
+- A plan's `plan-summary` is a one-line synopsis of at most 160 characters.
+  Shorten it before writing; the state write refuses a longer summary.
+
 - `<strong>`, `<code>`, `<a>`, `<p>`, `<ul>/<li>` render. Literal `**bold**`,
   leading `- ` or `# ` render **verbatim** as those characters. This covers all
   body fields: `.r-comment-body`, followup `.r-fu-body` + outcomes, question
