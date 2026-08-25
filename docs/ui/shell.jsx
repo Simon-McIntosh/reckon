@@ -14,6 +14,13 @@ function parseHash() {
   return { view: "cockpit" };
 }
 
+function canvasViewForRoute(route) {
+  const view = route?.view;
+  return ["cockpit", "plan", "sprint", "graph", "crew"].includes(view)
+    ? view
+    : "cockpit";
+}
+
 function useHashRoute() {
   const [route, setRoute] = useState(parseHash());
   useEffect(() => {
@@ -37,6 +44,10 @@ const PROJECT_VISIBILITY_STORAGE = "reckon:hidden-projects";
 
 function mountedProjectRows(projects) {
   return (projects || []).filter(project => Number(project.plans_count) > 0);
+}
+
+function manageableProjectRows(projects) {
+  return projects || [];
 }
 
 function projectHasOpenWork(project) {
@@ -109,6 +120,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
     || null;
 
   const mountedProjects = mountedProjectRows(projects);
+  const manageableProjects = manageableProjectRows(projects);
   const visibleProjects = visibleProjectRows(projects, hiddenProjects);
   const snapshot = snapshotReceipt(M);
 
@@ -146,9 +158,10 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           <summary>Manage</summary>
           <div className="r-project-manage-panel">
             <div className="r-project-manage-count">
-              {visibleProjects.length} of {mountedProjects.length} mounted
+              {manageableProjects.length} mounted
             </div>
-            {mountedProjects.map(project => {
+            {manageableProjects.map(project => {
+              const hasPlanState = mountedProjects.some(row => row.project === project.project);
               const visible = visibleProjects.some(row => row.project === project.project);
               const lastVisible = visible && visibleProjects.length === 1;
               return (
@@ -156,8 +169,10 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
                   key={project.project}
                   className={`r-project-manage-row ${visible ? "is-visible" : ""}`}
                   onClick={() => onToggleProject(project.project)}
-                  disabled={lastVisible}
-                  title={lastVisible ? "The last visible project cannot be hidden" : undefined}
+                  disabled={lastVisible || !hasPlanState}
+                  title={lastVisible
+                    ? "The last visible project cannot be hidden"
+                    : (!hasPlanState ? "No mounted plan state is available" : undefined)}
                   aria-pressed={visible}
                 >
                   <span>{project.project}</span>
@@ -276,9 +291,8 @@ function FiltersCol({ filters, setFilters }) {
           const on = (filters.status || []).includes(s);
           if (n === 0) return null;
           return (
-            <button type="button" key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)} aria-pressed={on}>
-              <span className={`dot ${s}`}></span>
-              <span style={{ textTransform: "capitalize" }}>{s}</span>
+            <button type="button" key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)} aria-pressed={on} title={s}>
+              <span className={`dot ${s}`} aria-hidden="true"></span>
               <span className="n">{n}</span>
             </button>
           );
@@ -293,9 +307,8 @@ function FiltersCol({ filters, setFilters }) {
             const n = actionable.filter(p => p.sprint === s.id).length;
             const on = (filters.sprint || []).includes(s.id);
             return (
-              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={s.theme || s.id}>
-                <span className="r-chip-sprint-id">{s.id}</span>
-                <span className="r-chip-sprint-theme">{s.theme}</span>
+              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={`${s.id}${s.theme ? ` · ${s.theme}` : ""}`}>
+                <span className="dot sprint" aria-hidden="true"></span>
                 <span className="n">{n}</span>
               </button>
             );
@@ -309,8 +322,8 @@ function FiltersCol({ filters, setFilters }) {
             const n = actionable.filter(p => p.north_star === direction.id).length;
             const on = (filters.north_star || []).includes(direction.id);
             return (
-              <button type="button" key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} aria-pressed={on} title={direction.statement}>
-                <span>{direction.name}</span>
+              <button type="button" key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} aria-pressed={on} title={`${direction.name} · ${direction.statement}`}>
+                <span className="dot north-star" aria-hidden="true"></span>
                 <span className="n">{n}</span>
               </button>
             );
@@ -529,7 +542,8 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         const authored = p.workflow_status || p.status || "pending";
         const effective = p.effective_status || authored;
         const gates = openGateCount(p);
-        const edited = p.last || "unknown";
+        const edited = p.last || null;
+        const identity = [p.roi, p.effort].filter(value => value && value !== "—");
         return (
           <div
             key={navKey}
@@ -540,21 +554,18 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
             <div>
               <div className="t">{p.title}</div>
               <div className="meta">
-                <span className="ms">{p.ms}</span>
-                <span className="sp">·</span>
+                {identity.map((value, index) => <React.Fragment key={`${value}-${index}`}><span>{value}</span><span className="sp">·</span></React.Fragment>)}
                 <button className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>
-                <span className="sp">·</span>
-                {p.north_star && <><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span><span className="sp">·</span></>}
-                <span className="date" title={`Edited ${edited}`}>edited {edited}</span>
+                {p.north_star && <><span className="sp">·</span><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span></>}
+                {edited && <><span className="sp">·</span><span className="date" title={`Edited ${edited}`}>edited {edited}</span></>}
               </div>
               {authored !== effective ? (
                 <button className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
                   <span>{authored}</span><span aria-hidden="true">→</span><span>{effective}</span><span>{gates} open {gates === 1 ? "gate" : "gates"}</span>
                 </button>
               ) : null}
-              {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
+              {(p.blockers || 0) > 0 && (
                 <div className="sigs">
-                  {(p.dec_open || 0) > 0 && <button className="sig dec" title={`${p.dec_open} open decisions; open decisions`} aria-label={`${p.title}: ${p.dec_open} open decisions`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "decisions")}>Decisions {p.dec_open}</button>}
                   {(p.blockers || 0) > 0 && <button className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button>}
                 </div>
               )}
@@ -822,13 +833,10 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
           <span className="title">{p.title}</span>
           <div className="actions">
             {blockedByDecisions && (
-              <button
-                className="resolve-btn"
-                onClick={() => {
-                  const el = document.querySelector(".r-dec:not(.taken)") || document.querySelector(".r-dec");
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              <button className="sig dec" data-target="decisions" title="Take the next open decision" aria-label={`${p.title}: ${openDecs} open decisions`} onClick={() => {
+                  const section = document.getElementById("decisions");
+                  if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                title="Take the next open decision"
               >
                 Resolve <span className="resolve-badge">{openDecs}</span>
               </button>
@@ -1062,6 +1070,7 @@ function ReadyGate({ children }) {
 
 function App() {
   const [route, nav] = useHashRoute();
+  const canvasView = canvasViewForRoute(route);
   // Storage keys are project-scoped to prevent cross-project filter contamination.
   const PROJECT = window.STATE?.project || "default";
   const SK = {
@@ -1343,30 +1352,16 @@ function App() {
           hiddenProjects={hiddenProjects}
           onToggleProject={toggleProject}
         />}
-      <div
-        className={`r-3col ${route.view === "plan" ? "plans-mode" : ""} ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""} ${(route.view === "cockpit" || route.view === "sprint" || route.view === "crew") ? "overview-mode" : ""}`}
-        style={readingMode ? { gridTemplateColumns: "minmax(0, 1fr)", height: "100vh" } : undefined}
-      >
-        {!readingMode && <button
-          className="r-filter-handle"
-          onClick={() => setFiltersHidden(c => !c)}
-          title={filtersHidden ? "Show filters · ⌘B" : "Hide filters · ⌘B"}
-          aria-label="Toggle filters"
-        >
-          <span></span><span></span>
-        </button>}
-        {!readingMode && <FiltersCol filters={filters} setFilters={setFilters} />}
-        {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
-        <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
-          {!readingMode && <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
-          <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`} style={readingMode ? { display: "block" } : undefined}>
-            <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
-              {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-              {route.view === "plan" && !readingMode && (
-                <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
-              )}
-              {route.view === "cockpit" && <CockpitBody onNav={nav} projects={projects} fleetRuns={fleetRuns} />}
-              {route.view === "plan" && <Plan
+      {canvasView === "plan" ? (
+        <div className={`r-canvas-view r-plans-view ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`}>
+          {!readingMode && <FiltersCol filters={filters} setFilters={setFilters} />}
+          {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
+          <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
+            {!readingMode && <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
+            <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>
+              <div className="r-body">
+                {!readingMode && <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />}
+                <Plan
                 slug={route.slug}
                 onNav={nav}
                 focusMode={readingMode}
@@ -1376,15 +1371,27 @@ function App() {
                   const next = readingQueueStep(readQueue, route.slug, direction);
                   if (next) nav({ view: "plan", slug: next });
                 }}
-              />}
-              {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
-              {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-              {route.view === "crew" && <CrewView />}
+                />
+              </div>
+              {!readingMode && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
             </div>
-            {route.view === "plan" && !readingMode && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
           </div>
         </div>
-      </div>
+      ) : (
+        <div className={`r-canvas-view r-${canvasView}-view`}>
+          <div className="r-content">
+            <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
+            <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`}>
+              <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
+                {canvasView === "cockpit" && <CockpitBody onNav={nav} projects={projects} fleetRuns={fleetRuns} />}
+                {canvasView === "sprint" && <><FleetPrompt sprintId={route.sprint} /><Sprint sprintId={route.sprint} onNav={nav} /></>}
+                {canvasView === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
+                {canvasView === "crew" && <CrewView />}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {cmdKOpen && <CmdKPalette items={searchItems} onClose={() => setCmdKOpen(false)} onPick={(result) => {
         setCmdKOpen(false);
         if (result.repository && result.repository !== M?.project) {
