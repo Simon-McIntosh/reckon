@@ -58,7 +58,10 @@ def test_each_route_selects_exactly_one_canvas_view() -> None:
     )
 
     assert selected == views
-    assert all(sum(candidate == selected_view for candidate in views) == 1 for selected_view in selected)
+    assert all(
+        sum(candidate == selected_view for candidate in views) == 1
+        for selected_view in selected
+    )
 
     app = _function_source("App")
     assert "r-3col" not in app
@@ -67,8 +70,14 @@ def test_each_route_selects_exactly_one_canvas_view() -> None:
         assert f'canvasView === "{view}" &&' in app
 
 
-def test_filter_chips_render_only_a_dot_and_count() -> None:
+def test_filter_chips_render_visible_label_and_count() -> None:
     filters = _function_source("FiltersCol")
+    labels = _evaluate(
+        ["readableFilterLabel"],
+        '["active", "in-progress", "on-hold"].map(readableFilterLabel)',
+    )
+
+    assert labels == ["Active", "In Progress", "On Hold"]
 
     status = re.search(
         r'<button type="button" key=\{s\}.*?title=\{s\}>(.*?)</button>',
@@ -76,10 +85,13 @@ def test_filter_chips_render_only_a_dot_and_count() -> None:
         re.DOTALL,
     )
     assert status
-    assert status.group(1).count("<span") == 2
-    assert 'className={`dot ${s}`}' in status.group(1)
+    assert status.group(1).count("<span") == 3
+    assert "className={`dot ${s}`}" in status.group(1)
+    assert (
+        '<span className="r-chip-label">{readableFilterLabel(s)}</span>'
+        in status.group(1)
+    )
     assert 'className="n"' in status.group(1)
-    assert "textTransform" not in status.group(1)
 
     sprint = re.search(
         r'<button type="button" key=\{s\.id\}.*?title=.*?>(.*?)</button>',
@@ -87,8 +99,12 @@ def test_filter_chips_render_only_a_dot_and_count() -> None:
         re.DOTALL,
     )
     assert sprint
-    assert sprint.group(1).count("<span") == 2
+    assert sprint.group(1).count("<span") == 3
     assert 'className="dot sprint"' in sprint.group(1)
+    assert (
+        '<span className="r-chip-label">{s.id}{s.theme ? ` · ${s.theme}` : ""}</span>'
+        in sprint.group(1)
+    )
     assert 'className="n"' in sprint.group(1)
 
 
@@ -106,7 +122,9 @@ def test_topbar_contains_tabs_in_its_single_row() -> None:
 
 
 def test_manage_lists_and_counts_every_mounted_project() -> None:
-    projects = [{"project": f"project-{index}", "plans_count": index % 2} for index in range(12)]
+    projects = [
+        {"project": f"project-{index}", "plans_count": index % 2} for index in range(12)
+    ]
     rows = _evaluate(
         ["manageableProjectRows"],
         f"manageableProjectRows({json.dumps(projects)}).map(row => row.project)",
@@ -125,5 +143,5 @@ def test_plan_rows_omit_missing_metadata_and_the_decisions_badge() -> None:
     assert "edited {edited}" in listing
     assert "{edited &&" in listing
     assert "Decisions {p.dec_open}" not in listing
-    assert 'p.roi, p.effort' in listing
+    assert "p.roi, p.effort" in listing
     assert 'value !== "—"' in listing

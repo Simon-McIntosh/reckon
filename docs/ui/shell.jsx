@@ -253,6 +253,12 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
 // ─── Filters column ─────────────────────────────────────────────────────
 
+function readableFilterLabel(value) {
+  return String(value || "")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, character => character.toUpperCase());
+}
+
 function FiltersCol({ filters, setFilters }) {
   const M = window.STATE;
   const sprints = M.sprints || [];
@@ -288,6 +294,7 @@ function FiltersCol({ filters, setFilters }) {
           return (
             <button type="button" key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)} aria-pressed={on} title={s}>
               <span className={`dot ${s}`} aria-hidden="true"></span>
+              <span className="r-chip-label">{readableFilterLabel(s)}</span>
               <span className="n">{n}</span>
             </button>
           );
@@ -304,6 +311,7 @@ function FiltersCol({ filters, setFilters }) {
             return (
               <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={`${s.id}${s.theme ? ` · ${s.theme}` : ""}`}>
                 <span className="dot sprint" aria-hidden="true"></span>
+                <span className="r-chip-label">{s.id}{s.theme ? ` · ${s.theme}` : ""}</span>
                 <span className="n">{n}</span>
               </button>
             );
