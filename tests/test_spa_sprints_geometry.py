@@ -1,12 +1,9 @@
-import html
-import json
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from tests.spa_browser_harness import installed_browser, run_browser_probe
 
 ROOT = Path(__file__).parents[1]
 CSS = (ROOT / "docs/ui/sprints.css").read_text()
@@ -54,9 +51,13 @@ def test_gantt_uses_the_declared_shared_axis_and_row_dimensions() -> None:
         "gap: 0 16px",
     )
     assert_declares(".r-time-axis > div", "grid-template-columns: repeat(6, 1fr)")
-    assert_declares(".r-folded-band", "padding: 8px 0", "border-bottom: 1px solid var(--line)")
+    assert_declares(
+        ".r-folded-band", "padding: 8px 0", "border-bottom: 1px solid var(--line)"
+    )
     assert_declares(".r-folded-track", "height: 15px")
-    assert_declares(".r-timeline-row", "padding: 9px 0", "border-bottom: 1px solid var(--line)")
+    assert_declares(
+        ".r-timeline-row", "padding: 9px 0", "border-bottom: 1px solid var(--line)"
+    )
     assert_declares(".r-timeline-track", "height: 21px")
     assert_declares(".r-sprint-mark", "top: 4px", "height: 13px", "border-radius: 3px")
     assert "const tickCount = 6;" in JSX
@@ -67,9 +68,9 @@ def test_gantt_uses_the_declared_shared_axis_and_row_dimensions() -> None:
 def test_rendered_timeline_labels_fit_and_use_available_width(
     tmp_path: Path, viewport_width: int
 ) -> None:
-    chrome = shutil.which("google-chrome") or shutil.which("chromium")
-    if not chrome:
-        pytest.skip("a Chromium browser is required for rendered geometry")
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("an installed browser is required for rendered geometry")
 
     stylesheets = [
         ROOT / "docs/_shared/foundation.css",
@@ -78,56 +79,37 @@ def test_rendered_timeline_labels_fit_and_use_available_width(
         ROOT / "docs/ui/styles.css",
         ROOT / "docs/ui/sprints.css",
     ]
-    links = "\n".join(
-        f'<link rel="stylesheet" href="{path.as_uri()}">' for path in stylesheets
-    )
+    styles = "\n".join(path.read_text() for path in stylesheets)
     document = f"""<!doctype html>
-<html><head><meta charset="utf-8">{links}</head>
+<html><head><meta charset="utf-8"><style>{styles}</style></head>
 <body><div class="r-app"><div class="r-canvas-view r-sprint-view"><div class="r-content">
 <div class="r-reader-with-attachments"><div class="r-body">
 <div class="r-page wide r-sprint-surface"><section class="r-sprint-overview">
-<div class="r-time-axis"><span></span><div>{''.join('<span>Aug 25</span>' for _ in range(6))}</div></div>
+<div class="r-time-axis"><span></span><div>{"".join("<span>Aug 25</span>" for _ in range(6))}</div></div>
 <div class="r-timeline-rows">
 <div class="r-timeline-row"><a href="#"><strong>S9</strong><span class="r-sprint-title">Observation and orientation across the complete planning surface</span><em>active</em></a>
 <div class="r-timeline-track"><a class="r-sprint-mark active" href="#" style="left: 20%; width: 1.5%"><span class="r-sprint-mark-label">S9</span></a></div></div>
-</div></section></div></div></div></div></div></div>
-<pre id="metrics"></pre><script>
-addEventListener("load", () => {{
-  const title = document.querySelector(".r-sprint-title");
-  const mark = document.querySelector(".r-sprint-mark-label");
-  const surface = document.querySelector(".r-sprint-surface");
-  const overview = document.querySelector(".r-sprint-overview");
-  const track = document.querySelector(".r-timeline-track");
-  document.querySelector("#metrics").textContent = JSON.stringify({{
-    titleClient: title.clientWidth, titleScroll: title.scrollWidth,
-    markClient: mark.clientWidth, markScroll: mark.scrollWidth,
-    surfaceWidth: surface.clientWidth, overviewWidth: overview.clientWidth,
-    trackWidth: track.clientWidth, viewportWidth: innerWidth
-  }});
-}});
-</script></body></html>"""
-    page = tmp_path / f"sprint-geometry-{viewport_width}.html"
-    page.write_text(document)
-    result = subprocess.run(
-        [
-            chrome,
-            "--headless=new",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--allow-file-access-from-files",
-            "--virtual-time-budget=1000",
-            f"--window-size={viewport_width},900",
-            "--dump-dom",
-            page.as_uri(),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=20,
+</div></section></div></div></div></div></div></div></body></html>"""
+    metrics = run_browser_probe(
+        tmp_path,
+        browser,
+        document,
+        """(() => {
+          const title = document.querySelector('.r-sprint-title');
+          const mark = document.querySelector('.r-sprint-mark-label');
+          const surface = document.querySelector('.r-sprint-surface');
+          const overview = document.querySelector('.r-sprint-overview');
+          const track = document.querySelector('.r-timeline-track');
+          return {
+            titleClient: title.clientWidth, titleScroll: title.scrollWidth,
+            markClient: mark.clientWidth, markScroll: mark.scrollWidth,
+            surfaceWidth: surface.clientWidth, overviewWidth: overview.clientWidth,
+            trackWidth: track.clientWidth, viewportWidth: innerWidth,
+          };
+        })()""",
+        viewport=(viewport_width, 900),
+        ready_expression="Boolean(document.querySelector('.r-sprint-mark-label'))",
     )
-    match = re.search(r'<pre id="metrics">([^<]+)</pre>', result.stdout)
-    assert match, result.stdout
-    metrics = json.loads(html.unescape(match.group(1)))
 
     assert metrics["titleScroll"] <= metrics["titleClient"], metrics
     assert metrics["markScroll"] <= metrics["markClient"], metrics
