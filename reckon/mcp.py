@@ -926,6 +926,7 @@ def _inventory_row(item: dict[str, Any]) -> dict[str, Any]:
                 "milestone": milestone,
                 "sprint": item.get("sprint"),
                 "graph_handle": item.get("graph_handle"),
+                "north_star": item.get("north_star"),
                 "roi": item.get("roi"),
                 "effort": item.get("effort"),
                 # Both effort quantities must survive into the inventory: the
