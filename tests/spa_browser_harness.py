@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import errno
 import json
 import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -17,6 +19,32 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSITION_PROBE = ROOT / "tests" / "spa_render_capture.mjs"
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
+
+
+@contextmanager
+def temporary_browser_profile(tmp_path: Path) -> Iterator[Path]:
+    profile = Path(tempfile.mkdtemp(prefix="browser-profile-", dir=tmp_path))
+    try:
+        yield profile
+    finally:
+        deadline = time.monotonic() + 5
+        absent_since: float | None = None
+        while time.monotonic() < deadline:
+            if profile.exists():
+                absent_since = None
+                try:
+                    shutil.rmtree(profile)
+                except FileNotFoundError:
+                    pass
+                except OSError as error:
+                    if error.errno not in (errno.EBUSY, errno.ENOTEMPTY):
+                        raise
+            elif absent_since is None:
+                absent_since = time.monotonic()
+            elif time.monotonic() - absent_since >= 0.5:
+                return
+            time.sleep(0.05)
+        raise TimeoutError(f"browser profile did not remain removed: {profile}")
 
 
 def installed_browser() -> str | None:
