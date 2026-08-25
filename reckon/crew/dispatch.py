@@ -1236,7 +1236,6 @@ def shadow(
     config: Mapping[str, Any],
     repo: str | Path,
     member: str = "",
-    agent_overrides: Iterable[str] = (),
     configuration_overrides: Iterable[str] = (),
     dry_run: bool = False,
     launcher=None,
@@ -1248,9 +1247,7 @@ def shadow(
     base_sha = source["base_sha"]
     primary = source["primary"]
     primary_agent = primary["agent"]
-    explicit = {
-        str(config_key) for config_key in (*agent_overrides, *configuration_overrides)
-    }
+    explicit = {str(config_key) for config_key in configuration_overrides}
     shadow_config, comparison = _shadow_dispatch_config(
         config=config,
         node=node,
