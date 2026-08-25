@@ -1,11 +1,11 @@
 // Two graph components:
-//   CriticalPathView — top-level Graph tab. Lead with mini-map; then critical
-//     path chain with ‹ › nav across all maximal-length paths; status-grouped
+//   DependencyChainView — top-level Graph tab. Lead with graph handles, then
+//     dependency chains with ‹ › nav across current endpoints; status-grouped
 //     list below. Generate-prompt button opens PathPromptModal.
 //   RadialFan — plan-view sub-mode. Focal plan centred, deps left, blocks
 //     right. Single-hop only. Click satellite to navigate.
 //
-// Both compute critical path (longest dep chain ending at active/blocked).
+// Both compute structural dependency depth, never execution ordering.
 
 // Provenance direction is always research → plan → evidence. References may be
 // same-project slugs or project-qualified `project:slug#stage` keys.
@@ -22,7 +22,7 @@ function _artifactKey(artifact) {
     : `${artifactType}:${archivePart}${artifact.slug}`;
 }
 
-function _criticalPath(plans) {
+function _dependencyChainMeasure(plans) {
   plans = plans.filter(p => (p.type || "plan") === "plan");
   const bySlug = Object.fromEntries(plans.map(p => [p.slug, p]));
   const pathLen = {}, pathPrev = {};
@@ -30,7 +30,9 @@ function _criticalPath(plans) {
     if (pathLen[slug] !== undefined) return pathLen[slug];
     if (seen.has(slug)) return 0;
     seen.add(slug);
-    const deps = (bySlug[slug]?.depends_on || []).filter(d => bySlug[d]);
+    const deps = (bySlug[slug]?.depends_on || [])
+      .map(_refSlug)
+      .filter(d => bySlug[d]);
     if (deps.length === 0) { pathLen[slug] = 1; return 1; }
     let best = 0, bestPrev = null;
     for (const d of deps) {
@@ -55,7 +57,7 @@ function _criticalPath(plans) {
 
 // Returns an array of all maximal-length chains (each is a slug array).
 // Sorted by chain length descending. Multiple endpoints may share the max length.
-function _allCriticalPaths(plans) {
+function _allDependencyChains(plans) {
   plans = plans.filter(p => (p.type || "plan") === "plan");
   const bySlug = Object.fromEntries(plans.map(p => [p.slug, p]));
   const pathLen = {}, pathPrev = {};
@@ -63,7 +65,9 @@ function _allCriticalPaths(plans) {
     if (pathLen[slug] !== undefined) return pathLen[slug];
     if (seen.has(slug)) return 0;
     seen.add(slug);
-    const deps = (bySlug[slug]?.depends_on || []).filter(d => bySlug[d]);
+    const deps = (bySlug[slug]?.depends_on || [])
+      .map(_refSlug)
+      .filter(d => bySlug[d]);
     if (deps.length === 0) { pathLen[slug] = 1; return 1; }
     let best = 0, bestPrev = null;
     for (const d of deps) {
@@ -76,11 +80,19 @@ function _allCriticalPaths(plans) {
   }
   plans.forEach(p => lp(p.slug));
 
-  const live = plans.filter(p => p.status === "active" || p.status === "blocked");
-  if (live.length === 0) return [];
+  const handled = plans.filter(p => String(p.graph_handle || "").trim());
+  const live = plans.filter(p =>
+    (p.status === "active" || p.status === "blocked") &&
+    !String(p.graph_handle || "").trim()
+  );
+  const endpoints = [...handled, ...live];
+  if (endpoints.length === 0) return [];
 
-  // Sort all live plans by pathLen desc, ties broken by slug alpha
-  const allEndpoints = [...live].sort((a, b) => {
+  // Named graph endpoints lead; remaining live trajectories retain the
+  // structural depth ordering this view already used.
+  const allEndpoints = endpoints.sort((a, b) => {
+    const handleOrder = Number(Boolean(b.graph_handle)) - Number(Boolean(a.graph_handle));
+    if (handleOrder) return handleOrder;
     const diff = (pathLen[b.slug] || 0) - (pathLen[a.slug] || 0);
     return diff !== 0 ? diff : a.slug.localeCompare(b.slug);
   });
@@ -91,6 +103,60 @@ function _allCriticalPaths(plans) {
     while (cur) { chain.unshift(cur); cur = pathPrev[cur]; }
     return chain;
   });
+}
+
+function _dependencyClosure(endpointSlug, bySlug) {
+  if (!endpointSlug || !bySlug[endpointSlug]) return new Set();
+  const visited = new Set();
+  function visit(slug) {
+    if (visited.has(slug) || !bySlug[slug]) return;
+    visited.add(slug);
+    for (const dependency of (bySlug[slug].depends_on || [])) {
+      visit(_refSlug(dependency));
+    }
+  }
+  visit(endpointSlug);
+  return visited;
+}
+
+function _openDecisionCount(plan) {
+  const decisions = Array.isArray(plan?.decisions) ? plan.decisions : [];
+  if (decisions.length) {
+    return decisions.filter(decision => !(decision.chosen || decision.choice)).length;
+  }
+  return Number(plan?.dec_open || 0);
+}
+
+function _graphHandleView(endpoint, members, hopCount, fallbackProject) {
+  const handle = String(endpoint?.graph_handle || "").trim();
+  if (!handle) return null;
+  const repositoryCounts = {};
+  for (const member of members) {
+    const repository = String(
+      member.project || member.repo || fallbackProject || "unknown"
+    );
+    repositoryCounts[repository] = (repositoryCounts[repository] || 0) + 1;
+  }
+  const total = members.length;
+  const shipped = members.filter(member => member.status === "shipped").length;
+  const openDecisions = members.reduce(
+    (count, member) => count + _openDecisionCount(member),
+    0,
+  );
+  const structuralDepth = Math.max(1, Number(hopCount || 0));
+  return {
+    handle,
+    shipLine: `/reckon-ship ${handle}`,
+    members,
+    repositories: Object.entries(repositoryCounts)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([repository, count]) => ({ repository, count })),
+    shipped,
+    total,
+    openDecisions,
+    structuralDepth,
+    averageWidth: total ? (total / structuralDepth).toFixed(2) : "0.00",
+  };
 }
 
 // ─── Path prompt modal ────────────────────────────────────────────────────
@@ -147,14 +213,17 @@ function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
   );
 }
 
-// ─── Critical-path-first view (top-level Graph tab) ──────────────────────
+// ─── Dependency-chain view (top-level Graph tab) ─────────────────────────
 
-function CriticalPathView({ onNav }) {
+function DependencyChainView({ onNav }) {
   const M = window.STATE;
   if (!M) return null;
 
-  const allPaths = React.useMemo(() => _allCriticalPaths(M.inventory), [M.inventory]);
-  const { bySlug, pathLen } = React.useMemo(() => _criticalPath(M.inventory), [M.inventory]);
+  const allPaths = React.useMemo(() => _allDependencyChains(M.inventory), [M.inventory]);
+  const { bySlug, pathLen } = React.useMemo(
+    () => _dependencyChainMeasure(M.inventory),
+    [M.inventory],
+  );
 
   const [pathIdx, setPathIdx] = React.useState(0);
   const safeIdx = Math.max(0, Math.min(pathIdx, allPaths.length - 1));
@@ -171,20 +240,10 @@ function CriticalPathView({ onNav }) {
   }, [allPaths]);
 
   // Full transitive prereq set of the current endpoint (DFS through ALL deps)
-  const fullPrereqSet = React.useMemo(() => {
-    const end = chain.length > 0 ? chain[chain.length - 1] : null;
-    if (!end) return new Set();
-    const visited = new Set();
-    function visit(slug) {
-      if (visited.has(slug)) return;
-      visited.add(slug);
-      for (const dep of (bySlug[slug]?.depends_on || [])) {
-        if (bySlug[dep]) visit(dep);
-      }
-    }
-    visit(end);
-    return visited;
-  }, [chain, bySlug]);
+  const fullPrereqSet = React.useMemo(
+    () => _dependencyClosure(chain.at(-1), bySlug),
+    [chain, bySlug],
+  );
 
   // Plans in fullPrereqSet but NOT on the linear chain → DAG branches
   const alsoRequired = React.useMemo(() =>
@@ -282,8 +341,22 @@ function CriticalPathView({ onNav }) {
   const endPlan = endSlug ? bySlug[endSlug] : null;
 
   // Open decisions in the full prereq set
-  const openDecCount = fullPrereqItems.reduce((n, p) =>
-    n + (p.decisions || []).filter(d => !(d.chosen || d.choice)).length, 0);
+  const openDecCount = fullPrereqItems.reduce(
+    (count, plan) => count + _openDecisionCount(plan),
+    0,
+  );
+  const graphHandle = _graphHandleView(
+    endPlan,
+    fullPrereqItems,
+    pathLen[endSlug],
+    M.project,
+  );
+
+  const copyGraphShipLine = async () => {
+    if (!graphHandle || graphHandle.openDecisions) return;
+    await navigator.clipboard?.writeText(graphHandle.shipLine);
+    if (window.flashSaved) window.flashSaved("graph ship line copied");
+  };
 
   const handleGenPrompt = () => {
     if (openDecCount > 0) {
@@ -297,6 +370,74 @@ function CriticalPathView({ onNav }) {
 
   return (
     <div className="r-graph">
+
+      {graphHandle && (
+        <section className="r-graph-handle" aria-label={`Shippable graph ${graphHandle.handle}`}>
+          <div className="r-graph-handle-head">
+            <span className="r-graph-handle-token">{graphHandle.handle}</span>
+            <div className="r-graph-handle-title">
+              <strong>{endPlan?.title || endSlug}</strong>
+              <span>{graphHandle.shipped}/{graphHandle.total} shipped</span>
+            </div>
+            <button
+              type="button"
+              className="r-graph-ship"
+              onClick={copyGraphShipLine}
+              disabled={graphHandle.openDecisions > 0}
+              title={graphHandle.openDecisions
+                ? `${graphHandle.openDecisions} open decision${graphHandle.openDecisions === 1 ? "" : "s"} in the closure — shipping is held`
+                : `Copy ${graphHandle.shipLine}`}
+            >
+              {graphHandle.shipLine}
+            </button>
+          </div>
+
+          <div className="r-graph-authority">
+            <span className="r-graph-label">Derived authority</span>
+            {graphHandle.repositories.map(scope => (
+              <span className="r-graph-scope" key={scope.repository}>
+                {scope.repository}<b>{scope.count}</b>
+              </span>
+            ))}
+            <span className="r-graph-authority-note">
+              repositories enter scope only through closure membership
+            </span>
+            {graphHandle.openDecisions > 0 && (
+              <span className="r-graph-held">
+                held by {graphHandle.openDecisions} open decision{graphHandle.openDecisions === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
+
+          <div className="r-graph-metrics">
+            <div>
+              <span>closure members</span>
+              <strong>{graphHandle.total}</strong>
+              <small>derived from the endpoint</small>
+            </div>
+            <div>
+              <span>average width</span>
+              <strong>{graphHandle.averageWidth}</strong>
+              <small>{graphHandle.total} members ÷ {graphHandle.structuralDepth} hops</small>
+            </div>
+            <div>
+              <span>longest dependency chain by hop count</span>
+              <strong>{graphHandle.structuralDepth}</strong>
+              <small>structural depth only; not execution ordering</small>
+            </div>
+          </div>
+
+          <div className="r-graph-members" aria-label="Derived closure membership">
+            <span className="r-graph-label">Derived closure</span>
+            {graphHandle.members.map(member => (
+              <a key={member.slug} href={`#plan/${member.slug}`}>
+                <span>{member.project || member.repo || M.project}</span>
+                /{member.slug}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 1. Trajectory header */}
       <div className="r-graph-head">
@@ -480,8 +621,9 @@ function CriticalPathView({ onNav }) {
   );
 }
 
-window.GraphView = CriticalPathView;
-window.CriticalPathView = CriticalPathView;
+window.GraphView = DependencyChainView;
+window.DependencyChainView = DependencyChainView;
+window.CriticalPathView = DependencyChainView;
 window.PathPromptModal = PathPromptModal;
 
 // ─── Plan-view focal graph (card-based, three-column) ────────────────────
