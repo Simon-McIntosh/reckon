@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const argumentsByName = new Map();
@@ -9,13 +8,15 @@ for (let index = 2; index < process.argv.length; index += 2) {
 }
 
 const browserPath = argumentsByName.get("--browser");
+const profile = argumentsByName.get("--profile");
 const pageUrl = argumentsByName.get("--url");
 const expectedWidth = Number(argumentsByName.get("--expected-width"));
 const conflictingWidth = Number(argumentsByName.get("--conflicting-width") || 0);
+const screenshotPath = argumentsByName.get("--screenshot");
 const viewportHeight = 900;
 
-if (!browserPath || !pageUrl || !Number.isFinite(expectedWidth)) {
-  console.error("usage: node spa_render_capture.mjs --browser PATH --url URL --expected-width PX [--conflicting-width PX]");
+if (!browserPath || !profile || !pageUrl || !Number.isFinite(expectedWidth)) {
+  console.error("usage: node spa_render_capture.mjs --browser PATH --profile PATH --url URL --expected-width PX [--conflicting-width PX] [--screenshot PATH]");
   process.exit(2);
 }
 
@@ -92,7 +93,7 @@ async function waitForComposition(devtools, timeoutMs = 45000) {
   while (Date.now() < deadline) {
     const ready = await evaluate(devtools, `(() => {
       const app = document.querySelector(".r-app");
-      const view = document.querySelector(".r-canvas-view");
+      const view = document.querySelector(".r-plans-view");
       return Boolean(app && view && app.getBoundingClientRect().height > 500);
     })()`);
     if (ready) return;
@@ -106,7 +107,6 @@ function closeEnough(left, right) {
 }
 
 async function main() {
-  const profile = await mkdtemp(path.join(os.tmpdir(), "reckon-composition-"));
   const browser = spawn(browserPath, [
     "--headless=new",
     "--no-sandbox",
@@ -157,13 +157,31 @@ async function main() {
         return style.display !== "none" && rect.width > 0 && rect.height > 0;
       });
       const view = views[0];
+      const documentElement = document.documentElement;
+      const body = document.body;
       const rect = element => {
         const value = element.getBoundingClientRect();
         return { x: value.x, top: value.top, right: value.right, bottom: value.bottom, width: value.width, height: value.height };
       };
+      const describe = element => {
+        const classes = [...element.classList].slice(0, 3).join(".");
+        return element.tagName.toLowerCase() + (element.id ? "#" + element.id : "") + (classes ? "." + classes : "");
+      };
+      const exceedingElements = [...document.querySelectorAll("body *")]
+        .filter(element => {
+          const value = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return style.display !== "none" && style.visibility !== "hidden" && value.width > 0 && value.height > 0
+            && (value.left < -1 || value.right > innerWidth + 1);
+        })
+        .map(element => ({ element: describe(element), ...rect(element) }));
       return {
         viewport: { width: innerWidth, height: innerHeight },
+        document: { clientWidth: documentElement.clientWidth, scrollWidth: documentElement.scrollWidth },
+        body: { clientWidth: body.clientWidth, scrollWidth: body.scrollWidth },
         visibleViewCount: views.length,
+        exceedingElementCount: exceedingElements.length,
+        exceedingElements: exceedingElements.slice(0, 20),
         app: { ...rect(app), display: getComputedStyle(app).display, flexDirection: getComputedStyle(app).flexDirection },
         topbar: rect(topbar),
         view: rect(view),
@@ -174,10 +192,23 @@ async function main() {
     if (geometry.visibleViewCount !== 1) failures.push(`visible views: ${geometry.visibleViewCount}`);
     if (geometry.app.display !== "flex") failures.push(`app display: ${geometry.app.display}`);
     if (geometry.app.flexDirection !== "column") failures.push(`app flex direction: ${geometry.app.flexDirection}`);
+    if (!closeEnough(geometry.document.clientWidth, expectedWidth)) failures.push(`document client width: ${geometry.document.clientWidth}, expected ${expectedWidth}`);
+    if (!closeEnough(geometry.document.scrollWidth, geometry.document.clientWidth)) failures.push(`document scroll width: ${geometry.document.scrollWidth}, client width ${geometry.document.clientWidth}`);
+    if (geometry.exceedingElementCount !== 0) failures.push(`elements past viewport: ${geometry.exceedingElementCount}`);
     if (!closeEnough(geometry.app.width, expectedWidth)) failures.push(`app width: ${geometry.app.width}, expected ${expectedWidth}`);
     if (!closeEnough(geometry.view.width, geometry.app.width)) failures.push(`view width: ${geometry.view.width}, app width ${geometry.app.width}`);
     if (!closeEnough(geometry.view.top, geometry.topbar.bottom)) failures.push(`view top: ${geometry.view.top}, topbar bottom ${geometry.topbar.bottom}`);
     if (!closeEnough(geometry.view.bottom, geometry.app.bottom)) failures.push(`view bottom: ${geometry.view.bottom}, app bottom ${geometry.app.bottom}`);
+
+    if (screenshotPath) {
+      const screenshot = await devtools.call("Page.captureScreenshot", {
+        format: "png",
+        fromSurface: true,
+        captureBeyondViewport: false,
+      });
+      await mkdir(path.dirname(screenshotPath), { recursive: true });
+      await writeFile(screenshotPath, Buffer.from(screenshot.data, "base64"));
+    }
 
     process.stdout.write(`${JSON.stringify(geometry)}\n`);
     if (failures.length) {
@@ -190,7 +221,6 @@ async function main() {
       if (browser.exitCode !== null) resolve();
       else browser.once("exit", resolve);
     });
-    await rm(profile, { recursive: true, force: true });
     if (browserErrors.length && browser.exitCode && browser.exitCode !== 0) {
       console.error(Buffer.concat(browserErrors).toString());
     }

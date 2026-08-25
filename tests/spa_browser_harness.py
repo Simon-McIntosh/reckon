@@ -162,7 +162,7 @@ def temporary_browser_profile(tmp_path: Path) -> Iterator[Path]:
     try:
         yield profile
     finally:
-        deadline = time.monotonic() + 5
+        deadline = time.monotonic() + 15
         absent_since: float | None = None
         while time.monotonic() < deadline:
             if profile.exists():
@@ -221,25 +221,32 @@ class ServedSpa:
         self,
         *extra: str,
         expected_width: int = 1374,
+        screenshot: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [
+        with temporary_browser_profile(self.tmp_path) as profile:
+            command = [
                 "node",
                 str(COMPOSITION_PROBE),
                 "--browser",
                 self.browser,
+                "--profile",
+                str(profile),
                 "--url",
                 self.url,
                 "--expected-width",
                 str(expected_width),
                 *extra,
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            timeout=75,
-            check=False,
-        )
+            ]
+            if screenshot is not None:
+                command.extend(["--screenshot", str(screenshot)])
+            return subprocess.run(
+                command,
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=75,
+                check=False,
+            )
 
 
 @contextmanager
