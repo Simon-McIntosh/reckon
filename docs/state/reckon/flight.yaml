@@ -34,16 +34,18 @@ backends:
 roles:
   implement:
     by_spec_level:
-      # effort is pinned empty because layers deep-merge per key: the host
+      # effort is pinned here because layers deep-merge per key: the host
       # layer's exact overlay carries effort=medium for projects routing exact
-      # to the default backend, and without this pin that value would merge
-      # under the spark backend here and change the pilot lane's measured
-      # configuration mid-audit. Empty means "emit no effort flag" — the exact
-      # configuration the pilot's audited runs recorded.
+      # to the default backend, and without this pin that value would merge in
+      # and change the pilot lane's configuration mid-audit. xhigh is what the
+      # audited pilot runs actually executed at — with no flag the codex CLI
+      # inherits the user's interactive model_reasoning_effort (xhigh on this
+      # host, proven from the rollout turn_context), so the pin converts an
+      # accidental inheritance into declared config without forking the slice.
       exact:
         backend: codex-spark
         time_budget: 15m
-        effort: ""
+        effort: xhigh
       guided:
         effort: medium
       open:

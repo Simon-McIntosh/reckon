@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="9">
-<meta name="plan-impl" content="0.56">
+<meta name="plan-version" content="11">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -528,20 +528,40 @@
         data — uncommitted; the provenance layer (<code>crew view=flight</code>)
         is its audit trail.</li>
       <li><strong>§9.3 — policy reference update (coordinator-owned).</strong>
-        <code>effort-routing.md</code> gains: the shadow qualification path; the
-        stream-failure classification (a run that dies mid-stream with no diff —
+        <code>effort-routing.md</code> gains: the shadow qualification path and
+        the new-model onboarding ladder (probe → defined-not-defaulted backend →
+        shadow qualification → gated pilot → slice-lock); the stream-failure
+        classification (a run that dies mid-stream with no diff —
         e.g. a malformed tool call — is an infrastructure failure: redispatch
         without indicting the spec, and it does not count toward the
         two-consecutive-gate-failure breaker); and the spark budget note
         (dedicated weekly meter, ~dozen-run capacity, token-lean dispatch
         guidance).</li>
+      <li><strong>§9.4 — session reuse must not cross models (worker node,
+        guided).</strong> A member's stored session is resumed regardless of
+        which model recorded it: 2026-08-25 rollout evidence shows a spark run
+        resuming a 10-turn sol session — codex warns on resume, and the
+        inherited history cost 22.9M input tokens in a 2-minute run, the single
+        largest draw on spark's small weekly meter. Effort inheritance has the
+        same root (no flag → the user's interactive
+        <code>model_reasoning_effort</code> applies, measured xhigh on the
+        pilot); the config side is closed by pinning <code>effort: xhigh</code>
+        on the spark backend and the reckon exact overlay — the audited pilot's
+        true configuration, so no slice forks. The reuse side is a
+        <code>reckon/crew.py</code> fix: reuse a member's stored session only
+        when its recorded backend model matches the dispatch's resolved model;
+        otherwise start a fresh session and record its id. Tests: same-model
+        reuse preserved; cross-model dispatch starts fresh; the run record
+        carries the fresh session id.</li>
     </ul>
     <p><strong>Done-when:</strong> §9.1's artifact records a verdict per
       identifier; <code>reckon flight --project nova</code> (and imas-codex)
       resolves <code>by_spec_level</code> with layer=host provenance and
       <code>reckon crew preflight --project reckon</code> reports a real spark
       headroom figure instead of <code>unknown</code> on the next spark run's
-      completion; the effort-routing reference carries all three additions.</p>
+      completion; the effort-routing reference carries the §9.3 additions; and
+      §9.4's cross-model refusal is covered by focused crew tests with the full
+      suite green.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -613,6 +633,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s9" data-id="c-20260825-probe" data-who="reckon-ship" data-when="2026-08-25T07:10:00+00:00">
+    <div class="r-comment-body">model-id-probe landed — run r-20260825T070329601294, gate passed, 178 worker-seconds: gpt-5.6-luna and gpt-5.6-terra BOTH ACCEPT on this account (bare → resolves xhigh from the user's interactive config, and with model_reasoning_effort=medium), codex-cli 0.149.1, 4/4 variants exited 0. Artifact: ~/.config/reckon/crew/reports/model-id-probe.md. Both backends now enter the host flight layer defined-not-defaulted.</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260825-scout" data-who="reckon-ship" data-when="2026-08-25T07:10:00+00:00">
+    <div class="r-comment-body">shadow-prior-art-scout landed — run r-20260825T070250261493, gate passed (6/6 capability areas, 6/6 fitness verdicts), 292 worker-seconds. Verdict: 0/6 absent, 1/6 runtime-sufficient, 5/6 bounded extensions of existing primitives. Key findings: fixed-SHA worktree creation already refuses HEAD fallback; lineage storage round-trips arbitrary mappings but dispatch must inject shadow lineage without incrementing attempts; commitless promotion exists but shadow completion must refuse commits and derive changed_lines from shadow.patch; capability derivation currently ADMITS shadow records into live competence curves — the partition is mandatory. Reuse map: ~/.config/reckon/crew/reports/shadow-prior-art-scout.md (30 candidate entries).</div>
+</div>
+</section>
+</main>
 </body>
 </html>
