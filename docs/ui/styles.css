@@ -1,12 +1,10 @@
-/* v7 styles — three-column SPA: filters | plans list | content.
+/* Shared SPA shell and component refinements.
    Layered on top of foundation/dashboard/project/r-styles. */
 
 :root {
-  --c1: 188px;   /* filters */
-  --c2: 264px;   /* plans list */
   --topbar-h: 52px;
   --warn-2: oklch(0.95 0.05 85);
-  /* Legacy aliases kept for v7 component references */
+  /* Compatibility aliases for components that use the shared palette. */
   --good:   var(--ok, oklch(0.55 0.14 145));
   --good-2: oklch(0.95 0.04 155);
   --bad-2:  oklch(0.96 0.03 25);
@@ -17,36 +15,61 @@
 html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 
 .r-app {
-  display: grid;
-  grid-template-rows: var(--topbar-h) 1fr;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  min-width: 1374px;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.r-3col {
-  display: grid;
-  grid-template-columns: var(--c1) var(--c2) 1fr;
+.r-app > div.r-3col {
+  display: flex;
+  flex: 1;
   min-height: 0;
-  height: calc(100vh - var(--topbar-h));
-  transition: grid-template-columns 220ms ease;
+  min-width: 1374px;
 }
 
-.r-3col.filters-collapsed {
-  grid-template-columns: 0 0 1fr;
+.r-app > .r-topbar {
+  flex: none;
 }
-.r-3col.filters-collapsed .r-filters,
-.r-3col.filters-collapsed .r-list {
-  padding: 14px 0;
-  border-right: 0;
+
+.r-app > div.r-3col > .r-filters {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 14px;
+  overflow: auto;
+  padding: 10px 8px;
+  width: 64px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.r-app > div.r-3col > .r-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-height: 0;
+  overflow-y: auto;
+  width: 390px;
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.r-app > div.r-3col > .r-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
-  pointer-events: none;
+  background: var(--bg);
 }
-.r-3col.filters-collapsed .r-filters > *,
-.r-3col.filters-collapsed .r-list > * { opacity: 0; transition: opacity 100ms; }
 
 /* Overview / Cockpit takes the whole screen — no filters, no plans list. */
-.r-3col.overview-mode {
-  grid-template-columns: 1fr;
+.r-app > div.r-3col.overview-mode {
+  display: flex;
 }
 .r-3col.overview-mode .r-filters,
 .r-3col.overview-mode .r-list {
@@ -54,40 +77,6 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 }
 
 /* ── Top bar ──────────────────────────────────────────────────────────── */
-
-/* Filter / sidebar collapse handle — anchored to the LEFT edge of the
-   content column so it is always reachable, regardless of sidebar state. */
-.r-3col { position: relative; }
-.r-filter-handle {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  left: calc(var(--c1) + var(--c2));
-  margin-left: -4px;
-  width: 8px;
-  height: 40px;
-  background: var(--bg-2);
-  border: 1px solid var(--hair);
-  border-radius: 3px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  z-index: 20;
-  padding: 0;
-  transition: left 220ms ease, background 120ms;
-}
-.r-filter-handle:hover { background: var(--bg-3); border-color: var(--line); }
-.r-filter-handle span {
-  width: 1px;
-  height: 12px;
-  background: var(--muted);
-  border-radius: 1px;
-}
-.r-filter-handle:hover span { background: var(--ink); }
-.r-3col.filters-collapsed .r-filter-handle { left: 0; }
-.r-3col.overview-mode .r-filter-handle { display: none; }
 
 .r-topbar {
   display: flex;
@@ -292,13 +281,6 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 }
 .r-plan-mode button.on { background: var(--ink); color: var(--bg); }
 .r-plan-mode button:not(.on):hover { color: var(--ink); }
-.r-3col.graph-mode {
-  grid-template-columns: var(--c1) 0 1fr;
-}
-.r-3col.graph-mode .r-list {
-  display: none;
-}
-
 .r-graph-foot {
   display: flex;
   align-items: center;
@@ -422,9 +404,6 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
   margin-left: 2px;
 }
 .resolve-btn:hover .resolve-badge { background: rgba(255,255,255,0.25); }
-
-/* Refined override for the handle (smaller still + consistent border-radius) */
-.r-filter-handle:focus { outline: 1px solid var(--accent); outline-offset: 1px; }
 
 /* Cockpit header inline actions (sprint nav + board icon) */
 .r-ck-h-actions {
@@ -797,17 +776,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-body .r-kcard .progress .bar i.shipped { background: var(--good); }
 .r-body .r-kcard .progress .bar i.blocked { background: var(--bad); }
 
-/* ── Column 1 · Filters ───────────────────────────────────────────────── */
-
-.r-filters {
-  background: var(--bg-2, #f3f3ee);
-  border-right: 1px solid var(--hair);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 14px 14px 18px;
-  min-height: 0;
-}
+/* ── Filter controls ──────────────────────────────────────────────────── */
 
 .r-filter-group {
   margin-bottom: 14px;
@@ -873,16 +842,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-clear:hover { color: var(--accent); }
 .r-clear:disabled { opacity: 0.3; cursor: default; }
 
-/* ── Column 2 · Plans list ────────────────────────────────────────────── */
-
-.r-list {
-  background: #fff;
-  border-right: 1px solid var(--hair);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
+/* ── Plan list controls ───────────────────────────────────────────────── */
 
 .r-search {
   padding: 12px 14px;
@@ -1078,9 +1038,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-cmdk .item.on, .r-cmdk .item:hover { background: var(--bg-2); color: var(--ink); }
 .r-cmdk-foot { padding: 8px 14px; font: 10.5px var(--mono); color: var(--muted); border-top: 1px solid var(--hair); display: flex; gap: 12px; }
 
-/* Hide the legacy vertical filter handle — sidebar toggle now lives in the top bar */
-.r-filter-handle { display: none !important; }
-/* New: shipped toggle, sprint filter note */
+/* Shipped toggle and sprint filter note. */
 .r-shipped-toggle {
   margin: 8px 4px 0;
   padding: 6px 9px;
@@ -1225,15 +1183,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 }
 .r-clear-btn:hover { background: var(--hover); }
 
-/* ── Column 3 · Content ───────────────────────────────────────────────── */
-
-.r-content {
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  min-height: 0;
-}
+/* ── Reader content ───────────────────────────────────────────────────── */
 
 .r-titlebar {
   padding: 12px 28px;
@@ -1312,11 +1262,11 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 
 .r-body { padding: 24px 28px 60px; max-width: 1320px; }
 
-/* Embedded view tweaks (reuse v6 components in column 3) */
+/* Embedded view composition inside the shared reader. */
 .r-body .r-page { padding: 0; max-width: none; }
 .r-body .r-page.wide { padding: 0; max-width: none; }
 
-/* Hide v6 view headers — the title bar owns them */
+/* The title bar owns embedded view headings. */
 .r-body .r-ck-head,
 .r-body .r-plan-head,
 .r-body .r-sp-head { display: none; }
@@ -1325,7 +1275,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-body .r-plan-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .r-body .r-rail { display: none; }
 
-/* Cockpit body in v7 — leaner */
+/* Compact cockpit body. */
 .r-cockpit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1498,16 +1448,7 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 .r-clear:hover { color: var(--accent); }
 .r-clear:disabled { opacity: 0.3; cursor: default; }
 
-/* ── Column 2 · Plans list ────────────────────────────────────────────── */
-
-.r-list {
-  background: #fff;
-  border-right: 1px solid var(--hair);
-  height: 100vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
+/* ── Plan list lifecycle details ──────────────────────────────────────── */
 
 .r-search {
   padding: 12px 14px;
