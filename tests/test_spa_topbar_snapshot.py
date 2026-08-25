@@ -2,9 +2,9 @@ import json
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHARED = ROOT / "docs" / "ui" / "_shared.jsx"
 TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
 
 
@@ -82,9 +82,13 @@ def test_snapshot_receipt_counts_payload_resource_versions() -> None:
     assert receipt["resourceCount"] == 12
     assert receipt["loadedAt"] != "unknown time"
 
-    source = SHELL.read_text()
-    assert "{snapshot.resourceCount} resources" in source
-    assert "window.location.reload()" in source
+    topbar = SHELL.read_text()
+    settings = SHARED.read_text()
+    assert "snapshot={snapshot}" in topbar
+    assert "onRefresh={() => window.location.reload()}" in topbar
+    assert "{snapshot.resourceCount} resources" in settings
+    assert 'className="r-snapshot-receipt" role="status"' in settings
+    assert '<button type="button" className="settings-item" onClick={onRefresh}>Refresh</button>' in settings
 
 
 def test_topbar_is_data_driven_and_owns_one_navigation_shell() -> None:

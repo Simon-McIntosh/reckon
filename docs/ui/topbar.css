@@ -6,6 +6,7 @@
 
 .r-topbar {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 18px;
   min-height: var(--topbar-h);
@@ -25,7 +26,10 @@
 
 .r-topbar > .top-r {
   display: flex;
+  align-items: center;
+  gap: 8px;
   flex: none;
+  margin-left: auto;
 }
 
 .r-topbar-brand {
@@ -212,40 +216,31 @@
   display: none;
 }
 
-.r-snapshot-receipt {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex: none;
-  color: var(--faint);
+.settings-snapshot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-snapshot .r-snapshot-receipt {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 10.5px;
-  white-space: nowrap;
-  margin-left: auto;
 }
 
-.r-snapshot-receipt span + span::before {
-  content: "/";
-  margin-right: 7px;
-  color: var(--line-2);
+.settings-snapshot-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px;
 }
 
-.r-snapshot-receipt button {
-  padding: 1px 5px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  cursor: pointer;
+.settings-snapshot-field span:first-child {
+  color: var(--faint);
 }
 
-.r-snapshot-receipt button:hover {
+.settings-snapshot .r-snapshot-receipt button:hover {
   color: var(--ink);
-}
-
-@media (max-width: 960px) {
-  .r-snapshot-receipt span:first-child,
-  .r-snapshot-receipt span:nth-child(3) {
-    display: none;
-  }
 }

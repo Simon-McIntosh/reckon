@@ -2,14 +2,19 @@ import json
 import subprocess
 from pathlib import Path
 
-from tests.spa_browser_harness import temporary_browser_profile
+import pytest
+
+from tests.spa_browser_harness import (
+    installed_browser,
+    served_spa,
+    temporary_browser_profile,
+)
 from tests.test_spa_rendered_semantics import (
     INDEX_STATE,
     NODE_PROBE,
     _installed_browser,
     _served_fixture,
 )
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
@@ -50,12 +55,56 @@ def test_topbar_is_one_row_with_four_within_project_tabs() -> None:
     css = TOPBAR.read_text()
 
     assert "display: flex" in css
-    assert "flex-wrap" not in css
+    assert "flex-wrap: nowrap" in css
+    assert "margin-left: auto" in css
     assert source.index('className="r-topbar-brand"') < source.index('className="r-project-manage"')
     assert source.index('className="r-project-manage"') < source.index('className="r-glyph-tabs"')
-    assert source.index('className="r-glyph-tabs"') < source.index('className="r-cmdk-trigger"')
+    assert source.index('className="r-glyph-tabs"') < source.index('className="top-r"')
+    assert source.index('className="top-r"') < source.index('className="r-cmdk-trigger"')
+    assert source.index('className="r-cmdk-trigger"') < source.index("<SM")
     assert '>Overview<' not in source
     assert [f"\n          {label}\n" in source for label in ("Plans", "Sprints", "Graph", "Crew")] == [True] * 4
+
+
+@pytest.mark.parametrize("width", [1280, 1440, 1920])
+def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
+    tmp_path: Path,
+    width: int,
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("rendered topbar geometry requires an installed browser")
+
+    expression = """(() => {
+      const header = document.querySelector('.r-topbar');
+      const brand = header?.querySelector('.r-topbar-brand');
+      const project = header?.querySelector('.r-project-manage');
+      const tabs = header?.querySelector('.r-glyph-tabs');
+      const tools = header?.querySelector('.top-r');
+      const rect = element => element?.getBoundingClientRect();
+      const boxes = [brand, project, tabs, tools].map(rect);
+      const headerBox = rect(header);
+      const paddingRight = parseFloat(getComputedStyle(header).paddingRight);
+      return {
+        centers: boxes.map(box => box.top + box.height / 2),
+        lefts: boxes.map(box => box.left),
+        toolsInset: headerBox.right - tools.getBoundingClientRect().right,
+        paddingRight,
+        headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),
+      };
+    })()"""
+
+    with served_spa(tmp_path, browser, route="#cockpit") as spa:
+        geometry = spa.run_probe(
+            expression,
+            viewport=(width, 900),
+            ready_expression="Boolean(document.querySelector('.r-topbar .top-r'))",
+        )
+
+    assert max(geometry["centers"]) - min(geometry["centers"]) <= 1
+    assert geometry["lefts"] == sorted(geometry["lefts"])
+    assert abs(geometry["toolsInset"] - geometry["paddingRight"]) <= 1
+    assert geometry["headerReceipt"] is False
 
 
 def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_entry() -> None:
@@ -140,32 +189,36 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(tmp_path: Path
       summary: document.querySelector('.r-crew-heading span')?.textContent.trim() || '',
     }))()"""
 
-    with temporary_browser_profile(tmp_path) as profile:
-        with _served_fixture(tmp_path, "#crew") as url:
-            result = subprocess.run(
-                [
-                    "node",
-                    "--input-type=module",
-                    "-e",
-                    probe_script,
-                    json.dumps(
-                        {
-                            "browser": _installed_browser(),
-                            "profile": str(profile),
-                            "url": url,
-                            "waitSelector": ".r-crew-card",
-                            "probe": probe,
-                            "removeSignal": "null",
-                            "failPlanHtml": False,
-                            "fixtureIndex": INDEX_STATE,
-                        }
-                    ),
-                ],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                timeout=90,
-            )
+    with (
+        temporary_browser_profile(tmp_path) as profile,
+        _served_fixture(tmp_path, "#crew") as url,
+    ):
+        result = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                probe_script,
+                json.dumps(
+                    {
+                        "browser": _installed_browser(),
+                        "profile": str(profile),
+                        "url": url,
+                        "waitSelector": ".r-crew-card",
+                        "probe": probe,
+                        "prepareSignal": "undefined",
+                        "removeSignal": "null",
+                        "failPlanHtml": False,
+                        "fixtureIndex": INDEX_STATE,
+                    }
+                ),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
 
     assert result.returncode == 0, result.stderr
     rendered = json.loads(result.stdout)["baseline"]
