@@ -359,6 +359,14 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
 
   const author = window.STATE?.projects?.[0]?.owner || "user";
   const loadedPlanVersion = fullState?.version ?? P.version ?? "unavailable";
+  const readerAttachments = (() => {
+    if (isResearch || isEvidence) return [];
+    const target = P.nav_key || P.slug || slug;
+    const keys = (M.attachment_relations || [])
+      .filter(row => String(row.target || "").split("#", 1)[0] === target)
+      .map(row => row.source);
+    return [...new Set(keys)].map(key => M.plans?.[key]).filter(Boolean);
+  })();
 
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
@@ -472,12 +480,35 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
   return (
     <div className="r-page">
       <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={focusMode ? "true" : "false"}>
-          <nav className="r-reading-controls" aria-label="Reading controls" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
-            {focusMode && <button type="button" className="btn ghost" onClick={() => onPage?.(-1)} aria-label="Previous item in reading queue">Previous</button>}
-            {focusMode && <span role="status" style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 11 }}>{focusPosition?.current || 0} / {focusPosition?.total || 0}</span>}
-            {focusMode && <button type="button" className="btn ghost" onClick={() => onPage?.(1)} aria-label="Next item in reading queue">Next</button>}
-            <button type="button" className="btn ghost" onClick={onToggleFocus} aria-pressed={focusMode} title={focusMode ? "Leave focus mode (f or Escape)" : "Enter focus mode (f)"}>{focusMode ? "Exit focus" : "Read"} <span aria-hidden="true">f</span></button>
+          <nav className="r-reading-controls" aria-label="Reading controls">
+            {focusMode ? (
+              <>
+                <button type="button" className="r-reading-exit" onClick={onToggleFocus} aria-pressed="true" title="Leave focus mode (f or Escape)">esc</button>
+                <span className="r-reading-crumb"><span>{project}</span><span>/{slug}</span></span>
+                <span className="r-reading-position" role="status">{focusPosition?.current || 0} / {focusPosition?.total || 0}</span>
+                <span className="r-reading-paging">
+                  <button type="button" onClick={() => onPage?.(-1)} aria-label="Previous item in reading queue">‹</button>
+                  <button type="button" onClick={() => onPage?.(1)} aria-label="Next item in reading queue">›</button>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="r-reading-path">/{slug}</span>
+                <button type="button" onClick={onToggleFocus} aria-pressed="false" title="Enter focus mode (f)">Read <span aria-hidden="true">f</span></button>
+                <span className="r-reading-project">{project}</span>
+                {P.sprint && <span>{P.sprint}</span>}
+                <span>{Math.round((P.impl || 0) * 100)}%</span>
+              </>
+            )}
           </nav>
+          <div className="r-reading-viewport">
+            <div className="r-reading-content">
+          {focusMode && (
+            <header className="r-reading-focus-title">
+              <div>/{slug} · {P.sprint || "unscheduled"} · {Math.round((P.impl || 0) * 100)}%</div>
+              <h1>{P.title || slug}</h1>
+            </header>
+          )}
           <PlanInFlightBand runs={liveRuns} />
           {htmlFailure && (
             <ReaderSourceFailure
@@ -544,13 +575,13 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
 
               {/* Interactive decisions — rendered from the doc's parsed state */}
               {decs.length > 0 && (
-                <>
+                <section className="r-reader-decisions" aria-labelledby="decisions">
                   <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
                   {decs.map(d => (
                     <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
                   ))}
                   <ActionableCommentList sectionId="decisions" arr={comments["decisions"] || []} onEdit={editComment} onDelete={deleteComment} />
-                </>
+                </section>
               )}
 
               {/* Comments on non-decisions body sections are NOT re-rendered here.
@@ -575,7 +606,7 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
               body and duplicate the section. The GenericBody fallback (no HTML
               file) still renders followups from state for legacy docs. */}
           {!planHtml && (fullState?.followups || []).length > 0 && (
-            <>
+            <section className="r-reader-followups" aria-labelledby="log">
               <h2 id="log"><span className="sec">§</span>Followups</h2>
               <div className="followup-log">
                 {fullState.followups.map(f => {
@@ -592,8 +623,31 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
                   );
                 })}
               </div>
-            </>
+            </section>
           )}
+          {focusMode && readerAttachments.length > 0 && (
+            <section className="r-reading-reads" aria-labelledby="reading-reads-heading">
+              <div className="r-reading-reads-heading">
+                <h2 id="reading-reads-heading">Reads</h2>
+                <span>{readerAttachments.length}</span>
+              </div>
+              <div className="r-reading-reads-list">
+                {readerAttachments.map(item => {
+                  const key = item.nav_key || item.slug;
+                  return (
+                    <button type="button" key={key} onClick={() => onNav?.({ view: "plan", slug: key })}>
+                      <span className={`r-reading-kind ${item.type || "attachment"}`}>{item.type || "attachment"}</span>
+                      <span className="r-reading-read-title">{item.title || item.slug}</span>
+                      <span className="r-reading-read-date">{item.last || item.modified || ""}</span>
+                      {item.summary && <span className="r-reading-read-summary">{item.summary}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+            </div>
+          </div>
       </article>
 
       {sel && !composingAt && (
