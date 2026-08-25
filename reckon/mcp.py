@@ -2850,12 +2850,20 @@ def _crew(
                 **flight_module.flight_report(project, checkout_path=checkout_path),
             }
         if view == "live":
+            from reckon.crew.runs import project_watch_visibility
+
             runs = [
                 crew_module.classify_pointer(record)
                 for record in crew_module.list_live()
                 if str(record.get("project") or "") == project
             ]
-            return {"ok": True, "project": project, "view": view, "runs": runs}
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                "watcher": project_watch_visibility(project),
+                "runs": runs,
+            }
         if view == "drain":
             return {
                 "ok": True,
