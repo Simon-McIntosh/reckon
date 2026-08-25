@@ -175,6 +175,42 @@
       10 shadow pairs per candidate tier). New sections: §8 shadow sidecar
       dispatch, §9 host-layer defaults + luna/terra widening.</p>
 
+    <h2 id="s9">§9 — Host-layer defaults and backend widening (2026-08-25)</h2>
+    <p><strong>Probe (§9.1)</strong> — run
+      <code>r-20260825T070329601294-model-id-probe</code>, gate passed, 178
+      worker-seconds: <code>gpt-5.6-luna</code> and <code>gpt-5.6-terra</code>
+      both <strong>ACCEPT</strong> on this account (codex-cli 0.149.1), bare —
+      resolving <code>xhigh</code> from the user's interactive config — and with
+      <code>model_reasoning_effort=medium</code>; 4/4 variants exited 0.
+      Artifact: <code>~/.config/reckon/crew/reports/model-id-probe.md</code>.</p>
+    <p><strong>Host layer (§9.2, coordinator-owned)</strong> —
+      <code>~/.config/reckon/flight.yaml</code> now carries
+      <code>roles.implement.by_spec_level</code> (exact → sol/medium prior,
+      guided → sol/medium measured, open → sol/high measured) for every mounted
+      project, the <code>codex-spark</code> backend with
+      <code>budget_check: true</code> and <code>effort: xhigh</code> pinned, and
+      defined-not-defaulted <code>codex-luna</code> / <code>codex-terra</code>
+      backends awaiting shadow qualification. Verified:
+      <code>reckon flight --project nova|imas-codex</code> resolves the mapping
+      with layer=host provenance; reckon's project layer pins the spark pilot
+      (backend, xhigh, 15 m) against the per-key deep merge.</p>
+    <p><strong>Effort-inheritance finding.</strong> Rollout
+      <code>turn_context</code> evidence proved the 8 spark pilot runs executed
+      at <code>xhigh</code> reasoning inherited from the user's interactive
+      <code>~/.codex/config.toml</code> (reckon emitted no effort flag) — the
+      pin converts that accidental inheritance into declared config with no
+      slice fork. The same rollout showed a spark run <em>resuming a ten-turn
+      sol session</em> (codex warns on cross-model resume), which explains the
+      22.9M-input-token outlier on spark's small weekly meter; §9.4 fences
+      session reuse to same-model only.</p>
+    <p><strong>Policy reference (§9.3, coordinator-owned)</strong> — commit
+      <code>1aa4215</code>: <code>effort-routing.md</code> gains failure
+      classification (no-diff stream deaths are infrastructure, exempt from the
+      lane breaker), small-model budget discipline, the effort-pin and
+      same-model session rules, and the new-model onboarding ladder
+      (probe → defined-not-defaulted → shadow ≥ 10 pairs → gated pilot →
+      slice-lock).</p>
+
     <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
     <p>The full-suite verification surfaced a pre-existing failure:
       <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code>
