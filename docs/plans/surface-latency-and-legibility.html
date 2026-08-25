@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -200,6 +200,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260825T070504487661-crew-route-cold-cost" data-who="codex-x" data-when="2026-08-25T07:17:23Z">
     <div class="r-comment-body"><p>Attribution: discover_plans is 33.923 s of a 34.007 s cold GET /crew — 99.75 percent — called twelve times, once per mounted project, by _crew_rows before crew.list_live is even read. Live-pointer work is 0.062 s in total across 12 ledger reads, one directory enumeration, 15 log tails and 15 terminal classifications, so pointers are not the problem. Cold reproduced twice at 46.804 s and 34.007 s; the 12.8 s spread came with one MORE live pointer, which rules pointer count out. The finding that matters more than the cold number: the warm route is also discovery-bound at 2.115 s of 2.186 s, 96.75 percent, and the SPA Crew view polls this route every three seconds — so the served surface pays a full twelve-project discovery scan every three seconds indefinitely. Same class as the discovery cold-start this plan already repaired, amplified by a caller mistake rather than a second cache: the route calls the same discover_plans and fills the same module-level cache twelve times before examining the pointers the response describes. Method note, and a legitimate substitution: the read-only investigate sandbox refuses to create a loopback socket with EPERM, so the worker timed the exact handler body in fresh interpreters, which have the same empty module-level cache as a fresh server process.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260825T070425064855-persist-the-creation-map" data-who="codex-w" data-when="2026-08-25T07:18:48Z">
+    <div class="r-comment-body"><p>One atomic checksummed schema-versioned map per repository/docs identity under config-home/cache/git-creation, carrying the exact HEAD and first-commit timestamps. An unchanged HEAD after a simulated restart runs git rev-parse HEAD and no git log while returning identical dates; a moved HEAD issues one old..new range query and retains the immutable earlier timestamps; missing, unreadable, partial, foreign-schema and corrupt caches all rebuild rather than serve wrong dates or fail. Measured cold discovery before and after on two mounted repositories: imas-efit 18.186 s to 8.753 s over 843 inventory rows, nova 6.930 s to 2.469 s over 149. Partial against the section criterion and recorded as such: nova now clears the 3 s cold target, imas-efit does not, because persistence removed the history-walk component and the residual 8.75 s is document parsing rather than git. Full suite 2327 passed / 0 failed.</p></div>
 </div>
 </section>
 </main>
