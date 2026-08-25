@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="spa-surface-redesign-landed">
+  <meta name="plan-title" content="Redrawing the degraded surfaces &mdash; landed evidence">
+  <meta name="plan-summary" content="A browser-backed check found four composition failures three waves of green declaration gates could not express, and the lead's seven complaints landed against it.">
+  <meta name="plan-evidence-for" content="reckon:spa-surface-redesign">
+  <meta name="plan-verifies" content="reckon:spa-surface-redesign#s14,reckon:spa-surface-redesign#s15,reckon:spa-surface-redesign#s16,reckon:spa-surface-redesign#s17">
+  <meta name="plan-recorded-at" content="2026-08-25">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; git worktrees; Google Chrome 150 headless against a locally served SPA; node 22 for the capture driver">
+  <meta name="plan-commits" content="ac3b103,9931ec9,4650658,ddb86b6,bee5f08,236de49,c81a3fd,6283a32,a0890ce,a99b5d8">
+  <title>Redrawing the degraded surfaces &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Redrawing the degraded surfaces &mdash; landed evidence</h1>
+    <p class="plan-summary">Three waves of surface work had passed every gate and the served page
+    was still wrong, three times, each time found by a human looking at a screenshot. This record
+    is what happened when the looking was automated: a browser-backed check that reads composed
+    geometry rather than authored declarations, and the lead's seven follow-up complaints landed
+    against its evidence.</p>
+  </header>
+
+  <h2 id="instrument">The instrument, and why it exists</h2>
+
+  <p><strong>Every gate on this plan asserted a declaration, and a declaration cannot fail the way
+  this page kept failing.</strong> A correct width under a wrong container renders wrongly while
+  the assertion that the width is correct stays true. That happened three times in one day: a
+  structural redraw that had not happened under passing structural tests, geometry lost to a prose
+  paraphrase of a canvas, and a CSS grid still governing every component redrawn beneath it. In all
+  three the evidence chain contained nothing false.</p>
+
+  <p><strong>The trade the plan had reserved for the lead turned out not to exist.</strong> The open
+  question was whether a rendering check was worth its dependency, on the premise that it needs a
+  JavaScript toolchain in a repository whose manifest cannot express one. But
+  <code>/usr/bin/google-chrome</code> is installed system-wide on this host and node 22 is on the
+  path, so a check that shells out to a present browser and skips when it is absent costs nothing to
+  declare. The measured proof: after landing the check, <code>git diff pyproject.toml</code> is
+  empty.</p>
+
+  <table>
+    <thead><tr><th>Property</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Passes at head</td><td>2 of 2, exactly one visible view observed at 1374&nbsp;px</td></tr>
+      <tr><td>Fails when composition breaks</td><td>injecting <code>min-width:1600px</code> on the app root reports app width 1600 against expected 1374, exit 1</td></tr>
+      <tr><td>Skips without a browser</td><td>exit 77, <em>SKIP: browser binary is not present</em></td></tr>
+      <tr><td>Costs no dependency</td><td><code>pyproject.toml</code> diff empty</td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative proof is the whole value. A check that passes proves nothing about its own
+  sensitivity; this one is known to bite on precisely the failure that declaration-site assertions
+  cannot represent. Commit <code>236de49</code> &mdash;
+  <code>tests/test_spa_composition.py</code> with <code>tests/spa_render_capture.mjs</code> as its
+  driver.</p>
+
+  <h2 id="captured">What the first capture found</h2>
+
+  <p>Ten screenshots, five routes, at 1374&nbsp;px and 1920&nbsp;px, each paired with a computed
+  container-geometry record. Capturing at <em>two</em> widths is what makes the findings decisive:
+  a defect that survives the wide viewport is authored fixed geometry, not pressure at the minimum.
+  Fourteen defects, every one citing a selector and a computed value.</p>
+
+  <figure>
+    <img src="/reckon/figures/spa-surface-redesign/before/plans.png"
+         alt="The Plans route at 1374 pixels before repair: a 64-pixel filter rail showing only
+              coloured dots and counts, plan rows whose metadata wraps to three lines repeating the
+              same north-star phrase, an in-flight band whose copy action is cut off at the right
+              edge, and a 300-pixel attachment rail containing only the words No attachments."
+         style="max-width:100%;border:1px solid var(--line)">
+    <figcaption>The Plans route as served, at the declared minimum width. Four of the fourteen
+    findings are visible at once: the filter rail carries no names, the row metadata repeats each
+    plan's north-star phrase in an unclamped wrapping row, the in-flight band hides 118&nbsp;px of
+    its action column, and an empty attachment rail holds 300&nbsp;px to say it is empty &mdash;
+    leaving the reader 620&nbsp;px of the 1374&nbsp;px viewport.</figcaption>
+  </figure>
+
+  <table>
+    <thead>
+      <tr><th>Composition failure</th><th>Computed measurement</th><th>Why no declaration caught it</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>In-flight band hides its action column</td>
+        <td><code>clientWidth 567px</code> against <code>scrollWidth 685px</code> &mdash; 118&nbsp;px
+        clipped under <code>overflow-x: hidden</code></td>
+        <td>Every one of the four grid columns is individually the declared value; only their sum
+        against the container is wrong</td>
+      </tr>
+      <tr>
+        <td>Empty attachment rail consumes the reader</td>
+        <td><code>width: 300px</code> at <code>flex: 0 0 auto</code> holding the words &ldquo;No
+        attachments&rdquo;; adjacent body reduced to 620&nbsp;px</td>
+        <td>The declared rail width is correct. Nothing declares what an empty rail should cost</td>
+      </tr>
+      <tr>
+        <td>Filter rail suppresses every name</td>
+        <td>64&nbsp;px at 1920&nbsp;px as well as 1374&nbsp;px, each group receiving 47&nbsp;px</td>
+        <td>The 64&nbsp;px was asserted <em>as the requirement</em> &mdash; a test pinned it</td>
+      </tr>
+      <tr>
+        <td>Sprint titles and marks clip while space goes unused</td>
+        <td>title span 104.78&nbsp;px against <code>scrollWidth 232px</code>; timeline fixed at
+        1216&nbsp;px inside a 1920&nbsp;px viewport</td>
+        <td>Ellipsis truncation is a successful render, indistinguishable from a short title</td>
+      </tr>
+      <tr>
+        <td>Overview blockers flood the first fold</td>
+        <td>blocker region 1930.5&nbsp;px inside a 1033&nbsp;px view &mdash; 1.87 viewport heights</td>
+        <td>Each blocker renders correctly; the defect is only their number</td>
+      </tr>
+      <tr>
+        <td>Faint text below readable contrast</td>
+        <td><code>--faint: #a1a4b0</code> at 10.5&nbsp;px computes 2.48:1 on white</td>
+        <td>Illegible-but-present text reads as a design choice, not a fault</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>One finding relocated a complaint.</strong> The lead reported plan card descriptions as
+  far too verbose. The verbose text is not a summary and not the sprint card description, which
+  already clamps: it is <code>.r-row .meta</code>, an unclamped wrapping flex row measured between
+  17.81&nbsp;px and 65.44&nbsp;px tall, rendering each plan's north-star phrase inline. So the same
+  sentence repeats down the list, discriminating nothing. Without the capture this would have been
+  fixed in the wrong place.</p>
+
+  <p><strong>Two coverage qualifications, recorded rather than inferred.</strong> Graph returned no
+  shippable handle and Crew no live runs, so populated geometry for those routes is unmeasured. The
+  Graph empty state was recorded on its own terms; nothing was invented for either.</p>
+
+  <h2 id="landed">What landed against it</h2>
+
+  <table>
+    <thead><tr><th>Change</th><th>Measure</th><th>Commit</th></tr></thead>
+    <tbody>
+      <tr><td>Every mounted project switchable, hidden ones labelled</td>
+          <td>2 of 2 mounted projects listed while 1 is hidden; hidden row routes through the
+          existing navigation path; 6 of 6</td><td><code>a0890ce</code></td></tr>
+      <tr><td>Filter rail carries visible status and sprint names</td>
+          <td>192&nbsp;px; humanized labels beside counts; the two tests enforcing 64&nbsp;px and
+          dot-only chips inverted; 9 focused, 72 SPA</td><td><code>9931ec9</code></td></tr>
+      <tr><td>In-flight band states plan effort, not a model name</td>
+          <td>0 model occurrences, 3.25 worker-hours rendered, overflow delta 0&nbsp;px against the
+          previous 118&nbsp;px; <code>run.effort</code> forbidden too; 6 of 6</td>
+          <td><code>c81a3fd</code></td></tr>
+      <tr><td>Crew card face carries plan effort</td>
+          <td>0 runtime model strings on the collapsed face; backend and model retained behind the
+          existing disclosure; 4 of 4</td><td><code>6283a32</code></td></tr>
+      <tr><td>Sprint names and gantt marks render in full</td>
+          <td>0 title overflows and 0 mark-label overflows at both widths; surface 1864&nbsp;px at
+          1920; track proven wider than 1216&nbsp;px; 5 of 5</td><td><code>a99b5d8</code></td></tr>
+      <tr><td>Faint token meets readable contrast</td>
+          <td>light 2.48 &rarr; 4.52:1, dark 2.97 &rarr; 4.56:1, both muted confirmed passing;
+          baseline proven failing first; 4 of 4</td><td><code>ddb86b6</code></td></tr>
+      <tr><td>Finished runs reachable from the browser</td>
+          <td>project- and plan-filtered routes over <code>ledger.runs</code>; newest first; empty
+          list rather than an error for a plan with no history; full suite 2384</td>
+          <td><code>bee5f08</code></td></tr>
+      <tr><td>Summary length bound enforced where written</td>
+          <td>bound 160; a 161-character write refused naming both figures; an unrelated write to
+          the same plan still succeeds; 31 existing violations enumerated at 164&ndash;473; 97
+          tests</td><td><code>4650658</code></td></tr>
+      <tr><td>Plan worker-hours survive the loader</td>
+          <td>3.25 hours asserted exactly through discovery and through the central fallback, which
+          had carried only a defaulted size letter; 2 of 2</td><td><code>ac3b103</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Full suite at the merged head: <strong>2399 passed, 2 skipped</strong>.</p>
+
+  <h2 id="lessons">What generalises</h2>
+
+  <p><strong>A test that pins a value existing in order to change is a fuse on the next person to
+  touch that file.</strong> This plan recorded the lesson twice already and met it a third time from
+  a new direction: three landed tests actively enforced what the lead had just rejected &mdash; one
+  requiring the chip render no label, one pinning 64&nbsp;px, one requiring the model string by
+  name. All three were inverted deliberately and recorded as edits. A regression and a superseded
+  requirement look identical in a red suite; only the plan can tell them apart.</p>
+
+  <p><strong>Two rulers for one bound is worse than a loose bound.</strong> The summary gate measures
+  the decoded string; the audit measures the HTML-encoded attribute. An apostrophe costs five
+  characters the author never typed, so a 158-character summary passed the write and was flagged at
+  164 by the audit &mdash; the author told it is fine, a later reader told it is not. Found by the
+  first plan through the gate, which was this one.</p>
+
+  <p><strong>A reach path a user cannot see is not a reach path.</strong> An earlier landing asserted
+  that hiding a project excluded it &ldquo;from aggregates and from the shortcut list but never from
+  reach&rdquo;, and its test passed, because the palette and the route genuinely worked. The lead
+  still could not switch to the project. Reachability that requires knowing the palette exists is a
+  claim about the implementation, not about the interface.</p>
+</main>
+</body>
+</html>
