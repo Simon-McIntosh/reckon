@@ -75,3 +75,72 @@ already pinned — never a way to write uncertain code quickly.
 7. **Circuit breaker:** two consecutive lane gate failures close the lane
    until the failing specifications are re-examined. A gate failure on an
    exact-tier node indicts the specification before the model.
+
+## Failure classification — gate failures versus infrastructure failures
+
+A run that dies mid-stream with **no diff and no manifest** — a malformed
+tool call, a truncated stream, a launcher error — is an **infrastructure
+failure**, not a gate failure. Redispatch it without indicting the
+specification, and do not count it toward the lane's two-consecutive-failure
+circuit breaker: the breaker exists to catch specifications (or a model)
+producing *wrong work*, and a run that produced *no work* is evidence about
+the transport, not the tier. A gate failure — the named check ran against a
+delivered diff and failed — always counts.
+
+## Small-model budget discipline
+
+A small-model lane may carry its **own dedicated rate meter**, far smaller
+than the default backend's. Measured 2026-08-25: eight spark runs (~41M input
+tokens) consumed ~60% of that model's weekly meter while 845 default-backend
+runs consumed ~40% of theirs — a lane capacity of roughly a dozen runs/week
+at that profile. Consequences:
+
+- `budget_check: true` on any backend with a dedicated meter, so pre-flight
+  reads real headroom instead of `unknown`.
+- Keep lane dispatches token-lean: the targeted named check, not the full
+  suite, unless the plan demands it; small file scopes.
+- The lane buys latency and default-meter relief — never fleet share. Do not
+  plan a wave that assumes the lane can absorb it.
+
+## Effort must be pinned, and sessions must not cross models
+
+With no effort flag, the codex CLI inherits `model_reasoning_effort` from the
+user's interactive `~/.codex/config.toml` — so an unpinned backend's effective
+effort **drifts with the user's interactive preference** and the ledger cannot
+see it. Every backend in flight config pins `effort` explicitly. When
+adopting a tier that ran unpinned, pin the value its audited runs actually
+executed at (read the rollout `turn_context`), so the calibration slice does
+not fork.
+
+Session reuse has the same trap in the other direction: resuming a member's
+session recorded by a *different model* drags that model's whole history into
+the new model's context window (measured: one spark run resuming a ten-turn
+sol session cost 22.9M input tokens in a two-minute run). Reuse a session
+only when the recorded model matches the dispatch's resolved model.
+
+## Onboarding a new model — the qualification ladder
+
+New identifiers appear on the account without notice; nothing in reckon
+source ever names one. The ladder, cheapest step first, each gating the next:
+
+1. **Probe** (worker node, minutes): one trivial read-only exec per candidate
+   identifier, bare and with an explicit effort; record the exact
+   accept/reject responses as a run artifact.
+2. **Define, don't default**: an accepted identifier enters the *host* flight
+   layer as a backend with pinned effort and `budget_check: true`. No role
+   and no `by_spec_level` overlay selects it.
+3. **Shadow qualification**: sampled shadow runs (`reckon crew shadow`) pair
+   the candidate against live nodes' primaries — same node, same base sha,
+   same named check, never merged. A tier qualifies for a pilot at ≥ 10
+   usable shadow pairs meeting the capabilities success threshold.
+4. **Gated pilot**: live routing under the small-model lane gate above (or a
+   role overlay for a full-size tier), first twenty runs full-diff audited.
+5. **Slice-lock**: the §6 checkpoint locks the winner into
+   `roles.<role>.by_spec_level` per the decision rule — cheapest
+   configuration with pass ≥ 0.8 over ≥ 10 usable runs, charged for
+   redispatches.
+
+Shadow evidence qualifies a tier for its pilot; **only live gated evidence
+opens routing**. Layer placement: measured cross-project defaults live in the
+host layer; a project layer carries only its deviations (e.g. a pilot pin);
+the shipped layer stays provider-neutral, always.
