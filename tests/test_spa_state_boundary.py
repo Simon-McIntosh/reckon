@@ -42,6 +42,65 @@ window.STATE_READY.then(() => console.log(JSON.stringify(window.STATE)));
     return json.loads(result.stdout)
 
 
+def _load_central_fallback_state(payload: dict) -> dict:
+    script = f"""
+const fs = require("fs");
+global.window = {{location: {{pathname: "/sample/"}}}};
+global.document = {{querySelector: () => ({{content: "sample"}})}};
+const projection = {json.dumps(payload)};
+global.fetch = async (url) => {{
+  if (url === "state/sample/projection.json") {{
+    return {{ok: true, status: 200, json: async () => projection}};
+  }}
+  if (url === "/_discover/sample") {{
+    return {{ok: false, status: 404, json: async () => ({{}})}};
+  }}
+  throw new Error("unexpected fetch " + url);
+}};
+eval(fs.readFileSync({json.dumps(str(LOADER))}, "utf8"));
+window.STATE_READY.then(() => console.log(JSON.stringify(window.STATE)));
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_plan_effort_hours_survives_discovery_and_central_fallback() -> None:
+    discovery_state = _load_discovery_state(
+        {
+            "inventory": [
+                {
+                    "slug": "work",
+                    "type": "plan",
+                    "status": "active",
+                    "effort_hours": 3.25,
+                }
+            ]
+        }
+    )
+    fallback_state = _load_central_fallback_state(
+        {
+            "data": {
+                "plans": [
+                    {
+                        "path": "plans/work.html",
+                        "type": "plan",
+                        "status": "active",
+                        "effort_hours": 3.25,
+                    }
+                ]
+            }
+        }
+    )
+
+    assert discovery_state["plans"]["work"]["effort_hours"] == 3.25
+    assert fallback_state["plans"]["work"]["effort_hours"] == 3.25
+
+
 def test_discovery_load_preserves_receipt_sprints_status_and_attachments() -> None:
     state = _load_discovery_state(
         {
