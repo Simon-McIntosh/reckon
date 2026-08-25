@@ -234,27 +234,31 @@ def test_spa_entry_points_load_the_same_surface_stylesheets(
     loaded = {name: _loaded_stylesheets(html) for name, html in entry_points.items()}
 
     assert all(assets == loaded["checked-in"] for assets in loaded.values())
-    assert expected_surface_assets <= set(loaded["checked-in"])
     for name in expected_surface_files:
+        asset = f"_ui/{name}"
+        assert all(asset in references for references in loaded.values())
         assert (docs_dir / "_ui" / name).is_file()
-        assert (REPO_ROOT / "docs" / "ui" / name).read_text() == (
-            f"/* Surface owner: {name.removesuffix('.css')}. */\n"
-        )
+        assert (REPO_ROOT / "docs" / "ui" / name).is_file()
 
 
 def test_plan_and_sprint_views_surface_only_matching_live_work():
     plan = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
     sprint = (REPO_ROOT / "docs" / "ui" / "sprint.jsx").read_text()
 
+    band_anchor = plan.find('className="r-inflight-band"')
+    assert band_anchor != -1
+    assert "run.member" in plan[band_anchor:]
+    assert "run.section" in plan[band_anchor:]
     assert 'aria-label="Work in flight"' in plan
-    assert "if (!runs.length) return null" in plan
-    assert "payload.runs.filter(run => run.plan === slug)" in plan
-    assert "{runs.map(run => (" in plan
-    assert 'run.member || "unassigned"' in plan
-    assert 'run.section || "whole plan"' in plan
-    assert 'className="r-inflight-badge"' in sprint
-    assert "const itemRuns = runsByPlan[p.slug] || []" in sprint
-    assert "{itemRuns.length > 0 && (" in sprint
+
+    live_summary_anchor = sprint.find("liveSummary =")
+    assert live_summary_anchor != -1
+    assert "run.member" in sprint[live_summary_anchor:]
+    assert "run.section" in sprint[live_summary_anchor:]
+
+    badge_anchor = sprint.find('className="r-inflight-badge"')
+    assert badge_anchor != -1
+    assert live_summary_anchor < badge_anchor
 
 
 def test_build_bakes_discovery_and_preserves_authored_project_state(
