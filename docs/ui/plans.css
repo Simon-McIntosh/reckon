@@ -1,1 +1,242 @@
 /* Surface owner: plans. */
+
+.r-3col {
+  grid-template-columns: var(--c2) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "filters filters"
+    "list content";
+}
+
+.r-3col.filters-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-rows: 0 minmax(0, 1fr);
+}
+
+.r-3col.overview-mode {
+  display: block;
+}
+
+.r-filters {
+  grid-area: filters;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 14px;
+  border-right: 0;
+  border-bottom: 1px solid var(--hair);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.r-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.r-filter-group + .r-filter-group {
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+
+.r-chip {
+  width: auto;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  white-space: nowrap;
+}
+
+.r-chip .n {
+  margin-left: 3px;
+}
+
+.r-clear-top {
+  flex: 0 0 auto;
+}
+
+.r-list {
+  grid-area: list;
+}
+
+.r-content {
+  grid-area: content;
+}
+
+.r-sort-bar {
+  gap: 7px;
+}
+
+.r-sort-n {
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.r-sort-segments {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg-2);
+}
+
+.r-sort-segments button {
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font: 10.5px var(--mono);
+  cursor: pointer;
+}
+
+.r-sort-segments button.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(15 20 35 / 6%);
+}
+
+.r-row .meta button,
+.r-row .sigs button,
+.r-status-transition {
+  font: inherit;
+}
+
+.r-compact-signal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.r-status-transition {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--bad) 25%, var(--line));
+  border-radius: 4px;
+  background: var(--bad-2);
+  color: var(--bad);
+  cursor: pointer;
+}
+
+.r-row .dot.transition {
+  background: linear-gradient(135deg, var(--accent) 50%, var(--bad) 50%);
+}
+
+.r-row .sig {
+  border: 0;
+  cursor: pointer;
+}
+
+.r-reader-with-attachments {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
+  align-items: start;
+  min-height: 0;
+}
+
+.r-reader-with-attachments > .r-body {
+  min-width: 0;
+}
+
+.r-attachment-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: calc(100vh - var(--topbar-h) - 80px);
+  padding: 22px 14px;
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.r-attachment-heading,
+.r-attachment-group h2 {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font: 10px var(--mono);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.r-attachment-group {
+  margin-top: 15px;
+}
+
+.r-attachment-group h2 {
+  display: flex;
+  justify-content: space-between;
+}
+
+.r-attachment-group button {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 7px;
+  width: 100%;
+  margin: 3px 0;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 11.5px/1.35 var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.r-attachment-group button:hover,
+.r-attachment-group button.active {
+  border-color: var(--line);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.r-attachment-group .dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+}
+
+.r-attachment-group .dot.research {
+  background: var(--accent);
+}
+
+.r-attachment-group .dot.evidence {
+  background: var(--good);
+}
+
+@media (max-width: 980px) {
+  .r-reader-with-attachments {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .r-attachment-rail {
+    position: static;
+    grid-row: 1;
+    display: flex;
+    gap: 12px;
+    max-height: none;
+    padding: 10px 18px;
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+
+  .r-attachment-group {
+    min-width: 180px;
+    margin-top: 0;
+  }
+}
