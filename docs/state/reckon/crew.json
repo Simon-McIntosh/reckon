@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:52:28",
+  "updated": "2026-08-25T14:55:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -62,7 +62,8 @@
         "session_id": "01a03323-76a4-7b00-8615-f759539e83d8",
         "created": "2026-08-12",
         "sessions": {
-          "gpt-5.6-luna": "01a038de-1aba-7f40-ae3e-7d59258fe3da"
+          "gpt-5.6-luna": "01a038de-1aba-7f40-ae3e-7d59258fe3da",
+          "gpt-5.6-sol": "01a038f8-cc64-7c61-b67c-302b5278f763"
         }
       },
       {
@@ -20335,9 +20336,103 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T125017297730-n-first-run-visibility-shows-the-fleet",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-first-run-visibility-shows-the-fleet",
+        "node_definition": {
+          "done_when": "a rendered check with an empty persisted preference asserts the crew view renders one card per run returned by the endpoint, currently 0 rendered against 8 returned, and that the project count reported as shown is not 1 of 12 when 12 are mounted",
+          "estimated_hours": 1.0,
+          "goal": "A viewer with no stored preference sees the live fleet, so the default visibility derivation cannot hide every project that has a running run",
+          "id": "n-first-run-visibility-shows-the-fleet",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T125017297730-n-first-run-visibility-shows-the-fleet/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/crew.jsx",
+            "tests/test_spa_project_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:50:24Z",
+        "completed_at": "2026-08-25T12:54:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 271,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 271,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "c0942e594c0a1c8feeec321ee28b64e1bcc5e44e",
+        "commits": [
+          "04b3823"
+        ],
+        "changed_lines": {
+          "added": 94,
+          "removed": 16,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T125017297730-n-first-run-visibility-shows-the-fleet/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f8-cc64-7c61-b67c-302b5278f763",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2533632,
+            "cached_input_tokens_cumulative": 2533632,
+            "input_tokens": 2666305,
+            "input_tokens_cumulative": 2666305,
+            "output_tokens": 8469,
+            "output_tokens_cumulative": 8469,
+            "reasoning_output_tokens": 2452,
+            "reasoning_output_tokens_cumulative": 2452
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 384
+    "_version": 386
   }
 }
