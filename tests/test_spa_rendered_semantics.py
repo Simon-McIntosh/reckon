@@ -13,6 +13,8 @@ from urllib.request import urlopen
 
 import pytest
 
+from tests.spa_browser_harness import temporary_browser_profile
+
 
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
@@ -108,8 +110,7 @@ INDEX_STATE = {
 
 NODE_PROBE = r"""
 import { spawn } from "node:child_process";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const input = JSON.parse(process.argv[1]);
@@ -194,7 +195,7 @@ async function navigateAndWait(devtools, generation) {
 
 async function main() {
   await access(input.browser);
-  const profile = await mkdtemp(path.join(os.tmpdir(), "reckon-semantics-"));
+  const profile = input.profile;
   const browser = spawn(input.browser, [
     "--headless=new",
     "--no-sandbox",
@@ -279,7 +280,6 @@ async function main() {
       if (browser.exitCode !== null) resolve();
       else browser.once("exit", resolve);
     });
-    await rm(profile, { recursive: true, force: true });
   }
 }
 
@@ -378,30 +378,33 @@ def _rendered_probe(
     remove_signal: str,
     fail_plan_html: bool = False,
 ) -> dict[str, dict[str, object]]:
-    with _served_fixture(tmp_path, route) as url:
-        result = subprocess.run(
-            [
-                "node",
-                "--input-type=module",
-                "-e",
-                NODE_PROBE,
-                json.dumps(
-                    {
-                        "browser": _installed_browser(),
-                        "url": url,
-                        "waitSelector": wait_selector,
-                        "probe": probe,
-                        "removeSignal": remove_signal,
-                        "failPlanHtml": fail_plan_html,
-                        "fixtureIndex": INDEX_STATE,
-                    }
-                ),
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            timeout=90,
-        )
+    with temporary_browser_profile(tmp_path) as profile:
+        with _served_fixture(tmp_path, route) as url:
+            result = subprocess.run(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    NODE_PROBE,
+                    json.dumps(
+                        {
+                            "browser": _installed_browser(),
+                            "profile": str(profile),
+                            "url": url,
+                            "waitSelector": wait_selector,
+                            "probe": probe,
+                            "removeSignal": remove_signal,
+                            "failPlanHtml": fail_plan_html,
+                            "fixtureIndex": INDEX_STATE,
+                        }
+                    ),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+    assert not profile.exists()
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout)
 
