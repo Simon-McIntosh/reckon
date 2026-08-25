@@ -1636,6 +1636,7 @@ function CockpitBody({ onNav, projects, fleetRuns, mountedProjectCount }) {
   const M = window.STATE;
   if (!M) return null;
   const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
+  const milestones = project.milestones || [];
   const northStars = M.north_stars || [];
 
   const decisionPlans = M.inventory
@@ -1676,28 +1677,32 @@ function CockpitBody({ onNav, projects, fleetRuns, mountedProjectCount }) {
         </>
       )}
 
-      <div className="r-ck-h">
-        <span className="r-eyebrow">Milestones</span>
-      </div>
-      <div className="r-ms" style={{ marginBottom: 4 }}>
-        {project.milestones.map(m => (
-          <button key={m.id} className={`r-ms-tile ${m.status}`}
-            onClick={() => {
-              // Apply milestone filter, navigate to plans view (first active plan in ms).
-              const _proj = window.STATE?.project || "default";
-              try { localStorage.setItem(`reckon:${_proj}:filters`, JSON.stringify({ ms: [m.id] })); } catch {}
-              window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
-              const target = M.inventory.find(i => i.ms === m.id && i.status === "active")
-                || M.inventory.find(i => i.ms === m.id);
-              if (target) onNav({ view: "plan", slug: target.slug });
-            }}>
-            <div className="fill" style={{ "--w": `${m.pct}%` }}></div>
-            <div className="lbl">{m.id} · <span className={`stat-${m.status}`}>{m.status}</span></div>
-            <div className="nm">{m.name}</div>
-            <div className="pct">{m.pct}%</div>
-          </button>
-        ))}
-      </div>
+      {milestones.length > 0 && (
+        <>
+          <div className="r-ck-h">
+            <span className="r-eyebrow">Milestones</span>
+          </div>
+          <div className="r-ms" style={{ marginBottom: 4 }}>
+            {milestones.map(m => (
+              <button key={m.id} className={`r-ms-tile ${m.status}`}
+                onClick={() => {
+                  // Apply milestone filter, navigate to plans view (first active plan in ms).
+                  const _proj = window.STATE?.project || "default";
+                  try { localStorage.setItem(`reckon:${_proj}:filters`, JSON.stringify({ ms: [m.id] })); } catch {}
+                  window.dispatchEvent(new CustomEvent("reckon:set-filters", { detail: { ms: [m.id] } }));
+                  const target = M.inventory.find(i => i.ms === m.id && i.status === "active")
+                    || M.inventory.find(i => i.ms === m.id);
+                  if (target) onNav({ view: "plan", slug: target.slug });
+                }}>
+                <div className="fill" style={{ "--w": `${m.pct}%` }}></div>
+                <div className="lbl">{m.id} · <span className={`stat-${m.status}`}>{m.status}</span></div>
+                <div className="nm">{m.name}</div>
+                <div className="pct">{m.pct}%</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="r-ck-h">
         <span className="r-eyebrow">Decisions</span>
