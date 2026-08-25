@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T19:14:09",
+  "updated": "2026-08-25T19:53:27",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -22244,9 +22244,196 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T171515402842-n-s18-reader-attachments",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a718c",
+        "node": "n-s18-reader-attachments",
+        "node_definition": {
+          "done_when": "A browser probe of a plan with attachments reports exactly 2 bars between the provenance band and the document body, ordered Resources before Evidence, each count equal to its typed attachment relation, 0 elements matching .r-attachment-rail, and an entry activation changing the reader route to that document; the same probe on a plan with no attachments reports 0 bars; focused pytest over the three assigned test modules passes and the full suite reports a 0 failure delta against base 681dba9.",
+          "estimated_hours": 0.8,
+          "goal": "The reader head renders Resources and Evidence as single-line expandable bars in that order, replacing the retired right-hand attachment rail, following the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/spa-s18-reuse-map.md.",
+          "id": "n-s18-reader-attachments",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T171515402842-n-s18-reader-attachments/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a718c",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/reader.css",
+            "docs/ui/plans.css",
+            "docs/ui/shell.jsx",
+            "docs/ui/plan.jsx",
+            "tests/test_spa_reader_provenance.py",
+            "tests/test_spa_plans_surface.py",
+            "tests/test_spa_reading_mode.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T17:15:19Z",
+        "completed_at": "2026-08-25T17:52:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2252,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2252,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "681dba944be537046f4804912c4f41203ee31495",
+        "commits": [
+          "0a764819ad29183a6f7e75bbd2e6ddbb6bfc1310"
+        ],
+        "changed_lines": {
+          "added": 277,
+          "removed": 222,
+          "files": 7
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T171515402842-n-s18-reader-attachments/manifest.md",
+        "scope_changed": true,
+        "session_id": "019ff70f-e564-7391-a681-b1c4d92d8ece",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 21883136,
+            "cached_input_tokens_cumulative": 89914880,
+            "input_tokens": 22247589,
+            "input_tokens_cumulative": 94173092,
+            "output_tokens": 33359,
+            "output_tokens_cumulative": 279861,
+            "reasoning_output_tokens": 7573,
+            "reasoning_output_tokens_cumulative": 85310
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 8801,
+              "budget_seconds": 1200,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 10001,
+              "log_age_seconds": 9548,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none; the exclusive delivery path is outside a Git worktree and the assigned repository was read-only"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142832299679-n-readyqueuegap/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260825T142832299679-n-readyqueuegap --gate <verdict> --commit none; the exclusive delivery path is outside a Git worktree and the assigned repository was read-only",
+              "node": "n-readyqueuegap",
+              "phase": "starting",
+              "plan": "concurrency-and-schedule-visibility",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T142832299679-n-readyqueuegap",
+              "terminal_age_seconds": 9629,
+              "terminal_at": "2026-08-25T14:34:49Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/rk-20260825a/n-readyqueuegap"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 8795,
+              "budget_seconds": 1200,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 9995,
+              "log_age_seconds": 9453,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none; investigation worktree was read-only and the assigned report directory is not a git repository"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142838652415-n-taggingmaturity/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260825T142838652415-n-taggingmaturity --gate <verdict> --commit none; investigation worktree was read-only and the assigned report directory is not a git repository",
+              "node": "n-taggingmaturity",
+              "phase": "starting",
+              "plan": "resource-tagging-system",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T142838652415-n-taggingmaturity",
+              "terminal_age_seconds": 9475,
+              "terminal_at": "2026-08-25T14:37:23Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/rk-20260825a/n-taggingmaturity"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 6874,
+              "budget_seconds": 2700,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 9574,
+              "log_age_seconds": 8663,
+              "log_fresh": false,
+              "manifest_commits": [
+                "8476b70"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T143538008344-second-checkpoint-slice-read/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260825T143538008344-second-checkpoint-slice-read --gate <verdict> --commit 8476b70",
+              "node": "second-checkpoint-slice-read",
+              "phase": "starting",
+              "plan": "crew-effort-routing",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T143538008344-second-checkpoint-slice-read",
+              "terminal_age_seconds": 8684,
+              "terminal_at": "2026-08-25T14:50:33Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/reckon-cer-s12/second-checkpoint-slice-read"
+            }
+          ]
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 402
+    "_version": 403
   }
 }

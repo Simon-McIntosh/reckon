@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="100">
+<meta name="plan-version" content="102">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076,ac3b103,9931ec9,4650658,ddb86b6,bee5f08,236de49,c81a3fd,6283a32,a0890ce,a99b5d8,a58f9a0,416e2d6,ecd10c7,b3b7920,55e492a,fed719c,75cd164,9c129e3,e55d536,967b12d,819e63d,04b3823,2db0606,9921f22,e37ce4d,b093d5c,780869a">
 <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/sprint.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/_shared/foundation.css,docs/index.html,reckon/serve.py,reckon/_store.py,reckon/doccheck.py,tests/test_spa_composition.py,tests/spa_render_capture.mjs,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_spa_project_visibility.py,tests/test_spa_sprints_geometry.py,tests/test_shared_token_contrast.py,tests/test_serve_finished_runs.py,tests/test_plan_summary_bound.py,tests/test_build.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html,design/canvas-layout-spec.md,docs/evidence/archive/spa-surface-redesign-landed.html,docs/figures/spa-surface-redesign/before/plans.png">
-<meta name="plan-impl" content="0.95">
+<meta name="plan-impl" content="0.97">
 </head>
 <body>
   <main class="plan-doc">
@@ -972,6 +972,16 @@
 
     <h3 id="s18c">&#167;18c &mdash; Resources and evidence head the reader</h3>
 
+    <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-25</span>
+    Commit <code>0a76481</code>, gate PASSED. A served-browser probe measured exactly 2 populated
+    bars ordered Resources before Evidence with typed counts 2 and 1, 0 elements matching
+    <code>.r-attachment-rail</code>, successful route activation to
+    <code>/research:resource-a</code>, and 0 bars after opening an unattached plan. The duplicate
+    plan-local attachment selector is gone, leaving one relation authority. New-failure delta 0
+    against <code>681dba9</code>. Full record:
+    <a href="/reckon/evidence/archive/spa-surface-redesign-landed#reader-head-bars">a column for
+    something that is usually one row</a>.</p>
+
     <p><strong>Deliverables.</strong></p>
     <ul>
       <li><strong>The attachment rail is retired.</strong> <code>.r-attachment-rail</code> and its
@@ -1402,6 +1412,12 @@
 </div>
 <div class="r-comment" data-section="s18b" data-id="c-20260825-s18b-landed" data-who="reckon-ship" data-when="2026-08-25T17:15:00+02:00">
     <div class="r-comment-body">n-s18-header-order landed - commit be79618; gate rendered-header-composition PASSED; measure 1 header row at each of 1280/1440/1920 with the tools group inset equal to the header right padding within 1px and 0 receipt nodes in the header, all four receipt fields rendering inside the opened settings menu with a removal control proving the signal is required; focused 21 passed, full suite 2434 passed 0 failed; artifacts docs/ui/topbar.css, docs/ui/shell.jsx, docs/ui/_shared.jsx and three test modules; 196 insertions against 109 deletions. One regression surfaced only in the full suite: widening the shared browser probe with an optional preparation expression broke a caller that omitted it, repaired by defaulting the argument.</div>
+</div>
+<div class="r-comment" data-section="§18c" data-id="c-run-r-20260825T171515402842-n-s18-reader-attachments" data-who="codex-d" data-when="2026-08-25T17:52:51Z">
+    <div class="r-comment-body"><p>2 bars ordered Resources before Evidence with typed counts 2 and 1, 0 .r-attachment-rail elements, route activation to /research:resource-a, 0 bars on an unattached plan; new-failure delta 0 against 681dba9 with 6 pre-existing base failures preserved</p></div>
+</div>
+<div class="r-comment" data-section="s18c" data-id="c-20260825-s18c-landed" data-who="reckon-ship" data-when="2026-08-25T17:55:00+02:00">
+    <div class="r-comment-body">n-s18-reader-attachments landed - commit 0a76481; gate rendered-attachment-bars PASSED; measure exactly 2 populated bars ordered Resources before Evidence with typed counts 2 and 1, 0 elements matching .r-attachment-rail, route activation reaching /research:resource-a, 0 bars on an unattached plan; focused 17 passed, full suite 2429 passed and 7 failed of which 1 was this diff (repaired and proven by its exact rerun) and 6 are byte-identical base failures, so the new-failure delta against 681dba9 is 0; artifacts docs/ui/reader.css, docs/ui/plans.css, docs/ui/shell.jsx, docs/ui/plan.jsx and five test modules; 292 insertions against 241 deletions. Scope widened mid-flight, so excluded from effort calibration. The duplicate plan-local attachment selector was removed, leaving attachmentGroups as the sole relation authority.</div>
 </div>
 </section>
 </main>
