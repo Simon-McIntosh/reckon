@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:38:37",
+  "updated": "2026-08-25T14:39:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -9,7 +9,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "019ff69e-daef-75a1-99cb-8609f30bb500",
-        "created": "2026-08-12"
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-sol": "01a038e4-7ad0-7d90-854c-9051ebabb2a8"
+        }
       },
       {
         "id": "codex-b",
@@ -19842,9 +19845,103 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T122808085607-n-repair-red-main",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-repair-red-main",
+        "node_definition": {
+          "done_when": "the full suite reports 0 failed and 0 errors, and the manifest states for each repaired assertion which of the two it was with the reasoning",
+          "estimated_hours": 1.0,
+          "goal": "The full test suite passes at the integrated head, with each failing assertion resolved as either a genuine regression repaired in the implementation or a superseded snapshot replaced by the contract it stood for",
+          "id": "n-repair-red-main",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122808085607-n-repair-red-main/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "open",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/test_crew_route_cost.py",
+            "tests/test_spa_sprint_surface.py",
+            "docs/ui/sprints.css"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:28:12Z",
+        "completed_at": "2026-08-25T12:38:35Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 623,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 623,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f4523a732469c097df3e9fd3e2ae7aad60490fdd",
+        "commits": [
+          "819e63d"
+        ],
+        "changed_lines": {
+          "added": 6,
+          "removed": 18,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T122808085607-n-repair-red-main/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e4-7ad0-7d90-854c-9051ebabb2a8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3290624,
+            "cached_input_tokens_cumulative": 3290624,
+            "input_tokens": 3474225,
+            "input_tokens_cumulative": 3474225,
+            "output_tokens": 10437,
+            "output_tokens_cumulative": 10437,
+            "reasoning_output_tokens": 3285,
+            "reasoning_output_tokens_cumulative": 3285
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 375
+    "_version": 377
   }
 }
