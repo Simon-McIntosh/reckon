@@ -911,11 +911,18 @@
       clamped to 300&ndash;480px; the reader takes the remainder. Both resize with the window.</li>
     </ul>
 
+    <p><strong>The index rule is a clamp, not a ratio.</strong> The index width is
+    <code>clamp(300px, 30%, 480px)</code> of the available width, so the ratio governs only between
+    roughly 1000px and 1600px and the cap governs above it. Stated as a percentage at every width
+    the rule contradicts itself &mdash; 30% of 1920px is 576px, which the 480px cap forbids &mdash;
+    so the measure below names the expected pixel width per viewport instead.</p>
+
     <p><strong>Done when</strong> the rendered document scroll width equals its client width at
-    1280px, 1440px and 1920px viewports with no element extending past the viewport, the index
-    column measures within 300&ndash;480px and 28&ndash;32% at each of those widths, filtering by a
-    status and by a sprint still reduces the list from the header controls, and no rule declaring
-    <code>1374px</code> remains in any stylesheet.</p>
+    1280px, 1440px and 1920px viewports with no element extending past the viewport; the index
+    column measures 384px at 1280, 432px at 1440 and 480px at 1920, each within a few pixels of
+    the clamp; filtering by a status and by a sprint still reduces the list from the header
+    controls; and no rule declaring <code>1374px</code> remains in any stylesheet, the topbar's
+    included.</p>
 
     <h3 id="s18b">&#167;18b &mdash; The header carries navigation, and the receipt moves behind the gear</h3>
 
