@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:06:47",
+  "updated": "2026-08-25T14:09:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -109,7 +109,8 @@
         "session_id": "01a033e4-05e4-7de1-b031-000c219c2d94",
         "created": "2026-08-24",
         "sessions": {
-          "gpt-5.6-luna": "01a0380d-6f40-7001-8029-b4afa891699f"
+          "gpt-5.6-luna": "01a0380d-6f40-7001-8029-b4afa891699f",
+          "gpt-5.6-sol": "01a038cc-88c9-78f2-98e0-03e4459c2edd"
         }
       },
       {
@@ -17826,9 +17827,200 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T120108794585-n-readable-filter-rail",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-readable-filter-rail",
+        "node_definition": {
+          "done_when": "a rendered check asserts each status and sprint chip carries visible label text plus its count, the two tests that pin the rejected 64px width and the dot-and-count-only chip are inverted to require labels, and the remaining three plans columns keep their owners",
+          "estimated_hours": 0.75,
+          "goal": "The plans filter rail shows readable status and sprint names beside their counts instead of a dot whose label lives only in a title attribute",
+          "id": "n-readable-filter-rail",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120108794585-n-readable-filter-rail/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/plans.css",
+            "tests/test_spa_shell_container.py",
+            "tests/test_spa_plans_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-j",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:01:19Z",
+        "completed_at": "2026-08-25T12:08:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 442,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 442,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "cd2927d2852a5808efd20b86d40710d26459538b",
+        "commits": [
+          "9931ec9"
+        ],
+        "changed_lines": {
+          "added": 133,
+          "removed": 74,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120108794585-n-readable-filter-rail/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a037d2-4e07-79e1-a7a1-7b2c63dca81d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4518400,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4693314,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 15968,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 6983
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T120148779539-n-summary-bound",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a717",
+        "node": "n-summary-bound",
+        "node_definition": {
+          "done_when": "a test asserts a write setting an over-length summary is refused naming the bound and the measured length while an unrelated write to the same plan succeeds, the audit lists every existing over-length summary with its length, and both authoring skills state the bound",
+          "estimated_hours": 1.0,
+          "goal": "A plan summary over the stated length bound is refused at the write that sets it, reported by the audit for plans already carrying one, and documented where a summary is authored",
+          "id": "n-summary-bound",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120148779539-n-summary-bound/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a717",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/_store.py",
+            "reckon/doccheck.py",
+            "tests/test_plan_summary_bound.py",
+            "skills/reckon-create/SKILL.md",
+            "skills/reckon-edit/SKILL.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-l",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:02:02Z",
+        "completed_at": "2026-08-25T12:08:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 373,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 373,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "cd2927d2852a5808efd20b86d40710d26459538b",
+        "commits": [
+          "4650658"
+        ],
+        "changed_lines": {
+          "added": 178,
+          "removed": 4,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T120148779539-n-summary-bound/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038cc-88c9-78f2-98e0-03e4459c2edd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3079936,
+            "cached_input_tokens_cumulative": 3079936,
+            "input_tokens": 3228409,
+            "input_tokens_cumulative": 3228409,
+            "output_tokens": 12780,
+            "output_tokens_cumulative": 12780,
+            "reasoning_output_tokens": 4201,
+            "reasoning_output_tokens_cumulative": 4201
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 339
+    "_version": 342
   }
 }
