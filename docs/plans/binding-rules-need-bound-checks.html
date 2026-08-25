@@ -4,24 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="binding-rules-need-bound-checks">
-  <meta name="plan-title"     content="Binding Rules Need Bound Checks">
-  <meta name="plan-summary"   content="Binding rules with no bound check decay. Two measured instances: four snapshot assertions in one day, and a tool configured but never declared.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="binding-rules-need-bound-checks">
+  <meta name="plan-title" content="Binding Rules Need Bound Checks">
+  <meta name="plan-summary" content="Binding rules with no bound check decay. Two measured instances: four snapshot assertions in one day, and a tool configured but never declared.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S13">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
   <title>Binding Rules Need Bound Checks | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -152,34 +155,33 @@
     A check that lands here can be carried outward later by whoever owns that sweep.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="snapshot-detection-mechanism" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How should a check tell a closed-set snapshot from a legitimate exact-value assertion?</p>
-        <p class="r-dec-ctx">Four instances in one day across two sessions makes the class real. But the guidance's own carve-outs — a measurement that stops someone undoing the code, runtime state in the past tense, tool codes and version pins — are exactly what a text-matching check would flag, so a noisy check would be worse than none.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="perturb-and-observe">Add a benign member and see which assertions break</button>
-          <button class="r-opt" data-value="source-lint-with-marker">Lint test source, with an explicit marker for the carve-outs</button>
-          <button class="r-opt" data-value="review-only">Leave it to review; record that no mechanism was found</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="snapshot-detection-mechanism" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How should a check tell a closed-set snapshot from a legitimate exact-value assertion?</p>
+    <p class="r-dec-ctx">Four instances in one day across two sessions makes the class real. But the guidance&#x27;s own carve-outs — a measurement that stops someone undoing the code, runtime state in the past tense, tool codes and version pins — are exactly what a text-matching check would flag, so a noisy check would be worse than none.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="perturb-and-observe">Add a benign member and see which assertions break</button>
+      <button class="r-opt" data-value="source-lint-with-marker">Lint test source, with an explicit marker for the carve-outs</button>
+      <button class="r-opt" data-value="review-only">Leave it to review; record that no mechanism was found</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-brnbc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks §3" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Land the declared-versus-configured check, then settle how a snapshot is detected</h4>
-        <div class="r-fu-body"><p>&#167;3 is a set comparison over <code>pyproject.toml</code> with no environment dependency and one known failing namespace, so it can run first and alone. &#167;4 needs its decision settled before a node is cut &mdash; a mechanism that flags the guidance's own carve-outs would be worse than no mechanism, which is why the option to record a negative result is on the ballot rather than a formality.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks §3</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-brnbc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the declared-versus-configured check, then settle how a snapshot is detected</h4>
+    <div class="r-fu-body"><p>§3 is a set comparison over <code>pyproject.toml</code> with no environment dependency and one known failing namespace, so it can run first and alone. §4 needs its decision settled before a node is cut — a mechanism that flags the guidance's own carve-outs would be worse than no mechanism, which is why the option to record a negative result is on the ballot rather than a formality.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks §3</pre>
+    </article>
+</section>
 
     <section data-reckon="research" id="research" class="r-research-list">
-      <h2><span class="sec">§</span> Research</h2>
-      <div class="r-research" data-id="r-red-suite" data-type="report" data-source="reckon" data-added-by="reckon-create" data-when="2026-08-25" data-url="/reckon/evidence/archive/spa-surface-redesign-landed">
-        <span class="r-research-title"><a href="/reckon/evidence/archive/spa-surface-redesign-landed">Surface-redraw evidence — carries the four snapshot instances, the configured-not-declared finding, and the three-kinds-of-red-suite taxonomy that separates a defect from a sandbox artifact from a stale base.</a></span>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-red-suite" data-type="report" data-source="reckon" data-added-by="reckon-create" data-when="2026-08-25" data-url="/reckon/evidence/archive/spa-surface-redesign-landed">
+    <span class="r-research-title"><a href="/reckon/evidence/archive/spa-surface-redesign-landed">Surface-redraw evidence — carries the four snapshot instances, the configured-not-declared finding, and the three-kinds-of-red-suite taxonomy that separates a defect from a sandbox artifact from a stale base.</a></span></div>
+</section>
 
   </main>
 </body>
