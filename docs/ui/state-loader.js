@@ -190,9 +190,7 @@ window.STATE_READY = (async function () {
       ...mapLegacyCapability(inv),
       workflow_status: workflowStatus,
       effective_status: effectiveStatus,
-      // Compatibility alias for existing views; authored state remains
-      // available as workflow_status.
-      status: effectiveStatus,
+      status: workflowStatus,
       type: canonicalType(inv.type),
       nav_key: canonicalType(inv.type) === "plan" && !isArchivedArtifact(inv)
         ? inv.slug
@@ -200,6 +198,15 @@ window.STATE_READY = (async function () {
     };
   });
   const plans = Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]));
+  const attachmentRelations = mergedInventory.flatMap(source =>
+    ["informs", "evidence_for", "verifies"].flatMap(relation =>
+      (Array.isArray(source[relation]) ? source[relation] : []).map(target => ({
+        relation,
+        source: source.nav_key,
+        target,
+      }))
+    )
+  );
 
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
   // Plans with sprint:"X" in their inventory entry appear in that sprint
@@ -213,7 +220,12 @@ window.STATE_READY = (async function () {
       .map(p => p.slug);
     return auto.length ? { ...s, items: [...(s.items || []), ...auto] } : s;
   });
-  const activeSprint = augmentedSprints.find(s => s.id === idx.active_sprint_id)
+  const activeSprintId = disc?.active_sprint_id ?? idx.active_sprint_id ?? null;
+  const activeSprints = augmentedSprints.filter(s => s.status === "active");
+  const activeSprintConflict = activeSprints.length === 0
+    ? activeSprintId !== null
+    : activeSprints.length !== 1 || activeSprints[0].id !== activeSprintId;
+  const activeSprint = augmentedSprints.find(s => s.id === activeSprintId)
                     || augmentedSprints.find(s => s.status === "active");
 
   // ── 6. Assemble window.STATE ───────────────────────────────────────────
@@ -232,7 +244,7 @@ window.STATE_READY = (async function () {
   // holds as the only available fallback.
   const liveCounts = mergedInventory.length > 0 ? (() => {
     const actionable = mergedInventory.filter(p => p.type === "plan");
-    const count = (s) => actionable.filter(p => p.status === s).length;
+    const count = (s) => actionable.filter(p => p.effective_status === s).length;
     const lastMods = actionable.map(p => p.last || "").filter(Boolean).sort();
     return {
       plans_count:   actionable.length,
@@ -279,13 +291,19 @@ window.STATE_READY = (async function () {
     milestones,
     north_stars:       northStars,
     inventory:        mergedInventory,
-    active_sprint_id: disc?.active_sprint_id ?? idx.active_sprint_id ?? null,
+    source_format:    disc?.source_format ?? idx.source_format ?? "legacy-index",
+    resource_versions: disc?.resource_versions ?? idx.resource_versions ?? {},
+    loaded_at:        new Date().toISOString(),
+    active_sprint_id: activeSprintId,
+    active_sprints:   activeSprints,
+    active_sprint_conflict: activeSprintConflict,
     sprints:          augmentedSprints,
     sprint:           activeSprint,
     blockers:         Array.isArray(disc?.blockers) ? disc.blockers
                       : (Array.isArray(idx.blockers) ? idx.blockers : []),
     timeline:         Array.isArray(disc?.timeline) ? disc.timeline
                       : (Array.isArray(idx.timeline) ? idx.timeline : []),
+    attachment_relations: attachmentRelations,
     plans,
   };
 })().catch(error => {
