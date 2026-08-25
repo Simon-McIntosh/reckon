@@ -814,6 +814,11 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
     const direction = (M.north_stars || []).find(item => item.id === p.north_star);
     const openDecs = p.dec_open || 0;
     const blockedByDecisions = isPlan && openDecs > 0;
+    const hasMetadataValue = value => {
+      const text = value === null || value === undefined ? "" : String(value).trim();
+      return text !== "" && text !== "-" && text !== "—";
+    };
+    const hasImplementation = hasMetadataValue(p.impl) && Number.isFinite(Number(p.impl));
     return (
       <div className="r-titlebar">
         <div className="row1">
@@ -846,19 +851,23 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
         <div className="row2">
           {isPlan ? <>
             <StatusMenu slug={route.slug} plan={p} onAfterChange={onPlanMutated} />
-            <span className="dot-sep">·</span>
-            <span className="meta-item"><span className="k">ms</span><span className="v">{p.ms}</span></span>
-            {p.sprint && <>
+            {hasMetadataValue(p.ms) && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">ms</span><span className="v">{p.ms}</span></span>
+            </>}
+            {hasMetadataValue(p.sprint) && <>
               <span className="dot-sep">·</span>
               <span className="meta-item"><span className="k">sprint</span><a className="v" href={`#sprint/${p.sprint}`} style={{ borderBottom: "1px dotted var(--line)" }}>{p.sprint}</a></span>
             </>}
-            <span className="dot-sep">·</span>
-            <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round((p.impl || 0) * 100)}%</span></span>
-            {p.north_star && <>
+            {hasImplementation && <>
+              <span className="dot-sep">·</span>
+              <span className="meta-item"><span className="k">progress</span><span className="v">{Math.round(Number(p.impl) * 100)}%</span></span>
+            </>}
+            {hasMetadataValue(p.north_star) && <>
               <span className="dot-sep">·</span>
               <span className="meta-item r-north-star-badge" title={direction?.statement || p.north_star}><span className="k">north star</span><span className="v">{direction?.name || p.north_star}</span></span>
             </>}
-            {p.capability?.class && <>
+            {hasMetadataValue(p.capability?.class) && <>
               <span className="dot-sep">·</span>
               <span className="meta-item"><span className="k">capability</span><span className="v">{p.capability.class}</span></span>
             </>}
@@ -876,9 +885,11 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
               <span className="meta-item"><span className="k">evidence for</span><span className="v">{(p.evidence_for || []).join(", ") || "unlinked"}</span></span>
             </>}
           </>}
-          <span className="dot-sep">·</span>
-          <span className="meta-item"><span className="k">last</span><span className="v">{p.last}</span></span>
-          {p.owner && <>
+          {hasMetadataValue(p.last) && <>
+            <span className="dot-sep">·</span>
+            <span className="meta-item"><span className="k">last</span><span className="v">{p.last}</span></span>
+          </>}
+          {hasMetadataValue(p.owner) && <>
             <span className="dot-sep">·</span>
             <span className="meta-item"><span className="k">owner</span><span className="v">{p.owner}</span></span>
           </>}
