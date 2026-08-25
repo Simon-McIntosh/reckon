@@ -244,6 +244,63 @@
       compact surfaces. Ranks 9 to 15 are medium and low.
     </p>
 
+    <h2 id="remeasure">Cold scan re-measured after persistence — the remedy worked, the criterion did not</h2>
+    <p>
+      The <a href="#cold">open negative result</a> above asked the lead to choose between persisting
+      the creation map and restating the cold-scan criterion. Persistence was chosen and landed
+      (<code>00f1a92</code>). Re-measuring gives a split verdict: <strong>the remedy did exactly what
+      it was meant to, and the criterion is still unmet.</strong>
+    </p>
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:14px 0;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="col" style="text-align:left; padding:7px 12px 7px 0;">Cold-scan frame (imas-efit)</th>
+          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">Before</th>
+          <th scope="col" style="text-align:right; padding:7px 12px; font-family:var(--mono);">After</th>
+          <th scope="col" style="text-align:left; padding:7px 0 7px 12px;">Reading</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;"><code>_git_first_committed</code></th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">7.72 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.098 s</td>
+          <td style="padding:7px 0 7px 12px;">79&#215; down; gone from the hot path</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--line);">
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;"><code>read_state</code> (251 calls)</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">&#8212;</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">26.4 s</td>
+          <td style="padding:7px 0 7px 12px;">now 69% of the scan</td>
+        </tr>
+        <tr>
+          <th scope="row" style="text-align:left; padding:7px 12px 7px 0; font-weight:600;"><code>parse_meta</code> (2,563 calls)</th>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">0.67 s</td>
+          <td style="text-align:right; padding:7px 12px; font-family:var(--mono);">8.7 s</td>
+          <td style="padding:7px 0 7px 12px;">scales with document count</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The new dominant cost is full BeautifulSoup parsing inside
+      <code>compose_project_state</code> &#8594; <code>_hydrate_items</code> &#8594;
+      <code>_plan_state_by_slug</code>, which calls <code>read_state</code> on every referenced plan
+      &#8212; 920,845 <code>soupsieve</code> match calls in a single scan. That contradicts
+      <code>discover_plans</code>' own documented design, which promises a "lightweight inventory:
+      head <code>&lt;meta&gt;</code> + a regex open-decision count, no full-body parse &#8212; so a
+      project with thousands of docs stays cheap". Distributed project-state composition full-parses
+      each plan and defeats that intent.
+    </p>
+    <p>
+      <strong>Measurement caveat, stated because it changes what may be concluded.</strong> These
+      figures were taken under concurrent fleet load &#8212; load average 6.2 with 97 worker
+      processes &#8212; so the wall-clock totals are inflated and are NOT comparable to the
+      lightly-loaded 2026-08-21 numbers above. The load-robust facts are the proportions and the
+      git-call collapse from 7.72&#8239;s to 0.098&#8239;s. No regression is claimed: imas-efit was
+      never profiled before this measurement, so its <code>read_state</code> cost may always have
+      been present, hidden behind a git walk that was simply larger.
+    </p>
+
     <h2 id="preexisting">Pre-existing failures found in passing</h2>
     <p>
       The four suite failures are unrelated to this plan but were repaired under it rather than

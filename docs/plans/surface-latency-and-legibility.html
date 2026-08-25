@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -64,7 +64,7 @@
       from the locked <code>git-creation-source</code> decision declining disk persistence. The
       criterion and the decision were authored in the same session and disagree. Resolution is the
       lead's call: persist the map to disk, or restate the criterion as steady-state.
-      Full detail: <a href="/reckon/evidence/archive/surface-latency-and-legibility-landed">execution record</a>.
+      Full detail: <a href="/reckon/evidence/surface-latency-and-legibility-landed">execution record</a>.
     </p>
 
     <h2 id="s3">§3 — What the SPA communicates</h2>
@@ -193,6 +193,8 @@
     <span class="r-research-title"><a href="/home/ITER/mcintos/.config/reckon/crew/runs/r-20260821T135033054402-prior-art-scout/manifest.md">Reuse map: 4 repositories, 17 candidate module groups, 36 classified tests. Binding verdicts — extend _DISC_CACHE/discover_plans and _git_first_committed in serve.py; reject _has_external_dependencies as the cache-hit predicate and key on the referenced external projects&#x27; own signatures instead; reuse capabilities.py&#x27;s explicit-version and atomic-replace invariants as pattern only, never as an import; keep all cache logic in serve.py rather than a new module. Confirms no existing test counts git subprocesses or parse calls across a repeated discover_plans. Separately found that ReadyGate has no rejection branch, so a failed discovery renders &#x27;Loading plan state...&#x27; forever despite STATE_ERROR being set, and that the Ambix and EFIT SPA asset copies differ from canonical reckon in 4 of 4 sampled files, making reckon the only safe edit point.</a></span></div>
 <div class="r-research" data-id="r-audit" data-type="audit" data-source="spa-legibility-audit, commit 38ac267" data-added-by="reckon-ship" data-when="2026-08-21" data-url="/reckon/research/spa-legibility-audit">
     <span class="r-research-title"><a href="/reckon/research/spa-legibility-audit">SPA legibility audit — 15 ranked findings against live payloads: 2 critical, 6 high, 5 medium, 2 low; by class 6 not-shown, 4 shown-but-unexplained, 5 stale-or-wrong. Rank 1 and rank 2 are both the surface lying by omission: ReadyGate has no rejection branch so a failed discovery renders as an indefinite load, and the status menu flashes success without awaiting a canonical write that returns ok even when only local storage changed.</a></span></div>
+<div class="r-research" data-id="r-cold-remeasure" data-type="measurement" data-source="cold-process profile after the creation-map persistence landed (00f1a92)" data-added-by="reckon-ship" data-when="2026-08-25">
+    <span class="r-research-title">Persistence worked and the cold criterion is still unmet, because a larger cost was hidden behind the git walk. Profiling a cold imas-efit scan: _git_first_committed fell from 7.72s to 0.098s, a 79x reduction that removes it from the hot path entirely. read_state now dominates at 26.4s over 251 calls, driven by full BeautifulSoup parsing inside compose_project_state -&gt; _hydrate_items -&gt; _plan_state_by_slug, with parse_meta a further 8.7s over 2,563 calls. This contradicts discover_plans&#x27; own documented design, which promises a lightweight inventory of head meta plus a regex decision count and no full-body parse so a project with thousands of docs stays cheap: distributed project-state composition full-parses every referenced plan and defeats that intent. Absolute figures are inflated by concurrent fleet load at measurement time (load average 6.2, 97 worker processes), so treat the proportions and the git-call collapse as the load-robust facts rather than the wall-clock totals.</span></div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260824T210925979076-spa-prototype-reuse-map" data-who="codex-a" data-when="2026-08-24T21:18:35Z">
@@ -205,7 +207,7 @@
     <div class="r-comment-body"><p>One atomic checksummed schema-versioned map per repository/docs identity under config-home/cache/git-creation, carrying the exact HEAD and first-commit timestamps. An unchanged HEAD after a simulated restart runs git rev-parse HEAD and no git log while returning identical dates; a moved HEAD issues one old..new range query and retains the immutable earlier timestamps; missing, unreadable, partial, foreign-schema and corrupt caches all rebuild rather than serve wrong dates or fail. Measured cold discovery before and after on two mounted repositories: imas-efit 18.186 s to 8.753 s over 843 inventory rows, nova 6.930 s to 2.469 s over 149. Partial against the section criterion and recorded as such: nova now clears the 3 s cold target, imas-efit does not, because persistence removed the history-walk component and the residual 8.75 s is document parsing rather than git. Full suite 2327 passed / 0 failed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260825T072816984915-crew-route-stops-discovering" data-who="codex-z" data-when="2026-08-25T07:37:51Z">
-    <div class="r-comment-body"><p>Discovery is out of the crew route&#x27;s path. Measured in the same fresh-interpreter way the attribution used: 43.8142 s cold and 3.8612 s warm before, 0.04012 s cold and 0.03701 s warm after — 1092x cold and 104x warm. Confirmed against a restarted live server: 0.086 s on the first call of a fresh process and 0.036 to 0.040 s thereafter, scoped and unscoped alike. The route now reads what it exists to describe rather than enumerating the corpus first, and the SPA Crew tab&#x27;s three-second poll costs 0.04 s instead of 2.1 s of twelve-project discovery. Every response field is preserved, and a test asserts the route returns its full field set for a synthesised pointer set without calling discover_plans at all and that its cost does not scale with mount count. Full suite 2352 passed.</p></div>
+    <div class="r-comment-body"><p>Discovery is out of the crew route's path. Measured in the same fresh-interpreter way the attribution used: 43.8142 s cold and 3.8612 s warm before, 0.04012 s cold and 0.03701 s warm after — 1092x cold and 104x warm. Confirmed against a restarted live server: 0.086 s on the first call of a fresh process and 0.036 to 0.040 s thereafter, scoped and unscoped alike. The route now reads what it exists to describe rather than enumerating the corpus first, and the SPA Crew tab's three-second poll costs 0.04 s instead of 2.1 s of twelve-project discovery. Every response field is preserved, and a test asserts the route returns its full field set for a synthesised pointer set without calling discover_plans at all and that its cost does not scale with mount count. Full suite 2352 passed.</p></div>
 </div>
 </section>
 </main>
