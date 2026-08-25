@@ -50,23 +50,9 @@ function manageableProjectRows(projects) {
   return projects || [];
 }
 
-function projectHasOpenWork(project) {
-  const state = project?.state || {};
-  const rows = Array.isArray(state.inventory)
-    ? state.inventory
-    : (Array.isArray(state.plans) ? state.plans : []);
-  const terminal = new Set(["shipped", "done", "archived", "superseded", "abandoned", "historical"]);
-  return rows.some(row =>
-    (row.type || "plan") === "plan"
-    && !terminal.has(String(row.effective_status || row.status || "pending").toLowerCase())
-  );
-}
-
 function effectiveHiddenProjects(projects, hiddenProjects) {
   if (Array.isArray(hiddenProjects)) return hiddenProjects;
-  return mountedProjectRows(projects)
-    .filter(project => !projectHasOpenWork(project))
-    .map(project => project.project);
+  return [];
 }
 
 function visibleProjectRows(projects, hiddenProjects) {
