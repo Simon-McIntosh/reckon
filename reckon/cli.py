@@ -1876,10 +1876,12 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
 <body>
   <div id=\"root\"></div>
   <script src=\"/_ui/state-loader.js\"></script>
+  <script type=\"text/babel\" src=\"/_ui/glyphs.jsx\"></script>
+  <script type=\"text/babel\" src=\"/_ui/_shared.jsx\"></script>
+  <script src=\"/_ui/prompts.js\"></script>
   <script type=\"text/babel\" src=\"/_ui/ui.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/bits.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/decision.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/cockpit.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/plan.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/sprint.jsx\"></script>
   <script type=\"text/babel\" src=\"/_ui/graph.jsx\"></script>
@@ -2666,7 +2668,6 @@ _BUILD_INDEX_TEMPLATE = """\
   <script type="text/babel" src="_ui/ui.jsx"></script>
   <script type="text/babel" src="_ui/bits.jsx"></script>
   <script type="text/babel" src="_ui/decision.jsx"></script>
-  <script type="text/babel" src="_ui/cockpit.jsx"></script>
   <script type="text/babel" src="_ui/plan.jsx"></script>
   <script type="text/babel" src="_ui/sprint.jsx"></script>
   <script type="text/babel" src="_ui/graph.jsx"></script>

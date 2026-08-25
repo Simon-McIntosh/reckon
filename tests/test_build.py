@@ -125,11 +125,14 @@ def _invoke_build(docs_dir: Path, project: str = "fixture"):
     return CliRunner().invoke(cli.main, ["build", str(docs_dir), "--project", project])
 
 
-def _loaded_jsx(html: str) -> set[str]:
-    return {
+def _loaded_spa_modules(html: str) -> tuple[str, ...]:
+    return tuple(
         reference.lstrip("/")
-        for reference in re.findall(r'<script[^>]+src="([^"]+\.jsx)"', html)
-    }
+        for reference in re.findall(
+            r'<script[^>]+src="([^"]+\.(?:js|jsx))"', html
+        )
+        if reference.lstrip("/").startswith("_ui/")
+    )
 
 
 def _loaded_stylesheets(html: str) -> tuple[str, ...]:
@@ -189,15 +192,58 @@ def test_build_writes_relative_index_and_nojekyll(built_source_site):
     assert (docs_dir / ".nojekyll").is_file()
 
 
-def test_spa_entry_points_load_the_same_jsx_files(built_source_site):
+def test_spa_entry_points_load_exactly_the_canonical_modules(
+    built_source_site, tmp_path
+):
     docs_dir, _, _ = built_source_site
-    built = _loaded_jsx((docs_dir / "index.html").read_text())
-    checked_in = _loaded_jsx((REPO_ROOT / "docs" / "index.html").read_text())
-    live = _loaded_jsx(serve._render_spa_html("fixture"))
+    synced_docs = tmp_path / "synced" / "docs"
+    synced_docs.mkdir(parents=True)
+    sync_result = CliRunner().invoke(
+        cli.main,
+        [
+            "sync",
+            str(synced_docs),
+            "--project",
+            "synced",
+            "--mounts",
+            str(tmp_path / "mounts.json"),
+            "--state-root",
+            str(tmp_path / "state"),
+        ],
+    )
+    assert sync_result.exit_code == 0, sync_result.output
 
-    assert "_ui/crew.jsx" in built
-    assert live == checked_in
-    assert built == checked_in
+    expected_modules = (
+        "_ui/state-loader.js",
+        "_ui/glyphs.jsx",
+        "_ui/_shared.jsx",
+        "_ui/prompts.js",
+        "_ui/ui.jsx",
+        "_ui/bits.jsx",
+        "_ui/decision.jsx",
+        "_ui/plan.jsx",
+        "_ui/sprint.jsx",
+        "_ui/graph.jsx",
+        "_ui/crew.jsx",
+        "_ui/shell.jsx",
+    )
+    entry_points = {
+        "checked-in": (REPO_ROOT / "docs" / "index.html").read_text(),
+        "served": serve._render_spa_html("fixture"),
+        "synced": (synced_docs / "index.html").read_text(),
+        "built": (docs_dir / "index.html").read_text(),
+    }
+    loaded = {
+        name: _loaded_spa_modules(html) for name, html in entry_points.items()
+    }
+
+    assert loaded == {name: expected_modules for name in entry_points}
+    assert all("_ui/cockpit.jsx" not in modules for modules in loaded.values())
+    assert not (REPO_ROOT / "docs" / "ui" / "cockpit.jsx").exists()
+    assert not (docs_dir / "_ui" / "cockpit.jsx").exists()
+    assert all((docs_dir / module).is_file() for module in expected_modules)
+    shell = (REPO_ROOT / "docs" / "ui" / "shell.jsx").read_text()
+    assert shell.count("function CockpitBody(") == 1
 
 
 def test_spa_entry_points_load_the_same_surface_stylesheets(
