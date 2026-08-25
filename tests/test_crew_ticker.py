@@ -207,3 +207,77 @@ def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) ->
     assert payload["from_state"] == "working"
     assert payload["to_state"] == "blocked"
     assert (payload["live"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
+
+
+def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
+    """Following is the default, because the seat is what dispatch requires.
+
+    A watcher that returns after one event releases the seat, so every landing
+    would have to be followed by a re-arm before the next dispatch could run.
+    """
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj"],
+    )
+
+    assert result.exit_code == 0
+    assert "ticker-node" in result.output
+    assert "working → blocked" in result.output
+
+
+def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
+    called: dict[str, object] = {}
+
+    def _single(project, **kwargs):
+        called["project"] = project
+        called["kwargs"] = kwargs
+        return {
+            "project": project,
+            "event": "empty",
+            "run_id": None,
+            "classification": "no_live_pointers",
+            "next_action": "none",
+        }
+
+    monkeypatch.setattr(crew, "watch", _single)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--once"],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["event"] == "empty"
+    assert called["project"] == "proj"
+
+
+def test_cli_watch_treats_exit_on_empty_as_selecting_single_event(
+    home, monkeypatch
+) -> None:
+    """The flag only means anything to the single-event mode.
+
+    Ignoring it under the new default would silently follow forever for a
+    caller that explicitly asked to be told about an empty fleet.
+    """
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--exit-on-empty"],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["event"] == "empty"
+    assert payload["classification"] == "no_live_pointers"

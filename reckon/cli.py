@@ -129,7 +129,9 @@ def _project_docs_root(project: str, checkout_path: Path | None = None) -> Path:
     try:
         mounts = json.loads(mounts_path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
-        raise click.ClickException(f"cannot read mounts file {mounts_path}: {exc}") from exc
+        raise click.ClickException(
+            f"cannot read mounts file {mounts_path}: {exc}"
+        ) from exc
     raw = mounts.get(project)
     if raw is None:
         raise click.ClickException(
@@ -362,9 +364,7 @@ def tag():
 
 
 @tag.command(name="rename")
-@click.option(
-    "--project", required=True, help="Project owning the tagged resources."
-)
+@click.option("--project", required=True, help="Project owning the tagged resources.")
 @click.option(
     "--checkout-path",
     default=None,
@@ -374,7 +374,9 @@ def tag():
         "project path."
     ),
 )
-@click.option("--dry-run", is_flag=True, help="Emit affected resources without writing.")
+@click.option(
+    "--dry-run", is_flag=True, help="Emit affected resources without writing."
+)
 @click.argument("source")
 @click.argument("target")
 def tag_rename(project, checkout_path, dry_run, source, target):
@@ -874,27 +876,49 @@ def crew_observe(run_id, project, pretty):
     "--exit-on-empty",
     is_flag=True,
     help=(
-        "In single-event mode, exit when no live pointers remain instead of "
+        "With --once, exit when no live pointers remain instead of "
         "waiting for the first one."
+    ),
+)
+@click.option(
+    "--once",
+    is_flag=True,
+    help=(
+        "Return after a single fleet event instead of following. The seat is "
+        "released on return, so the caller must re-arm before its next dispatch."
     ),
 )
 @click.option(
     "--follow",
     is_flag=True,
-    help="Print a baseline and each fleet transition until the fleet empties.",
+    hidden=True,
+    help=(
+        "Accepted for compatibility; following is now the default, and this "
+        "flag still wins over --once."
+    ),
 )
 @click.option(
     "--json",
     "json_output",
     is_flag=True,
-    help="With --follow, emit machine-readable transition objects.",
+    help="Emit machine-readable transition objects rather than ticker lines.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_watch(project, stall_window, exit_on_empty, follow, json_output, pretty):
-    """Block for one project event, or follow a fleet through reconciliation."""
+def crew_watch(project, stall_window, exit_on_empty, once, follow, json_output, pretty):
+    """Follow a fleet through reconciliation, or return after one event.
+
+    Following is the default because the watcher seat is what
+    ``reckon crew dispatch`` requires. A seat released after every landing has
+    to be re-armed before each dispatch, and a coordinator that forgets meets
+    ``watcher-required`` instead of a worker. Following holds the seat from an
+    empty project, through every landing, until the fleet drains.
+    """
     crew_module, _ = _crew_modules()
+    # --exit-on-empty only means anything to the single-event mode, so asking
+    # for it selects that mode rather than being silently ignored.
+    single_event = once or exit_on_empty
     try:
-        if follow:
+        if follow or not single_event:
             from reckon.crew.recovery import format_watch_transition, watch_follow
 
             for result in watch_follow(
@@ -974,9 +998,7 @@ def crew_drain(project, leaves, pretty):
     for leave in leaves:
         run_id, separator, disposition = leave.partition("=")
         if not separator or not run_id.strip() or not disposition.strip():
-            raise click.ClickException(
-                f"--leave {leave!r} must be RUN=DISPOSITION"
-            )
+            raise click.ClickException(f"--leave {leave!r} must be RUN=DISPOSITION")
         if disposition.strip() not in crew_module.RUN_DRAIN_DISPOSITIONS:
             allowed = ", ".join(crew_module.RUN_DRAIN_DISPOSITIONS)
             raise click.ClickException(
@@ -1741,9 +1763,7 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
                 f"{publication_strategy.describe()}; no workflow written"
             )
         try:
-            badge_changed = pages.write_readme_badge(
-                docs_dir, publication_strategy
-            )
+            badge_changed = pages.write_readme_badge(docs_dir, publication_strategy)
         except pages.PagesError as exc:
             raise click.ClickException(str(exc)) from exc
         if badge_changed:
@@ -2168,9 +2188,7 @@ def archive(project, older_than_days, apply_changes, checkout_path):
     if apply_changes:
         click.echo(f"Archived {len(result.archived)} document(s).")
     else:
-        click.echo(
-            f"Dry run: {len(result.candidates)} candidate(s); no files changed."
-        )
+        click.echo(f"Dry run: {len(result.candidates)} candidate(s); no files changed.")
 
 
 @main.group(name="evidence")
