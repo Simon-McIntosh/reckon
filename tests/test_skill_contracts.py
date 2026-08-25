@@ -401,7 +401,16 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # budget should bind where a review is actually wanted, so it is set above current
 # size with room for the rule set to grow, and raising it again should require
 # stating why here.
-FIXED_READ_SET_TOKEN_BUDGET = 14_000
+# Raised from 14_000 when the watcher section gained the affordances its
+# prohibitions had been missing: the script-reachable classifier and its blind
+# spots, the ticker filter shape, observe-before-promote, and the unwatch,
+# discard and gc verbs. A prohibition documented without its affordance is what
+# sends an orchestrator to hand-rolled file polling, so these are rules rather
+# than reference material and belong in the always-loaded file. The prior ceiling
+# left 54 tokens of headroom, which is why any new rule at all has to argue with
+# this number; prefer relocating reference material to references/ over raising
+# it again.
+FIXED_READ_SET_TOKEN_BUDGET = 14_400
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -562,6 +571,27 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
     assert "requires exactly one match" in edit
 
 
+# The ship skill owns the crew surface, so every verb the CLI registers under
+# `crew` is either named in the skill or exempted here with the reason it is not
+# an orchestrator's to call. An exemption asserts absence as well as presence, so
+# documenting one of these forces the entry to be removed rather than left to rot.
+CREW_VERBS_OUTSIDE_ORCHESTRATION = {
+    ("crew", "ledger"): "committed records are read through crew(view=...)",
+    ("crew", "repair-completion"): "ledger maintenance, not orchestration",
+}
+
+
+def _registered_leaf_paths(command, path: tuple[str, ...] = ()) -> list[tuple[str, ...]]:
+    commands = getattr(command, "commands", None)
+    if not commands:
+        return [path]
+    return [
+        leaf
+        for name, sub in sorted(commands.items())
+        for leaf in _registered_leaf_paths(sub, path + (name,))
+    ]
+
+
 def _command_at(path: tuple[str, ...]):
     command = main
     for part in path:
@@ -590,6 +620,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--run",
             "--gate",
             "--commit",
+            "--outcome",
             "--tests-added",
             "--scope-changed",
         },
@@ -612,8 +643,10 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--allow-unreconciled-runs",
             "--no-watch",
         },
+        ("crew", "discard"): {"--run"},
         ("crew", "drain"): {"--project", "--leave"},
         ("crew", "follow"): {"--project"},
+        ("crew", "gc"): set(),
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
@@ -622,6 +655,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "recover"): set(),
         ("crew", "resume"): {"--run", "--advice"},
         ("crew", "stop"): set(),
+        ("crew", "unwatch"): {"--project"},
         ("crew", "watch"): {"--project", "--stall-window"},
         ("flight",): {"--project"},
         ("audit-doc",): set(),
@@ -645,6 +679,18 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         assert required_flags <= registered_flags, " ".join(path)
         for flag in required_flags:
             assert flag in ship
+
+
+def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    for path in _registered_leaf_paths(main):
+        if path[0] != "crew":
+            continue
+        phrase = "reckon " + " ".join(path)
+        if path in CREW_VERBS_OUTSIDE_ORCHESTRATION:
+            assert phrase not in ship, f"{phrase} is documented; drop its exemption"
+            continue
+        assert phrase in ship, f"{phrase} is registered and the skill never names it"
 
 
 def test_closure_ledger_carries_both_drain_counts() -> None:

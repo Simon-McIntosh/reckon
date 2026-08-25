@@ -539,6 +539,15 @@ reads `starting` until an `observe` folds its stream; `process_alive` and
 `log_age_seconds` stay fresh), and **`observe` is what captures token usage** —
 promoting without it records `tokens: null`.
 
+**The read split governs a turn, not a shell loop.** A background script cannot
+call an MCP tool, so in-loop only `reckon crew follow` (transitions) and `reckon
+crew list` (the one script-reachable classifier) remain. `list` omits the live
+view's classification, liveness, elapsed, log age, budget and next action, so a
+loop grepping it has not established that a worker is alive. Let `follow` wake
+the session, then read `crew(project, view="live")` at turn time. Grepping a
+manifest is weaker again: a worker that dies without writing one emits nothing,
+and that silence reads as progress.
+
 ### Keep one project-wide watch live while dispatching
 
 **Nothing tells you a worker stopped.** Run state is pull-only: a worker that
@@ -584,8 +593,10 @@ return**, so a coordinator using it must re-arm before its next dispatch or meet
 A second concurrent invocation exits immediately with `event: watcher-live` and
 the current watcher metadata. The single-watcher guarantee is an advisory lock
 held by the live command, so an unlocked stale record is reclaimed
-automatically. A recorded worker pid is never the watch's liveness signal, which
-also keeps in-harness runs observable.
+automatically. Releasing a seat on purpose is `reckon crew unwatch --project
+<project>` — to replace a watcher, never to quiet a running fleet. A recorded
+worker pid is never the watch's liveness signal, which also keeps in-harness
+runs observable.
 
 **Arm it through the host harness's background mechanism, not a detached
 `nohup`.** A detached watcher writes its transitions to a file that nothing
@@ -597,6 +608,10 @@ filter — `| tail`, `| head`, `| grep` without `--line-buffered` — holds ever
 transition until the command exits and you see nothing at all while the fleet
 runs. Background the bare command and read its output file.
 
+Filter shape matters as much as buffering: every line ends with a fleet summary
+— `· N live · N blocked · N unpromoted` — so a terminal-word grep matches every
+line ever printed. Match node names first, terminal words second.
+
 The live classifier reads the manifest's recorded status — `complete` becomes
 `completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
 manifests become `abandoned` — but that does not prove the gate; read its
@@ -605,7 +620,9 @@ Dispatch consumes that signal too: once a complete or blocked manifest is older
 than `fences.unreconciled_run_grace`, new work for the project is refused with
 every run's resolving command. Reconcile the rows before continuing. If one
 must deliberately remain, pass `--allow-unreconciled-runs`; the new run records
-the exact backlog it waived.
+the exact backlog it waived. A row that must never become evidence is dropped
+with `reckon crew discard --run <id>`, which removes a non-running pointer
+without a ledger record; stop a running row first.
 
 ### Concurrency — the roster is the whole authority
 
@@ -789,8 +806,12 @@ For each completed agent:
 4. Dispatch a test worker and audit its compact result manifest
 5. Confirm the worker returned commit, test, artifact, and evidence inputs.
    The orchestrator writes plan/index state after integration.
-6. Promote the run: `reckon crew complete --run <id> --gate <verdict> --commit
-   <sha> [--tests-added N] [--scope-changed]`. This is the moment the transient
+6. Fold final state in with `reckon crew observe --run <id>`, then promote:
+   `reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome
+   "<one line>" [--tests-added N] [--scope-changed]`. `observe` captures token
+   usage and only a non-passing gate requires `--outcome`, so the passing path
+   is where an unobserved promotion records `tokens: null` with nothing refusing
+   it. State both on every verdict. This is the moment the transient
    pointer becomes committed evidence in the repository's ledger, and the last
    moment `--tests-added` and `--scope-changed` can still be stated — a
    scope-changed node measures neither the estimate nor the worker, so saying so
@@ -1219,9 +1240,10 @@ expands on:
 - reachability checks and mandatory worktree cleanup.
 
 Use `scripts/worktree_fleet.py` for deterministic worktree creation, inspection,
-and cleanup. Workers never mutate shared Reckon state; the orchestrator records
-followups, evidence, plan progress, sprint item outcomes, and sprint closure
-after integration.
+and cleanup. `reckon crew gc` reports disposable crew workspaces and removes
+only on request, so auditing what is reclaimable is free. Workers never mutate
+shared Reckon state; the orchestrator records followups, evidence, plan
+progress, sprint item outcomes, and sprint closure after integration.
 
 ## Cross-references
 
