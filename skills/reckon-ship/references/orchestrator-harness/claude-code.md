@@ -42,6 +42,50 @@ different session; three terminal events then went unnoticed for more than two
 hours. The monitor form prevents that measured failure by making every ticker
 line observable instead of waiting only for process exit.
 
+Neither `watcher_live` nor `seat_held` answers whether *this* session will be
+woken: both are project-global, wake delivery is session-local, and dispatch
+arms a producer detached on the caller's behalf, so both read true while the
+caller hears nothing. Read them as "a seat exists", never as "I am attached".
+
+### Filtering the ticker
+
+The follower streams every transition, so the monitor needs a filter — and the
+filter is where this goes wrong. Three sessions have now armed a broken one.
+
+```
+{ reckon crew follow --project <project> \
+    | grep --line-buffered -E '→ +(complete|blocked|fail|stall|abandon|stop|unknown)' \
+    || true; }
+```
+
+- **Anchor the state word to `→ `.** Every line ends with a summary field
+  `· N blocked · N unpromoted`, so a bare `blocked` or `unpromoted` alternative
+  matches the whole stream. An unanchored filter is a firehose that reads as a
+  working channel until the monitor is stopped for volume.
+- **`--line-buffered` on every stage**, or the ticker is withheld until exit.
+- **`|| true`**, because a pipeline exits with its last stage's status and
+  "nothing matched yet" would otherwise surface as a failing monitor.
+
+Scope the filter to a node id as well when babysitting one long run; leave it
+project-wide for a coordinator across waves, which is the only form that
+reports work the session did not think to name.
+
+`_watch_snapshot` emits exactly these states, and a filter is complete only
+against this list:
+
+| State | Emitted when |
+|---|---|
+| `complete` / `blocked` / `failed` | the manifest reports that status |
+| `dispatched` | phase is `starting` |
+| `working` | phase is `working` or `running` |
+| `stalled` | `working` with the stream quiet past the stall window |
+| `stopped` | phase is `stopped` — reachable from `reckon crew stop` |
+| `unknown` | neither classification nor phase resolves |
+
+Anything else arrives through the classification fallback, `abandoned` among
+them. `dispatched` and `working` are the two a terminal filter omits on
+purpose.
+
 ## Resuming a held wave without a human
 
 A wave held on a reset timestamp knows *when* it can reopen —
