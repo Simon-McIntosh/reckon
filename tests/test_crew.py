@@ -3174,6 +3174,146 @@ def test_shadow_derives_the_committed_node_at_the_primary_base(home, repo) -> No
     assert "without committing" in Path(shadow["prompt_path"]).read_text()
 
 
+def test_shadow_accepts_historical_plan_when_current_plan_changed(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    plan.write_text(plan.read_text().replace("§3 — Dispatch", "§3 — Landed"))
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "docs: update dispatch section"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert shadow["base_sha"] == primary["base_sha"]
+    assert Path(shadow["worktree"]).is_dir()
+
+
+def test_shadow_refuses_plan_unreadable_at_primary_base(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    original = plan.read_text()
+    plan.unlink()
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: remove dispatch authority"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    unreadable_base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    plan.write_text(original)
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: restore dispatch authority"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    data, version = ledger.load("proj", repo)
+    data["runs"][0]["base_sha"] = unreadable_base
+    ledger.write("proj", data, version, repo)
+
+    with pytest.raises(crew.PlanVisibilityError, match="not readable at base"):
+        dispatch_shadow(
+            primary["run_id"],
+            candidate_backend="candidate",
+            config=_candidate_config(),
+            repo=repo,
+            launcher=lambda *args, **kwargs: 0,
+        )
+
+    assert crew.list_live() == []
+
+
+def test_shadow_refuses_section_absent_at_primary_base(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    plan = repo / "docs" / "plans" / "plan-a.html"
+    original = plan.read_text()
+    plan.write_text(
+        original.replace('id="s3"', 'id="dispatch"').replace("§3", "Dispatch")
+    )
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: omit requested section"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    sectionless_base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    plan.write_text(original.replace("Dispatch", "Current dispatch"))
+    subprocess.run(
+        ["git", "add", "docs/plans/plan-a.html"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "test: restore requested section"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    data, version = ledger.load("proj", repo)
+    data["runs"][0]["base_sha"] = sectionless_base
+    ledger.write("proj", data, version, repo)
+
+    with pytest.raises(crew.PlanVisibilityError, match="does not contain section"):
+        dispatch_shadow(
+            primary["run_id"],
+            candidate_backend="candidate",
+            config=_candidate_config(),
+            repo=repo,
+            launcher=lambda *args, **kwargs: 0,
+        )
+
+    assert crew.list_live() == []
+
+
 def test_shadow_refuses_an_unreachable_primary_base_without_artifacts(
     home, repo
 ) -> None:
