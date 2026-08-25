@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -11,7 +12,14 @@ from typing import Any, Iterable, Mapping
 from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
-from reckon.crew.runs import _pointer_lock, _utc_now, pointer_path, process_alive, read_pointer
+from reckon.crew.runs import (
+    _pointer_lock,
+    _utc_now,
+    pointer_path,
+    process_alive,
+    read_pointer,
+    run_dir,
+)
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
 
@@ -66,6 +74,103 @@ def scoped_diff_stat(
         # A binary file reports "-" for both counts; it changed, but no lines did.
         added += int(parts[0]) if parts[0].isdigit() else 0
         removed += int(parts[1]) if parts[1].isdigit() else 0
+    return {"added": added, "removed": removed, "files": files}
+
+
+def _is_shadow(record: Mapping[str, Any]) -> bool:
+    """Return whether a live or committed record is shadow evidence."""
+    lineage = record.get("lineage")
+    return isinstance(lineage, Mapping) and lineage.get("kind") == "shadow"
+
+
+def _write_shadow_patch(record: Mapping[str, Any]) -> Path:
+    """Persist the complete diff from a shadow's fixed base, including new files."""
+    run_id = str(record.get("run_id") or "")
+    worktree = Path(str(record.get("worktree") or ""))
+    base = str(record.get("base_sha") or "")
+    if not worktree.is_dir():
+        raise CrewError(
+            f"shadow run {run_id!r} has no readable worktree; its patch cannot be preserved"
+        )
+    resolved = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "--end-of-options",
+            f"{base}^{{commit}}",
+        ],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    if not base or resolved.returncode:
+        raise CrewError(
+            f"shadow run {run_id!r} base {base!r} is not reachable in its worktree"
+        )
+
+    tracked = subprocess.run(
+        ["git", "diff", "--binary", "--no-ext-diff", base, "--"],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    if tracked.returncode:
+        raise CrewError(f"shadow run {run_id!r} could not produce its tracked diff")
+    patch = bytearray(tracked.stdout)
+
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    if untracked.returncode:
+        raise CrewError(f"shadow run {run_id!r} could not enumerate new files")
+    for raw_path in (item for item in untracked.stdout.split(b"\0") if item):
+        path = os.fsdecode(raw_path)
+        addition = subprocess.run(
+            ["git", "diff", "--no-index", "--binary", "--", "/dev/null", path],
+            cwd=worktree,
+            capture_output=True,
+            check=False,
+        )
+        if addition.returncode not in (0, 1):
+            raise CrewError(
+                f"shadow run {run_id!r} could not preserve new file {path!r}"
+            )
+        if patch and not patch.endswith(b"\n"):
+            patch.extend(b"\n")
+        patch.extend(addition.stdout)
+
+    artifact = run_dir(run_id) / "shadow.patch"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_bytes(bytes(patch))
+    return artifact
+
+
+def _shadow_patch_stat(path: Path, *, cwd: Path) -> dict[str, int]:
+    """Derive line and file counts from the retained patch artifact."""
+    if not path.read_bytes():
+        return {"added": 0, "removed": 0, "files": 0}
+    result = subprocess.run(
+        ["git", "apply", "--numstat", str(path)],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise CrewError(f"shadow patch {path} is not a measurable git patch")
+    added = removed = files = 0
+    for line in result.stdout.splitlines():
+        fields = line.split("\t", 2)
+        if len(fields) != 3:
+            continue
+        files += 1
+        added += int(fields[0]) if fields[0].isdigit() else 0
+        removed += int(fields[1]) if fields[1].isdigit() else 0
     return {"added": added, "removed": removed, "files": files}
 
 
@@ -280,11 +385,17 @@ def complete(
             "a non-passing gate requires --outcome; write what failed or why "
             "the evidence could not be produced"
         )
+    commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
+        record = read_pointer(run_id)
+        if _is_shadow(record) and commit_list:
+            raise CrewError(
+                f"shadow run {run_id!r} is commitless evidence; --commit is refused"
+            )
         return _complete_locked(
             run_id,
             gate=gate,
-            commits=commits,
+            commits=commit_list,
             outcome=outcome,
             tests_added=tests_added,
             scope_changed=scope_changed,
@@ -320,6 +431,7 @@ def _complete_locked(
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
+    shadow = _is_shadow(record)
     ledger_root = root if root is not None else record.get("repo")
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
     existing = next(
@@ -331,15 +443,19 @@ def _complete_locked(
         None,
     )
     if existing is not None:
-        comment = _record_landing_comment(
-            project=project,
-            plan=str(node.get("plan") or ""),
-            section=str(node.get("section") or ""),
-            run_id=run_id,
-            narrative=outcome,
-            author=str(record.get("member") or record.get("role") or "reckon"),
-            when=str(existing.get("completed_at") or _utc_now()),
-            root=ledger_root,
+        comment = (
+            {"recorded": False, "reason": "shadow evidence does not land code"}
+            if shadow
+            else _record_landing_comment(
+                project=project,
+                plan=str(node.get("plan") or ""),
+                section=str(node.get("section") or ""),
+                run_id=run_id,
+                narrative=outcome,
+                author=str(record.get("member") or record.get("role") or "reckon"),
+                when=str(existing.get("completed_at") or _utc_now()),
+                root=ledger_root,
+            )
         )
         capture = _capture_member_session(record)
         path = pointer_path(run_id)
@@ -367,18 +483,28 @@ def _complete_locked(
         finished = _utc_now()
         completion_source = "promotion_time"
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
+    if shadow and commit_list:
+        raise CrewError(
+            f"shadow run {run_id!r} is commitless evidence; --commit is refused"
+        )
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-    changed_lines = (
-        scoped_diff_stat(
-            cwd=tree,
-            base=str(record.get("base_sha") or ""),
-            head=commit_list[-1],
-            paths=node.get("write_paths") or (),
+    shadow_patch = ""
+    if shadow:
+        artifact = _write_shadow_patch(record)
+        changed_lines = _shadow_patch_stat(artifact, cwd=tree)
+        shadow_patch = str(artifact)
+    else:
+        changed_lines = (
+            scoped_diff_stat(
+                cwd=tree,
+                base=str(record.get("base_sha") or ""),
+                head=commit_list[-1],
+                paths=node.get("write_paths") or (),
+            )
+            if commit_list
+            else None
         )
-        if commit_list
-        else None
-    )
 
     session_id = record.get("session_id") or stream.session_id
     previous = next(
@@ -403,21 +529,26 @@ def _complete_locked(
     else:
         worker_seconds_source = "unavailable"
 
-    comment = _record_landing_comment(
-        project=project,
-        plan=str(node.get("plan") or ""),
-        section=str(node.get("section") or ""),
-        run_id=run_id,
-        narrative=outcome,
-        author=str(record.get("member") or record.get("role") or "reckon"),
-        when=finished,
-        root=ledger_root,
+    comment = (
+        {"recorded": False, "reason": "shadow evidence does not land code"}
+        if shadow
+        else _record_landing_comment(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            section=str(node.get("section") or ""),
+            run_id=run_id,
+            narrative=outcome,
+            author=str(record.get("member") or record.get("role") or "reckon"),
+            when=finished,
+            root=ledger_root,
+        )
     )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
         section=str(node.get("section") or ""),
         node=str(node.get("id") or ""),
+        node_definition=node,
         role=str(record.get("role") or ""),
         spec_level=str(node.get("spec_level") or ""),
         member_id=str(record.get("member") or ""),
@@ -444,6 +575,7 @@ def _complete_locked(
         session_id=session_id,
         budget=measured_budget,
         lineage=record.get("lineage"),
+        shadow_patch=shadow_patch,
         unreconciled_override=record.get("unreconciled_override"),
     )
     run["attempt"] = int(record.get("attempt") or 1)

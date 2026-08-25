@@ -1086,6 +1086,140 @@ def plan_dispatch(
     return resolution
 
 
+def shadow_source(
+    run_id: str,
+    *,
+    repo: str | Path,
+) -> dict[str, Any]:
+    """Resolve one committed primary and reconstruct its shadow node."""
+    repo_root = Path(repo).resolve()
+    projects = mounted_repository_projects().get(repo_root, ())
+    if not projects:
+        state_root = repo_root / "docs" / "state"
+        projects = (
+            tuple(
+                sorted(
+                    path.name
+                    for path in state_root.iterdir()
+                    if path.is_dir() and (path / "crew.json").is_file()
+                )
+            )
+            if state_root.is_dir()
+            else ()
+        )
+    matches = [
+        (project, record)
+        for project in projects
+        for record in ledger.runs(project, root=repo_root)
+        if str(record.get("run_id") or "") == run_id
+    ]
+    if not matches:
+        raise CrewError(
+            f"run {run_id!r} is not a committed ledger record in repository {repo_root}"
+        )
+    if len(matches) > 1:
+        raise CrewError(
+            f"run {run_id!r} appears in more than one project ledger in {repo_root}"
+        )
+    project, primary = matches[0]
+    lineage = primary.get("lineage")
+    if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
+        raise CrewError(
+            f"run {run_id!r} is itself a shadow and cannot be a shadow parent"
+        )
+    definition = primary.get("node_definition")
+    if not isinstance(definition, Mapping):
+        raise CrewError(
+            f"committed run {run_id!r} has no stored node definition and cannot "
+            "be shadowed without re-authoring its contract"
+        )
+    required = ("id", "goal", "plan", "done_when", "write_paths")
+    missing = [name for name in required if not definition.get(name)]
+    if missing:
+        raise CrewError(
+            f"committed run {run_id!r} has an incomplete stored node definition: "
+            + ", ".join(missing)
+        )
+    base_sha = str(primary.get("base_sha") or "")
+    if not base_sha:
+        raise CrewError(f"committed run {run_id!r} records no base_sha")
+    node = TaskNode(
+        id=str(definition["id"]),
+        goal=str(definition["goal"]),
+        plan=str(definition["plan"]),
+        section=str(definition.get("section") or ""),
+        role=str(definition.get("role") or primary.get("role") or "implement"),
+        spec_level=str(definition.get("spec_level") or primary.get("spec_level") or ""),
+        done_when=str(definition["done_when"]),
+        write_paths=[str(path) for path in definition.get("write_paths") or ()],
+        estimated_hours=definition.get("estimated_hours"),
+        requires_decisions=[
+            str(key) for key in definition.get("requires_decisions") or ()
+        ],
+    )
+    return {
+        "project": str(project),
+        "primary": dict(primary),
+        "node": node,
+        "base_sha": base_sha,
+    }
+
+
+def shadow(
+    run_id: str,
+    *,
+    candidate_backend: str,
+    config: Mapping[str, Any],
+    repo: str | Path,
+    member: str = "",
+    dry_run: bool = False,
+    launcher=None,
+) -> dict[str, Any]:
+    """Dispatch a committed node at its original base as isolated evidence."""
+    source = shadow_source(run_id, repo=repo)
+    project = source["project"]
+    node = source["node"]
+    base_sha = source["base_sha"]
+    lineage = {"kind": "shadow", "primary_run_id": run_id}
+    resolved_backend, _settings = resolve_role(config, node.role, node.spec_level)
+    if resolved_backend != candidate_backend:
+        raise CrewError(
+            f"candidate backend {candidate_backend!r} resolved to "
+            f"{resolved_backend!r}; route the node explicitly to the candidate"
+        )
+    if dry_run:
+        resolution = plan_dispatch(
+            node=node,
+            config=config,
+            locked_decisions=node.requires_decisions,
+            peer_scopes={},
+            project=project,
+            repo=repo,
+            base=base_sha,
+        )
+        return {
+            "dry_run": True,
+            "primary_run_id": run_id,
+            "project": project,
+            "base_sha": base_sha,
+            "lineage": lineage,
+            **resolution.as_dict(),
+        }
+    return dispatch(
+        node=node,
+        project=project,
+        repo=repo,
+        config=config,
+        session=f"shadow-{run_id}",
+        base=base_sha,
+        locked_decisions=node.requires_decisions,
+        peer_scopes={},
+        member=member,
+        launcher=launcher,
+        lineage_override=lineage,
+    )
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -1104,6 +1238,7 @@ def dispatch(
     unreconciled_override: bool = False,
     watch_required: bool = False,
     watch_override: bool = False,
+    lineage_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1140,6 +1275,14 @@ def dispatch(
     liveness observed at the dispatch gate.
     """
     repo_root = Path(repo).resolve()
+    shadow_lineage = (
+        dict(lineage_override)
+        if isinstance(lineage_override, Mapping)
+        and lineage_override.get("kind") == "shadow"
+        else None
+    )
+    if lineage_override is not None and shadow_lineage is None:
+        raise CrewError("only shadow lineage may be supplied explicitly at dispatch")
     authority = resolve_dispatch_authority(project, repo_root)
     resolution = plan_dispatch(
         node=node,
@@ -1168,18 +1311,21 @@ def dispatch(
             "for this repository to install it"
         )
     _workspace_roots(repo_root)
-    live_claims = _repository_scope_claims()
-    candidate_scope = _candidate_scope_entries(
-        node, project=project, repo=repo_root, authority=authority
-    )
-    candidate_repositories = {
-        repository
-        for repository, _path, _absolute, _declared, _derived_from in candidate_scope
-        if repository is not None
-    }
-    peer_claims = [
-        claim for claim in live_claims if claim.repository in candidate_repositories
-    ]
+    live_claims = [] if shadow_lineage else _repository_scope_claims()
+    if shadow_lineage:
+        peer_claims = []
+    else:
+        candidate_scope = _candidate_scope_entries(
+            node, project=project, repo=repo_root, authority=authority
+        )
+        candidate_repositories = {
+            repository
+            for repository, _path, _absolute, _declared, _derived_from in candidate_scope
+            if repository is not None
+        }
+        peer_claims = [
+            claim for claim in live_claims if claim.repository in candidate_repositories
+        ]
 
     competence = resolution.competence or _competence_verdict(
         resolution=resolution, project=project, repo=repo_root
@@ -1229,8 +1375,8 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
-    explicitly_named_peers = set(node.peer_scopes)
-    peers = _merge_peer_scopes(peer_claims, node.peer_scopes)
+    explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
+    peers = {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
     node.peer_scopes = peers
 
     reap_idle_session_members(
@@ -1257,33 +1403,54 @@ def dispatch(
                 raise MemberInFlight(
                     effective_member, str(pointer.get("run_id") or "unknown")
                 )
-    _raise_repository_scope_conflict(
-        node,
-        project=project,
-        repo=repo_root,
-        authority=authority,
-        claims=live_claims,
-    )
-    adjacent_peers = _adjacent_live_peers(
-        node,
-        project=project,
-        repo=repo_root,
-        explicitly_named=explicitly_named_peers,
-    )
+    if shadow_lineage:
+        adjacent_peers = []
+    else:
+        _raise_repository_scope_conflict(
+            node,
+            project=project,
+            repo=repo_root,
+            authority=authority,
+            claims=live_claims,
+        )
+        adjacent_peers = _adjacent_live_peers(
+            node,
+            project=project,
+            repo=repo_root,
+            explicitly_named=explicitly_named_peers,
+        )
     resolved_model = str(backend.get("model") or "")
     reuse_session = (
         ledger.session_for_model(roster_member, resolved_model)
         if roster_member and backend.get("session_reuse")
         else None
     )
+    committed_runs = ledger.runs(project, root=repo_root)
     prior_node_runs = [
         item
-        for item in ledger.runs(project, root=repo_root)
+        for item in committed_runs
         if str(item.get("node") or "") == node.id
+        and not (
+            isinstance(item.get("lineage"), Mapping)
+            and item["lineage"].get("kind") == "shadow"
+        )
     ]
-    lineage = None
+    lineage = shadow_lineage
     attempt = 1
-    if prior_node_runs:
+    if shadow_lineage:
+        primary = next(
+            (
+                item
+                for item in committed_runs
+                if str(item.get("run_id") or "")
+                == str(shadow_lineage.get("primary_run_id") or "")
+            ),
+            None,
+        )
+        if primary is None:
+            raise CrewError("shadow lineage names no committed primary run")
+        attempt = int(primary.get("attempt") or 1)
+    elif prior_node_runs:
         previous = prior_node_runs[-1]
         previous_lineage = previous.get("lineage") or {}
         previous_attempt = previous.get("attempt") or previous_lineage.get("attempt")
@@ -1341,6 +1508,12 @@ def dispatch(
             },
             peer_channel_path=str(_channel_root(run_id)),
         )
+        if shadow_lineage:
+            prompt += (
+                "\n\nSHADOW RUN — produce the named evidence without committing. "
+                "The durable deliverable is the worktree patch retained at completion; "
+                "this run is never merged.\n"
+            )
         prompt_path = directory / "prompt.txt"
         prompt_path.write_text(prompt)
         log_path = directory / "stream.jsonl"
@@ -1388,7 +1561,9 @@ def dispatch(
             },
             "created_at": _utc_now(),
             "attempt": attempt,
-            "attempt_kind": "redispatch" if lineage else "dispatch",
+            "attempt_kind": (
+                "shadow" if shadow_lineage else "redispatch" if lineage else "dispatch"
+            ),
             "attempt_started_at": _utc_now(),
             "phase": "starting",
             "session_id": reuse_session,

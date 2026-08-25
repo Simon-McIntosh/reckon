@@ -829,6 +829,98 @@ def crew_dispatch(
     _emit({"ok": True, **record}, pretty)
 
 
+@crew.command(name="shadow")
+@click.option("--run", "run_id", required=True, help="Committed primary run id.")
+@click.option(
+    "--backend",
+    required=True,
+    help="Candidate backend name resolved through flight config.",
+)
+@click.option(
+    "--set",
+    "overrides",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="Flight override for this shadow; always wins over config layers.",
+)
+@click.option(
+    "--member",
+    default="",
+    help="Roster member to run the shadow, reusing its model-matched session.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate and resolve only: no worktree, process or live pointer.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
+    """Re-run a committed node at its original base as isolated evidence."""
+    from reckon.crew.dispatch import shadow, shadow_source
+
+    crew_module, flight_module = _crew_modules()
+    repo = _repo_root(None)
+    try:
+        source = shadow_source(run_id, repo=repo)
+        node = source["node"]
+        routed_overrides = [*overrides, f"roles.{node.role}.backend={backend}"]
+        if node.spec_level:
+            routed_overrides.append(
+                f"roles.{node.role}.by_spec_level.{node.spec_level}.backend={backend}"
+            )
+        config = _resolved_flight(
+            flight_module,
+            source["project"],
+            repo,
+            routed_overrides,
+        )
+        record = shadow(
+            run_id,
+            candidate_backend=backend,
+            config=config,
+            repo=repo,
+            member=member,
+            dry_run=dry_run,
+        )
+    except crew_module.PlanVisibilityError as exc:
+        _emit(
+            {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+            pretty,
+        )
+        raise click.exceptions.Exit(4) from exc
+    except crew_module.BudgetHold as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "budget-hold",
+                "detail": str(exc),
+                "hold": exc.verdict,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(3) from exc
+    except crew_module.CompetenceLimit as exc:
+        _emit(
+            {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+            pretty,
+        )
+        raise click.exceptions.Exit(5) from exc
+    except crew_module.UnreconciledRuns as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "unreconciled-runs",
+                "detail": str(exc),
+                "runs": exc.runs,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(6) from exc
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **record}, pretty)
+
+
 @crew.command(name="attach")
 @click.option("--run", "run_id", required=True, help="Run id returned by dispatch.")
 @click.option("--task", required=True, help="The harness's own task identifier.")

@@ -49,6 +49,7 @@ def _run(
     changed_lines: dict | None = None,
     completed_at_source: str = "stream_mtime",
     spec_level: str | None = None,
+    lineage: dict | None = None,
 ) -> None:
     build_record_kwargs: dict[str, Any] = {}
     if spec_level is not None:
@@ -63,6 +64,7 @@ def _run(
             worker_seconds=int(actual_hours * 3600),
             completed_at_source=completed_at_source,
             changed_lines=changed_lines,
+            lineage=lineage,
             **build_record_kwargs,
         ),
         root=root,
@@ -214,6 +216,38 @@ def test_spec_level_is_captured_in_observations(tmp_path) -> None:
     indexed = {entry["run_id"]: entry for entry in observations}
     assert indexed["exact"]["spec_level"] == "exact"
     assert indexed["none"]["spec_level"] is None
+
+
+def test_shadow_observations_are_partitioned_from_live_competence(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(root, "primary", "work", 1.0, spec_level="guided")
+    _run(
+        root,
+        "shadow",
+        "work",
+        0.5,
+        gate="failed",
+        effort="medium",
+        spec_level="guided",
+        lineage={"kind": "shadow", "primary_run_id": "primary"},
+    )
+
+    derived = _derive(root)
+
+    assert len(derived["configurations"]) == 1
+    assert derived["configurations"][0]["runs"] == 1
+    assert derived["configurations"][0]["observations"][0]["run_id"] == "primary"
+    assert len(derived["shadow_slices"]) == 1
+    shadow_slice = derived["shadow_slices"][0]
+    assert shadow_slice["spec_level"] == "guided"
+    assert shadow_slice["runs"] == 1
+    observation = shadow_slice["observations"][0]
+    assert observation["run_id"] == "shadow"
+    assert observation["primary_run_id"] == "primary"
+    assert observation["primary_gate"] == "passed"
+    assert observation["primary_success"] is True
+    assert observation["success"] is False
 
 
 def test_cache_contains_only_directly_rederived_values(home, tmp_path) -> None:

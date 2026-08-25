@@ -488,6 +488,52 @@ def test_a_completed_record_carries_the_declared_specification_level() -> None:
     assert stored["spec_level"] == "exact"
 
 
+def test_a_completed_record_carries_shadow_replay_inputs() -> None:
+    node = {
+        "id": "mechanical-copy",
+        "goal": "copy one recorded value",
+        "plan": "plan-a",
+        "done_when": "pytest reports 1 passed",
+        "write_paths": ["reckon/target.py"],
+    }
+    stored = ledger.build_record(
+        run_id="r-shadow-ready",
+        plan="plan-a",
+        gate="passed",
+        node="mechanical-copy",
+        node_definition=node,
+        lineage={"kind": "shadow", "primary_run_id": "r-primary"},
+        shadow_patch="/durable/r-shadow-ready/shadow.patch",
+    )
+
+    assert stored["node"] == "mechanical-copy"
+    assert stored["node_definition"] == node
+    assert stored["lineage"]["kind"] == "shadow"
+    assert stored["shadow_patch"].endswith("/shadow.patch")
+
+
+def test_ledger_summary_labels_live_and_shadow_rows(repo) -> None:
+    for record in (
+        ledger.build_record(
+            run_id="r-primary",
+            plan="plan-a",
+            gate="passed",
+        ),
+        ledger.build_record(
+            run_id="r-shadow",
+            plan="plan-a",
+            gate="failed",
+            lineage={"kind": "shadow", "primary_run_id": "r-primary"},
+        ),
+    ):
+        ledger.append_run(PROJECT, record, root=repo)
+
+    assert ledger.summary(PROJECT, root=repo)["run_kinds"] == {
+        "live": 1,
+        "shadow": 1,
+    }
+
+
 def test_completion_repair_reports_event_time_without_writing(home, repo) -> None:
     _historical_record(repo, "historical-event")
     _historical_stream(
@@ -860,9 +906,7 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
     }
 
 
-def test_derived_member_guard_ignores_a_run_from_another_repository(
-    home, repo
-) -> None:
+def test_derived_member_guard_ignores_a_run_from_another_repository(home, repo) -> None:
     session = "shared-coordinator-session"
     member = crew._session_member_id(session)
     ledger.register_member(PROJECT, member, harness="alpha", root=repo)
@@ -1303,6 +1347,7 @@ def test_the_summary_rolls_up_gates_roster_and_measured_effort(home, repo) -> No
     summary = ledger.summary(PROJECT, root=repo)
 
     assert summary["runs"] == 2
+    assert summary["run_kinds"] == {"live": 2, "shadow": 0}
     assert summary["gates"] == {"failed": 1, "passed": 1}
     assert summary["members"] == 1
     assert summary["members_with_session"] == 0
