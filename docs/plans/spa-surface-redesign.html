@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -242,62 +242,61 @@
 
     <h2 id="s4">&#167;4 &mdash; Shell: one routing owner, chips you can manage, a visible snapshot</h2>
 
-    <p>Five of the surfaces the canvas redraws live inside one 1,544-line file, which is a
-    scheduling fact before it is an aesthetic one: five workers redrawing five surfaces would
-    serialise on <code>shell.jsx</code> and take five times as long as the work needs. The canvas's
-    own information architecture already separates them, so the split is not a refactor invented for
-    parallelism &mdash; it is the design being taken at its word.</p>
+    <p>Five of the surfaces the canvas redraws live inside one 1,544-line file. That is a
+    scheduling fact before it is an aesthetic one, and the obvious answer &mdash; split
+    <code>shell.jsx</code> into five modules so five workers can redraw five surfaces at once
+    &mdash; was checked against the tree and rejected. The asset list that loads the SPA is written
+    out in four places: <code>docs/index.html</code>, the served fallback template in
+    <code>reckon/serve.py</code>, and both templates in <code>reckon/cli.py</code>. All four agree
+    today, and nothing keeps them agreeing. A module split would put five new entries through that
+    seam for parallelism that is available for free by giving <code>shell.jsx</code> one worker for
+    the whole redraw, running its three surfaces in sequence on one retained session.</p>
+
+    <p>What the surfaces genuinely cannot share is a stylesheet. Every surface's rules currently sit
+    interleaved in <code>styles.css</code> and <code>styles-base.css</code>, so any two concurrent
+    surface workers collide there and nowhere else. One stylesheet per surface removes the collision
+    without touching a component, and it goes through the four-way seam once rather than once per
+    section.</p>
 
     <figure>
-      <svg viewBox="0 0 720 250" width="100%" style="max-width:720px" role="img"
-           aria-label="shell.jsx today holds five surface components plus routing; the split moves each surface into its own module and leaves App as the routing owner">
+      <svg viewBox="0 0 700 190" width="100%" style="max-width:700px" role="img"
+           aria-label="One asset list written out in four places, all four agreeing today with nothing enforcing it">
         <g fill="none" stroke="currentColor" stroke-width="1">
-          <rect x="8" y="26" width="196" height="196" rx="3"/>
-          <rect x="470" y="8" width="242" height="34" rx="3"/>
-          <rect x="470" y="50" width="242" height="34" rx="3"/>
-          <rect x="470" y="92" width="242" height="34" rx="3"/>
-          <rect x="470" y="134" width="242" height="34" rx="3"/>
-          <rect x="470" y="176" width="242" height="34" rx="3"/>
-          <rect x="470" y="218" width="242" height="26" rx="3" stroke-dasharray="3 3"/>
-          <path d="M 210 124 H 300"/>
-          <path d="M 300 124 V 25 H 464"/>
-          <path d="M 300 124 V 67 H 464"/>
-          <path d="M 300 124 H 464"/>
-          <path d="M 300 124 V 151 H 464"/>
-          <path d="M 300 124 V 193 H 464"/>
-          <path d="M 300 124 V 231 H 464"/>
+          <rect x="8" y="62" width="150" height="46" rx="3"/>
+          <rect x="424" y="8" width="268" height="34" rx="3"/>
+          <rect x="424" y="50" width="268" height="34" rx="3"/>
+          <rect x="424" y="92" width="268" height="34" rx="3"/>
+          <rect x="424" y="134" width="268" height="34" rx="3"/>
+          <path d="M 164 85 H 250"/>
+          <path d="M 250 85 V 25 H 418"/>
+          <path d="M 250 85 V 67 H 418"/>
+          <path d="M 250 85 V 109 H 418"/>
+          <path d="M 250 85 V 151 H 418"/>
         </g>
         <g fill="currentColor" font-size="13" font-family="system-ui, sans-serif">
-          <text x="16" y="18" font-size="13" opacity="0.6">today</text>
-          <text x="20" y="52" font-size="14">shell.jsx</text>
-          <text x="20" y="72" opacity="0.6">1,544 lines</text>
-          <text x="20" y="104">TopBar</text>
-          <text x="20" y="126">FiltersCol</text>
-          <text x="20" y="148">ListCol</text>
-          <text x="20" y="170">CockpitBody</text>
-          <text x="20" y="192">CmdKPalette</text>
-          <text x="20" y="214" opacity="0.6">App &mdash; routing, shared state</text>
-          <text x="316" y="118" font-size="13">split</text>
-          <text x="316" y="136" font-size="13">in place</text>
-          <text x="478" y="30">topbar &mdash; &#167;4</text>
-          <text x="478" y="72">filters &mdash; &#167;5</text>
-          <text x="478" y="114">list &mdash; &#167;5</text>
-          <text x="478" y="156">overview &mdash; &#167;8</text>
-          <text x="478" y="198">palette &mdash; &#167;7</text>
-          <text x="478" y="236" opacity="0.6">App stays &mdash; routing, shared state</text>
+          <text x="16" y="54" opacity="0.6">one asset list</text>
+          <text x="18" y="82">16 files the</text>
+          <text x="18" y="100">SPA loads</text>
+          <text x="258" y="78" opacity="0.6">written</text>
+          <text x="258" y="96" opacity="0.6">out in</text>
+          <text x="432" y="30">docs/index.html</text>
+          <text x="432" y="72">reckon/serve.py &mdash; served fallback</text>
+          <text x="432" y="114">reckon/cli.py &mdash; sync template</text>
+          <text x="432" y="156">reckon/cli.py &mdash; static build</text>
         </g>
       </svg>
-      <figcaption>Five surfaces the canvas redraws share one file, so five workers would serialise
-      on it. Extracting each in place &mdash; no behaviour change, no parallel component family &mdash;
-      is what lets the redraw run wide. <code>App</code> does not move: it remains the routing and
-      cross-surface state owner every extracted module composes against.</figcaption>
+      <figcaption>Adding one file to the SPA means editing four lists that nothing compares. They
+      agree today, which is why the seam is a hazard rather than a defect &mdash; and why the seven
+      surface stylesheets go through it once, with a test that fails the next time the four
+      disagree.</figcaption>
     </figure>
 
     <p><strong>Deliverables.</strong></p>
     <ul>
-      <li><strong>The split, with nothing else in it.</strong> Each surface moves to its own module
-      and <code>docs/index.html</code> loads it. Behaviour is identical; the suite is the proof.
-      A second copy of anything is a failure, not a migration step.</li>
+      <li><strong>One stylesheet per surface.</strong> Seven files &mdash; topbar, plans, reader,
+      overview, sprints, crew, graph &mdash; registered in all four asset lists at once, with a test
+      that fails when the four stop agreeing. They start empty; each surface section fills its own,
+      so no two concurrent workers touch one file.</li>
       <li><strong>The topbar as the canvas draws it.</strong> Project chips carrying a live dot,
       a Manage disclosure, and the tab row. Chips replace the picker; the picker's behaviour does
       not.</li>
@@ -518,7 +517,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ssr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship spa-surface-redesign" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Redraw the seven surfaces and carry the nine outstanding audit ranks through them</h4>
-    <div class="r-fu-body"><p>&#167;3 runs first and alone: three of the four canvas contradictions are the state boundary discarding a distinction the server already makes, and no redraw fixes that downstream. &#167;4's module split is the other gate on width &mdash; five of the redrawn surfaces share one 1,544-line file today, so the surface sections serialise on it until it is split in place.</p><p>After those two, &#167;5 to &#167;11 are file-disjoint and run wide. Each carries its own audit ranks from the &#167;2 table; a section that lands its canvas surface without them has re-opened a ranked defect rather than closed one.</p></div>
+    <div class="r-fu-body"><p>§3 runs first and alone: three of the four canvas contradictions are the state boundary discarding a distinction the server already makes, and no redraw fixes that downstream. §4's module split is the other gate on width — five of the redrawn surfaces share one 1,544-line file today, so the surface sections serialise on it until it is split in place.</p><p>After those two, §5 to §11 are file-disjoint and run wide. Each carries its own audit ranks from the §2 table; a section that lands its canvas surface without them has re-opened a ranked defect rather than closed one.</p></div>
     <pre class="r-fu-prompt">/reckon-ship spa-surface-redesign</pre>
     </article>
 </section>
