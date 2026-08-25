@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:58:12",
+  "updated": "2026-08-25T15:07:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -20522,9 +20522,193 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T130058423099-n-invert-idle-hiding-assertion",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-invert-idle-hiding-assertion",
+        "node_definition": {
+          "done_when": "tests/test_spa_plans_geometry.py passes 5 of 5 where it currently fails 1, the replacement asserts an absent stored preference hides nothing while an explicit stored preference still filters, and the full suite reports 0 failed",
+          "estimated_hours": 0.75,
+          "goal": "The assertion that idle projects are hidden until a browser records an override is inverted to require what the locked visibility decision states, because it enforces the behaviour that hid every live run from a first-time viewer",
+          "id": "n-invert-idle-hiding-assertion",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T130058423099-n-invert-idle-hiding-assertion/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_spa_plans_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T13:01:04Z",
+        "completed_at": "2026-08-25T13:06:05Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 301,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 301,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "64acd928e541e59414a337faf59e969c193fa4a7",
+        "commits": [
+          "9921f22"
+        ],
+        "changed_lines": {
+          "added": 5,
+          "removed": 6,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T130058423099-n-invert-idle-hiding-assertion/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 1491968,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1602511,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 4667,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 910
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T124030254755-n-after-capture-evidence",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-after-capture-evidence",
+        "node_definition": {
+          "done_when": "the capture command exits 0 having written screenshots for five routes at widths 1374 and 1920 into the figures directory, and the report states for each of the 14 recorded before-defects its after measurement and whether it is resolved",
+          "estimated_hours": 1.0,
+          "goal": "A matched after-capture of the served SPA proving each enumerated defect is resolved, taken at the same routes and widths as the before-capture and including a populated Crew route",
+          "id": "n-after-capture-evidence",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124030254755-n-after-capture-evidence/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/figures/spa-surface-redesign/after",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/spa-render-after.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:40:37Z",
+        "completed_at": "2026-08-25T13:05:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1519,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1519,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "248b98b77addf7fa91eaff8cdd1bae6c9308cde5",
+        "commits": [
+          "e37ce4d"
+        ],
+        "changed_lines": {
+          "available": false,
+          "reason": "diff_unavailable"
+        },
+        "tests_added": 0,
+        "gate": "failed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124030254755-n-after-capture-evidence/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff70f-e564-7391-a681-b1c4d92d8ece",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7789824,
+            "cached_input_tokens_cumulative": 52301312,
+            "input_tokens": 8364160,
+            "input_tokens_cumulative": 55407667,
+            "output_tokens": 36699,
+            "output_tokens_cumulative": 189914,
+            "reasoning_output_tokens": 13942,
+            "reasoning_output_tokens_cumulative": 63819
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 387
+    "_version": 389
   }
 }
