@@ -490,6 +490,46 @@
   screenshot the lead had to send. The instrument does not remove the need to look; it removes the
   need for a human to be the only one who can.</p>
 
+
+  <h2 id="row-legibility">Three counts that were three populations</h2>
+
+  <p><strong>Node <code>n-s18-row-legibility</code>, commit <code>0a2dd91</code>, gate PASSED,
+  2026-08-25.</strong> 223 insertions against 49 deletions across ten paths. All four defects the
+  window gate's own captures exposed are closed, and each is now asserted by
+  <code>test_rendered_plan_rows_and_controls_are_legible</code> at 1280, 1440 and 1920:
+  <code>clippedTransitions = 0</code>, <code>trailingSeparators = 0</code>, labelled count
+  populations, a stated empty reader, <code>notFoundOccurrences = 0</code>.</p>
+
+  <p><strong>The disagreeing counts were not a bug in any count.</strong> The header's 44, the status
+  control's 46 and the sprint control's 37 were three different populations sharing one unlabelled
+  shape &mdash; plans shown, plans in total, plans assigned to a sprint. The repair was to say which
+  is which: <code>44 shown</code>, <code>STATUS &middot; TOTAL PLANS</code>,
+  <code>SPRINT &middot; ASSIGNED PLANS</code>. Audit rank 14 asked for exactly this and was recorded
+  satisfied two sections ago; it was satisfied for the signals that existed then, and the controls
+  that replaced the rail arrived after the check.</p>
+
+  <p><strong>The clipped pill was the remedy hiding the finding.</strong> Rank 6 exists because a
+  compact row that flattens <code>active &rarr; blocked</code> to one status loses the transition and
+  its open-gate count. The row rendered the transition and then truncated it at the column edge, so
+  the surface carried less than the flat status it replaced while passing every assertion that the
+  transition was present. It now renders whole on its own line with its gate count and a labelled
+  blocker mark.</p>
+
+  <figure>
+    <img src="/reckon/figures/spa-surface-redesign/window-composition/fluid-1440.png"
+         alt="The Plans surface at 1440px after the legibility repair: labelled status and sprint counts, a whole active-to-blocked pill with its open-gate count, and a stated empty reader." style="max-width:100%">
+    <figcaption>After the repair, at 1440px. Every count says what it counts, the transition pill
+    renders whole with its gate count, and the unselected reader states what to do instead of
+    reporting a missing artifact.</figcaption>
+  </figure>
+
+  <p><strong>The node stopped rather than overrun its fence, and was right to.</strong> Its one full
+  suite exposed two literal-shape assertions in a neighbouring module; both were repaired and proven
+  by their exact rerun, but a post-repair suite measures 16m19s and the fence had ~4 minutes left.
+  It reported a structured brief with its own leaning &mdash; make the broad run a separate node
+  &mdash; rather than starting a run it could not finish or claiming a delta it had not measured.
+  One suite over the merged tree is also strictly better evidence than a rerun on its own base.</p>
+
 </main>
 </body>
 </html>

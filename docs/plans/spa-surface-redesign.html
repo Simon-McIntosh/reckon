@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="104">
+<meta name="plan-version" content="106">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076,ac3b103,9931ec9,4650658,ddb86b6,bee5f08,236de49,c81a3fd,6283a32,a0890ce,a99b5d8,a58f9a0,416e2d6,ecd10c7,b3b7920,55e492a,fed719c,75cd164,9c129e3,e55d536,967b12d,819e63d,04b3823,2db0606,9921f22,e37ce4d,b093d5c,780869a">
 <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/sprint.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/_shared/foundation.css,docs/index.html,reckon/serve.py,reckon/_store.py,reckon/doccheck.py,tests/test_spa_composition.py,tests/spa_render_capture.mjs,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_spa_project_visibility.py,tests/test_spa_sprints_geometry.py,tests/test_shared_token_contrast.py,tests/test_serve_finished_runs.py,tests/test_plan_summary_bound.py,tests/test_build.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html,design/canvas-layout-spec.md,docs/evidence/archive/spa-surface-redesign-landed.html,docs/figures/spa-surface-redesign/before/plans.png">
-<meta name="plan-impl" content="0.97">
+<meta name="plan-impl" content="0.98">
 </head>
 <body>
   <main class="plan-doc">
@@ -1021,6 +1021,17 @@
 
     <h3 id="s18e">&#167;18e &mdash; What the capture found that the containment gate could not</h3>
 
+    <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-25</span>
+    Commit <code>0a2dd91</code>, gate PASSED. The named rendered test
+    <code>test_rendered_plan_rows_and_controls_are_legible</code> passes at 1280, 1440 and 1920
+    asserting 0 clipped transitions, 0 trailing separators, labelled count populations, a stated
+    empty reader and 0 not-found occurrences; focused module 11/11; the regenerated captures show
+    <code>active &rarr; blocked 1 open gate</code> whole with its <code>Blockers 1</code> label,
+    <code>44 shown</code> against <code>STATUS &middot; TOTAL PLANS</code> and
+    <code>SPRINT &middot; ASSIGNED PLANS</code>, and <em>select a plan to read</em>. Full record:
+    <a href="/reckon/evidence/archive/spa-surface-redesign-landed#row-legibility">three counts that
+    were three populations</a>.</p>
+
     <p><strong>The window gate passed at all three widths and the captures it produced show four
     defects.</strong> That is this plan's recurring lesson arriving for the fourth time: a measure
     proves the property it names and says nothing about the ones it does not. The difference now is
@@ -1495,6 +1506,12 @@
 </div>
 <div class="r-comment" data-section="s18e" data-id="c-20260825-s18e-open" data-who="reckon-ship" data-when="2026-08-25T18:32:00+02:00">
     <div class="r-comment-body">Opened by folding the window gate's own captures back into the queue. Four defects visible in the committed 1280 and 1440 captures that no containment measure covers: the rank 6 status-transition pill clipped mid-word by the row, a trailing separator on rows with no transition, three disagreeing counts in one control row (44 plans / status All 46 / sprint All 37), and the unselected reader rendering an artifact-not-found error where an empty state belongs. Section 18f covers the merged suite, which no run has measured since the four merges.</div>
+</div>
+<div class="r-comment" data-section="s18e" data-id="c-20260825-s18e-landed" data-who="reckon-ship" data-when="2026-08-25T19:20:00+02:00">
+    <div class="r-comment-body">n-s18-row-legibility landed - commit 0a2dd91; gate rendered-row-legibility PASSED; measure test_rendered_plan_rows_and_controls_are_legible passes at 1280, 1440 and 1920 with clippedTransitions 0, trailingSeparators 0, labelled count populations, a stated empty reader and notFoundOccurrences 0; focused module 11/11; two neighbouring literal-shape assertions repaired and passing 3/3; captures regenerated at all three widths with containment intact; artifacts docs/ui/plans.css, docs/ui/shell.jsx, docs/ui/plan.jsx, tests/test_spa_plans_geometry.py and six capture files; 223 insertions against 49 deletions. The broad post-repair suite was deferred to n-s18-merged-suite rather than started inside 4 remaining minutes of fence. The three disagreeing counts were three populations sharing one unlabelled shape, now labelled shown, total plans and assigned plans.</div>
+</div>
+<div class="r-comment" data-section="§18e" data-id="c-run-r-20260825T183139746328-n-s18-row-legibility" data-who="codex-d" data-when="2026-08-25T19:14:58Z">
+    <div class="r-comment-body"><p>rendered gate passes at 3 widths with 0 clipped transitions, 0 trailing separators, labelled count populations and 0 not-found occurrences; focused 11/11; two repaired assertions 3/3; broad suite delta deferred to the merged-suite node</p></div>
 </div>
 </section>
 </main>
