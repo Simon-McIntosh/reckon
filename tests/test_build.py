@@ -132,6 +132,14 @@ def _loaded_jsx(html: str) -> set[str]:
     }
 
 
+def _loaded_stylesheets(html: str) -> tuple[str, ...]:
+    return tuple(
+        reference.lstrip("/")
+        for reference in re.findall(r'<link[^>]+href="([^"]+\.css)"', html)
+        if not reference.startswith(("https://", "http://"))
+    )
+
+
 @pytest.fixture()
 def built_source_site(tmp_path):
     docs_dir = tmp_path / "docs"
@@ -184,6 +192,54 @@ def test_spa_entry_points_load_the_same_jsx_files(built_source_site):
     assert "_ui/crew.jsx" in built
     assert live == checked_in
     assert built == checked_in
+
+
+def test_spa_entry_points_load_the_same_surface_stylesheets(
+    built_source_site, tmp_path
+):
+    docs_dir, _, _ = built_source_site
+    synced_docs = tmp_path / "synced" / "docs"
+    synced_docs.mkdir(parents=True)
+    sync_result = CliRunner().invoke(
+        cli.main,
+        [
+            "sync",
+            str(synced_docs),
+            "--project",
+            "synced",
+            "--mounts",
+            str(tmp_path / "mounts.json"),
+            "--state-root",
+            str(tmp_path / "state"),
+        ],
+    )
+    assert sync_result.exit_code == 0, sync_result.output
+
+    expected_surface_files = (
+        "topbar.css",
+        "plans.css",
+        "reader.css",
+        "overview.css",
+        "sprints.css",
+        "crew.css",
+        "graph.css",
+    )
+    expected_surface_assets = {f"_ui/{name}" for name in expected_surface_files}
+    entry_points = {
+        "checked-in": (REPO_ROOT / "docs" / "index.html").read_text(),
+        "served": serve._render_spa_html("fixture"),
+        "synced": (synced_docs / "index.html").read_text(),
+        "built": (docs_dir / "index.html").read_text(),
+    }
+    loaded = {name: _loaded_stylesheets(html) for name, html in entry_points.items()}
+
+    assert all(assets == loaded["checked-in"] for assets in loaded.values())
+    assert expected_surface_assets <= set(loaded["checked-in"])
+    for name in expected_surface_files:
+        assert (docs_dir / "_ui" / name).is_file()
+        assert (REPO_ROOT / "docs" / "ui" / name).read_text() == (
+            f"/* Surface owner: {name.removesuffix('.css')}. */\n"
+        )
 
 
 def test_plan_and_sprint_views_surface_only_matching_live_work():
