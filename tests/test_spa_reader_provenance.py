@@ -130,3 +130,80 @@ def test_copied_handoff_carries_live_source_provenance_and_plan_version():
     assert "fullState?.version ?? P.version" in PLAN_SOURCE
     assert "planVersion={loadedPlanVersion}" in PLAN_SOURCE
     assert "built from live plan HTML + project discovery" in BITS_SOURCE
+
+
+def test_absent_reader_values_are_omitted_instead_of_rendered_as_placeholders():
+    controls = _between(PLAN_SOURCE, '<nav className="r-reading-controls"', '<div className="r-reading-viewport">')
+    focus_title = _between(PLAN_SOURCE, "{focusMode && (", "<h1>")
+
+    assert '{project && <span className="r-reading-project">' in controls
+    assert "{P.sprint && <span>" in controls
+    assert "{implementationLabel && <span>" in controls
+    assert 'P.impl !== ""' in PLAN_SOURCE
+    assert '.filter(Boolean).join(" · ")' in focus_title
+    assert 'P.sprint || "unscheduled"' not in focus_title
+    assert 'val.choice || "—"' not in PLAN_SOURCE
+    assert ': "—"' not in PLAN_SOURCE
+
+
+def test_empty_reader_regions_are_shorter_than_populated_regions(tmp_path):
+    chrome = shutil.which("google-chrome")
+    if chrome is None:
+        pytest.skip("browser-backed reader check requires google-chrome")
+
+    reader_css = (REPO_ROOT / "docs" / "ui" / "reader.css").read_text()
+    plans_css = (REPO_ROOT / "docs" / "ui" / "plans.css").read_text()
+    fixture = tmp_path / "reader-empty-regions.html"
+    fixture.write_text(
+        f"""<!doctype html>
+<html><head><meta charset="utf-8"><style>
+* {{ box-sizing: border-box; }}
+:root {{ --line: #ddd; --line-2: #ccc; --ink: #111; --muted: #666; --faint: #777; --mono: monospace; }}
+body {{ margin: 0; font: 12px Arial, sans-serif; }}
+.comparison {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
+.r-plans-view {{ display: flex; height: 360px; }}
+.r-reader-with-attachments {{ display: flex; flex: 1; min-width: 0; }}
+.r-body {{ flex: 1; min-width: 0; }}
+.r-plan-graph {{ border-top: 1px solid var(--line); }}
+.r-plan-graph-h {{ height: 28px; }}
+.r-fan-wrap {{ padding: 10px 14px 14px; }}
+.r-fan-grid {{ height: 150px; }}
+.r-fan-empty {{ padding: 8px 0; }}
+{reader_css}
+{plans_css}
+</style></head><body>
+<div class="r-reading-controls" id="titlebar"><span class="r-reading-path">/fixture</span></div>
+<div class="comparison">
+  <div class="r-plans-view"><div class="r-reader-with-attachments"><main class="r-body">
+    <div class="r-plan-graph empty-dependencies"><div class="r-plan-graph-h">Dependencies <span>no edges</span></div><div class="r-fan-wrap compact"><div class="r-fan-grid"></div><div class="r-fan-empty">This plan stands alone.</div></div></div>
+  </main><aside class="r-attachment-rail empty-attachments"><div class="r-attachment-heading">Attached</div><p class="r-attachment-empty">No attachments</p></aside></div></div>
+  <div class="r-plans-view"><div class="r-reader-with-attachments"><main class="r-body">
+    <div class="r-plan-graph populated-dependencies"><div class="r-plan-graph-h">Dependencies <span>1 in</span></div><div class="r-fan-wrap compact"><div class="r-fan-grid">Dependency cards</div></div></div>
+  </main><aside class="r-attachment-rail populated-attachments"><div class="r-attachment-heading">Attached</div><section class="r-attachment-group"><h2>Evidence <span>2</span></h2><button>First evidence</button><button>Second evidence</button></section></aside></div></div>
+</div>
+<output id="measure"></output><script>
+const height = selector => document.querySelector(selector).getBoundingClientRect().height;
+const titlebar = document.querySelector('#titlebar').textContent.toLowerCase();
+document.querySelector('#measure').textContent = JSON.stringify({{
+  placeholderTokens: ['—', 'unknown'].filter(token => titlebar.includes(token)),
+  emptyAttachmentHeight: height('.empty-attachments'),
+  populatedAttachmentHeight: height('.populated-attachments'),
+  emptyDependencyHeight: height('.empty-dependencies'),
+  populatedDependencyHeight: height('.populated-dependencies'),
+}});
+</script></body></html>"""
+    )
+
+    result = subprocess.run(
+        [chrome, "--headless", "--disable-gpu", "--no-sandbox", "--dump-dom", fixture.as_uri()],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    match = re.search(r'<output id="measure">(\{.*?\})</output>', result.stdout)
+    assert match is not None
+    measurement = json.loads(match.group(1))
+    assert measurement["placeholderTokens"] == []
+    assert measurement["emptyAttachmentHeight"] < measurement["populatedAttachmentHeight"]
+    assert measurement["emptyDependencyHeight"] < measurement["populatedDependencyHeight"]
