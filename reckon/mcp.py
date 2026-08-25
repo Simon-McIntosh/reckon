@@ -42,11 +42,26 @@ except ImportError:
     _HAS_MCP = False
     FastMCP = None  # type: ignore[assignment,misc]
 
+from reckon import (
+    _plan_html,
+    budget as budget_module,
+    crew as crew_module,
+    flight as flight_module,
+    ledger as ledger_module,
+)
+from reckon._schema import (
+    TYPE_ENUM,
+    IndexData,
+    PlanState,
+    gen_json_schema,
+    parse_plan_ref,
+)
 from reckon._store import (
     OpError,
     VersionConflict,
     _docs_dir_for_project,
     _mounts_path,
+    _resolve_html_file,
     _state_root,
     append_to_list,
     apply_ops,
@@ -58,8 +73,49 @@ from reckon._store import (
     replace_plan_text,
     resolve_in_list,
     set_nested,
+    state_path,
     write_plan,
 )
+from reckon.capability import (
+    from_legacy_tier,
+    map_legacy_capabilities,
+    validate_capability,
+)
+from reckon.crew.runs import project_watch_visibility
+from reckon.doccheck import audit_lifecycle, audit_links
+from reckon.mcp_views import (
+    ResourceSelector,
+    ViewRequestError,
+    audit_view,
+    discovery_view,
+    error_response,
+    normalize_selector,
+    normalize_view,
+    resource_view,
+    roadmap_view,
+    storage_schema_for,
+)
+from reckon.project_state import (
+    RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
+    LegacyIndexReadOnly,
+    ProjectStateConflict,
+    ProjectStateError,
+    apply_resource_ops,
+    audit_project_state,
+    legacy_index_path,
+    resource_path,
+)
+from reckon.resources import (
+    ResourceCollision,
+    canonical_type,
+    composed_provenance,
+    content_provenance,
+    identify_resource,
+    resolve_resource,
+    resource_map,
+)
+from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
+from reckon.serve import _resolve_plan_file, discover_plans
 
 # ── Server instance ────────────────────────────────────────────────────────
 
@@ -86,8 +142,6 @@ def _resource_reference(
     title: str | None = None,
 ) -> dict[str, Any]:
     """Build the typed affected-resource identity used by write responses."""
-
-    from reckon.resources import canonical_type
 
     resource_type = (
         canonical_type(doc_type)
@@ -257,8 +311,6 @@ def _read_plan(
     if project is None or project == "*":
         return _list_projects()
 
-    from reckon.project_state import ProjectStateError
-
     # ── discovery mode (no slug) ──
     if slug is None:
         try:
@@ -336,8 +388,6 @@ def _read_plan(
             "detail": str(exc),
         }
     if slug in ("index", "project") and doc_type is None:
-        from reckon.capability import map_legacy_capabilities
-
         index_warnings: list[str] = []
         normalised_sprints: list[Any] = []
         for sprint_record in data.get("sprints", []):
@@ -376,8 +426,6 @@ def _read_plan(
             _resolve_plan_ref(ref, project, checkout_path) for ref in deps
         ]
     if with_schema:
-        from reckon._schema import gen_json_schema
-
         result["schema"] = gen_json_schema()
         result["dos_donts"] = _DOS_DONTS
         result["op_vocab"] = _OP_VOCAB
@@ -391,9 +439,6 @@ def _read_archived_resource(
     checkout_path: str | None,
 ) -> tuple[dict[str, Any], int]:
     """Read exactly one archived typed artifact without live-resource ambiguity."""
-
-    from reckon import _plan_html
-    from reckon.resources import canonical_type, resource_map
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
@@ -414,13 +459,6 @@ def _typed_resource_provenance(
     composed_content: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     """Return provenance for the canonical file selected by a typed read."""
-
-    from reckon.project_state import legacy_index_path, resource_path
-    from reckon.resources import (
-        composed_provenance,
-        content_provenance,
-        resource_map,
-    )
 
     docs_dir = _docs_dir_for_project(selector.project, checkout_path)
     if docs_dir is None:
@@ -446,8 +484,6 @@ def _typed_resource_provenance(
         if not content_path.is_file():
             content_path = legacy_index_path(docs_dir, selector.project)
         if not content_path.is_file() and checkout_path is None:
-            from reckon._store import state_path
-
             content_path = state_path(selector.project, "index")
     if not content_path.is_file() and composed_content is not None:
         return composed_provenance(docs_dir.parent, composed_content)
@@ -529,17 +565,6 @@ def _read_plan_view(
     include_questions: bool,
 ) -> dict[str, Any]:
     """Route opt-in progressive reads without changing the legacy call path."""
-
-    from reckon.mcp_views import (
-        ResourceSelector,
-        ViewRequestError,
-        discovery_view,
-        error_response,
-        normalize_selector,
-        normalize_view,
-        resource_view,
-        storage_schema_for,
-    )
 
     selector: ResourceSelector | None = None
     try:
@@ -769,8 +794,6 @@ def _resolve_plan_ref(
     checkout is the only sensible target. A ref that does not resolve keeps
     ``found: False`` (the audit reports it; the reader decides severity).
     """
-    from reckon._schema import parse_plan_ref
-
     parsed = parse_plan_ref(ref)
     if parsed is None:
         return {"ref": ref, "scope": "invalid", "found": False}
@@ -843,15 +866,10 @@ def _discovery_state_root(root: str | None) -> Path:
 
 
 def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:
-    from reckon.serve import discover_plans
-
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return {"inventory": [], "sprints": [], "milestones": []}
     discovered = discover_plans(docs_dir, project, _discovery_state_root(root))
-
-    from reckon import _plan_html
-    from reckon.resources import resource_map
 
     resources = {
         resource.identity.key: resource
@@ -2027,12 +2045,6 @@ def _validate_working(slug: str, working: dict) -> list[str] | None:
     """Schema-validate the working dict. Returns a list of error lines on
     failure, or None when valid. Constructs the model FROM the dict (never
     mutates a model and dumps it — see reckon/_schema.py header)."""
-    from reckon._schema import IndexData, PlanState
-    from reckon.capability import (
-        from_legacy_tier,
-        validate_capability,
-    )
-
     try:
         if slug in ("index", "project"):
             IndexData.model_validate(working)
@@ -2178,19 +2190,7 @@ def _edit_plan(
 
     is_index = slug in ("index", "project") and doc_type is None
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
-    from reckon._schema import TYPE_ENUM
-    from reckon.resources import ResourceCollision, canonical_type, resolve_resource
-
     canonical_doc_type = canonical_type(doc_type) if doc_type else None
-    from reckon.project_state import (
-        RESOURCE_TYPES as PROJECT_RESOURCE_TYPES,
-        LegacyIndexReadOnly,
-        ProjectStateConflict,
-        ProjectStateError,
-        apply_resource_ops,
-        resource_path,
-    )
-
     if canonical_doc_type in PROJECT_RESOURCE_TYPES:
         docs_dir = _docs_dir_for_project(project, root)
         if docs_dir is None:
@@ -2219,8 +2219,6 @@ def _edit_plan(
             result["path"] = str(
                 resource_path(docs_dir, project, canonical_doc_type, slug)
             )
-            from reckon.resources import content_provenance
-
             result["provenance"] = content_provenance(
                 docs_dir.parent, Path(result["path"])
             )
@@ -2314,8 +2312,6 @@ def _edit_plan(
             }
         html_file = docs_dir / "plans" / f"{slug}.html"
         # Reject if a plan already exists at this slug (direct or via resolution).
-        from reckon.serve import _resolve_plan_file
-
         if (
             html_file.exists()
             or _resolve_plan_file(docs_dir, slug, "plan", project=project) is not None
@@ -2336,8 +2332,6 @@ def _edit_plan(
     cur_data, cur_version = read_plan(project, slug, root, artifact_type=selected_type)
     if not create and not cur_data and not is_index:
         # An empty plan dict for a non-index slug means the HTML file is absent.
-        from reckon.serve import _resolve_plan_file
-
         docs_dir = _docs_dir_for_project(project, root)
         if (
             docs_dir is None
@@ -2426,8 +2420,6 @@ def _edit_plan(
     )
     result["path"] = _written_path(project, slug, root, selected_type)
     if result["path"] is not None:
-        from reckon.resources import content_provenance
-
         written_docs_dir = _docs_dir_for_project(project, root)
         if written_docs_dir is not None:
             result["provenance"] = content_provenance(
@@ -2476,8 +2468,6 @@ def _edit_plan_prose(
         )
         result["operation"] = "edit_text"
         result["path"] = str(path)
-        from reckon.resources import content_provenance
-
         docs_dir = _docs_dir_for_project(project, checkout_path)
         if docs_dir is not None:
             result["provenance"] = content_provenance(docs_dir.parent, path)
@@ -2555,8 +2545,6 @@ def _roadmap(
     ``checkout_path`` is accepted for a single project and follows the same
     worktree-routing contract as ``read_plan``.
     """
-
-    from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
 
     if max_paths < 1 or max_paths > 50:
         return {
@@ -2679,8 +2667,6 @@ def _roadmap(
             "projects": reports,
         }
         selected_view = view or "summary"
-        from reckon.mcp_views import ViewRequestError, error_response, roadmap_view
-
         try:
             return roadmap_view(
                 raw,
@@ -2726,8 +2712,6 @@ def _roadmap(
         )
         if view is None:
             return raw
-        from reckon.mcp_views import ViewRequestError, error_response, roadmap_view
-
         try:
             return roadmap_view(raw, view=view, cursor=cursor, limit=limit)
         except ViewRequestError as exc:
@@ -2769,11 +2753,6 @@ def _crew(
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
-    from reckon import budget as budget_module
-    from reckon import crew as crew_module
-    from reckon import flight as flight_module
-    from reckon import ledger as ledger_module
-
     if view not in (
         "summary",
         "flight",
@@ -2850,8 +2829,6 @@ def _crew(
                 **flight_module.flight_report(project, checkout_path=checkout_path),
             }
         if view == "live":
-            from reckon.crew.runs import project_watch_visibility
-
             runs = [
                 crew_module.classify_pointer(record)
                 for record in crew_module.list_live()
@@ -2928,8 +2905,6 @@ def _written_path(
     deterministically (e.g. ``git -C <dir> status`` in the right checkout).
     Never raises — returns None if the path cannot be resolved.
     """
-    from reckon._store import _resolve_html_file, state_path
-
     try:
         if slug in ("index", "project"):
             return str(state_path(project, slug, root))
@@ -2967,8 +2942,6 @@ def _audit(
     response unchanged.
     """
     if view is not None:
-        from reckon.mcp_views import ViewRequestError, audit_view, error_response
-
         raw = _audit(project, checkout_path)
         try:
             return audit_view(
@@ -2980,10 +2953,6 @@ def _audit(
             )
         except ViewRequestError as exc:
             return error_response(exc.code, exc.message, hint=exc.hint)
-
-    from reckon import _plan_html
-    from reckon.doccheck import audit_lifecycle, audit_links
-    from reckon.resources import ResourceCollision, identify_resource
 
     docs_dir = _docs_dir_for_project(project, checkout_path)
     if docs_dir is None:
@@ -3050,8 +3019,6 @@ def _audit(
             violations.append({"slug": slug, "errors": lines})
 
     findings: list[dict[str, Any]] = []
-    from reckon.project_state import audit_project_state
-
     project_state_findings = audit_project_state(docs_dir, project)
     if project_state_findings:
         for item in project_state_findings:
@@ -3234,8 +3201,6 @@ def _audit(
         pass
     # External (cross-project) refs: doccheck's per-file pass is corpus-local
     # by design, so qualified refs are resolved here, where mounts are known.
-    from reckon._schema import parse_plan_ref
-
     for artifact in plans:
         for field in ("depends_on", "blocks"):
             for ref in artifact.get(field) or []:
@@ -3265,8 +3230,6 @@ def _audit(
                     )
                 )
     findings.extend(_audit_sprint_findings(index_data, plans))
-    from reckon.roadmap import build_roadmap
-
     discovered = _discover_project(project, checkout_path)
     project_rows = index_data.get("projects") or []
     roadmap = build_roadmap(
