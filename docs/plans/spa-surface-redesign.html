@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076,ac3b103,9931ec9,4650658,ddb86b6,bee5f08,236de49">
-<meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/index.html,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_build.py,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html">
+<meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/sprint.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/_shared/foundation.css,docs/index.html,reckon/serve.py,reckon/_store.py,reckon/doccheck.py,tests/test_spa_composition.py,tests/spa_render_capture.mjs,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_spa_project_visibility.py,tests/test_spa_sprints_geometry.py,tests/test_shared_token_contrast.py,tests/test_serve_finished_runs.py,tests/test_plan_summary_bound.py,tests/test_build.py,skills/reckon-create/SKILL.md,skills/reckon-edit/SKILL.md,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html,design/canvas-layout-spec.md,docs/evidence/archive/spa-surface-redesign-landed.html,docs/figures/spa-surface-redesign/before/plans.png">
 <meta name="plan-impl" content="0.78">
 </head>
 <body>
@@ -842,6 +842,8 @@
     <span class="r-research-title"><a href="/home/ITER/mcintos/.config/reckon/crew/reports/spa-prototype-reuse-map.md">SPA prototype reuse map — eight of eight surfaces extend an existing implementation, none replaces one; ten of ten sub-surfaces and nine of nine outstanding ranks mapped, with four literal contradictions and two partial answers.</a></span></div>
 <div class="r-research" data-id="r-canvas" data-type="design" data-source="claude-design" data-added-by="reckon-ship" data-when="2026-08-25">
     <span class="r-research-title">Design canvas, imported at design/ — the annotated redesign carrying seven verbatim complaints beside seven redrawn surfaces, and the interactive prototype of the whole surface.</span></div>
+<div class="r-research" data-id="r-render-evidence" data-type="report" data-source="crew" data-added-by="reckon-ship" data-when="2026-08-25" data-url="/reckon/evidence/archive/spa-surface-redesign-landed">
+    <span class="r-research-title"><a href="/reckon/evidence/archive/spa-surface-redesign-landed">Served SPA rendering evidence — ten browser captures across five routes at two widths, fourteen defects each citing a selector and a computed value; the first instrument in this plan to catch a composition failure without a human looking.</a></span></div>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -991,6 +993,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-finished-runs-route-20260825T1212" data-who="reckon-ship" data-when="2026-08-25T12:12:00Z">
     <div class="r-comment-body"><p><strong>The record is now reachable from the browser, and it reads the ledger rather than reparsing it.</strong> <code>/crew/&lt;project&gt;/finished</code> and <code>/crew/&lt;project&gt;/finished/&lt;plan&gt;</code> call <code>ledger.runs</code> with the mounted repository root, preserving the committed record shape instead of teaching the server a second parser — which is the constraint that keeps this from becoming a competing authority over run history. Ordered newest first by <code>completed_at</code> with <code>dispatched_at</code> as the fallback. A valid plan with no completed runs returns HTTP 200 with an empty list rather than an error, because “nothing finished yet” is an answer and not a fault. Verified carrying <code>dispatched_at</code>, <code>completed_at</code>, node, section, gate and commits for two matching records while excluding an unrelated plan. Existing live routes unchanged. Commit <code>bee5f08</code>, full suite 2384 passed.</p><p>This was the single gap between the lead's question and its answer. The sprint drill-down that consumes it is next, behind the sprint surface's current owner.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-route-live-20260825T1221" data-who="reckon-ship" data-when="2026-08-25T12:21:00Z">
+    <div class="r-comment-body"><p><strong>The route is live and the record was already there.</strong> After the server restart, <code>GET /crew/reckon/finished/spa-surface-redesign</code> returns 36 completed runs for this plan alone, newest first, each with its completion stamp and gate verdict. Nothing was recorded to make that true &mdash; the answer to the lead's question was that the data had been accumulating all along behind a route that only served live pointers.</p><p>The projection gap the Crew card node reported was folded rather than left as prose: a card for a run in another project rendered worker-hours unavailable because <code>/crew</code> never emitted the field. Plan metadata is now read once per unique project and plan pair, so effort is numeric regardless of which project the browser has loaded. Commit <code>a58f9a0</code>, 8/8.</p></div>
 </div>
 </section>
 </main>
