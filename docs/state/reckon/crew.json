@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T15:30:50",
+  "updated": "2026-08-25T15:39:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -21082,9 +21082,195 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T132454668138-n-rendered-checks-share-one-harness",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-rendered-checks-share-one-harness",
+        "node_definition": {
+          "done_when": "a grep shows 0 test modules other than the harness itself launching a browser directly, and the three converted modules pass together with the composition tests across two consecutive runs",
+          "estimated_hours": 1.0,
+          "goal": "The three rendered test modules still carrying their own browser and server setup use the shared harness instead, so the profile lifecycle exists in one place",
+          "id": "n-rendered-checks-share-one-harness",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T132454668138-n-rendered-checks-share-one-harness/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/test_spa_reader_provenance.py",
+            "tests/test_spa_sprints_geometry.py",
+            "tests/test_spa_overview_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T13:24:58Z",
+        "completed_at": "2026-08-25T13:38:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 833,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 833,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "fad6bfa35ecd5a7b92ad0cedad8b4f49a37d9d85",
+        "commits": [
+          "4071c67"
+        ],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": 0,
+        "gate": "not-run",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T132454668138-n-rendered-checks-share-one-harness/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03804-4354-78d2-8cda-589df3a42ef1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 472320,
+            "cached_input_tokens_cumulative": 5944576,
+            "input_tokens": 429705,
+            "input_tokens_cumulative": 6139652,
+            "output_tokens": 9179,
+            "output_tokens_cumulative": 20008,
+            "reasoning_output_tokens": 4123,
+            "reasoning_output_tokens_cumulative": 7119
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T132539841711-n-north-star-contract-not-source-text",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-north-star-contract-not-source-text",
+        "node_definition": {
+          "done_when": "tests/test_build.py passes where it currently fails 1, the replacement is proven to still bite by failing when the north-star element is rendered unconditionally, and no assertion in the file matches a literal JSX expression from shell.jsx",
+          "estimated_hours": 0.75,
+          "goal": "The unlabelled-build assertion states the contract that a plan without a north star renders no north-star element, instead of grepping the shell source for a literal conditional expression",
+          "id": "n-north-star-contract-not-source-text",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T132539841711-n-north-star-contract-not-source-text/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_build.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-m",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T13:25:44Z",
+        "completed_at": "2026-08-25T13:31:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 341,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 341,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "fad6bfa35ecd5a7b92ad0cedad8b4f49a37d9d85",
+        "commits": [
+          "4071c67"
+        ],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": 0,
+        "gate": "not-run",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T132539841711-n-north-star-contract-not-source-text/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038cf-cb84-7f23-ba61-617cbb4c91b1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 226816,
+            "cached_input_tokens_cumulative": 1998592,
+            "input_tokens": 298675,
+            "input_tokens_cumulative": 2181167,
+            "output_tokens": 3279,
+            "output_tokens_cumulative": 11834,
+            "reasoning_output_tokens": 3656,
+            "reasoning_output_tokens_cumulative": 6308
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 393
+    "_version": 395
   }
 }
