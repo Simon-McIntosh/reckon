@@ -208,6 +208,7 @@ def _inspect_workspace(
     path: Path,
     integrated_into: str,
     claimed_by: Iterable[str],
+    shadow_record: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     dirty = _git(path, "status", "--porcelain").stdout.splitlines()
     head = _git(path, "rev-parse", "HEAD").stdout.strip()
@@ -225,6 +226,8 @@ def _inspect_workspace(
     claims = sorted(claimed_by)
     if claims:
         classification = "live-referenced"
+    elif shadow_record is not None and _shadow_patch_retained(shadow_record):
+        classification = "disposable"
     elif dirty:
         classification = "dirty"
     elif reachable:
@@ -238,21 +241,57 @@ def _inspect_workspace(
         "dirty": dirty,
         "integrated_into": integrated_into,
         "claimed_by_live_runs": claims,
+        "shadow_run_id": (
+            str(shadow_record.get("run_id") or "") if shadow_record else ""
+        ),
+        "shadow_patch": (
+            str(shadow_record.get("shadow_patch") or "") if shadow_record else ""
+        ),
     }
 
 
-def _ledgered_run_ids(repo: Path, project: str | None) -> set[str]:
+def _ledgered_records(repo: Path, project: str | None) -> list[dict[str, Any]]:
     projects = [project] if project else []
     if not projects:
         state_root = repo / "docs" / "state"
         if state_root.is_dir():
             projects = [path.name for path in state_root.iterdir() if path.is_dir()]
-    result: set[str] = set()
+    result: list[dict[str, Any]] = []
     for name in projects:
-        for record in ledger.runs(str(name), root=repo):
-            run_id = str(record.get("run_id") or "")
-            if run_id:
-                result.add(run_id)
+        result.extend(ledger.runs(str(name), root=repo))
+    return result
+
+
+def _ledgered_run_ids(repo: Path, project: str | None) -> set[str]:
+    return {
+        str(record.get("run_id") or "")
+        for record in _ledgered_records(repo, project)
+        if record.get("run_id")
+    }
+
+
+def _shadow_patch_retained(record: Mapping[str, Any]) -> bool:
+    run_id = str(record.get("run_id") or "")
+    artifact = Path(str(record.get("shadow_patch") or ""))
+    expected = runs_dir() / run_id / "shadow.patch"
+    return bool(run_id) and artifact.resolve() == expected.resolve() and artifact.is_file()
+
+
+def _shadow_worktree_records(
+    repo: Path, project: str | None
+) -> dict[Path, dict[str, Any]]:
+    roots = _workspace_roots(repo)
+    result: dict[Path, dict[str, Any]] = {}
+    for record in _ledgered_records(repo, project):
+        lineage = record.get("lineage")
+        if not isinstance(lineage, Mapping) or lineage.get("kind") != "shadow":
+            continue
+        primary_run_id = str(lineage.get("primary_run_id") or "")
+        node = str(record.get("node") or "")
+        if not primary_run_id or not node:
+            continue
+        for root in roots:
+            result[(root / f"shadow-{primary_run_id}" / node).resolve()] = record
     return result
 
 
@@ -272,6 +311,7 @@ def garbage_collect(
     _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
     roots = _workspace_roots(repo_root)
     claims = _live_worktree_claims()
+    shadow_records = _shadow_worktree_records(repo_root, project)
     candidates = [
         path
         for path in _registered_worktrees(repo_root)
@@ -283,13 +323,14 @@ def garbage_collect(
             path,
             integrated_into,
             claims.get(path.resolve(), ()),
+            shadow_records.get(path.resolve()),
         )
         for path in sorted(candidates)
     ]
     removed: list[str] = []
     if apply:
         for item in worktrees:
-            if item["classification"] != "integrated":
+            if item["classification"] not in ("integrated", "disposable"):
                 continue
             path = Path(item["path"])
             current_claims = _live_worktree_claims().get(path.resolve(), [])
@@ -297,11 +338,22 @@ def garbage_collect(
                 item["classification"] = "live-referenced"
                 item["claimed_by_live_runs"] = sorted(current_claims)
                 continue
-            _git(repo_root, "worktree", "remove", str(path))
+            if item["classification"] == "disposable":
+                shadow_record = shadow_records.get(path.resolve())
+                if shadow_record is None or not _shadow_patch_retained(shadow_record):
+                    item["classification"] = "unintegrated"
+                    continue
+                _git(repo_root, "worktree", "remove", "--force", str(path))
+            else:
+                _git(repo_root, "worktree", "remove", str(path))
             removed.append(str(path))
         _git(repo_root, "worktree", "prune")
 
-    ledgered = _ledgered_run_ids(repo_root, project)
+    ledgered = {
+        str(record.get("run_id") or "")
+        for record in _ledgered_records(repo_root, project)
+        if record.get("run_id")
+    }
     pointer_reports: list[dict[str, Any]] = []
     for record in list_live():
         run_id = str(record.get("run_id") or "")
@@ -347,7 +399,13 @@ def garbage_collect(
 
     counts = {
         name: sum(item["classification"] == name for item in worktrees)
-        for name in ("integrated", "dirty", "unintegrated", "live-referenced")
+        for name in (
+            "integrated",
+            "disposable",
+            "dirty",
+            "unintegrated",
+            "live-referenced",
+        )
     }
     return {
         "dry_run": not apply,
