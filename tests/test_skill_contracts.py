@@ -613,6 +613,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--no-watch",
         },
         ("crew", "drain"): {"--project", "--leave"},
+        ("crew", "follow"): {"--project"},
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},

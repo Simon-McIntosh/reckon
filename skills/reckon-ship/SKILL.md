@@ -558,7 +558,10 @@ observed:
 
 If dispatch reports `watcher-required`, launch exactly its `arming_line` with
 the host's background mechanism and retry. Do not launch another when
-`watcher_live` is true. The watcher is one per project, not one per run: one
+`watcher_live` is true; a session that is not the seat holder attaches
+read-only with `reckon crew follow --project <project>`, which streams the same
+transitions without claiming the seat.
+The watcher is one per project, not one per run: one
 fleet event owes one wake-up however many nodes were dispatched. A caller that
 deliberately passes `--no-watch` owns synchronous observation and leaves a
 durable `watch_override` on the run.
