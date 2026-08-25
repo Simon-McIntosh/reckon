@@ -54,7 +54,7 @@
 .r-list-filter {
   display: grid;
   flex: 1;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 25px;
   align-items: center;
   gap: 5px;
   min-width: 0;
@@ -62,6 +62,12 @@
   font: 10px var(--mono);
   letter-spacing: .04em;
   text-transform: uppercase;
+}
+
+.r-list-filter > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .r-list-filter select {
@@ -140,11 +146,12 @@
 
 .r-plans-view .r-row .meta {
   align-items: center;
-  flex-wrap: nowrap;
-  height: 16px;
+  flex-wrap: wrap;
+  min-height: 16px;
   line-height: 16px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
+  row-gap: 2px;
 }
 
 .r-sort-n {
@@ -229,6 +236,14 @@
   margin: 0;
   padding: 0 4px;
   line-height: 14px;
+}
+
+.r-reader-empty-state {
+  color: var(--muted);
+}
+
+.r-reader-empty-state h2 {
+  color: var(--ink);
 }
 
 .r-row .dot.transition {

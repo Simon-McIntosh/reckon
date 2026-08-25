@@ -234,6 +234,14 @@ function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
+  if (!slug) {
+    return (
+      <div className="r-page r-reader-empty-state">
+        <h2>Select a plan to read</h2>
+        <p>Choose a plan from the list to open its document and related resources.</p>
+      </div>
+    );
+  }
   const PG = M.plans[slug];
   if (!PG) return <div className="r-page">Artifact "{slug}" not found.</div>;
 
