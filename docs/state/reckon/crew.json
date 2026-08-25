@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T10:38:47",
+  "updated": "2026-08-25T10:41:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -17073,9 +17073,107 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260825T082636207094-project-visibility-as-a-setting",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a713",
+        "node": "project-visibility-as-a-setting",
+        "node_definition": {
+          "done_when": "Read design/canvas-layout-spec.md for type scale and spacing, but note the canvas topbar was drawn against a three-project fixture and cannot hold twelve, so this departs from it deliberately on the lead's instruction. FIVE PARTS, one node because the whole point is that one preference propagates \u2014 splitting this across files is what produced the r-3col defect earlier today, where a container's rules were retired in one scope and the container survived in another. ONE: the topbar becomes a single row \u2014 brand, project control, tabs, search, settings, snapshot receipt \u2014 with the tabs left-aligned after the project control. TWO: the Overview tab is removed. The brand button already calls navProject(null) titled All projects and renders the fleet page, and CockpitBody renders the same cross-project content, so they are two doors to one room; fold anything CockpitBody shows that the fleet view does not into the fleet view rather than dropping it, and leave the tabs as the four within-project views Plans, Sprints, Graph and Crew. THREE: the project control shows the current project with its live dot and opens a dropdown listing only VISIBLE projects, each with its plan count and live count, plus a Configure entry at the foot. FOUR: Configure opens the visibility panel that lives in the settings menu in docs/ui/_shared.jsx beside theme and density, which already own exactly this class of cross-cutting display preference \u2014 the dropdown entry is a shortcut that opens that same panel and must not be a second implementation of it. The panel lists every mounted project with a visible or hidden toggle. FIVE: visibility propagates. It is read today only by shell.jsx for the chip strip; crew.jsx and the fleet strip never see it. Every fleet-wide display must respect it: the Crew run list, the Overview fleet statistics, and any other cross-project aggregate. Distinguish mounted from shown where a count is displayed, since twelve mounted and three shown are different facts. CRITICAL AND SUBTLE: hidden means excluded from aggregates and from the selector shortcut list; it must never mean unreachable. Any mounted project stays reachable through Configure and through the command palette \u2014 a project being hidden is why nova could not be selected, and that bug is a display preference wrongly used as a routing filter. A test asserts the topbar renders one row containing the tabs with no Overview tab, that the dropdown lists visible projects only and offers Configure, that Configure and the settings menu render the same panel rather than two, that hiding a project removes it from the Crew list and the fleet statistics while leaving it selectable through the palette, and that a count displaying mounted and shown reports both. The existing suite passes unchanged.",
+          "estimated_hours": 5.0,
+          "goal": "Make project visibility one fleet-wide setting that every surface respects, and fit the topbar on one row",
+          "id": "project-visibility-as-a-setting",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T082636207094-project-visibility-as-a-setting/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/_shared.jsx",
+            "docs/ui/crew.jsx",
+            "docs/ui/topbar.css",
+            "docs/ui/overview.css",
+            "docs/ui/crew.css",
+            "tests/test_spa_project_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T08:26:45Z",
+        "completed_at": "2026-08-25T08:41:12Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 867,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 867,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "683cffdcaab49528ddb1a8c360deddae197b7576",
+        "commits": [
+          "b08e083"
+        ],
+        "changed_lines": {
+          "added": 321,
+          "removed": 126,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T082636207094-project-visibility-as-a-setting/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03807-6e27-7e21-9217-a3e2d90d0e3f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6332160,
+            "cached_input_tokens_cumulative": 6332160,
+            "input_tokens": 6510630,
+            "input_tokens_cumulative": 6510630,
+            "output_tokens": 24277,
+            "output_tokens_cumulative": 24277,
+            "reasoning_output_tokens": 4786,
+            "reasoning_output_tokens_cumulative": 4786
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 329
+    "_version": 330
   }
 }
