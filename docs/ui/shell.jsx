@@ -1,6 +1,6 @@
 // Reckon shell — top bar + plan workspace.
 // Top bar: brand, search, view tabs and settings.
-// Body: filters · plans list · reader · attachments.
+// Body: plans list · reader · attachments.
 
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
@@ -219,7 +219,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           <button
             className="icon-btn"
             onClick={onToggleFilters}
-            title={`${filtersHidden ? "Show" : "Hide"} filters + list · ⌘B`}
+            title={`${filtersHidden ? "Show" : "Hide"} plan list · ⌘B`}
             aria-pressed={!filtersHidden}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -239,7 +239,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
   );
 }
 
-// ─── Filters column ─────────────────────────────────────────────────────
+// ─── Plan-list filters ──────────────────────────────────────────────────
 
 function readableFilterLabel(value) {
   return String(value || "")
@@ -247,17 +247,14 @@ function readableFilterLabel(value) {
     .replace(/\b\w/g, character => character.toUpperCase());
 }
 
-function FiltersCol({ filters, setFilters }) {
+function ListFilterControls({ filters, setFilters, onClearFilters }) {
   const M = window.STATE;
   const sprints = M.sprints || [];
   const northStars = M.north_stars || [];
 
-  const toggle = (group, value) => {
+  const select = (group, value) => {
     setFilters(f => {
-      // Single-select per group: clicking the same value clears it; another value replaces.
-      const cur = (f[group] || []);
-      if (cur.includes(value)) return { ...f, [group]: [] };
-      return { ...f, [group]: [value] };
+      return { ...f, [group]: value ? [value] : [] };
     });
   };
 
@@ -273,62 +270,32 @@ function FiltersCol({ filters, setFilters }) {
   const statusList = [...allStatuses].sort((a, b) => (statusOrder.indexOf(a) + 99) - (statusOrder.indexOf(b) + 99));
 
   return (
-    <aside className="r-filters" aria-label="Plan filters">
-      <div className="r-filter-group" aria-label="Status filters">
-        {statusList.map(s => {
-          const n = actionable.filter(p => (p.effective_status || p.status) === s).length;
-          const on = (filters.status || []).includes(s);
-          if (n === 0) return null;
-          return (
-            <button type="button" key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)} aria-pressed={on} title={s}>
-              <span className={`dot ${s}`} aria-hidden="true"></span>
-              <span className="r-chip-label">{readableFilterLabel(s)}</span>
-              <span className="n">{n}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="r-filter-divider" aria-hidden="true"></div>
-
+    <div className="r-list-filter-controls" aria-label="Plan filters">
+      <label className="r-list-filter">
+        <span>Status</span>
+        <select aria-label="Filter plans by status" value={(filters.status || [])[0] || ""} onChange={event => select("status", event.target.value)}>
+          <option value="">All · {actionable.length}</option>
+          {statusList.map(status => {
+            const count = actionable.filter(plan => (plan.effective_status || plan.status) === status).length;
+            if (count === 0) return null;
+            return <option key={status} value={status} data-count={count}>{readableFilterLabel(status)} · {count}</option>;
+          })}
+        </select>
+      </label>
       {sprintsWithPlans.length > 0 && (
-        <div className="r-filter-group r-sprint-filters" aria-label="Sprint filters">
-          {sprintsWithPlans.map(s => {
-            const n = actionable.filter(p => p.sprint === s.id).length;
-            const on = (filters.sprint || []).includes(s.id);
-            return (
-              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={`${s.id}${s.theme ? ` · ${s.theme}` : ""}`}>
-                <span className="dot sprint" aria-hidden="true"></span>
-                <span className="r-chip-label">{s.id}{s.theme ? ` · ${s.theme}` : ""}</span>
-                <span className="n">{n}</span>
-              </button>
-            );
-          })}
-        </div>
+        <label className="r-list-filter">
+          <span>Sprint</span>
+          <select aria-label="Filter plans by sprint" value={(filters.sprint || [])[0] || ""} onChange={event => select("sprint", event.target.value)}>
+            <option value="">All · {actionable.filter(plan => plan.sprint).length}</option>
+            {sprintsWithPlans.map(sprint => {
+              const count = actionable.filter(plan => plan.sprint === sprint.id).length;
+              return <option key={sprint.id} value={sprint.id} data-count={count}>{sprint.id}{sprint.theme ? ` · ${sprint.theme}` : ""} · {count}</option>;
+            })}
+          </select>
+        </label>
       )}
-
-      {northStars.length > 0 && (
-        <div className="r-filter-group" aria-label="North stars">
-          {northStars.map(direction => {
-            const n = actionable.filter(p => p.north_star === direction.id).length;
-            const on = (filters.north_star || []).includes(direction.id);
-            return (
-              <button type="button" key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} aria-pressed={on} title={`${direction.name} · ${direction.statement}`}>
-                <span className="dot north-star" aria-hidden="true"></span>
-                <span className="n">{n}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {anyActive && (
-        <button className="r-clear-top" onClick={() => setFilters({})}>
-          × clear filters
-        </button>
-      )}
-
-    </aside>
+      {anyActive && <button type="button" className="r-list-filter-clear" onClick={onClearFilters} aria-label="Clear plan filters">×</button>}
+    </div>
   );
 }
 
@@ -458,7 +425,7 @@ function selectPlanSection(event, onSelectPlan, slug, sectionId) {
   window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ block: "start" }), 0);
 }
 
-function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext, onSetContext }) {
+function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, setFilters, onClearFilters, onClearContext, onSetContext }) {
   const sorted = React.useMemo(() => sortItems(items, sortBy, sortDir), [items, sortBy, sortDir]);
   const contextSlug = filters.context || null;
 
@@ -501,6 +468,7 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
           {sortDir === "asc" ? <SortAscIcon /> : <SortDescIcon />}
         </button>
         <button type="button" className="r-sort-more" aria-label="More plan list options" disabled>⋯</button>
+        <ListFilterControls filters={filters} setFilters={setFilters} onClearFilters={onClearFilters} />
       </div>
 
       {/* Context / Related filter — explicit opt-in, not auto-applied */}
@@ -1299,7 +1267,7 @@ function App() {
       }
       if (e.key === "b" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (route.view === "plan") setFiltersHidden(c => !c); // Plans only — hides filter + list cols
+        if (route.view === "plan") setFiltersHidden(c => !c); // Plans only — hides the plan list.
         return;
       }
       const canRead = route.view === "plan" && !!route.slug;
@@ -1347,8 +1315,7 @@ function App() {
         />}
       {canvasView === "plan" ? (
         <div className={`r-canvas-view r-plans-view ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`}>
-          {!readingMode && <FiltersCol filters={filters} setFilters={setFilters} />}
-          {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
+          {!readingMode && <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} setFilters={setFilters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
           <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
             {!readingMode && <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
             <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>

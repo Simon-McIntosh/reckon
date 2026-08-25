@@ -5,7 +5,6 @@ import re
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
 TOPBAR = ROOT / "docs" / "ui" / "topbar.css"
@@ -68,10 +67,11 @@ def test_each_route_selects_exactly_one_canvas_view() -> None:
     assert '{canvasView === "plan" ? (' in app
     for view in ("cockpit", "sprint", "graph", "crew"):
         assert f'canvasView === "{view}" &&' in app
+    assert ".r-3col.plans-mode" not in (ROOT / "docs/ui/plans.css").read_text()
 
 
-def test_filter_chips_render_visible_label_and_count() -> None:
-    filters = _function_source("FiltersCol")
+def test_list_header_filters_render_labels_and_counts() -> None:
+    filters = _function_source("ListFilterControls")
     labels = _evaluate(
         ["readableFilterLabel"],
         '["active", "in-progress", "on-hold"].map(readableFilterLabel)',
@@ -80,32 +80,31 @@ def test_filter_chips_render_visible_label_and_count() -> None:
     assert labels == ["Active", "In Progress", "On Hold"]
 
     status = re.search(
-        r'<button type="button" key=\{s\}.*?title=\{s\}>(.*?)</button>',
+        r'<select aria-label="Filter plans by status".*?>(.*?)</select>',
         filters,
         re.DOTALL,
     )
     assert status
-    assert status.group(1).count("<span") == 3
-    assert "className={`dot ${s}`}" in status.group(1)
-    assert (
-        '<span className="r-chip-label">{readableFilterLabel(s)}</span>'
-        in status.group(1)
-    )
-    assert 'className="n"' in status.group(1)
+    assert '<option value="">All · {actionable.length}</option>' in status.group(1)
+    assert "{readableFilterLabel(status)} · {count}" in status.group(1)
+    assert "data-count={count}" in status.group(1)
 
     sprint = re.search(
-        r'<button type="button" key=\{s\.id\}.*?title=.*?>(.*?)</button>',
+        r'<select aria-label="Filter plans by sprint".*?>(.*?)</select>',
         filters,
         re.DOTALL,
     )
     assert sprint
-    assert sprint.group(1).count("<span") == 3
-    assert 'className="dot sprint"' in sprint.group(1)
     assert (
-        '<span className="r-chip-label">{s.id}{s.theme ? ` · ${s.theme}` : ""}</span>'
+        '{sprint.id}{sprint.theme ? ` · ${sprint.theme}` : ""} · {count}'
         in sprint.group(1)
     )
-    assert 'className="n"' in sprint.group(1)
+    assert "data-count={count}" in sprint.group(1)
+    assert '<button type="button" className="r-list-filter-clear"' in filters
+
+    listing = _function_source("ListCol")
+    assert "<ListFilterControls" in listing
+    assert "FiltersCol" not in SHELL.read_text()
 
 
 def test_topbar_contains_tabs_in_its_single_row() -> None:

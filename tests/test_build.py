@@ -153,22 +153,15 @@ def _rendered_north_star_state(tmp_path: Path, docs_dir: Path) -> dict:
         return spa.run_probe(
             """
           (() => {
-            const group = document.querySelector('[aria-label="North stars"]');
             const badge = document.querySelector('.r-north-star-badge');
             return {
-              filterTitles: group
-                ? [...group.querySelectorAll('button')].map(button => button.title)
-                : [],
-              filterCounts: group
-                ? [...group.querySelectorAll('.n')].map(count => count.textContent.trim())
-                : [],
               badgeName: badge?.querySelector('.v')?.textContent.trim() || null,
               badgeStatement: badge?.title || null,
             };
           })()
             """,
             viewport=(1374, 900),
-            ready_expression="Boolean(document.querySelector('.r-filters'))",
+            ready_expression="Boolean(document.querySelector('.r-list-body'))",
         )
 
 
@@ -433,11 +426,6 @@ def test_build_carries_directions_into_the_project_surfaces(tmp_path):
     assert data["north_stars"] == directions
     assert alpha["north_star"] == "reliable-delivery"
     assert rendered == {
-        "filterTitles": [
-            "Reliable delivery · Every release remains reproducible and observable.",
-            "Clear work · Every active plan states what it advances.",
-        ],
-        "filterCounts": ["1", "0"],
         "badgeName": "Reliable delivery",
         "badgeStatement": "Every release remains reproducible and observable.",
     }
@@ -454,8 +442,6 @@ def test_build_without_directions_preserves_the_unlabelled_shape(
     assert "north_stars" not in data
     assert "north_star" not in alpha
     assert rendered == {
-        "filterTitles": [],
-        "filterCounts": [],
         "badgeName": None,
         "badgeStatement": None,
     }

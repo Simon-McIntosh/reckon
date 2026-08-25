@@ -3,7 +3,7 @@
 .r-canvas-view {
   display: flex;
   flex: 1;
-  min-width: 1374px;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -18,68 +18,16 @@
   background: var(--bg);
 }
 
-.r-plans-view.filters-collapsed > .r-filters,
 .r-plans-view.filters-collapsed > .r-list {
   display: none;
 }
 
-.r-plans-view > .r-filters {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 14px;
-  width: 192px;
-  min-height: 0;
-  padding: 10px 8px;
-  border-right: 1px solid var(--line);
-  overflow: auto;
-  background: var(--bg-2);
-  box-sizing: border-box;
-}
-
-.r-plans-view .r-filter-group {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  margin: 0;
-}
-
-.r-plans-view .r-sprint-filters {
-  gap: 3px;
-}
-
-.r-plans-view .r-chip {
-  justify-content: flex-start;
-  width: 100%;
-  min-height: 0;
-  margin: 0;
-  padding: 5px 7px;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.r-plans-view .r-chip .n {
-  flex: none;
-  margin-left: auto;
-}
-
-.r-plans-view .r-chip-label {
-  min-width: 0;
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-}
-
 .r-plans-view > .r-list {
   display: flex;
-  flex: none;
+  flex: 0 0 clamp(300px, 30%, 480px);
   flex-direction: column;
-  width: 390px;
+  width: clamp(300px, 30%, 480px);
+  min-width: 0;
   min-height: 0;
   border-right: 1px solid var(--line);
   overflow: hidden;
@@ -89,10 +37,57 @@
 .r-plans-view .r-sort-bar {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
+}
+
+.r-list-filter-controls {
+  display: flex;
+  flex: 1 0 100%;
+  gap: 6px;
+  min-width: 0;
+}
+
+.r-list-filter {
+  display: grid;
+  flex: 1;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font: 10px var(--mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.r-list-filter select {
+  width: 100%;
+  min-width: 0;
+  height: 25px;
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font: 10.5px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.r-list-filter-clear {
+  flex: none;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
 }
 
 .r-plans-view .r-reader-with-attachments {
@@ -169,123 +164,6 @@
   line-height: 16px;
   white-space: nowrap;
   overflow: hidden;
-}
-
-.r-chip .dot.sprint,
-.r-chip .dot.north-star {
-  background: var(--accent);
-}
-
-.r-3col.plans-mode {
-  display: flex;
-  flex: 1;
-  min-width: 1374px;
-  min-height: 0;
-}
-
-.r-3col.plans-mode.filters-collapsed > .r-filters,
-.r-3col.plans-mode.filters-collapsed > .r-list {
-  display: none;
-}
-
-.r-3col.overview-mode {
-  display: block;
-}
-
-.r-3col.plans-mode > .r-filters {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 14px;
-  width: 192px;
-  min-height: 0;
-  padding: 10px 8px;
-  border-right: 1px solid var(--line);
-  border-bottom: 0;
-  overflow: auto;
-  background: var(--bg-2);
-  box-sizing: border-box;
-}
-
-.r-3col.plans-mode .r-filter-group {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  margin: 0;
-}
-
-.r-3col.plans-mode .r-sprint-filters {
-  gap: 3px;
-}
-
-.r-filter-divider {
-  flex: none;
-  width: 100%;
-  height: 1px;
-  background: var(--line);
-}
-
-.r-3col.plans-mode .r-chip {
-  justify-content: flex-start;
-  width: 100%;
-  min-height: 0;
-  margin: 0;
-  padding: 5px 7px;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.r-3col.plans-mode .r-chip .n {
-  flex: none;
-  margin-left: auto;
-}
-
-.r-3col.plans-mode .r-chip-label {
-  min-width: 0;
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-}
-
-.r-3col.plans-mode .r-clear-top {
-  flex: none;
-  width: 100%;
-  margin-top: auto;
-  white-space: normal;
-}
-
-.r-3col.plans-mode > .r-list {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: 390px;
-  min-height: 0;
-  border-right: 1px solid var(--line);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.r-3col.plans-mode > .r-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.r-3col.plans-mode .r-sort-bar {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
 }
 
 .r-sort-n {
@@ -379,69 +257,6 @@
 .r-row .sig {
   border: 0;
   cursor: pointer;
-}
-
-.r-3col.plans-mode .r-reader-with-attachments {
-  display: flex;
-  flex: 1;
-  align-items: stretch;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.r-3col.plans-mode .r-reader-with-attachments > .r-body {
-  flex: 1;
-  min-width: 300px;
-  max-width: none;
-  padding: 22px 26px 34px;
-  overflow: auto;
-}
-
-.r-3col.plans-mode .r-attachment-rail {
-  position: static;
-  flex: none;
-  align-self: stretch;
-  width: 300px;
-  max-height: none;
-  padding: 16px 14px;
-  border-left: 1px solid var(--line);
-  overflow: auto;
-  box-sizing: border-box;
-}
-
-.r-3col.plans-mode .r-attachment-rail:has(> .r-attachment-empty) {
-  align-self: flex-start;
-  width: 150px;
-  max-height: 72px;
-  overflow: hidden;
-}
-
-.r-3col.plans-mode .r-reader-with-attachments > .r-body h2 {
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -.015em;
-}
-
-.r-3col.plans-mode .r-row .meta,
-.r-3col.plans-mode .r-reader-with-attachments .meta {
-  font-family: var(--mono);
-  font-size: 11.5px;
-}
-
-.r-3col.plans-mode .r-row .t {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.r-3col.plans-mode .r-row .meta {
-  align-items: center;
-  flex-wrap: nowrap;
-  height: 16px;
-  line-height: 16px;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 .r-attachment-heading,

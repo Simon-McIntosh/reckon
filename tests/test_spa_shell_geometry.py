@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).parents[1]
 UI_ROOT = REPO_ROOT / "docs" / "ui"
 
@@ -26,52 +25,21 @@ def test_shell_uses_the_canvas_root_geometry():
         "display": "flex",
         "flex-direction": "column",
         "height": "100vh",
-        "min-width": "1374px",
-        "overflow-x": "auto",
+        "min-width": "0",
+        "overflow-x": "hidden",
         "overflow-y": "hidden",
     }
 
 
-def test_each_view_and_plan_column_uses_the_canvas_flex_geometry():
+def test_shell_has_one_fluid_view_owner_and_no_retired_columns():
     source = (UI_ROOT / "styles.css").read_text()
+    plans = (UI_ROOT / "plans.css").read_text()
 
-    assert _declarations(source, ".r-app > div.r-3col") == {
-        "display": "flex",
-        "flex": "1",
-        "min-height": "0",
-        "min-width": "1374px",
-    }
     assert _declarations(source, ".r-app > .r-topbar") == {"flex": "none"}
-    assert _declarations(source, ".r-app > div.r-3col > .r-filters") == {
-        "display": "flex",
-        "flex-direction": "column",
-        "flex": "none",
-        "gap": "14px",
-        "overflow": "auto",
-        "padding": "10px 8px",
-        "width": "64px",
-        "border-right": "1px solid var(--line)",
-        "background": "var(--bg-2)",
-    }
-    assert _declarations(source, ".r-app > div.r-3col > .r-list") == {
-        "display": "flex",
-        "flex-direction": "column",
-        "flex": "none",
-        "min-height": "0",
-        "overflow-y": "auto",
-        "width": "390px",
-        "border-right": "1px solid var(--line)",
-        "background": "var(--bg)",
-    }
-    assert _declarations(source, ".r-app > div.r-3col > .r-content") == {
-        "display": "flex",
-        "flex-direction": "column",
-        "flex": "1",
-        "min-width": "0",
-        "min-height": "0",
-        "overflow": "hidden",
-        "background": "var(--bg)",
-    }
+    assert ".r-app > div.r-3col" not in source
+    assert ".r-filters" not in source
+    assert ".r-3col.plans-mode" not in plans
+    assert ".r-filters" not in plans
 
 
 def test_retired_grid_and_collapse_rules_are_absent():
@@ -91,6 +59,17 @@ def test_retired_grid_and_collapse_rules_are_absent():
 
     assert "--sb-width" not in base
     assert not re.search(r"\.r-app\s*\{", base)
+
+
+def test_stylesheets_have_no_fixed_canvas_width() -> None:
+    declarations = {
+        path.relative_to(REPO_ROOT): line
+        for path in (REPO_ROOT / "docs").rglob("*.css")
+        for line in path.read_text().splitlines()
+        if "1374px" in line
+    }
+
+    assert declarations == {}
 
 
 def test_shell_styles_do_not_carry_version_label_comments():

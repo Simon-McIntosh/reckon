@@ -9,9 +9,7 @@ from tests.spa_browser_harness import (
     BROWSER_NAMES,
     installed_browser,
     served_spa,
-    temporary_browser_profile,
 )
-from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
@@ -22,7 +20,7 @@ TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
 def _function_source(name: str) -> str:
     source = SHELL.read_text()
     start = source.index(f"function {name}(")
-    brace = source.index("{", start)
+    brace = source.index(") {", start) + 2
     depth = 0
     for index in range(brace, len(source)):
         if source[index] == "{":
@@ -62,9 +60,8 @@ def _assert_declarations(actual: dict[str, str], expected: dict[str, str]) -> No
     assert actual.items() >= expected.items()
 
 
-def test_plan_workspace_gives_labels_room_and_preserves_other_column_widths() -> None:
+def test_plan_workspace_uses_a_fluid_clamped_index_and_reader() -> None:
     workspace = _declarations(PLANS_CSS, ".r-canvas-view")
-    filters = _declarations(PLANS_CSS, ".r-plans-view > .r-filters")
     listing = _declarations(PLANS_CSS, ".r-plans-view > .r-list")
     content = _declarations(PLANS_CSS, ".r-canvas-view > .r-content")
     reader = _declarations(
@@ -78,25 +75,15 @@ def test_plan_workspace_gives_labels_room_and_preserves_other_column_widths() ->
             "display": "flex",
             "flex": "1",
             "min-height": "0",
-            "min-width": "1374px",
-        },
-    )
-    _assert_declarations(
-        filters,
-        {
-            "width": "192px",
-            "flex": "none",
-            "padding": "10px 8px",
-            "border-right": "1px solid var(--line)",
-            "gap": "14px",
-            "overflow": "auto",
+            "min-width": "0",
         },
     )
     _assert_declarations(
         listing,
         {
-            "width": "390px",
-            "flex": "none",
+            "width": "clamp(300px, 30%, 480px)",
+            "flex": "0 0 clamp(300px, 30%, 480px)",
+            "min-width": "0",
             "border-right": "1px solid var(--line)",
         },
     )
@@ -120,38 +107,54 @@ def test_plan_workspace_gives_labels_room_and_preserves_other_column_widths() ->
     )
 
 
-def test_filter_and_list_interior_geometry_matches_the_canvas() -> None:
-    statuses = _declarations(PLANS_CSS, ".r-3col.plans-mode .r-filter-group")
-    sprints = _declarations(PLANS_CSS, ".r-3col.plans-mode .r-sprint-filters")
-    divider = _declarations(PLANS_CSS, ".r-filter-divider")
-    header = _declarations(PLANS_CSS, ".r-3col.plans-mode .r-sort-bar")
+def test_filter_controls_share_the_plan_list_header() -> None:
+    header = _declarations(PLANS_CSS, ".r-plans-view .r-sort-bar")
+    controls = _declarations(PLANS_CSS, ".r-list-filter-controls")
+    filter_control = _declarations(PLANS_CSS, ".r-list-filter")
+    select = _declarations(PLANS_CSS, ".r-list-filter select")
     square_buttons = _declarations(PLANS_CSS, ".r-sort-dir,\n.r-sort-more")
     body = _declarations(PLANS_CSS, ".r-list-body")
 
-    assert statuses["gap"] == "4px"
-    assert sprints["gap"] == "3px"
-    assert divider["height"] == "1px"
     _assert_declarations(
         header,
         {
             "display": "flex",
+            "flex-wrap": "wrap",
             "gap": "8px",
             "padding": "10px 12px",
             "border-bottom": "1px solid var(--line)",
             "flex": "none",
         },
     )
+    _assert_declarations(
+        controls,
+        {"display": "flex", "flex": "1 0 100%", "gap": "6px", "min-width": "0"},
+    )
+    _assert_declarations(
+        filter_control, {"display": "grid", "flex": "1", "min-width": "0"}
+    )
+    _assert_declarations(select, {"width": "100%", "min-width": "0", "height": "25px"})
     _assert_declarations(square_buttons, {"width": "25px", "height": "25px"})
     _assert_declarations(body, {"flex": "1", "overflow": "auto"})
 
+    shell = SHELL.read_text()
+    listing = _function_source("ListCol")
+    filters = _function_source("ListFilterControls")
+    assert "FiltersCol" not in shell
+    assert 'className="r-filters"' not in shell
+    assert "<ListFilterControls" in listing
+    assert 'aria-label="Filter plans by status"' in filters
+    assert 'aria-label="Filter plans by sprint"' in filters
+    assert "data-count={count}" in filters
 
-def test_reader_typography_and_topbar_hold_the_declared_geometry() -> None:
+
+def test_reader_typography_is_preserved_without_a_width_floor() -> None:
     heading = _declarations(
-        PLANS_CSS, ".r-3col.plans-mode .r-reader-with-attachments > .r-body h2"
+        PLANS_CSS, ".r-plans-view .r-reader-with-attachments > .r-body h2"
     )
     metadata = _declarations(
         PLANS_CSS,
-        ".r-3col.plans-mode .r-row .meta,\n.r-3col.plans-mode .r-reader-with-attachments .meta",
+        ".r-plans-view .r-row .meta,\n.r-plans-view .r-reader-with-attachments .meta",
     )
     topbar = _declarations(TOPBAR_CSS, ".r-topbar")
 
@@ -170,11 +173,119 @@ def test_reader_typography_and_topbar_hold_the_declared_geometry() -> None:
             "font-size": "11.5px",
         },
     )
-    assert topbar["min-width"] == "1374px"
+    assert "min-width" not in topbar
 
     shell = SHELL.read_text()
     assert 'className="r-sort-more"' in shell
     assert 'className="r-attachment-empty"' in shell
+
+
+@pytest.mark.parametrize(
+    ("viewport_width", "expected_index_width"),
+    [(1280, 384), (1440, 432), (1920, 480)],
+)
+def test_rendered_plan_workspace_fits_the_window_and_clamps_the_index(
+    tmp_path: Path, viewport_width: int, expected_index_width: int
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip(
+            "rendered plan workspace check requires an installed browser; tried "
+            + ", ".join(BROWSER_NAMES)
+        )
+
+    probe = r"""(() => {
+      const root = document.documentElement;
+      const listing = document.querySelector(".r-plans-view > .r-list");
+      const visible = [...document.body.querySelectorAll("*")].filter(element => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      });
+      const overflow = visible
+        .map(element => ({
+          selector: element.className || element.tagName,
+          left: element.getBoundingClientRect().left,
+          right: element.getBoundingClientRect().right,
+        }))
+        .filter(row => row.left < -1 || row.right > root.clientWidth + 1);
+      return {
+        clientWidth: root.clientWidth,
+        scrollWidth: root.scrollWidth,
+        indexWidth: listing.getBoundingClientRect().width,
+        overflow,
+      };
+    })()"""
+
+    with served_spa(tmp_path, browser, route="#plans") as context:
+        geometry = context.run_probe(
+            probe,
+            viewport=(viewport_width, 900),
+            ready_expression='Boolean(document.querySelector(".r-list-body > .r-row"))',
+        )
+
+    assert geometry["scrollWidth"] == geometry["clientWidth"], geometry
+    assert geometry["indexWidth"] == pytest.approx(expected_index_width, abs=3), (
+        geometry
+    )
+    assert geometry["overflow"] == [], geometry
+
+
+def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
+    tmp_path: Path,
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip(
+            "rendered plan-filter check requires an installed browser; tried "
+            + ", ".join(BROWSER_NAMES)
+        )
+
+    probe = r"""(async () => {
+      const countRows = () => document.querySelectorAll(".r-list-body > .r-row").length;
+      const chooseReducingOption = select => [...select.options]
+        .find(option => option.value && Number(option.dataset.count) > 0 && Number(option.dataset.count) < countRows());
+      const choose = async (select, option) => {
+        select.value = option.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 150));
+        return countRows();
+      };
+
+      const status = document.querySelector('[aria-label="Filter plans by status"]');
+      const sprint = document.querySelector('[aria-label="Filter plans by sprint"]');
+      const baseline = countRows();
+      const statusOption = chooseReducingOption(status);
+      const statusCount = await choose(status, statusOption);
+      status.value = "";
+      status.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 150));
+      const restored = countRows();
+      const sprintOption = chooseReducingOption(sprint);
+      const sprintCount = await choose(sprint, sprintOption);
+      return {
+        baseline,
+        statusCount,
+        restored,
+        sprintCount,
+        statusValue: statusOption.value,
+        sprintValue: sprintOption.value,
+      };
+    })()"""
+
+    with served_spa(tmp_path, browser, route="#plans") as context:
+        result = context.run_probe(
+            probe,
+            viewport=(1440, 900),
+            ready_expression=(
+                'Boolean(document.querySelector(".r-list-body > .r-row") '
+                '&& document.querySelectorAll("[aria-label=\\"Filter plans by sprint\\"] option").length > 1)'
+            ),
+        )
+
+    assert result["baseline"] > result["statusCount"] > 0, result
+    assert result["restored"] == result["baseline"], result
+    assert result["baseline"] > result["sprintCount"] > 0, result
 
 
 def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
@@ -212,40 +323,13 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
       };
     })()"""
 
-    with (
-        temporary_browser_profile(tmp_path) as profile,
-        served_spa(tmp_path, browser, route="#plans") as context,
-    ):
-        result = subprocess.run(
-            [
-                "node",
-                "--input-type=module",
-                "-e",
-                NODE_PROBE,
-                json.dumps(
-                    {
-                        "browser": browser,
-                        "profile": str(profile),
-                        "url": context.url,
-                        "waitSelector": ".r-list-body > .r-row .meta",
-                        "probe": probe,
-                        "removeSignal": "undefined",
-                        "failPlanHtml": False,
-                        "fixtureIndex": INDEX_STATE,
-                    }
-                ),
-            ],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=90,
+    with served_spa(tmp_path, browser, route="#plans") as context:
+        geometry = context.run_probe(
+            probe,
+            viewport=(1374, 900),
+            ready_expression='Boolean(document.querySelector(".r-list-body > .r-row .meta"))',
         )
 
-    assert not profile.exists()
-
-    assert result.returncode == 0, result.stderr
-    geometry = json.loads(result.stdout)["baseline"]
     print(json.dumps(geometry, sort_keys=True))
     assert geometry["metadataCount"] >= 10
     assert all(
