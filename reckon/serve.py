@@ -205,10 +205,10 @@ def _elapsed_since(stamp: object) -> int | None:
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
-def _crew_plan_sprint(docs: Path, slug: str) -> str:
-    """Read sprint navigation from one referenced plan without discovery."""
+def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
+    """Read navigation and effort from one referenced plan without discovery."""
     if not slug or not SAFE_NAME.fullmatch(slug):
-        return ""
+        return "", None
     candidates = (
         docs / "plans" / f"{slug}.html",
         docs / f"{slug}.html",
@@ -218,10 +218,14 @@ def _crew_plan_sprint(docs: Path, slug: str) -> str:
         if not plan_path.is_file():
             continue
         try:
-            return str(_plan_html.parse_meta(plan_path).get("sprint") or "")
+            metadata = _plan_html.parse_meta(plan_path)
+            return (
+                str(metadata.get("sprint") or ""),
+                metadata.get("effort_hours"),
+            )
         except (OSError, ValueError):
-            return ""
-    return ""
+            return "", None
+    return "", None
 
 
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
@@ -250,7 +254,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         }
 
     rows: list[dict] = []
-    sprint_by_plan: dict[tuple[str, str], str] = {}
+    details_by_plan: dict[tuple[str, str], tuple[str, float | None]] = {}
     for pointer in pointers:
         name = str(pointer.get("project") or "")
         node = pointer.get("node") if isinstance(pointer.get("node"), dict) else {}
@@ -268,9 +272,9 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
             else "idle"
         )
         plan_key = (name, plan)
-        if plan_key not in sprint_by_plan:
-            sprint_by_plan[plan_key] = _crew_plan_sprint(mounts[name], plan)
-        sprint = sprint_by_plan[plan_key]
+        if plan_key not in details_by_plan:
+            details_by_plan[plan_key] = _crew_plan_details(mounts[name], plan)
+        sprint, effort_hours = details_by_plan[plan_key]
         rows.append(
             {
                 "run_id": str(pointer.get("run_id") or ""),
@@ -284,8 +288,10 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
                 ),
                 "plan": plan,
                 "section": str(node.get("section") or ""),
+                "backend": str(pointer.get("backend") or ""),
                 "model": agent.get("model"),
                 "effort": agent.get("effort"),
+                "effort_hours": effort_hours,
                 "elapsed_seconds": _elapsed_since(pointer.get("created_at")),
                 "phase": phase,
                 "last_activity": last_activity,
