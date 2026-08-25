@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:20:13",
+  "updated": "2026-08-25T14:23:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -178,21 +178,30 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03431-8248-73d3-af63-64322cfbb8ba",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038d6-7f2e-7071-bf01-d4df55f30ef4"
+        }
       },
       {
         "id": "codex-t",
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03435-959b-7f01-9948-0129ce9a2bad",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038d9-ff9f-7570-b35d-ddbf75625529"
+        }
       },
       {
         "id": "codex-u",
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03437-1285-7cb3-95cc-3aa18f6f7cd6",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038da-278c-7290-856c-c794408acfc8"
+        }
       },
       {
         "id": "codex-v",
@@ -209,7 +218,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03445-9600-7db0-a1f3-d7ca86719a4c",
-        "created": "2026-08-24"
+        "created": "2026-08-24",
+        "sessions": {
+          "gpt-5.6-sol": "01a038da-87cd-7d03-881f-95e3484fbd5d"
+        }
       },
       {
         "id": "codex-x",
@@ -18975,9 +18987,290 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T121249845937-n-rank-rendering-assertions",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-rank-rendering-assertions",
+        "node_definition": {
+          "done_when": "six named tests, one per rank, each pass at the current head and each fail when its rank's signal is removed from the rendered output, with the removal proof recorded per rank",
+          "estimated_hours": 1.25,
+          "goal": "Each of audit ranks 3, 6, 9, 10, 13 and 14 gains one rendered assertion proving its signal is present in the composed page rather than only declared in source",
+          "id": "n-rank-rendering-assertions",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121249845937-n-rank-rendering-assertions/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "tests/test_spa_rendered_semantics.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-s",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:12:56Z",
+        "completed_at": "2026-08-25T12:22:34Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 578,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 578,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "3142c57e81e7b040b0f9ad0b69bc23c4b1452a62",
+        "commits": [
+          "416e2d6"
+        ],
+        "changed_lines": {
+          "added": 588,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121249845937-n-rank-rendering-assertions/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d6-7f2e-7071-bf01-d4df55f30ef4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3294720,
+            "cached_input_tokens_cumulative": 3294720,
+            "input_tokens": 3452713,
+            "input_tokens_cumulative": 3452713,
+            "output_tokens": 22445,
+            "output_tokens_cumulative": 22445,
+            "reasoning_output_tokens": 7673,
+            "reasoning_output_tokens_cumulative": 7673
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T121649379490-n-sprint-completed-work-drilldown",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a716",
+        "node": "n-sprint-completed-work-drilldown",
+        "node_definition": {
+          "done_when": "a named test asserts a sprint with completed runs renders them newest first carrying dispatched and completed stamps node section gate and commit, a sprint with none renders a stated empty result rather than an empty axis, and the 1D and 1hr ticks are sub-day while every active sprint still appears",
+          "estimated_hours": 1.25,
+          "goal": "Selecting a sprint opens the recorded completed work of its member plans with timestamps, and the horizon selector gains a 1-day and a 1-hour window over that record",
+          "id": "n-sprint-completed-work-drilldown",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121649379490-n-sprint-completed-work-drilldown/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-u",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:16:55Z",
+        "completed_at": "2026-08-25T12:22:31Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 336,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 336,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "3168292e62efffc4cbf67957d6fd6e1210d88c4d",
+        "commits": [
+          "ecd10c7"
+        ],
+        "changed_lines": {
+          "added": 179,
+          "removed": 13,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121649379490-n-sprint-completed-work-drilldown/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038da-278c-7290-856c-c794408acfc8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2125056,
+            "cached_input_tokens_cumulative": 2125056,
+            "input_tokens": 2313337,
+            "input_tokens_cumulative": 2313337,
+            "output_tokens": 13771,
+            "output_tokens_cumulative": 13771,
+            "reasoning_output_tokens": 3823,
+            "reasoning_output_tokens_cumulative": 3823
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T121714519961-n-absent-values-and-empty-states",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-absent-values-and-empty-states",
+        "node_definition": {
+          "done_when": "a rendered check asserts 0 placeholder tokens such as an em dash beside a key or the literal unknown appear in the reader titlebar, that an empty attachment rail and an empty dependency region each occupy less height than a populated one, and existing reader tests still pass",
+          "estimated_hours": 1.0,
+          "goal": "Absent values and empty regions stop being rendered as substantive content, so a missing field is omitted or explained rather than emitted as a label with punctuation",
+          "id": "n-absent-values-and-empty-states",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121714519961-n-absent-values-and-empty-states/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/plan.jsx",
+            "docs/ui/reader.css",
+            "docs/ui/plans.css",
+            "tests/test_spa_reader_provenance.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-w",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:17:20Z",
+        "completed_at": "2026-08-25T12:23:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 344,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 344,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "3168292e62efffc4cbf67957d6fd6e1210d88c4d",
+        "commits": [
+          "b3b7920"
+        ],
+        "changed_lines": {
+          "added": 115,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T121714519961-n-absent-values-and-empty-states/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038da-87cd-7d03-881f-95e3484fbd5d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3593216,
+            "cached_input_tokens_cumulative": 3593216,
+            "input_tokens": 3747909,
+            "input_tokens_cumulative": 3747909,
+            "output_tokens": 12825,
+            "output_tokens_cumulative": 12825,
+            "reasoning_output_tokens": 3675,
+            "reasoning_output_tokens_cumulative": 3675
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 359
+    "_version": 366
   }
 }
