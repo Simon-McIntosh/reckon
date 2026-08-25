@@ -9,6 +9,7 @@ import os
 import select
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -75,10 +76,72 @@ from reckon.crew.runs import (
     run_dir,
     runs_dir,
     watch_state,
+    watch_stream_path,
 )
 
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
+_WATCH_START_TIMEOUT_SECONDS = 5.0
+
+
+def _watch_executable() -> str:
+    """Resolve the console entry point beside the running interpreter first."""
+    adjacent = Path(sys.executable).with_name("reckon")
+    if adjacent.is_file():
+        return str(adjacent)
+    executable = shutil.which("reckon")
+    if executable:
+        return executable
+    raise CrewError("cannot start the project watcher: reckon is not on PATH")
+
+
+def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
+    """Start a detached supervisor that remains the watcher's live parent."""
+    supervisor = (
+        "import subprocess, sys; "
+        "producer = subprocess.Popen(sys.argv[1:], stdin=subprocess.DEVNULL, "
+        "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); "
+        "raise SystemExit(producer.wait())"
+    )
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            supervisor,
+            _watch_executable(),
+            "crew",
+            "watch",
+            "--project",
+            project,
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+    )
+
+
+def _ensure_watch_producer(project: str) -> dict[str, Any]:
+    """Return the live producer, starting at most one across concurrent calls."""
+    arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
+    arming_lock.parent.mkdir(parents=True, exist_ok=True)
+    with arming_lock.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        state = watch_state(project)
+        if state["watcher_live"]:
+            return state
+
+        supervisor = _start_watch_producer(project)
+        deadline = time.monotonic() + _WATCH_START_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            state = watch_state(project)
+            if state["watcher_live"]:
+                return state
+            if supervisor.poll() is not None:
+                break
+            time.sleep(0.05)
+        raise WatcherRequired(project, state)
 
 
 @dataclass(frozen=True)
@@ -1070,12 +1133,11 @@ def dispatch(
     backlog observed by this dispatch. The exact runs and resolving commands
     are copied onto the new record so the exception survives its command line.
 
-    Process-launching dispatches joining an existing fleet require a live
-    project watcher. The first run can therefore bootstrap the fleet before a
-    watcher is armed. ``watch_required`` is explicit here so library callers
-    and in-harness preparation, which launches no worker, keep control of that
-    policy. A watch override records both the arming command and the liveness
-    observed at the dispatch gate.
+    Dispatch arms the project watcher before creating a worktree when watcher
+    policy is enabled. The producer is detached from the caller and keeps a
+    supervisor as its live parent, so it remains valid after the dispatching
+    process exits. A watch override records both the arming command and the
+    liveness observed at the dispatch gate.
     """
     repo_root = Path(repo).resolve()
     authority = resolve_dispatch_authority(project, repo_root)
@@ -1239,16 +1301,8 @@ def dispatch(
         }
 
     dispatch_watch = watch_state(project)
-    starts_worker = resolution.launch == "cli"
-    project_has_live_runs = bool(list_live(project=project))
-    if (
-        watch_required
-        and starts_worker
-        and project_has_live_runs
-        and not dispatch_watch["watcher_live"]
-        and not watch_override
-    ):
-        raise WatcherRequired(project, dispatch_watch)
+    if watch_required and not watch_override:
+        dispatch_watch = _ensure_watch_producer(project)
     watcher_waiver = (
         {
             "requested": True,

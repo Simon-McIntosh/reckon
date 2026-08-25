@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import json
-import os
 import subprocess
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -77,6 +75,26 @@ def isolated_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     (config_home / "mounts.json").write_text(
         json.dumps({"sample": str(repo / "docs")}), encoding="utf-8"
     )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    watcher = {
+        "arming_line": "reckon crew watch --project sample",
+        "watcher_live": False,
+        "watcher": {},
+    }
+
+    def watch_state(_project: str) -> dict:
+        return {
+            **watcher,
+            "watcher": dict(watcher["watcher"]),
+        }
+
+    def ensure_watch(_project: str) -> dict:
+        watcher["watcher_live"] = True
+        watcher["watcher"] = {"pid": 7319}
+        return watch_state(_project)
+
+    monkeypatch.setattr(dispatch_module, "watch_state", watch_state)
+    monkeypatch.setattr(dispatch_module, "_ensure_watch_producer", ensure_watch)
     return config_home, repo
 
 
@@ -112,42 +130,30 @@ def _dispatch(
     )
 
 
-def _deliver(record: dict) -> None:
-    manifest = Path(record["manifest_path"])
-    manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(
-        "node: watcher-owner\nstatus: complete\ncommits: HEAD\n",
-        encoding="utf-8",
-    )
-
-
-def test_first_dispatch_does_not_require_a_watcher_or_waiver(
+def test_first_dispatch_arms_a_watcher_without_a_waiver(
     isolated_project: tuple[Path, Path],
 ) -> None:
     config_home, repo = isolated_project
 
     record = _dispatch(config_home, repo, "first")
 
-    assert record["watch"]["watcher_live"] is False
+    assert record["watch"]["watcher_live"] is True
+    assert record["watch"]["watcher"]["pid"] == 7319
     assert record["watch_override"] is None
     assert crew.read_pointer(record["run_id"])["watch_override"] is None
 
 
-def test_occupied_project_without_a_watcher_refuses_before_worktree_creation(
+def test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch(
     isolated_project: tuple[Path, Path],
 ) -> None:
     config_home, repo = isolated_project
     owner = _dispatch(config_home, repo, "owner")
 
-    with pytest.raises(crew.WatcherRequired) as excinfo:
-        _dispatch(config_home, repo, "refused")
+    accepted = _dispatch(config_home, repo, "accepted")
 
-    assert excinfo.value.watch["watcher_live"] is False
-    assert excinfo.value.watch["arming_line"] == (
-        "reckon crew watch --project sample"
-    )
-    assert excinfo.value.watch["arming_line"] in str(excinfo.value)
-    assert crew.list_live(project="sample") == [owner]
+    assert accepted["watch"]["watcher_live"] is True
+    assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
+    assert crew.list_live(project="sample") == [owner, accepted]
     worktrees = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,
@@ -155,7 +161,7 @@ def test_occupied_project_without_a_watcher_refuses_before_worktree_creation(
         capture_output=True,
         text=True,
     ).stdout
-    assert "node-refused" not in worktrees
+    assert "node-accepted" in worktrees
 
 
 def test_no_watch_override_is_recorded_for_an_occupied_project(
@@ -169,7 +175,7 @@ def test_no_watch_override_is_recorded_for_an_occupied_project(
     assert waived["watch_override"] == {
         "requested": True,
         "arming_line": "reckon crew watch --project sample",
-        "watcher_live": False,
+        "watcher_live": True,
     }
     assert crew.read_pointer(waived["run_id"])["watch_override"] == waived[
         "watch_override"
@@ -181,30 +187,8 @@ def test_occupied_project_with_a_live_watcher_accepts_another_dispatch(
 ) -> None:
     config_home, repo = isolated_project
     owner = _dispatch(config_home, repo, "owner")
-    sleeping = threading.Event()
-    release = threading.Event()
+    accepted = _dispatch(config_home, repo, "accepted")
 
-    def controlled_sleep(_seconds: float) -> None:
-        sleeping.set()
-        assert release.wait(timeout=5)
-
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        watcher = pool.submit(
-            crew.watch,
-            "sample",
-            stall_window="1h",
-            sleeper=controlled_sleep,
-        )
-        assert sleeping.wait(timeout=5)
-
-        accepted = _dispatch(config_home, repo, "accepted")
-
-        assert accepted["watch"]["watcher_live"] is True
-        assert accepted["watch"]["watcher"]["pid"] == os.getpid()
-        assert accepted["watch_override"] is None
-
-        _deliver(owner)
-        release.set()
-        event = watcher.result(timeout=5)
-        assert event["event"] == "terminal"
-        assert event["run_id"] == owner["run_id"]
+    assert accepted["watch"]["watcher_live"] is True
+    assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
+    assert accepted["watch_override"] is None
