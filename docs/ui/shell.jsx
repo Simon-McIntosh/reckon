@@ -1477,6 +1477,16 @@ function projectActiveSprints(state) {
   return { active, focus, conflict };
 }
 
+function blockerGatedPlans(state, blocker) {
+  if (Array.isArray(blocker.gated_plans)) return blocker.gated_plans;
+  return [...new Set((state.sprints || []).flatMap(sprint =>
+    (sprint.items || [])
+      .filter(item => (item.blocked_by || []).includes(blocker.id))
+      .map(item => item.slug)
+      .filter(Boolean)
+  ))].sort();
+}
+
 function overviewProjectRows(projects, currentState, fleetRuns, includeCurrent = true) {
   const currentProject = currentState?.project || null;
   const sources = (projects || []).map(project => ({
@@ -1493,7 +1503,9 @@ function overviewProjectRows(projects, currentState, fleetRuns, includeCurrent =
       : (Array.isArray(state.plans) ? state.plans : []);
     const inventory = rawInventory.filter(item => (item.type || "plan") === "plan");
     const sprintState = projectActiveSprints(state);
-    const blockers = (state.blockers || []).filter(blockerIsUnresolved);
+    const blockers = (state.blockers || [])
+      .filter(blockerIsUnresolved)
+      .map(blocker => ({ ...blocker, gated_plans: blockerGatedPlans(state, blocker) }));
     return {
       project: project.project,
       plans: Number(project.plans_count ?? inventory.length),
@@ -1506,9 +1518,39 @@ function overviewProjectRows(projects, currentState, fleetRuns, includeCurrent =
   });
 }
 
+function overviewBlockerScopes(rows) {
+  const scopes = new Map();
+  for (const row of rows) {
+    for (const blocker of row.blockers) {
+      for (const slug of blocker.gated_plans || []) {
+        const key = `${row.project}:${slug}`;
+        scopes.set(key, { key, project: row.project, slug });
+      }
+    }
+  }
+  return [...scopes.values()].sort((left, right) =>
+    left.project.localeCompare(right.project) || left.slug.localeCompare(right.slug)
+  );
+}
+
+function blockersForPlanScope(rows, scope) {
+  const [project, ...slugParts] = String(scope || "").split(":");
+  const slug = slugParts.join(":");
+  if (!project || !slug) return [];
+  const row = rows.find(candidate => candidate.project === project);
+  return (row?.blockers || [])
+    .filter(blocker => (blocker.gated_plans || []).includes(slug))
+    .map(blocker => ({ ...blocker, project }));
+}
+
 function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
   const rows = overviewProjectRows(projects, window.STATE, fleetRuns, false);
-  const blockers = rows.flatMap(row => row.blockers.map(blocker => ({ ...blocker, project: row.project })));
+  const blockerScopes = overviewBlockerScopes(rows);
+  const [blockerScope, setBlockerScope] = useState(() => blockerScopes[0]?.key || "");
+  const effectiveBlockerScope = blockerScopes.some(scope => scope.key === blockerScope)
+    ? blockerScope
+    : (blockerScopes[0]?.key || "");
+  const blockers = blockersForPlanScope(rows, effectiveBlockerScope);
   const totals = [
     { label: "projects", value: rows.length, note: `${rows.length} shown / ${mountedProjectCount} mounted` },
     { label: "plans", value: rows.reduce((count, row) => count + row.plans, 0), note: "in view" },
@@ -1527,9 +1569,19 @@ function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
         ))}
       </div>
 
-      {blockers.length > 0 && (
+      {blockerScopes.length > 0 && (
         <section className="r-overview-blockers" aria-labelledby="overview-blockers-heading">
-          <h2 id="overview-blockers-heading">Unresolved blockers</h2>
+          <div className="r-overview-blocker-head">
+            <h2 id="overview-blockers-heading">Unresolved blockers</h2>
+            <label>
+              <span>Plan scope</span>
+              <select aria-label="Plan scope for unresolved blockers" value={effectiveBlockerScope} onChange={event => setBlockerScope(event.target.value)}>
+                {blockerScopes.map(scope => (
+                  <option key={scope.key} value={scope.key}>{scope.project} / {scope.slug}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="r-overview-blocker-list">
             {blockers.map(blocker => (
               <article key={`${blocker.project}:${blocker.id}`}>
@@ -1543,6 +1595,7 @@ function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
                 <div className="r-overview-blocker-next"><span>Next</span>{blocker.next || "No next action recorded"}</div>
               </article>
             ))}
+            {blockers.length === 0 && <p className="r-overview-none">No unresolved blockers gate this plan.</p>}
           </div>
         </section>
       )}
