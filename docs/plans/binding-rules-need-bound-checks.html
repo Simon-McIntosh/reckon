@@ -23,8 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="1">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="3">
+<meta name="plan-commits" content="9ad9b7d">
+<meta name="plan-artifacts" content="tests/test_declared_tooling.py,pyproject.toml,uv.lock">
 </head>
 <body>
   <main class="plan-doc">
@@ -183,6 +185,14 @@
     <span class="r-research-title"><a href="/reckon/evidence/archive/spa-surface-redesign-landed">Surface-redraw evidence — carries the four snapshot instances, the configured-not-declared finding, and the three-kinds-of-red-suite taxonomy that separates a defect from a sandbox artifact from a stale base.</a></span></div>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260825T124539900150-n-declared-matches-configured" data-who="codex-e" data-when="2026-08-25T12:51:54Z">
+    <div class="r-comment-body"><p>3 configured namespaces enumerated with explicit distribution aliases, failing closed on unknown ones; red-to-green proof 1 failed before the ruff declaration to 1 passed after; uv run ruff check now resolves and executes, exposing 322 pre-existing findings that were unreachable before</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-declared-tools-20260825T1252" data-who="reckon-ship" data-when="2026-08-25T12:52:00Z">
+    <div class="r-comment-body"><p><strong>The check exists, it was proven red before it was made green, and it fails closed.</strong> <code>tests/test_declared_tooling.py</code> enumerates the three configured namespaces, resolves each through an explicit distribution alias table &mdash; needed because <code>hatch</code> resolves through <code>hatchling</code> and <code>hatch-vcs</code>, neither of which is the namespace name &mdash; and treats an unknown namespace or an alias disjoint from every declared set as a failure rather than an assumption. The red-to-green proof is 1 failed on unresolved ruff before the declaration and 1 passed after. Commit <code>9ad9b7d</code>, with <code>ruff&gt;=0.16.4</code> now in the dev group and the lockfile.</p><p><strong>Landing it produced the number that shows what the gap cost: <code>uv run ruff check</code> now resolves, executes, and reports 322 pre-existing findings.</strong> Not one of those was reachable through the documented command before today, because the command could not start. So the repository has been carrying 322 lint findings behind a protocol that reads as enforced, and the count is a direct measure of how long a rule can decay while its prose stays correct. The scoped lint over the node's own changed paths is clean; the 322 belong to the tree, not to this node, and remediating them is deliberately not in this plan's scope.</p><p>The check's shape came from the peer session that confirmed the gap independently: declaring the tool makes the protocol true today, and asserting the agreement is what keeps it true. Their framing, and it is the right way round &mdash; the node authored the assertion first and the declaration as what makes it pass.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

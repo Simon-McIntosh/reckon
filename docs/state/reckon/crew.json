@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T14:45:21",
+  "updated": "2026-08-25T14:52:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -50,7 +50,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a0330a-268f-7582-8501-94285c765782",
-        "created": "2026-08-12"
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-sol": "01a038f4-8784-75b2-84e0-70f59910f8cb"
+        }
       },
       {
         "id": "codex-f",
@@ -20238,9 +20241,103 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T124539900150-n-declared-matches-configured",
+        "plan": "binding-rules-need-bound-checks",
+        "section": "\u00a73",
+        "node": "n-declared-matches-configured",
+        "node_definition": {
+          "done_when": "a named test enumerates all configured namespaces and fails on any resolving to nothing, is shown failing on the pre-change tree and passing after, and uv run ruff check exits without a resolution error",
+          "estimated_hours": 0.75,
+          "goal": "Every tool namespace configured in pyproject.toml is proven to resolve against something the project declares, with ruff declared so the documented lint command resolves",
+          "id": "n-declared-matches-configured",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124539900150-n-declared-matches-configured/manifest.md",
+          "plan": "binding-rules-need-bound-checks",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "pyproject.toml",
+            "uv.lock",
+            "tests/test_declared_tooling.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-e",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T12:45:44Z",
+        "completed_at": "2026-08-25T12:51:54Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 370,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 370,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "1b073b998ea5dd8acb023dcbfb02abe42e86d9a6",
+        "commits": [
+          "9ad9b7d"
+        ],
+        "changed_lines": {
+          "added": 86,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T124539900150-n-declared-matches-configured/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f4-8784-75b2-84e0-70f59910f8cb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2590976,
+            "cached_input_tokens_cumulative": 2590976,
+            "input_tokens": 2686855,
+            "input_tokens_cumulative": 2686855,
+            "output_tokens": 12220,
+            "output_tokens_cumulative": 12220,
+            "reasoning_output_tokens": 2915,
+            "reasoning_output_tokens_cumulative": 2915
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 382
+    "_version": 384
   }
 }
