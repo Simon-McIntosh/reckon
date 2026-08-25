@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="18">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="20">
+<meta name="plan-impl" content="0.83">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
@@ -640,6 +640,84 @@
       dirty plan file is still refused unchanged; focused tests cover all four, and
       <code>PYTHONPATH=$PWD python -m pytest tests/ -q</code> is fully green.</p>
 
+    <h2 id="s11">§11 — Make the shadow pair a controlled comparison</h2>
+    <p>
+      The first real shadow ran on <code>gpt-5.6-luna</code> against the
+      <code>shadow-sidecar-dispatch</code> primary and produced usable evidence
+      immediately (§8 anchor in the evidence record). It also exposed three defects
+      in §8 that the unit tests could not, because each one only appears when a
+      shadow runs beside live work. All three are cheap, and the first is the one
+      that decides whether the qualification programme produces science.
+    </p>
+
+    <h3 id="s11.1">§11.1 — A shadow must reproduce its primary's configuration except the dimension under test</h3>
+    <p>
+      The pair is confounded as it stands. The primary ran <code>sol</code> at
+      <code>high</code> (an explicit override on its dispatch); the shadow resolved
+      <code>luna</code> at <code>medium</code>, because routing is re-derived from
+      <em>current</em> flight config at shadow time and the level overlay for
+      <code>guided</code> is applied last, outranking the candidate backend's own
+      pinned effort. So the recorded pair compares (luna, medium) against
+      (sol, high) and cannot attribute the difference to the model. Every pair the
+      programme collects would carry the same confound, and the §6 decision rule
+      would then be applied to slices that do not isolate what they name.
+    </p>
+    <p>
+      <strong>Design (fixed):</strong> a shadow inherits the primary's recorded
+      agent configuration and substitutes only what the caller names. The primary's
+      <code>agent</code> block is already stored on its committed record — backend,
+      model, effort, sandbox — so the shadow resolves that configuration and applies
+      <code>--backend</code> (and any explicit <code>--set</code>) over it, rather
+      than resolving the node's spec level against today's config. Record on the
+      shadow both the substituted dimension and the inherited remainder, so a later
+      reader can tell a controlled pair from an uncontrolled one. Where the primary
+      predates configuration recording, refuse rather than guess.
+    </p>
+    <p><strong>Done-when:</strong> a shadow of a primary recorded at one effort
+      resolves that same effort while switching only the named backend; a shadow
+      given an explicit effort override uses it and records the substitution; a
+      primary with no recorded agent configuration is refused with a message naming
+      why; focused tests cover all three and the full suite is green.</p>
+
+    <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
+    <p>
+      A shadow registers live path claims on its primary's declared write paths, yet
+      by construction it writes only inside its own worktree and merges nowhere.
+      Measured 2026-08-25: the luna shadow held claims on eight repository paths
+      including <code>reckon/cli.py</code>, and a peer session dispatching against
+      the same file eighteen seconds later stopped its own run and yielded to a
+      claim that could never have collided with it. Since the point of sampled
+      shadows is to run <em>alongside</em> live work, a shadow that reserves the
+      live scope registry is self-defeating: it converts a free measurement into a
+      lock on the paths the fleet is actively working.
+    </p>
+    <p>
+      <strong>Design (fixed):</strong> a shadow run's pointer records its write
+      paths for provenance but is excluded from the live claim registry that peer
+      derivation and the scope-conflict refusal consult. A shadow neither takes a
+      claim nor is blocked by one.
+    </p>
+    <p><strong>Done-when:</strong> a live dispatch against paths a running shadow
+      declares is admitted rather than refused; a shadow against paths a live run
+      holds is likewise admitted; two live runs on the same path are still refused
+      with the unchanged conflict message; <code>crew</code> scope reads still show
+      the shadow's paths labelled as shadow provenance; focused tests cover each and
+      the full suite is green.</p>
+
+    <h3 id="s11.3">§11.3 — Ledger gate counts pool shadow rows with live</h3>
+    <p>
+      <code>crew ledger --view summary</code> partitions <code>run_kinds</code>
+      correctly (live 266, shadow 1) but its <code>gates</code> block does not: the
+      shadow's failed gate is counted among twelve live failures. Pass rate read
+      from that block is the exact quantity the §6 decision rule consumes, so the
+      contamination grows with the programme. Partition <code>gates</code> the way
+      <code>run_kinds</code> already is, and leave the live figure meaning live.
+    </p>
+    <p><strong>Done-when:</strong> the summary reports live and shadow gate counts
+      separately, a ledger containing only live runs reports an unchanged live
+      block, and a focused test asserts a shadow failure does not move the live
+      count.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="spec-vocabulary" data-choice="three-level-enum" data-by="Simon McIntosh (lead), §6 checkpoint session" data-when="2026-08-25T06:55:02+00:00">
@@ -722,6 +800,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260825-shadow" data-who="reckon-ship" data-when="2026-08-25T08:05:00+00:00">
     <div class="r-comment-body">shadow-sidecar-dispatch landed — run r-20260825T072832542100, gate passed, commit 4656c7a merged as c82cf57; focused suites 244/244, full suite 2357/2357, 7 substantive tests added, 1983 worker-seconds at sol/high, 46.9k output tokens. Delivered: reckon crew shadow deriving a committed record's node at its recorded base revision (unreachable base refused before worktree creation), shadow lineage on pointer and promoted record carrying the primary's attempt number without incrementing live attempts, candidate backend forced through role and spec overlays, commitless completion refusing --commit under the pointer lock before mutation and capturing the full tracked-and-untracked worktree diff as shadow.patch with changed_lines derived from that artifact, ledger summaries labelling live versus shadow rows, and capability derivation excluding shadow observations from live competence configurations while exposing paired shadow_slices. Promoted with scope-changed: the worker blocked correctly at its fence (the atomic completion transaction lives in reckon/crew/promotion.py after the crew-package refactor) and the coordinator widened the scope via resume.</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260825-firstpair" data-who="reckon-ship" data-when="2026-08-25T08:42:00+00:00">
+    <div class="r-comment-body">First shadow pair recorded — run r-20260825T083313351944 on gpt-5.6-luna against primary r-20260825T072832542100, lineage kind shadow, gate FAILED, promoted commitless with shadow.patch retained (11,406 bytes). The shadow met neither half of the node's done-when: zero tests added against a measure naming five test behaviours, and only the three focused suites at their pre-existing 237 rather than the full suite. Source work was real but thinner — 115 insertions across 5 paths against the primary's 809 across 8 — in 258 worker-seconds against the primary's 1983. Partition verified independently of the tests: luna appears in capabilities shadow_slices with success false and is absent from live configurations, which stayed at 4. This is n=1 and a confounded pair (see §11.1), so it is calibration input, not a verdict on the configuration.</div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260825-authority" data-who="reckon-ship" data-when="2026-08-25T08:35:00+00:00">
     <div class="r-comment-body">shadow-authority-at-base landed — run r-20260825T082306311144, gate passed, commit cc4c686 merged as 5ccaa44; focused gate 4/4, full suite 2372/2372, 523 worker-seconds at sol/medium, 149 insertions across exactly the two authorised paths. The working-tree equality check now runs only when the resolved plan base equals the plan repository head at dispatch; a historical shadow base skips equality alone and keeps blob readability and section validation, and a live dispatch with a dirty plan is refused with its production error string unchanged. Verified beyond the suite: a luna shadow of the r-20260825T072832542100 primary, whose §8 section has since been collapsed, now resolves (ok, lineage kind shadow, base 14cd488) where it was refused plan-unavailable before the fix — the measurement path is usable.</div>
