@@ -5,9 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import BROWSER_NAMES, installed_browser, served_spa
+from tests.spa_browser_harness import (
+    BROWSER_NAMES,
+    installed_browser,
+    served_spa,
+    temporary_browser_profile,
+)
 from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
@@ -208,7 +212,10 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
       };
     })()"""
 
-    with served_spa(tmp_path, browser, route="#plans") as context:
+    with (
+        temporary_browser_profile(tmp_path) as profile,
+        served_spa(tmp_path, browser, route="#plans") as context,
+    ):
         result = subprocess.run(
             [
                 "node",
@@ -218,6 +225,7 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
                 json.dumps(
                     {
                         "browser": browser,
+                        "profile": str(profile),
                         "url": context.url,
                         "waitSelector": ".r-list-body > .r-row .meta",
                         "probe": probe,
@@ -228,10 +236,13 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
                 ),
             ],
             cwd=ROOT,
+            check=False,
             capture_output=True,
             text=True,
             timeout=90,
         )
+
+    assert not profile.exists()
 
     assert result.returncode == 0, result.stderr
     geometry = json.loads(result.stdout)["baseline"]
