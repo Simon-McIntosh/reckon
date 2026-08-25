@@ -326,6 +326,14 @@
       <code>crew ledger</code> CLI and the <code>crew</code> MCP summary view, both of
       which splat the payload — the plan-level <code>gates</code> list the SPA and
       <code>_plan_html</code> read is an unrelated structure and is untouched.</p>
+    <p><strong>Verified beyond the suite, on the real ledger.</strong> Against reckon's
+      270 live and 1 shadow records, <code>gates</code> now reads
+      <code>live {failed: 11, not-run: 19, passed: 240}</code> and
+      <code>shadow {failed: 1}</code>. The live failure count moved from twelve to
+      eleven — the shadow's gate left the block it was never part of — so the live
+      graded pass rate the §6 rule consumes is 240/251 rather than 240/252. The
+      quantity is small at one shadow and was always going to be: the defect scales
+      with the programme, which is why it was worth fixing before the programme ran.</p>
 
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
