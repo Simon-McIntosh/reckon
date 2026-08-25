@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="38">
-<meta name="plan-impl" content="0.9">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28">
+<meta name="plan-version" content="43">
+<meta name="plan-impl" content="0.909">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -675,56 +675,6 @@
       Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-1">§11.1 landed</a>.
     </p>
 
-    <h3 id="s11.4" class="section-landed">§11.4 — A shadow worktree is unintegrated by construction, so cleanup can never reclaim it
-      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
-    <p class="landed-summary">
-      <code>crew gc</code> called a shadow worktree <code>unintegrated</code> — literally
-      true and permanently disqualifying, since a shadow never merges — so every shadow
-      leaked a worktree and the deterministic per-primary path then blocked re-measuring
-      that primary. Classification now reads lineage: <code>disposable</code> only when a
-      committed <code>lineage.kind = shadow</code> record maps to that exact path and its
-      <code>shadow_patch</code> resolves to the canonical artifact and exists, both
-      re-checked at apply time. Gate passed: 5 focused assertions each with its negative,
-      <code>test_crew_gc.py</code> 7/7, full suite <strong>2388/2388</strong>, 450
-      worker-seconds at sol/medium (commit <code>39d7a28</code>).
-      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-4">§11.4 landed</a>.
-    </p>
-
-
-
-    <h3 id="s11.5">§11.5 — The time budget is part of the configuration a shadow must inherit</h3>
-    <p>
-      §11.1 was necessary but not sufficient, and the shortfall was found the only way it
-      could be — by dispatching a pair and reading the fences before trusting it. A shadow
-      now inherits the primary's <code>agent</code> block, but <code>time_budget</code> is
-      not in that block: it is a separate field on the run record. So the shadow falls back
-      to the role default, and the measured pair is
-      <strong>(luna, 8 minutes) against (sol, 40 minutes)</strong>.
-    </p>
-    <p>
-      This is not a small residual confound. A worker sizes its work to the budget it is
-      told it has, so the fence is one of the strongest determinants of what a run
-      produces. It also means <strong>the §8 first pair must be re-read</strong>: that
-      shadow was given 8 minutes against the primary's 40 and used 4.3 minutes against
-      33. Its thinner output — 115 insertions against 809, zero tests added — was
-      attributed in the §8 record to the candidate model, and a five-fold budget
-      difference is at least as good an explanation. No conclusion about
-      <code>gpt-5.6-luna</code> survives that, in either direction.
-    </p>
-    <p>
-      The general rule is the one §11.1 already stated and this section extends: a shadow
-      reproduces every recorded condition of its primary and substitutes only what the
-      caller names. <code>time_budget</code> is such a condition, and it belongs in
-      <code>lineage.configuration</code> beside the rest so a reader can see it was held
-      equal rather than assume it.
-    </p>
-    <p><strong>Done-when:</strong> a shadow of a primary recorded at one time budget
-      resolves that same budget rather than the role default; an explicit budget override
-      is used and recorded as substituted; <code>lineage.configuration</code> carries
-      <code>time_budget</code> in its inherited or substituted half accordingly; a primary
-      with no recorded time budget falls back to the role default and records that it did;
-      focused tests cover all four and the full suite is green.</p>
-
     <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
     <p class="landed-summary"><span class="badge badge-shipped">→ owned elsewhere 2026-08-25</span>
       Reallocated to <code>concurrency-and-schedule-visibility</code> §5, which owns the
@@ -750,6 +700,97 @@
       <code>72ef099</code>, merged <code>e2f30c4</code>).
       Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-3">§11.3 landed</a>.
     </p>
+
+    <h3 id="s11.4" class="section-landed">§11.4 — A shadow worktree is unintegrated by construction, so cleanup can never reclaim it
+      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
+    <p class="landed-summary">
+      <code>crew gc</code> called a shadow worktree <code>unintegrated</code> — literally
+      true and permanently disqualifying, since a shadow never merges — so every shadow
+      leaked a worktree and the deterministic per-primary path then blocked re-measuring
+      that primary. Classification now reads lineage: <code>disposable</code> only when a
+      committed <code>lineage.kind = shadow</code> record maps to that exact path and its
+      <code>shadow_patch</code> resolves to the canonical artifact and exists, both
+      re-checked at apply time. Gate passed: 5 focused assertions each with its negative,
+      <code>test_crew_gc.py</code> 7/7, full suite <strong>2388/2388</strong>, 450
+      worker-seconds at sol/medium (commit <code>39d7a28</code>).
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-4">§11.4 landed</a>.
+    </p>
+
+
+
+    <h3 id="s11.5" class="section-landed">§11.5 — The time budget is part of the configuration a shadow must inherit
+      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
+    <p class="landed-summary">
+      A shadow now sets the reconstructed node's budget from the primary's record before
+      role resolution can fill the default; an override records
+      <code>via: override</code> with both values, and a legacy primary with no recorded
+      budget keeps the default and records
+      <code>fallbacks.time_budget</code> so an uncontrolled dimension announces itself.
+      <strong>Scale, measured:</strong> all 58 shadowable primaries record 20m–60m against
+      the role's 8m, so every collectable pair was under-budgeted, most 3–7×. Gate passed:
+      4 focused behaviours, <code>test_crew.py</code> 178/178, full suite
+      <strong>2390/2390</strong>, 471 worker-seconds at sol/medium (commit
+      <code>cc03efe</code>).
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-5">§11.5 landed</a>.
+    </p>
+    <details>
+      <summary>Original finding (retained — it explains the §8 correction)</summary>
+    <p>
+      §11.1 was necessary but not sufficient, and the shortfall was found the only way it
+      could be — by dispatching a pair and reading the fences before trusting it. A shadow
+      now inherits the primary's <code>agent</code> block, but <code>time_budget</code> is
+      not in that block: it is a separate field on the run record. So the shadow falls back
+      to the role default, and the measured pair is
+      <strong>(luna, 8 minutes) against (sol, 40 minutes)</strong>.
+    </p>
+    <p>
+      This is not a small residual confound. A worker sizes its work to the budget it is
+      told it has, so the fence is one of the strongest determinants of what a run
+      produces. It also means <strong>the §8 first pair must be re-read</strong>: that
+      shadow was given 8 minutes against the primary's 40 and used 4.3 minutes against
+      33. Its thinner output — 115 insertions against 809, zero tests added — was
+      attributed in the §8 record to the candidate model, and a five-fold budget
+      difference is at least as good an explanation. No conclusion about
+      <code>gpt-5.6-luna</code> survives that, in either direction.
+    </p>
+    <p>
+      The general rule is the one §11.1 already stated and this section extends: a shadow
+      reproduces every recorded condition of its primary and substitutes only what the
+      caller names. <code>time_budget</code> is such a condition, and it belongs in
+      <code>lineage.configuration</code> beside the rest so a reader can see it was held
+      equal rather than assume it.
+    </p>
+    </details>
+
+    <h3 id="s11.6">§11.6 — Retire the vestigial override parameter before it calcifies</h3>
+    <p>
+      §11.1 added <code>agent_overrides</code> to <code>shadow()</code>; §11.5 generalised
+      it to <code>configuration_overrides</code> and migrated the only production caller.
+      Both parameters now exist, unioned into one <code>explicit</code> set, and
+      <code>agent_overrides</code> has no caller outside a single test that pins the old
+      name. Two parameters meaning one thing, created and orphaned within a single
+      session — the moment to decide is now, not once something depends on the older one.
+    </p>
+    <p><strong>The prescribed change</strong> (nothing else in these files):</p>
+    <ol>
+      <li>In <code>reckon/crew/dispatch.py</code>, delete the
+        <code>agent_overrides: Iterable[str] = (),</code> parameter from
+        <code>shadow()</code>.</li>
+      <li>In the same function, replace the union
+        <code>explicit = {str(config_key) for config_key in (*agent_overrides,
+        *configuration_overrides)}</code> with the single-source form over
+        <code>configuration_overrides</code> alone.</li>
+      <li>In <code>tests/test_crew.py</code>, change the one call site passing
+        <code>agent_overrides={"effort"}</code> to
+        <code>configuration_overrides={"effort"}</code>.</li>
+    </ol>
+    <p><strong>Done-when:</strong> <code>grep -rn agent_overrides reckon/ tests/</code>
+      returns no matches, and
+      <code>pytest -q tests/test_crew.py</code> plus the full suite are green with zero
+      failures.</p>
+
+
+
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -857,6 +898,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260825T120327466836-shadow-worktree-reclaimable-by-lineage" data-who="reckon-ship" data-when="2026-08-25T12:12:10Z">
     <div class="r-comment-body">§11.4 landed — run r-20260825T120327466836, gate passed, commit 39d7a28; 450 worker-seconds at sol/medium, 241 insertions across exactly the two authorised paths, 5 tests added. crew gc was asking the wrong question of a shadow worktree: unintegrated is literally true and permanently disqualifying, since a shadow never merges by design, so every shadow leaked a worktree and the deterministic per-primary path then blocked re-measuring that primary at all. Classification now reads lineage. A worktree is disposable only when a committed lineage.kind=shadow record maps to that exact path and its shadow_patch resolves to the canonical <run-id>/shadow.patch and that file exists; both conditions are re-checked at apply time and a failure degrades the row back to unintegrated rather than removing it. The removal is forced only under that proof, which is what a shadow needs since its diff is uncommitted by design and the patch is what preserves it. Gate: 5 focused assertions each paired with its negative, tests/test_crew_gc.py 7/7, full suite 2388/2388. impl 9 of 10 executable sections. Evidence: /reckon/evidence/crew-effort-routing-landed#s11-4</run-id></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260825T120857694038-shadow-inherits-primary-time-budget" data-who="reckon-ship" data-when="2026-08-25T12:19:40Z">
+    <div class="r-comment-body">§11.5 landed — run r-20260825T120857694038, gate passed, commit cc03efe; 471 worker-seconds at sol/medium, 131 insertions across exactly the three authorised paths, 4 tests added. A shadow now sets the reconstructed node's budget from the primary's record before role resolution can fill the default; an applicable override records via override with both values, and a legacy primary with no recorded budget keeps the default and records fallbacks.time_budget so an uncontrolled dimension announces itself in the record rather than hiding in it. Scale measured before dispatch: all 58 shadowable primaries across the mounted ledgers record a budget spanning 20m to 60m against the implement role's 8m default, so every pair the programme could have collected was under-budgeted, most three- to sevenfold. Gate: 4 focused behaviours, tests/test_crew.py 178/178, full suite 2390/2390, ruff clean, promotion retains the enriched lineage by assertion. §11 subsection order repaired to numeric (insertions had left it 1,4,5,2,3). impl 10 of 11 executable sections. Evidence: /reckon/evidence/crew-effort-routing-landed#s11-5</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260825-s116-vestigial-param" data-who="reckon-ship" data-when="2026-08-25T12:19:45Z">
+    <div class="r-comment-body">§11.6 added from the §11.5 full-diff audit: §11.1 introduced agent_overrides on shadow(), §11.5 generalised it to configuration_overrides and migrated the only production caller, and both now exist unioned into one explicit set with agent_overrides called from nothing but a single test pinning the old name. Two parameters meaning one thing, created and orphaned inside one session — the decision point is when the second appears, not once something depends on the first. Cut as an exact-level node because the change is fully prescribed in the section (delete the parameter, collapse the union, update the one call site) with grep plus the suite as its runnable check, which also makes it a legitimate spark-lane pilot run under the unchanged §4 gate.</div>
 </div>
 </section>
 </main>

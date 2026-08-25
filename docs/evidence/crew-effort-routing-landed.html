@@ -417,6 +417,39 @@
       unintegrated worktree still withheld and still on disk.
       <code>tests/test_crew_gc.py</code> 7/7, full suite <strong>2388/2388</strong>.</p>
 
+    <h3 id="s11-5">§11.5 — The fence is part of the comparison, and it was the larger half</h3>
+    <p>Run <code>r-20260825T120857694038-shadow-inherits-primary-time-budget</code>, gate
+      <strong>passed</strong>, commit <code>cc03efe</code>; <strong>471
+      worker-seconds</strong> at sol/medium, 131 insertions across exactly the three
+      authorised paths, 4 tests added.</p>
+    <p>§11.1 was necessary and not sufficient, and the shortfall was found the only way it
+      could be: by dispatching a pair on the repaired path and reading its fences before
+      trusting it. <code>time_budget</code> is a top-level field on the run record, not a
+      member of the <code>agent</code> block a shadow inherits, so the shadow fell through
+      to the role default of 8 minutes against a primary recorded at 40. The run was
+      <strong>stopped and discarded rather than promoted</strong> — it would have entered
+      the ledger looking like a controlled comparison, which is the precise failure §11.1
+      existed to prevent, one field over.</p>
+    <p><strong>The scale of it, measured.</strong> All 58 shadowable primaries in the
+      mounted ledgers record a time budget, spanning <strong>20m to 60m</strong> (most
+      common: 60m, 45m, 50m) against the implement role's 8m default. So this was not an
+      edge case awaiting a pathological input — <em>every</em> pair the programme could
+      have collected would have been under-budgeted, most by three- to sevenfold.</p>
+    <p>A shadow now sets the reconstructed node's budget from the primary's record before
+      role resolution can fill the default. An applicable caller override resolves and is
+      recorded <code>via: override</code> with both values; a legacy primary with no
+      recorded budget keeps the role default and records
+      <code>fallbacks.time_budget = {source: resolved_role_default}</code>, so an
+      uncontrolled dimension announces itself in the record rather than hiding in it.</p>
+    <p>Gate evidence: 4 focused behaviours, <code>tests/test_crew.py</code> 178/178, full
+      suite <strong>2390/2390</strong>, ruff clean. Promotion retains the enriched lineage,
+      asserted by the completion test rather than assumed.</p>
+    <p><strong>Consequence for the §8 record.</strong> The first pair was given 8 minutes
+      against 40 and used 4.3 against 33; its thinner output was attributed there to the
+      candidate model. That reading is withdrawn — see the §8 anchor, corrected. The
+      programme's first genuinely controlled pair therefore post-dates this section, and
+      the honest count of usable qualification pairs before it is <strong>zero</strong>.</p>
+
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
   f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved
