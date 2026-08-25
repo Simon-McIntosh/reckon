@@ -257,41 +257,63 @@
   font-size: 11.5px;
 }
 
-.r-reading-reads {
-  margin-top: 44px;
-  padding-top: 18px;
+.r-reader-attachment-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 18px;
+}
+
+.r-reader-attachment-bar {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.r-reader-attachment-bar > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 7px 11px;
+  color: var(--ink-2);
+  font: 600 11px var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.r-reader-attachment-bar > summary::-webkit-details-marker {
+  display: none;
+}
+
+.r-reader-attachment-bar > summary::before {
+  content: "›";
+  color: var(--faint);
+  transition: transform .12s ease;
+}
+
+.r-reader-attachment-bar[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.r-reader-attachment-count {
+  margin-left: auto;
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.r-reader-attachment-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
   border-top: 1px solid var(--line);
 }
 
-.r-reading-reads-heading {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  margin-bottom: 12px;
-}
-
-.r-reading-reads-heading h2 {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11.5px !important;
-  font-weight: 600;
-  letter-spacing: 0.07em !important;
-  text-transform: uppercase;
-}
-
-.r-reading-reads-heading span {
-  color: var(--faint);
-  font-family: var(--mono);
-  font-size: 11.5px;
-}
-
-.r-reading-reads-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.r-reading-reads-list > button {
+.r-reader-attachment-entries > button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -306,6 +328,16 @@
   cursor: pointer;
 }
 
+.r-reader-attachment-entries > button:first-child {
+  margin-top: 8px;
+}
+
+.r-reader-attachment-entries > button:hover,
+.r-reader-attachment-entries > button.active {
+  border-color: var(--line-2);
+  background: var(--bg-2);
+}
+
 .r-reading-kind {
   padding: 2px 6px;
   border: 1px solid var(--accent-2);
@@ -317,19 +349,19 @@
   text-transform: uppercase;
 }
 
-.r-reading-read-title {
+.r-reader-attachment-title {
   min-width: 0;
   font-size: 14px;
   font-weight: 500;
 }
 
-.r-reading-read-date {
+.r-reader-attachment-date {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 11px;
 }
 
-.r-reading-read-summary {
+.r-reader-attachment-summary {
   grid-column: 2 / -1;
   color: var(--muted);
   font-size: 13.5px;

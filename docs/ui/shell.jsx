@@ -415,6 +415,10 @@ function paletteItems(currentState, projects) {
   return rows;
 }
 
+function paletteKindLabel(kind) {
+  return ({ plan: "Plans", research: "Research", evidence: "Evidence", archive: "Archive" })[kind] || kind;
+}
+
 function selectPlanSection(event, onSelectPlan, slug, sectionId) {
   event.stopPropagation();
   onSelectPlan(slug);
@@ -527,35 +531,6 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         })}
       </div>
     </div>
-  );
-}
-
-function AttachmentRail({ selectedKey, onSelect }) {
-  const groups = attachmentGroups(window.STATE, selectedKey);
-  const rows = [
-    ["research", "Research", groups.research],
-    ["evidence", "Evidence", groups.evidence],
-  ];
-  const empty = !groups.planKey || rows.every(([, , items]) => items.length === 0);
-  return (
-    <aside className="r-attachment-rail" aria-label="Plan attachments">
-      <div className="r-attachment-heading">Attached</div>
-      {empty && <p className="r-attachment-empty">No attachments</p>}
-      {rows.map(([type, label, items]) => items.length > 0 && (
-        <section key={type} className="r-attachment-group" aria-labelledby={`attachment-${type}`}>
-          <h2 id={`attachment-${type}`}>{label}<span>{items.length}</span></h2>
-          {items.map(item => {
-            const key = item.nav_key || item.slug;
-            return (
-              <button type="button" key={key} className={selectedKey === key ? "active" : ""} aria-pressed={selectedKey === key} onClick={() => onSelect(key)}>
-                <span className={`dot ${type}`} aria-hidden="true"></span>
-                <span>{item.title || item.slug}</span>
-              </button>
-            );
-          })}
-        </section>
-      ))}
-    </aside>
   );
 }
 
@@ -1320,6 +1295,7 @@ function App() {
                 <Plan
                 slug={route.slug}
                 onNav={nav}
+                attachmentGroups={attachmentGroups(M, route.slug)}
                 focusMode={readingMode}
                 onToggleFocus={() => setReadingMode(current => !current)}
                 focusPosition={{ current: readPosition + 1, total: readQueue.length }}
@@ -1329,7 +1305,6 @@ function App() {
                 }}
                 />
               </div>
-              {!readingMode && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
             </div>
           </div>
         </div>
@@ -1398,7 +1373,7 @@ function CmdKPalette({ items, onClose, onPick }) {
             <button key={`${p.repository}:${p.nav_key}`} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p)}>
               <span className={`dot ${p.status}`}></span>
               <span><strong>{p.label}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.nav_key}</span></span>
-              <span className="meta">{p.kind} · {p.repository} · {p.status}</span>
+              <span className="meta">{paletteKindLabel(p.kind)} · {p.repository} · {p.status}</span>
             </button>
           ))}
           {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No resources match.</div>}

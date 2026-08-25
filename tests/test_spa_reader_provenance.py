@@ -1,8 +1,13 @@
+import json
 from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import installed_browser, run_browser_probe
+from tests.spa_browser_harness import (
+    installed_browser,
+    run_browser_probe,
+    served_spa,
+)
 
 REPO_ROOT = Path(__file__).parents[1]
 PLAN_SOURCE = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
@@ -155,61 +160,148 @@ def test_absent_reader_values_are_omitted_instead_of_rendered_as_placeholders():
     assert ': "—"' not in PLAN_SOURCE
 
 
-def test_empty_reader_regions_are_shorter_than_populated_regions(tmp_path):
+def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(tmp_path):
     browser = installed_browser()
     if browser is None:
         pytest.skip("browser-backed reader check requires an installed browser")
 
-    reader_css = (REPO_ROOT / "docs" / "ui" / "reader.css").read_text()
-    plans_css = (REPO_ROOT / "docs" / "ui" / "plans.css").read_text()
-    document = f"""<!doctype html>
-<html><head><meta charset="utf-8"><style>
-* {{ box-sizing: border-box; }}
-:root {{ --line: #ddd; --line-2: #ccc; --ink: #111; --muted: #666; --faint: #777; --mono: monospace; }}
-body {{ margin: 0; font: 12px Arial, sans-serif; }}
-.comparison {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }}
-.r-plans-view {{ display: flex; height: 360px; }}
-.r-reader-with-attachments {{ display: flex; flex: 1; min-width: 0; }}
-.r-body {{ flex: 1; min-width: 0; }}
-.r-plan-graph {{ border-top: 1px solid var(--line); }}
-.r-plan-graph-h {{ height: 28px; }}
-.r-fan-wrap {{ padding: 10px 14px 14px; }}
-.r-fan-grid {{ height: 150px; }}
-.r-fan-empty {{ padding: 8px 0; }}
-{reader_css}
-{plans_css}
-</style></head><body>
-<div class="r-reading-controls" id="titlebar"><span class="r-reading-path">/fixture</span></div>
-<div class="comparison">
-  <div class="r-plans-view"><div class="r-reader-with-attachments"><main class="r-body">
-    <div class="r-plan-graph empty-dependencies"><div class="r-plan-graph-h">Dependencies <span>no edges</span></div><div class="r-fan-wrap compact"><div class="r-fan-grid"></div><div class="r-fan-empty">This plan stands alone.</div></div></div>
-  </main><aside class="r-attachment-rail empty-attachments"><div class="r-attachment-heading">Attached</div><p class="r-attachment-empty">No attachments</p></aside></div></div>
-  <div class="r-plans-view"><div class="r-reader-with-attachments"><main class="r-body">
-    <div class="r-plan-graph populated-dependencies"><div class="r-plan-graph-h">Dependencies <span>1 in</span></div><div class="r-fan-wrap compact"><div class="r-fan-grid">Dependency cards</div></div></div>
-  </main><aside class="r-attachment-rail populated-attachments"><div class="r-attachment-heading">Attached</div><section class="r-attachment-group"><h2>Evidence <span>2</span></h2><button>First evidence</button><button>Second evidence</button></section></aside></div></div>
-</div>
- </body></html>"""
-    measurement = run_browser_probe(
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    research = docs / "research"
+    evidence = docs / "evidence"
+    state = docs / "state" / "reckon"
+    for directory in (plans, research, evidence, state):
+        directory.mkdir(parents=True, exist_ok=True)
+    (docs / "index.html").symlink_to(REPO_ROOT / "docs" / "index.html")
+    (state / "index.json").write_text(
+        json.dumps(
+            {
+                "project": "reckon",
+                "data": {
+                    "active_sprint_id": None,
+                    "sprints": [],
+                    "milestones": [],
+                    "blockers": [],
+                    "timeline": [],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def write_resource(
+        root: Path,
+        slug: str,
+        title: str,
+        resource_type: str,
+        relation: tuple[str, str] | None = None,
+    ) -> None:
+        relation_meta = (
+            f'<meta name="plan-{relation[0]}" content="{relation[1]}">'
+            if relation
+            else ""
+        )
+        (root / f"{slug}.html").write_text(
+            f"""<!doctype html><html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="{resource_type}">
+<meta name="plan-slug" content="{slug}">
+<meta name="plan-title" content="{title}">
+<meta name="plan-summary" content="{title} summary">
+<meta name="plan-status" content="active">
+<meta name="plan-version" content="1">
+{relation_meta}
+</head><body><main class="plan-doc"><h2>{title}</h2>
+<p class="fixture-body fixture-{slug}">{title} body</p></main></body></html>""",
+            encoding="utf-8",
+        )
+
+    write_resource(plans, "work", "Work plan", "plan")
+    write_resource(plans, "empty", "Empty plan", "plan")
+    write_resource(
+        research,
+        "resource-a",
+        "Resource A",
+        "research",
+        ("informs", "work"),
+    )
+    write_resource(
+        research,
+        "resource-b",
+        "Resource B",
+        "research",
+        ("informs", "work"),
+    )
+    write_resource(
+        evidence,
+        "outcome",
+        "Outcome evidence",
+        "evidence",
+        ("evidence-for", "work"),
+    )
+
+    probe = """(async () => {
+      const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+      const waitFor = async predicate => {
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          if (predicate()) return true;
+          await delay(50);
+        }
+        return false;
+      };
+      const bars = [...document.querySelectorAll('.r-reader-attachment-bar')];
+      const labels = bars.map(bar => bar.querySelector('summary span')?.textContent.trim());
+      const counts = bars.map(bar => Number(bar.querySelector('.r-reader-attachment-count')?.textContent));
+      const body = document.querySelector('.r-plan-html');
+      const barsBeforeBody = bars.every(bar => Boolean(
+        bar.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING
+      ));
+      bars[0].open = true;
+      bars[0].querySelector('button')?.click();
+      const attachmentOpened = await waitFor(() =>
+        document.querySelector('.r-reading-path')?.textContent.trim() === '/research:resource-a'
+      );
+      const activatedRoute = document.querySelector('.r-reading-path')?.textContent.trim() || '';
+      location.hash = '#plan/empty';
+      const emptyOpened = await waitFor(() =>
+        document.querySelector('.r-reading-path')?.textContent.trim() === '/empty'
+        && document.querySelectorAll('.r-reader-attachment-bar').length === 0
+      );
+      return {
+        populatedBars: bars.length,
+        labels,
+        counts,
+        railCount: document.querySelectorAll('.r-attachment-rail').length,
+        barsBeforeBody,
+        attachmentOpened,
+        activatedRoute,
+        emptyOpened,
+        emptyBars: document.querySelectorAll('.r-reader-attachment-bar').length,
+      };
+    })()"""
+    with served_spa(
         tmp_path,
         browser,
-        document,
-        """(() => {
-          const height = selector => document.querySelector(selector).getBoundingClientRect().height;
-          const titlebar = document.querySelector('#titlebar').textContent.toLowerCase();
-          return {
-            placeholderTokens: ['—', 'unknown'].filter(token => titlebar.includes(token)),
-            emptyAttachmentHeight: height('.empty-attachments'),
-            populatedAttachmentHeight: height('.populated-attachments'),
-            emptyDependencyHeight: height('.empty-dependencies'),
-            populatedDependencyHeight: height('.populated-dependencies'),
-          };
-        })()""",
-        ready_expression="Boolean(document.querySelector('.populated-dependencies'))",
-    )
-    assert measurement["placeholderTokens"] == []
-    assert (
-        measurement["emptyAttachmentHeight"] < measurement["populatedAttachmentHeight"]
-    )
-    assert (
-        measurement["emptyDependencyHeight"] < measurement["populatedDependencyHeight"]
-    )
+        docs=docs,
+        route="#plan/work",
+    ) as spa:
+        measurement = spa.run_probe(
+            probe,
+            ready_expression=(
+                "document.querySelectorAll('.r-reader-attachment-bar').length === 2 "
+                "&& Boolean(document.querySelector('.r-plan-html'))"
+            ),
+        )
+
+    assert measurement == {
+        "populatedBars": 2,
+        "labels": ["Resources", "Evidence"],
+        "counts": [2, 1],
+        "railCount": 0,
+        "barsBeforeBody": True,
+        "attachmentOpened": True,
+        "activatedRoute": "/research:resource-a",
+        "emptyOpened": True,
+        "emptyBars": 0,
+    }

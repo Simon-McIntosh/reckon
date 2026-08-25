@@ -13,6 +13,7 @@ from tests.spa_browser_harness import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 PLANS_CSS = ROOT / "docs" / "ui" / "plans.css"
 TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
 
@@ -67,7 +68,6 @@ def test_plan_workspace_uses_a_fluid_clamped_index_and_reader() -> None:
     reader = _declarations(
         PLANS_CSS, ".r-plans-view .r-reader-with-attachments > .r-body"
     )
-    attachments = _declarations(PLANS_CSS, ".r-plans-view .r-attachment-rail")
 
     _assert_declarations(
         workspace,
@@ -96,15 +96,7 @@ def test_plan_workspace_uses_a_fluid_clamped_index_and_reader() -> None:
             "padding": "22px 26px 34px",
         },
     )
-    _assert_declarations(
-        attachments,
-        {
-            "width": "300px",
-            "flex": "none",
-            "border-left": "1px solid var(--line)",
-            "padding": "16px 14px",
-        },
-    )
+    assert ".r-attachment-rail" not in PLANS_CSS.read_text()
 
 
 def test_filter_controls_share_the_plan_list_header() -> None:
@@ -177,7 +169,8 @@ def test_reader_typography_is_preserved_without_a_width_floor() -> None:
 
     shell = SHELL.read_text()
     assert 'className="r-sort-more"' in shell
-    assert 'className="r-attachment-empty"' in shell
+    assert 'className="r-attachment-rail"' not in shell
+    assert 'className="r-reader-attachment-bar"' in PLAN.read_text()
 
 
 @pytest.mark.parametrize(

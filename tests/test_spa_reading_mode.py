@@ -2,7 +2,6 @@ import json
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
@@ -53,7 +52,7 @@ def test_focus_key_toggles_both_ways_and_escape_keeps_selection() -> None:
     }
 
 
-def test_reading_queue_follows_filtered_plan_and_attachment_rail_order() -> None:
+def test_reading_queue_follows_filtered_plan_and_attachment_bar_order() -> None:
     state = {
         "plans": {
             "plan-a": {"slug": "plan-a", "type": "plan"},
@@ -86,7 +85,7 @@ def test_reading_queue_follows_filtered_plan_and_attachment_rail_order() -> None
         ["readingQueueStep"],
         f"readingQueueStep({json.dumps(queue)}, 'plan-a', 1)",
     )
-    next_after_rail = _evaluate(
+    next_after_evidence = _evaluate(
         ["readingQueueStep"],
         f"readingQueueStep({json.dumps(queue)}, 'evidence:receipt', 1)",
     )
@@ -98,7 +97,7 @@ def test_reading_queue_follows_filtered_plan_and_attachment_rail_order() -> None
         "plan-b",
     ]
     assert next_after_plan == "research:note"
-    assert next_after_rail == "plan-b"
+    assert next_after_evidence == "plan-b"
 
 
 def test_palette_projects_typed_results_across_repositories() -> None:
@@ -144,6 +143,19 @@ def test_focus_mode_reuses_reader_with_provenance_banners() -> None:
     assert "data-focus-mode={focusMode ? \"true\" : \"false\"}" in plan
     assert 'source="authored plan HTML"' in article
     assert 'source="structured plan state"' in article
+    assert "<ReaderAttachmentBars" in article
+    assert article.index("<PlanInFlightBand") < article.index(
+        'source="authored plan HTML"'
+    )
+    assert article.index('source="authored plan HTML"') < article.index(
+        'source="structured plan state"'
+    )
+    assert article.index('source="structured plan state"') < article.index(
+        "<ReaderAttachmentBars"
+    )
+    assert article.index("<ReaderAttachmentBars") < article.index(
+        "{!htmlReady ? ("
+    )
     assert "readingQueueStep(readQueue, route.slug" in shell
 
 
