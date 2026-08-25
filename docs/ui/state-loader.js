@@ -112,6 +112,7 @@ window.STATE_READY = (async function () {
         ms:       pl.milestone || "—",
         roi:      pl.roi    || "mid",
         effort:   pl.effort || "M",
+        effort_hours: pl.effort_hours,
         impl:     pl.implementation_fraction || 0,
         dec_open: pl.dec_open || 0,
         blockers: Array.isArray(pl.blocked_by) ? pl.blocked_by.length
