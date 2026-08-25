@@ -2272,6 +2272,94 @@ def test_observe_folds_the_stream_into_the_record(home, repo) -> None:
     )
 
 
+def test_member_session_is_reused_when_the_resolved_model_matches(home, repo) -> None:
+    session_id = "019ff509-8a60-7723-94fd-65942a6d8faa"
+    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
+    first = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="first",
+        member="worker-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    Path(first["log_path"]).write_text((FIXTURES / "codex-turn.jsonl").read_text())
+    crew.observe(first["run_id"])
+
+    second = crew.dispatch(
+        node=_node(id="node-b", write_paths=["reckon/session.py"]),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="second",
+        member="worker-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert second["session_id"] == session_id
+    assert second["argv"][second["argv"].index("resume") + 1] == session_id
+
+
+def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
+    home, repo
+) -> None:
+    original_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
+    fresh_session = "019ff509-8a60-7723-94fd-65942a6d8fab"
+    ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
+    first = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="first",
+        member="worker-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    Path(first["log_path"]).write_text((FIXTURES / "codex-turn.jsonl").read_text())
+    crew.observe(first["run_id"])
+
+    other_config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "model": "other-model"},
+        },
+    }
+    plans = []
+    second = crew.dispatch(
+        node=_node(id="node-b", write_paths=["reckon/session.py"]),
+        project="proj",
+        repo=repo,
+        config=other_config,
+        session="second",
+        member="worker-a",
+        launcher=lambda plan, **kwargs: plans.append(plan) or 0,
+    )
+
+    assert second["session_id"] is None
+    assert plans[0].resumed_session is None
+    assert "resume" not in second["argv"]
+
+    fresh_stream = (
+        (FIXTURES / "codex-turn.jsonl")
+        .read_text()
+        .replace(original_session, fresh_session)
+    )
+    Path(second["log_path"]).write_text(fresh_stream)
+    observed = crew.observe(second["run_id"])
+    member = ledger.member("proj", "worker-a", repo)
+
+    assert observed["session_id"] == fresh_session
+    assert observed["session_capture"]["captured"] is True
+    assert member["session_id"] == original_session
+    assert member["session_model"] == "some-model"
+    assert member["sessions"] == {
+        "other-model": fresh_session,
+        "some-model": original_session,
+    }
+
+
 def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> None:
     record = crew.dispatch(
         node=_node(),

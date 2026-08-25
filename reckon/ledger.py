@@ -251,6 +251,19 @@ def member(
     return None
 
 
+def session_for_model(entry: Mapping[str, Any], model: str) -> str | None:
+    """Return the member session recorded for exactly one resolved model."""
+    model_key = str(model).strip()
+    if not model_key:
+        return None
+    sessions = entry.get("sessions")
+    if isinstance(sessions, Mapping) and sessions.get(model_key):
+        return str(sessions[model_key])
+    if str(entry.get("session_model") or "") == model_key and entry.get("session_id"):
+        return str(entry["session_id"])
+    return None
+
+
 def register_member(
     project: str,
     member_id: str,
@@ -272,11 +285,25 @@ def register_member(
     if not str(harness).strip():
         raise LedgerError("a member must name the harness it dispatches to")
     data, version = load(project, root)
+    existing = next(
+        (
+            dict(item)
+            for item in data["members"]
+            if str(item.get("id")) == str(member_id)
+        ),
+        {},
+    )
     entry = {
         "id": str(member_id),
         "harness": str(harness),
         "role": str(role),
         "session_id": str(session_id) if session_id else None,
+        "session_model": (
+            existing.get("session_model")
+            if session_id and str(existing.get("session_id") or "") == str(session_id)
+            else None
+        ),
+        "sessions": dict(existing.get("sessions") or {}),
         "created": next(
             (
                 str(existing.get("created"))
@@ -300,13 +327,13 @@ def capture_session(
     member_id: str,
     session_id: str,
     root: str | Path | None = None,
+    *,
+    model: str = "",
 ) -> dict[str, Any]:
-    """Persist a session id onto a member that does not have one yet.
+    """Persist a session id without replacing another model's session.
 
-    The first id wins. A later run that started a fresh session instead of
-    resuming is reported rather than written over the top, because overwriting
-    would silently retire the long-lived session every subsequent node and every
-    escape-hatch resumption is meant to reach.
+    The first id wins independently for every recorded model. Calls without a
+    model retain the scalar compatibility contract used by older ledgers.
     """
     if not str(session_id).strip():
         raise LedgerError("cannot capture an empty session id")
@@ -314,6 +341,41 @@ def capture_session(
     for entry in data["members"]:
         if str(entry.get("id")) != str(member_id):
             continue
+        model_key = str(model).strip()
+        if model_key:
+            sessions = dict(entry.get("sessions") or {})
+            current = sessions.get(model_key)
+            if current and str(current) != str(session_id):
+                return {
+                    "captured": False,
+                    "member": dict(entry),
+                    "detail": (
+                        f"member {member_id!r} already reuses session {current!r} "
+                        f"for model {model_key!r}; run reported {session_id!r} and "
+                        "it was not written over the top"
+                    ),
+                }
+            if current:
+                return {
+                    "captured": False,
+                    "member": dict(entry),
+                    "detail": "unchanged",
+                }
+            sessions[model_key] = str(session_id)
+            entry["sessions"] = sessions
+            if not entry.get("session_id"):
+                entry["session_id"] = str(session_id)
+                entry["session_model"] = model_key
+            elif str(entry.get("session_id")) == str(session_id) and not entry.get(
+                "session_model"
+            ):
+                entry["session_model"] = model_key
+            write(project, data, version, root)
+            return {
+                "captured": True,
+                "member": dict(entry),
+                "detail": f"first run for model {model_key!r}",
+            }
         current = entry.get("session_id")
         if current and str(current) != str(session_id):
             return {
@@ -1041,7 +1103,11 @@ def summary(
     for record in records:
         verdict = str(record.get("gate") or "unknown")
         gates[verdict] = gates.get(verdict, 0) + 1
-    sessions = sum(1 for entry in data["members"] if entry.get("session_id"))
+    sessions = sum(
+        1
+        for entry in data["members"]
+        if entry.get("session_id") or entry.get("sessions")
+    )
     return {
         "version": version,
         "path": str(ledger_path(project, root)),
