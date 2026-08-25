@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T10:48:23",
+  "updated": "2026-08-25T13:58:19",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -55,7 +55,10 @@
         "harness": "codex",
         "role": "implement",
         "session_id": "01a03333-6548-7fd2-baf0-918c1671dadf",
-        "created": "2026-08-12"
+        "created": "2026-08-12",
+        "sessions": {
+          "gpt-5.6-sol": "01a038c0-f651-73a0-aee6-bbaed1da322d"
+        }
       },
       {
         "id": "codex-h",
@@ -17356,9 +17359,287 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T114758024534-ledger-summary-partitions-gates",
+        "plan": "crew-effort-routing",
+        "section": "\u00a711.3",
+        "node": "ledger-summary-partitions-gates",
+        "node_definition": {
+          "done_when": "A focused test in tests/test_ledger.py asserts a shadow run's failed gate does not move the live gate count; a second asserts a ledger holding only live runs reports an unchanged live block. Full test suite green with zero failures.",
+          "estimated_hours": 0.4,
+          "goal": "The ledger summary reports live and shadow gate counts as separate blocks.",
+          "id": "ledger-summary-partitions-gates",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114758024534-ledger-summary-partitions-gates/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711.3",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-i",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T11:48:02Z",
+        "completed_at": "2026-08-25T11:53:35Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 333,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 333,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "d983b2e5cec603436592d357a56c81d108d347bb",
+        "commits": [
+          "72ef0992073935ca7a37b2184ce72ba0673afd4e"
+        ],
+        "changed_lines": {
+          "added": 29,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114758024534-ledger-summary-partitions-gates/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0333a-d46a-7131-b032-c4ceea354f65",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4781312,
+            "cached_input_tokens_cumulative": 25376256,
+            "input_tokens": 4972605,
+            "input_tokens_cumulative": 26966649,
+            "output_tokens": 9805,
+            "output_tokens_cumulative": 79317,
+            "reasoning_output_tokens": 2743,
+            "reasoning_output_tokens_cumulative": 26705
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T114920512493-n-lead-complaint-reuse-map",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a714",
+        "node": "n-lead-complaint-reuse-map",
+        "node_definition": {
+          "done_when": "grep -c on the report counts exactly 7 complaint headings and at least 14 candidate lines in file:symbol form, and every candidate line carries one verdict token of reuse or extend or absent",
+          "estimated_hours": 0.5,
+          "goal": "A reuse map naming every existing module, symbol and test that already implements or partially implements each of the seven complaints in the plan's section 14, with a one-line fitness verdict per candidate",
+          "id": "n-lead-complaint-reuse-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114920512493-n-lead-complaint-reuse-map/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a714",
+          "spec_level": "open",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/spa-lead-complaint-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "codex-g",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-25T11:49:24Z",
+        "completed_at": "2026-08-25T11:56:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 413,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 413,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "a8b501de9e510c5759ad6e3a0b5cc6b724a79bc9",
+        "commits": [
+          "a8b501d"
+        ],
+        "changed_lines": {
+          "available": false,
+          "reason": "diff_unavailable"
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114920512493-n-lead-complaint-reuse-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c0-f651-73a0-aee6-bbaed1da322d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2829312,
+            "cached_input_tokens_cumulative": 2829312,
+            "input_tokens": 2997550,
+            "input_tokens_cumulative": 2997550,
+            "output_tokens": 14592,
+            "output_tokens_cumulative": 14592,
+            "reasoning_output_tokens": 4675,
+            "reasoning_output_tokens_cumulative": 4675
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T114747092517-shadow-inherits-primary-configuration",
+        "plan": "crew-effort-routing",
+        "section": "\u00a711.1",
+        "node": "shadow-inherits-primary-configuration",
+        "node_definition": {
+          "done_when": "Focused tests in tests/test_crew.py assert four behaviours: a shadow of a primary recorded at one effort resolves that same effort while switching only the named backend; an explicit effort override is used and the substitution recorded on the run; a primary carrying no recorded agent configuration is refused with a message naming why; the promoted shadow record states both the substituted dimension and the inherited remainder. Full test suite green with zero failures.",
+          "estimated_hours": 0.75,
+          "goal": "A shadow resolves its primary's recorded agent configuration, substituting only the dimension the caller names.",
+          "id": "shadow-inherits-primary-configuration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114747092517-shadow-inherits-primary-configuration/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711.1",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T11:47:49Z",
+        "completed_at": "2026-08-25T11:57:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 576,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 576,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d983b2e5cec603436592d357a56c81d108d347bb",
+        "commits": [
+          "9f3e8dc9f5a0e281daff26c2530e201a01bdbeac"
+        ],
+        "changed_lines": {
+          "added": 191,
+          "removed": 14,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T114747092517-shadow-inherits-primary-configuration/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff70f-e564-7391-a681-b1c4d92d8ece",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 38970624,
+            "cached_input_tokens_cumulative": 38970624,
+            "input_tokens": 41400622,
+            "input_tokens_cumulative": 41400622,
+            "output_tokens": 138678,
+            "output_tokens_cumulative": 138678,
+            "reasoning_output_tokens": 45691,
+            "reasoning_output_tokens_cumulative": 45691
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 332
+    "_version": 336
   }
 }

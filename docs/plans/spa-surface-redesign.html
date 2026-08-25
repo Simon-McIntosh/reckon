@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="36">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076">
 <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/index.html,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_build.py,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html">
@@ -458,10 +458,14 @@
 
     <h2 id="s12">&#167;12 &mdash; Out of scope</h2>
 
-    <p><strong>Server, schema and tool surfaces.</strong> This plan changes what the browser renders
-    from payloads the server already emits. It adds no endpoint, no plan-schema field and no MCP
-    tool. Where a surface needs something the server does not send, that is a finding to record, not
-    a licence to extend the API here.</p>
+    <p><strong>Server, schema and tool surfaces &mdash; narrowed by the lead, twice.</strong> This
+    plan was scoped to change only what the browser renders from payloads the server already emits,
+    adding no endpoint, no plan-schema field and no MCP tool. Two of the lead's answers cross that
+    line deliberately and are therefore authorised rather than findings: the sprint drill-down of
+    &#167;16 needs a served route for finished runs, because <code>GET /crew</code> returns live
+    pointers only; and the description bound of &#167;17 needs a write-time refusal, which is a tool
+    surface by construction. The boundary otherwise stands &mdash; anything else a surface wants
+    from the server is still a finding to record, not a licence to extend the API here.</p>
 
     <p><strong>The canvas runtime.</strong> The imported <code>.dc.html</code> documents are read as
     specification. Their <code>x-dc</code> template dialect and the generated runtime that
@@ -645,6 +649,125 @@
     the defect list names each finding with its computed value, and a deliberately broken container
     is shown to fail a check that declaration-site assertions pass.</p>
 
+    <h2 id="s16">&#167;16 &mdash; A sprint opens the record of what it actually did</h2>
+
+    <p><strong>The short-horizon question had a wrong premise, and the lead replaced it rather than
+    answering it.</strong> Asked whether a 1-day and 1-hour window should zoom the sprint bands or
+    overlay live activity, the answer was neither: <em>&ldquo;the sprints should be clickable, this
+    should open up a ledger of completed work with timestamps if it is being recorded anywhere. we
+    have a ticker watcher and file timestamps, would this be hard to build with the data that we are
+    already recording&rdquo;</em>.</p>
+
+    <p><strong>It is not hard, and nothing new needs recording.</strong> The committed ledger at
+    <code>docs/state/reckon/crew.json</code> holds 271 completed run records in this project alone,
+    and every one already carries the fields the drill-down needs: <code>dispatched_at</code> and
+    <code>completed_at</code>, the plan and section it served, the node, the gate verdict, the
+    commits, the changed-line counts, tests added, and measured worker seconds. The reader for it
+    exists too &mdash; <code>reckon/ledger.py</code> already exposes <code>runs</code>,
+    <code>read_records</code> and <code>evidence_records_for_plan</code>, and
+    <code>reckon/serve.py</code> already imports the module. Sprint membership comes from the
+    index's own items. The one missing link is that <code>GET /crew</code> serves
+    <code>crew.list_live()</code> only, so the browser can see what is running and has no route to
+    what has finished.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 220" width="100%" style="max-width:720px" role="img"
+           aria-label="271 committed run records already carry every field the drill-down needs; only the served route is missing">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="30" width="184" height="150" rx="3"/>
+          <rect x="270" y="30" width="150" height="52" rx="3"/>
+          <rect x="270" y="112" width="150" height="52" rx="3"/>
+          <rect x="512" y="66" width="200" height="80" rx="3"/>
+          <path d="M 198 66 H 264"/>
+          <path d="M 198 140 H 264"/>
+          <path d="M 426 56 H 470 V 96 H 506"/>
+          <path d="M 426 138 H 470 V 116 H 506"/>
+        </g>
+        <g stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" fill="none">
+          <path d="M 426 138 H 470"/>
+        </g>
+        <g fill="currentColor" font-size="12.5" font-family="system-ui, sans-serif">
+          <text x="8" y="22" opacity="0.6">already recorded</text>
+          <text x="18" y="52" font-weight="600">crew.json &mdash; 271 records</text>
+          <text x="18" y="72">dispatched_at, completed_at</text>
+          <text x="18" y="90">plan, section, node</text>
+          <text x="18" y="108">gate, commits, tests_added</text>
+          <text x="18" y="126">changed_lines, worker_seconds</text>
+          <text x="18" y="150" opacity="0.6">index.json &mdash; sprint items</text>
+          <text x="18" y="168" opacity="0.6">give sprint &rarr; plan membership</text>
+          <text x="280" y="52">ledger.read_records</text>
+          <text x="280" y="70" opacity="0.6">exists</text>
+          <text x="280" y="134">GET /crew</text>
+          <text x="280" y="152" opacity="0.6">live only &mdash; the gap</text>
+          <text x="522" y="88" font-weight="600">click a sprint row</text>
+          <text x="522" y="108">&rarr; its completed work,</text>
+          <text x="522" y="126">newest first, with stamps</text>
+        </g>
+      </svg>
+      <figcaption>Every field the drill-down renders is already committed on every completed run,
+      and the reader for it already exists. The single missing piece is a served route for finished
+      runs &mdash; <code>GET /crew</code> returns live pointers only.</figcaption>
+    </figure>
+
+    <p><strong>This also settles what the short horizons plot.</strong> The scout named one
+    unresolved semantic input: live-run activity is sub-hour but is not authored planning, while
+    sprint <code>starts</code> and <code>ends</code> are authored planning but date-only. The
+    recorded ledger is the third answer and the right one &mdash; it is neither a guess about the
+    future nor a poll of the present, but what happened, at second resolution, already committed. So
+    1D and 1hr are honest axis scales over that record rather than over a date-only sprint band.</p>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>A route for finished runs.</strong> Completed run records reach the browser
+      filtered by project and by plan, read through the existing <code>ledger</code> module rather
+      than a second parser.</li>
+      <li><strong>A sprint row that opens.</strong> Selecting a sprint lists the completed work of
+      its member plans, newest first, each row carrying its stamps, node, section, gate verdict and
+      commit.</li>
+      <li><strong>1D and 1hr horizons.</strong> Added to the single existing horizon registry, with
+      the axis gaining duration units and sub-day tick formatting, and the record supplying the
+      structure a date-only band cannot.</li>
+    </ul>
+
+    <p><strong>Done when</strong> a sprint with completed runs renders them with timestamps on
+    selection, a sprint with none says so rather than rendering an empty axis, and the 1D and 1hr
+    ticks are sub-day while every active sprint still appears.</p>
+
+    <h2 id="s17">&#167;17 &mdash; A bound on description text, enforced where it is written</h2>
+
+    <p><strong>The verbose-description complaint is the third of its kind, so the remedy is not
+    another display fix.</strong> Asked whether to clamp the display or shorten the data, the lead
+    took both and added the part that keeps it fixed: <em>&ldquo;clamp and flag, update skills to
+    ensure short descriptions are written in future. gate the plan write to ensure that this is
+    followed&rdquo;</em>. A clamp alone leaves every future plan free to author a paragraph; a
+    manual pass alone regresses on the next plan created.</p>
+
+    <p>The scout found the display half already substantially done &mdash;
+    <code>sprints.css</code>'s card description is already one line with an ellipsis, and the plan
+    list renders no description body at all &mdash; which relocates the defect. Whatever the lead is
+    reading as a verbose card is therefore identified from the rendered captures of &#167;15, not
+    guessed at.</p>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>The clamp, where the captures show it is missing.</strong> One rendered line, full
+      text still reachable, no new disclosure.</li>
+      <li><strong>The flag.</strong> <code>reckon audit</code> reports every plan whose summary
+      exceeds the bound, so existing over-long summaries are enumerable rather than discovered one
+      card at a time.</li>
+      <li><strong>The write gate.</strong> A write that sets a plan summary over the bound is
+      refused, with the bound and the measured length in the refusal. Deliberately scoped to writes
+      that touch the summary itself, so the 43 existing plans are not bricked and any edit passing
+      through one must shorten it.</li>
+      <li><strong>The skills.</strong> <code>reckon-create</code> and <code>reckon-edit</code> state
+      the bound where a summary is authored, so the gate is documented before it is met rather than
+      discovered as a refusal.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the audit lists the over-long summaries with their lengths, a write
+    setting an over-long summary is refused while an unrelated write to the same plan is not, and the
+    two skills state the bound.</p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="audited-semantics-survive" data-section="s2" data-gated-sections="s12" data-status="open" data-verdict="">
@@ -687,6 +810,18 @@
       <button class="r-opt" data-value="stay-with-the-audit">Keep them on the audit&#x27;s plan and serialise the two</button>
       </p>
     <p class="r-dec-rat">A remedy and a redraw competing for the same row are one piece of work, not two, and scheduling them as two would mean either serialising every surface behind the audit&#x27;s plan or letting two workers write one file. Moving them also makes the contradiction visible: four of the nine are things the canvas would otherwise undo, which only reads as a requirement when both live on the same page.</p>
+    </div>
+<div class="r-dec" data-key="rendering-check-dependency" data-choice="committed-browser-backed-test" data-by="Simon McIntosh" data-when="2026-08-25T11:59:40+00:00">
+    <p class="r-dec-q">rendering-check-dependency</p>
+    <p class="r-dec-rat">The trade section 13 reserved for the lead had a false premise: it weighed adding a JavaScript toolchain to a manifest that cannot express one, but the browser is already installed system-wide and node 22 is on the path, so a check that shells out and skips when it is absent adds nothing to pyproject.toml. The lead chose to land it on the merits that remain: it is the only instrument in this plan that has ever caught the composition class, three waves of green declaration-site gates having passed over a page a screenshot then broke, and both gates still holding this plan blocked demand a rendering assertion by name.</p>
+    </div>
+<div class="r-dec" data-key="short-horizon-content" data-choice="recorded-run-ledger" data-by="Simon McIntosh" data-when="2026-08-25T11:59:40+00:00">
+    <p class="r-dec-q">short-horizon-content</p>
+    <p class="r-dec-rat">Both options put to the lead were wrong in the same way and the lead replaced the question rather than answering it: zooming a date-only band gives a flat bar off both edges, and overlaying live runs plots the present rather than a plan. The recorded ledger is the third answer and needs nothing new recorded - 271 completed runs in this project already carry dispatched_at, completed_at, plan, section, node, gate, commits, changed lines and measured worker seconds, and reckon/ledger.py already reads them. It also resolves the scout&#x27;s one open semantic input, which framed the choice as live activity versus new authored timestamps and missed the record that already exists. The single gap is that GET /crew serves live pointers only.</p>
+    </div>
+<div class="r-dec" data-key="verbose-description-remedy" data-choice="clamp-flag-skill-and-write-gate" data-by="Simon McIntosh" data-when="2026-08-25T11:59:40+00:00">
+    <p class="r-dec-q">verbose-description-remedy</p>
+    <p class="r-dec-rat">This is the third time the verbosity complaint has been made - first of the sprint card contract, answered by a disclosure, then of the sort dropdown, answered by segmented buttons, and now of the description text itself. A display clamp alone leaves every future plan free to author a paragraph and would earn a fourth complaint; a manual pass over the existing summaries alone regresses on the next plan created. The lead took both halves and added the part that keeps it fixed, so the bound is stated where a summary is authored, enforced when one is written, and reported for the ones already in the tree. The gate is scoped to writes that touch the summary itself so existing plans are not bricked by an unrelated edit.</p>
     </div>
 </section>
 
@@ -783,7 +918,13 @@
     <div class="r-comment-body"><p>Focus mode over the reader: f toggles both ways, Escape leaves focus without clearing the selection beneath it, and the arrows page the filtered list order across both the plan list and the attachment rail, so the rail is the reading queue. The palette gained typed cross-project results. Rank 9's provenance banner renders in focus mode too, where a partial document passing for complete is worse for having no surrounding chrome.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260825T082636207094-project-visibility-as-a-setting" data-who="codex-c" data-when="2026-08-25T08:41:12Z">
-    <div class="r-comment-body"><p>Project visibility is now one fleet-wide setting rather than a chip filter. The topbar is a single row with left-aligned tabs, the Overview tab is removed because the brand button already calls navProject(null) titled All projects and rendered the same cross-project content, and the tabs are the four within-project views. The project control lists visible projects with their plan and live counts plus a Configure entry at the foot, and Configure opens the same panel that lives in the settings menu beside theme and density rather than a second implementation of it. Visibility propagates: the Crew run list and the fleet statistics respect it, and counts distinguish mounted from shown. Hidden excludes from aggregates and from the shortcut list but never from reach, which is the nova defect — a display preference had been doing routing&#x27;s job. Full suite 2375 passed / 0 failed.</p></div>
+    <div class="r-comment-body"><p>Project visibility is now one fleet-wide setting rather than a chip filter. The topbar is a single row with left-aligned tabs, the Overview tab is removed because the brand button already calls navProject(null) titled All projects and rendered the same cross-project content, and the tabs are the four within-project views. The project control lists visible projects with their plan and live counts plus a Configure entry at the foot, and Configure opens the same panel that lives in the settings menu beside theme and density rather than a second implementation of it. Visibility propagates: the Crew run list and the fleet statistics respect it, and counts distinguish mounted from shown. Hidden excludes from aggregates and from the shortcut list but never from reach, which is the nova defect — a display preference had been doing routing's job. Full suite 2375 passed / 0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20260825T114920512493-n-lead-complaint-reuse-map" data-who="codex-g" data-when="2026-08-25T11:56:17Z">
+    <div class="r-comment-body"><p>Reuse map: 7/7 complaints mapped to existing owners; 50 candidates (18 reuse, 29 extend, 3 absent); three landed tests identified as contradiction tests to invert</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-reuse-map-20260825T1157" data-who="reckon-ship" data-when="2026-08-25T11:57:00Z">
+    <div class="r-comment-body"><p><strong>The reuse map found an existing owner for all seven complaints and no case for a new component.</strong> 50 candidates across the seven: 18 reuse, 29 extend, 3 genuinely absent. The three absences are the browser-backed capture harness, an hour-resolution sprint axis test, and a plan-scoped overview blocker test &mdash; no missing component, only missing checks.</p><p><strong>Three landed tests actively enforce what the lead has now rejected, and they are edits rather than regressions.</strong> <code>test_filter_chips_render_only_a_dot_and_count</code> requires exactly two spans and no label; <code>test_plan_workspace_preserves_the_four_column_canvas_widths</code> pins the rejected 64px; and <code>test_inflight_band_identifies_work_without_rendering_a_run_hash</code> requires <code>run.model</code> by name. Each must be inverted deliberately. This is the fuse class this plan already recorded twice today, arriving a third time from a different direction: a test that pins a value which exists in order to change.</p><p><strong>Two complaints turned out smaller than they read, and one larger.</strong> Complaint 1 is discoverability alone &mdash; <code>navProject</code>, the palette and the cross-project route already reach a hidden project end to end, and only the primary menu omits the affordance. Complaint 6 needs no schema work, because <code>effort_hours</code> and the <code>_plan_effort</code> projection already exist and only the loader fallback and three render sites carry the model. Complaint 5 is the one that grew: the sprint card already clamps to one line, so the verbose text the lead is reading is somewhere the captures of &#167;15 must identify.</p></div>
 </div>
 </section>
 </main>
