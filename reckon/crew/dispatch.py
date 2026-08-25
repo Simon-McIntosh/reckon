@@ -1177,7 +1177,7 @@ def _shadow_dispatch_config(
     node: TaskNode,
     primary_agent: Mapping[str, Any],
     candidate_backend: str,
-    agent_overrides: Iterable[str],
+    configuration_overrides: Iterable[str],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Resolve a candidate while retaining unmodified primary agent settings."""
     resolved_backend, candidate = resolve_role(config, node.role, node.spec_level)
@@ -1187,7 +1187,7 @@ def _shadow_dispatch_config(
             f"{resolved_backend!r}; route the node explicitly to the candidate"
         )
 
-    explicit = {str(config_key) for config_key in agent_overrides}
+    explicit = {str(config_key) for config_key in configuration_overrides}
     effective = dict(candidate)
     for config_key in ("effort", "sandbox"):
         if config_key not in explicit:
@@ -1237,6 +1237,7 @@ def shadow(
     repo: str | Path,
     member: str = "",
     agent_overrides: Iterable[str] = (),
+    configuration_overrides: Iterable[str] = (),
     dry_run: bool = False,
     launcher=None,
 ) -> dict[str, Any]:
@@ -1245,14 +1246,42 @@ def shadow(
     project = source["project"]
     node = source["node"]
     base_sha = source["base_sha"]
-    primary_agent = source["primary"]["agent"]
+    primary = source["primary"]
+    primary_agent = primary["agent"]
+    explicit = {
+        str(config_key) for config_key in (*agent_overrides, *configuration_overrides)
+    }
     shadow_config, comparison = _shadow_dispatch_config(
         config=config,
         node=node,
         primary_agent=primary_agent,
         candidate_backend=candidate_backend,
-        agent_overrides=agent_overrides,
+        configuration_overrides=explicit,
     )
+    _backend_name, shadow_backend = resolve_role(
+        shadow_config, node.role, node.spec_level
+    )
+    role_time_budget = resolved_time_budget(shadow_config, shadow_backend)
+    primary_time_budget = str(primary.get("time_budget") or "")
+    if "time_budget" in explicit:
+        node.time_budget = role_time_budget
+        comparison["substituted"]["time_budget"] = {
+            "primary": primary_time_budget or None,
+            "shadow": role_time_budget,
+            "via": "override",
+        }
+    elif primary_time_budget:
+        node.time_budget = primary_time_budget
+        comparison["inherited"]["time_budget"] = primary_time_budget
+    else:
+        node.time_budget = role_time_budget
+        comparison["inherited"]["time_budget"] = role_time_budget
+        comparison["fallbacks"] = {
+            "time_budget": {
+                "source": "resolved_role_default",
+                "value": role_time_budget,
+            }
+        }
     lineage = {
         "kind": "shadow",
         "primary_run_id": run_id,
