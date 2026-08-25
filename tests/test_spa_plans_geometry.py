@@ -256,7 +256,7 @@ def test_plan_row_metadata_is_one_bounded_line_in_the_rendered_list(
     assert geometry["rowHeightRange"] < 20
 
 
-def test_idle_projects_are_hidden_until_the_browser_records_an_override() -> None:
+def test_project_visibility_defaults_to_all_and_respects_stored_hiding() -> None:
     projects = [
         {
             "project": "open-work",
@@ -271,7 +271,6 @@ def test_idle_projects_are_hidden_until_the_browser_records_an_override() -> Non
     ]
     functions = [
         "mountedProjectRows",
-        "projectHasOpenWork",
         "effectiveHiddenProjects",
         "visibleProjectRows",
     ]
@@ -279,12 +278,12 @@ def test_idle_projects_are_hidden_until_the_browser_records_an_override() -> Non
         functions,
         f"visibleProjectRows({json.dumps(projects)}, null).map(row => row.project)",
     )
-    overridden_rows = _evaluate(
+    stored_preference_rows = _evaluate(
         functions,
-        f"visibleProjectRows({json.dumps(projects)}, []).map(row => row.project)",
+        f"visibleProjectRows({json.dumps(projects)}, ['settled-work']).map(row => row.project)",
     )
 
-    assert default_rows == ["open-work"]
-    assert overridden_rows == ["open-work", "settled-work"]
+    assert default_rows == ["open-work", "settled-work"]
+    assert stored_preference_rows == ["open-work"]
     assert "localStorage.getItem(PROJECT_VISIBILITY_STORAGE)" in SHELL.read_text()
     assert "localStorage.setItem(PROJECT_VISIBILITY_STORAGE" in SHELL.read_text()
