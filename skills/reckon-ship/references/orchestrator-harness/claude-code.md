@@ -25,15 +25,27 @@ config.
 
 Every successful dispatch returns `watch.arming_line` and
 `watch.watcher_live`. When the latter is false, arm the returned line as a
-harness `Monitor`; when it is true, attach to the monitor the CLI lists for that
-project. The seat holder's stdout is the monitor signal: each line becomes a
-chat notification, so a blocked or terminal transition wakes the orchestrator
-while the watch continues to hold the project seat until the fleet drains.
+harness `Monitor`; when it is true the seat belongs to someone else — possibly
+to a producer dispatch armed detached on your behalf — and this session reaches
+the same stream with `reckon crew follow --project <project>`, also as a
+`Monitor`. Either way stdout is the signal: each line becomes a chat
+notification, so a blocked or terminal transition wakes the orchestrator.
+Sessions do not compete for the seat, so each keeps its own view and attaches or
+leaves independently.
 
-Other sessions in the same repository do not compete for that seat. They run
-`reckon crew follow --project <project>`, which prints the current fleet and
-then follows the same durable transition stream without registering a watcher.
-Each session may therefore keep its own view and attach or leave independently.
+Both forms belong in a `Monitor`, and the follower especially, because it is a
+**line-producing** primitive rather than an **exit-producing** one. It returns
+only when `watcher_live` goes false — never on a terminal manifest, a stall
+window, or an empty fleet. Arming it with a wake-on-exit background command
+therefore yields silence until the seat dies, which reads as a quiet fleet and
+is the measured cause of three sessions falling back to hand-rolled manifest
+polling. The follower also refuses when no seat exists anywhere, naming the
+arming line: it follows a watch, it does not start one.
+
+Attaching late loses nothing. The follower yields a baseline built from the
+current live pointers before seeking to the end of the stream, so it opens with
+the present state of every run; only the historical lines themselves are not
+replayed.
 
 Do not launch the watcher as a detached shell background command. Its process
 can remain live and satisfy the dispatch guard while no session reads its
