@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T10:41:36",
+  "updated": "2026-08-25T10:48:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -17171,9 +17171,194 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T084013159052-crew-list-classification-fields",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a75",
+        "node": "crew-list-classification-fields",
+        "node_definition": {
+          "done_when": "Widen the crew list CLI projection to carry the classification, process_alive, elapsed_seconds, log_age_seconds, budget_seconds, budget_overrun, manifest_status and next_action that crew view=live already computes, reusing that computation rather than reimplementing it, because list returns only nine fields today and is the only surface a shell loop can reach, so a fleet in trouble reads identically to a healthy one. Pin the two projections against each other in a new tests/test_crew_surface_parity.py so they cannot diverge again. SECOND HALF WITH A HARD CONSTRAINT: skills/reckon-ship/SKILL.md around line 544 asserts that list omits those exact fields, which this falsifies, so correct it in the same commit, because code and its documentation are two halves that must be specified together or neither is owned. That file is at 14314 estimated tokens against a 14400 budget enforced by test_engine_generated_dispatch_keeps_fixed_read_set_bounded, leaving about 64 words. The paragraph must get SHORTER, since the enumeration of omitted fields is most of its length and widening removes the reason for it. Do not raise FIXED_READ_SET_TOKEN_BUDGET and do not shave an unrelated rule; report the before and after estimate. The existing suite passes unchanged.",
+          "estimated_hours": 3.0,
+          "goal": "Give reckon crew list the deciding fields the live view already computes, and shorten the guidance that enumerates their absence",
+          "id": "crew-list-classification-fields",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T084013159052-crew-list-classification-fields/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_crew_surface_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-g",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T08:40:18Z",
+        "completed_at": "2026-08-25T08:47:13Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 415,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 415,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f85fa08f258628fbaabcc978a7498065614e4595",
+        "commits": [
+          "95bc9db"
+        ],
+        "changed_lines": {
+          "added": 104,
+          "removed": 23,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T084013159052-crew-list-classification-fields/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03813-d6b5-7280-a5b7-934810797bba",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2925824,
+            "cached_input_tokens_cumulative": 2925824,
+            "input_tokens": 3059343,
+            "input_tokens_cumulative": 3059343,
+            "output_tokens": 10545,
+            "output_tokens_cumulative": 10545,
+            "reasoning_output_tokens": 2503,
+            "reasoning_output_tokens_cumulative": 2503
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260825T083318691111-crew-list-classification-fields",
+          "root_run_id": "r-20260825T083318691111-crew-list-classification-fields"
+        },
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "redispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T083837114756-shadow-claims-inbound-asymmetry",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a75",
+        "node": "shadow-claims-inbound-asymmetry",
+        "node_definition": {
+          "done_when": "The report at the write path answers one determinate question by reading two code paths and states which of two outcomes holds. OBSERVED: reckon/cli.py appeared under two live claims at once \u2014 a shadow run r-20260825T083313351944-shadow-sidecar-dispatch with attempt_kind shadow, lineage kind shadow, base_sha 14cd4889, pointer created 08:33:19Z, and a normal dispatch at 08:33:31Z which was ADMITTED rather than refused with exit 7. Twelve seconds separated them, so a pointer-write race is already ruled out. ESTABLISHED BY READING, do not re-derive: dispatch.py line 1314 reads live_claims equals empty list if shadow_lineage else _repository_scope_claims, so a shadow skips claim collection OUTBOUND, which is correct because a shadow re-runs a committed node at its recorded base in its own worktree and merges nowhere. And _repository_scope_claims at line 231 walks list_live with NO lineage filter, so inbound a normal dispatch's live_claims does include a shadow's claims. THE QUESTION: does _candidate_scope_entries at line 288, or any predicate between it and the scope-conflict refusal, exclude shadow-lineage claims? If it does, the admission was correct by design and the only defect is that the asymmetry is undocumented \u2014 say so and name the line that filters. If it does not, the inbound side has a hole and a shadow's claim silently fails to block anyone \u2014 say so and name the line where the refusal should have fired. Do not guess between them and do not fix either, because a wrong answer here would either raise a false alarm about a safety fence or dismiss a real one. Support the answer with a reproduction if one is cheap: a synthesised shadow pointer under a temporary RECKON_HOME plus a dry-run dispatch declaring the same path, reporting whether it refuses. Also state in one paragraph whether a shadow SHOULD be excluded inbound, given that it never merges. Write no repository code.",
+          "estimated_hours": 1.5,
+          "goal": "Settle whether a shadow run's path claim can block a normal dispatch, or is silently excluded",
+          "id": "shadow-claims-inbound-asymmetry",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T083837114756-shadow-claims-inbound-asymmetry/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a75",
+          "spec_level": "open",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/shadow-claims-inbound.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-25T08:38:43Z",
+        "completed_at": "2026-08-25T08:47:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 546,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 546,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "f85fa08f258628fbaabcc978a7498065614e4595",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T083837114756-shadow-claims-inbound-asymmetry/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03812-62c2-79c0-9bd8-0c21519ec9d6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4295680,
+            "cached_input_tokens_cumulative": 4295680,
+            "input_tokens": 4464452,
+            "input_tokens_cumulative": 4464452,
+            "output_tokens": 17695,
+            "output_tokens_cumulative": 17695,
+            "reasoning_output_tokens": 6799,
+            "reasoning_output_tokens_cumulative": 6799
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 330
+    "_version": 332
   }
 }
