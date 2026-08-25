@@ -187,17 +187,26 @@ function ReaderSourceFailure({ source, status, missing, onRetry }) {
   );
 }
 
+function metadataValueIsPresent(value) {
+  const text = value === null || value === undefined ? "" : String(value).trim();
+  return text !== "" && text !== "-" && text !== "—";
+}
+
 function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
   if (!PG) return <div className="r-page">Artifact "{slug}" not found.</div>;
 
-  const P = PG;
+  const P = {
+    ...PG,
+    sprint: metadataValueIsPresent(PG.sprint) ? PG.sprint : "",
+  };
   const isResearch = PG.type === "research";
   const isEvidence = PG.type === "evidence";
   const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
-  const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+  const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
+  const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const [liveRuns, setLiveRuns] = useState([]);
 
   useEffect(() => {
@@ -360,7 +369,7 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
 
   const author = window.STATE?.projects?.[0]?.owner || "user";
   const loadedPlanVersion = fullState?.version ?? P.version ?? "unavailable";
-  const implementationLabel = P.impl !== null && P.impl !== undefined && P.impl !== "" && Number.isFinite(Number(P.impl))
+  const implementationLabel = P.impl !== null && P.impl !== undefined && P.impl !== "" && metadataValueIsPresent(P.impl) && Number.isFinite(Number(P.impl))
     ? `${Math.round(Number(P.impl) * 100)}%`
     : null;
   const readerAttachments = (() => {

@@ -1,5 +1,12 @@
+import json
 import re
+import subprocess
 from pathlib import Path
+
+import pytest
+
+from tests.spa_browser_harness import installed_browser, served_spa, temporary_browser_profile
+from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE, PLAN_HTML
 
 
 ROOT = Path(__file__).parents[1]
@@ -79,3 +86,78 @@ def test_focus_header_paging_and_reads_list_keep_existing_navigation_paths() -> 
     assert reads["padding-top"] == "18px"
     assert cards["padding"] == "12px 14px"
     assert cards["gap"] == "9px"
+
+
+def test_titlebar_omits_absent_metadata_and_remains_one_line(tmp_path: Path) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("rendered titlebar checks require an installed Chromium browser")
+
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    state = docs / "state" / "reckon"
+    plans.mkdir(parents=True)
+    state.mkdir(parents=True)
+    (docs / "index.html").symlink_to(ROOT / "docs" / "index.html")
+    (plans / "rendered-contract.html").write_text(PLAN_HTML, encoding="utf-8")
+    (state / "index.json").write_text(json.dumps(INDEX_STATE), encoding="utf-8")
+
+    probe = r"""(() => {
+      const row = document.querySelector(".r-titlebar > .row2");
+      const bareDashFields = [...row.querySelectorAll(".meta-item")]
+        .map(item => ({
+          key: item.querySelector(".k")?.textContent.trim() || "",
+          value: item.querySelector(".v")?.textContent.trim() || "",
+        }))
+        .filter(item => item.key && (item.value === "-" || item.value === "—"));
+      return {
+        height: row.getBoundingClientRect().height,
+        bareDashFields,
+      };
+    })()"""
+
+    measurements = {}
+    with served_spa(tmp_path, browser, docs=docs, route="#plan/rendered-contract") as context:
+        for width in (1374, 1920):
+            configured_probe = NODE_PROBE.replace(
+                '"--window-size=1374,900"',
+                f'"--window-size={width},900"',
+            ).replace("width: 1374,", f"width: {width},")
+            if width != 1374:
+                assert configured_probe != NODE_PROBE
+            with temporary_browser_profile(tmp_path) as profile:
+                result = subprocess.run(
+                    [
+                        "node",
+                        "--input-type=module",
+                        "-e",
+                        configured_probe,
+                        json.dumps(
+                            {
+                                "browser": browser,
+                                "profile": str(profile),
+                                "url": context.url,
+                                "waitSelector": ".r-titlebar > .row2",
+                                "probe": probe,
+                                "removeSignal": "undefined",
+                                "failPlanHtml": False,
+                                "fixtureIndex": INDEX_STATE,
+                            }
+                        ),
+                    ],
+                    cwd=ROOT,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                )
+            assert result.returncode == 0, result.stderr
+            measurements[width] = json.loads(result.stdout)["baseline"]
+
+    assert measurements[1374]["bareDashFields"] == []
+    assert measurements[1920]["bareDashFields"] == []
+    print(json.dumps(measurements, sort_keys=True))
+    assert measurements[1374]["height"] == pytest.approx(
+        measurements[1920]["height"],
+        abs=4,
+    )
