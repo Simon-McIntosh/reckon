@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import installed_browser, served_spa, temporary_browser_profile
+from tests.spa_browser_harness import (
+    installed_browser,
+    served_spa,
+    temporary_browser_profile,
+)
 from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE, PLAN_HTML
-
 
 ROOT = Path(__file__).parents[1]
 READER_CSS = (ROOT / "docs" / "ui" / "reader.css").read_text()
@@ -72,18 +75,18 @@ def test_focus_mode_is_a_full_viewport_surface_with_canvas_reading_measure() -> 
     assert title["letter-spacing"] == "-0.022em"
 
 
-def test_focus_header_paging_and_reads_list_keep_existing_navigation_paths() -> None:
+def test_focus_header_paging_and_attachment_bars_keep_existing_navigation_paths() -> None:
     assert 'className="r-reading-position" role="status"' in PLAN_SOURCE
     assert 'className="r-reading-paging"' in PLAN_SOURCE
     assert "onPage?.(-1)" in PLAN_SOURCE
     assert "onPage?.(1)" in PLAN_SOURCE
-    assert 'className="r-reading-reads"' in PLAN_SOURCE
+    assert 'className="r-reader-attachment-bars"' in PLAN_SOURCE
     assert 'onNav?.({ view: "plan", slug: key })' in PLAN_SOURCE
 
-    reads = _declarations(".r-reading-reads")
-    cards = _declarations(".r-reading-reads-list > button")
-    assert reads["margin-top"] == "44px"
-    assert reads["padding-top"] == "18px"
+    bars = _declarations(".r-reader-attachment-bars")
+    cards = _declarations(".r-reader-attachment-entries > button")
+    assert bars["display"] == "flex"
+    assert bars["flex-direction"] == "column"
     assert cards["padding"] == "12px 14px"
     assert cards["gap"] == "9px"
 

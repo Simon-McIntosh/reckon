@@ -192,7 +192,46 @@ function metadataValueIsPresent(value) {
   return text !== "" && text !== "-" && text !== "—";
 }
 
-function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, onPage }) {
+function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
+  const rows = [
+    ["research", "Resources", groups?.research || []],
+    ["evidence", "Evidence", groups?.evidence || []],
+  ].filter(([, , items]) => items.length > 0);
+  if (rows.length === 0) return null;
+  return (
+    <div className="r-reader-attachment-bars" aria-label="Plan attachments">
+      {rows.map(([type, label, items]) => (
+        <details key={type} className="r-reader-attachment-bar" data-attachment-type={type}>
+          <summary>
+            <span>{label}</span>
+            <span className="r-reader-attachment-count">{items.length}</span>
+          </summary>
+          <div className="r-reader-attachment-entries">
+            {items.map(item => {
+              const key = item.nav_key || item.slug;
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  className={selectedKey === key ? "active" : ""}
+                  aria-pressed={selectedKey === key}
+                  onClick={() => onNav?.({ view: "plan", slug: key })}
+                >
+                  <span className={`r-reading-kind ${type}`}>{type}</span>
+                  <span className="r-reader-attachment-title">{item.title || item.slug}</span>
+                  <span className="r-reader-attachment-date">{item.last || item.modified || ""}</span>
+                  {item.summary && <span className="r-reader-attachment-summary">{item.summary}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
   const PG = M.plans[slug];
@@ -372,15 +411,6 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
   const implementationLabel = P.impl !== null && P.impl !== undefined && P.impl !== "" && metadataValueIsPresent(P.impl) && Number.isFinite(Number(P.impl))
     ? `${Math.round(Number(P.impl) * 100)}%`
     : null;
-  const readerAttachments = (() => {
-    if (isResearch || isEvidence) return [];
-    const target = P.nav_key || P.slug || slug;
-    const keys = (M.attachment_relations || [])
-      .filter(row => String(row.target || "").split("#", 1)[0] === target)
-      .map(row => row.source);
-    return [...new Set(keys)].map(key => M.plans?.[key]).filter(Boolean);
-  })();
-
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
     setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", choice: choice || "", rationale, when: now, by: author } : x));
@@ -539,6 +569,11 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
               onRetry={() => setStateRetry(value => value + 1)}
             />
           )}
+          <ReaderAttachmentBars
+            groups={attachmentGroups}
+            selectedKey={slug}
+            onNav={onNav}
+          />
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
@@ -633,27 +668,6 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
                         {f.outcome && <div className="outcome" dangerouslySetInnerHTML={{ __html: f.outcome }} />}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-          {focusMode && readerAttachments.length > 0 && (
-            <section className="r-reading-reads" aria-labelledby="reading-reads-heading">
-              <div className="r-reading-reads-heading">
-                <h2 id="reading-reads-heading">Reads</h2>
-                <span>{readerAttachments.length}</span>
-              </div>
-              <div className="r-reading-reads-list">
-                {readerAttachments.map(item => {
-                  const key = item.nav_key || item.slug;
-                  return (
-                    <button type="button" key={key} onClick={() => onNav?.({ view: "plan", slug: key })}>
-                      <span className={`r-reading-kind ${item.type || "attachment"}`}>{item.type || "attachment"}</span>
-                      <span className="r-reading-read-title">{item.title || item.slug}</span>
-                      <span className="r-reading-read-date">{item.last || item.modified || ""}</span>
-                      {item.summary && <span className="r-reading-read-summary">{item.summary}</span>}
-                    </button>
                   );
                 })}
               </div>

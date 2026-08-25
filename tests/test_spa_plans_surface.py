@@ -2,7 +2,6 @@ import json
 import subprocess
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs" / "ui" / "shell.jsx"
 
@@ -79,6 +78,17 @@ def test_typed_attachments_are_reachable_from_plan_and_attachment_selection() ->
     assert [item["slug"] for item in plan_view["research"]] == ["study"]
     assert [item["slug"] for item in plan_view["evidence"]] == ["receipt"]
     assert attachment_view == plan_view
+
+
+def test_shell_passes_the_canonical_attachment_groups_into_the_reader() -> None:
+    shell = SOURCE.read_text()
+    plan = (ROOT / "docs" / "ui" / "plan.jsx").read_text()
+
+    assert shell.count("function attachmentGroups(") == 1
+    assert "attachmentGroups={attachmentGroups(M, route.slug)}" in shell
+    assert "M.attachment_relations" not in plan
+    assert "readerAttachments" not in plan
+    assert "function AttachmentRail(" not in shell
 
 
 def test_status_transition_reports_the_real_open_gate_count() -> None:
