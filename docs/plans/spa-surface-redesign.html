@@ -519,6 +519,132 @@
     manifest cannot express one. That is a real trade and it belongs to the lead, not to this
     plan.</p>
 
+    <h2 id="s14">&#167;14 &mdash; The lead used it again, and named seven more</h2>
+
+    <p><strong>Every surface had landed and the geometry corrections had landed on top of them.</strong>
+    The lead then used the running SPA and reported seven defects. Four are new complaints about
+    surfaces this plan already closed; two contradict the canvas outright, in the same way the
+    original seven complaints contradicted the surface that preceded them; and one &mdash; the
+    unreachable project &mdash; is a defect a landing three hours earlier claimed to have fixed.</p>
+
+    <p><strong>The canvas does not outrank the lead, and never did.</strong> &#167;1 settled this
+    before any node ran: <em>the complaints are the requirement; the canvas is one answer to
+    them.</em> So where a complaint below contradicts an authored canvas value, the canvas value
+    loses and <code>design/canvas-layout-spec.md</code> stops being the specification for that row.
+    It remains the specification everywhere a complaint is silent. Nothing here reopens a locked
+    decision; two of them narrow one.</p>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>The complaint, verbatim</th><th>Standing</th><th>Lands in</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>&ldquo;the inability to access the nova project, only currently visable projects are
+          switchable, all others are not&rdquo;</td>
+          <td><strong>Regression, not a new surface.</strong> The visibility landing asserted that
+          hiding &ldquo;excludes from aggregates and from the shortcut list but never from
+          reach&rdquo;. The lead cannot reach a hidden project, so either the reach path does not
+          work or it is not discoverable &mdash; and an undiscoverable reach path is the same defect
+          for a user.</td>
+          <td>&#167;4</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>&ldquo;there are many readability and formating issues&rdquo;</td>
+          <td><strong>Not yet demonstrable.</strong> Stated as-is it cannot become a node: there is
+          no measure. It must first be turned into an enumerated, evidenced list against the running
+          page, which is what the rendering evidence below produces.</td>
+          <td>&#167;15</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>&ldquo;the spring gant window needs to include a 1D and 1hr versions for
+          planning&rdquo;</td>
+          <td><strong>Extends the canvas.</strong> The horizon selector exists; its shortest window
+          is far longer than a day. A sprint band at hour resolution is a flat bar, so the short
+          horizons need content with hour-scale structure or they are decoration.</td>
+          <td>&#167;9</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>&ldquo;the left hand bar is too narrow to see filter names or sprint names&rdquo;</td>
+          <td><strong>Contradicts the canvas.</strong> 64px with the human label in a
+          <code>title</code> attribute is authored canvas geometry, landed deliberately, and
+          defended in this plan as <em>&ldquo;which is why 64px is enough&rdquo;</em>. It is not
+          enough. A label that requires a hover to read is not a label.</td>
+          <td>&#167;5</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>&ldquo;lots of the plan card descriptions are far too verbose&rdquo;</td>
+          <td><strong>Third time this complaint has been made.</strong> It was made of the sprint
+          card contract and answered by a disclosure; it was made of the sort dropdown and answered
+          by segmented buttons. Now it is made of the description line itself &mdash; so the
+          remedy is a bound on the rendered text, not another disclosure.</td>
+          <td>&#167;5, &#167;9</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>&ldquo;plan effort should be stated and never the model name, this is an internal
+          reckon concern&rdquo;</td>
+          <td><strong>Contradicts the canvas, and the canvas was wrong on policy.</strong> The
+          in-flight band was specified as <em>harness, model, role &middot; effort</em> and landed
+          that way. Runtime routing is a per-task choice with no standing on a plan surface, and the
+          user-space rule is explicit that plan state must not carry concrete models. Effort is the
+          plan-owned figure and is what belongs there.</td>
+          <td>&#167;6, &#167;10</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>&ldquo;the overview / landing page is flooded with blockers, they should be scopable
+          per plan&rdquo;</td>
+          <td><strong>Extends a landed remedy that over-delivered.</strong> Audit rank 15 asked for
+          unresolved blockers with summary, owner, gated count and next action, and got them for
+          every plan in the portfolio at once. The rank is satisfied; the volume is the new
+          defect.</td>
+          <td>&#167;8</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s15">&#167;15 &mdash; The rendering check the last two waves needed</h2>
+
+    <p><strong>&#167;13 left this to the lead as a trade, and the trade has dissolved.</strong> The
+    open question was whether a check that renders rather than reads is worth its dependency,
+    because <em>&ldquo;a rendering check needs a browser or a DOM implementation, which means a
+    JavaScript toolchain in a repository whose dependency manifest cannot express one&rdquo;</em>.
+    That premise is false on this host: <code>/usr/bin/google-chrome</code> is installed
+    system-wide and node 22 is on the path. A check that shells out to an already-present browser
+    and skips when it is absent adds nothing to <code>pyproject.toml</code>, so the cost the
+    question was weighing is not there to weigh.</p>
+
+    <p>This matters beyond one assertion. Three separate defect waves in this plan &mdash; the
+    structural redraw that had not happened, the geometry that a paraphrase lost, and the container
+    that governed every surface beneath it &mdash; were each invisible to every gate because every
+    gate reads declarations. The lead's screenshot found each of them. A screenshot is currently
+    the only instrument in this plan that has ever caught this class, and it is operated by
+    hand.</p>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>A capture harness.</strong> Drive the installed browser headless against the
+      served SPA, at the canvas minimum width and at a wide viewport, and emit one screenshot plus
+      the computed geometry of the container tree per view.</li>
+      <li><strong>An enumerated defect list.</strong> Turn complaint 2 into evidence: every
+      readability or formatting defect visible in those captures, each citing its screenshot, its
+      element and the computed value that produces it.</li>
+      <li><strong>Composition assertions, if the lead takes the trade.</strong> The two open gates
+      on this plan both demand a <em>rendering</em> assertion, which is why both are still open
+      after every surface landed. A browser-backed check that skips cleanly without a browser can
+      close them.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the harness captures every view without a hand-operated browser,
+    the defect list names each finding with its computed value, and a deliberately broken container
+    is shown to fail a check that declaration-site assertions pass.</p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="audited-semantics-survive" data-section="s2" data-gated-sections="s12" data-status="open" data-verdict="">
