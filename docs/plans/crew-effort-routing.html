@@ -20,8 +20,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="51">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="53">
+<meta name="plan-impl" content="0.917">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
@@ -838,6 +838,49 @@
 
 
 
+    <h2 id="s12">§12 — Second checkpoint: re-read the slices and render every verdict</h2>
+    <p>
+      <strong>Trigger: met.</strong> The §6 loop re-runs at roughly each 100 further
+      varied-configuration runs. The ledgers now hold <strong>433</strong> spec-level-era
+      implement runs (reckon 165, imas-codex 147, nova 121) against checkpoint 1's
+      baseline of 317 — <strong>116 further</strong>. This section carries that read as
+      same-plan work rather than a handoff, because it belongs to this plan's own §6.
+    </p>
+    <p>
+      <strong>A checkpoint renders a verdict, including a negative one.</strong> Three of
+      the four components below cannot produce a <em>positive</em> result at current
+      counts, and that is not a reason to defer them: "no tier qualifies at n=1" and "the
+      pilot continues at 9 of 20" are verdicts, and recording them is what stops the same
+      question being re-asked from scratch next time.
+    </p>
+    <ol>
+      <li><strong>Re-apply the §6 decision rule</strong> per (configuration × declared
+        level × size bucket) over all three ledgers — pass rate, median worker minutes,
+        tokens, and redispatch lineage, charging a cheap tier for the runs it failed into.
+        Label shadow-lineage rows separately; do not pool them with live.</li>
+      <li><strong>Graduate, or decline to graduate, candidate tiers.</strong> Under the
+        locked <code>shadow-sidecar</code> evidence rule a tier needs ten usable pairs.
+        <code>gpt-5.6-luna</code> has one, and <code>gpt-5.6-terra</code> none, so the
+        expected verdict is no graduation — stated, with the counts, rather than left
+        implicit.</li>
+      <li><strong>Lock or revert the host-layer <code>guided→medium</code> default</strong>
+        on its cross-project pass rate. This is the one component with abundant data and a
+        real decision behind it: the default was promoted to the host flight layer at
+        checkpoint 1 on a single project's slice.</li>
+      <li><strong>Verdict on the spark pilot audit</strong> — widen, keep, or close. It
+        stands at 9 of 20 audited runs after this session, so the expected verdict is
+        keep-and-continue, with the audited-diff record and the weekly-meter utilisation
+        stated.</li>
+    </ol>
+    <p><strong>Done-when:</strong> a durable slice report gives, per (configuration ×
+      level × size bucket), pass rate over usable runs, median worker minutes, and
+      redispatch-charged totals, with shadow rows labelled and excluded from live figures;
+      each of the four components above carries an explicit written verdict including the
+      negative ones; the figure at
+      <code>docs/figures/crew-effort-routing/spec-level-slices.png</code> is updated in
+      place from the current data; and every decision the read changes is locked or
+      reverted on this plan with its rationale.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="spec-vocabulary" data-choice="three-level-enum" data-by="Simon McIntosh (lead), §6 checkpoint session" data-when="2026-08-25T06:55:02+00:00">
@@ -965,6 +1008,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260825-first-controlled-pair" data-who="reckon-ship" data-when="2026-08-25T12:46:00Z">
     <div class="r-comment-body">First usable qualification pair recorded — shadow r-20260825T122112217644 on gpt-5.6-luna against primary r-20260825T072832542100 on gpt-5.6-sol, gate passed, promoted commitless with commits [] and shadow.patch retained. lineage.configuration: inherited effort high, launch cli, sandbox worktree-full and time_budget 40m; substituted backend and model only, both via backend; no fallbacks. The result retires the earlier reading entirely: same model, same node, same base, 115 insertions across 5 paths at an 8-minute fence versus 806 across 8 at a 40-minute one, against the primary's 809 across 8. Tests added 8 versus the primary's 10; worker time 1393s versus 1983s; both suites green. Under the locked shadow-sidecar evidence rule this is one usable pair of the ten a candidate tier needs — it qualifies nothing and opens no routing. Its significance is that controlled pairs are now producible at all; the honest count before it is zero. Also recorded: this session's six nodes, six first-attempt passes, no redispatches — four guided/sol-medium at 333, 576, 450 and 471 seconds (median 7.7 min against the slice's measured 5.4, still far under ~13 at high, 4/4 against 86%), one exact/spark at 249s on its 3.9-min pilot median taking the spark audit to 9 of 20, and one exact/sol-high verification at 261s. Evidence: /reckon/evidence/crew-effort-routing-landed#first-controlled-pair and #session-calibration</div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-20260825-s12-restructured" data-who="reckon-ship" data-when="2026-08-25T12:52:00Z">
+    <div class="r-comment-body">§12 opened, and it corrects two errors of mine. First, f-cer-003 was same-plan work — a §6 re-checkpoint on this plan — carried as a followup, and the rule is that same-plan follow-on work becomes a section with DAG nodes while a followup is reserved for work another plan owns. It should have been a section from the moment it was written. Second, I recorded its drain disposition as trigger-gated, which is not in the closed set; folding same-plan work MEANS turning it into a section, so the correct disposition was folded all along and I invented a category the rule explicitly forbids. The finding I sent to reckon-skill-overhaul about the closed set lacking a disposition for a standing followup is withdrawn: the gap was my misuse, not the vocabulary. Third and worst, the trigger was already met and I reported it as unmet — the ledgers hold 433 spec-level-era implement runs against checkpoint 1's 317, so 116 further against a ~100 threshold, where I reported 93 from a count taken before the last wave landed. And my reasoning that three of four components were count-gated was wrong in kind: a checkpoint renders a verdict, and no-tier-qualifies-at-n=1 and pilot-continues-at-9-of-20 are verdicts. impl re-based to 11 of 12 executable sections.</div>
 </div>
 </section>
 </main>
