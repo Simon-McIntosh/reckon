@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="spa-surface-redesign">
+  <meta name="plan-title" content="Redraw the Degraded Surfaces">
+  <meta name="plan-summary" content="Seven surfaces of the served SPA were named as degraded and redrawn on a design canvas. Implement that canvas against the existing components — and carry through it the six audited information defects the canvas either contradicts or only half answers, because the rows the canvas redraws are the same rows those remedies live in.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="26.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Redraw the Degraded Surfaces | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+
+    <p>The served surface was reviewed twice, from two directions, and both reviews
+    reached the same building from opposite sides. The <a href="/reckon/research/spa-legibility-audit">legibility
+    audit</a> asked what the SPA fails to <em>say</em>, ranked fifteen information defects, and
+    closed by refusing to recommend a redesign: <em>&ldquo;A separate navigation or visual-language
+    proposal is not justified by this evidence.&rdquo;</em> The plan carrying it drew the same
+    boundary in its own scope &mdash; <em>&ldquo;No redesign &hellip; A proposal to restructure
+    navigation or restyle the shell is a separate plan.&rdquo;</em> This is that separate plan, and
+    what justifies it is not the audit's evidence but the lead's, gathered by using the thing.</p>
+
+    <p>Seven surfaces were named as degraded, each with the complaint that named it, and each
+    redrawn on a design canvas that is now imported at <code>design/reckon-spa-redesign.dc.html</code>
+    beside the full interactive prototype at <code>design/reckon-spa-prototype.dc.html</code>. The
+    complaints are the requirement; the canvas is one answer to them.</p>
+
+    <table>
+      <thead>
+        <tr><th>Surface</th><th>The complaint, verbatim</th><th>What the canvas answers with</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>In-flight band</td>
+          <td>&ldquo;The inflight bar is useful, but could be designed in a cleaner way &mdash; does
+          the user need to know the exact worker hash?&rdquo;</td>
+          <td>Identity by <em>role</em>, not by hash: harness, model, role &middot; effort, member,
+          section, then an elapsed-against-budget bar and the current phase.</td>
+        </tr>
+        <tr>
+          <td>Plans list</td>
+          <td>&ldquo;The dropdown is overly verbose&hellip; I typically have it set to just created
+          and rarely edited. It would be useful to see an edited timestamp on all plan
+          interactions.&rdquo; &middot; &ldquo;I don't find myself using the left hand scroll bar &mdash;
+          an indication that the design could be better.&rdquo;</td>
+          <td>Two segmented buttons and a direction toggle replace the dropdown; every row carries
+          its edited stamp; the scrolling filter rail becomes a single row of status and sprint
+          chips carrying their own counts.</td>
+        </tr>
+        <tr>
+          <td>Evidence rail</td>
+          <td>&ldquo;We have duplicated the wiring for evidence and research docs, they do not block
+          or enable. We need to design another visibility surface.&rdquo; &middot; &ldquo;I don't
+          like it interleaved with our plans &mdash; an evidence doc is not a plan.&rdquo;</td>
+          <td>Attachments leave the plan list entirely and become a grouped rail beside the reader,
+          selectable into the same reader, never an edge in the dependency graph.</td>
+        </tr>
+        <tr>
+          <td>Sprint cards</td>
+          <td>&ldquo;The content given on the sprint plans (why now, done when) is FAR too verbose.
+          All plan cards should come with a brief description and nothing else &mdash; forcing more
+          into the pills makes them too large and hides other information.&rdquo;</td>
+          <td>One description line per card, progress, and a flag. The contract moves behind a
+          disclosure rather than out of the system.</td>
+        </tr>
+        <tr>
+          <td>Sprint overview</td>
+          <td>&ldquo;The navigation of the sprints is 'clunky'. It is hard to get an overview of the
+          sprints and how they depend on one another without scrolling left and right &lsaquo;
+          &rsaquo;.&rdquo;</td>
+          <td>All sprints at once on a shared time axis with a horizon selector, sprints holding
+          nothing open folded into a single band, and the board demoted to a second tab.</td>
+        </tr>
+        <tr>
+          <td>Live runs</td>
+          <td>&ldquo;The clarity of the live runs needs to be improved. The formatting is poor and we
+          need to communicate the information required whilst using the screen space wisely &mdash;
+          the current text is squashed and maybe too verbose.&rdquo;</td>
+          <td>Rows become cards: identity and phase on one line, budget as a bar, gate progress as
+          marks, and the attach command behind an expansion.</td>
+        </tr>
+        <tr>
+          <td>Graph handles</td>
+          <td>&ldquo;Should we consider a G* label for all of our graphs so that we could
+          reckon-ship a particular graph like we can do for sprints?&rdquo;</td>
+          <td>Already true underneath &mdash; <code>plan-graph-handle</code> and
+          <code>/reckon-ship graph:&lt;handle&gt;</code> ship today. The canvas surfaces the handle,
+          the derived authority scope, and a copyable ship line the surface currently hides.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>A prior-art scout read both canvases against all eleven SPA components before any node was
+    cut. Its verdict is unanimous and is the constraint every section below inherits:
+    <strong>eight of eight surfaces extend existing implementations; none replaces one.</strong>
+    <code>state-loader.js</code> stays the normalised state boundary, <code>shell.jsx:App</code>
+    stays the routing and cross-surface state owner, and <code>plan.jsx:Plan</code>,
+    <code>sprint.jsx:Sprint</code>, <code>crew.jsx:CrewView</code> and the <code>graph.jsx</code>
+    relationship machinery stay the semantic authorities for their surfaces. Styling work may
+    refactor a render tree; it may not fork a data path, add a second loader, or revive the
+    unused legacy <code>cockpit.jsx:Cockpit</code>, which is not a reuse target.</p>
+
+    <h2 id="s2">&#167;2 &mdash; The redraw must not lose what the audit repaired</h2>
+
+    <p><strong>A design canvas is drawn from fixtures, and fixtures are always in their good
+    state.</strong> That is the defect class this section exists to prevent: every degraded,
+    contradictory, stale and partial state the audit found is invisible on a canvas whose data is
+    hand-made and correct. The scout checked all nine outstanding ranks against the canvas and found
+    four it contradicts outright and two it only half answers. Implementing the canvas literally
+    would therefore <em>re-open</em> defects that were ranked, evidenced and in one case already
+    scheduled for repair.</p>
+
+    <p>These are not a second workstream. Each remedy lives in exactly the rows the canvas redraws,
+    so it lands in the node that redraws them or it does not land at all. The rank column below is
+    the audit's own ordering, retained so the finding stays traceable to its evidence.</p>
+
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>What the audit requires</th><th>Canvas verdict</th><th>Carried by</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>3</td>
+          <td>Never silently pick one sprint when several are active. Show every active sprint,
+          label the legacy-index focus as such, and warn on the conflict.</td>
+          <td><strong>Contradicts.</strong> The canvas derives a singular active sprint with a
+          <code>find</code>, which is the silent pick in a new shape.</td>
+          <td>&#167;3, &#167;8, &#167;9</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Compact rows must render the transition &mdash; <code>active &rarr; blocked</code> with
+          its open-gate count &mdash; not the flattened effective status alone.</td>
+          <td><strong>Contradicts.</strong> Canvas rows render one status and defer the explanation
+          to the reader, which is the flattening the audit named.</td>
+          <td>&#167;3, &#167;5, &#167;9</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>A reader whose HTML or state fetch failed must say so: which source failed, which
+          sections are missing, the status, and a retry.</td>
+          <td><strong>Contradicts by omission.</strong> The canvas has only successful states, so a
+          partial document still looks complete.</td>
+          <td>&#167;6, &#167;7</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>Preserve <code>resource_versions</code>, <code>source_format</code> and a client load
+          time, and show one quiet snapshot line with refresh.</td>
+          <td><strong>Contradicts.</strong> Live dots imply currency while no snapshot receipt
+          exists anywhere on the canvas.</td>
+          <td>&#167;3, &#167;4</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Stop presenting the longest hop-count chain as an unlabelled critical path; consume
+          the roadmap result or label the measure exactly.</td>
+          <td>Compatible. The canvas exposes authority, metrics and readiness explicitly.</td>
+          <td>&#167;11</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>Collapse the completion contract; give the gate column a measured verdict.</td>
+          <td>Compatible. Cards keep phase, budget and gate marks visible with detail behind
+          expansion.</td>
+          <td>&#167;10</td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td>Handoff copy must name its real source and carry the loaded plan version.</td>
+          <td><strong>Partial.</strong> Wording is already provider-neutral; the version receipt is
+          absent.</td>
+          <td>&#167;6</td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td>Every compact signal gets a label or tooltip and a navigation target.</td>
+          <td><strong>Partial.</strong> Chips improve, but bare percentages and unlabelled gate and
+          flag marks remain.</td>
+          <td>&#167;5, &#167;9</td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td>Render unresolved blockers with summary, owner, gated count and next action.</td>
+          <td>Compatible, and better &mdash; the canvas already has the blocker area the audit asked
+          for.</td>
+          <td>&#167;8</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Ownership moved with the work. These nine ranks were the open half of
+    <code>surface-latency-and-legibility</code> &#167;3; they are carried here because a remedy and a
+    redraw competing for the same row is not two pieces of work, it is one.</p>
+
+    <h2 id="s3">&#167;3 &mdash; The state boundary learns what it currently discards</h2>
+
+    <p>Three of the four contradictions are the same defect wearing three faces: the loader receives
+    a distinction the server took trouble to make and flattens it before any component can render
+    it. No amount of redrawing fixes that downstream, so this section runs first and alone, and
+    every surface section consumes what it produces.</p>
+
+    <p><strong>Deliverables.</strong> In <code>docs/ui/state-loader.js</code> only:</p>
+    <ul>
+      <li><strong>Snapshot identity survives the load.</strong> Preserve
+      <code>resource_versions</code> and <code>source_format</code> from the discovery envelope and
+      stamp a client <code>loaded_at</code>. Discovery emits twelve resource tokens today and the
+      shell discards every one.</li>
+      <li><strong>Every active sprint survives the load.</strong> Expose the full set of sprints
+      whose status is active alongside the legacy <code>active_sprint_id</code>, and a derived flag
+      that is true when they disagree. Three sprints are active right now while the legacy index
+      names one.</li>
+      <li><strong>Authored status survives beside effective status.</strong> The loader deliberately
+      overwrites the authored value with <code>effective_status</code>; keep both so a compact row
+      can render the transition and its open-gate count.</li>
+      <li><strong>Attachments are typed, not edges.</strong> Expose <code>informs</code>,
+      <code>evidence_for</code> and <code>verifies</code> as a typed attachment relation the rail in
+      &#167;5 can group, distinct from the dependency relations the graph consumes.</li>
+    </ul>
+
+    <p><strong>Done when</strong> a test asserts each of the four survives a load of a payload that
+    carries it, and the existing loader tests still pass unchanged.</p>
+
+    <h2 id="s4">&#167;4 &mdash; Shell: one routing owner, chips you can manage, a visible snapshot</h2>
+
+    <p>Five of the surfaces the canvas redraws live inside one 1,544-line file, which is a
+    scheduling fact before it is an aesthetic one: five workers redrawing five surfaces would
+    serialise on <code>shell.jsx</code> and take five times as long as the work needs. The canvas's
+    own information architecture already separates them, so the split is not a refactor invented for
+    parallelism &mdash; it is the design being taken at its word.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 250" width="100%" style="max-width:720px" role="img"
+           aria-label="shell.jsx today holds five surface components plus routing; the split moves each surface into its own module and leaves App as the routing owner">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="26" width="196" height="196" rx="3"/>
+          <rect x="470" y="8" width="242" height="34" rx="3"/>
+          <rect x="470" y="50" width="242" height="34" rx="3"/>
+          <rect x="470" y="92" width="242" height="34" rx="3"/>
+          <rect x="470" y="134" width="242" height="34" rx="3"/>
+          <rect x="470" y="176" width="242" height="34" rx="3"/>
+          <rect x="470" y="218" width="242" height="26" rx="3" stroke-dasharray="3 3"/>
+          <path d="M 210 124 H 300"/>
+          <path d="M 300 124 V 25 H 464"/>
+          <path d="M 300 124 V 67 H 464"/>
+          <path d="M 300 124 H 464"/>
+          <path d="M 300 124 V 151 H 464"/>
+          <path d="M 300 124 V 193 H 464"/>
+          <path d="M 300 124 V 231 H 464"/>
+        </g>
+        <g fill="currentColor" font-size="13" font-family="system-ui, sans-serif">
+          <text x="16" y="18" font-size="13" opacity="0.6">today</text>
+          <text x="20" y="52" font-size="14">shell.jsx</text>
+          <text x="20" y="72" opacity="0.6">1,544 lines</text>
+          <text x="20" y="104">TopBar</text>
+          <text x="20" y="126">FiltersCol</text>
+          <text x="20" y="148">ListCol</text>
+          <text x="20" y="170">CockpitBody</text>
+          <text x="20" y="192">CmdKPalette</text>
+          <text x="20" y="214" opacity="0.6">App &mdash; routing, shared state</text>
+          <text x="316" y="118" font-size="13">split</text>
+          <text x="316" y="136" font-size="13">in place</text>
+          <text x="478" y="30">topbar &mdash; &#167;4</text>
+          <text x="478" y="72">filters &mdash; &#167;5</text>
+          <text x="478" y="114">list &mdash; &#167;5</text>
+          <text x="478" y="156">overview &mdash; &#167;8</text>
+          <text x="478" y="198">palette &mdash; &#167;7</text>
+          <text x="478" y="236" opacity="0.6">App stays &mdash; routing, shared state</text>
+        </g>
+      </svg>
+      <figcaption>Five surfaces the canvas redraws share one file, so five workers would serialise
+      on it. Extracting each in place &mdash; no behaviour change, no parallel component family &mdash;
+      is what lets the redraw run wide. <code>App</code> does not move: it remains the routing and
+      cross-surface state owner every extracted module composes against.</figcaption>
+    </figure>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>The split, with nothing else in it.</strong> Each surface moves to its own module
+      and <code>docs/index.html</code> loads it. Behaviour is identical; the suite is the proof.
+      A second copy of anything is a failure, not a migration step.</li>
+      <li><strong>The topbar as the canvas draws it.</strong> Project chips carrying a live dot,
+      a Manage disclosure, and the tab row. Chips replace the picker; the picker's behaviour does
+      not.</li>
+      <li><strong>Project visibility, without a hard-coded list.</strong> The canvas hides nine of
+      twelve projects by naming them, which reckon's repo-agnostic rule forbids. Default to every
+      mounted project visible, persist hiding per browser, and keep the canvas's three rules: a
+      project with no mounted plan state cannot be shown, hiding the focused project hands focus to
+      one that survives, and the last visible project cannot be hidden.</li>
+      <li><strong>The snapshot receipt (rank 10).</strong> One quiet shell line naming the source
+      format, the resource count and the load time, with a manual refresh. A live dot without a
+      verifiable receipt is the thing being fixed, so the dot does not ship without the line.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the suite passes with no behaviour change from the split, the
+    static build still bundles every module, hiding the focused project moves focus, the last
+    visible project refuses to hide, and the snapshot line renders the real resource count.</p>
+
+    <h2 id="s5">&#167;5 &mdash; Plans: chips instead of a rail, and an evidence rail beside the reader</h2>
+
+    <p>Two complaints meet here. The filter rail is not used, and evidence documents are interleaved
+    with plans although &mdash; as the complaint puts it &mdash; <em>&ldquo;an evidence doc is not a
+    plan&rdquo;</em> and they neither block nor enable anything. The canvas answers both at once: the
+    rail's function compresses into chips carrying their own counts, and the space that frees becomes
+    where attachments live, beside the reader rather than inside the list.</p>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>Chip filters.</strong> Status chips and sprint chips in one row, each with its
+      count, replacing the scrolling filter column. The existing filter, sort and selection state
+      keeps its authority; only its presentation compresses.</li>
+      <li><strong>A list of plans, sorted plainly.</strong> Segmented Created and Edited buttons plus
+      a direction toggle replace the dropdown, and every row carries its edited stamp &mdash; both
+      asked for by name.</li>
+      <li><strong>The attachment rail.</strong> Research and evidence leave the plan list and become
+      a rail beside the reader, grouped by type, each entry selectable into the same reader. They
+      are attachments, never dependency edges.</li>
+      <li><strong>Rank 6 in the rows.</strong> Where authored and effective status differ, the row
+      renders the transition with its open-gate count and links to the gate section. Plain
+      <code>blocked</code> is reserved for when the two agree.</li>
+      <li><strong>Rank 14 in the signals.</strong> Every compact mark &mdash; percentage, gate count,
+      decision and blocker glyph &mdash; gets a label or a tooltip and a navigation target.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the list holds plans only, attachments are reachable only through
+    the rail, a plan whose authored and effective status differ renders both with its gate count,
+    and no compact signal is unlabelled.</p>
+
+    <h2 id="s6">&#167;6 &mdash; The reader: a band without a hash, honest partial state, a handoff with a receipt</h2>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>The in-flight band, redrawn.</strong> The run hash goes. Identity becomes the
+      thing a reader can act on: harness, model, role &middot; effort, member, section, then elapsed
+      against budget as a bar, the phase, and one action. The run identifier stays available where
+      it is needed &mdash; a command to copy &mdash; rather than displayed as a name.</li>
+      <li><strong>Partial state stops looking complete (rank 9).</strong> When the authored HTML or
+      the structured-state fetch fails, a persistent banner above the fallback names the failed
+      source, the sections that are therefore missing, the response status, and a retry. This is the
+      one requirement with no canvas to copy, because a canvas has no failures.</li>
+      <li><strong>The handoff carries its receipt (rank 13).</strong> The copied line is built from
+      live plan HTML and project discovery, and says so, with the loaded plan version beside it so
+      its provenance is checkable.</li>
+    </ul>
+
+    <p><strong>Done when</strong> a failed HTML fetch and a failed state fetch each render the banner
+    with their status, the band renders no run hash, and the handoff shows the version it was built
+    from.</p>
+
+    <h2 id="s7">&#167;7 &mdash; Reading mode and the palette</h2>
+
+    <p>The canvas adds a focus mode over the reader: <code>f</code> enters, Escape leaves without
+    unwinding the selection underneath it, and the arrow keys page through the filtered list &mdash;
+    <em>the rail is the reading queue</em>, so reading order is list order. The palette gains typed
+    results across projects. Neither is a new engine: the existing keyboard lifecycle, selection
+    routing and reader are what compose into both.</p>
+
+    <p><strong>Done when</strong> <code>f</code> toggles both ways, Escape always leaves focus mode
+    and never clears the selection, paging follows the filtered order across both the plan list and
+    the attachment rail, and rank 9's provenance banner is visible in focus mode too.</p>
+
+    <h2 id="s8">&#167;8 &mdash; Overview: every active sprint, and blockers with a next action</h2>
+
+    <p><strong>Deliverables.</strong> Fleet statistics, a project roll-up with per-project active
+    sprint, plan, live and held counts, and the blocker area the canvas already draws &mdash; extended
+    per rank 15 with the gated-plan count, and showing unresolved rows only.</p>
+
+    <p><strong>Rank 3 lands here, against the canvas.</strong> The overview enumerates every active
+    sprint rather than choosing one, labels whichever the legacy index names as the focus, and warns
+    when they disagree, linking the conflicting resources. The canvas's singular <code>find</code>
+    is exactly the defect and is not implemented.</p>
+
+    <p><strong>Done when</strong> a payload with three active sprints renders three, the legacy focus
+    is labelled as such, the conflict warning renders and links, and unresolved blockers show
+    summary, owner, gated count and next action while resolved rows stay out.</p>
+
+    <h2 id="s9">&#167;9 &mdash; Sprints: an overview you do not scroll, cards that say one thing</h2>
+
+    <p><strong>Deliverables.</strong></p>
+    <ul>
+      <li><strong>The overview.</strong> All sprints on one shared time axis with a horizon
+      selector, sprints holding nothing open folded into a single band with a count, and a legend.
+      Stepping through sprints with <code>&lsaquo;</code> and <code>&rsaquo;</code> stops being the
+      only way to see them.</li>
+      <li><strong>Cards that say one thing.</strong> Description, progress, flag. The item contract
+      does not leave the system: <code>why_now</code> and <code>done_when</code> move behind a
+      disclosure, so the card is brief and the contract stays one interaction away.</li>
+      <li><strong>The board, demoted and kept.</strong> The existing board becomes the second tab
+      with its data hydration and interactions intact, plus the canvas's Needs-you panel listing the
+      sprint's own open decisions.</li>
+      <li><strong>Ranks 3, 6 and 14 in the board.</strong> Multiple active sprints are shown rather
+      than resolved; cards render authored beside effective status where they differ; every compact
+      mark is labelled.</li>
+    </ul>
+
+    <p><strong>Done when</strong> the overview renders every sprint without horizontal paging,
+    folding hides only sprints with nothing open and reports how many, a card body is one
+    description line with the contract reachable behind a disclosure, and the board keeps its
+    existing behaviour.</p>
+
+    <h2 id="s10">&#167;10 &mdash; Crew: live runs as cards with a measured gate</h2>
+
+    <p><strong>Deliverables.</strong> Rows become cards: identity and phase on one line; the
+    repository, plan and section on the next; budget as an elapsed-against-total bar; gate progress
+    as marks with the current gate named; and the session, host and attach command behind an
+    expansion with a copy action. Per rank 12 the completion contract stops being printed verbatim
+    &mdash; cells ranged from 189 to 1,346 characters &mdash; and is relabelled to what it is, a
+    done-when, collapsed to one line, with the gate column carrying a measured verdict when one
+    exists. The three-second poll, the elapsed and activity calculations and the error lifecycle are
+    kept exactly as they are.</p>
+
+    <p><strong>Done when</strong> a run with a 1,300-character contract renders one line, phase and
+    last activity are legible without horizontal pressure, and the attach command copies.</p>
+
+    <h2 id="s11">&#167;11 &mdash; Graph: a labelled measure and a handle you can ship</h2>
+
+    <p>The complaint asked for something that already exists: <code>plan-graph-handle</code> and
+    <code>/reckon-ship graph:&lt;handle&gt;</code> ship today, and a bare handle resolves like a
+    sprint id. The surface has simply never shown it. So this section is mostly exposure &mdash; the
+    handle, the derived closure membership, the metrics, and a copyable ship line gated by the same
+    open decisions that would hold the ship itself.</p>
+
+    <p><strong>Authority is derived, never authored.</strong> The canvas is explicit that a
+    repository earns write scope by having a member in the closure, never by being named in a
+    literal. The scope chips render that derivation.</p>
+
+    <p><strong>Rank 11 lands here.</strong> The current top-level selection is the longest dependency
+    chain by hop count, presented unlabelled as a critical path, while the roadmap already computes a
+    weighted one. Consume the roadmap result, or label the local measure exactly as
+    &ldquo;longest dependency chain by hop count&rdquo; and say why it differs. Feeding the old
+    result into the canvas's confident new labels is the one outcome this section forbids.</p>
+
+    <p><strong>Done when</strong> the handle, its derived membership and its derived authority scope
+    render for a live endpoint, the ship line copies and is disabled while an open decision holds
+    the closure, and no execution-ordering claim is made by a hop-count measure.</p>
+
+    <h2 id="s12">&#167;12 &mdash; Out of scope</h2>
+
+    <p><strong>Server, schema and tool surfaces.</strong> This plan changes what the browser renders
+    from payloads the server already emits. It adds no endpoint, no plan-schema field and no MCP
+    tool. Where a surface needs something the server does not send, that is a finding to record, not
+    a licence to extend the API here.</p>
+
+    <p><strong>The canvas runtime.</strong> The imported <code>.dc.html</code> documents are read as
+    specification. Their <code>x-dc</code> template dialect and the generated runtime that
+    interprets them are deliberately not vendored and are not a dependency of anything shipped.</p>
+
+    <p><strong>Cold-path latency.</strong> A separate measurement this session recorded
+    <code>GET /crew</code> at 46.4&nbsp;s cold against 1.5&nbsp;s warm on a four-minute-old server.
+    It is real and it belongs to the latency half of
+    <code>surface-latency-and-legibility</code>, not here.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="audited-semantics-survive" data-section="s2" data-gated-sections="s12" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Each of audit ranks 3, 6, 9, 10, 13 and 14 has a rendering assertion proving its signal is present after the redraw.</h4>
+    <p class="r-gate-required-evidence">One named test per rank, each failing against the literal canvas behaviour and passing against the shipped surface, listed with its rank in the execution record.</p>
+    </div>
+<div class="r-gate" data-id="no-parallel-component-family" data-section="s4" data-gated-sections="s12" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">No surface has two implementations: the module split leaves one authority per surface and the legacy overview component is gone or unreferenced.</h4>
+    <p class="r-gate-required-evidence">A search over the loaded module list showing one definition per surface, and the static build bundling exactly that set.</p>
+    </div>
+</section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="project-visibility" data-choice="browser-persisted-default-all" data-by="Simon McIntosh" data-when="2026-08-25">
+    <p class="r-dec-q">How is project visibility decided, given the canvas hides nine of twelve projects with a hard-coded list?</p>
+    <p class="r-dec-ctx">Naming projects in reckon&#x27;s own source is forbidden by the repo-agnostic rule — project identity comes from the served HTML and from mounts. The canvas&#x27;s intent is still right: a dozen chips for three projects under development is noise.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="browser-persisted-default-all">Show all mounted; persist hiding per browser</button>
+      <button class="r-opt" data-value="derived-hide-idle">Derive the default from projects with no open work</button>
+      <button class="r-opt" data-value="committed-project-state">Declare visibility in committed project state</button>
+      </p>
+    <p class="r-dec-rat">A personal view preference does not need a schema field, a write path or a shared decision, and committing one would make every reader of a checkout share one operator&#x27;s chip row. Deriving it from open work was the near miss: it matches the intent exactly but the chip row would then change under the reader as work opens and closes, which is a worse failure than one stale toggle. Browser persistence keeps the three canvas rules that actually matter — an unmounted project cannot be shown, hiding the focused project hands focus on, and the last visible project cannot be hidden.</p>
+    </div>
+<div class="r-dec" data-key="sprint-card-density" data-choice="description-only-contract-behind-disclosure" data-by="Simon McIntosh" data-when="2026-08-25">
+    <p class="r-dec-q">Sprint cards were given why_now and done_when by a landed audit remedy, and the lead&#x27;s complaint is that this is FAR too verbose. Which wins?</p>
+    <p class="r-dec-ctx">Audit rank 5 found that every live sprint item carries both fields and the board rendered neither, so nine sprint resources lost their rationale and completion contract on screen. That remedy landed. The complaint that followed is about the result of it.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="description-only-contract-behind-disclosure">Description only on the card; contract behind a disclosure</button>
+      <button class="r-opt" data-value="keep-rank-5-as-landed">Keep both fields on the card as rank 5 landed them</button>
+      <button class="r-opt" data-value="drop-the-contract">Drop the contract from the sprint surface entirely</button>
+      </p>
+    <p class="r-dec-rat">The two findings are not actually opposed: rank 5&#x27;s defect was that the contract was unreachable , not that it was absent from the card face. A disclosure satisfies both — the card is one line as asked, and the contract is one interaction away rather than lost. Dropping it would re-open rank 5 against its own evidence; keeping it on the face preserves a card size the lead has already rejected as hiding other information.</p>
+    </div>
+<div class="r-dec" data-key="outstanding-rank-ownership" data-choice="carried-by-the-redraw" data-by="reckon-ship" data-when="2026-08-25">
+    <p class="r-dec-q">Do audit ranks 3, 6 and 9–15 stay on surface-latency-and-legibility §3, or move to the plan that redraws the same rows?</p>
+    <p class="r-dec-ctx">Both plans are active and both write docs/ui/ . The prior-art scout mapped every outstanding rank to the canvas surface that would carry its remedy, and no rank mapped anywhere else.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="carried-by-the-redraw">Move them; the redraw carries each remedy</button>
+      <button class="r-opt" data-value="stay-with-the-audit">Keep them on the audit&#x27;s plan and serialise the two</button>
+      </p>
+    <p class="r-dec-rat">A remedy and a redraw competing for the same row are one piece of work, not two, and scheduling them as two would mean either serialising every surface behind the audit&#x27;s plan or letting two workers write one file. Moving them also makes the contradiction visible: four of the nine are things the canvas would otherwise undo, which only reads as a requirement when both live on the same page.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ssr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship spa-surface-redesign" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Redraw the seven surfaces and carry the nine outstanding audit ranks through them</h4>
+    <div class="r-fu-body"><p>&#167;3 runs first and alone: three of the four canvas contradictions are the state boundary discarding a distinction the server already makes, and no redraw fixes that downstream. &#167;4's module split is the other gate on width &mdash; five of the redrawn surfaces share one 1,544-line file today, so the surface sections serialise on it until it is split in place.</p><p>After those two, &#167;5 to &#167;11 are file-disjoint and run wide. Each carries its own audit ranks from the &#167;2 table; a section that lands its canvas surface without them has re-opened a ranked defect rather than closed one.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship spa-surface-redesign</pre>
+    </article>
+</section>
+
+    <section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-audit" data-type="analysis" data-source="reckon" data-added-by="reckon-ship" data-when="2026-08-25" data-url="/reckon/research/spa-legibility-audit">
+    <span class="r-research-title"><a href="/reckon/research/spa-legibility-audit">SPA legibility audit — fifteen ranked information defects against live payloads. Six are fixed; the nine carried by §2 are its open remainder, and four of them are contradicted by the canvas.</a></span></div>
+<div class="r-research" data-id="r-reuse-map" data-type="report" data-source="crew" data-added-by="reckon-ship" data-when="2026-08-25" data-url="/home/ITER/mcintos/.config/reckon/crew/reports/spa-prototype-reuse-map.md">
+    <span class="r-research-title"><a href="/home/ITER/mcintos/.config/reckon/crew/reports/spa-prototype-reuse-map.md">SPA prototype reuse map — eight of eight surfaces extend an existing implementation, none replaces one; ten of ten sub-surfaces and nine of nine outstanding ranks mapped, with four literal contradictions and two partial answers.</a></span></div>
+<div class="r-research" data-id="r-canvas" data-type="design" data-source="claude-design" data-added-by="reckon-ship" data-when="2026-08-25">
+    <span class="r-research-title">Design canvas, imported at design/ — the annotated redesign carrying seven verbatim complaints beside seven redrawn surfaces, and the interactive prototype of the whole surface.</span></div>
+</section>
+
+  </main>
+</body>
+</html>
