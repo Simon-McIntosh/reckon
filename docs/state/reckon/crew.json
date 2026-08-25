@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T15:58:05",
+  "updated": "2026-08-25T16:05:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -21364,9 +21364,101 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T140144134804-n-delivery-test-stops-using-the-live-directory",
+        "plan": "binding-rules-need-bound-checks",
+        "section": "\u00a72",
+        "node": "n-delivery-test-stops-using-the-live-directory",
+        "node_definition": {
+          "done_when": "the test passes while a file it would have written already exists in the live reports directory, that live directory is asserted untouched afterwards, and the test still passes in isolation",
+          "estimated_hours": 0.75,
+          "goal": "The investigation-delivery test writes into a temporary reports directory rather than the live shared one, so it cannot collide with a running fleet or with a concurrent test run",
+          "id": "n-delivery-test-stops-using-the-live-directory",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T140144134804-n-delivery-test-stops-using-the-live-directory/manifest.md",
+          "plan": "binding-rules-need-bound-checks",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_sandbox_delivery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-p",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T14:01:50Z",
+        "completed_at": "2026-08-25T14:05:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 212,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 212,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "1a6b2d44016542ca87bd757c34209f4894b650c4",
+        "commits": [
+          "1f8310d"
+        ],
+        "changed_lines": {
+          "added": 24,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T140144134804-n-delivery-test-stops-using-the-live-directory/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d1-bbfe-7343-a316-eeff6ebd712e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 218624,
+            "cached_input_tokens_cumulative": 2565120,
+            "input_tokens": 275050,
+            "input_tokens_cumulative": 2746825,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 6772,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2870
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 396
+    "_version": 397
   }
 }
