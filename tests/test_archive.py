@@ -13,6 +13,10 @@ from reckon.cli import main
 TODAY = date(2026, 8, 24)
 
 
+def _age_days(since: str, today: date | None = None) -> str:
+    return str(((today or date.today()) - date.fromisoformat(since)).days)
+
+
 def _write_document(
     docs_dir: Path,
     slug: str,
@@ -82,10 +86,10 @@ def test_dry_run_lists_every_candidate_without_changing_files(tmp_path) -> None:
     assert result.exit_code == 0, result.output
     assert "finished-plan" in result.output
     assert "done" in result.output
-    assert "145d" in result.output
+    assert f"{_age_days('2026-04-01')}d" in result.output
     assert "replaced-research" in result.output
     assert "superseded" in result.output
-    assert "176d" in result.output
+    assert f"{_age_days('2026-03-01')}d" in result.output
     assert "Dry run: 2 candidate(s); no files changed." in result.output
     assert {path: path.read_bytes() for path in before} == before
 
