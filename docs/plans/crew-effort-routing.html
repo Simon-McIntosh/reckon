@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="27">
-<meta name="plan-impl" content="0.875">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099">
+<meta name="plan-version" content="31">
+<meta name="plan-impl" content="0.889">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -650,34 +650,61 @@
       that decides whether the qualification programme produces science.
     </p>
 
-    <h3 id="s11.1">§11.1 — A shadow must reproduce its primary's configuration except the dimension under test</h3>
+    <h3 id="s11.1" class="section-landed">§11.1 — A shadow must reproduce its primary's configuration except the dimension under test
+      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
+    <p class="landed-summary">
+      <code>resolve_role</code> applied the <code>by_spec_level</code> overlay last, so it
+      outranked the candidate backend's pinned effort and every pair moved two dimensions
+      while naming one. A shadow now pins the candidate's role to the bare backend —
+      removing the overlay from resolution — and takes <code>effort</code> and
+      <code>sandbox</code> from the primary's committed <code>agent</code> block unless the
+      caller names them; <code>lineage.configuration</code> records the substituted fields
+      and the inherited remainder, and a primary with no recorded configuration is refused.
+      Gate passed: 5 focused checks, <code>test_crew.py</code> 175/175, full suite
+      <strong>2382/2382</strong>, 576 worker-seconds at sol/medium (commit
+      <code>9f3e8dc</code>, merged <code>2470d54</code>). Verified on the pair that
+      motivated it: the same luna shadow now inherits <code>high</code> and substitutes
+      only backend and model.
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-1">§11.1 landed</a>.
+    </p>
+
+    <h3 id="s11.4">§11.4 — A shadow worktree is unintegrated by construction, so cleanup can never reclaim it</h3>
     <p>
-      The pair is confounded as it stands. The primary ran <code>sol</code> at
-      <code>high</code> (an explicit override on its dispatch); the shadow resolved
-      <code>luna</code> at <code>medium</code>, because routing is re-derived from
-      <em>current</em> flight config at shadow time and the level overlay for
-      <code>guided</code> is applied last, outranking the candidate backend's own
-      pinned effort. So the recorded pair compares (luna, medium) against
-      (sol, high) and cannot attribute the difference to the model. Every pair the
-      programme collects would carry the same confound, and the §6 decision rule
-      would then be applied to slices that do not isolate what they name.
+      Found the same way §10 was — by running the programme, not by reviewing it. With
+      §11.1 merged, re-shadowing the primary that motivated it failed outright:
+      <code>worktree creation failed: worktree path already exists</code>. Two coupled
+      causes, and the second is the one that matters.
     </p>
     <p>
-      <strong>Design (fixed):</strong> a shadow inherits the primary's recorded
-      agent configuration and substitutes only what the caller names. The primary's
-      <code>agent</code> block is already stored on its committed record — backend,
-      model, effort, sandbox — so the shadow resolves that configuration and applies
-      <code>--backend</code> (and any explicit <code>--set</code>) over it, rather
-      than resolving the node's spec level against today's config. Record on the
-      shadow both the substituted dimension and the inherited remainder, so a later
-      reader can tell a controlled pair from an uncontrolled one. Where the primary
-      predates configuration recording, refuse rather than guess.
+      The shadow worktree path is derived deterministically from the primary run id, so
+      the <em>second</em> shadow of any primary collides with the first. That alone would
+      be a nuisance. The reason the first one is still there is the real defect:
+      <code>crew gc</code> classifies it <code>unintegrated</code> — which is exactly
+      right, since a shadow never merges by design — and conservative cleanup correctly
+      refuses to remove unintegrated work. So <strong>every shadow leaks a worktree
+      permanently</strong>, and the leak then blocks re-measuring that primary.
     </p>
-    <p><strong>Done-when:</strong> a shadow of a primary recorded at one effort
-      resolves that same effort while switching only the named backend; a shadow
-      given an explicit effort override uses it and records the substitution; a
-      primary with no recorded agent configuration is refused with a message naming
-      why; focused tests cover all three and the full suite is green.</p>
+    <p>
+      This bites hardest on precisely the measurement the programme needs. Qualifying
+      candidate tiers against one another — spark against luna against terra on a single
+      node, the comparison that isolates the model — means shadowing <em>the same
+      primary</em> repeatedly. That is currently impossible without manual
+      <code>git worktree remove</code>.
+    </p>
+    <p>
+      The locked <code>shadow-sidecar</code> decision already settled the semantics this
+      needs: <q>the shadow's evidence is its diff artifact and test log in the durable run
+      directory, not a merged commit.</q> A shadow worktree whose <code>shadow.patch</code>
+      is retained is therefore disposable, and <code>unintegrated</code> is the wrong
+      question to ask of it. Classify by lineage, as §11.3 had to for gate counts.
+    </p>
+    <p><strong>Done-when:</strong> <code>crew gc</code> reports a completed shadow run's
+      worktree as disposable rather than unintegrated once its <code>shadow.patch</code> is
+      retained, and removes it on request; a shadow worktree whose patch artifact is
+      <em>absent</em> is still withheld; a live-referenced shadow worktree is never offered;
+      re-shadowing a primary whose prior shadow worktree was reclaimed succeeds; and a
+      focused test asserts a shadow worktree is not reported as unintegrated. Full suite
+      green.</p>
 
     <h3 id="s11.2">§11.2 — A shadow must not claim exclusive scope it cannot write</h3>
     <p class="landed-summary"><span class="badge badge-shipped">→ owned elsewhere 2026-08-25</span>
@@ -799,6 +826,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260825T114758024534-ledger-summary-partitions-gates" data-who="reckon-ship" data-when="2026-08-25T11:54:30Z">
     <div class="r-comment-body">§11.3 landed — run r-20260825T114758024534, gate passed, commit 72ef099 merged as e2f30c4; 333 worker-seconds at sol/medium, 29 insertions across exactly the two authorised paths, 1 test added and 2 strengthened. summary() already classified each record's lineage to build run_kinds and then discarded it one iteration later when counting gates, so the first shadow's failed gate sat among twelve live failures; gates is now keyed live and shadow with its own verdict counts, reusing the classification already in hand. Pass rate read from that block is the exact quantity the §6 decision rule consumes, so the bias would have grown with every shadow run. Gate evidence: focused 3/3, tests/test_ledger.py 61/61, full suite 2380/2380, ruff clean. The shape change reaches only the crew ledger CLI and the crew MCP summary view, both of which splat the payload; the unrelated plan-level gates list is untouched. Worker time landed on the guided/sol-medium median checkpoint 1 measured (5.4 min). Evidence: /reckon/evidence/crew-effort-routing-landed#s11-3</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260825T114747092517-shadow-inherits-primary-configuration" data-who="reckon-ship" data-when="2026-08-25T11:59:30Z">
+    <div class="r-comment-body">§11.1 landed — run r-20260825T114747092517, gate passed, commit 9f3e8dc merged as 2470d54; 576 worker-seconds at sol/medium, 191 insertions across exactly the three authorised paths, 3 tests added, first attempt, no scope change. Mechanism of the confound: shadow() re-derived routing from current flight config, and resolve_role applies the by_spec_level overlay last, so the level overlay's effort outranked the candidate backend's pinned effort and the shadow moved two dimensions while naming one. Fixed at the source rather than patched — the candidate's role entry is pinned to the bare backend, removing the level overlay from resolution entirely, then effort and sandbox are taken from the primary's committed agent block unless the caller explicitly named them; override detection is confined to the selected backend and the node's own role and spec-level paths. Every shadow now records lineage.configuration as substituted (per field: primary value, shadow value, and whether the cause was the backend or an explicit override) plus the inherited remainder, so a controlled pair is legible rather than assumed. A primary with no recorded agent configuration is refused. Gate: 5 focused checks, tests/test_crew.py 175/175, full suite 2382/2382, ruff clean. Verified beyond the suite on the pair that motivated it: the same luna shadow of r-20260825T072832542100 now inherits effort high and substitutes only backend and model, where it previously resolved luna at medium against a primary recorded at high. Evidence: /reckon/evidence/crew-effort-routing-landed#s11-1</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260825-s114-discovered" data-who="reckon-ship" data-when="2026-08-25T12:02:30Z">
+    <div class="r-comment-body">§11.4 added as a same-plan section, found by running the programme rather than reviewing it. With §11.1 merged, re-shadowing the primary that motivated it failed with 'worktree path already exists'. The deterministic per-primary path is the surface cause; the real one is that crew gc classifies a shadow worktree as unintegrated — correct, since a shadow never merges by design — so conservative cleanup can never reclaim it and every shadow leaks a worktree permanently. It bites hardest on the measurement the programme needs most: qualifying candidate tiers against each other means shadowing the same primary repeatedly, which is currently impossible without manual git worktree remove. The locked shadow-sidecar decision already settled the semantics — the shadow's evidence is its patch artifact in the durable run directory, not a merged commit — so classification should read lineage, exactly as §11.3 had to for gate counts. impl re-scored to 8 of 9 executable sections.</div>
 </div>
 </section>
 </main>

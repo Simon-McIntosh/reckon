@@ -303,6 +303,48 @@
       scope machinery; this plan owns routing and calibration, and two live plans
       describing one fix is the failure the allocation rule exists to prevent.</p>
 
+    <h3 id="s11-1">§11.1 — A shadow now reproduces its primary except the dimension under test</h3>
+    <p>Run <code>r-20260825T114747092517-shadow-inherits-primary-configuration</code>,
+      gate <strong>passed</strong>, commit <code>9f3e8dc</code> merged as
+      <code>2470d54</code>; <strong>576 worker-seconds</strong> at sol/medium, 191
+      insertions across exactly the three authorised paths, 3 tests added, first
+      attempt, no scope change.</p>
+    <p>The confound had a specific mechanism. <code>shadow()</code> re-derived routing
+      from <em>current</em> flight config, and <code>resolve_role</code> applies the
+      <code>by_spec_level</code> overlay <em>last</em> — so the level overlay's
+      <code>effort</code> outranked the candidate backend's own pinned effort, and the
+      shadow silently moved two dimensions while naming one. The repair inverts the
+      precedence at its source rather than patching the symptom: a shadow now starts
+      from the primary's committed <code>agent</code> block and the candidate's role
+      entry is pinned to the bare backend, which removes the level overlay from the
+      resolution entirely; <code>effort</code> and <code>sandbox</code> are then
+      overwritten from the primary unless the caller explicitly named them. Override
+      detection is confined to the selected backend and the node's own role and
+      spec-level paths, so an unrelated <code>--set</code> cannot be mistaken for a
+      deliberate substitution.</p>
+    <p>Every shadow now records <code>lineage.configuration</code> as two halves —
+      <code>substituted</code> (per field: the primary's value, the shadow's, and
+      whether the cause was the named backend or an explicit override) and the
+      <code>inherited</code> remainder — so a later reader can tell a controlled pair
+      from an uncontrolled one instead of having to trust that it was. A primary with
+      no recorded agent configuration is refused rather than guessed at.</p>
+    <p>Gate evidence: 5 focused shadow checks, <code>tests/test_crew.py</code> 175/175,
+      full suite <strong>2382/2382</strong>, ruff clean on all three paths. The four
+      done-when behaviours are each asserted, including that promotion retains the
+      provenance byte-for-byte. Audited: all 50 shadowable primaries in the mounted
+      ledgers carry a complete agent block, so the refusal path guards future records
+      rather than masking present ones.</p>
+    <p><strong>Verified beyond the suite, on the pair that motivated the fix.</strong>
+      Re-resolving the same <code>codex-luna</code> shadow of primary
+      <code>r-20260825T072832542100</code> now yields
+      <code>inherited: {effort: high, launch: cli, sandbox: worktree-full}</code> with
+      <code>substituted</code> holding only <code>backend</code> (codex &rarr;
+      codex-luna) and <code>model</code> (gpt-5.6-sol &rarr; gpt-5.6-luna), both
+      <code>via: backend</code>. The identical invocation previously resolved luna at
+      <em>medium</em> against a primary recorded at <em>high</em>. The pair varies one
+      dimension — the model — which is what the §6 decision rule requires of a slice
+      that names it.</p>
+
     <h3 id="s11-3">§11.3 — Ledger gate counts no longer pool shadow rows with live</h3>
     <p>Run <code>r-20260825T114758024534-ledger-summary-partitions-gates</code>, gate
       <strong>passed</strong>, commit <code>72ef099</code> merged as <code>e2f30c4</code>;
