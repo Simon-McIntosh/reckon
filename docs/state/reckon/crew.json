@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T09:47:18",
+  "updated": "2026-08-25T10:09:46",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -16621,9 +16621,108 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T072832542100-shadow-sidecar-dispatch",
+        "plan": "crew-effort-routing",
+        "section": "\u00a78",
+        "node": "shadow-sidecar-dispatch",
+        "node_definition": {
+          "done_when": "Focused tests cover shadow node derivation from a committed record, unreachable-base refusal, shadow lineage on pointer and promoted record without attempt increment, complete refusing --commit and deriving changed_lines from shadow.patch, and capabilities excluding shadow rows from live slices while exposing a shadow slice; PYTHONPATH=$PWD python -m pytest tests/ -q fully green",
+          "estimated_hours": null,
+          "goal": "Implement the \u00a78 shadow sidecar: a reckon crew shadow CLI command that re-dispatches a committed run's node to a candidate backend in a worktree at the primary's base_sha with shadow lineage, commitless completion capturing shadow.patch, and capability slicing that partitions shadow observations out of live competence curves",
+          "id": "shadow-sidecar-dispatch",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T072832542100-shadow-sidecar-dispatch/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew.py",
+            "reckon/ledger.py",
+            "reckon/capabilities.py",
+            "tests/test_crew.py",
+            "tests/test_ledger.py",
+            "tests/test_capabilities.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-j",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T07:28:44Z",
+        "completed_at": "2026-08-25T08:01:47Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1983,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1983,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "14cd4889dcae5f9235c1628b832ae929c0c08202",
+        "commits": [
+          "4656c7a0a8480950e0fc4a455fae93a6691f5300"
+        ],
+        "changed_lines": {
+          "added": 648,
+          "removed": 78,
+          "files": 7
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T072832542100-shadow-sidecar-dispatch/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a037d2-4e07-79e1-a7a1-7b2c63dca81d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 14165760,
+            "cached_input_tokens_cumulative": 14165760,
+            "input_tokens": 14713522,
+            "input_tokens_cumulative": 14713522,
+            "output_tokens": 46895,
+            "output_tokens_cumulative": 46895,
+            "reasoning_output_tokens": 18657,
+            "reasoning_output_tokens_cumulative": 18657
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 322
+    "_version": 323
   }
 }
