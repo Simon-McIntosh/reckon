@@ -429,7 +429,11 @@ def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
         f"{FIXED_READ_SET_TOKEN_BUDGET} budget. This file is loaded in full every "
         "session, so growth costs every run. The fix is to move REFERENCE material "
         "into references/ (read conditionally), not to shave sentences off a rule "
-        "that is worth stating. Raise the budget only with a reason recorded here."
+        "that is worth stating. Telling the two apart: a rule changes what an "
+        "orchestrator does mid-dispatch and has to be in hand before the decision, "
+        "so it stays; vocabulary, formats, enumerations, worked examples and "
+        "anything consulted only once a decision is made are reference, so they "
+        "move. Raise the budget only with a reason recorded here."
     )
 
 
