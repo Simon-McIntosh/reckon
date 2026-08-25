@@ -243,6 +243,37 @@
       begin from that commit; earlier records refuse with a clear message rather than
       re-authoring a contract.</p>
 
+    <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
+    <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
+  f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved
+  f-cer-003  §6 re-checkpoint                   open, trigger-gated (needs ~100 further
+                                                varied runs or 10 usable shadow pairs;
+                                                1 pair exists) — not foldable now
+  §8 manifest follow_ons                        folded → shadow-sidecar-dispatch
+  §9 probe + host layer                         folded → model-id-probe, coordinator config
+  §9.4 cross-model session reuse                folded → session-reuse-model-fence
+  §10 shadow authority at base                  folded → shadow-authority-at-base
+  §11.1 confounded pair                         open, same-plan section, next session
+  §11.2 shadow claim asymmetry                  foreign-owner → overlap flagged to the
+                                                session running shadow-claims-inbound-
+                                                asymmetry on concurrency-and-schedule-
+                                                visibility; awaiting its answer
+  §11.3 ledger gate pooling                     open, same-plan section, next session
+  gate-at-merge-time                            foreign-owner → execution-orchestration-
+                                                hardening (f-eoh-02)
+  dispatch seat ownership                       foreign-owner → execution-orchestration-
+                                                hardening (f-eoh-03)
+  ship read-set outgrowing its bound            foreign-owner → reckon-skill-overhaul
+                                                (f-rso-04)
+  ---
+  rows: 12   foldable-remaining: 0   unreconciled-runs: 0</pre>
+    <p>Two live pointers remained at closure, both owned by another session and
+      both alive; recorded through <code>reckon crew drain --leave …=still-working</code>,
+      which self-expires when each turns terminal. Neither was stopped, promoted or
+      altered. §11.1 and §11.3 are open <em>sections</em> rather than followups, so
+      <code>roadmap</code> surfaces them as pending work on an active plan — the plan
+      is deliberately left at <code>impl</code> 0.83 rather than closed.</p>
+
     <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
     <p>The full-suite verification surfaced a pre-existing failure:
       <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code>
