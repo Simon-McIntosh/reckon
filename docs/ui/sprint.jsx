@@ -60,7 +60,7 @@ function sprintAxis(sprints, horizon, todayValue) {
     const right = Math.max(left + 1.5, Math.min(100, ((itemEnd - start) / span) * 100));
     return { left, width: Math.max(1.5, right - left) };
   };
-  const tickCount = 5;
+  const tickCount = 6;
   const ticks = Array.from({ length: tickCount }, (_, index) => {
     const date = new Date(start.getTime() + span * index / (tickCount - 1));
     return { left: index * 100 / (tickCount - 1), label: date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }) };
@@ -191,8 +191,8 @@ function Sprint({ sprintId, onNav }) {
             <div className="r-horizon" aria-label="Timeline horizon">{Object.keys(SPRINT_HORIZONS).map(value => <button key={value} aria-pressed={horizon === value} onClick={() => setHorizon(value)}>{value}</button>)}</div>
             <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold sprints with nothing open</label>
           </div>
-          <div className="r-time-axis" aria-hidden="true"><span></span><div>{axis.ticks.map(tick => <i key={tick.left} style={{ left: `${tick.left}%` }}><b>{tick.label}</b></i>)}</div></div>
-          {overview.foldedCount > 0 && <div className="r-folded-band"><strong>{overview.foldedCount}</strong> {overview.foldedCount === 1 ? "sprint" : "sprints"} with nothing open</div>}
+          <div className="r-time-axis" aria-hidden="true"><span></span><div>{axis.ticks.map(tick => <span key={tick.left}>{tick.label}</span>)}</div></div>
+          {overview.foldedCount > 0 && <div className="r-folded-band"><div className="r-folded-summary"><strong>{overview.foldedCount}</strong><span>{overview.foldedCount === 1 ? "sprint" : "sprints"} with nothing open</span></div><div className="r-folded-track" aria-hidden="true"><i></i></div></div>}
           <div className="r-timeline-rows">
             {overview.visible.map(({ sprint: row, openCount }) => {
               const geometry = axis.position(row);
