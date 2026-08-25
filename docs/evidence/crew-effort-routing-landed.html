@@ -295,6 +295,38 @@
       begin from that commit; earlier records refuse with a clear message rather than
       re-authoring a contract.</p>
 
+    <h2 id="s11">§11 — Making the shadow pair a controlled comparison (2026-08-25)</h2>
+    <p>Three defects, all found by <em>running</em> §8 against live work rather than by
+      reviewing it — each appears only when a shadow runs beside a primary, which is
+      why 7 passing unit tests and a green suite had missed them. §11.2 was reallocated
+      to <code>concurrency-and-schedule-visibility</code> §5, which owns dispatch and
+      scope machinery; this plan owns routing and calibration, and two live plans
+      describing one fix is the failure the allocation rule exists to prevent.</p>
+
+    <h3 id="s11-3">§11.3 — Ledger gate counts no longer pool shadow rows with live</h3>
+    <p>Run <code>r-20260825T114758024534-ledger-summary-partitions-gates</code>, gate
+      <strong>passed</strong>, commit <code>72ef099</code> merged as <code>e2f30c4</code>;
+      <strong>333 worker-seconds</strong> at sol/medium, 29 insertions across exactly the
+      two authorised paths, 1 test added and 2 strengthened.</p>
+    <p><code>summary()</code> already classified every record's lineage to build
+      <code>run_kinds</code>, then threw that classification away one loop iteration
+      later when counting <code>gates</code> — so the first shadow's failed gate was
+      counted among twelve live failures. Since pass rate read from that block is the
+      exact quantity the §6 decision rule consumes, the contamination would have grown
+      with the qualification programme, biasing every future slice downward by however
+      many shadows had been run. The fix reuses the classification already in hand:
+      <code>gates</code> is now keyed <code>live</code> and <code>shadow</code>, each
+      holding its own verdict counts.</p>
+    <p>Gate evidence: focused 3/3 (a shadow failure leaves the live block at
+      <code>{passed: 1}</code> while the shadow block reads <code>{failed: 1}</code>;
+      a live-only ledger keeps <code>{failed: 1, passed: 1}</code> in its live block
+      with the shadow block empty), <code>tests/test_ledger.py</code> 61/61, full suite
+      <strong>2380/2380</strong>, ruff check and format clean on both paths. Audited
+      beyond the suite: the shape change reaches only two callers, the
+      <code>crew ledger</code> CLI and the <code>crew</code> MCP summary view, both of
+      which splat the payload — the plan-level <code>gates</code> list the SPA and
+      <code>_plan_html</code> read is an unrelated structure and is untouched.</p>
+
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
   f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved

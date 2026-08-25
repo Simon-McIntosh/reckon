@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="25">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770">
+<meta name="plan-version" content="27">
+<meta name="plan-impl" content="0.875">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -692,19 +692,18 @@
       is known to have been blocked; the race first reported was withdrawn at its source.
     </p>
 
-    <h3 id="s11.3">§11.3 — Ledger gate counts pool shadow rows with live</h3>
-    <p>
-      <code>crew ledger --view summary</code> partitions <code>run_kinds</code>
-      correctly (live 266, shadow 1) but its <code>gates</code> block does not: the
-      shadow's failed gate is counted among twelve live failures. Pass rate read
-      from that block is the exact quantity the §6 decision rule consumes, so the
-      contamination grows with the programme. Partition <code>gates</code> the way
-      <code>run_kinds</code> already is, and leave the live figure meaning live.
+    <h3 id="s11.3" class="section-landed">§11.3 — Ledger gate counts pool shadow rows with live
+      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
+    <p class="landed-summary">
+      <code>summary()</code> classified each record's lineage for <code>run_kinds</code>
+      then discarded it when counting <code>gates</code>; the block is now keyed
+      <code>live</code> and <code>shadow</code>, reusing that classification. Pass rate
+      read from it is what the §6 decision rule consumes, so the bias would have grown
+      with every shadow run. Gate passed: focused 3/3, <code>test_ledger.py</code> 61/61,
+      full suite <strong>2380/2380</strong>, 333 worker-seconds at sol/medium (commit
+      <code>72ef099</code>, merged <code>e2f30c4</code>).
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-3">§11.3 landed</a>.
     </p>
-    <p><strong>Done-when:</strong> the summary reports live and shadow gate counts
-      separately, a ledger containing only live runs reports an unchanged live
-      block, and a focused test asserts a shadow failure does not move the live
-      count.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -797,6 +796,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20260825-s112-realloc" data-who="reckon-ship" data-when="2026-08-25T08:52:00+00:00">
     <div class="r-comment-body">§11.2 reallocated to concurrency-and-schedule-visibility §5 by agreement with the session already running shadow-claims-inbound-asymmetry against it — that plan owns dispatch and scope machinery, this one owns routing and calibration, and two live plans describing one fix is the failure the allocation rule exists to prevent. Raised while their node was mid-flight rather than after it landed. Two points carried across: repair the publishing side (_repository_scope_claims applying no lineage filter) rather than adding a second inbound special case, which makes the two halves agree with one change; and assert the admission case directly in a test, because nothing has ever exercised it and pinning current behaviour would freeze an accident. Their node was cut after the race framing was withdrawn, so it targets the asymmetry rather than the retracted incident. impl re-scored to 6 of 8 executable sections with §11.1 and §11.3 remaining.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260825T114758024534-ledger-summary-partitions-gates" data-who="reckon-ship" data-when="2026-08-25T11:54:30Z">
+    <div class="r-comment-body">§11.3 landed — run r-20260825T114758024534, gate passed, commit 72ef099 merged as e2f30c4; 333 worker-seconds at sol/medium, 29 insertions across exactly the two authorised paths, 1 test added and 2 strengthened. summary() already classified each record's lineage to build run_kinds and then discarded it one iteration later when counting gates, so the first shadow's failed gate sat among twelve live failures; gates is now keyed live and shadow with its own verdict counts, reusing the classification already in hand. Pass rate read from that block is the exact quantity the §6 decision rule consumes, so the bias would have grown with every shadow run. Gate evidence: focused 3/3, tests/test_ledger.py 61/61, full suite 2380/2380, ruff clean. The shape change reaches only the crew ledger CLI and the crew MCP summary view, both of which splat the payload; the unrelated plan-level gates list is untouched. Worker time landed on the guided/sol-medium median checkpoint 1 measured (5.4 min). Evidence: /reckon/evidence/crew-effort-routing-landed#s11-3</div>
 </div>
 </section>
 </main>
