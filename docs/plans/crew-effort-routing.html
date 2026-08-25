@@ -19,9 +19,9 @@
   <title>Crew Effort Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-22">
-<meta name="plan-version" content="6">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-version" content="9">
+<meta name="plan-impl" content="0.56">
 </head>
 <body>
   <main class="plan-doc">
@@ -322,6 +322,18 @@
     </ul>
 
     <h2 id="s6">§6 — Finding the dispatch sweet spot: trial protocol</h2>
+    <p class="landed-summary"><span class="badge badge-shipped">✓ checkpoint 1 — 2026-08-25</span>
+      First checkpoint read over 317 spec-level-era implement runs (3 ledgers).
+      guided→<code>sol/medium</code> <strong>qualifies</strong> (50/58 = 86% ≥ 0.8 over ≥10 usable,
+      5.4 min vs ~13 min median at high; all 8 failures one migration wave whose re-cut nodes
+      passed at the same config). open→<code>sol/high</code> kept (11/11). Spark pilot 7/8 at
+      8/20 audits — continues (single failure was a harness-level malformed tool call, no diff;
+      its dedicated weekly meter drained ~60% on 8 runs ≈ a dozen-run/week capacity).
+      All four decisions locked; O3 stays deferred. Defaults promoted to the host flight
+      layer (§9); shadow measurement lands as §8. Slices, figure, token economics:
+      <a href="/reckon/evidence/crew-effort-routing-landed#checkpoint-1">checkpoint 1 evidence</a>.
+      The protocol below stands — it re-runs at each checkpoint (next: f-cer-003).
+    </p>
     <p>
       With the level recorded and routing varied, the sweet spot is a measurement,
       not a debate. The loop:
@@ -422,17 +434,126 @@
       because every layer is schema-validated on read.
     </p>
 
+    <h2 id="s8">§8 — Shadow sidecar dispatch (guided)</h2>
+    <p>
+      Implements the locked <code>shadow-sidecar: sampled-shadow</code> decision.
+      A shadow run re-dispatches an already-completed live node to a <em>candidate</em>
+      backend configuration in its own detached worktree, runs the same named check,
+      records the outcome — and never merges. It produces paired per-node evidence
+      that qualifies a candidate tier for a gated pilot at zero code-pollution risk.
+      <strong>Design (fixed); the worker derives the implementation:</strong>
+    </p>
+    <ul>
+      <li><strong>CLI surface</strong> (<code>reckon/cli.py</code>):
+        <code>reckon crew shadow --run &lt;primary-run-id&gt; --backend &lt;name&gt;
+        [--set k=v] [--member &lt;id&gt;] [--dry-run]</code>. The primary must be a
+        <em>committed ledger record</em> (a completed, promoted run) in the current
+        project; the node definition — plan, section, goal, done-when, write paths,
+        spec level, role — is taken verbatim from that record's stored node, never
+        re-authored. <code>--backend</code> is required: reckon source names no
+        model identifiers (repo-agnostic rule), so the candidate configuration is
+        always caller data resolved through flight config.</li>
+      <li><strong>Base parity</strong>: the shadow worktree is created at the
+        primary's recorded <code>base_sha</code> so the pair is comparable; an
+        unreachable base sha is a refusal, not a fallback to HEAD.</li>
+      <li><strong>Lineage</strong> (<code>reckon/crew.py</code>,
+        <code>reckon/ledger.py</code>): the live pointer and the promoted record
+        carry <code>lineage = {kind: "shadow", primary_run_id: &lt;id&gt;}</code>,
+        reusing the existing lineage field; a shadow never increments the
+        primary's attempt count and is never itself a redispatch parent.</li>
+      <li><strong>Never merges</strong>: the shadow's deliverable is its evidence,
+        not a commit. On completion the run directory keeps a
+        <code>shadow.patch</code> (full worktree diff against base) and the gate
+        log; <code>reckon crew complete</code> on a shadow run refuses
+        <code>--commit</code>, records <code>changed_lines</code> from the patch
+        artifact, and promotion makes the worktree removable without any
+        reachability requirement (nothing merged, evidence is in the run dir).</li>
+      <li><strong>Calibration isolation</strong>
+        (<code>reckon/capabilities.py</code>): shadow observations are excluded
+        from competence horizons and live pass-rate slices by default and exposed
+        as a separate shadow slice per (configuration × spec level), so a
+        qualification read can compare each shadow verdict with its primary's
+        without contaminating live routing evidence. Ledger summary views label
+        shadow rows.</li>
+      <li><strong>Budget and scope</strong>: a shadow dispatch passes the same
+        per-backend preflight/budget hold as any dispatch; its write scope is its
+        own worktree plus its run directory, so it never conflicts with live path
+        claims and needs no peer fences.</li>
+      <li><strong>Sampling policy is orchestrator-explicit</strong> in this wave —
+        no config automation. Guidance lives in
+        <code>skills/reckon-ship/references/effort-routing.md</code>: shadow
+        roughly every Nth eligible live node per candidate tier; a tier's
+        qualification read needs ≥ 10 usable pairs; shadow evidence qualifies a
+        tier for its gated pilot, only live gated evidence opens routing.</li>
+    </ul>
+    <p><strong>Done-when:</strong> focused tests cover shadow node derivation from
+      a committed record, base-sha parity refusal, lineage kind on pointer and
+      promoted record, complete-without-commit with patch artifact, and
+      capabilities exclusion + shadow slice; <code>uv run pytest tests/ -q</code>
+      fully green.</p>
+
+    <h2 id="s9">§9 — Host-layer defaults and backend widening</h2>
+    <p>
+      The §6 checkpoint exposed a config-placement defect: only reckon carried a
+      <code>by_spec_level</code> mapping, so nova and imas-codex declared levels
+      while routing everything to <code>sol/high</code>. The intended pattern is
+      the flight config's own layering — <em>shipped → host → project →
+      override</em>: the <strong>shipped layer stays neutral</strong> (reckon
+      source names no models or efforts), the <strong>host layer carries this
+      workstation's measured defaults</strong> for every mounted project, and a
+      <strong>project layer carries only deviations</strong> (reckon's
+      exact→spark pilot). Per-repo flight.yaml files are not required for shared
+      policy and never were.
+    </p>
+    <ul>
+      <li><strong>§9.1 — model-id probe (worker node).</strong> One trivial
+        read-only <code>codex exec</code> per candidate identifier on this
+        account: <code>gpt-5.6-luna</code> and <code>gpt-5.6-terra</code>, each
+        probed bare and with <code>model_reasoning_effort</code> set; record the
+        exact accept/reject response per identifier as a run artifact. Same
+        protocol as the 2026-08-22 spark probes (§2 table).</li>
+      <li><strong>§9.2 — host flight layer (coordinator-owned, like §5.3).</strong>
+        <code>~/.config/reckon/flight.yaml</code> gains
+        <code>roles.implement.by_spec_level</code> — exact → effort
+        <code>medium</code> (advisory prior: populates the empty sol/medium-exact
+        slice; the gate-verified named check bounds the risk), guided → effort
+        <code>medium</code> (measured winner, 86% ≥ 0.8 over 58 usable), open →
+        effort <code>high</code> (measured, kept) — plus the
+        <code>codex-spark</code> backend definition with
+        <code>budget_check</code> enabled (its dedicated weekly meter is small
+        enough to exhaust; preflight must see it), and, for each identifier the
+        §9.1 probe admits, a defined-not-defaulted backend
+        (<code>codex-luna</code> / <code>codex-terra</code>) reachable only via
+        shadow qualification (§8) or explicit override. Host config is user
+        data — uncommitted; the provenance layer (<code>crew view=flight</code>)
+        is its audit trail.</li>
+      <li><strong>§9.3 — policy reference update (coordinator-owned).</strong>
+        <code>effort-routing.md</code> gains: the shadow qualification path; the
+        stream-failure classification (a run that dies mid-stream with no diff —
+        e.g. a malformed tool call — is an infrastructure failure: redispatch
+        without indicting the spec, and it does not count toward the
+        two-consecutive-gate-failure breaker); and the spark budget note
+        (dedicated weekly meter, ~dozen-run capacity, token-lean dispatch
+        guidance).</li>
+    </ul>
+    <p><strong>Done-when:</strong> §9.1's artifact records a verdict per
+      identifier; <code>reckon flight --project nova</code> (and imas-codex)
+      resolves <code>by_spec_level</code> with layer=host provenance and
+      <code>reckon crew preflight --project reckon</code> reports a real spark
+      headroom figure instead of <code>unknown</code> on the next spark run's
+      completion; the effort-routing reference carries all three additions.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="spec-vocabulary" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="spec-vocabulary" data-choice="three-level-enum" data-by="Simon McIntosh (lead), §6 checkpoint session" data-when="2026-08-25T06:55:02+00:00">
     <p class="r-dec-q">Is the three-level declared vocabulary (exact / guided / open) the right specification signal?</p>
     <p class="r-dec-ctx">The prototype implements the enum as an optional field — reversible, nothing depends on it yet. Alternatives: free text (unmeasurable), derived-only scoring (weak proxies, no declaration to audit). §4 defines the levels by design ownership.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="three-level-enum">three-level enum</button>
+      <button class="r-opt chosen" data-value="three-level-enum">three-level enum</button>
       <button class="r-opt" data-value="free-text">free text</button>
       <button class="r-opt" data-value="derived-only">derived-only</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked from measurement at the §6 checkpoint (2026-08-25): 317 spec-level-era implement runs across three ledgers sliced cleanly per (level × configuration) — exact/spark 7/8 pass at 3.9 min median, exact/sol-high 67/74 at ~12 min, guided/sol-medium 50/58 at 5.4 min, guided/sol-high 140/147 at ~13 min, open/sol-high 11/11. The enum produced exactly the slices the §6 decision rule needs, and declarations proved auditable: the one failure cluster was traced to specifications (re-cut nodes passed at the same configuration), not to the vocabulary. Free text could not have sliced; derived scoring (O3) stays deferred as a future audit of declarations — no inflation signal yet.</p>
     </div>
 <div class="r-dec" data-key="routing-mode" data-choice="config-mapped" data-by="Simon McIntosh (lead)" data-when="2026-08-22T09:51:23+00:00">
     <p class="r-dec-q">How does a declared level select routing?</p>
@@ -444,30 +565,30 @@
       </p>
     <p class="r-dec-rat">Lead decision 2026-08-22: one dial per dispatch. The orchestrator declares only --spec-level; flight config resolves backend, model, provider-effort and time budget underneath it as data (roles.&lt;role&gt;.by_spec_level), keeping --set as the per-dispatch escape hatch. The dial stays named by spec completeness rather than effort so a wrong declaration remains checkable against the plan section and the ledger.</p>
     </div>
-<div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="spark-lane" data-choice="pilot-gated" data-by="Simon McIntosh (lead), §6 checkpoint session" data-when="2026-08-25T06:55:02+00:00">
     <p class="r-dec-q">Does the spark lane open under the §4 gate?</p>
     <p class="r-dec-ctx">gpt-5.3-codex-spark is confirmed available on this account. The gate: exact level with a runnable named check, ≤ 0.5 h estimate, no open decisions, mechanical roles only, first twenty runs full-diff audited, two consecutive gate failures close the lane. §5.2 runs one pilot dispatch under exactly these conditions.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="pilot-gated">open as gated pilot</button>
+      <button class="r-opt chosen" data-value="pilot-gated">open as gated pilot</button>
       <button class="r-opt" data-value="dry-run-only">dry-run only for now</button>
       <button class="r-opt" data-value="reject">reject the lane</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Pilot evidence at 8 of 20 audited runs (2026-08-25): 7/8 gate-passed at 3.9 min median (vs 8–18 min for sol exact slices elsewhere), zero redispatches charged, all full-diff audits clean, and manifests show the lane running its named checks and in one case the full 2257-test suite. The single failure was a harness-level malformed tool call after a 222k-line stream — no diff produced, the specification was not indicted, the circuit breaker never tripped. The lane stays open under the unchanged §4 gate. Two caps recorded: the dedicated spark weekly meter absorbed ~60% from these 8 runs (~41M input tokens) — capacity is roughly a dozen runs/week at the current profile, so the lane buys latency and sol-budget relief, never fleet share; and budget_check is enabled on the spark backend so preflight sees its headroom instead of unknown. Slice-lock per the §6 rule still needs ≥10 usable runs — the pilot audit continues to run 20.</p>
     </div>
-<div class="r-dec" data-key="scheduling" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="scheduling" data-choice="standing-calibration" data-by="Simon McIntosh (lead), §6 checkpoint session" data-when="2026-08-25T06:55:02+00:00">
     <p class="r-dec-q">Where does this plan sit in the roadmap — which sprint, or explicitly backlog?</p>
     <p class="r-dec-ctx">The §5 prototype executes in the authoring session; §6 is an ongoing measurement loop with a checkpoint after ~50 varied runs. Deliberately left sprint-unassigned pending this decision rather than silently unscheduled.</p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Deliberately sprint-unassigned as a standing calibration loop rather than backlog: execution waves (§5, §7, and now §8/§9) run inside the sessions that need them, and the open §6-recheck followup keeps the plan visible to roadmap between checkpoints. Re-checkpoint at roughly each 100 new varied runs and at every new-tier qualification read; revisit sprint assignment only if a wave outgrows its driving session.</p>
     </div>
-<div class="r-dec" data-key="shadow-sidecar" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="shadow-sidecar" data-choice="sampled-shadow" data-by="Simon McIntosh (lead)" data-when="2026-08-25T06:55:02+00:00">
     <p class="r-dec-q">Do we measure spark with shadow sidecar runs on live nodes?</p>
     <p class="r-dec-ctx">A shadow run dispatches the same node to the spark backend in its own worktree, runs the gate, records the outcome, and never merges - paired per-node evidence across all spec tiers with zero code pollution. Risks and mitigations: ledger ambiguity -&gt; records carry lineage kind shadow naming the primary run, and calibration slices label them; cleanup reachability -&gt; the shadow&#x27;s evidence is its diff artifact and test log in the durable run directory, not a merged commit; spend -&gt; shadow a sample (the spark side costs roughly a minute and ~9k output tokens per node). Evidence rule: shadow evidence qualifies a tier for the gated pilot; only live gated evidence opens routing.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="sampled-shadow">shadow a sample of live nodes</button>
+      <button class="r-opt chosen" data-value="sampled-shadow">shadow a sample of live nodes</button>
       <button class="r-opt" data-value="no-shadow">no shadows - pilot lane only</button>
       <button class="r-opt" data-value="shadow-everything">shadow every implement node</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Lead choice 2026-08-25. Sampled shadows give paired per-node evidence that qualifies candidate tiers (spark beyond exact; gpt-5.6-luna/terra; sol at untested efforts) without merging their code, at a cost the small dedicated meters can absorb — shadow-everything would drain the spark weekly meter in under a day at the current fleet rate (~845 sol runs/week against a ~dozen-run spark capacity). The evidence rule stands: shadow evidence qualifies a tier for its gated pilot; only live gated evidence opens routing. Implementation is §8 of this plan.</p>
     </div>
 </section>
 
@@ -479,9 +600,15 @@
     <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §5</pre>
     <p class="r-fu-outcome">Landed. §5.1 spec-level recording at sol/medium: gate passed, 173/173 focused tests, 8 added, 266 worker-seconds, commit dbb81e0 (merged 4d3f3d2). §5.2 capability slice down the spark lane (gpt-5.3-codex-spark, exact tier, full-diff pilot audit): gate passed, 14/14 tests, 63 worker-seconds, commit 2a10c38 (merged 1406b50). §5.3 flight layer + effort-routing reference landed in 6767cd5; spark dry-run resolves end-to-end from merged main. Capability cache rebuilt: 4 configurations tracked, observations carry spec_level. Full suite 1961 passed. Evidence: /reckon/evidence/archive/crew-effort-routing-landed.</p>
     </article>
-<article class="r-fu" data-id="f-cer-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship session 2026-08-22" data-written-at="2026-08-22" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cer-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship session 2026-08-22" data-written-at="2026-08-22" data-recommends-skill="" data-resolved-at="2026-08-25T06:55:02+00:00" data-resolved-by="reckon-ship §6 checkpoint session 2026-08-25">
     <h4 class="r-fu-title">§6 checkpoint: read the calibration slices and lock the routing table</h4>
     <div class="r-fu-body">Trigger: roughly 50 varied-configuration runs in the committed ledgers (dispatches declaring --spec-level and routed by the §4 advisory table). Read pass rate, worker minutes, tokens, and redispatch lineage per (configuration × declared level × size bucket); apply the §6 decision rule; then lock or amend the four open decisions (spec-vocabulary, routing-mode, spark-lane, scheduling) from measured slices rather than priors.</div>
+    <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §6</pre>
+    <p class="r-fu-outcome">Checkpoint read 2026-08-25 over 317 spec-level-era implement runs (reckon 103, nova 92, imas-codex 122). Verdicts by the §6 rule (cheapest configuration with pass ≥0.8 over ≥10 usable runs, charged for redispatches): guided→sol/medium QUALIFIES (50/58 = 86%, median 5.4 min vs ~13 min at high, ~2.3× cheaper output tokens; all 8 failures were one migration wave whose re-cut nodes passed at the same configuration — specification defects, not effort). open→sol/high KEPT (11/11 pass; no cheaper arm tested). exact: spark pilot 7/8 at 8/20 audits — below the 10-run bar, pilot continues; the sol/medium-exact slice is empty and is populated next via the host-layer prior. Host flight layer gains by_spec_level defaults for every project and spark gains budget_check (§9); shadow measurement lands as §8. O3 derived scoring stays deferred — no declaration-inflation signal. All four open decisions locked. Slices, figure and token economics: /reckon/evidence/crew-effort-routing-landed#checkpoint-1.</p>
+    </article>
+<article class="r-fu" data-id="f-cer-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship §6 checkpoint session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">§6 re-checkpoint: read shadow and widened slices, graduate or close lanes</h4>
+    <div class="r-fu-body">Trigger: roughly 100 further varied-configuration runs OR the first 10 usable shadow pairs for any candidate tier (spark beyond exact; gpt-5.6-luna / gpt-5.6-terra if the §9 probe admits them; sol/medium on exact). Re-apply the §6 decision rule per (configuration × level × size bucket) including shadow-labelled slices; graduate qualified tiers to gated pilots; lock or revert the host-layer guided→medium default per its cross-project pass rate; and close the spark pilot audit (20 runs) with a widen/keep/close verdict.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §6</pre>
     </article>
 </section>

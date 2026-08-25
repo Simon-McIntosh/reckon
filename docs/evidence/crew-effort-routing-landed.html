@@ -9,7 +9,7 @@
   <meta name="plan-title"       content="Crew Effort Routing — Landed">
   <meta name="plan-summary"     content="Execution evidence for the crew-effort-routing prototype: model probes, the two varied-configuration pilot runs, and the config surfaces landed.">
   <meta name="plan-evidence-for" content="crew-effort-routing">
-  <meta name="plan-verifies"    content="crew-effort-routing#s5">
+  <meta name="plan-verifies"    content="crew-effort-routing#s6">
   <title>Crew Effort Routing — Landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -101,6 +101,79 @@
       <code>sol/high</code>, undeclared → <code>sol/high</code> unchanged.
       Decision <code>routing-mode</code> locked to <code>config-mapped</code>
       by the lead the same day.</p>
+
+    <h2 id="checkpoint-1">§6 checkpoint 1 — calibration slices (2026-08-25)</h2>
+    <p>
+      Trigger met roughly six-fold: 317 spec-level-era implement runs in the
+      committed ledgers (reckon 103, nova 92, imas-codex 122; dispatched
+      2026-08-22 → 25), plus test/investigate/documentation slices. Read-out per
+      (configuration × declared level), usable = passed + failed (not-run
+      excluded), redispatch lineage charged:
+    </p>
+    <table>
+      <thead><tr><th>Slice (implement)</th><th>n</th><th>Pass / usable</th>
+        <th>Median min</th><th>Median out / in tokens</th><th>Redispatch rows</th></tr></thead>
+      <tbody>
+        <tr><td><code>exact · gpt-5.3-codex-spark</code> (reckon)</td><td>8</td><td>7/8 (88%)</td><td>3.9</td><td>26k / 3.3M</td><td>0</td></tr>
+        <tr><td><code>exact · sol/high</code> (nova + imas-codex)</td><td>78</td><td>69/76 (91%)</td><td>9.8–18.1</td><td>20–28k / 5.6–8M</td><td>8</td></tr>
+        <tr><td><code>guided · sol/medium</code> (reckon)</td><td>62</td><td>47/55 (85%)</td><td>5.4</td><td>11k / 2.7M</td><td>3</td></tr>
+        <tr><td><code>guided · sol/high</code> (3 repos)</td><td>155</td><td>139/146 (95%)</td><td>11.4–25.4</td><td>24–37k / 6.4–10.9M</td><td>12</td></tr>
+        <tr><td><code>open · sol/high</code> (nova + imas-codex)</td><td>11</td><td>11/11 (100%)</td><td>10.5–18.6</td><td>21–22k / 6.5–8.7M</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <figure>
+      <img src="/reckon/figures/crew-effort-routing/spec-level-slices.png"
+           alt="Strip plot of worker minutes per implement run for each spec level and configuration, pass/fail coloured, with medians and pass counts"
+           style="max-width:100%">
+      <figcaption>Every spec-level-era implement run across the three ledgers
+      (log scale; black tick = median). The spark exact lane sits a factor 2–4
+      left of the sol exact slices at an indistinguishable pass rate; the
+      guided medium slice halves the high slice's median with its failures
+      confined to one wave.</figcaption>
+    </figure>
+    <p><strong>Verdicts by the §6 decision rule</strong> (cheapest configuration
+      with pass ≥ 0.8 over ≥ 10 usable runs, ties by worker-minutes charged for
+      redispatches):</p>
+    <ul>
+      <li><strong>guided → sol/medium qualifies.</strong> 50/58 usable = 86%
+        pooled (47/55 in reckon), median 5.4 min vs ~13 min at high, ~2.3×
+        cheaper output tokens. All 8 failures came from one
+        <code>project-state-fleet-migration</code> wave on 2026-08-24 whose
+        re-cut nodes (<code>*-state-migration</code>, 12:17) then <em>passed at
+        the same sol/medium configuration</em> — specification defects, not
+        effort inadequacy. Promoted to the host flight layer (§9).</li>
+      <li><strong>open → sol/high kept.</strong> 11/11; no cheaper arm has data.
+        <code>xhigh</code> deliberately NOT opened for crew: nothing is failing
+        at high, so extra effort would buy quality the gate cannot measure.</li>
+      <li><strong>exact — spark pilot continues; no slice-lock yet.</strong>
+        7/8 at 8/20 full-diff audits (all clean; manifests show the lane running
+        its named checks and once the full 2257-test suite — the dispatch
+        contract neutralises the "no tests by default" operating pattern). The
+        single failure (<code>hermetic-preflight-tests</code>) was a
+        harness-level malformed tool call after a 222k-line stream — zero output
+        tokens, no diff, no manifest; classified infrastructure, breaker not
+        tripped. Below the 10-run bar, so the ≤ 0.5 h manual bound stays. The
+        empty sol/medium-exact slice is populated next via the host-layer
+        prior.</li>
+      <li><strong>Spark budget ceiling (new finding).</strong> The 8 spark runs
+        consumed ≈ 41M input / 208k output tokens ≈ 60% of spark's dedicated
+        weekly meter, while 845 sol runs (~8.5B input tokens) consumed ~40% of
+        the general meter in the same window — spark capacity is roughly a
+        dozen runs/week at the current profile (one outlier burned 22.9M input
+        in 2 minutes). Consequence: <code>budget_check</code> enabled on the
+        spark backend (§9); lane positioning is latency + sol-budget relief,
+        never fleet share.</li>
+      <li><strong>O3 (derived spec scoring) stays deferred.</strong> No
+        declaration-inflation signal: the failure cluster indicted specs and
+        was repaired by re-cutting them, exactly as the §4 ownership test
+        predicts.</li>
+    </ul>
+    <p>All four open decisions locked this session (spec-vocabulary =
+      three-level-enum, spark-lane = pilot-gated, shadow-sidecar =
+      sampled-shadow, scheduling = standing-calibration); f-cer-002 resolved;
+      f-cer-003 carries the re-checkpoint (~100 further varied runs or first
+      10 shadow pairs per candidate tier). New sections: §8 shadow sidecar
+      dispatch, §9 host-layer defaults + luna/terra widening.</p>
 
     <h2 id="side-repair">Side repair — ship skill returned to its read-set budget</h2>
     <p>The full-suite verification surfaced a pre-existing failure:
