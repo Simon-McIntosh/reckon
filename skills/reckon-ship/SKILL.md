@@ -590,6 +590,11 @@ also keeps in-harness runs observable.
 reads, which turns orchestration back into polling; a harness-backgrounded watch
 wakes the session with the event.
 
+**And do not pipe it.** The ticker flushes each line as it happens, so a buffering
+filter — `| tail`, `| head`, `| grep` without `--line-buffered` — holds every
+transition until the command exits and you see nothing at all while the fleet
+runs. Background the bare command and read its output file.
+
 The live classifier reads the manifest's recorded status — `complete` becomes
 `completed_unpromoted`, `blocked`/`failed` are retained, missing terminal
 manifests become `abandoned` — but that does not prove the gate; read its
