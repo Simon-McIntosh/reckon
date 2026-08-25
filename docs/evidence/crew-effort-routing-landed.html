@@ -386,6 +386,37 @@
       quantity is small at one shadow and was always going to be: the defect scales
       with the programme, which is why it was worth fixing before the programme ran.</p>
 
+    <h3 id="s11-4">§11.4 — A shadow worktree is now reclaimable, because its evidence is the patch</h3>
+    <p>Run <code>r-20260825T120327466836-shadow-worktree-reclaimable-by-lineage</code>,
+      gate <strong>passed</strong>, commit <code>39d7a28</code>; <strong>450
+      worker-seconds</strong> at sol/medium, 241 insertions across exactly the two
+      authorised paths, 5 tests added.</p>
+    <p>Found by running the programme, not reviewing it: with §11.1 merged, re-shadowing
+      the primary that motivated it failed with <code>worktree path already exists</code>.
+      The deterministic per-primary path was the surface cause; the real one was that
+      <code>crew gc</code> asked the wrong question. It classified the leftover
+      <code>unintegrated</code> — correct, since a shadow never merges — and conservative
+      cleanup rightly refuses unintegrated work, so <strong>every shadow leaked a worktree
+      permanently</strong> and the leak then blocked re-measuring that primary at all.
+      That falls hardest on the comparison the programme most needs: qualifying candidate
+      tiers against one another means shadowing <em>the same primary</em> repeatedly.</p>
+    <p>The locked <code>shadow-sidecar</code> decision had already settled the semantics —
+      the shadow's evidence is its patch artifact in the durable run directory, not a
+      merged commit — so classification now reads lineage, as §11.3 had to for gate counts.
+      A worktree is <code>disposable</code> only when a committed record of
+      <code>lineage.kind = shadow</code> maps to that exact path <em>and</em> its
+      <code>shadow_patch</code> resolves to the canonical
+      <code>&lt;run-id&gt;/shadow.patch</code> and that file exists. Both conditions are
+      re-checked at apply time, and a failure degrades the row back to
+      <code>unintegrated</code> rather than removing it. Only then is the removal forced —
+      which is what a shadow needs, since its diff is uncommitted by design and the patch
+      is what preserves it.</p>
+    <p>Gate evidence: 5 focused assertions, each paired with its negative — disposable
+      when the patch is retained; removed on apply with the patch surviving; withheld when
+      the patch is absent; never offered while live-referenced; and an ordinary
+      unintegrated worktree still withheld and still on disk.
+      <code>tests/test_crew_gc.py</code> 7/7, full suite <strong>2388/2388</strong>.</p>
+
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
   f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved

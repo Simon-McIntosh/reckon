@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="crew-effort-routing">
   <meta name="plan-title" content="Crew Effort Routing">
-  <meta name="plan-summary" content="Route each crew dispatch&#x27;s model and effort from how completely the node is specified, add a gated small-model lane for exactly-specified work, and calibrate the dispatch sweet spot from the run ledger.">
+  <meta name="plan-summary" content="Route each dispatch&#x27;s model and effort from how completely its node is specified, gate a small-model lane, and calibrate the sweet spot from the ledger.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="33">
-<meta name="plan-impl" content="0.8">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc">
+<meta name="plan-version" content="37">
+<meta name="plan-impl" content="0.9">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -668,43 +668,22 @@
       Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-1">§11.1 landed</a>.
     </p>
 
-    <h3 id="s11.4">§11.4 — A shadow worktree is unintegrated by construction, so cleanup can never reclaim it</h3>
-    <p>
-      Found the same way §10 was — by running the programme, not by reviewing it. With
-      §11.1 merged, re-shadowing the primary that motivated it failed outright:
-      <code>worktree creation failed: worktree path already exists</code>. Two coupled
-      causes, and the second is the one that matters.
+    <h3 id="s11.4" class="section-landed">§11.4 — A shadow worktree is unintegrated by construction, so cleanup can never reclaim it
+      <span class="badge badge-shipped">✓ landed 2026-08-25</span></h3>
+    <p class="landed-summary">
+      <code>crew gc</code> called a shadow worktree <code>unintegrated</code> — literally
+      true and permanently disqualifying, since a shadow never merges — so every shadow
+      leaked a worktree and the deterministic per-primary path then blocked re-measuring
+      that primary. Classification now reads lineage: <code>disposable</code> only when a
+      committed <code>lineage.kind = shadow</code> record maps to that exact path and its
+      <code>shadow_patch</code> resolves to the canonical artifact and exists, both
+      re-checked at apply time. Gate passed: 5 focused assertions each with its negative,
+      <code>test_crew_gc.py</code> 7/7, full suite <strong>2388/2388</strong>, 450
+      worker-seconds at sol/medium (commit <code>39d7a28</code>).
+      Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-4">§11.4 landed</a>.
     </p>
-    <p>
-      The shadow worktree path is derived deterministically from the primary run id, so
-      the <em>second</em> shadow of any primary collides with the first. That alone would
-      be a nuisance. The reason the first one is still there is the real defect:
-      <code>crew gc</code> classifies it <code>unintegrated</code> — which is exactly
-      right, since a shadow never merges by design — and conservative cleanup correctly
-      refuses to remove unintegrated work. So <strong>every shadow leaks a worktree
-      permanently</strong>, and the leak then blocks re-measuring that primary.
-    </p>
-    <p>
-      This bites hardest on precisely the measurement the programme needs. Qualifying
-      candidate tiers against one another — spark against luna against terra on a single
-      node, the comparison that isolates the model — means shadowing <em>the same
-      primary</em> repeatedly. That is currently impossible without manual
-      <code>git worktree remove</code>.
-    </p>
-    <p>
-      The locked <code>shadow-sidecar</code> decision already settled the semantics this
-      needs: <q>the shadow's evidence is its diff artifact and test log in the durable run
-      directory, not a merged commit.</q> A shadow worktree whose <code>shadow.patch</code>
-      is retained is therefore disposable, and <code>unintegrated</code> is the wrong
-      question to ask of it. Classify by lineage, as §11.3 had to for gate counts.
-    </p>
-    <p><strong>Done-when:</strong> <code>crew gc</code> reports a completed shadow run's
-      worktree as disposable rather than unintegrated once its <code>shadow.patch</code> is
-      retained, and removes it on request; a shadow worktree whose patch artifact is
-      <em>absent</em> is still withheld; a live-referenced shadow worktree is never offered;
-      re-shadowing a primary whose prior shadow worktree was reclaimed succeeds; and a
-      focused test asserts a shadow worktree is not reported as unintegrated. Full suite
-      green.</p>
+
+
 
     <h3 id="s11.5">§11.5 — The time budget is part of the configuration a shadow must inherit</h3>
     <p>
@@ -868,6 +847,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20260825-s115-budget-confound" data-who="reckon-ship" data-when="2026-08-25T12:08:10Z">
     <div class="r-comment-body">§11.5 added, and the §8 pair reading corrected. Dispatching the first supposedly-controlled pair exposed that §11.1 was necessary but not sufficient: time_budget is a top-level field on the run record, not part of the agent block a shadow inherits, so the shadow fell back to the role default and the pair was (luna, 8 minutes) against (sol, 40 minutes). The run was stopped and discarded rather than promoted — it would have looked like a controlled comparison and was not, which is the exact failure §11.1 existed to prevent, one field over. Consequence for the record: the §8 first pair was given 8 minutes against the primary's 40 and used 4.3 against 33, so its thinner output (115 insertions against 809, zero tests added) cannot be attributed to the candidate model — a worker sizes its work to the budget it is told it has. The §8 evidence anchor now says so explicitly and no longer reads as a model comparison. impl re-scored to 8 of 10 executable sections: the denominator grew because execution discovered §11.4 and §11.5, so the fraction is re-based rather than advanced.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260825T120327466836-shadow-worktree-reclaimable-by-lineage" data-who="reckon-ship" data-when="2026-08-25T12:12:10Z">
+    <div class="r-comment-body">§11.4 landed — run r-20260825T120327466836, gate passed, commit 39d7a28; 450 worker-seconds at sol/medium, 241 insertions across exactly the two authorised paths, 5 tests added. crew gc was asking the wrong question of a shadow worktree: unintegrated is literally true and permanently disqualifying, since a shadow never merges by design, so every shadow leaked a worktree and the deterministic per-primary path then blocked re-measuring that primary at all. Classification now reads lineage. A worktree is disposable only when a committed lineage.kind=shadow record maps to that exact path and its shadow_patch resolves to the canonical <run-id>/shadow.patch and that file exists; both conditions are re-checked at apply time and a failure degrades the row back to unintegrated rather than removing it. The removal is forced only under that proof, which is what a shadow needs since its diff is uncommitted by design and the patch is what preserves it. Gate: 5 focused assertions each paired with its negative, tests/test_crew_gc.py 7/7, full suite 2388/2388. impl 9 of 10 executable sections. Evidence: /reckon/evidence/crew-effort-routing-landed#s11-4</run-id></div>
 </div>
 </section>
 </main>
