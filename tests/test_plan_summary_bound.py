@@ -99,6 +99,36 @@ def test_audits_report_every_existing_overlong_summary_with_its_length(
         assert str(store_module.PLAN_SUMMARY_MAX_LENGTH) in finding.message
 
 
+def test_exact_bound_with_apostrophes_is_clean_at_write_and_both_audits(
+    mounted_project,
+):
+    project, docs_dir = mounted_project
+    path = _write_plan(docs_dir, "apostrophes", "short")
+    summary = "'" + "x" * (store_module.PLAN_SUMMARY_MAX_LENGTH - 2) + "'"
+
+    written = mcp_module._edit_plan(
+        project,
+        "apostrophes",
+        [{"op": "set", "path": "summary", "value": summary}],
+        0,
+    )
+    html = path.read_text(encoding="utf-8")
+    encoded_summary = html.split('name="plan-summary" content="', 1)[1].split(
+        '"', 1
+    )[0]
+    document_findings = audit_html(html)
+    lifecycle_findings = audit_lifecycle(project=project, docs_dir=docs_dir)
+
+    assert len(summary) == store_module.PLAN_SUMMARY_MAX_LENGTH
+    assert len(encoded_summary) == store_module.PLAN_SUMMARY_MAX_LENGTH + 10
+    assert written["ok"] is True
+    assert html.count("&#x27;") == 2
+    assert not any(item.code == "summary-too-long" for item in document_findings)
+    assert not any(
+        item.flag == "SUMMARY_TOO_LONG" for item in lifecycle_findings
+    )
+
+
 def test_authoring_skills_state_the_summary_bound():
     root = Path(__file__).parents[1]
     for relative in (

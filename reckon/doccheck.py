@@ -45,7 +45,11 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 
 from reckon import _plan_html
-from reckon._store import PLAN_SUMMARY_MAX_LENGTH, _mounts_path
+from reckon._store import (
+    PLAN_SUMMARY_MAX_LENGTH,
+    _mounts_path,
+    plan_summary_length,
+)
 
 # Required scalar meta tags for plan-family documents. Research, evidence, and
 # general documents relax ``status``. Distributed project-state resources use
@@ -269,7 +273,7 @@ def audit_lifecycle(
             status = state["status"]
             doc_type = state["type"]
             impl = state["impl"]
-            summary_length = len(state["summary"])
+            summary_length = plan_summary_length(state["summary"])
 
             staleness = lifecycle_staleness(
                 doc_type=doc_type,
@@ -360,14 +364,14 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 )
             )
 
-    summary_meta = soup.find("meta", attrs={"name": "plan-summary"})
-    summary = ((summary_meta.get("content") if summary_meta else "") or "")
-    if doc_type == "plan" and len(summary) > PLAN_SUMMARY_MAX_LENGTH:
+    summary = str(_plan_html.read_state(html_text).get("summary") or "")
+    summary_length = plan_summary_length(summary)
+    if doc_type == "plan" and summary_length > PLAN_SUMMARY_MAX_LENGTH:
         out.append(
             Finding(
                 "warn",
                 "summary-too-long",
-                f"plan summary is {len(summary)} characters; "
+                f"plan summary is {summary_length} characters; "
                 f"the maximum is {PLAN_SUMMARY_MAX_LENGTH}",
             )
         )

@@ -76,10 +76,15 @@ from reckon.lifecycle import TERMINAL_STATUSES
 PLAN_SUMMARY_MAX_LENGTH = 160
 
 
+def plan_summary_length(value: Any) -> int:
+    """Measure the authored summary value used by writes and audits."""
+    return len(str(value or ""))
+
+
 def _validate_plan_summary(value: Any) -> str:
     """Return a summary within the authored display bound or refuse it."""
     summary = str(value or "")
-    measured = len(summary)
+    measured = plan_summary_length(summary)
     if measured > PLAN_SUMMARY_MAX_LENGTH:
         raise OpError(
             f"plan summary is {measured} characters; "
