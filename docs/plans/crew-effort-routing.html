@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="49">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -770,8 +770,10 @@
       at exact tier in <strong>249 worker-seconds</strong> (pilot run 9 of 20, on the
       3.9-min median), commit <code>492d498</code>. The node first
       <em>blocked correctly</em> against a done-when that demanded an absolute green suite
-      while a peer session was reddening <code>main</code>; four of the six rows turned out
-      to be worker-sandbox artifacts. The measure was amended and the amendment recorded.
+      while a peer session was reddening <code>main</code>. Of the six rows it reported,
+      exactly <strong>one was real</strong> and none was the node's: four were worker-sandbox
+      artifacts and one was red only at the node's base. The measure was amended and the
+      amendment recorded.
       Full record: <a href="/reckon/evidence/crew-effort-routing-landed#s11-6">§11.6 landed</a>.
     </p>
     <p>
@@ -812,14 +814,19 @@
       code under test.
     </p>
     <p>
-      Both halves bit at once. Of the six rows the node reported, two were real and
-      belonged to the peer session, and <strong>four were sandbox artifacts</strong> — an
-      offline wheel-build dependency and an executable-path assumption that a worker tier
-      cannot satisfy. Run unsandboxed in the main checkout they pass in under nine
-      seconds. A baseline node dispatched to attribute them was <em>stopped and
-      discarded</em> on learning this: run inside the same restricted tier it would have
-      reproduced the four artifacts and labelled them pre-existing, manufacturing exactly
-      the false conclusion it existed to prevent.
+      Of the six rows the node reported, <strong>exactly one was real, and none was
+      the node's</strong> — established by running the suite unsandboxed in the main
+      checkout, the only tier where the question is answerable. One real (a stale
+      exact-field-set assertion owned by the peer session), <strong>four sandbox
+      artifacts</strong> (an offline wheel-build dependency and an executable-path
+      assumption a restricted tier cannot satisfy — they pass in under nine seconds), and
+      <strong>one stale-base artifact</strong> whose test passes at head because the node's
+      base predated the fix satisfying it. A baseline node dispatched to attribute them was
+      <em>stopped and discarded</em> on learning this: run inside the same restricted tier
+      it would have reproduced the four artifacts and labelled them pre-existing,
+      manufacturing exactly the false conclusion it existed to prevent. The third category
+      is the one no rule named — a row can be red at a node's own base and green at head,
+      so even a correct delta measurement has to state which base it is a delta from.
     </p>
     <p>
       The amendment is recorded rather than applied silently, because quietly relaxing a

@@ -469,15 +469,33 @@
       it had no power to fix; it completed its work, verified its own named checks, and
       blocked at the fence rather than claim a gate it could not meet. Correct worker
       behaviour against an impossible measure.</p>
-    <p><strong>Two documented hazards fired together, and the second inverted a
-      conclusion.</strong> Of the six rows reported, two were real and owned by the peer
-      session; <strong>four were worker-sandbox artifacts</strong> — an offline wheel-build
-      dependency and an executable-path assumption a restricted tier cannot satisfy. Run
-      unsandboxed in the main checkout, those four pass in under nine seconds. This
-      repository's <code>AGENTS.md</code> states both rules that were needed and neither was
-      applied at authoring time: judge a run by its delta against a known base rather than
-      an absolute count, and expect a restricted tier to report failures unrelated to the
-      code under test.</p>
+    <p><strong>Of the six rows reported, exactly one was real — and none was the
+      node's.</strong> Established by the peer session running the suite unsandboxed in the
+      main checkout (<code>1 failed, 2414 passed, 2 skipped</code>), which is the only tier
+      where the question is answerable. The six sort into three kinds:</p>
+    <table>
+      <thead><tr><th>Rows</th><th>Kind</th><th>Why it appeared</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Real</strong></td><td><code>test_crew_route_cost</code> —
+          a stale exact-field-set assertion rejecting the <code>backend</code> and
+          <code>effort_hours</code> fields a peer commit added to the <code>/crew</code>
+          projection. Owned and repaired by that session.</td></tr>
+        <tr><td>4</td><td><strong>Sandbox artifact</strong></td><td>Three
+          <code>test_build</code> rows needing an offline wheel build, and a watch test
+          assuming a resolvable executable — a restricted worker tier cannot satisfy either.
+          They pass unsandboxed in under nine seconds.</td></tr>
+        <tr><td>1</td><td><strong>Stale-base artifact</strong></td><td>
+          <code>test_spa_sprint_surface</code> — the node's base predated the CSS fix that
+          satisfies it. It passes at head, so it was neither a regression nor a real
+          failure.</td></tr>
+      </tbody>
+    </table>
+    <p>This repository's <code>AGENTS.md</code> states both rules that were needed, and
+      neither was applied when the node was authored: judge a run by its delta against a
+      known base rather than an absolute count, and expect a restricted tier to report
+      failures that have nothing to do with the code under test. The third category is the
+      one no rule named — a row can be red at a node's own base and green at head, so even
+      a correct delta measurement needs the base stated alongside it.</p>
     <p><strong>A measurement was discarded rather than trusted.</strong> A baseline node had
       been dispatched to attribute the six rows. On learning the sandbox explanation it was
       stopped and discarded mid-suite: running inside that same restricted tier it would
