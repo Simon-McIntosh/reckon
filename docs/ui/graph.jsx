@@ -351,6 +351,71 @@ function DependencyChainView({ onNav }) {
     pathLen[endSlug],
     M.project,
   );
+  const canvas = React.useMemo(() => {
+    const members = fullPrereqItems;
+    const memberBySlug = Object.fromEntries(members.map(member => [member.slug, member]));
+    const depth = {};
+    function memberDepth(slug, seen = new Set()) {
+      if (depth[slug] !== undefined) return depth[slug];
+      if (seen.has(slug)) return 0;
+      seen.add(slug);
+      const dependencies = (memberBySlug[slug]?.depends_on || [])
+        .map(_refSlug)
+        .filter(dependency => memberBySlug[dependency]);
+      depth[slug] = dependencies.length
+        ? 1 + Math.max(...dependencies.map(dependency => memberDepth(dependency, new Set(seen))))
+        : 0;
+      return depth[slug];
+    }
+    members.forEach(member => memberDepth(member.slug));
+    const columns = {};
+    members.forEach(member => {
+      (columns[depth[member.slug]] ||= []).push(member);
+    });
+    Object.values(columns).forEach(column => column.sort((left, right) =>
+      left.slug.localeCompare(right.slug)
+    ));
+    const rows = {};
+    Object.values(columns).forEach(column => column.forEach((member, row) => {
+      rows[member.slug] = row;
+    }));
+    const cardWidth = 178;
+    const columnGap = 62;
+    const cardHeight = 54;
+    const rowGap = 16;
+    const position = member => ({
+      x: depth[member.slug] * (cardWidth + columnGap),
+      y: rows[member.slug] * (cardHeight + rowGap),
+    });
+    const edges = [];
+    for (const member of members) {
+      for (const dependencyRef of (member.depends_on || [])) {
+        const dependency = memberBySlug[_refSlug(dependencyRef)];
+        if (!dependency) continue;
+        const source = position(dependency);
+        const target = position(member);
+        const x1 = source.x + cardWidth;
+        const y1 = source.y + cardHeight / 2;
+        const x2 = target.x - 9;
+        const y2 = target.y + cardHeight / 2;
+        edges.push({
+          key: `${dependency.slug}-${member.slug}`,
+          d: `M ${x1} ${y1} C ${x1 + 30} ${y1}, ${x2 - 30} ${y2}, ${x2} ${y2}`,
+          head: `${x2},${y2 - 4} ${x2 + 8},${y2} ${x2},${y2 + 4}`,
+          blocked: dependency.status === "blocked" || member.status === "blocked",
+        });
+      }
+    }
+    const columnCount = Math.max(1, ...Object.values(depth).map(value => value + 1));
+    const rowCount = Math.max(1, ...Object.values(rows).map(value => value + 1));
+    return {
+      members,
+      edges,
+      position,
+      width: columnCount * (cardWidth + columnGap) - columnGap,
+      height: rowCount * (cardHeight + rowGap) - rowGap,
+    };
+  }, [fullPrereqItems]);
 
   const copyGraphShipLine = async () => {
     if (!graphHandle || graphHandle.openDecisions) return;
@@ -370,14 +435,20 @@ function DependencyChainView({ onNav }) {
 
   return (
     <div className="r-graph">
-
-      {graphHandle && (
-        <section className="r-graph-handle" aria-label={`Shippable graph ${graphHandle.handle}`}>
-          <div className="r-graph-handle-head">
+      {graphHandle ? (
+        <>
+          <header className="r-graph-header">
             <span className="r-graph-handle-token">{graphHandle.handle}</span>
-            <div className="r-graph-handle-title">
-              <strong>{endPlan?.title || endSlug}</strong>
-              <span>{graphHandle.shipped}/{graphHandle.total} shipped</span>
+            <strong>{endPlan?.title || endSlug}</strong>
+            <span className="r-graph-subtitle">
+              endpoint /{endSlug} · closure {graphHandle.total} derived
+            </span>
+            <div className="r-graph-path-nav" aria-label="Graph trajectory navigation">
+              <button type="button" disabled={safeIdx <= 0}
+                onClick={() => setPathIdx(index => Math.max(0, index - 1))}>‹</button>
+              <span>{safeIdx + 1}/{allPaths.length}</span>
+              <button type="button" disabled={safeIdx >= allPaths.length - 1}
+                onClick={() => setPathIdx(index => Math.min(allPaths.length - 1, index + 1))}>›</button>
             </div>
             <button
               type="button"
@@ -390,7 +461,7 @@ function DependencyChainView({ onNav }) {
             >
               {graphHandle.shipLine}
             </button>
-          </div>
+          </header>
 
           <div className="r-graph-authority">
             <span className="r-graph-label">Derived authority</span>
@@ -400,212 +471,96 @@ function DependencyChainView({ onNav }) {
               </span>
             ))}
             <span className="r-graph-authority-note">
-              repositories enter scope only through closure membership
+              repositories enter scope only through closure membership · writes outside scope refused
             </span>
-            {graphHandle.openDecisions > 0 && (
-              <span className="r-graph-held">
-                held by {graphHandle.openDecisions} open decision{graphHandle.openDecisions === 1 ? "" : "s"}
-              </span>
-            )}
+            <span className={`r-graph-ship-state ${graphHandle.openDecisions ? "held" : "ready"}`}>
+              {graphHandle.openDecisions
+                ? `held · ${graphHandle.openDecisions} open`
+                : "ready"}
+            </span>
           </div>
 
-          <div className="r-graph-metrics">
-            <div>
-              <span>closure members</span>
-              <strong>{graphHandle.total}</strong>
-              <small>derived from the endpoint</small>
-            </div>
-            <div>
-              <span>average width</span>
-              <strong>{graphHandle.averageWidth}</strong>
-              <small>{graphHandle.total} members ÷ {graphHandle.structuralDepth} hops</small>
-            </div>
-            <div>
-              <span>longest dependency chain by hop count</span>
-              <strong>{graphHandle.structuralDepth}</strong>
-              <small>structural depth only; not execution ordering</small>
-            </div>
-          </div>
-
-          <div className="r-graph-members" aria-label="Derived closure membership">
-            <span className="r-graph-label">Derived closure</span>
-            {graphHandle.members.map(member => (
-              <a key={member.slug} href={`#plan/${member.slug}`}>
-                <span>{member.project || member.repo || M.project}</span>
-                /{member.slug}
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 1. Trajectory header */}
-      <div className="r-graph-head">
-        <div className="r-crit-chain-nav">
-          <button className="r-nav-btn" disabled={safeIdx <= 0}
-            onClick={() => setPathIdx(i => Math.max(0, i - 1))} title="Previous trajectory">‹</button>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)", minWidth: 36, textAlign: "center" }}>
-            {allPaths.length > 0 ? `${safeIdx + 1}/${allPaths.length}` : "—"}
-          </span>
-          <button className="r-nav-btn" disabled={safeIdx >= allPaths.length - 1}
-            onClick={() => setPathIdx(i => Math.min(allPaths.length - 1, i + 1))} title="Next trajectory">›</button>
-        </div>
-        {endPlan && (
-          <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-2)", marginLeft: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>
-            → <strong>{endSlug}</strong>
-          </span>
-        )}
-        {fullPrereqSet.size > 0 && (
-          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)", marginLeft: 8, whiteSpace: "nowrap" }}>
-            {fullPrereqSet.size} prereq{fullPrereqSet.size !== 1 ? "s" : ""}
-          </span>
-        )}
-        <span style={{ flex: 1 }}></span>
-        <button
-          className="gen-prompt"
-          onClick={handleGenPrompt}
-          disabled={chain.length === 0}
-          title={openDecCount > 0 ? `${openDecCount} open decisions — resolve first` : "Generate fleet prompt"}
-          style={{ position: "relative" }}
-        >
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M4 3h6l2 2v8H4z"/>
-            <path d="M10 3v2h2"/>
-            <path d="M6 7h4M6 9h4M6 11h2"/>
-          </svg>
-          Generate prompt
-          {openDecCount > 0 && <span className="resolve-badge" style={{ marginLeft: 4 }}>{openDecCount}</span>}
-        </button>
-      </div>
-
-      {/* 2. Chain cards */}
-      <div className="r-crit-chain">
-        {chain.length === 0 && (
-          <div style={{ color: "var(--muted)", padding: "12px 0", fontSize: 13 }}>
-            No active or blocked plans with dependencies found.
-          </div>
-        )}
-        {chain.map((slug, i) => {
-          const p = bySlug[slug];
-          if (!p) return null;
-          return (
-            <React.Fragment key={slug}>
-              <a className="r-crit-card" href={`#plan/${slug}`}>
-                <div className="r-crit-card-h">
-                  <span className={`r-crit-dot ${p.status}`}></span>
-                  <span className="r-crit-card-t">{p.title}</span>
-                </div>
-                <div className="r-crit-card-meta">
-                  /{slug} · {p.ms || "—"}{p.sprint ? " · " + p.sprint : ""}
-                </div>
-                <div className="r-crit-card-bar">
-                  <i style={{ width: `${Math.round((p.impl || 0) * 100)}%`, background: statusColor(p.status) }}></i>
-                </div>
-                <div className="r-crit-card-foot">
-                  <span style={{ color: statusColor(p.status) }}>{p.status}</span>
-                  <span style={{ flex: 1 }}></span>
-                  <span>{Math.round((p.impl || 0) * 100)}%</span>
-                </div>
-              </a>
-              {i < chain.length - 1 && <span className="r-crit-arr">→</span>}
-            </React.Fragment>
-          );
-        })}
-      </div>
-
-      {/* 3. "Also required" strip — DAG branches not on the linear chain */}
-      {alsoRequired.length > 0 && (
-        <div className="r-graph-section" style={{ marginTop: 16 }}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
-            Also required · {alsoRequired.length}
-          </div>
-          <div className="r-ck-list">
-            {alsoRequired.map(p => (
-              <a key={p.slug} className="r-ck-row" href={`#plan/${p.slug}`}>
-                <span className={`r-ck-dot ${p.status}`}></span>
-                <div className="r-ck-body">
-                  <div className="r-ck-title">{p.title}</div>
-                  <div className="r-ck-slug">/{p.slug} · {p.ms || "—"}</div>
-                </div>
-                <div className="r-ck-prog">
-                  <span className="r-ck-bar"><i style={{ width: `${Math.round((p.impl || 0) * 100)}%`, background: statusColor(p.status) }}></i></span>
-                  <span className="r-ck-pct">{Math.round((p.impl || 0) * 100)}%</span>
-                </div>
-                <span className="r-ck-arr">›</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 4. Mini-map — last, with endpoint dots clickable */}
-      <div className="r-graph-section" style={{ marginTop: 20 }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
-          Map · {M.inventory.length} plans
-        </div>
-        <div className="r-mini-map">
-          <svg viewBox={`0 0 ${mini.W} ${mini.H}`} width="100%" height={mini.H}>
-            {mini.edges.map((e, i) => (
-              <line key={i} x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y}
-                stroke={e.crit ? "var(--accent)" : "var(--hair)"}
-                strokeWidth={e.crit ? 1.8 : 1}/>
-            ))}
-            {mini.plans.map(p => {
-              const navKey = _artifactKey(p);
-              const xy = mini.pos[navKey];
-              if (!xy) return null;
-              const c = statusColor(p.status);
-              const isPlanArtifact = (p.type || "plan") === "plan" && !p.archived;
-              const isCrit = isPlanArtifact && onPath.has(p.slug);
-              const isEndpoint = isPlanArtifact && endpointToChain[p.slug] !== undefined;
-              const isOffChainPrereq = isPlanArtifact && fullPrereqSet.has(p.slug) && !onPath.has(p.slug);
-              return (
-                <g key={navKey}
-                   transform={`translate(${xy.x},${xy.y})`}
-                   style={{ cursor: isEndpoint ? "pointer" : "default" }}
-                   onClick={() => {
-                     if (isEndpoint) setPathIdx(endpointToChain[p.slug]);
-                     else onNav({ view: "plan", slug: navKey });
-                   }}>
-                  <title>{p.title} · {p.status}{isEndpoint ? " (endpoint — click to select)" : ""}</title>
-                  {isCrit && <circle r="6" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>}
-                  {isOffChainPrereq && !isCrit && <circle r="5" fill="none" stroke="var(--muted)" strokeWidth="1" strokeDasharray="2,2"/>}
-                  <circle r="3" fill={c}/>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      </div>
-
-      {/* 5. Other active & blocked (not in the prereq set) */}
-      {otherActive.length > 0 && (
-        <div className="r-graph-grid">
-          <div>
-            <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", margin: "16px 0 8px" }}>
-              Other active &amp; blocked · {otherActive.length}
-            </div>
-            <div className="r-ck-list">
-              {otherActive.map(p => (
-                <a key={p.slug} className="r-ck-row" href={`#plan/${p.slug}`}>
-                  <span className={`r-ck-dot ${p.status}`}></span>
-                  <div className="r-ck-body">
-                    <div className="r-ck-title">{p.title}</div>
-                    <div className="r-ck-slug">/{p.slug} · {p.ms || "—"}</div>
-                  </div>
-                  <div className="r-ck-prog">
-                    <span className="r-ck-bar"><i style={{ width: `${Math.round((p.impl || 0) * 100)}%`, background: statusColor(p.status) }}></i></span>
-                    <span className="r-ck-pct">{Math.round((p.impl || 0) * 100)}%</span>
-                  </div>
-                  <span className="r-ck-arr">›</span>
+          <div className="r-graph-layout">
+            <nav className="r-graph-members" aria-label="Derived closure membership">
+              <span className="r-graph-label">Derived closure</span>
+              {graphHandle.members.map(member => (
+                <a key={member.slug} href={`#plan/${member.slug}`}>
+                  <span className="r-graph-member-repo">
+                    {member.project || member.repo || M.project}
+                  </span>
+                  <span className="r-graph-member-title">{member.title || member.slug}</span>
+                  <span className="r-graph-member-status">{member.status}</span>
                 </a>
               ))}
-            </div>
+            </nav>
+
+            <section className="r-graph-canvas-panel" aria-label="Derived dependency closure">
+              <div className="r-graph-metrics">
+                <div>
+                  <span>closure members</span>
+                  <strong>{graphHandle.total}</strong>
+                  <small>derived from the endpoint</small>
+                </div>
+                <div>
+                  <span>average width</span>
+                  <strong>{graphHandle.averageWidth}</strong>
+                  <small>{graphHandle.total} members ÷ {graphHandle.structuralDepth} hops</small>
+                </div>
+                <div>
+                  <span>longest dependency chain by hop count</span>
+                  <strong>{graphHandle.structuralDepth}</strong>
+                  <small>structural depth only; not execution ordering</small>
+                </div>
+              </div>
+
+              <div className="r-graph-canvas-scroll">
+                <div className="r-graph-canvas-stage" style={{ width: canvas.width, height: canvas.height }}>
+                  <svg width={canvas.width} height={canvas.height} aria-hidden="true">
+                    {canvas.edges.map(edge => (
+                      <React.Fragment key={edge.key}>
+                        <path d={edge.d} className={edge.blocked ? "blocked" : ""}/>
+                        <polygon points={edge.head} className={edge.blocked ? "blocked" : ""}/>
+                      </React.Fragment>
+                    ))}
+                  </svg>
+                  {canvas.members.map(member => {
+                    const position = canvas.position(member);
+                    const navKey = _artifactKey(member);
+                    return (
+                      <a
+                        key={member.slug}
+                        className={`r-graph-node-card ${member.status}`}
+                        href={`#plan/${member.slug}`}
+                        style={{ left: position.x, top: position.y }}
+                        onClick={event => {
+                          event.preventDefault();
+                          onNav({ view: "plan", slug: navKey });
+                        }}
+                      >
+                        <strong>{member.title || member.slug}</strong>
+                        <span>{member.status}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <footer className="r-graph-legend">
+                <span><i></i>▶ depends on</span>
+                <span><i className="blocked"></i>blocking</span>
+                <button type="button" className="gen-prompt" onClick={handleGenPrompt}
+                  disabled={chain.length === 0}
+                  title={openDecCount > 0 ? `${openDecCount} open decisions — resolve first` : "Generate fleet prompt"}>
+                  Generate prompt
+                </button>
+              </footer>
+            </section>
           </div>
-        </div>
+        </>
+      ) : (
+        <p className="r-graph-empty">No shippable graph handle is available for this trajectory.</p>
       )}
 
-      {/* Prompt modal */}
       {showPrompt && window.reckon?.PromptModal && (
         <window.reckon.PromptModal
           planSlug={endSlug || "graph"}
