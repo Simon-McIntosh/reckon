@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -589,6 +589,45 @@
       completion; the effort-routing reference carries the §9.3 additions; and
       §9.4's cross-model refusal is covered by focused crew tests with the full
       suite green.</p>
+
+    <h2 id="s10">§10 — Shadow authority reads the base revision, not the working tree</h2>
+    <p>
+      Found by running §8 for real immediately after it landed: every shadow of a
+      landed node is refused with <code>plan-unavailable</code>, so the measurement
+      path cannot produce its first pair. The mechanism is one over-strict line, and
+      it is a defect in §8 rather than a new capability.
+    </p>
+    <p>
+      <code>_require_plan_at_base</code> (<code>reckon/crew/routing.py</code>) performs
+      three checks against the dispatch's base revision: the plan file is readable
+      there, the current working-tree bytes equal the file at that revision, and the
+      named section exists there. For a live dispatch the base is <code>HEAD</code>,
+      so the equality check means <em>the plan is committed and not dirty</em> — correct
+      and load-bearing, because the worker reads the plan from a worktree at that base.
+      A shadow passes the <em>primary's recorded</em> base instead, so the same line
+      means "the plan must be byte-identical to a historical revision" — which is false
+      for every plan that has legitimately moved on, including any plan whose section
+      was collapsed on landing, which §6b makes mandatory. The shadow's worktree is
+      created at the primary's base and its worker therefore reads the plan as of that
+      base regardless of the coordinator's tree, so the equality check protects nothing
+      for a shadow while blocking its intended use.
+    </p>
+    <p>
+      <strong>Design (fixed); the worker derives the implementation:</strong> the
+      working-tree equality check applies only when the base is the dispatch-time head
+      of the plan repository. When authority is being resolved for a shadow — the base
+      is an explicit historical revision — the readability and section-presence checks
+      at that revision remain in force and the equality check is skipped, because the
+      base revision is the authority a shadow reproduces. Preserve the existing error
+      text and exit code for both retained refusals; a live dispatch's behaviour must
+      not change in any respect.
+    </p>
+    <p><strong>Done-when:</strong> a shadow of a committed primary whose plan section
+      has since been collapsed resolves instead of raising <code>plan-unavailable</code>;
+      a shadow whose plan is unreadable at the primary's base, and one whose named
+      section is absent at that base, are both still refused; a live dispatch with a
+      dirty plan file is still refused unchanged; focused tests cover all four, and
+      <code>PYTHONPATH=$PWD python -m pytest tests/ -q</code> is fully green.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
