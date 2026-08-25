@@ -22,7 +22,6 @@
 
 .r-topbar > .r-glyph-tabs {
   flex: none;
-  margin-left: auto;
 }
 
 .r-topbar > .top-r {
@@ -55,20 +54,16 @@
   font-size: 11px;
 }
 
-.r-project-strip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  padding-left: 6px;
-  border-left: 1px solid var(--line);
+.r-project-manage {
+  position: relative;
+  flex: none;
 }
 
-.r-project-chip,
 .r-project-manage > summary {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 150px;
   min-height: 27px;
   padding: 3px 9px;
   border: var(--hairline);
@@ -81,17 +76,23 @@
   cursor: pointer;
 }
 
-.r-project-chip:hover,
 .r-project-manage > summary:hover {
   border-color: var(--line-2);
   background: var(--bg-2);
   color: var(--ink);
 }
 
-.r-project-chip.active {
-  border-color: var(--accent);
-  background: var(--accent-3);
-  color: var(--ink);
+.r-project-manage > summary {
+  list-style: none;
+}
+
+.r-project-manage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.r-project-caret {
+  margin-left: auto;
+  color: var(--faint);
 }
 
 .r-live-dot {
@@ -106,23 +107,11 @@
   animation: livepulse 1.7s ease-in-out infinite;
 }
 
-.r-project-manage {
-  position: relative;
-}
-
-.r-project-manage > summary {
-  list-style: none;
-}
-
-.r-project-manage > summary::-webkit-details-marker {
-  display: none;
-}
-
-.r-project-manage-panel {
+.r-project-menu {
   position: absolute;
   top: calc(100% + 7px);
   left: 0;
-  width: 230px;
+  width: 330px;
   padding: 7px;
   border: var(--hairline-2);
   border-radius: 8px;
@@ -131,16 +120,18 @@
   z-index: 20;
 }
 
-.r-project-manage-count {
+.r-project-menu-count {
   padding: 4px 7px 7px;
   color: var(--faint);
   font-family: var(--mono);
   font-size: 10.5px;
 }
 
-.r-project-manage-row {
-  display: flex;
-  justify-content: space-between;
+.r-project-menu > button {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 6px 7px;
   border: 0;
@@ -152,18 +143,65 @@
   cursor: pointer;
 }
 
-.r-project-manage-row:hover:not(:disabled) {
+.r-project-menu > button:hover,
+.r-project-menu > button.active {
   background: var(--bg-2);
   color: var(--ink);
 }
 
-.r-project-manage-row.is-visible span:last-child {
+.r-project-menu > button strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.r-project-menu > .r-project-configure {
+  display: block;
+  margin-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.r-topbar .settings-menu {
+  width: 270px;
+  max-height: min(560px, calc(100vh - 64px));
+  overflow-y: auto;
+}
+
+.settings-project-visibility {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-project-count {
+  padding: 0 8px 5px;
+  color: var(--faint);
+  font: 10.5px var(--mono);
+}
+
+.settings-project-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-project-row span:last-child {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.settings-project-row.on span:last-child {
   color: var(--accent);
 }
 
-.r-project-manage-row:disabled {
-  color: var(--faint);
-  cursor: not-allowed;
+.r-project-chip {
+  display: none;
 }
 
 .r-snapshot-receipt {
@@ -175,6 +213,7 @@
   font-family: var(--mono);
   font-size: 10.5px;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .r-snapshot-receipt span + span::before {
@@ -197,10 +236,6 @@
 }
 
 @media (max-width: 960px) {
-  .r-project-strip {
-    overflow-x: auto;
-  }
-
   .r-snapshot-receipt span:first-child,
   .r-snapshot-receipt span:nth-child(3) {
     display: none;
