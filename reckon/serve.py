@@ -203,15 +203,40 @@ def _elapsed_since(stamp: object) -> int | None:
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
+def _crew_plan_sprint(docs: Path, slug: str) -> str:
+    """Read sprint navigation from one referenced plan without discovery."""
+    if not slug or not SAFE_NAME.fullmatch(slug):
+        return ""
+    candidates = (
+        docs / "plans" / f"{slug}.html",
+        docs / f"{slug}.html",
+        docs / "plans" / "archive" / f"{slug}.html",
+    )
+    for plan_path in candidates:
+        if not plan_path.is_file():
+            continue
+        try:
+            return str(_plan_html.parse_meta(plan_path).get("sprint") or "")
+        except (OSError, ValueError):
+            return ""
+    return ""
+
+
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
     """Join mounted live pointers with roster and navigation state."""
     selected = {project} if project else set(mounts)
+    pointers = [
+        pointer
+        for pointer in crew.list_live()
+        if str(pointer.get("project") or "") in selected
+        and str(pointer.get("project") or "") in mounts
+    ]
+    referenced_projects = {
+        str(pointer.get("project") or "") for pointer in pointers
+    }
     roster_by_project: dict[str, dict[str, dict]] = {}
-    sprint_by_project: dict[str, dict[str, str]] = {}
-    for name in selected:
-        docs = mounts.get(name)
-        if docs is None:
-            continue
+    for name in referenced_projects:
+        docs = mounts[name]
         try:
             roster, _version = ledger.load(name, docs.parent)
         except (OSError, ledger.LedgerError):
@@ -221,21 +246,11 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
             for member in roster.get("members", [])
             if isinstance(member, dict) and member.get("id")
         }
-        try:
-            discovered = discover_plans(docs, name, _STATE_ROOT)
-            sprint_by_project[name] = {
-                str(item.get("slug") or ""): str(item.get("sprint") or "")
-                for item in discovered.get("inventory", [])
-                if isinstance(item, dict) and item.get("slug")
-            }
-        except (OSError, ValueError, ResourceCollision):
-            sprint_by_project[name] = {}
 
     rows: list[dict] = []
-    for pointer in crew.list_live():
+    sprint_by_plan: dict[tuple[str, str], str] = {}
+    for pointer in pointers:
         name = str(pointer.get("project") or "")
-        if name not in selected or name not in mounts:
-            continue
         node = pointer.get("node") if isinstance(pointer.get("node"), dict) else {}
         agent = pointer.get("agent") if isinstance(pointer.get("agent"), dict) else {}
         plan = str(node.get("plan") or "")
@@ -250,7 +265,10 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
             if age is not None and age <= crew.LOG_STALE_AFTER_SECONDS
             else "idle"
         )
-        sprint = sprint_by_project.get(name, {}).get(plan) or ""
+        plan_key = (name, plan)
+        if plan_key not in sprint_by_plan:
+            sprint_by_plan[plan_key] = _crew_plan_sprint(mounts[name], plan)
+        sprint = sprint_by_plan[plan_key]
         rows.append(
             {
                 "run_id": str(pointer.get("run_id") or ""),
