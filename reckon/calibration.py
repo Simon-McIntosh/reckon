@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -17,6 +18,14 @@ from statistics import fmean, pstdev
 from typing import Any
 
 from reckon import ledger
+
+
+# A time fence is an allowance rather than an exact duration prediction. Four
+# times that allowance preserves substantial overruns as useful calibration
+# evidence while withholding durations likely dominated by time outside work.
+MAX_DECLARED_BUDGET_MULTIPLE = 4.0
+_DECLARED_DURATION = re.compile(r"^(\d+)([smh])$")
+_DURATION_UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600}
 
 
 @dataclass(frozen=True)
@@ -30,13 +39,14 @@ class CalibrationFigure:
 
 @dataclass(frozen=True)
 class CalibrationResult:
-    """Figures produced by one loop and explicit exclusion counts."""
+    """Figures produced by one loop and explicit sample accounting."""
 
     plan_estimates: dict[str, CalibrationFigure]
     agent_speed_factors: dict[str, CalibrationFigure]
     included_runs: int
     excluded: dict[str, int]
     excluded_worker_hours: dict[str, float]
+    unjudgeable_runs: int
 
 
 def agent_configuration_key(run: Mapping[str, Any]) -> str:
@@ -98,7 +108,28 @@ def _observation(
         or worker_seconds <= 0
     ):
         return "invalid_measurement"
+    time_budget = str(run.get("time_budget") or "").strip()
+    if time_budget:
+        match = _DECLARED_DURATION.fullmatch(time_budget)
+        budget_seconds = (
+            int(match.group(1)) * _DURATION_UNIT_SECONDS[match.group(2)]
+            if match
+            else None
+        )
+        if (
+            budget_seconds is not None
+            and worker_seconds > budget_seconds * MAX_DECLARED_BUDGET_MULTIPLE
+        ):
+            return "duration_over_budget"
     return plan, agent, worker_seconds / 3600.0
+
+
+def _duration_provenance_is_unjudgeable(run: Mapping[str, Any]) -> bool:
+    """Return whether a record predates both duration provenance signals."""
+
+    attempt = run.get("attempt")
+    duration_source = str(run.get("worker_seconds_source") or "").strip()
+    return (attempt is None or str(attempt).strip() == "") and not duration_source
 
 
 def _confidence(samples: Sequence[float]) -> float:
@@ -125,6 +156,7 @@ def _eligible_runs(
     list[tuple[str, str, float]],
     dict[str, int],
     dict[str, float],
+    int,
 ]:
     included: list[tuple[str, str, float]] = []
     excluded = {
@@ -132,11 +164,15 @@ def _eligible_runs(
         "stalled": 0,
         "unusable_completion": 0,
         "untrustworthy_duration": 0,
+        "duration_over_budget": 0,
         "invalid_measurement": 0,
         "missing_counterpart": 0,
     }
     excluded_worker_hours = {reason: 0.0 for reason in excluded}
+    unjudgeable_runs = 0
     for run in runs:
+        if _duration_provenance_is_unjudgeable(run):
+            unjudgeable_runs += 1
         observation = _observation(run)
         if isinstance(observation, str):
             excluded[observation] += 1
@@ -148,7 +184,7 @@ def _eligible_runs(
                 excluded_worker_hours[observation] += worker_seconds / 3600.0
         else:
             included.append(observation)
-    return included, excluded, excluded_worker_hours
+    return included, excluded, excluded_worker_hours, unjudgeable_runs
 
 
 def _reported_excluded_hours(values: Mapping[str, float]) -> dict[str, float]:
@@ -171,7 +207,9 @@ def calibrate_agent_speeds(
 
     estimates = _figures(plan_estimates)
     factors = _figures(agent_speed_factors or {})
-    observations, excluded, excluded_worker_hours = _eligible_runs(runs)
+    observations, excluded, excluded_worker_hours, unjudgeable_runs = _eligible_runs(
+        runs
+    )
     samples: dict[str, list[float]] = defaultdict(list)
     included = 0
     for plan, agent, actual_hours in observations:
@@ -190,6 +228,7 @@ def calibrate_agent_speeds(
         included,
         excluded,
         _reported_excluded_hours(excluded_worker_hours),
+        unjudgeable_runs,
     )
 
 
@@ -203,7 +242,9 @@ def calibrate_plan_estimates(
 
     estimates = _figures(plan_estimates)
     factors = _figures(agent_speed_factors)
-    observations, excluded, excluded_worker_hours = _eligible_runs(runs)
+    observations, excluded, excluded_worker_hours, unjudgeable_runs = _eligible_runs(
+        runs
+    )
     samples: dict[str, list[float]] = defaultdict(list)
     included = 0
     for plan, agent, actual_hours in observations:
@@ -222,4 +263,5 @@ def calibrate_plan_estimates(
         included,
         excluded,
         _reported_excluded_hours(excluded_worker_hours),
+        unjudgeable_runs,
     )
