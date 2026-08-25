@@ -450,6 +450,46 @@
       programme's first genuinely controlled pair therefore post-dates this section, and
       the honest count of usable qualification pairs before it is <strong>zero</strong>.</p>
 
+    <h3 id="s11-6">§11.6 — One override parameter, and a lesson about done-whens</h3>
+    <p>Run <code>r-20260825T122048519102-retire-vestigial-override-parameter</code>, gate
+      <strong>passed</strong> on the amended measure, commit <code>492d498</code>;
+      <strong>249 worker-seconds</strong> down the <strong>spark lane</strong>
+      (<code>gpt-5.3-codex-spark</code>, xhigh, exact tier) — 2 insertions, 5 deletions.
+      <strong>Spark pilot audit: run 9 of 20.</strong></p>
+    <p>§11.1 introduced <code>agent_overrides</code>; §11.5 generalised it to
+      <code>configuration_overrides</code> and migrated the only production caller, leaving
+      both parameters unioned into one set with the older name called from nothing but a
+      test pinning it. Created and orphaned inside a single session — the decision point is
+      when the second appears. Full-diff pilot audit: the diff is exactly the three
+      prescribed steps and nothing else, which is what exact-tier transcription should look
+      like. Worker time landed on the pilot's 3.9-minute median.</p>
+    <p><strong>The node blocked first, and the fault was the specification.</strong> Its
+      original done-when required an absolute green full suite. It was written while a peer
+      session was merging into the same <code>main</code>, so the node inherited a red suite
+      it had no power to fix; it completed its work, verified its own named checks, and
+      blocked at the fence rather than claim a gate it could not meet. Correct worker
+      behaviour against an impossible measure.</p>
+    <p><strong>Two documented hazards fired together, and the second inverted a
+      conclusion.</strong> Of the six rows reported, two were real and owned by the peer
+      session; <strong>four were worker-sandbox artifacts</strong> — an offline wheel-build
+      dependency and an executable-path assumption a restricted tier cannot satisfy. Run
+      unsandboxed in the main checkout, those four pass in under nine seconds. This
+      repository's <code>AGENTS.md</code> states both rules that were needed and neither was
+      applied at authoring time: judge a run by its delta against a known base rather than
+      an absolute count, and expect a restricted tier to report failures unrelated to the
+      code under test.</p>
+    <p><strong>A measurement was discarded rather than trusted.</strong> A baseline node had
+      been dispatched to attribute the six rows. On learning the sandbox explanation it was
+      stopped and discarded mid-suite: running inside that same restricted tier it would
+      have faithfully reproduced the four artifacts and recorded them as pre-existing
+      failures — manufacturing the precise false conclusion it existed to rule out. The
+      attribution came instead from the peer session running the four unsandboxed, which is
+      the only tier where the question is answerable.</p>
+    <p>The done-when was <em>amended on the plan and the amendment recorded</em>, because
+      quietly relaxing a measure a node failed is indistinguishable from moving the
+      goalposts. The lane is not charged: an exact-tier gate failure indicts the
+      specification before the model, and the specification was the defect.</p>
+
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
   f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved
