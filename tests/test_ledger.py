@@ -512,7 +512,7 @@ def test_a_completed_record_carries_shadow_replay_inputs() -> None:
     assert stored["shadow_patch"].endswith("/shadow.patch")
 
 
-def test_ledger_summary_labels_live_and_shadow_rows(repo) -> None:
+def test_ledger_summary_partitions_live_and_shadow_gate_counts(repo) -> None:
     for record in (
         ledger.build_record(
             run_id="r-primary",
@@ -528,9 +528,28 @@ def test_ledger_summary_labels_live_and_shadow_rows(repo) -> None:
     ):
         ledger.append_run(PROJECT, record, root=repo)
 
-    assert ledger.summary(PROJECT, root=repo)["run_kinds"] == {
+    summary = ledger.summary(PROJECT, root=repo)
+
+    assert summary["run_kinds"] == {
         "live": 1,
         "shadow": 1,
+    }
+    assert summary["gates"] == {
+        "live": {"passed": 1},
+        "shadow": {"failed": 1},
+    }
+
+
+def test_ledger_summary_keeps_live_only_gate_counts_in_the_live_block(repo) -> None:
+    for record in (
+        ledger.build_record(run_id="r-pass", plan="plan-a", gate="passed"),
+        ledger.build_record(run_id="r-fail", plan="plan-a", gate="failed"),
+    ):
+        ledger.append_run(PROJECT, record, root=repo)
+
+    assert ledger.summary(PROJECT, root=repo)["gates"] == {
+        "live": {"failed": 1, "passed": 1},
+        "shadow": {},
     }
 
 
@@ -1348,7 +1367,10 @@ def test_the_summary_rolls_up_gates_roster_and_measured_effort(home, repo) -> No
 
     assert summary["runs"] == 2
     assert summary["run_kinds"] == {"live": 2, "shadow": 0}
-    assert summary["gates"] == {"failed": 1, "passed": 1}
+    assert summary["gates"] == {
+        "live": {"failed": 1, "passed": 1},
+        "shadow": {},
+    }
     assert summary["members"] == 1
     assert summary["members_with_session"] == 0
     assert summary["plans"] == ["plan-a", "plan-b"]

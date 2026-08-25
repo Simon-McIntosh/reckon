@@ -1101,11 +1101,9 @@ def summary(
     data, version = load(project, root)
     records = data["runs"]
     hold_records = data["holds"]
-    gates: dict[str, int] = {}
+    gates: dict[str, dict[str, int]] = {"live": {}, "shadow": {}}
     run_kinds = {"live": 0, "shadow": 0}
     for record in records:
-        verdict = str(record.get("gate") or "unknown")
-        gates[verdict] = gates.get(verdict, 0) + 1
         lineage = record.get("lineage")
         kind = (
             "shadow"
@@ -1113,6 +1111,8 @@ def summary(
             else "live"
         )
         run_kinds[kind] += 1
+        verdict = str(record.get("gate") or "unknown")
+        gates[kind][verdict] = gates[kind].get(verdict, 0) + 1
     sessions = sum(
         1
         for entry in data["members"]
@@ -1130,7 +1130,7 @@ def summary(
         "total_held_seconds": sum(
             int(record.get("held_seconds") or 0) for record in hold_records
         ),
-        "gates": dict(sorted(gates.items())),
+        "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "plans": sorted({str(record.get("plan") or "") for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
