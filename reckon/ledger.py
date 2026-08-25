@@ -71,6 +71,7 @@ RECORD_FIELDS = (
     "plan",
     "section",
     "node",
+    "node_definition",
     "role",
     "spec_level",
     "member",
@@ -95,6 +96,7 @@ RECORD_FIELDS = (
     "session_id",
     "budget",
     "lineage",
+    "shadow_patch",
     "unreconciled_override",
 )
 
@@ -139,11 +141,7 @@ def evidence_records_for_plan(
             continue
         for raw_ref in record.get("evidence_for") or []:
             ref = parse_plan_ref(raw_ref)
-            if (
-                ref is not None
-                and not ref.is_external(project)
-                and ref.slug == plan
-            ):
+            if ref is not None and not ref.is_external(project) and ref.slug == plan:
                 matches.append(path)
                 break
     return matches
@@ -407,6 +405,7 @@ def build_record(
     plan: str,
     gate: str,
     node: str = "",
+    node_definition: Mapping[str, Any] | None = None,
     section: str = "",
     role: str = "",
     spec_level: str = "",
@@ -431,6 +430,7 @@ def build_record(
     session_id: str | None = None,
     budget: Mapping[str, Any] | None = None,
     lineage: Mapping[str, Any] | None = None,
+    shadow_patch: str = "",
     unreconciled_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict."""
@@ -445,6 +445,7 @@ def build_record(
         "plan": str(plan),
         "section": normalize_section(section),
         "node": str(node),
+        "node_definition": (None if node_definition is None else dict(node_definition)),
         "role": str(role),
         "spec_level": str(spec_level),
         "member": str(member_id),
@@ -477,6 +478,7 @@ def build_record(
         # very resource it is measuring — most often when it is scarcest.
         "budget": dict(budget or {}),
         "lineage": None if lineage is None else dict(lineage),
+        "shadow_patch": str(shadow_patch),
         "unreconciled_override": (
             None if unreconciled_override is None else dict(unreconciled_override)
         ),
@@ -1100,9 +1102,17 @@ def summary(
     records = data["runs"]
     hold_records = data["holds"]
     gates: dict[str, int] = {}
+    run_kinds = {"live": 0, "shadow": 0}
     for record in records:
         verdict = str(record.get("gate") or "unknown")
         gates[verdict] = gates.get(verdict, 0) + 1
+        lineage = record.get("lineage")
+        kind = (
+            "shadow"
+            if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow"
+            else "live"
+        )
+        run_kinds[kind] += 1
     sessions = sum(
         1
         for entry in data["members"]
@@ -1114,6 +1124,7 @@ def summary(
         "members": len(data["members"]),
         "members_with_session": sessions,
         "runs": len(records),
+        "run_kinds": run_kinds,
         "holds": len(hold_records),
         "open_holds": sum(1 for record in hold_records if not record.get("closed_at")),
         "total_held_seconds": sum(

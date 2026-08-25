@@ -122,6 +122,17 @@ def _success_curve(
     return curve
 
 
+def _configuration_from_key(key: str) -> dict[str, Any]:
+    """Decode a canonical agent key without trusting it to remain JSON."""
+    try:
+        configuration = json.loads(key)
+    except json.JSONDecodeError:
+        configuration = {"key": key}
+    if not isinstance(configuration, Mapping):
+        configuration = {"key": key}
+    return dict(configuration)
+
+
 def derive_capabilities(
     mounted_docs: Mapping[str, str | Path],
     *,
@@ -136,6 +147,7 @@ def derive_capabilities(
         raise ValueError("bin_width_hours must be positive")
 
     observations_by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    shadow_observations: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     excluded = {
         "scope_changed": 0,
         "stalled": 0,
@@ -148,6 +160,11 @@ def derive_capabilities(
         estimates = _plan_estimates(docs_dir)
         data, version = ledger.load(str(project), root=docs_dir.parent)
         source_versions[str(project)] = version
+        runs_by_id = {
+            str(run.get("run_id") or ""): run
+            for run in data["runs"]
+            if run.get("run_id")
+        }
         for run in data["runs"]:
             exclusion = ledger.measurement_exclusion_reason(run)
             if exclusion:
@@ -164,20 +181,38 @@ def derive_capabilities(
             if not agent_key or not math.isfinite(actual_hours) or actual_hours <= 0:
                 excluded["invalid"] += 1
                 continue
-            observations_by_agent[agent_key].append(
-                {
-                    "project": str(project),
-                    "run_id": str(run.get("run_id") or ""),
-                    "plan": plan,
-                    "estimated_hours": estimated_hours,
-                    "actual_hours": round(actual_hours, 6),
-                    "success": str(run.get("gate") or "") == "passed",
-                    "gate": str(run.get("gate") or ""),
-                    "tests_added": run.get("tests_added"),
-                    "changed_lines": _descriptive_changed_lines(run),
-                    "spec_level": str(run.get("spec_level") or "") or None,
-                }
-            )
+            observation = {
+                "project": str(project),
+                "run_id": str(run.get("run_id") or ""),
+                "plan": plan,
+                "estimated_hours": estimated_hours,
+                "actual_hours": round(actual_hours, 6),
+                "success": str(run.get("gate") or "") == "passed",
+                "gate": str(run.get("gate") or ""),
+                "tests_added": run.get("tests_added"),
+                "changed_lines": _descriptive_changed_lines(run),
+                "spec_level": str(run.get("spec_level") or "") or None,
+            }
+            lineage = run.get("lineage")
+            if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
+                primary_run_id = str(lineage.get("primary_run_id") or "")
+                primary = runs_by_id.get(primary_run_id) or {}
+                observation.update(
+                    {
+                        "primary_run_id": primary_run_id,
+                        "primary_gate": str(primary.get("gate") or "") or None,
+                        "primary_success": (
+                            str(primary.get("gate") or "") == "passed"
+                            if primary
+                            else None
+                        ),
+                    }
+                )
+                shadow_observations[
+                    (agent_key, str(run.get("spec_level") or ""))
+                ].append(observation)
+                continue
+            observations_by_agent[agent_key].append(observation)
 
     configurations = []
     for key in sorted(observations_by_agent):
@@ -196,16 +231,10 @@ def derive_capabilities(
             for point in curve
             if point["success_rate"] >= success_threshold
         ]
-        try:
-            configuration = json.loads(key)
-        except json.JSONDecodeError:
-            configuration = {"key": key}
-        if not isinstance(configuration, Mapping):
-            configuration = {"key": key}
         configurations.append(
             {
                 "key": key,
-                "configuration": dict(configuration),
+                "configuration": _configuration_from_key(key),
                 "runs": len(observations),
                 "success_threshold": success_threshold,
                 "success_by_estimated_hours": curve,
@@ -213,6 +242,22 @@ def derive_capabilities(
                 if passing_sizes
                 else None,
                 "speed": _distribution(speed_values),
+                "observations": observations,
+            }
+        )
+
+    shadow_slices = []
+    for (key, spec_level), rows in sorted(shadow_observations.items()):
+        observations = sorted(
+            rows,
+            key=lambda item: (item["project"], item["run_id"]),
+        )
+        shadow_slices.append(
+            {
+                "key": key,
+                "configuration": _configuration_from_key(key),
+                "spec_level": spec_level or None,
+                "runs": len(observations),
                 "observations": observations,
             }
         )
@@ -225,6 +270,7 @@ def derive_capabilities(
         "bin_width_hours": bin_width_hours,
         "excluded": excluded,
         "configurations": configurations,
+        "shadow_slices": shadow_slices,
     }
     canonical = json.dumps(derived, sort_keys=True, separators=(",", ":"))
     return {**derived, "source_digest": hashlib.sha256(canonical.encode()).hexdigest()}

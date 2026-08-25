@@ -22,6 +22,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
+from reckon.crew.dispatch import shadow as dispatch_shadow
 
 
 CONFIG = {
@@ -175,6 +176,17 @@ def _capability_cache(*, horizon: float | None, speed: float = 1.0) -> dict:
             }
         ]
     }
+
+
+def _candidate_config() -> dict:
+    """Route implement nodes to a distinct configured candidate backend."""
+    config = json.loads(json.dumps(CONFIG))
+    config["backends"]["candidate"] = {
+        **config["backends"]["alpha"],
+        "model": "candidate-model",
+    }
+    config["roles"]["implement"] = {"backend": "candidate"}
+    return config
 
 
 # ── The task-definition contract ────────────────────────────────────────────
@@ -596,9 +608,7 @@ def _write_terminal_pointer(
     """Create one project-scoped pointer whose manifest has a known terminal age."""
     manifest = home / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(
-        f"node: delivered-node\nstatus: {status}\ncommits: HEAD\n"
-    )
+    manifest.write_text(f"node: delivered-node\nstatus: {status}\ncommits: HEAD\n")
     terminal = datetime.now(tz=timezone.utc) - timedelta(seconds=age_seconds)
     os.utime(manifest, (terminal.timestamp(), terminal.timestamp()))
     record = {
@@ -633,9 +643,7 @@ def _write_running_pointer(
     stream = home / "streams" / f"{run_id}.jsonl"
     stream.parent.mkdir(parents=True, exist_ok=True)
     stream.write_text('{"type":"turn.started"}\n')
-    quiet_since = datetime.now(tz=timezone.utc) - timedelta(
-        seconds=stream_age_seconds
-    )
+    quiet_since = datetime.now(tz=timezone.utc) - timedelta(seconds=stream_age_seconds)
     os.utime(stream, (quiet_since.timestamp(), quiet_since.timestamp()))
     record = {
         "run_id": run_id,
@@ -1198,9 +1206,7 @@ def test_lane_planner_groups_a_connected_three_node_scope_graph(home, repo) -> N
     result = crew.plan_scope_lanes(candidates, project="proj", repo=repo)
 
     assert result["lane_count"] == 1
-    assert result["lanes"] == [
-        {"lane": 1, "nodes": ["refusal", "watch", "drain"]}
-    ]
+    assert result["lanes"] == [{"lane": 1, "nodes": ["refusal", "watch", "drain"]}]
     assert result["conflict_graph"] == {
         "refusal": ["drain", "watch"],
         "watch": ["drain", "refusal"],
@@ -1402,9 +1408,7 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     assert Path(record["worktree"]).is_dir()
 
 
-def test_dispatch_into_an_occupied_project_reuses_the_armed_watcher(
-    home, repo
-) -> None:
+def test_dispatch_into_an_occupied_project_reuses_the_armed_watcher(home, repo) -> None:
     try:
         owner = crew.dispatch(
             node=_node(
@@ -1530,14 +1534,13 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
         "watcher_live": False,
     }
     assert crew.read_pointer(record["run_id"])["watch_override"] == waiver
-    assert crew.complete(record["run_id"], gate="passed")["record"][
-        "watch_override"
-    ] == waiver
+    assert (
+        crew.complete(record["run_id"], gate="passed")["record"]["watch_override"]
+        == waiver
+    )
 
 
-def test_cli_dispatch_arms_a_missing_watcher(
-    home, repo, monkeypatch
-) -> None:
+def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
     monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
     existing = _write_running_pointer(
@@ -3118,6 +3121,120 @@ def test_the_prompt_names_concurrent_scopes(home, repo) -> None:
     assert record["peer_scopes"] == {"node-b": ["reckon/cli.py"]}
 
 
+def test_shadow_derives_the_committed_node_at_the_primary_base(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo, spec_level="guided")
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    live_same_scope = crew.dispatch(
+        node=_node(spec_level="guided"),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="live-same-scope",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    stored_node = primary["node_definition"]
+    for name in (
+        "id",
+        "goal",
+        "plan",
+        "section",
+        "role",
+        "spec_level",
+        "done_when",
+        "write_paths",
+    ):
+        assert shadow["node"][name] == stored_node[name]
+    assert shadow["base_sha"] == primary["base_sha"]
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=shadow["worktree"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert head == primary["base_sha"]
+    assert shadow["lineage"] == {
+        "kind": "shadow",
+        "primary_run_id": primary["run_id"],
+    }
+    assert shadow["attempt"] == primary["attempt"] == 1
+    assert shadow["attempt_kind"] == "shadow"
+    assert shadow["peer_scopes"] == {}
+    assert crew.pointer_path(live_same_scope["run_id"]).is_file()
+    assert Path(shadow["manifest_path"]).parent == crew.run_dir(shadow["run_id"])
+    assert "without committing" in Path(shadow["prompt_path"]).read_text()
+
+
+def test_shadow_refuses_an_unreachable_primary_base_without_artifacts(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    data, version = ledger.load("proj", repo)
+    data["runs"][0]["base_sha"] = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    ledger.write("proj", data, version, repo)
+
+    with pytest.raises(crew.PlanVisibilityError, match="base"):
+        dispatch_shadow(
+            primary["run_id"],
+            candidate_backend="candidate",
+            config=_candidate_config(),
+            repo=repo,
+            launcher=lambda *args, **kwargs: 0,
+        )
+
+    assert crew.list_live() == []
+
+
+def test_shadow_cli_routes_the_candidate_and_derives_the_node(
+    home, repo, monkeypatch
+) -> None:
+    primary_pointer = _dispatched(home, repo, spec_level="guided")
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    observed_overrides = []
+
+    def resolve(_flight, project, checkout_path, overrides):
+        observed_overrides.extend(overrides)
+        assert project == "proj"
+        assert checkout_path == repo
+        return _candidate_config()
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "shadow",
+            "--run",
+            primary["run_id"],
+            "--backend",
+            "candidate",
+            "--dry-run",
+        ],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["dry_run"] is True
+    assert payload["primary_run_id"] == primary["run_id"]
+    assert payload["backend"] == "candidate"
+    assert observed_overrides[-2:] == [
+        "roles.implement.backend=candidate",
+        "roles.implement.by_spec_level.guided.backend=candidate",
+    ]
+    assert crew.list_live() == []
+
+
 # ── Promotion measurements ─────────────────────────────────────────────────
 
 
@@ -3136,6 +3253,56 @@ def test_promotion_forwards_the_declared_specification_level(home, repo) -> None
     stored = crew.complete(record["run_id"], gate="passed")["record"]
 
     assert stored["spec_level"] == "guided"
+
+
+def test_shadow_completion_refuses_commits_and_measures_the_retained_patch(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+    changed = Path(shadow["worktree"]) / "reckon" / "_backends.py"
+    changed.parent.mkdir()
+    changed.write_text("first = 1\nsecond = 2\n")
+    patch = crew.run_dir(shadow["run_id"]) / "shadow.patch"
+
+    with pytest.raises(crew.CrewError, match="--commit is refused"):
+        crew.complete(shadow["run_id"], gate="passed", commits=["HEAD"])
+
+    assert crew.pointer_path(shadow["run_id"]).is_file()
+    assert not patch.exists()
+    stored = crew.complete(shadow["run_id"], gate="passed")["record"]
+
+    assert stored["commits"] == []
+    assert stored["changed_lines"] == {"added": 2, "removed": 0, "files": 1}
+    assert stored["shadow_patch"] == str(patch)
+    assert patch.is_file()
+    assert "reckon/_backends.py" in patch.read_text()
+    assert stored["lineage"] == shadow["lineage"]
+    assert stored["attempt"] == primary["attempt"]
+    assert stored["attempt_kind"] == "shadow"
+    assert (
+        stored["node_definition"]["done_when"]
+        == primary["node_definition"]["done_when"]
+    )
+    assert not crew.pointer_path(shadow["run_id"]).exists()
+
+    redispatch = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="after-shadow",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    assert redispatch["attempt"] == 2
+    assert redispatch["lineage"]["previous_run_id"] == primary["run_id"]
 
 
 @pytest.mark.parametrize("gate", ["failed", "not-run"])
