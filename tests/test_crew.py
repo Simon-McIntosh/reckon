@@ -189,6 +189,13 @@ def _candidate_config() -> dict:
     return config
 
 
+def _candidate_config_with_distinct_agent() -> dict:
+    """Route to a candidate whose defaults differ from the primary agent."""
+    config = _candidate_config()
+    config["backends"]["candidate"].update({"effort": "medium", "sandbox": "read-only"})
+    return config
+
+
 # ── The task-definition contract ────────────────────────────────────────────
 
 
@@ -3162,16 +3169,87 @@ def test_shadow_derives_the_committed_node_at_the_primary_base(home, repo) -> No
         check=True,
     ).stdout.strip()
     assert head == primary["base_sha"]
-    assert shadow["lineage"] == {
-        "kind": "shadow",
-        "primary_run_id": primary["run_id"],
-    }
+    assert shadow["lineage"]["kind"] == "shadow"
+    assert shadow["lineage"]["primary_run_id"] == primary["run_id"]
     assert shadow["attempt"] == primary["attempt"] == 1
     assert shadow["attempt_kind"] == "shadow"
     assert shadow["peer_scopes"] == {}
     assert crew.pointer_path(live_same_scope["run_id"]).is_file()
     assert Path(shadow["manifest_path"]).parent == crew.run_dir(shadow["run_id"])
     assert "without committing" in Path(shadow["prompt_path"]).read_text()
+
+
+def test_shadow_inherits_primary_agent_settings_while_switching_backend(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config_with_distinct_agent(),
+        repo=repo,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert shadow["agent"] == {
+        "backend": "candidate",
+        "launch": primary["agent"]["launch"],
+        "model": "candidate-model",
+        "effort": primary["agent"]["effort"],
+        "sandbox": primary["agent"]["sandbox"],
+    }
+    comparison = shadow["lineage"]["configuration"]
+    assert comparison["substituted"]["backend"] == {
+        "primary": "alpha",
+        "shadow": "candidate",
+        "via": "backend",
+    }
+    assert comparison["inherited"]["effort"] == "high"
+    assert comparison["inherited"]["sandbox"] == "worktree-full"
+
+
+def test_shadow_explicit_effort_override_is_used_and_recorded(home, repo) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+
+    shadow = dispatch_shadow(
+        primary["run_id"],
+        candidate_backend="candidate",
+        config=_candidate_config_with_distinct_agent(),
+        repo=repo,
+        agent_overrides={"effort"},
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert shadow["agent"]["effort"] == "medium"
+    assert shadow["lineage"]["configuration"]["substituted"]["effort"] == {
+        "primary": "high",
+        "shadow": "medium",
+        "via": "override",
+    }
+
+
+def test_shadow_refuses_primary_without_recorded_agent_configuration(
+    home, repo
+) -> None:
+    primary_pointer = _dispatched(home, repo)
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+    data, version = ledger.load("proj", repo)
+    data["runs"][0].pop("agent")
+    ledger.write("proj", data, version, repo)
+
+    with pytest.raises(crew.CrewError, match="no recorded agent configuration"):
+        dispatch_shadow(
+            primary["run_id"],
+            candidate_backend="candidate",
+            config=_candidate_config(),
+            repo=repo,
+            launcher=lambda *args, **kwargs: 0,
+        )
+
+    assert crew.list_live() == []
 
 
 def test_shadow_accepts_historical_plan_when_current_plan_changed(home, repo) -> None:
@@ -3346,7 +3424,7 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
         observed_overrides.extend(overrides)
         assert project == "proj"
         assert checkout_path == repo
-        return _candidate_config()
+        return _candidate_config_with_distinct_agent()
 
     monkeypatch.chdir(repo)
     monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
@@ -3359,6 +3437,8 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
             primary["run_id"],
             "--backend",
             "candidate",
+            "--set",
+            "roles.implement.effort=medium",
             "--dry-run",
         ],
     )
@@ -3368,6 +3448,11 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
     assert payload["dry_run"] is True
     assert payload["primary_run_id"] == primary["run_id"]
     assert payload["backend"] == "candidate"
+    assert payload["lineage"]["configuration"]["substituted"]["effort"] == {
+        "primary": "high",
+        "shadow": "medium",
+        "via": "override",
+    }
     assert observed_overrides[-2:] == [
         "roles.implement.backend=candidate",
         "roles.implement.by_spec_level.guided.backend=candidate",
@@ -3425,6 +3510,11 @@ def test_shadow_completion_refuses_commits_and_measures_the_retained_patch(
     assert patch.is_file()
     assert "reckon/_backends.py" in patch.read_text()
     assert stored["lineage"] == shadow["lineage"]
+    assert (
+        stored["lineage"]["configuration"]["substituted"]["backend"]["shadow"]
+        == "candidate"
+    )
+    assert stored["lineage"]["configuration"]["inherited"]["effort"] == "high"
     assert stored["attempt"] == primary["attempt"]
     assert stored["attempt_kind"] == "shadow"
     assert (

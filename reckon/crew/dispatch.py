@@ -1127,6 +1127,12 @@ def shadow_source(
         raise CrewError(
             f"run {run_id!r} is itself a shadow and cannot be a shadow parent"
         )
+    agent = primary.get("agent")
+    if not isinstance(agent, Mapping) or not agent:
+        raise CrewError(
+            f"committed run {run_id!r} has no recorded agent configuration; "
+            "the shadow cannot inherit a configuration without guessing"
+        )
     definition = primary.get("node_definition")
     if not isinstance(definition, Mapping):
         raise CrewError(
@@ -1165,6 +1171,64 @@ def shadow_source(
     }
 
 
+def _shadow_dispatch_config(
+    *,
+    config: Mapping[str, Any],
+    node: TaskNode,
+    primary_agent: Mapping[str, Any],
+    candidate_backend: str,
+    agent_overrides: Iterable[str],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve a candidate while retaining unmodified primary agent settings."""
+    resolved_backend, candidate = resolve_role(config, node.role, node.spec_level)
+    if resolved_backend != candidate_backend:
+        raise CrewError(
+            f"candidate backend {candidate_backend!r} resolved to "
+            f"{resolved_backend!r}; route the node explicitly to the candidate"
+        )
+
+    explicit = {str(config_key) for config_key in agent_overrides}
+    effective = dict(candidate)
+    for config_key in ("effort", "sandbox"):
+        if config_key not in explicit:
+            effective[config_key] = primary_agent.get(config_key)
+
+    shadow_agent = _agent_configuration(
+        candidate_backend, str(effective.get("launch") or ""), effective
+    )
+    substituted: dict[str, dict[str, Any]] = {}
+    inherited: dict[str, Any] = {}
+    for config_key in ("backend", "launch", "model", "effort", "sandbox"):
+        before = primary_agent.get(config_key)
+        after = shadow_agent.get(config_key)
+        via = (
+            "backend"
+            if config_key == "backend"
+            else "override"
+            if config_key in explicit
+            else ""
+        )
+        if config_key in ("launch", "model") and before != after:
+            via = "backend"
+        if via:
+            substituted[config_key] = {
+                "primary": before,
+                "shadow": after,
+                "via": via,
+            }
+        else:
+            inherited[config_key] = after
+
+    shadow_config = dict(config)
+    backends = dict(config.get("backends") or {})
+    backends[candidate_backend] = effective
+    shadow_config["backends"] = backends
+    roles = dict(config.get("roles") or {})
+    roles[node.role] = {"backend": candidate_backend}
+    shadow_config["roles"] = roles
+    return shadow_config, {"substituted": substituted, "inherited": inherited}
+
+
 def shadow(
     run_id: str,
     *,
@@ -1172,6 +1236,7 @@ def shadow(
     config: Mapping[str, Any],
     repo: str | Path,
     member: str = "",
+    agent_overrides: Iterable[str] = (),
     dry_run: bool = False,
     launcher=None,
 ) -> dict[str, Any]:
@@ -1180,17 +1245,23 @@ def shadow(
     project = source["project"]
     node = source["node"]
     base_sha = source["base_sha"]
-    lineage = {"kind": "shadow", "primary_run_id": run_id}
-    resolved_backend, _settings = resolve_role(config, node.role, node.spec_level)
-    if resolved_backend != candidate_backend:
-        raise CrewError(
-            f"candidate backend {candidate_backend!r} resolved to "
-            f"{resolved_backend!r}; route the node explicitly to the candidate"
-        )
+    primary_agent = source["primary"]["agent"]
+    shadow_config, comparison = _shadow_dispatch_config(
+        config=config,
+        node=node,
+        primary_agent=primary_agent,
+        candidate_backend=candidate_backend,
+        agent_overrides=agent_overrides,
+    )
+    lineage = {
+        "kind": "shadow",
+        "primary_run_id": run_id,
+        "configuration": comparison,
+    }
     if dry_run:
         resolution = plan_dispatch(
             node=node,
-            config=config,
+            config=shadow_config,
             locked_decisions=node.requires_decisions,
             peer_scopes={},
             project=project,
@@ -1209,7 +1280,7 @@ def shadow(
         node=node,
         project=project,
         repo=repo,
-        config=config,
+        config=shadow_config,
         session=f"shadow-{run_id}",
         base=base_sha,
         locked_decisions=node.requires_decisions,

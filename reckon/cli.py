@@ -874,12 +874,28 @@ def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
             repo,
             routed_overrides,
         )
+        agent_fields = {"launch", "model", "effort", "sandbox"}
+        applicable_prefixes = {
+            f"backends.{backend}",
+            f"roles.{node.role}",
+        }
+        if node.spec_level:
+            applicable_prefixes.add(
+                f"roles.{node.role}.by_spec_level.{node.spec_level}"
+            )
+        agent_overrides = set()
+        for pair in overrides:
+            key, separator, _value = pair.partition("=")
+            prefix, _dot, field = key.rpartition(".")
+            if separator and prefix in applicable_prefixes and field in agent_fields:
+                agent_overrides.add(field)
         record = shadow(
             run_id,
             candidate_backend=backend,
             config=config,
             repo=repo,
             member=member,
+            agent_overrides=agent_overrides,
             dry_run=dry_run,
         )
     except crew_module.PlanVisibilityError as exc:
