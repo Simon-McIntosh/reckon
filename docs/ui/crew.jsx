@@ -1,14 +1,6 @@
 const CREW_POLL_INTERVAL_MS = 3000;
 
-const CREW_CARD_STYLES = String.raw`
-.r-crew-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}.r-crew-heading h1{margin:2px 0 0;font-size:22px}.r-crew-heading>span,.r-crew-activity{font:11px var(--mono);color:var(--muted)}.r-crew-error{color:var(--bad);margin-bottom:12px}.r-crew-empty{color:var(--muted)}.r-crew-list{display:grid;gap:8px}
-.r-crew-card{display:grid;grid-template-columns:minmax(280px,1fr) 150px minmax(180px,220px);gap:16px 22px;align-items:center;padding:13px 15px;border:1px solid var(--line);border-radius:8px;background:var(--card)}.r-crew-card.needs-attention{border-color:var(--bad);background:var(--bad-2)}.r-crew-main{min-width:0}.r-crew-identity,.r-crew-location{display:flex;align-items:baseline;min-width:0;gap:8px}.r-crew-identity strong{font-size:14px;color:var(--ink)}.r-crew-identity code,.r-crew-location code{padding:1px 5px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2);font-size:11px}.r-crew-identity>span:not(.r-crew-phase-dot):not(.r-crew-phase){color:var(--muted);font-size:12px}
-.r-crew-phase-dot{width:7px;height:7px;flex:none;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-3)}.r-crew-card.needs-attention .r-crew-phase-dot{background:var(--bad);box-shadow:0 0 0 3px var(--bad-2)}.r-crew-phase{margin-left:auto;color:var(--accent);font:11px var(--mono)}.r-crew-card.needs-attention .r-crew-phase{color:var(--bad)}.r-crew-location{margin-top:5px;font-size:13px}.r-crew-location a:not(.r-crew-sprint),.r-crew-location>span:first-of-type{font-weight:600}.r-crew-location>span:last-of-type{color:var(--accent);font:12px var(--mono)}.r-crew-sprint{margin-left:auto;color:var(--muted);font-size:11px}
-.r-crew-label{color:var(--faint);font:10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}.r-crew-done-when{min-width:0;margin-top:5px}.r-crew-done-when summary{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px;align-items:baseline;cursor:pointer;list-style:none}.r-crew-done-when summary::-webkit-details-marker{display:none}.r-crew-contract{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:12px;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:1}.r-crew-done-when p{margin:8px 0 0;padding:8px 10px;border-left:2px solid var(--line-2);color:var(--ink-2);font-size:12px;line-height:1.45;white-space:pre-wrap}
-.r-crew-budget-values,.r-crew-gate-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.r-crew-budget-values{margin:4px 0;font:12px var(--mono)}.r-crew-budget-values span{color:var(--muted)}.r-crew-meter{height:4px;overflow:hidden;border-radius:3px;background:var(--bg-3)}.r-crew-meter i{display:block;height:100%;border-radius:inherit;background:var(--accent)}.r-crew-card.needs-attention .r-crew-meter i{background:var(--bad)}.r-crew-activity{margin-top:5px}.r-crew-verdict{color:var(--ink-2);font:10.5px var(--mono);text-transform:uppercase}.r-crew-verdict.passed{color:var(--good)}.r-crew-verdict.failed{color:var(--bad)}.r-crew-gate-marks{display:flex;gap:4px;margin:6px 0}.r-crew-gate-marks i{flex:1;height:5px;border-radius:2px;background:var(--bg-3)}.r-crew-gate-marks i.measured{background:var(--accent-2)}.r-crew-current-gate{overflow:hidden;color:var(--ink-2);font-size:12px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}.r-crew-current-gate span{color:var(--muted)}
-.r-crew-connect{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}.r-crew-connect>summary{cursor:pointer;color:var(--muted);font:11px var(--mono)}.r-crew-connect-grid{display:flex;gap:24px;margin-top:10px}.r-crew-connect-grid>span{display:flex;align-items:baseline;gap:7px}.r-crew-attach{display:flex;align-items:center;gap:10px;margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg-2)}.r-crew-attach code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.r-crew-attach button{flex:none;margin-left:auto}
-@media(max-width:920px){.r-crew-card{grid-template-columns:minmax(0,1fr) minmax(180px,220px)}.r-crew-main{grid-column:1/-1}}@media(max-width:620px){.r-crew-heading{align-items:flex-start;flex-direction:column}.r-crew-card{grid-template-columns:1fr}.r-crew-main,.r-crew-connect{grid-column:1}.r-crew-connect-grid{align-items:flex-start;flex-direction:column;gap:5px}}
-`;
+const CREW_CARD_STYLES = String.raw`.r-crew-contract{-webkit-line-clamp:1}`;
 
 function formatCrewElapsed(seconds) {
   if (seconds == null || Number.isNaN(Number(seconds))) return "—";
@@ -183,13 +175,10 @@ function CrewView() {
   }, []);
 
   return (
-    <div className="r-page wide">
+    <div className="r-crew-view">
       <style>{CREW_CARD_STYLES}</style>
       <div className="r-crew-heading">
-        <div>
-          <div className="r-eyebrow">Crew</div>
-          <h1>Live runs</h1>
-        </div>
+        <h1>Live runs</h1>
         <span>
           {runs.length} visible · polls every {CREW_POLL_INTERVAL_MS / 1000}s
           {refreshedAt ? ` · refreshed ${refreshedAt.toLocaleTimeString()}` : ""}

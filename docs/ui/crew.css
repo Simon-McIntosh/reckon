@@ -1,19 +1,26 @@
+.r-crew-view {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 26px 40px;
+}
+
 .r-crew-heading {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .r-crew-heading h1 {
-  margin: 2px 0 0;
-  font-size: 22px;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
 }
 
-.r-crew-heading > span,
-.r-crew-activity {
+.r-crew-heading > span {
   color: var(--muted);
-  font: 11px var(--mono);
+  font: 11.5px var(--mono);
 }
 
 .r-crew-error {
@@ -26,16 +33,17 @@
 }
 
 .r-crew-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
 .r-crew-card {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 150px minmax(180px, 220px);
-  gap: 16px 22px;
-  align-items: center;
-  padding: 13px 15px;
+  grid-template-columns: minmax(0, 1fr) 150px 200px;
+  gap: 18px;
+  align-items: start;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--bg);
@@ -59,13 +67,15 @@
 
 .r-crew-identity {
   overflow: hidden;
+  font: 11.5px var(--mono);
   white-space: nowrap;
 }
 
 .r-crew-identity strong {
   overflow: hidden;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 11.5px;
+  font-weight: 500;
   text-overflow: ellipsis;
 }
 
@@ -81,7 +91,6 @@
 .r-crew-identity > span:not(.r-crew-phase-dot):not(.r-crew-phase) {
   overflow: hidden;
   color: var(--muted);
-  font-size: 12px;
   text-overflow: ellipsis;
 }
 
@@ -136,7 +145,7 @@
 .r-crew-label {
   color: var(--faint);
   font: 10.5px var(--mono);
-  letter-spacing: 0.06em;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
@@ -196,7 +205,7 @@
 }
 
 .r-crew-meter {
-  height: 4px;
+  height: 3px;
   overflow: hidden;
   border-radius: 3px;
   background: var(--bg-3);
@@ -215,6 +224,8 @@
 
 .r-crew-activity {
   margin-top: 5px;
+  color: var(--muted);
+  font: 11px var(--mono);
 }
 
 .r-crew-verdict {
@@ -306,36 +317,4 @@
 .r-crew-attach button {
   flex: none;
   margin-left: auto;
-}
-
-@media (max-width: 920px) {
-  .r-crew-card {
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
-  }
-
-  .r-crew-main {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 620px) {
-  .r-crew-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .r-crew-card {
-    grid-template-columns: 1fr;
-  }
-
-  .r-crew-main,
-  .r-crew-connect {
-    grid-column: 1;
-  }
-
-  .r-crew-connect-grid {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
-  }
 }
