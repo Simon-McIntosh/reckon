@@ -330,6 +330,62 @@
   reach&rdquo;, and its test passed, because the palette and the route genuinely worked. The lead
   still could not switch to the project. Reachability that requires knowing the palette exists is a
   claim about the implementation, not about the interface.</p>
+
+  <h2 id="fluid-window">The window became the constraint it always was</h2>
+
+  <p>The lead's third round of feedback named six defects and five of them were one: the Plans
+  surface spent 452px on a filter rail nobody used and an attachment column rendering a single
+  line, under a <code>min-width: 1374px</code> floor declared five times across three stylesheets.
+  A floor wider than the viewport is a horizontal scrollbar by construction, so no amount of
+  redistributing the interior space could have removed it.</p>
+
+  <p><strong>Node <code>n-s18-plans-fluid</code>, commit <code>32c68aa</code>, gate PASSED,
+  2026-08-25.</strong> Scope was widened twice mid-flight after two correct worker refusals, so
+  this node is excluded from effort calibration. 266 insertions against 486 deletions across eight
+  paths &mdash; the change is mostly subtraction.</p>
+
+  <table>
+    <thead>
+      <tr><th>Viewport</th><th>document scrollWidth / clientWidth</th><th>index width</th><th>elements past the viewport</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1280</td><td>1280 / 1280</td><td>384px</td><td>0</td></tr>
+      <tr><td>1440</td><td>1440 / 1440</td><td>432px</td><td>0</td></tr>
+      <tr><td>1920</td><td>1920 / 1920</td><td>480px &mdash; the clamp's cap</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p>All five authored <code>1374px</code> declarations are gone and a repository stylesheet grep
+  returns zero matches. The filter rail's markup, its live rules and the dead
+  <code>.r-3col.plans-mode</code> duplicate that &#167;13 left behind are all removed. Filtering
+  survives in the list header on the same state authority: status <code>active</code> reduces 44
+  plans to 13, sprint <code>S4</code> reduces 44 to 1. Full suite 2431 passed, 0 failed &mdash; a
+  +5 case and 0 failure delta against base <code>aeb6479</code>.</p>
+
+  <p><strong>Two refusals, both of them spec defects rather than code defects.</strong> The node
+  blocked twice and was right both times, which is the escape hatch doing the job an approving
+  worker would have hidden:</p>
+
+  <ul>
+    <li><strong>A clamp stated as a ratio contradicts itself above its cap.</strong> The authored
+    measure asked for the index to sit inside 300&ndash;480px <em>and</em> 28&ndash;32% at 1280,
+    1440 and 1920. Those intervals do not intersect at 1920: 30% is 576px and the cap forbids it. A
+    worker that guessed would have produced a green gate for one of two incompatible rules.</li>
+    <li><strong>A floor outside the assigned scope is a gate that passes while the defect
+    stands.</strong> One of the five declarations sat in <code>topbar.css</code>, which the node did
+    not own. It could have removed four of five and reported success; instead it refused and named
+    the fifth.</li>
+  </ul>
+
+  <p>A third refusal was mechanical and equally load-bearing: <code>tests/test_build.py</code> waited
+  on <code>.r-filters</code> to decide the built page was ready, so retiring the rail would have hung
+  a build assertion that no node owned.</p>
+
+  <p><strong>One capability retired deliberately.</strong> The rail also carried a north-star filter
+  control. Status and sprint moved to the list header; the north-star <em>filter</em> retired with
+  the rail rather than taking header width, while the north-star <em>badge</em> &mdash; a display
+  relation on rows and in the reader &mdash; is untouched.</p>
+
 </main>
 </body>
 </html>
