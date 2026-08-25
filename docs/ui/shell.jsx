@@ -224,9 +224,8 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
 
 // ─── Filters column ─────────────────────────────────────────────────────
 
-function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArchived, setShowArchived }) {
+function FiltersCol({ filters, setFilters }) {
   const M = window.STATE;
-  const milestones = M.projects?.[0]?.milestones || M.milestones || [];
   const sprints = M.sprints || [];
   const northStars = M.north_stars || [];
 
@@ -239,177 +238,84 @@ function FiltersCol({ filters, setFilters, showShipped, setShowShipped, showArch
     });
   };
 
-  const anyActive = (filters.status?.length || 0) + (filters.ms?.length || 0) + (filters.sprint?.length || 0) + (filters.type?.length || 0) + (northStars.length ? (filters.north_star?.length || 0) : 0) > 0;
+  const anyActive = (filters.status?.length || 0) + (filters.sprint?.length || 0) + (northStars.length ? (filters.north_star?.length || 0) : 0) > 0;
 
   // Sprints that have plans in inventory
   const sprintsWithPlans = sprints.filter(s => M.inventory.some(p => p.type === "plan" && p.sprint === s.id));
 
-  // Artifact facets are stable even when one class is currently empty.
-  const typeCounts = { plan: 0, research: 0, evidence: 0 };
-  for (const p of M.inventory) {
-    const t = p.type || "plan";
-    typeCounts[t] = (typeCounts[t] || 0) + 1;
-  }
-  const typeLabels = { plan: "Plans", research: "Research", evidence: "Evidence" };
-  const allTypes = ["plan", "research", "evidence"].map(key => [key, typeCounts[key] || 0]);
-
-  // Archived count (independent of status — orthogonal axis).
-  const archivedCount = M.inventory.filter(p => p.archived === "1" || p.archived === true || p.archived === "true").length;
-
-  // Statuses to surface in the filter. We always show active workflow ones plus
-  // any status that has at least one plan (so on-hold/superseded show up when used).
   const ALWAYS = ["active", "blocked", "pending", "shipped"];
   const actionable = M.inventory.filter(p => (p.type || "plan") === "plan");
-  const allStatuses = new Set([...ALWAYS, ...actionable.map(p => p.status).filter(Boolean)]);
+  const allStatuses = new Set([...ALWAYS, ...actionable.map(p => p.effective_status || p.status).filter(Boolean)]);
   const statusOrder = ["active", "blocked", "pending", "in-progress", "on-hold", "shipped", "done", "superseded", "abandoned", "draft", "historical"];
   const statusList = [...allStatuses].sort((a, b) => (statusOrder.indexOf(a) + 99) - (statusOrder.indexOf(b) + 99));
 
   return (
-    <aside className="r-filters">
+    <aside className="r-filters" aria-label="Plan filters">
       {anyActive && (
         <button className="r-clear-top" onClick={() => setFilters({})}>
           × clear filters
         </button>
       )}
 
-      <div className="r-filter-group">
-        <div className="r-filter-h">Status</div>
+      <div className="r-filter-group" aria-label="Status filters">
         {statusList.map(s => {
-          const n = actionable.filter(p => p.status === s).length;
+          const n = actionable.filter(p => (p.effective_status || p.status) === s).length;
           const on = (filters.status || []).includes(s);
           if (n === 0) return null;
           return (
-            <div key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)}>
+            <button type="button" key={s} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("status", s)} aria-pressed={on}>
               <span className={`dot ${s}`}></span>
               <span style={{ textTransform: "capitalize" }}>{s}</span>
               <span className="n">{n}</span>
-            </div>
+            </button>
           );
         })}
-        {archivedCount > 0 && (
-          <button
-            type="button"
-            className={`r-chip r-chip-archived ${showArchived ? "on" : ""}`}
-            onClick={() => setShowArchived(v => !v)}
-            title={showArchived ? "Hide archived artifacts" : "Reveal archived artifacts"}
-          >
-            <span className="r-archive-glyph" aria-hidden="true">▦</span>
-            <span>Archive</span>
-            <span className="n">{archivedCount}</span>
-          </button>
-        )}
       </div>
 
       {northStars.length > 0 && (
-        <div className="r-filter-group">
-          <div className="r-filter-h">North star</div>
+        <div className="r-filter-group" aria-label="North stars">
           {northStars.map(direction => {
             const n = actionable.filter(p => p.north_star === direction.id).length;
             const on = (filters.north_star || []).includes(direction.id);
             return (
-              <div key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} title={direction.statement}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{direction.name}</span>
+              <button type="button" key={direction.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("north_star", direction.id)} aria-pressed={on} title={direction.statement}>
+                <span>{direction.name}</span>
                 <span className="n">{n}</span>
-              </div>
+              </button>
             );
           })}
         </div>
       )}
 
       {sprintsWithPlans.length > 0 && (
-        <div className="r-filter-group">
-          <div className="r-filter-h">Sprint</div>
+        <div className="r-filter-group" aria-label="Sprint filters">
           {sprintsWithPlans.map(s => {
             const n = actionable.filter(p => p.sprint === s.id).length;
             const on = (filters.sprint || []).includes(s.id);
             return (
-              <div key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)}>
+              <button type="button" key={s.id} className={`r-chip r-chip-sprint ${on ? "on" : ""}`} onClick={() => toggle("sprint", s.id)} aria-pressed={on} title={s.theme || s.id}>
                 <span className="r-chip-sprint-id">{s.id}</span>
                 <span className="r-chip-sprint-theme">{s.theme}</span>
                 <span className="n">{n}</span>
-              </div>
+              </button>
             );
           })}
         </div>
       )}
 
-      <div className="r-filter-group">
-        <div className="r-filter-h">Milestone</div>
-        {milestones.map(m => {
-          const n = actionable.filter(p => p.ms === m.id).length;
-          const on = (filters.ms || []).includes(m.id);
-          if (n === 0) return null;
-          return (
-            <div key={m.id} className={`r-chip ${on ? "on" : ""}`} onClick={() => toggle("ms", m.id)}>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: m.status === "active" ? "var(--accent)" : m.status === "shipped" ? "var(--good)" : "var(--muted)", minWidth: 22 }}>{m.id}</span>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{m.name}</span>
-              <span className="n">{n}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="r-filter-group">
-        <div className="r-filter-h">Artifact</div>
-        {allTypes.map(([key, count]) => {
-          const on = (filters.type || []).includes(key);
-          return (
-            <div key={key} className={`r-chip r-chip-type r-chip-type-${key} ${on ? "on" : ""}`} onClick={() => toggle("type", key)}>
-              <span className="r-chip-type-label">{typeLabels[key]}</span>
-              <span className="n">{count}</span>
-            </div>
-          );
-        })}
-      </div>
     </aside>
   );
 }
 
 // ─── Plans list column ──────────────────────────────────────────────────
 
-const STATUS_ORDER = { blocked: 0, active: 1, "in-progress": 1, pending: 2, shipped: 3, done: 4, draft: 5 };
-
 // Default direction per sort key: "asc" = smallest/earliest/A/high-priority first.
-const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc", status: "asc", progress: "desc", title: "asc", priority: "asc" };
-
-const ROI_ORDER = { high: 0, mid: 1, low: 2 };
-
-// Format a Unix timestamp. Plans within 7 days show "YYYY-MM-DD HH:MM" (local time);
-// older plans show "YYYY-MM-DD".
-function fmtTimestamp(ts) {
-  if (!ts) return "";
-  const d = new Date(ts * 1000);
-  const pad = n => String(n).padStart(2, "0");
-  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  if (Date.now() - d < 7 * 24 * 60 * 60 * 1000) {
-    return `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  return date;
-}
-
-// Pick the date label for a row given the active sort key.
-// • "created" sort  → always show git-commit timestamp (has local time for recent plans)
-// • other sorts     → prefer plan-modified date string; fall back to git timestamp
-//                     so plans without plan-modified still show something
-function fmtPlanDate(p, sortBy) {
-  if (sortBy === "created" && p.created) return fmtTimestamp(p.created);
-  if (p.last) return p.last;
-  if (p.created) return fmtTimestamp(p.created);
-  return "";
-}
+const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc" };
 
 function sortItems(items, sortBy, dir) {
-  const arr = [...items];
+  const arr = items.filter(item => (item.type || "plan") === "plan");
   const m = dir === "asc" ? 1 : -1;
-  if (sortBy === "status") {
-    arr.sort((a, b) => m * ((STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9)));
-  } else if (sortBy === "progress") {
-    arr.sort((a, b) => m * ((a.impl || 0) - (b.impl || 0)));
-  } else if (sortBy === "title") {
-    arr.sort((a, b) => m * (a.title || "").localeCompare(b.title || ""));
-  } else if (sortBy === "priority") {
-    arr.sort((a, b) => m * ((ROI_ORDER[a.roi || "mid"] ?? 1) - (ROI_ORDER[b.roi || "mid"] ?? 1)));
-  } else if (sortBy === "created") {
+  if (sortBy === "created") {
     // created is a Unix timestamp (integer seconds) — numeric comparison for second precision
     arr.sort((a, b) => {
       if (!a.created && !b.created) return 0;
@@ -432,31 +338,43 @@ function sortItems(items, sortBy, dir) {
 const SORT_OPTIONS = [
   { value: "edited",   label: "Edited"   },
   { value: "created",  label: "Created"  },
-  { value: "status",   label: "Status"   },
-  { value: "progress", label: "Progress" },
-  { value: "priority", label: "Priority" },
-  { value: "title",    label: "Title"    },
 ];
+
+function openGateCount(plan) {
+  if (Number.isFinite(plan.open_gate_count)) return plan.open_gate_count;
+  return (plan.gates || []).filter(gate =>
+    String(gate.verdict || "").trim().toLowerCase() !== "passed"
+  ).length;
+}
+
+function attachmentGroups(state, selectedKey) {
+  const relations = state?.attachment_relations || [];
+  const selected = state?.plans?.[selectedKey];
+  let planKey = selected?.type === "plan" ? selected.nav_key || selected.slug : null;
+  if (!planKey) {
+    const relation = relations.find(row => row.source === selectedKey);
+    planKey = relation ? String(relation.target || "").split("#", 1)[0] : null;
+  }
+  const sources = new Set(relations
+    .filter(row => String(row.target || "").split("#", 1)[0] === planKey)
+    .map(row => row.source));
+  const attachments = [...sources].map(key => state?.plans?.[key]).filter(Boolean);
+  return {
+    planKey,
+    research: attachments.filter(item => item.type === "research"),
+    evidence: attachments.filter(item => item.type === "evidence"),
+  };
+}
+
+function selectPlanSection(event, onSelectPlan, slug, sectionId) {
+  event.stopPropagation();
+  onSelectPlan(slug);
+  window.setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ block: "start" }), 0);
+}
 
 function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir, toggleSortDir, filters, onClearFilters, onClearContext, onSetContext }) {
   const sorted = React.useMemo(() => sortItems(items, sortBy, sortDir), [items, sortBy, sortDir]);
   const contextSlug = filters.context || null;
-  const [sortMenuOpen, setSortMenuOpen] = React.useState(false);
-  const sortRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!sortMenuOpen) return;
-    const onDown = (e) => {
-      if (sortRef.current && !sortRef.current.contains(e.target)) setSortMenuOpen(false);
-    };
-    const onKey = (e) => { if (e.key === "Escape") setSortMenuOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [sortMenuOpen]);
-  const currentLabel = (SORT_OPTIONS.find(o => o.value === sortBy) || SORT_OPTIONS[0]).label;
 
   const SortAscIcon = () => (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -480,45 +398,19 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
   return (
     <div className="r-list">
       <div className="r-sort-bar">
-        <span className="r-sort-n">{items.length}</span>
-        <div className={`r-sort-popover ${sortMenuOpen ? "open" : ""}`} ref={sortRef}>
-          <button
-            type="button"
-            className="r-sort-trigger"
-            onClick={() => setSortMenuOpen(o => !o)}
-            aria-expanded={sortMenuOpen}
-            aria-haspopup="listbox"
-          >
-            <svg className="r-sort-icon" width="11" height="8" viewBox="0 0 11 8" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-              <path d="M1 1h9M1 4h6M1 7h3"/>
-            </svg>
-            <span className="r-sort-trigger-label">{currentLabel}</span>
-            <svg className="r-sort-chevron" width="9" height="6" viewBox="0 0 9 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 1.5l3.5 3.5L8 1.5"/>
-            </svg>
-          </button>
-          {sortMenuOpen && (
-            <div className="r-sort-menu" role="listbox">
-              {SORT_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="option"
-                  aria-selected={opt.value === sortBy}
-                  className={`r-sort-item ${opt.value === sortBy ? "current" : ""}`}
-                  onClick={() => { setSortBy(opt.value); setSortMenuOpen(false); }}
-                >
-                  <span className="r-sort-item-check">{opt.value === sortBy ? "✓" : ""}</span>
-                  <span>{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <span className="r-sort-n">{sorted.length} plans</span>
+        <div className="r-sort-segments" aria-label="Sort plans by">
+          {SORT_OPTIONS.map(option => (
+            <button type="button" key={option.value} className={sortBy === option.value ? "active" : ""} aria-pressed={sortBy === option.value} onClick={() => setSortBy(option.value)}>
+              {option.label}
+            </button>
+          ))}
         </div>
         <button
           className={`r-sort-dir ${sortDir !== (SORT_DIR_DEFAULTS[sortBy] || "asc") ? "active" : ""}`}
           onClick={toggleSortDir}
-          title={sortDir === "asc" ? "Ascending" : "Descending"}
+          title={sortDir === "asc" ? "Ascending order" : "Descending order"}
+          aria-label={sortDir === "asc" ? "Sort ascending" : "Sort descending"}
         >
           {sortDir === "asc" ? <SortAscIcon /> : <SortDescIcon />}
         </button>
@@ -540,59 +432,46 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
 
       {items.length === 0 ? (
         <div className="r-list-empty">
-          No artifacts match.
-          {(filters?.status?.length || filters?.ms?.length || filters?.sprint?.length || filters?.type?.length || ((window.STATE?.north_stars || []).length && filters?.north_star?.length)) && (
+          No plans match.
+          {(filters?.status?.length || filters?.sprint?.length) && (
             <button className="r-clear-btn" onClick={onClearFilters}>Clear filters</button>
           )}
         </div>
       ) : sorted.map(p => {
         const navKey = p.nav_key || p.slug;
         const active = route.view === "plan" && route.slug === navKey;
-        const artifactType = p.type || "plan";
         const isArchived = p.archived === "1" || p.archived === true || p.archived === "true";
         const isRead = p.read === "1" || p.read === true || p.read === "true";
+        const authored = p.workflow_status || p.status || "pending";
+        const effective = p.effective_status || authored;
+        const gates = openGateCount(p);
+        const edited = p.last || "unknown";
         return (
           <div
             key={navKey}
             className={`r-row ${active ? "active" : ""} ${isArchived ? "archived" : ""} ${isRead ? "read" : ""}`}
             onClick={() => onSelectPlan(navKey)}
           >
-            <span className={`dot ${artifactType === "plan" ? p.status : artifactType}`}></span>
+            <span className={`dot ${authored === effective ? effective : "transition"}`} title={authored === effective ? effective : `${authored} to ${effective}`}></span>
             <div>
-              <div className="t">{p.title}{artifactType !== "plan" && <span className={`r-type-pill ${artifactType}`}>{artifactType}</span>}</div>
+              <div className="t">{p.title}</div>
               <div className="meta">
-                {artifactType === "plan" && <>
-                  <span className="ms">{p.ms}</span>
-                  <span className="sp">·</span>
-                  <span className="pct">{Math.round((p.impl || 0) * 100)}%</span>
-                  {p.north_star && <><span className="sp">·</span><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span></>}
-                  <span className="sp">·</span>
-                </>}
-                {artifactType === "research" && <>
-                  <span>{(p.informs || []).length} informed</span>
-                  {p.source_quality && <><span className="sp">·</span><span>{p.source_quality}</span></>}
-                  {p.reviewed_at && <><span className="sp">·</span><span>reviewed {p.reviewed_at}</span></>}
-                  <span className="sp">·</span>
-                </>}
-                {artifactType === "evidence" && <>
-                  <span>{p.verdict || "unreviewed"}</span>
-                  <span className="sp">·</span>
-                  <span>{(p.evidence_for || []).length} verified</span>
-                  {p.recorded_at && <><span className="sp">·</span><span>{p.recorded_at}</span></>}
-                  <span className="sp">·</span>
-                </>}
-                {(() => {
-                  const ds = fmtPlanDate(p, sortBy);
-                  if (!ds) return null;
-                  const sp = ds.indexOf(" ");
-                  if (sp === -1) return <span className="date">{ds}</span>;
-                  return <><span className="date">{ds.slice(0, sp)}</span><span className="time">{ds.slice(sp + 1)}</span></>;
-                })()}
+                <span className="ms">{p.ms}</span>
+                <span className="sp">·</span>
+                <button className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>
+                <span className="sp">·</span>
+                {p.north_star && <><span>{(window.STATE?.north_stars || []).find(direction => direction.id === p.north_star)?.name || p.north_star}</span><span className="sp">·</span></>}
+                <span className="date" title={`Edited ${edited}`}>edited {edited}</span>
               </div>
-              {artifactType === "plan" && ((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
+              {authored !== effective ? (
+                <button className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>
+                  <span>{authored}</span><span aria-hidden="true">→</span><span>{effective}</span><span>{gates} open {gates === 1 ? "gate" : "gates"}</span>
+                </button>
+              ) : null}
+              {((p.dec_open || 0) > 0 || (p.blockers || 0) > 0) && (
                 <div className="sigs">
-                  {(p.dec_open || 0) > 0 && <span className="sig dec">D {p.dec_open}</span>}
-                  {(p.blockers || 0) > 0 && <span className="sig blk">! {p.blockers}</span>}
+                  {(p.dec_open || 0) > 0 && <button className="sig dec" title={`${p.dec_open} open decisions; open decisions`} aria-label={`${p.title}: ${p.dec_open} open decisions`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "decisions")}>Decisions {p.dec_open}</button>}
+                  {(p.blockers || 0) > 0 && <button className="sig blk" title={`${p.blockers} blockers; open blockers`} aria-label={`${p.title}: ${p.blockers} blockers`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "blockers")}>Blockers {p.blockers}</button>}
                 </div>
               )}
             </div>
@@ -600,6 +479,34 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         );
       })}
     </div>
+  );
+}
+
+function AttachmentRail({ selectedKey, onSelect }) {
+  const groups = attachmentGroups(window.STATE, selectedKey);
+  const rows = [
+    ["research", "Research", groups.research],
+    ["evidence", "Evidence", groups.evidence],
+  ];
+  if (!groups.planKey || rows.every(([, , items]) => items.length === 0)) return null;
+  return (
+    <aside className="r-attachment-rail" aria-label="Plan attachments">
+      <div className="r-attachment-heading">Attached</div>
+      {rows.map(([type, label, items]) => items.length > 0 && (
+        <section key={type} className="r-attachment-group" aria-labelledby={`attachment-${type}`}>
+          <h2 id={`attachment-${type}`}>{label}<span>{items.length}</span></h2>
+          {items.map(item => {
+            const key = item.nav_key || item.slug;
+            return (
+              <button type="button" key={key} className={selectedKey === key ? "active" : ""} aria-pressed={selectedKey === key} onClick={() => onSelect(key)}>
+                <span className={`dot ${type}`} aria-hidden="true"></span>
+                <span>{item.title || item.slug}</span>
+              </button>
+            );
+          })}
+        </section>
+      ))}
+    </aside>
   );
 }
 
@@ -1132,7 +1039,7 @@ function App() {
   const [groupBy, setGroupBy] = useState(() => {
     try {
       const stored = localStorage.getItem(SK.groupBy);
-      if (!stored || stored === "sprint" || stored === "recent") return "edited";
+      if (!SORT_OPTIONS.some(option => option.value === stored)) return "edited";
       return stored;
     } catch { return "edited"; }
   });
@@ -1243,22 +1150,16 @@ function App() {
   const M = window.STATE;
   const items = useMemo(() => {
     if (!M) return [];
-    let list = M.inventory;
+    let list = M.inventory.filter(item => (item.type || "plan") === "plan");
     // Archived axis is orthogonal to status. Hide by default unless the user
     // toggled it on OR is explicitly filtering for a specific status.
     if (!showArchived) {
       list = list.filter(p => !(p.archived === "1" || p.archived === true || p.archived === "true"));
     }
-    if (filters.status?.length) list = list.filter(p => filters.status.includes(p.status));
+    if (filters.status?.length) list = list.filter(p => filters.status.includes(p.effective_status || p.status));
     if (filters.ms?.length) list = list.filter(p => filters.ms.includes(p.ms));
     if (filters.sprint?.length) list = list.filter(p => filters.sprint.includes(p.sprint));
     if ((M.north_stars || []).length && filters.north_star?.length) list = list.filter(p => filters.north_star.includes(p.north_star));
-    if (filters.type?.length) {
-      list = list.filter(p => {
-        const t = p.type || "plan";
-        return filters.type.includes(t);
-      });
-    }
     if (filters.context) {
       const ctx = M.inventory.find(p => p.slug === filters.context);
       if (ctx) {
@@ -1327,20 +1228,23 @@ function App() {
         >
           <span></span><span></span>
         </button>
-        <FiltersCol filters={filters} setFilters={setFilters} showShipped={showShipped} setShowShipped={setShowShipped} showArchived={showArchived} setShowArchived={setShowArchived} />
+        <FiltersCol filters={filters} setFilters={setFilters} />
         <ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />
         <div className="r-content">
           <TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
-          <div className="r-body">
-            {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
-            {route.view === "plan" && (
-              <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
-            )}
-            {route.view === "cockpit" && <CockpitBody onNav={nav} />}
-            {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
-            {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
-            {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-            {route.view === "crew" && <CrewView />}
+          <div className="r-reader-with-attachments">
+            <div className="r-body">
+              {route.view === "sprint" && <FleetPrompt sprintId={route.sprint} />}
+              {route.view === "plan" && (
+                <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
+              )}
+              {route.view === "cockpit" && <CockpitBody onNav={nav} />}
+              {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
+              {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
+              {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
+              {route.view === "crew" && <CrewView />}
+            </div>
+            {route.view === "plan" && <AttachmentRail selectedKey={route.slug} onSelect={onSelectPlan} />}
           </div>
         </div>
       </div>
