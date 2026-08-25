@@ -436,7 +436,7 @@ repair the request, not as a worker failure:
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
 | `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
-| `watcher-required` | 8 | Arm the exact reported `reckon crew watch --project P` command, or use `--no-watch` only for a synchronous one-off; the waiver is recorded on the run. |
+| `watcher-required` | 8 | Automatic producer arming could not acquire a valid watcher seat; inspect the reported watcher state, or use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |
 
 Three node-contract refusals are easy to mistake for infrastructure failures:
 
@@ -459,14 +459,13 @@ Pre-flight the routing surface once per session with `reckon flight --project P`
 it reports the resolved config, which layer supplied each value, and which
 backends are actually available.
 
-Keep one live `reckon crew watch --project P` process for the project before
-opening a process-launching dispatch. The command refuses with
-`watcher-required` before creating a worktree when that kernel-backed watcher
-seat is empty. An in-harness result only prepares a directive; arm the watcher
-before the host launches and attaches that task. `--no-watch` is the explicit
-exception for a genuinely synchronous one-off; it records the arming command
-and observed watcher liveness on both the live run and its promoted ledger
-record.
+Dispatch ensures one live `reckon crew watch --project P` producer before it
+creates a worktree. It reuses an existing kernel-backed seat or starts the
+producer detached with a live supervisor, so no session has to follow an arming
+instruction and ending the dispatching process does not orphan the producer.
+`--no-watch` is the explicit exception for a genuinely synchronous one-off; it
+records the arming command and observed watcher liveness on both the live run
+and its promoted ledger record.
 
 **One dispatch instruction covers every backend.** State what the node is;
 reckon resolves how it runs. Which harness, at what model, effort and sandbox

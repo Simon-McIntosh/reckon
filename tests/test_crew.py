@@ -776,7 +776,7 @@ def test_cli_watch_exposes_the_explicit_empty_fleet_exit(home) -> None:
     assert payload["classification"] == "no_live_pointers"
 
 
-def test_dead_watcher_does_not_satisfy_the_dispatch_gate(home, repo) -> None:
+def test_dispatch_replaces_a_dead_watcher(home, repo) -> None:
     source_root = Path(__file__).parents[1]
     script = """
 import time
@@ -807,18 +807,24 @@ with _project_watch_claim('proj', '1h') as (acquired, _record):
         repo=str(repo),
         write_paths=["reckon/cli.py"],
     )
-    with pytest.raises(crew.WatcherRequired):
-        crew.dispatch(
+    try:
+        record = crew.dispatch(
             node=_node(),
             project="proj",
             repo=repo,
             config=CONFIG,
             session="sess",
-            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
+            launcher=lambda *args, **kwargs: 4242,
             watch_required=True,
         )
+        assert record["watch"]["watcher_live"] is True
+        assert record["watch"]["watcher"]["pid"] != watcher.pid
+    finally:
+        from reckon.crew.recovery import unwatch
+
+        if crew.watch_state("proj")["watcher_live"]:
+            unwatch("proj")
     crew.pointer_path(existing["run_id"]).unlink()
-    _assert_no_dispatch_artifacts(repo)
 
 
 def test_live_run_listing_combines_project_and_phase_filters(home) -> None:
@@ -1396,44 +1402,44 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
     assert Path(record["worktree"]).is_dir()
 
 
-def test_dispatch_into_an_occupied_project_requires_a_watcher_before_worktree(
+def test_dispatch_into_an_occupied_project_reuses_the_armed_watcher(
     home, repo
 ) -> None:
-    owner = crew.dispatch(
-        node=_node(
-            id="owner-node",
-            manifest_path=str(home / "owner-manifest.md"),
-        ),
-        project="proj",
-        repo=repo,
-        config=CONFIG,
-        session="owner-session",
-        launcher=lambda *args, **kwargs: 4242,
-        watch_required=True,
-    )
-
-    with pytest.raises(crew.WatcherRequired) as excinfo:
-        crew.dispatch(
+    try:
+        owner = crew.dispatch(
             node=_node(
-                id="refused-node",
-                manifest_path=str(home / "refused-manifest.md"),
+                id="owner-node",
+                manifest_path=str(home / "owner-manifest.md"),
+            ),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="owner-session",
+            launcher=lambda *args, **kwargs: 4242,
+            watch_required=True,
+        )
+        accepted = crew.dispatch(
+            node=_node(
+                id="accepted-node",
+                manifest_path=str(home / "accepted-manifest.md"),
                 write_paths=["reckon/cli.py"],
             ),
             project="proj",
             repo=repo,
             config=CONFIG,
-            session="refused-session",
-            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
+            session="accepted-session",
+            launcher=lambda *args, **kwargs: 4243,
             watch_required=True,
         )
 
-    assert excinfo.value.watch == {
-        "arming_line": "reckon crew watch --project proj",
-        "watcher_live": False,
-        "watcher": {},
-    }
-    assert "reckon crew watch --project proj" in str(excinfo.value)
-    assert crew.list_live(project="proj") == [owner]
+        assert accepted["watch"]["watcher_live"] is True
+        assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
+        assert crew.list_live(project="proj") == [owner, accepted]
+    finally:
+        from reckon.crew.recovery import unwatch
+
+        if crew.watch_state("proj")["watcher_live"]:
+            unwatch("proj")
     listed = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,
@@ -1442,7 +1448,7 @@ def test_dispatch_into_an_occupied_project_requires_a_watcher_before_worktree(
         check=True,
     )
     assert "owner-node" in listed.stdout
-    assert "refused-node" not in listed.stdout
+    assert "accepted-node" in listed.stdout
 
 
 def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) -> None:
@@ -1529,10 +1535,11 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     ] == waiver
 
 
-def test_cli_dispatch_reports_missing_watcher_on_its_own_exit_code(
+def test_cli_dispatch_arms_a_missing_watcher(
     home, repo, monkeypatch
 ) -> None:
     monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
     existing = _write_running_pointer(
         home,
         "r-existing",
@@ -1567,13 +1574,13 @@ def test_cli_dispatch_reports_missing_watcher_on_its_own_exit_code(
     )
 
     payload = json.loads(result.output)
-    assert result.exit_code == 8
-    assert payload["error"] == "watcher-required"
-    assert payload["watch"]["watcher_live"] is False
+    assert result.exit_code == 0
+    assert payload["watch"]["watcher_live"] is True
     assert payload["watch"]["arming_line"] == "reckon crew watch --project proj"
-    assert payload["watch"]["arming_line"] in payload["detail"]
+    from reckon.crew.recovery import unwatch
+
+    unwatch("proj")
     crew.pointer_path(existing["run_id"]).unlink()
-    _assert_no_dispatch_artifacts(repo)
 
 
 def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> None:
