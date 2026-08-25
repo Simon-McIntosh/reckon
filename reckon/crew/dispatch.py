@@ -1270,11 +1270,10 @@ def dispatch(
         repo=repo_root,
         explicitly_named=explicitly_named_peers,
     )
+    resolved_model = str(backend.get("model") or "")
     reuse_session = (
-        str(roster_member.get("session_id"))
-        if roster_member
-        and roster_member.get("session_id")
-        and backend.get("session_reuse")
+        ledger.session_for_model(roster_member, resolved_model)
+        if roster_member and backend.get("session_reuse")
         else None
     )
     prior_node_runs = [
@@ -1644,6 +1643,7 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
             str(member),
             str(session_id),
             root=record.get("repo"),
+            model=str((record.get("agent") or {}).get("model") or ""),
         )
     except (ledger.LedgerError, OSError) as exc:
         # The record being promoted carries the session id anyway, so a roster
