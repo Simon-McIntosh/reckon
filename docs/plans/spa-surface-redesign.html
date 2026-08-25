@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 <meta name="plan-commits" content="e106b871dc849f0f7a6e3f1296764ec261a72361,aa286193e4cfaf1405dcd127e769e7856d5892b3,fc585f1202f99ee9171faae42366ba779f10523f,63be365,48ffde4f18bc8255e349bd328e1a4260e8c677e2,832cf81c4a4e2aa296f6b215f81616f93e494068,bf5969ee0df533d4b80ce8964bd48e5cec814618,b04df53,41eb939bcfe07aea6f5f1b9567ecc50eafebf3a2,2917f9c5da040c24fbe7df72a6031aa450eafb1d,8a98076">
 <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/plan.jsx,docs/ui/bits.jsx,docs/ui/crew.jsx,docs/ui/topbar.css,docs/ui/plans.css,docs/ui/reader.css,docs/ui/overview.css,docs/ui/sprints.css,docs/ui/crew.css,docs/ui/graph.css,docs/index.html,tests/test_spa_state_boundary.py,tests/test_spa_reader_provenance.py,tests/test_spa_crew_cards.py,tests/test_build.py,design/reckon-spa-prototype.dc.html,design/reckon-spa-redesign.dc.html">
@@ -471,6 +471,53 @@
     <code>GET /crew</code> at 46.4&nbsp;s cold against 1.5&nbsp;s warm on a four-minute-old server.
     It is real and it belongs to the latency half of
     <code>surface-latency-and-legibility</code>, not here.</p>
+
+    <h2 id="s13">&#167;13 &mdash; What a screenshot found that seven green gates did not</h2>
+
+    <p><strong>All seven surfaces had landed, every geometry value was declared and served, and the
+    lead sent a screenshot of the running SPA with six visible defects.</strong> One cause, and it is
+    a coupling introduced by how the work was split rather than by any worker.</p>
+
+    <p><strong>The cause.</strong> <code>shell.jsx</code> still emitted
+    <code>className="r-3col &hellip; plans-mode &hellip; overview-mode"</code>. The node that retired
+    the legacy grid removed those rules from <code>styles.css</code>; nothing removed the container
+    that depended on them, because the CSS and the JSX were given to two different nodes and only
+    one side was specified. The classes became inert, so the Plans chip rail and list rendered
+    <em>alongside</em> the Overview content instead of instead of it. Splitting a change across two
+    write scopes without naming both halves leaves the half nobody owns.</p>
+
+    <table>
+      <thead><tr><th>Observed</th><th>What the canvas specifies</th></tr></thead>
+      <tbody>
+        <tr><td>Plans rail and list render on top of the Overview</td><td>One view per tab, mutually exclusive under a flex root at <code>min-width:1374px</code></td></tr>
+        <tr><td>Chip rail shows clipped text &mdash; <code>Arc</code>, <code>Act</code>, <code>Blo</code>, <code>S1 In</code>, <code>S6 So</code></td><td>The chip is a dot and a count; the human label lives in <code>title</code>, which is why 64px is enough</td></tr>
+        <tr><td>Tab row sits on a second row below the topbar</td><td>One topbar row at padding 9px 18px, gap 18px: mark, project chips, Manage, search, tabs</td></tr>
+        <tr><td>Manage reports &ldquo;1 of 3 mounted&rdquo; beside a fleet strip reporting 12 projects</td><td>Every mounted project listed, with a count that matches</td></tr>
+        <tr><td>Rows render <code>edited unknown</code> and a leading placeholder dash</td><td>Resolve the value or omit the element; never print a placeholder</td></tr>
+        <tr><td>A stray <code>Decisions 1</code> badge mid-list</td><td>Appears nowhere in the canvas</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Why the gates were all true anyway, for the second time today.</strong> Every
+    geometry assertion in this plan checks a <em>declaration</em> &mdash; that
+    <code>plans.css</code> declares 64px, that <code>crew.css</code> declares its grid &mdash; and
+    all of them were correct. The values were declared, served, and verified reaching the browser.
+    What no assertion could see is whether they <em>compose</em>: a correct value under a wrong
+    container renders wrongly while every test passes. This plan already recorded the same shape
+    once, when structural and behavioural tests passed over a redraw that had not happened; this is
+    that lesson recurring one level down, in geometry rather than in structure.</p>
+
+    <p><strong>Done when</strong> exactly one view renders per tab selection; a chip renders a dot
+    and a count with its label only in a title attribute; the topbar carries the tabs; the Manage
+    panel lists every mounted project with a matching count; and no plan row renders a placeholder
+    where a value belongs.</p>
+
+    <p><strong>The open question this leaves</strong> is whether a check that renders rather than
+    reads is worth its dependency. Declaration-site assertions have now failed to catch this class
+    twice in one session, and they cannot catch it in principle. A rendering check needs a browser
+    or a DOM implementation, which means a JavaScript toolchain in a repository whose dependency
+    manifest cannot express one. That is a real trade and it belongs to the lead, not to this
+    plan.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
