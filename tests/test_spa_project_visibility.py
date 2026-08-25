@@ -2,6 +2,14 @@ import json
 import subprocess
 from pathlib import Path
 
+from tests.spa_browser_harness import temporary_browser_profile
+from tests.test_spa_rendered_semantics import (
+    INDEX_STATE,
+    NODE_PROBE,
+    _installed_browser,
+    _served_fixture,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = ROOT / "docs" / "ui" / "shell.jsx"
@@ -62,7 +70,6 @@ def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_e
     shown = _evaluate(
         [
             (SHELL, "mountedProjectRows"),
-            (SHELL, "projectHasOpenWork"),
             (SHELL, "effectiveHiddenProjects"),
             (SHELL, "visibleProjectRows"),
         ],
@@ -79,6 +86,91 @@ def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_e
     assert "project.plans_count" in source
     assert "project.live_count" in source
     assert "Configure visibility…" in source
+
+
+def test_first_visit_renders_live_runs_from_every_mounted_project(tmp_path: Path) -> None:
+    projects = [
+        {
+            "project": f"project-{index}",
+            "data": {
+                "projects": [{"project": f"project-{index}", "plans_count": 1}],
+                "inventory": [{"slug": "finished", "status": "done"}],
+            },
+        }
+        for index in range(12)
+    ]
+    runs = [
+        {
+            "project": f"project-{index}",
+            "run_id": f"run-{index}",
+            "plan": "finished",
+            "section": "delivery",
+            "phase": "working",
+        }
+        for index in range(1, 9)
+    ]
+    fixture_source = (
+        f"const fixtureProjects = {json.dumps({'projects': projects})};"
+        f"const fixtureRuns = {json.dumps({'runs': runs})};"
+        'localStorage.removeItem("reckon:hidden-projects");'
+    )
+    fetch_source = """
+            if (url.endsWith("/_projects/index.json")) {
+              return Promise.resolve(new Response(JSON.stringify(fixtureProjects), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }));
+            }
+            if (url.endsWith("/crew")) {
+              return Promise.resolve(new Response(JSON.stringify(fixtureRuns), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }));
+            }
+"""
+    probe_script = NODE_PROBE.replace(
+        "const fixtureSprints = fixtureIndex.data.sprints;",
+        "const fixtureSprints = fixtureIndex.data.sprints;" + fixture_source,
+    ).replace(
+        "            const url = String(resource);\n",
+        "            const url = String(resource);\n" + fetch_source,
+    )
+    probe = """(() => ({
+      cards: document.querySelectorAll('.r-crew-card').length,
+      summary: document.querySelector('.r-crew-heading span')?.textContent.trim() || '',
+    }))()"""
+
+    with temporary_browser_profile(tmp_path) as profile:
+        with _served_fixture(tmp_path, "#crew") as url:
+            result = subprocess.run(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    probe_script,
+                    json.dumps(
+                        {
+                            "browser": _installed_browser(),
+                            "profile": str(profile),
+                            "url": url,
+                            "waitSelector": ".r-crew-card",
+                            "probe": probe,
+                            "removeSignal": "null",
+                            "failPlanHtml": False,
+                            "fixtureIndex": INDEX_STATE,
+                        }
+                    ),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+
+    assert result.returncode == 0, result.stderr
+    rendered = json.loads(result.stdout)["baseline"]
+    assert rendered["cards"] == len(runs)
+    assert "12 shown / 12 mounted" in rendered["summary"]
 
 
 def test_configure_shortcut_opens_the_settings_visibility_panel() -> None:
