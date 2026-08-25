@@ -175,6 +175,58 @@
       10 shadow pairs per candidate tier). New sections: §8 shadow sidecar
       dispatch, §9 host-layer defaults + luna/terra widening.</p>
 
+    <h2 id="s8">§8 — Shadow sidecar dispatch (2026-08-25)</h2>
+    <p><strong>Reuse map first.</strong> Read-only scout run
+      <code>r-20260825T070250261493-shadow-prior-art-scout</code>, gate passed
+      (6/6 capability areas, 6/6 fitness verdicts), 292 worker-seconds. Verdict:
+      <strong>0/6 absent, 1/6 runtime-sufficient, 5/6 bounded extensions</strong> of
+      existing primitives — so §8 extended machinery rather than authoring a second
+      dispatch path. Four findings shaped the node: fixed-SHA worktree creation
+      already refuses HEAD fallback; lineage storage round-trips arbitrary mappings
+      but dispatch must inject shadow lineage <em>without</em> incrementing attempts;
+      commitless promotion exists but shadow completion must refuse commits and derive
+      <code>changed_lines</code> from the patch artifact; and capability derivation
+      then <em>admitted</em> shadow records into live competence curves, which made the
+      partition mandatory rather than tidy. Reuse map (30 candidate entries):
+      <code>~/.config/reckon/crew/reports/shadow-prior-art-scout.md</code>.</p>
+    <p><strong>Implementation.</strong> Run
+      <code>r-20260825T072832542100-shadow-sidecar-dispatch</code>, gate passed,
+      commit <code>4656c7a</code> merged as <code>c82cf57</code>; focused suites
+      244/244, full suite <strong>2357/2357</strong>, 7 substantive tests added,
+      1983 worker-seconds at sol/high, 46.9k output tokens. Delivered:
+      <code>reckon crew shadow</code> deriving a committed record's node at its
+      recorded base revision (an unreachable base refused before worktree creation);
+      shadow lineage on both pointer and promoted record carrying the primary's
+      attempt number without incrementing live attempts; the candidate backend forced
+      through role and spec overlays; commitless completion refusing
+      <code>--commit</code> under the pointer lock before mutation and capturing the
+      full tracked-and-untracked worktree diff as <code>shadow.patch</code>; ledger
+      summaries labelling live versus shadow rows; and capability derivation excluding
+      shadow observations from live competence configurations while exposing paired
+      <code>shadow_slices</code>. Promoted <code>scope-changed</code>: the worker
+      blocked correctly at its fence — the atomic completion transaction had moved to
+      <code>reckon/crew/promotion.py</code> in the crew-package refactor — and the
+      coordinator widened the scope by resuming that same session.</p>
+    <p><strong>First pair, and what it measured.</strong> Run
+      <code>r-20260825T083313351944</code> on <code>gpt-5.6-luna</code> against
+      primary <code>r-20260825T072832542100</code>, lineage kind
+      <code>shadow</code>, gate <strong>FAILED</strong>, promoted commitless with
+      <code>shadow.patch</code> retained (11,406 bytes). The shadow met neither half
+      of the node's done-when: zero tests added against a measure naming five test
+      behaviours, and only the three focused suites at their pre-existing 237 rather
+      than the full suite. Source work was real but thinner — <strong>115 insertions
+      across 5 paths against the primary's 809 across 8</strong> — in 258
+      worker-seconds against the primary's 1983. The partition was verified
+      independently of the unit tests: luna appears in
+      <code>capabilities.shadow_slices</code> with <code>success: false</code> and is
+      absent from live configurations, which stayed at 4.</p>
+    <p><strong>Read this pair as calibration input, not a verdict.</strong> It is
+      n=1 <em>and</em> confounded: routing was re-derived from current flight config at
+      shadow time, so the recorded pair compares (luna, medium) against (sol, high)
+      and cannot attribute the difference to the model. That defect is §11.1, and it
+      had to be repaired before the qualification programme could produce science —
+      every pair collected until then carries the same confound.</p>
+
     <h2 id="s9">§9 — Host-layer defaults and backend widening (2026-08-25)</h2>
     <p><strong>Probe (§9.1)</strong> — run
       <code>r-20260825T070329601294-model-id-probe</code>, gate passed, 178
