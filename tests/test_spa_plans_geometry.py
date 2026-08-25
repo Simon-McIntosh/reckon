@@ -53,49 +53,62 @@ def _assert_declarations(actual: dict[str, str], expected: dict[str, str]) -> No
     assert actual.items() >= expected.items()
 
 
-def test_plan_workspace_preserves_the_four_column_canvas_widths() -> None:
-    workspace = _declarations(PLANS_CSS, ".r-3col.plans-mode")
-    filters = _declarations(PLANS_CSS, ".r-3col.plans-mode > .r-filters")
-    listing = _declarations(PLANS_CSS, ".r-3col.plans-mode > .r-list")
-    content = _declarations(PLANS_CSS, ".r-3col.plans-mode > .r-content")
+def test_plan_workspace_gives_labels_room_and_preserves_other_column_widths() -> None:
+    workspace = _declarations(PLANS_CSS, ".r-canvas-view")
+    filters = _declarations(PLANS_CSS, ".r-plans-view > .r-filters")
+    listing = _declarations(PLANS_CSS, ".r-plans-view > .r-list")
+    content = _declarations(PLANS_CSS, ".r-canvas-view > .r-content")
     reader = _declarations(
-        PLANS_CSS, ".r-3col.plans-mode .r-reader-with-attachments > .r-body"
+        PLANS_CSS, ".r-plans-view .r-reader-with-attachments > .r-body"
     )
-    attachments = _declarations(
-        PLANS_CSS, ".r-3col.plans-mode .r-attachment-rail"
-    )
+    attachments = _declarations(PLANS_CSS, ".r-plans-view .r-attachment-rail")
 
-    _assert_declarations(workspace, {
-        "display": "flex",
-        "flex": "1",
-        "min-height": "0",
-        "min-width": "1374px",
-    })
-    _assert_declarations(filters, {
-        "width": "64px",
-        "flex": "none",
-        "padding": "10px 8px",
-        "border-right": "1px solid var(--line)",
-        "gap": "14px",
-        "overflow": "auto",
-    })
-    _assert_declarations(listing, {
-        "width": "390px",
-        "flex": "none",
-        "border-right": "1px solid var(--line)",
-    })
+    _assert_declarations(
+        workspace,
+        {
+            "display": "flex",
+            "flex": "1",
+            "min-height": "0",
+            "min-width": "1374px",
+        },
+    )
+    _assert_declarations(
+        filters,
+        {
+            "width": "192px",
+            "flex": "none",
+            "padding": "10px 8px",
+            "border-right": "1px solid var(--line)",
+            "gap": "14px",
+            "overflow": "auto",
+        },
+    )
+    _assert_declarations(
+        listing,
+        {
+            "width": "390px",
+            "flex": "none",
+            "border-right": "1px solid var(--line)",
+        },
+    )
     _assert_declarations(content, {"display": "flex", "flex": "1", "min-width": "0"})
-    _assert_declarations(reader, {
-        "flex": "1",
-        "min-width": "300px",
-        "padding": "22px 26px 34px",
-    })
-    _assert_declarations(attachments, {
-        "width": "300px",
-        "flex": "none",
-        "border-left": "1px solid var(--line)",
-        "padding": "16px 14px",
-    })
+    _assert_declarations(
+        reader,
+        {
+            "flex": "1",
+            "min-width": "300px",
+            "padding": "22px 26px 34px",
+        },
+    )
+    _assert_declarations(
+        attachments,
+        {
+            "width": "300px",
+            "flex": "none",
+            "border-left": "1px solid var(--line)",
+            "padding": "16px 14px",
+        },
+    )
 
 
 def test_filter_and_list_interior_geometry_matches_the_canvas() -> None:
@@ -109,13 +122,16 @@ def test_filter_and_list_interior_geometry_matches_the_canvas() -> None:
     assert statuses["gap"] == "4px"
     assert sprints["gap"] == "3px"
     assert divider["height"] == "1px"
-    _assert_declarations(header, {
-        "display": "flex",
-        "gap": "8px",
-        "padding": "10px 12px",
-        "border-bottom": "1px solid var(--line)",
-        "flex": "none",
-    })
+    _assert_declarations(
+        header,
+        {
+            "display": "flex",
+            "gap": "8px",
+            "padding": "10px 12px",
+            "border-bottom": "1px solid var(--line)",
+            "flex": "none",
+        },
+    )
     _assert_declarations(square_buttons, {"width": "25px", "height": "25px"})
     _assert_declarations(body, {"flex": "1", "overflow": "auto"})
 
@@ -130,15 +146,21 @@ def test_reader_typography_and_topbar_hold_the_declared_geometry() -> None:
     )
     topbar = _declarations(TOPBAR_CSS, ".r-topbar")
 
-    _assert_declarations(heading, {
-        "font-size": "23px",
-        "font-weight": "600",
-        "letter-spacing": "-.015em",
-    })
-    _assert_declarations(metadata, {
-        "font-family": "var(--mono)",
-        "font-size": "11.5px",
-    })
+    _assert_declarations(
+        heading,
+        {
+            "font-size": "23px",
+            "font-weight": "600",
+            "letter-spacing": "-.015em",
+        },
+    )
+    _assert_declarations(
+        metadata,
+        {
+            "font-family": "var(--mono)",
+            "font-size": "11.5px",
+        },
+    )
     assert topbar["min-width"] == "1374px"
 
     shell = SHELL.read_text()
