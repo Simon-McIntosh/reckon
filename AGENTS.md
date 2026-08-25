@@ -32,6 +32,27 @@ count. A worker sandbox restricts sockets, config-home writes and network
 builds, so a tier that cannot execute freely reports failures that have nothing
 to do with the code under test.
 
+### A test must not encode the current date
+
+The sibling of the rule below, and it fails the same way: silently, later, and
+for everyone at once. A test that hardcodes a value derived from *today* —
+an age in days, a computed deadline, a formatted timestamp — passes on the day
+it is written and every day until it doesn't. Measured here on 2026-08-25: an
+archive dry-run test asserted `"145d"` and `"176d"`, ages derived from its own
+fixture dates and frozen into literals. It passed its node's gate, passed the
+full suite twice, and turned `main` red at midnight with nobody touching the
+code. Two workers in another session were blocked on it before anyone noticed,
+because the failure surfaced in *their* gate rather than in ours.
+
+Derive the expectation from the same fixture the code sees, at assertion time.
+If a test needs a fixed age, compute it from the fixture's own date rather than
+writing down what that age happened to be. The tell is a literal that would
+have to be edited on a future date to keep the test true.
+
+The same applies to any recorded absolute that moves on its own — a pass count
+baked into a done-when, a line number in a comment, a total that grows. State
+the delta or derive the figure; a snapshot of a moving number is a fuse.
+
 ### A test must not read or write state outside the repository under test
 
 A test that does is not a test, it is a monitor: it reports on the machine
