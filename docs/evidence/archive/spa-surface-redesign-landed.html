@@ -191,6 +191,55 @@
   164 by the audit &mdash; the author told it is fine, a later reader told it is not. Found by the
   first plan through the gate, which was this one.</p>
 
+  <h2 id="red-suite">A red suite has three kinds of row, and only one of them is a defect</h2>
+
+  <p><strong>Two sessions measured the same repository at the same moment and got one failure and
+  six.</strong> Neither was wrong about what it observed. Sorting the six, jointly with the peer
+  session that reported them, produced a taxonomy sharper than either of us started with:</p>
+
+  <table>
+    <thead><tr><th>Kind</th><th>Count</th><th>What it actually was</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Real</strong></td><td>1</td>
+        <td>An exact-field-set assertion superseded by two fields a merge added to the served
+        projection</td>
+        <td>Repair it. This is the only row that was a defect.</td>
+      </tr>
+      <tr>
+        <td><strong>Sandbox tier</strong></td><td>4</td>
+        <td>An offline wheel build and an executable-path assumption that a restricted worker
+        sandbox cannot satisfy. All four pass unsandboxed in under nine seconds; two of them
+        appear as skips rather than failures in an unrestricted run</td>
+        <td>Attribute to the tier, not the code. Re-measure in the main checkout.</td>
+      </tr>
+      <tr>
+        <td><strong>Stale base</strong></td><td>1</td>
+        <td>A row a later commit had already fixed, reported from a worktree cut before that
+        commit. Never a regression and never a live failure</td>
+        <td>Re-measure at head. A delta at the node's own base would have called it pre-existing
+        &mdash; true of that revision, false of the repository.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>So &ldquo;judge a run by its delta against a base&rdquo; is necessary and not
+  sufficient: the measurement has to name <em>which</em> base.</strong> For attributing anything to
+  another session's merges, the only useful base is head in the main checkout. A delta taken inside
+  a restricted worktree at an older base is internally consistent, cheap, and wrong &mdash; and it
+  is wrong in the most durable way, because it lands in an evidence record looking like a
+  measurement. The peer session had a baseline node dispatched to answer exactly this question and
+  killed it mid-run rather than let it write four sandbox artifacts down as pre-existing failures.
+  Two dispatches spent, nothing promoted, and that was the correct outcome.</p>
+
+  <p><strong>A related finding, surfaced by workers rather than by tests.</strong> Several nodes
+  reported that they could not lint, because <code>ruff</code> is absent from the project
+  environment as both an executable and a module. The repository configures it &mdash; there is a
+  <code>[tool.ruff]</code> block in <code>pyproject.toml</code> &mdash; and never declares it, so
+  the pre-stage format-and-lint protocol is unfollowable for any worker whose PATH does not happen
+  to carry a user-level install. A tool that is configured but not declared is worse than one that
+  is absent: the configuration implies a guarantee the environment does not provide.</p>
+
   <p><strong>A reach path a user cannot see is not a reach path.</strong> An earlier landing asserted
   that hiding a project excluded it &ldquo;from aggregates and from the shortcut list but never from
   reach&rdquo;, and its test passed, because the palette and the route genuinely worked. The lead
