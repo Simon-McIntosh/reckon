@@ -1060,6 +1060,7 @@ function App() {
   const [cmdKOpen, setCmdKOpen] = useState(false);
 
   const [projects, setProjects] = useState([]);
+  const [fleetRuns, setFleetRuns] = useState([]);
   const [hiddenProjects, setHiddenProjects] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(PROJECT_VISIBILITY_STORAGE) || "[]");
@@ -1074,6 +1075,7 @@ function App() {
         .catch(() => ({ runs: [] })),
     ])
       .then(([data, crew]) => {
+        setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []);
         if (!data?.projects) return;
         const liveProjects = new Set((crew?.runs || []).map(run => run.project));
         setProjects(data.projects.map(project => {
@@ -1086,6 +1088,7 @@ function App() {
             accent: summary?.accent || state.accent || window.ACCENTS?.[project.project] || "var(--accent)",
             plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
             live: liveProjects.has(project.project),
+            state,
           };
         }));
       })
@@ -1238,7 +1241,7 @@ function App() {
               {route.view === "plan" && (
                 <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />
               )}
-              {route.view === "cockpit" && <CockpitBody onNav={nav} />}
+              {route.view === "cockpit" && <CockpitBody onNav={nav} projects={projects} fleetRuns={fleetRuns} />}
               {route.view === "plan" && <Plan slug={route.slug} onNav={nav} />}
               {route.view === "sprint" && <Sprint sprintId={route.sprint} onNav={nav} />}
               {route.view === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
@@ -1302,17 +1305,132 @@ function CmdKPalette({ items, onClose, onPick }) {
 }
 
 // Leaner cockpit body — plan list is in column 2 so cockpit is project-only.
-function CockpitBody({ onNav }) {
+function blockerIsUnresolved(blocker) {
+  const state = String(blocker.status || "").toLowerCase();
+  const summary = String(blocker.summary || "").trim().toLowerCase();
+  const next = String(blocker.next || "").trim().toLowerCase();
+  return blocker.resolved !== true
+    && !blocker.resolved_at
+    && !["resolved", "done", "closed"].includes(state)
+    && !summary.startsWith("resolved:")
+    && !next.startsWith("resolved ");
+}
+
+function projectActiveSprints(state) {
+  const active = Array.isArray(state.active_sprints) && state.active_sprints.length
+    ? state.active_sprints
+    : (state.sprints || []).filter(sprint => sprint.status === "active");
+  const focus = state.active_sprint_id || null;
+  const conflict = state.active_sprint_conflict ?? (
+    active.length === 0 ? focus !== null : active.length !== 1 || active[0].id !== focus
+  );
+  return { active, focus, conflict };
+}
+
+function overviewProjectRows(projects, currentState, fleetRuns) {
+  const currentProject = currentState?.project || null;
+  const sources = (projects || []).map(project => ({
+    ...project,
+    state: project.project === currentProject ? currentState : (project.state || {}),
+  }));
+  if (currentProject && !sources.some(project => project.project === currentProject)) {
+    sources.unshift({ project: currentProject, state: currentState });
+  }
+  return sources.map(project => {
+    const state = project.state || {};
+    const rawInventory = Array.isArray(state.inventory)
+      ? state.inventory
+      : (Array.isArray(state.plans) ? state.plans : []);
+    const inventory = rawInventory.filter(item => (item.type || "plan") === "plan");
+    const sprintState = projectActiveSprints(state);
+    const blockers = (state.blockers || []).filter(blockerIsUnresolved);
+    return {
+      project: project.project,
+      plans: Number(project.plans_count ?? inventory.length),
+      activePlans: inventory.filter(plan => ["active", "in-progress"].includes(plan.effective_status || plan.status)).length,
+      live: (fleetRuns || []).filter(run => run.project === project.project).length,
+      held: inventory.reduce((count, plan) => count + Number(plan.dec_open || 0), 0),
+      blockers,
+      ...sprintState,
+    };
+  });
+}
+
+function OverviewFleet({ projects, fleetRuns }) {
+  const rows = overviewProjectRows(projects, window.STATE, fleetRuns);
+  const blockers = rows.flatMap(row => row.blockers.map(blocker => ({ ...blocker, project: row.project })));
+  const totals = {
+    projects: rows.length,
+    plans: rows.reduce((count, row) => count + row.plans, 0),
+    live: rows.reduce((count, row) => count + row.live, 0),
+    held: rows.reduce((count, row) => count + row.held, 0),
+  };
+  return (
+    <section className="r-overview-fleet" aria-labelledby="fleet-overview-heading">
+      <div className="r-ck-h"><span className="r-eyebrow" id="fleet-overview-heading">Fleet</span></div>
+      <div className="r-overview-stats">
+        {Object.entries(totals).map(([label, value]) => (
+          <div key={label}><strong>{value}</strong><span>{label}</span></div>
+        ))}
+      </div>
+
+      {blockers.length > 0 && (
+        <section className="r-overview-blockers" aria-labelledby="overview-blockers-heading">
+          <h2 id="overview-blockers-heading">Unresolved blockers</h2>
+          {blockers.map(blocker => (
+            <article key={`${blocker.project}:${blocker.id}`}>
+              <div className="r-overview-blocker-meta">
+                <span>{blocker.project}</span>
+                <span>Owner: {blocker.owner || "unassigned"}</span>
+                <span>{Number(blocker.n || 0)} gated</span>
+              </div>
+              <strong>{blocker.summary || blocker.id}</strong>
+              <div className="r-overview-blocker-next"><span>Next</span>{blocker.next || "No next action recorded"}</div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      <div className="r-overview-projects" role="table" aria-label="Project roll-up">
+        <div className="r-overview-project-head" role="row">
+          <span>Project</span><span>Active sprints</span><span>Plans</span><span>Active</span><span>Live</span><span>Held</span>
+        </div>
+        {rows.map(row => (
+          <div className="r-overview-project-row" role="row" key={row.project}>
+            <strong role="cell">{row.project}</strong>
+            <div role="cell" className="r-overview-sprints">
+              {row.active.map(sprint => (
+                <a key={sprint.id} href={`#sprint/${sprint.id}`}>
+                  <span>{sprint.id} · {sprint.theme}</span>
+                  {sprint.id === row.focus && <em>legacy focus</em>}
+                </a>
+              ))}
+              {row.active.length === 0 && <span className="r-overview-none">No active sprint</span>}
+              {row.conflict && (
+                <div className="r-overview-conflict" role="alert">
+                  Active sprint resources disagree with legacy focus {row.focus || "none"}.
+                  {[...new Set([...row.active.map(sprint => sprint.id), row.focus].filter(Boolean))].map(id => (
+                    <a key={id} href={`#sprint/${id}`}>{id}</a>
+                  ))}
+                </div>
+              )}
+            </div>
+            <span role="cell">{row.plans}</span>
+            <span role="cell">{row.activePlans}</span>
+            <span role="cell">{row.live}</span>
+            <span role="cell">{row.held}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CockpitBody({ onNav, projects, fleetRuns }) {
   const M = window.STATE;
   if (!M) return null;
   const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
   const northStars = M.north_stars || [];
-  const allSprints = M.sprints || [];
-  const [ckSprintIdx, setCkSprintIdx] = useState(() => {
-    const i = allSprints.findIndex(s => s.id === M.active_sprint_id);
-    return i >= 0 ? i : 0;
-  });
-  const sprint = allSprints[ckSprintIdx] || M.sprint;
 
   const decisionPlans = M.inventory
     .filter(i => (i.dec_open || 0) > 0)
@@ -1327,6 +1445,7 @@ function CockpitBody({ onNav }) {
 
   return (
     <>
+      <OverviewFleet projects={projects} fleetRuns={fleetRuns} />
       {northStars.length > 0 && (
         <>
           <div className="r-ck-h">
@@ -1372,44 +1491,6 @@ function CockpitBody({ onNav }) {
             <div className="pct">{m.pct}%</div>
           </button>
         ))}
-      </div>
-
-      <div className="r-ck-h">
-        <span className="r-eyebrow">Sprint {sprint?.id} · {sprint?.theme}</span>
-        <div className="r-ck-h-actions">
-          <button className="r-nav-btn" disabled={ckSprintIdx <= 0} onClick={() => setCkSprintIdx(i => i - 1)}>‹</button>
-          <button className="r-nav-btn" disabled={ckSprintIdx >= allSprints.length - 1} onClick={() => setCkSprintIdx(i => i + 1)}>›</button>
-          <a className="r-board-icon" href={`#sprint/${sprint?.id}`} title="Sprints">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
-              <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
-              <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
-            </svg>
-          </a>
-        </div>
-      </div>
-      <div className="r-ck-list" style={{ marginBottom: 22 }}>
-        {(sprint?.items || []).map(it => {
-          const slug = typeof it === "string" ? it : it.slug;
-          const justification = typeof it === "object" ? it.justification : null;
-          const p = M.inventory.find(x => x.slug === slug);
-          if (!p) return null;
-          const pct = Math.round((p.impl || 0) * 100);
-          return (
-            <a key={slug} className="r-ck-row" href={`#plan/${slug}`}>
-              <span className={`r-ck-dot ${p.status}`}></span>
-              <div className="r-ck-body">
-                <div className="r-ck-title">{p.title}</div>
-                {justification && <div className="r-ck-just">{justification}</div>}
-              </div>
-              <div className="r-ck-prog">
-                <span className="r-ck-bar"><i style={{ width: `${pct}%` }} className={p.status === "shipped" ? "shipped" : p.status === "blocked" ? "blocked" : ""}></i></span>
-                <span className="r-ck-pct">{pct}%</span>
-              </div>
-              <span className="r-ck-arr">›</span>
-            </a>
-          );
-        })}
       </div>
 
       <div className="r-ck-h">
