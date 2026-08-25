@@ -638,12 +638,12 @@
   §11 subsection order 1,4,5,2,3       folded → coordinator state write (plan v39-40)
   plan summary over published bound    folded → coordinator state write (plan v37)
 
-  f-cer-003  §6 re-checkpoint          open, trigger-gated — NOT foldable now:
-                                       93 of ~100 further varied runs; 0 usable shadow
-                                       pairs of 10 (1 recorded, and it is this session's);
-                                       spark pilot 9 of 20. Three of its four components
-                                       are count-gated; the ~100 threshold is the lead's
-                                       locked scheduling choice, so it is not pre-empted.
+  f-cer-003  §6 re-checkpoint          folded → §12 + second-checkpoint-slice-read
+                                       (CORRECTED — see the note below; this row was
+                                       first written as "open, trigger-gated" on a
+                                       count of 93 that predated the last wave, and on
+                                       a reading that a checkpoint needs a positive
+                                       result to be worth rendering. Both were wrong.)
   §11.2 shadow claim asymmetry         foreign-owner → concurrency-and-schedule-visibility §5
   ruff configured but not declared     foreign-owner → binding-rules-need-bound-checks
   snapshot-not-contract assertions     foreign-owner → binding-rules-need-bound-checks
@@ -655,13 +655,33 @@
     scoped                             foreign-owner → concurrency-and-schedule-visibility
   §7c closed set has no disposition
     for a trigger-gated standing
-    followup                           foreign-owner → reckon-skill-overhaul
+    followup                           WITHDRAWN — the gap was my misuse, not the
+                                       vocabulary. Same-plan work becomes a section, and
+                                       folding it IS that; the correct disposition existed.
 
   LIVE RUN POINTERS
   r-...-n-after-capture-evidence       still-working (peer, spa-surface-redesign)
   r-...-n-declared-matches-configured  still-working (peer, binding-rules-need-bound-checks)
   ---
-  followup rows: 18   foldable-remaining: 0   unreconciled-runs: 0</pre>
+  followup rows: 18   foldable-remaining: 0   unreconciled-runs: 0
+  (recount after correction: 17 live rows, 1 withdrawn, foldable-remaining still 0 —
+   f-cer-003 moved from open to folded, so the figure holds for a different reason)</pre>
+    <p><strong>Correction, recorded rather than quietly edited.</strong> This ledger first
+      disposed <code>f-cer-003</code> as <em>open, trigger-gated</em>, and both halves of
+      that were wrong. <strong>The rule:</strong> it was same-plan work — a re-read of this
+      plan's own §6 — carried as a followup, when same-plan follow-on work becomes a
+      section with nodes and a followup is reserved for work another plan owns. Folding
+      same-plan work <em>means</em> making it a section, so "folded" was always the
+      available disposition and "trigger-gated" was a sixth category the rule forbids
+      inventing. <strong>The figure:</strong> the trigger was already met — 433
+      spec-level-era implement runs against the 317 baseline is 116 further, not the 93 I
+      recorded from a count taken before the session's last wave landed.
+      <strong>The reasoning:</strong> I called three of its four components count-gated,
+      but a checkpoint renders a verdict and "no tier qualifies at n=1" and "the pilot
+      continues at 9 of 20" are verdicts — declining to write them down is what forces the
+      next session to re-derive them. It is the same error class this record names at
+      <a href="#general-form">#general-form</a>, one level up: a disposition that was
+      internally consistent and was not the disposition it named.</p>
     <p>Three notes on this ledger. <strong>Every <code>folded</code> row names a dispatched
       node or a coordinator write</strong>, which is the check that separates a fold from a
       stop with paperwork. <strong>f-cer-003 is the one open non-exempt row</strong>, and its
