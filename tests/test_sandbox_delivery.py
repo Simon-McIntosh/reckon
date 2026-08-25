@@ -12,7 +12,6 @@ import pytest
 
 from reckon import crew
 
-
 CONFIG = {
     "default_backend": "worker",
     "backends": {
@@ -119,10 +118,26 @@ def _worktrees(repo: Path) -> str:
     ).stdout
 
 
-def test_investigation_delivers_to_the_shared_reports_directory(
-    home: Path, repo: Path
+def test_investigation_delivers_to_a_temporary_reports_directory(
+    home: Path,
+    repo: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    live_home = tmp_path / "live-config"
+    monkeypatch.setenv("RECKON_HOME", str(live_home))
+    live_manifest = crew.reports_dir() / "investigation" / "manifest.md"
+    live_manifest.parent.mkdir(parents=True)
+    live_manifest.write_text("status: live fleet owns this file\n", encoding="utf-8")
+    live_before = {
+        path.relative_to(crew.reports_dir()): path.read_bytes()
+        for path in crew.reports_dir().rglob("*")
+        if path.is_file()
+    }
+
+    monkeypatch.setenv("RECKON_HOME", str(home))
     manifest = crew.reports_dir() / "investigation" / "manifest.md"
+    assert manifest != live_manifest
     launched: dict = {}
 
     def launcher(plan, **_kwargs):
@@ -152,6 +167,12 @@ def test_investigation_delivers_to_the_shared_reports_directory(
     assert str(crew.reports_dir()) in add_dirs
     assert str(crew.reports_dir()) in record["sandbox_write_roots"]
     assert str(crew.run_dir(record["run_id"])) in record["sandbox_write_roots"]
+    live_after = {
+        path.relative_to(live_manifest.parents[1]): path.read_bytes()
+        for path in live_manifest.parents[1].rglob("*")
+        if path.is_file()
+    }
+    assert live_after == live_before
     assert crew.live_dir().is_relative_to(home)
 
 
