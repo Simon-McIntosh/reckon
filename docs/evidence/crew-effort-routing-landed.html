@@ -508,6 +508,135 @@
       goalposts. The lane is not charged: an exact-tier gate failure indicts the
       specification before the model, and the specification was the defect.</p>
 
+    <h2 id="first-controlled-pair">§6 measurement — the first usable qualification pair (2026-08-25)</h2>
+    <p>With §11.1 and §11.5 merged, the pair that motivated both was re-run on the repaired
+      path: shadow <code>r-20260825T122112217644</code> on <code>gpt-5.6-luna</code> against
+      primary <code>r-20260825T072832542100</code> on <code>gpt-5.6-sol</code>. Recorded
+      <code>lineage.configuration</code>:
+      <code>inherited {effort: high, launch: cli, sandbox: worktree-full, time_budget: 40m}</code>,
+      <code>substituted {backend, model}</code> both <code>via: backend</code>,
+      <code>fallbacks: none</code>. One dimension varies.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Files</th><th>Insertions</th><th>Tests added</th><th>Worker time</th><th>Budget</th><th>Suite</th></tr></thead>
+      <tbody>
+        <tr><td>primary — <code>sol</code>/high</td><td>8</td><td>809</td><td>10</td><td>1983 s</td><td>40m</td><td>2357/2357</td></tr>
+        <tr><td><strong>controlled shadow — <code>luna</code>/high</strong></td><td>8</td><td><strong>806</strong></td><td>8</td><td>1393 s</td><td>40m</td><td>2355/2355</td></tr>
+        <tr><td>earlier confounded shadow — <code>luna</code>/medium</td><td>5</td><td>115</td><td>0</td><td>258 s</td><td><strong>8m</strong></td><td>focused only</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The confound was the whole of the earlier result.</strong> Same model, same
+      node, same base, same candidate backend — 115 insertions across 5 paths at an 8-minute
+      fence, 806 across 8 at a 40-minute one, against the primary's 809 across 8. The
+      earlier record read that thinness as a property of <code>gpt-5.6-luna</code>; it was a
+      property of the budget. Gate passed, promoted commitless: <code>commits: []</code>,
+      <code>shadow.patch</code> retained, <code>changed_lines</code> derived from the patch.</p>
+    <p><strong>What this does and does not license.</strong> Under the locked
+      <code>shadow-sidecar</code> evidence rule — shadow evidence qualifies a tier for a
+      gated pilot, only live gated evidence opens routing — this is <strong>one</strong>
+      usable pair of the ten a candidate tier needs. It qualifies nothing yet and changes no
+      routing. Its value is that the qualification programme now produces controlled pairs
+      at all, which before §11.5 it did not: the honest count of usable pairs prior to this
+      one is zero.</p>
+
+    <h2 id="integrated-verification">Integrated verification and real-data checks (2026-08-25)</h2>
+    <p><strong>Suite at the integrated head.</strong> Run
+      <code>r-20260825T124039432000-integrated-suite-at-head</code>, clean tree at
+      <code>248b98b</code>: <strong>2419 passed, 0 failed, 0 errors</strong>, and
+      <code>agent_overrides</code> confirmed absent from
+      <code>reckon/crew/dispatch.py</code>. This is the first measurement covering this
+      session's five merges together with a peer session's concurrent repair of the same
+      <code>main</code>, and it is what closes §11.6's gate on evidence rather than on a
+      delta argument. A peer-run green suite earlier at <code>819e63d</code> did
+      <em>not</em> cover §11.6, which came down a sibling line — ancestry checked rather
+      than assumed.</p>
+    <p><strong>§11.4 checked against a real shadow worktree.</strong> The controlled pair
+      left exactly the artifact §11.4 was written for. <code>crew gc</code> now reports
+      <code>disposable: 1, unintegrated: 0</code>, resolving that path to its committed
+      shadow record and its retained <code>shadow.patch</code>. Before the change the same
+      tree classified <code>unintegrated</code> and could never be reclaimed — the leak
+      that had blocked re-shadowing this very primary earlier in the session.</p>
+    <p><strong>§11.3 checked across the session's own runs.</strong> Twenty-five further
+      live runs landed while this plan executed. <code>live.passed</code> moved 240 → 265
+      and <code>live.failed</code> stayed at <strong>11</strong>, with the shadow verdicts
+      isolated in their own block. The live pass rate the §6 rule consumes still means
+      live.</p>
+
+    <h2 id="session-calibration">§6 measurement — this session's own routing evidence</h2>
+    <p>Six nodes, six first-attempt gate passes, no redispatches, no scope changes:</p>
+    <table>
+      <thead><tr><th>Node</th><th>Level</th><th>Configuration</th><th>Worker time</th></tr></thead>
+      <tbody>
+        <tr><td>ledger gate partition</td><td>guided</td><td>sol/medium</td><td>333 s</td></tr>
+        <tr><td>shadow config inheritance</td><td>guided</td><td>sol/medium</td><td>576 s</td></tr>
+        <tr><td>gc reclaims shadow worktrees</td><td>guided</td><td>sol/medium</td><td>450 s</td></tr>
+        <tr><td>shadow time-budget inheritance</td><td>guided</td><td>sol/medium</td><td>471 s</td></tr>
+        <tr><td>retire override parameter</td><td>exact</td><td><strong>spark</strong>/xhigh</td><td>249 s</td></tr>
+        <tr><td>integrated suite verification</td><td>exact</td><td>sol/high</td><td>261 s</td></tr>
+      </tbody>
+    </table>
+    <p>The four guided/<code>sol-medium</code> nodes ran 333–576 s, median 460 s (7.7 min)
+      against the 5.4-min median checkpoint 1 measured for that slice — longer, still far
+      under the ~13 min the same level costs at <code>high</code>, and 4/4 against the
+      slice's 86%. The spark node at 249 s sits on its pilot's 3.9-min median and takes the
+      pilot to <strong>9 of 20</strong> audited runs, its full diff audited and clean. Two
+      dispatches produced no evidence and are deliberately absent from the ledger: a
+      mis-based baseline (the dispatch omitted <code>--base</code> while the done-when named
+      a revision) and its correctly-based successor, discarded on learning the failures it
+      was measuring were sandbox artifacts. Both were specification errors, not worker
+      failures.</p>
+
+    <h2 id="drain-s11">Drain ledger — §11 execution session, 2026-08-25</h2>
+    <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T12:46Z
+
+  FOLLOWUP / DISCOVERED-WORK ROWS
+  §11.1 confounded pair                folded → shadow-inherits-primary-configuration
+  §11.3 ledger gate pooling            folded → ledger-summary-partitions-gates
+  §11.4 shadow worktree leak           folded → shadow-worktree-reclaimable-by-lineage
+  §11.5 time-budget confound           folded → shadow-inherits-primary-time-budget
+  §11.6 duplicated override parameter  folded → retire-vestigial-override-parameter
+  §11.6 gate attribution               folded → integrated-suite-at-head
+  first controlled qualification pair  folded → shadow r-20260825T122112217644
+  stale evidence anchors + 404 links   folded → coordinator state write (e6eec45)
+  §11 subsection order 1,4,5,2,3       folded → coordinator state write (plan v39-40)
+  plan summary over published bound    folded → coordinator state write (plan v37)
+
+  f-cer-003  §6 re-checkpoint          open, trigger-gated — NOT foldable now:
+                                       93 of ~100 further varied runs; 0 usable shadow
+                                       pairs of 10 (1 recorded, and it is this session's);
+                                       spark pilot 9 of 20. Three of its four components
+                                       are count-gated; the ~100 threshold is the lead's
+                                       locked scheduling choice, so it is not pre-empted.
+  §11.2 shadow claim asymmetry         foreign-owner → concurrency-and-schedule-visibility §5
+  ruff configured but not declared     foreign-owner → binding-rules-need-bound-checks
+  snapshot-not-contract assertions     foreign-owner → binding-rules-need-bound-checks
+  crew list omits member               foreign-owner → inflight-visibility
+  watch ticker says "promoted" for a
+    discarded pointer                  foreign-owner → inflight-visibility
+  drain count is project-scoped while
+    session responsibility is plan-
+    scoped                             foreign-owner → concurrency-and-schedule-visibility
+  §7c closed set has no disposition
+    for a trigger-gated standing
+    followup                           foreign-owner → reckon-skill-overhaul
+
+  LIVE RUN POINTERS
+  r-...-n-after-capture-evidence       still-working (peer, spa-surface-redesign)
+  r-...-n-declared-matches-configured  still-working (peer, binding-rules-need-bound-checks)
+  ---
+  followup rows: 18   foldable-remaining: 0   unreconciled-runs: 0</pre>
+    <p>Three notes on this ledger. <strong>Every <code>folded</code> row names a dispatched
+      node or a coordinator write</strong>, which is the check that separates a fold from a
+      stop with paperwork. <strong>f-cer-003 is the one open non-exempt row</strong>, and its
+      figures are recorded rather than asserted: its trigger is the plan's own declared
+      threshold, set by the locked <code>scheduling</code> decision, and 93 of ~100 with 0
+      usable pairs is not it. <strong>Two findings had no owning plan when they were
+      found</strong> — the ruff gap and the snapshot-assertion pattern — and both now point
+      at a real slug rather than a promise, because the peer session stood
+      <code>binding-rules-need-bound-checks</code> up while this session was closing. Both
+      are instances of one thesis: this repository states binding rules and binds no check to
+      them, which is a diagnosis its own <code>AGENTS.md</code> makes of itself in the naming
+      section before demonstrating the cure.</p>
+
     <h2 id="drain-checkpoint-1">Drain ledger — §6 checkpoint session, 2026-08-25</h2>
     <pre>DRAIN LEDGER — crew-effort-routing @ 2026-08-25T08:50Z
   f-cer-002  §6 checkpoint                      folded → checkpoint read; resolved
