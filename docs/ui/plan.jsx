@@ -117,7 +117,7 @@ function GateTable({ gates }) {
   );
 }
 
-function PlanInFlightBand({ runs }) {
+function PlanInFlightBand({ runs, effortHours }) {
   if (!runs.length) return null;
 
   const durationSeconds = (value) => {
@@ -141,12 +141,13 @@ function PlanInFlightBand({ runs }) {
     const elapsed = run.elapsed_seconds;
     const budget = durationSeconds(run.time_budget || run.budget_ceiling);
     const progress = budget && elapsed != null ? Math.min(100, Math.round((elapsed / budget) * 100)) : 0;
+    const hasPlanEffort = effortHours !== null && effortHours !== undefined && Number.isFinite(Number(effortHours));
+    const planEffort = hasPlanEffort ? `${Number(effortHours)} worker-hours` : "worker-hours not estimated";
     return (
-      <li className="r-inflight-run" style={{ display: "grid", gridTemplateColumns: "minmax(260px, 1fr) minmax(170px, .45fr) auto auto", alignItems: "center", gap: 14 }} key={`${run.member || "member"}:${run.section || "plan"}:${run.created_at || run.elapsed_seconds || "active"}`}>
+      <li className="r-inflight-run" key={`${run.member || "member"}:${run.section || "plan"}:${run.created_at || run.elapsed_seconds || "active"}`}>
         <div className="r-inflight-identity" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 10px" }}>
           <strong>{run.backend || run.harness || "harness"}</strong>
-          {run.model && <span>{run.model}</span>}
-          <span>{run.role || "worker"} · {run.effort || "default effort"}</span>
+          <span>{run.role || "worker"} · {planEffort}</span>
           <span>@{run.member || "unassigned"}</span>
           <span>{run.section || "whole plan"}</span>
         </div>
@@ -509,7 +510,7 @@ function Plan({ slug, onNav, focusMode = false, onToggleFocus, focusPosition, on
               <h1>{P.title || slug}</h1>
             </header>
           )}
-          <PlanInFlightBand runs={liveRuns} />
+          <PlanInFlightBand runs={liveRuns} effortHours={P.effort_hours} />
           {htmlFailure && (
             <ReaderSourceFailure
               source="authored plan HTML"
