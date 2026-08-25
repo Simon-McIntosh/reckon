@@ -123,6 +123,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
   const mountedProjects = mountedProjectRows(projects);
   const manageableProjects = manageableProjectRows(projects);
   const visibleProjects = visibleProjectRows(projects, hiddenProjects);
+  const visibleProjectNames = new Set(visibleProjects.map(project => project.project));
   const current = manageableProjects.find(project => project.project === currentProject);
   const snapshot = snapshotReceipt(M);
 
@@ -152,11 +153,11 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
         </summary>
         <div className="r-project-menu">
           <div className="r-project-menu-count">{visibleProjects.length} shown · {manageableProjects.length} mounted</div>
-          {visibleProjects.map(project => (
+          {manageableProjects.map(project => (
             <button
               type="button"
               key={project.project}
-              className={project.project === currentProject ? "active" : ""}
+              className={`${project.project === currentProject ? "active " : ""}${visibleProjectNames.has(project.project) ? "" : "is-hidden"}`.trim()}
               onClick={() => navProject(project.project)}
               aria-current={project.project === currentProject ? "page" : undefined}
             >
@@ -164,6 +165,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
               <strong>{project.project}</strong>
               <span>{project.plans_count} plans</span>
               <span>{project.live_count || 0} live</span>
+              {!visibleProjectNames.has(project.project) && <span className="r-project-visibility-state">hidden</span>}
             </button>
           ))}
           <button
