@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+from tests.test_spa_rendered_semantics import _rendered_probe
+
 
 ROOT = Path(__file__).resolve().parents[1]
 STYLES = (ROOT / "docs" / "ui" / "overview.css").read_text()
@@ -88,3 +90,76 @@ def test_projects_table_matches_the_canvas_columns_and_row_paddings() -> None:
     assert row["padding"] == "10px 12px"
     assert project["font-size"] == "12.5px"
     assert sprint["font-size"] == "13px"
+
+
+def test_empty_overview_sections_omit_their_heading_at_canvas_width(
+    tmp_path: Path,
+) -> None:
+    result = _rendered_probe(
+        tmp_path,
+        route="#cockpit",
+        wait_selector=".r-overview-view .r-ck-h",
+        probe="""(async () => {
+          const headings = [...document.querySelectorAll(".r-overview-view .r-ck-h")];
+          const emptyHeadings = headings.filter(heading => {
+            const content = heading.nextElementSibling;
+            return !content || content.getBoundingClientRect().height === 0;
+          }).map(heading => heading.textContent.trim());
+          const populatedHeadings = headings
+            .filter(heading => {
+              const content = heading.nextElementSibling;
+              return content && content.getBoundingClientRect().height > 0;
+            })
+            .map(heading => heading.textContent.trim());
+          const previousState = window.STATE;
+          const populatedHost = document.createElement("div");
+          populatedHost.id = "populated-overview";
+          document.body.appendChild(populatedHost);
+          window.STATE = {
+            ...previousState,
+            projects: [{
+              ...(previousState.projects?.[0] || {}),
+              milestones: [{ id: "delivery", name: "Delivery", status: "active", pct: 50 }],
+            }],
+          };
+          const populatedRoot = ReactDOM.createRoot(populatedHost);
+          populatedRoot.render(React.createElement(CockpitBody, {
+            onNav: () => {}, projects: [], fleetRuns: [], mountedProjectCount: 0,
+          }));
+          for (let attempt = 0; attempt < 100; attempt++) {
+            if (populatedHost.querySelector(".r-ms-tile")) break;
+            await new Promise(resolve => setTimeout(resolve, 20));
+          }
+          const populatedMilestoneHeading = [...populatedHost.querySelectorAll(".r-ck-h")]
+            .find(heading => heading.textContent.trim() === "Milestones");
+          const populatedMilestones = Boolean(
+            populatedMilestoneHeading
+            && populatedMilestoneHeading.nextElementSibling?.querySelector(".r-ms-tile")
+          );
+          populatedRoot.unmount();
+          populatedHost.remove();
+          window.STATE = previousState;
+          return {
+            ok: innerWidth === 1374
+              && emptyHeadings.length === 0
+              && populatedHeadings.includes("Fleet")
+              && populatedMilestones,
+            viewportWidth: innerWidth,
+            emptyHeadings,
+            populatedHeadings,
+            populatedMilestones,
+          };
+        })()""",
+        remove_signal="""document.querySelectorAll(
+          ".r-overview-fleet > :not(.r-ck-h)"
+        ).forEach(node => node.remove())""",
+    )
+
+    assert result["baseline"]["ok"] is True
+    assert result["baseline"]["viewportWidth"] == 1374
+    assert result["baseline"]["emptyHeadings"] == []
+    assert "Milestones" not in result["baseline"]["populatedHeadings"]
+    assert "Fleet" in result["baseline"]["populatedHeadings"]
+    assert result["baseline"]["populatedMilestones"] is True
+    assert result["removed"]["ok"] is False
+    assert result["removed"]["emptyHeadings"] == ["Fleet"]
