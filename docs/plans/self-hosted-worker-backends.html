@@ -24,7 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="7">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/audit-metrics.json">
+<meta name="plan-impl" content="0.222">
 </head>
 <body>
   <main class="plan-doc">
@@ -235,6 +237,17 @@
       picking, not the model.
     </p>
     <p>
+      <strong>Ten pairs is a feasibility threshold and not an inferential one, and this
+      section must not be read as though it were.</strong> The audit in &sect;7 computed
+      the powered depth: at the measured live base rate of 93.305%, detecting a
+      ten-percentage-point difference at 80% power needs <strong>161 pairs</strong>, so
+      ten is 6.21% of it. What ten controlled pairs can establish is that a candidate is
+      not catastrophically broken &mdash; that it holds fences, writes manifests, and
+      passes checks at all. What they cannot establish is that it is as good as the
+      incumbent. &sect;5's recommendation is bounded by that and says so, rather than
+      quoting a rate the sample cannot support.
+    </p>
+    <p>
       <strong>Done-when:</strong> at least ten controlled shadow pairs are committed with
       lineage recording backend, launch and model as the only substituted dimensions;
       each pair reports its gate verdict against the primary's own named check, worker
@@ -353,6 +366,57 @@
       passes with no new failures against the base revision.
     </p>
 
+    <h2 id="s7">&sect;7 &mdash; The gate is an assertion, not a measurement</h2>
+    <p>
+      &sect;6 found the failure classes pooled into one word. The audit that produced
+      &sect;4's powered-depth figure found something upstream of that and worse: nothing
+      in the record establishes that a gate verdict was ever measured. Tracing the
+      promotion path, <code>promotion::complete</code> accepts the caller's
+      <code>gate</code> string and passes it to <code>ledger::build_record</code>, which
+      validates that it is one of three words and stores it. No manifest is read, no
+      named check is re-run, no evidence is consulted. Across the whole corpus,
+      <strong>0 of 1,534 records carry a gate command, an exit code, a log path, or an
+      evidence digest.</strong>
+    </p>
+    <p>
+      The consequence is precise, and it is not that coordinators are dishonest. It is
+      that a verdict is unfalsifiable after the fact: a reader cannot tell an audited
+      pass from a rubber-stamped one, and the two are worth different amounts. The audit
+      ranked eleven weaknesses by direction of bias and <strong>nine of them inflate</strong>
+      a candidate's apparent pass rate. That is the dangerous direction &mdash; the
+      errors push toward adopting a model that has not earned it.
+    </p>
+    <p>
+      Three of the nine are structural rather than statistical, and they are what this
+      section fixes. The named check is not identifiable, so nothing prevents a pair
+      being scored on a different check from its primary's. Control is recorded but not
+      enforced: <code>capabilities::derive_capabilities</code> branches on
+      <code>lineage.kind</code> and never reads <code>lineage.configuration</code>, so
+      the one confounded shadow in the corpus is pooled with the one controlled one.
+      And node choice is discretionary &mdash; <code>crew shadow</code> accepts any
+      eligible committed run id, with no sampling frame recorded, which is how both
+      existing shadows came to target a single primary.
+    </p>
+    <p>
+      This is folded here rather than handed off because it is the same plan's own
+      question. &sect;5 cannot render a verdict on evidence whose provenance is absent,
+      and the fold is converging rather than creeping: each layer's blocker has been
+      narrower than its parent's and the write scope has stayed inside the ledger and
+      promotion modules.
+    </p>
+    <p>
+      <strong>Done-when:</strong> a run promoted with a passing gate carries the check
+      that produced it &mdash; command, exit status, and a log path or digest &mdash;
+      with a passing verdict refused when they are absent, asserted by a test; a single
+      accessor derives whether a shadow was controlled by comparing the recorded
+      primary and shadow configurations, is the only place that predicate exists, and
+      is consulted by both completion and capability derivation so a confounded row is
+      never pooled with a controlled one, asserted by a test over the two existing
+      shadow records; qualification depth counts distinct primary run ids rather than
+      shadow rows; and the existing suite passes with no new failures against the base
+      revision.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="endpoint-dialect" data-choice="anthropic-messages" data-by="reckon-create, from measured probes" data-when="2026-08-26">
@@ -398,6 +462,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260826T045020895396-n-backend-env-reuse-map" data-who="codex-a" data-when="2026-08-26T04:55:41Z">
+    <div class="r-comment-body"><p>Reuse map: all four touch points have reusable mechanisms needing bounded extensions; shadow substrate already replays at base sha with controlled substitution; no existing symbol computes pairwise candidate-versus-incumbent rates</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260826T045236576569-n-eval-robustness-audit" data-who="codex-b" data-when="2026-08-26T05:03:09Z">
+    <div class="r-comment-body"><p>Eval audit over 1534 records / 12 mounts: 1 controlled shadow pair against a floor of 10 and a powered target of 161; gate is coordinator-asserted with 0 of 1534 records carrying a gate command, exit code or log; 11 weaknesses, 9 inflating</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

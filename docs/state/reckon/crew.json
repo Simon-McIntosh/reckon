@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T06:44:02",
+  "updated": "2026-08-26T07:03:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -23338,9 +23338,181 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T045020895396-n-backend-env-reuse-map",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a72",
+        "node": "n-backend-env-reuse-map",
+        "node_definition": {
+          "done_when": "The report at the assigned path names every existing module, symbol, schema field, config layer and test already in reach for (a) declaring per-backend configuration in flight.yaml and resolving it through the layered merge, (b) translating a backend into a runnable invocation and spawning it, and (c) shadow-pair qualification and its ledger fields; each entry carries a one-line fitness verdict of reuse, extend or unfit-because; and the report states explicitly which of the four touch points named in the plan section already have a mechanism and which need new code",
+          "estimated_hours": null,
+          "goal": "Produce a reuse map for carrying per-backend environment into a spawned worker process and for qualifying a candidate backend through shadow pairs",
+          "id": "n-backend-env-reuse-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045020895396-n-backend-env-reuse-map/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a72",
+          "spec_level": "open",
+          "time_budget": "12m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-26T04:50:24Z",
+        "completed_at": "2026-08-26T04:55:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 317,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 317,
+        "stalled": false,
+        "time_budget": "12m",
+        "base_sha": "8193275c62cfa9807cccd95bee853e4fdc7afd38",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045020895396-n-backend-env-reuse-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e4-7ad0-7d90-854c-9051ebabb2a8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 2823168,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 2978006,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 13837,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2796
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T045236576569-n-eval-robustness-audit",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a74",
+        "node": "n-eval-robustness-audit",
+        "node_definition": {
+          "done_when": "The report at the assigned path embeds every command it ran with that command's numeric output, and states: the count of committed shadow records across all mounted ledgers split into controlled and confounded, with the field comparison that classifies each; the list of run-record fields a shadow comparison consumes, each labelled worker-supplied or reckon-derived, cited to the function that writes it; whether a shadow gate verdict can reach the ledger with no coordinator reading evidence, answered by tracing the complete and shadow code paths and naming the parameter that decides it; the live gate pass rate over all mounted ledgers as passed over usable with the counts; the number of shadow pairs at which a binary gate at that base rate would separate two backends differing by ten percentage points at eighty percent power, computed and shown; and a table of every weakness found with its direction of bias stated as inflates or deflates the candidate pass rate, and the smallest code or contract change that would close it",
+          "estimated_hours": null,
+          "goal": "Audit what a shadow-pair comparison can establish about a candidate backend, reporting each weakness with the code path or count that evidences it",
+          "id": "n-eval-robustness-audit",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a74",
+          "spec_level": "open",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/shadow-eval-robustness.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "codex-b",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-26T04:52:38Z",
+        "completed_at": "2026-08-26T05:03:09Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 631,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 631,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "b84cc058d157c76109b63b26a82d58ae48f208b9",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e7-fa6e-7333-af51-50f8a42a3220",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 2661888,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3040802,
+            "output_tokens": 11672,
+            "output_tokens_cumulative": 26908,
+            "reasoning_output_tokens": 1455,
+            "reasoning_output_tokens_cumulative": 8027
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 410
+    "_version": 412
   }
 }
