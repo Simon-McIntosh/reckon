@@ -25,12 +25,13 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable
+from typing import Any
 
 from reckon._schema import (
     SPRINT_STATUS_ENUM,
@@ -39,12 +40,15 @@ from reckon._schema import (
     NorthStar,
     Sprint,
     TimelineEntry,
+    parse_plan_ref,
 )
 from reckon.lifecycle import COMPLETED_STATUSES
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
-RESOURCE_TYPES = frozenset({"sprint", "milestone", "blocker", "timeline", "project"})
+RESOURCE_TYPES = frozenset(
+    {"sprint", "milestone", "blocker", "timeline", "project", "review"}
+)
 LIFECYCLE_ITEM_FIELDS = frozenset({"status", "impl"})
 NORTH_STAR_ADVISORY_CAP = 5
 MIGRATION_COMPOSED_DERIVATIONS = frozenset(
@@ -82,6 +86,29 @@ _META_RE = re.compile(
 _SCRIPT_RE = re.compile(
     rf"""<script\b[^>]*\bid=["']{RESOURCE_SCRIPT_ID}["'][^>]*>(?P<data>.*?)</script>""",
     re.IGNORECASE | re.DOTALL,
+)
+_FINDING_CODE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_REVIEW_CATEGORIES = frozenset(
+    {"sprint", "dag", "lifecycle", "provenance", "references", "calibration"}
+)
+_REVIEW_SEVERITIES = frozenset({"error", "warn", "info"})
+_REVIEW_SUBJECT_KINDS = frozenset(
+    {"plan", "sprint", "milestone", "blocker", "followup", "decision", "project"}
+)
+_REVIEW_ACTIONS = frozenset(
+    {
+        "close",
+        "resequence",
+        "rescope",
+        "recalibrate",
+        "resolve",
+        "repair-pointer",
+        "reopen",
+    }
+)
+_REVIEW_VALIDATIONS = frozenset({"confirmed", "stale", "conflicting"})
+_PRIORITY_REASONS = frozenset(
+    {"critical-path", "unlock", "deadline", "roi", "decision-first"}
 )
 
 
@@ -182,6 +209,10 @@ def resource_path(
         if resource_id != "timeline":
             raise ValueError("timeline resource id must be 'timeline'")
         return docs_dir / "state" / project / "timeline.html"
+    if resource_type == "review":
+        if resource_id != "review":
+            raise ValueError("review resource id must be 'review'")
+        return docs_dir / "state" / project / "review.html"
     if resource_type == "project":
         if resource_id != "project":
             raise ValueError("project resource id must be 'project'")
@@ -284,6 +315,18 @@ def _render_resource(
             )
             rows.append(f'<li data-id="{eid}" data-event="{payload}">{eid}</li>')
         rows.append("</ol>")
+    elif resource_type == "review":
+        rows.append('<ol data-reckon="review-findings">')
+        for finding in state.get("findings", []):
+            finding_id = html.escape(str(finding.get("id", "")), quote=True)
+            code = html.escape(str(finding.get("code", "")))
+            payload = html.escape(
+                json.dumps(finding, ensure_ascii=False, sort_keys=True), quote=True
+            )
+            rows.append(
+                f'<li data-id="{finding_id}" data-finding="{payload}">{code}</li>'
+            )
+        rows.append("</ol>")
     else:
         rows.append(
             f'<dl data-reckon="{resource_type}"><dt>Identity</dt>'
@@ -385,7 +428,201 @@ def _read_resource_unchecked(
         data = _read_project_json(path, project)
     else:
         data = _parse_resource(path, resource_type, resource_id)
+    if resource_type == "review":
+        data = deepcopy(data)
+        for finding in data.get("findings", []):
+            finding["status"] = "resolved" if finding.get("resolved_at") else "open"
     return data, int(data.get("version", 0) or 0)
+
+
+def _review_date(value: Any, field: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field} must be a YYYY-MM-DD date")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{field} must be a YYYY-MM-DD date") from exc
+    if parsed.isoformat() != value:
+        raise ValueError(f"{field} must be a YYYY-MM-DD date")
+    return value
+
+
+def _review_text(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be non-empty text")
+    return value
+
+
+def _review_enum(value: Any, field: str, allowed: frozenset[str]) -> str:
+    if value not in allowed:
+        raise ValueError(f"{field} must be one of {', '.join(sorted(allowed))}")
+    return str(value)
+
+
+def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
+    reviewed_at = _review_date(data.get("reviewed_at"), "reviewed_at")
+    reviewed_by = _review_text(data.get("reviewed_by"), "reviewed_by")
+    basis = _review_text(data.get("basis"), "basis")
+    findings = data.get("findings", [])
+    if not isinstance(findings, list):
+        raise TypeError("findings must be a list")
+    validated_findings: list[dict[str, Any]] = []
+    finding_ids: set[str] = set()
+    finding_fields = {
+        "id",
+        "code",
+        "category",
+        "severity",
+        "subject",
+        "evidence",
+        "recommended_action",
+        "validated",
+        "checked_at",
+        "resolved_at",
+        "resolved_by",
+        "outcome",
+        "status",
+    }
+    for index, raw in enumerate(findings):
+        field = f"findings[{index}]"
+        if not isinstance(raw, dict):
+            raise TypeError(f"{field} must be an object")
+        unexpected = set(raw) - finding_fields
+        if unexpected:
+            raise ValueError(f"{field}.{min(unexpected)} is not supported")
+        finding_id = _review_text(raw.get("id"), f"{field}.id")
+        _safe_segment(finding_id, f"{field}.id")
+        if finding_id in finding_ids:
+            raise ValueError(f"{field}.id duplicates {finding_id!r}")
+        finding_ids.add(finding_id)
+        code = _review_text(raw.get("code"), f"{field}.code")
+        if not _FINDING_CODE_RE.fullmatch(code):
+            raise ValueError(f"{field}.code must be kebab-case")
+        category = _review_enum(raw.get("category"), f"{field}.category", _REVIEW_CATEGORIES)
+        severity = _review_enum(raw.get("severity"), f"{field}.severity", _REVIEW_SEVERITIES)
+        subject = raw.get("subject")
+        if not isinstance(subject, dict):
+            raise TypeError(f"{field}.subject must be an object")
+        if set(subject) != {"kind", "id"}:
+            raise ValueError(f"{field}.subject must contain only kind and id")
+        subject_kind = _review_enum(
+            subject.get("kind"), f"{field}.subject.kind", _REVIEW_SUBJECT_KINDS
+        )
+        subject_id = _review_text(subject.get("id"), f"{field}.subject.id")
+        if subject_kind == "plan":
+            if parse_plan_ref(subject_id) is None:
+                raise ValueError(f"{field}.subject.id is not a valid plan ref")
+        else:
+            try:
+                _safe_segment(subject_id, f"{field}.subject.id")
+            except ValueError as exc:
+                raise ValueError(f"{field}.subject.id is malformed") from exc
+        evidence = raw.get("evidence")
+        if not isinstance(evidence, list) or not evidence:
+            raise ValueError(f"{field}.evidence must be a non-empty list")
+        evidence = [
+            _review_text(line, f"{field}.evidence[{line_index}]")
+            for line_index, line in enumerate(evidence)
+        ]
+        action = raw.get("recommended_action")
+        if not isinstance(action, dict):
+            raise TypeError(f"{field}.recommended_action must be an object")
+        if set(action) != {"verb", "owner_skill", "detail"}:
+            raise ValueError(
+                f"{field}.recommended_action must contain only verb, owner_skill, and detail"
+            )
+        verb = _review_enum(
+            action.get("verb"), f"{field}.recommended_action.verb", _REVIEW_ACTIONS
+        )
+        owner_skill = _review_text(
+            action.get("owner_skill"), f"{field}.recommended_action.owner_skill"
+        )
+        detail = _review_text(
+            action.get("detail"), f"{field}.recommended_action.detail"
+        )
+        validation = _review_enum(
+            raw.get("validated"), f"{field}.validated", _REVIEW_VALIDATIONS
+        )
+        checked_at = _review_date(raw.get("checked_at"), f"{field}.checked_at")
+        resolved_at = raw.get("resolved_at") or ""
+        resolved_by = raw.get("resolved_by") or ""
+        outcome = raw.get("outcome") or ""
+        if resolved_at:
+            try:
+                datetime.fromisoformat(str(resolved_at))
+            except ValueError as exc:
+                raise ValueError(f"{field}.resolved_at must be an ISO date or datetime") from exc
+            resolved_by = _review_text(resolved_by, f"{field}.resolved_by")
+            outcome = _review_text(outcome, f"{field}.outcome")
+        elif resolved_by or outcome:
+            raise ValueError(f"{field}.resolved_at is required for resolution fields")
+        validated_findings.append(
+            {
+                "id": finding_id,
+                "code": code,
+                "category": category,
+                "severity": severity,
+                "subject": {"kind": subject_kind, "id": subject_id},
+                "evidence": evidence,
+                "recommended_action": {
+                    "verb": verb,
+                    "owner_skill": owner_skill,
+                    "detail": detail,
+                },
+                "validated": validation,
+                "checked_at": checked_at,
+                "resolved_at": str(resolved_at),
+                "resolved_by": str(resolved_by),
+                "outcome": str(outcome),
+            }
+        )
+    priority = data.get("priority", [])
+    if not isinstance(priority, list):
+        raise TypeError("priority must be a list")
+    validated_priority: list[dict[str, Any]] = []
+    priority_refs: set[str] = set()
+    for index, raw in enumerate(priority):
+        field = f"priority[{index}]"
+        if not isinstance(raw, dict):
+            raise TypeError(f"{field} must be an object")
+        if set(raw) != {"rank", "ref", "reasons", "detail"}:
+            raise ValueError(f"{field} must contain only rank, ref, reasons, and detail")
+        rank = raw.get("rank")
+        if type(rank) is not int or rank != index + 1:
+            raise ValueError(f"{field}.rank must be contiguous from 1")
+        ref = _review_text(raw.get("ref"), f"{field}.ref")
+        if parse_plan_ref(ref) is None:
+            raise ValueError(f"{field}.ref is not a valid plan ref")
+        if ref in priority_refs:
+            raise ValueError(f"{field}.ref duplicates {ref!r}")
+        priority_refs.add(ref)
+        reasons = raw.get("reasons")
+        if not isinstance(reasons, list) or not reasons:
+            raise ValueError(f"{field}.reasons must be a non-empty list")
+        if len(reasons) != len(set(reasons)):
+            raise ValueError(f"{field}.reasons must be unique")
+        reasons = [
+            _review_enum(reason, f"{field}.reasons[{reason_index}]", _PRIORITY_REASONS)
+            for reason_index, reason in enumerate(reasons)
+        ]
+        validated_priority.append(
+            {
+                "rank": rank,
+                "ref": ref,
+                "reasons": reasons,
+                "detail": _review_text(raw.get("detail"), f"{field}.detail"),
+            }
+        )
+    return {
+        "id": "review",
+        "type": "review",
+        "version": int(data.get("version", 0) or 0),
+        "reviewed_at": reviewed_at,
+        "reviewed_by": reviewed_by,
+        "basis": basis,
+        "findings": validated_findings,
+        "priority": validated_priority,
+    }
 
 
 def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -461,6 +698,8 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
             "version": int(data.get("version", 0) or 0),
             "events": validated,
         }
+    elif resource_type == "review":
+        cleaned = _validate_review(cleaned)
     elif resource_type == "project":
         bad = PROJECT_DERIVED_FIELDS & set(cleaned) - {"type", "id", "version"}
         if bad:
@@ -1558,6 +1797,13 @@ def apply_resource_ops(
                 raise ValueError(f"unsupported {resource_type} set path {path!r}")
             if resource_type == "timeline":
                 raise ValueError("timeline is append-only")
+            if resource_type == "review" and path not in {
+                "reviewed_at",
+                "reviewed_by",
+                "basis",
+                "priority",
+            }:
+                raise ValueError(f"unsupported review set path {path!r}")
             working[path] = op.get("value")
         elif verb == "append":
             target = op.get("target")
@@ -1581,10 +1827,35 @@ def apply_resource_ops(
                     raise ValueError(f"{slug!r} already exists in sprint {resource_id}")
                 items.append(item)
                 working["items"] = items
+            elif resource_type == "review" and target == "findings":
+                finding = dict(op.get("item") or {})
+                finding_id = finding.get("id")
+                if not finding_id:
+                    raise ValueError("findings[].id must be non-empty")
+                findings = list(working.get("findings", []))
+                if any(row.get("id") == finding_id for row in findings):
+                    raise ValueError(f"findings[].id duplicates {finding_id!r}")
+                findings.append(finding)
+                working["findings"] = findings
             else:
                 raise ValueError(
                     f"unsupported append target {target!r} for {resource_type}"
                 )
+        elif verb == "resolve" and resource_type == "review":
+            if op.get("target") != "findings":
+                raise ValueError("review resolve target must be findings")
+            finding_id = str(op.get("id", ""))
+            findings = list(working.get("findings", []))
+            match = next(
+                (row for row in findings if str(row.get("id", "")) == finding_id),
+                None,
+            )
+            if match is None:
+                raise ValueError(f"findings[].id {finding_id!r} was not found")
+            match.pop("status", None)
+            match["resolved_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            match["resolved_by"] = _review_text(op.get("by"), "findings[].resolved_by")
+            match["outcome"] = _review_text(op.get("outcome"), "findings[].outcome")
         elif verb == "move" and resource_type == "sprint":
             if op.get("target") != "sprint_item":
                 raise ValueError("sprint move target must be sprint_item")

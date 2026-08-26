@@ -686,7 +686,14 @@ def _read_plan_view(
                 detail = str(legacy.get("detail") or "")
                 if (
                     selector.type
-                    in {"sprint", "milestone", "blocker", "timeline", "project"}
+                    in {
+                        "sprint",
+                        "milestone",
+                        "blocker",
+                        "timeline",
+                        "project",
+                        "review",
+                    }
                     and "distributed_resource_inactive" in detail
                 ):
                     data, version = _read_legacy_project_resource(
@@ -850,9 +857,9 @@ _DOS_DONTS = {
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, or followups.<id>.prompt; or one top-level field on a selected sprint/milestone/blocker/project resource. impl clamps to 0..1 and is plan-only.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events. followup prompt is one /reckon-ship invocation line.",
-    "resolve": "{op:'resolve', target:'followups'|'questions', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, or followups.<id>.prompt; one top-level field on a selected sprint/milestone/blocker/project resource; or review scalars and the whole priority list. impl clamps to 0..1 and is plan-only.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-ship invocation line.",
+    "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status is derived from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
@@ -2244,7 +2251,7 @@ def _edit_plan(
                 "doc_type": canonical_doc_type,
                 "detail": str(exc),
             }
-        except (ValueError, FileNotFoundError) as exc:
+        except (TypeError, ValueError, FileNotFoundError) as exc:
             return {
                 "ok": False,
                 "error": "resource_edit_error",
