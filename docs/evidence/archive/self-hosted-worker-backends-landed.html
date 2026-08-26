@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="self-hosted-worker-backends-landed">
+  <meta name="plan-title" content="Self-Hosted Worker Backends — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence: the transport gap, the failure-class denominator, what a shadow pair can prove, and the local endpoint's qualification.">
+  <meta name="plan-evidence-for" content="self-hosted-worker-backends">
+  <meta name="plan-verifies" content="self-hosted-worker-backends#s2,self-hosted-worker-backends#s3,self-hosted-worker-backends#s6,self-hosted-worker-backends#s7">
+  <meta name="plan-tags" content="crew,reckon-tooling,evidence">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>Self-Hosted Worker Backends — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="probes">Endpoint capability probes</h2>
+    <p>
+      Measured directly against the served endpoint before any code was written, because
+      the whole plan is worthless if the model cannot hold an agent loop. Each row is a
+      command whose output was read, not an inference from documentation.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Probe</th><th>Result</th><th>Consequence</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Model listing</td>
+          <td>One model, <code>max_model_len</code> 524,288</td>
+          <td>Context exceeds the incumbent's working range</td>
+        </tr>
+        <tr>
+          <td>OpenAI chat completions and responses</td>
+          <td>200</td>
+          <td>One of the two translated dialects is reachable</td>
+        </tr>
+        <tr>
+          <td>Anthropic messages</td>
+          <td>200 on bearer; <strong>401 on <code>x-api-key</code></strong></td>
+          <td>The other dialect is reachable, on one auth header only</td>
+        </tr>
+        <tr>
+          <td>Tool schema, single turn</td>
+          <td><code>stop_reason: tool_use</code>, arguments correctly extracted</td>
+          <td>The model can call a tool</td>
+        </tr>
+        <tr>
+          <td>Full loop: call &rarr; result &rarr; answer</td>
+          <td>Consumed the tool result, answered <code>1</code> in 2 output tokens</td>
+          <td><strong>The loop closes</strong>, and under a task the model is terse</td>
+        </tr>
+        <tr>
+          <td>Is it keyed? No header / empty bearer / <code>no-auth</code> / arbitrary</td>
+          <td><strong>401 on all four</strong></td>
+          <td>A host-local token is required; no provider account is</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>A bare-prompt probe measured the wrong thing.</strong> With no tools and no
+      task, &ldquo;say PONG&rdquo; produced an essay on the game of Pong, which read as a
+      model that would ignore a fence. Given a tool schema and a concrete job the same
+      model answered in two tokens. The reversal is the finding: fence adherence under a
+      real task is not predicted by verbosity under an empty one, and neither is settled
+      by a single turn &mdash; only a dispatched node tests it.
+    </p>
+    <p>
+      <strong>The keyed result contradicts the deployed wrapper.</strong> The wrapper
+      comments that the server accepts requests with no auth header and strips both auth
+      variables on that path. It works only because its key lookup finds a token in a
+      <code>0640</code> file owned by the one user who has been testing it; for anyone
+      else the lookup falls through to a literal <code>no-auth</code> bearer and the
+      server returns 401. The defect is invisible to whoever tests it as themselves, and
+      it lives in the wrapper's generator, outside this repository.
+    </p>
+
+    <h2 id="s2">&sect;2 &mdash; The transport gap, and a fence with the wrong blast radius</h2>
+    <p>
+      A backend declared ten keys and none of them carried an endpoint; the single worker
+      <code>Popen</code> passed no environment. So a self-hosted server was reachable only
+      by mutating the orchestrator's own environment &mdash; global, unrecorded, and
+      identical for every node in a wave. Naming a wrapper directly did not help either:
+      dialect selection matches the command's basename, so an unknown command was refused
+      before launch.
+    </p>
+    <p>
+      Landed as an optional environment map on the backend class, resolved through the
+      layered config with per-leaf provenance and merged over the inherited environment at
+      the spawn boundary. <strong>Commit <code>072112a</code></strong>, 7 files, 328
+      insertions, 5 tests. Both generated schema artifacts regenerated byte-identically
+      (<code>_flight_schema.py</code> sha256 <code>b7e8781a&hellip;</code>,
+      <code>flight.schema.json</code> sha256 <code>61edc890&hellip;</code>); full suite
+      <strong>2,460 passed</strong>.
+    </p>
+    <p>
+      One assertion in that node's own contract was carried deliberately and is the reason
+      no credential can leak: the persisted agent configuration must remain exactly
+      backend, launch, model, effort and sandbox. The run ledger is committed to git, so
+      an environment value reaching the run record would put a secret in history.
+    </p>
+    <h3 id="s2-blast-radius">The correction, and why the specification caused it</h3>
+    <p>
+      The section's done-when asked for an unset reference to raise a typed error naming
+      the variable. That is correct for a backend a call routes to and wrong for every
+      other caller. Implemented as eager whole-config expansion, one unresolved reference
+      in one <em>defined-and-defaulted-by-nothing</em> backend became a hard failure for
+      every dispatch in the project. A concurrent session's work stopped on it within a
+      minute of the config landing, and reported it.
+    </p>
+    <p>
+      The precedent to follow already existed: a backend whose command is absent reports
+      <code>command_found: false</code> as an availability finding and breaks nothing.
+      Expansion now happens at selection; an unresolved reference stays visible through
+      resolution in that same availability shape, and the typed error naming both the
+      variable and the <code>backends.&lt;name&gt;.environment.&lt;key&gt;</code> path
+      survives at launch-plan construction for the backend that actually carries it.
+      <strong>Commit <code>5dbf304</code></strong>, 3 files, 3 tests added; full suite
+      <strong>2,465 passed</strong>.
+    </p>
+    <p>
+      <strong>The class of defect is worth naming: a fence with the wrong blast radius.</strong>
+      The check was not wrong and it did not fail to fire &mdash; it fired correctly, on
+      callers who had nothing to do with what it was checking. It passed its own author's
+      testing because that testing ran in a shell which happened to have the variable
+      exported, which is why a single-session test cannot see this class at all.
+    </p>
+
+    <h2 id="s3">&sect;3 &mdash; The local endpoint routes, by a better mechanism than specified</h2>
+    <p>
+      The section specified an environment map naming the endpoint. What landed instead
+      names the local <em>wrapper</em> as the backend's command, registered as an alias of
+      the agent CLI's dialect because the wrapper execs that CLI with its arguments
+      unchanged. The wrapper resolves the endpoint and its token itself, so <strong>no
+      secret passes through Reckon at all</strong> &mdash; strictly better against a
+      constraint that the work must run without provider API keys.
+      <strong>Commits <code>479d286</code>, <code>6ddb052</code></strong>.
+    </p>
+    <p>
+      Routing is inert as the ladder requires, verified rather than asserted: a dry-run
+      dispatch resolves the incumbent backend by default and the local backend only under
+      an explicit override.
+    </p>
+    <h3 id="s3-end-to-end">The end-to-end measure, delivered by an unrelated dispatch</h3>
+    <p>
+      A worker ran on the served model through this backend, took a worktree, executed
+      commands and returned a well-formed manifest with structured evidence. The
+      qualitatively important part is not that it succeeded: <strong>it contradicted its
+      own dispatch's premise.</strong> The node assumed one accelerator; the model
+      reported a different one and that inference routed to a remote host, and filed the
+      discrepancy as a follow-on rather than agreeing with the prompt. A worker that
+      reports its dispatch is wrong is doing the thing a fence depends on.
+    </p>
+    <p>
+      That run's landing comment went to a plan at implementation 1.0, because that is
+      where it was dispatched. This is itself the recorded finding: evidence dispatched
+      against a completed plan lands in a container the roadmap excludes from every open
+      path, which is the mechanism by which work becomes invisible while leaving a paper
+      trail that looks like tracking.
+    </p>
+    <h3 id="s3-layer">Machine-specific routing does not belong in a committed layer</h3>
+    <p>
+      The backend was first written into the project layer, which is committed. The
+      executable it names exists only on one cluster, so a site-specific path was
+      travelling to every checkout of a repository whose first principle is that it
+      hardcodes nothing site-specific. Moved to the host layer, which is also what
+      &ldquo;global config&rdquo; means. Effort was pinned in the same move: unpinned, a
+      backend inherits whichever reasoning preference the interactive CLI holds, and the
+      first run's agent record accordingly reads <code>none</code> &mdash; a value the
+      ledger cannot attribute to anything.
+    </p>
+
+    <h2 id="s6">&sect;6 &mdash; Only 17 of 89 recorded failures indicted a worker</h2>
+    <p>
+      Every verdict about a candidate backend is a ratio, and the denominator was
+      contaminated. Across three committed ledgers, 1,281 usable records carried 1,192
+      passed and 89 failed. Reading the 89 showed <code>gate: failed</code> serving as the
+      only word for at least six distinct outcomes. <strong>Commit <code>bc95a74</code></strong>,
+      4 files, 8 tests; focused 83 passed, full suite <strong>2,457 passed</strong>.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Class</th><th>Count</th><th>What it indicts</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>negative-result</code> — the experiment returning what it was built to return</td><td>28</td><td>Nothing; it is a result</td></tr>
+        <tr><td><code>work-rejected</code> — a delivered diff failing its named check</td><td><strong>17</strong></td><td>The worker, or its specification</td></tr>
+        <tr><td><code>infrastructure-failure</code> — died producing nothing</td><td>11</td><td>The transport</td></tr>
+        <tr><td>unclassified — empty outcome, listed by run id, not forced into a class</td><td>11</td><td>Unknown, and recorded as unknown</td></tr>
+        <tr><td><code>pre-existing-failure</code> — a check failing on the tree the worker was handed</td><td>10</td><td>The base revision</td></tr>
+        <tr><td><code>correct-refusal</code> — the worker stopping at a fence</td><td>6</td><td>Nothing; the fence working</td></tr>
+        <tr><td><code>malformed-node</code> — the node's own fences were wrong</td><td>6</td><td>The coordinator that wrote it</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Worker pass rate is 1,192/1,209 = 98.6%, against the pooled 1,192/1,281 =
+      93.1%.</strong> One record reading &ldquo;225 compared / 225 matched / 0
+      mismatches&rdquo; was stored as a failure; three others read &ldquo;refused
+      correctly&rdquo;. Two consequences are load-bearing rather than cosmetic. A
+      candidate's measured rate is depressed by its refusal and infrastructure share, and
+      nothing makes that share equal between a candidate and the incumbent it is compared
+      to. And the small-model lane's circuit breaker closes a lane on two consecutive gate
+      failures &mdash; which, on the old vocabulary, two correct refusals would have
+      tripped.
+    </p>
+
+    <h2 id="s7">&sect;7 &mdash; The gate was an assertion, not a measurement</h2>
+    <p>
+      An independent audit of what a shadow pair can establish returned the harder result.
+      Tracing the promotion path, completion accepts the caller's gate string and passes it
+      to the ledger, which validates that it is one of three words and stores it: no
+      manifest is read, no named check is re-run. Across 1,534 records over 12 mounts and
+      4 populated ledgers, <strong>0 carry a gate command, exit code, log path or evidence
+      digest</strong>. A reader cannot distinguish an audited pass from a rubber-stamped
+      one.
+    </p>
+    <p>
+      The audit ranked eleven weaknesses by direction of bias: <strong>nine inflate</strong>
+      a candidate's apparent pass rate and two deflate it. Inflation is the dangerous
+      direction, because the errors argue for adopting a model that has not earned it.
+      Three are structural rather than statistical &mdash; the named check is not
+      identifiable, so nothing prevents a pair being scored on a different check from its
+      primary's; control is recorded but not enforced, because capability derivation
+      branches on lineage <em>kind</em> and never reads lineage <em>configuration</em>, so
+      the corpus's one confounded shadow pools with its one controlled one; and node choice
+      is discretionary, with no sampling frame recorded, which is how both pre-existing
+      shadows came to target a single primary.
+    </p>
+    <p>
+      <strong>It also falsified this plan's own evidence floor.</strong> Ten pairs is a
+      feasibility threshold, not an inferential one: at the measured 93.305% live base
+      rate, detecting a ten-percentage-point difference at 80% power requires
+      <strong>161 pairs</strong>, so ten is 6.21% of the powered depth. Ten controlled
+      pairs can show a candidate is not catastrophically broken. They cannot show it is as
+      good as the incumbent, and no recommendation built on them may claim otherwise.
+    </p>
+
+    <h2 id="s4">&sect;4 &mdash; Shadow qualification</h2>
+    <p>
+      The sampling frame was computed rather than chosen, in direct answer to the audit's
+      discretionary-selection finding: across four populated ledgers, <strong>137 eligible
+      primaries over 25 distinct plans</strong> &mdash; passed implement runs with a
+      complete stored node definition, a recorded base revision, no required decisions, and
+      no shadow lineage. Restricted to those whose done-when names a runnable check, the
+      local ledger holds <strong>19 candidates over 5 distinct plans</strong> spanning 4.2
+      to 42 recorded worker minutes.
+    </p>
+    <p>
+      Control quality was verified on a dry run before any pair was launched: <strong>only
+      backend and model are substituted</strong>, while effort, launch, sandbox and time
+      budget are all inherited from the primary. That is the property the corpus's one
+      discarded pair lacked, and it is what makes a difference in outcome attributable to
+      the model rather than to its budget.
+    </p>
+    <p>Results are recorded here as pairs land.</p>
+
+  </main>
+</body>
+</html>
