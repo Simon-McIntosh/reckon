@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="sprint-review-persistence">
+  <meta name="plan-title" content="Sprint Review Findings and Priority as Project State">
+  <meta name="plan-summary" content="Persist sprint-review findings and plan priority order as a versioned review resource, composed live into roadmap, MCP reads, and the SPA sprint view.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Sprint Review Findings and Priority as Project State | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The gap: review verdicts evaporate, so every consumer re-derives them</h2>
+    <p>
+      A sprint-review worker reads the roadmap, validates blockers and followups against
+      the code and git state, and produces two artifacts: a set of <strong>findings</strong>
+      (each with evidence and a recommended action) and a <strong>priority order</strong>
+      over the actionable plans. Today both live only in the reviewing session's chat.
+      Nothing persists them, so a ship coordinator dispatching an hour later re-derives the
+      same staleness verdicts or — worse — never sees them. A live example measured
+      2026-08-26 during a fleet review of a mounted project: the retained index pointer
+      named one sprint while a different sprint resource carried <code>status="active"</code>
+      (the audit's <code>active-sprint-mismatch</code>), the review validated the mismatch
+      with git evidence and a recommended repair, and the only record of that validation
+      was a chat transcript. This repository shows the same class of dirt right now: the
+      derived active-sprint pointer names a <code>planned</code> sprint while two other
+      sprint resources are simultaneously <code>active</code>.
+    </p>
+    <p>
+      The persisted half must stay small because the live half already exists: item
+      lifecycle status and implementation fractions are never stored in sprint resources —
+      they are composed at read time from plan HTML. This plan keeps that contract. What a
+      review persists is exactly the judgment a machine cannot recompute — validated
+      findings with their evidence, and a ranked order with the reason each rank was
+      assigned. Everything else (current status, impl, effective blocking, sprint metrics)
+      is joined live at read time, which is what makes the surface update automatically as
+      work lands, with no writer in the loop.
+    </p>
+    <figure>
+      <svg viewBox="0 0 920 210" role="img" style="max-width:100%;height:auto;font-family:system-ui">
+        <defs>
+          <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#333"/>
+          </marker>
+        </defs>
+        <rect x="8" y="70" width="150" height="54" fill="none" stroke="#333" stroke-width="1"/>
+        <text x="83" y="92" text-anchor="middle" font-size="13" fill="#111">review worker</text>
+        <text x="83" y="110" text-anchor="middle" font-size="12" fill="#444">findings + ranks</text>
+        <line x1="158" y1="97" x2="238" y2="97" stroke="#333" stroke-width="1" marker-end="url(#arr)"/>
+        <text x="198" y="88" text-anchor="middle" font-size="12" fill="#444">edit_plan</text>
+        <rect x="240" y="58" width="190" height="78" fill="#f6f6f4" stroke="#333" stroke-width="1"/>
+        <text x="335" y="84" text-anchor="middle" font-size="13" fill="#111">review resource</text>
+        <text x="335" y="102" text-anchor="middle" font-size="12" fill="#444">state/&lt;project&gt;/review.html</text>
+        <text x="335" y="120" text-anchor="middle" font-size="12" fill="#444">versioned · schema-checked</text>
+        <rect x="240" y="160" width="190" height="40" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="335" y="185" text-anchor="middle" font-size="12" fill="#444">plan HTML (live status, impl)</text>
+        <line x1="335" y1="160" x2="335" y2="140" stroke="#888" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="430" y1="97" x2="520" y2="97" stroke="#333" stroke-width="1" marker-end="url(#arr)"/>
+        <text x="475" y="88" text-anchor="middle" font-size="12" fill="#444">composed join</text>
+        <rect x="522" y="12" width="180" height="40" fill="none" stroke="#333" stroke-width="1"/>
+        <text x="612" y="37" text-anchor="middle" font-size="13" fill="#111">roadmap tool</text>
+        <rect x="522" y="66" width="180" height="40" fill="none" stroke="#333" stroke-width="1"/>
+        <text x="612" y="91" text-anchor="middle" font-size="13" fill="#111">read_plan views</text>
+        <rect x="522" y="120" width="180" height="40" fill="none" stroke="#333" stroke-width="1"/>
+        <text x="612" y="145" text-anchor="middle" font-size="13" fill="#111">SPA sprint view</text>
+        <line x1="702" y1="32" x2="790" y2="70" stroke="#333" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="702" y1="86" x2="790" y2="92" stroke="#333" stroke-width="1" marker-end="url(#arr)"/>
+        <rect x="792" y="66" width="120" height="54" fill="none" stroke="#333" stroke-width="1"/>
+        <text x="852" y="88" text-anchor="middle" font-size="13" fill="#111">ship agents</text>
+        <text x="852" y="106" text-anchor="middle" font-size="12" fill="#444">and the lead</text>
+      </svg>
+      <figcaption>One write path, three composed read surfaces. The review resource stores
+      only validated judgment; live plan state joins in at read time, so every surface
+      updates as work lands without touching the stored review.</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — The review resource: fixed schema, versioned, one write path</h2>
+    <p>
+      A new singleton distributed resource of type <code>review</code>, stored at
+      <code>docs/state/&lt;project&gt;/review.html</code> beside the timeline, with the same
+      semantic-HTML shape as other distributed resources (meta identity, a semantic list of
+      findings, the JSON state script) and its own optimistic-concurrency version. It is
+      created, read, and written exclusively through <code>read_plan</code> /
+      <code>edit_plan</code> with <code>doc_type="review"</code> — lenient read, strict
+      write, exactly like plans.
+    </p>
+    <p>Scalars: <code>reviewed_at</code> (date), <code>reviewed_by</code> (session or
+      person), <code>basis</code> (what the review read — e.g. the roadmap at a named
+      commit). Two collections:</p>
+    <p><strong>findings[]</strong> — each row is the persisted form of one validated
+      review finding:</p>
+    <ul>
+      <li><code>id</code> — deterministic, unique within the resource</li>
+      <li><code>code</code> — non-empty kebab-case finding name (open vocabulary, aligned
+        with audit codes where one exists, e.g. <code>active-sprint-mismatch</code>)</li>
+      <li><code>category</code> ∈ <code>sprint · dag · lifecycle · provenance · references · calibration</code></li>
+      <li><code>severity</code> ∈ <code>error · warn · info</code></li>
+      <li><code>subject</code> — <code>{kind ∈ plan · sprint · milestone · blocker · followup · decision · project, id}</code>;
+        plan subjects accept the standard project-qualified ref grammar</li>
+      <li><code>evidence</code> — one or more free-text lines carrying dates, commits, paths</li>
+      <li><code>recommended_action</code> — <code>{verb ∈ close · resequence · rescope · recalibrate · resolve · repair-pointer · reopen, owner_skill, detail}</code></li>
+      <li><code>validated</code> ∈ <code>confirmed · stale · conflicting</code>, with <code>checked_at</code> (date)</li>
+      <li>resolution: <code>resolved_at</code>, <code>resolved_by</code>, <code>outcome</code> —
+        resolved status is <em>derived</em> from a non-empty <code>resolved_at</code>, the
+        same rule followups use</li>
+    </ul>
+    <p><strong>priority[]</strong> — the persisted ranking judgment, per plan (sprint order
+      is derived, never stored):</p>
+    <ul>
+      <li><code>rank</code> — 1-based, contiguous, no duplicate refs</li>
+      <li><code>ref</code> — plan ref (project-qualifiable)</li>
+      <li><code>reasons</code> — non-empty subset of the fixed vocabulary
+        <code>critical-path · unlock · deadline · roi · decision-first</code></li>
+      <li><code>detail</code> — one line saying what earned the rank (e.g. the deadline
+        date, or which plans this unlocks)</li>
+    </ul>
+    <p>
+      Write verbs: <code>set</code> for scalars and for <code>priority</code> as a whole
+      list (a ranking is one judgment — partial edits would let two reviews interleave into
+      an order nobody produced), <code>append</code> for findings, <code>resolve</code> for
+      findings. Strict write validation rejects any enum violation, an empty evidence list,
+      a non-contiguous or duplicate-ref priority, and a malformed subject ref, each with the
+      offending field named.
+    </p>
+    <p><em>Done when:</em> a round-trip test writes a review through
+      <code>edit_plan(create=True, doc_type="review")</code> — including a finding carrying
+      the real measured <code>active-sprint-mismatch</code> shape — reads it back losslessly
+      with an incremented version; each invalid-write case above is refused naming its
+      field; and resolving a finding derives its status without a stored flag.</p>
+
+    <h2 id="s3">§3 — Composed reads: the dynamic half, derived at read time</h2>
+    <p>
+      Sprint cards in the composed views (<code>read_plan</code> discovery/summary and the
+      index compatibility view) gain a per-sprint metrics block joined live from plan HTML:
+      item count, counts by <code>effective_status</code>, mean stored implementation
+      fraction over items, and <code>current_work</code> — the items whose plans are
+      actively moving (non-terminal status with implementation between zero and one). No
+      field of this block is ever persisted; it must change when a member plan's HTML
+      changes, and a test proves exactly that by editing a member plan and re-reading the
+      sprint card.
+    </p>
+    <p>
+      The review resource composes the same way. Each finding row gains
+      <code>subject_found</code>, <code>subject_status</code>, and a derived
+      <code>current</code> flag — false when the subject changed after
+      <code>checked_at</code> (its <code>plan-modified</code> or resource version moved) or
+      reached a state that satisfies the recommended action, so an acted-on finding decays
+      visibly instead of lingering as advice. Each priority row gains live
+      <code>status</code>, <code>effective_status</code>, <code>impl</code>, and
+      <code>sprint</code>, plus a <code>landed</code> flag for terminal plans. From the
+      joined priority the reader also gets <code>sprint_order</code>: sprints in first
+      appearance order of their ranked members, remaining open sprints after them in id
+      order. That derived order IS the fixed-schema sprint priority — stored per plan where
+      the judgment lives, projected per sprint where execution consumes it.
+    </p>
+    <p><em>Done when:</em> tests prove the join is live (edit a member plan → sprint
+      metrics and priority rows change on the next read with no review write), prove
+      <code>current</code> flips when a subject moves after <code>checked_at</code>, and
+      prove <code>sprint_order</code> against a hand-computed case.</p>
+
+    <h2 id="s4">§4 — Roadmap and audit wiring: the DAG carries the review</h2>
+    <p>
+      <code>roadmap(project)</code> gains a <code>review</code> block: <code>reviewed_at</code>
+      / <code>reviewed_by</code>, the composed open findings, the joined priority rows, the
+      derived <code>sprint_order</code>, and two computed health signals —
+      <code>priority-order-inversion</code> (a persisted rank places a plan ahead of its
+      unshipped prerequisite, per the dependency graph) and <code>review-stale</code>
+      (subjects moved since <code>reviewed_at</code>, so ranks may no longer bind). Both are
+      wiring findings in the existing findings stream, severity warn: a review is advice
+      about the DAG and must never gate execution the way a dependency does. A ship
+      coordinator reading the roadmap before dispatch now sees the persisted priority and
+      any unresolved findings against the sprints and plans it is about to execute, in one
+      read. The <code>audit</code> tool validates review conformance over the corpus:
+      dangling subject refs (<code>dangling-review-subject</code>), enum violations, and
+      priority contiguity, all report-only.
+    </p>
+    <p><em>Done when:</em> roadmap payload tests cover the block's presence with and
+      without a stored review, the inversion signal against a constructed
+      prerequisite-behind-successor ranking, and staleness; audit tests cover a dangling
+      subject and a broken enum; a project with no review resource reports an absent block,
+      not an error.</p>
+
+    <h2 id="s5">§5 — SPA sprint view: execution order, live metrics, open findings</h2>
+    <p>
+      The sprint view renders what §3 and §4 compose, from the served composed endpoints —
+      the SPA parses no plan HTML itself and persists nothing:
+    </p>
+    <ul>
+      <li>sprints listed in derived <code>sprint_order</code> (fallback: id order), the
+        derived active sprint visibly distinct, and any active/pointer disagreement
+        surfaced as the finding badge rather than hidden by picking one</li>
+      <li>a per-sprint metric strip — implementation mean, item counts by effective
+        status, and the current-work items by name</li>
+      <li>open review-finding badges on the sprints and plans they subject, with severity
+        and code visible, linking to the finding's evidence</li>
+      <li>a priority panel: ranked plans with reason chips from the fixed vocabulary,
+        each row carrying its live status/impl so the panel visibly decays as work lands
+        (landed rows drop to a muted tail rather than vanishing)</li>
+    </ul>
+    <p><em>Done when:</em> a served project carrying a review resource renders order,
+      metric strip, badges, and priority panel from live endpoints; a project with no
+      review renders the same view minus the review affordances; and re-reading after a
+      plan status change shows moved metrics with no review write. Rendered evidence
+      captured against the local server.</p>
+
+    <h2 id="s6">§6 — Skill and contract refresh: how workers persist and consumers read</h2>
+    <p>
+      <code>skills/reckon-sprint/SKILL.md</code> gains a "Persist a sprint review" section:
+      the read-then-write MCP calls with <code>doc_type="review"</code>, the fixed schema
+      and vocabularies of §2, the rule that a whole ranking is one <code>set</code>, and
+      the resolve-on-action rule — whoever executes a finding's recommended action resolves
+      that finding in the same session, so the review stream cannot drift from reality.
+      Consumption guidance lands where the consumers read: the sprint skill documents the
+      roadmap <code>review</code> block for proposing/rebalancing, and the ship skill's
+      pre-flight mention stays to a single line pointing at the roadmap payload (its
+      SKILL.md is at a measured size ceiling; reference material belongs in its
+      references, not its fixed read-set).
+    </p>
+    <p><em>Done when:</em> the sprint skill documents write path, schema, and consumption
+      against the landed implementation with copyable calls that a fresh session can run
+      verbatim against a scratch project; cross-references stay one line each.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="review-storage" data-choice="singleton-state-resource" data-by="reckon-3a" data-when="2026-08-26">
+        <p class="r-dec-q">Where does a persisted review live?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="singleton-state-resource">one versioned review.html beside timeline</button>
+          <button class="r-opt" data-value="per-review-files">a file per review under docs/reviews/</button>
+          <button class="r-opt" data-value="project-json-field">a field on project.json</button>
+        </p>
+        <p class="r-dec-rat">Findings are resolvable rows in one live stream, like followups — a
+          singleton with its own version keeps resolve semantics and avoids a growing file-per-review
+          corpus nobody reads twice; project.json is identity/presentation-only by contract.
+          Superseded judgments are resolved rows, not new files.</p>
+      </div>
+      <div class="r-dec" data-key="priority-grain" data-choice="per-plan-ranks" data-by="reckon-3a" data-when="2026-08-26">
+        <p class="r-dec-q">What grain does the persisted priority order use?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="per-plan-ranks">per-plan ranks with reason vocabulary; sprint order derived</button>
+          <button class="r-opt" data-value="per-sprint-scores">per-sprint numeric scores</button>
+        </p>
+        <p class="r-dec-rat">Coordinated with the reviewing worker producing the real artifact: its
+          ordering is a partial order over plans driven by critical-path membership, unlocks,
+          deadlines, stored roi, and decision gates — sprint ordering falls out of plan order.
+          Storing the derived form would persist what read-time composition already computes.</p>
+      </div>
+      <div class="r-dec" data-key="staleness-derivation" data-choice="composed-at-read" data-by="reckon-3a" data-when="2026-08-26">
+        <p class="r-dec-q">How does a finding or rank expire when the world moves?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="composed-at-read">derived at read time from subject state vs checked_at</button>
+          <button class="r-opt" data-value="writer-maintained">a maintenance job rewrites stored rows</button>
+        </p>
+        <p class="r-dec-rat">Same mechanism as effective_status: derive, never persist, what live
+          state already implies. A writer-maintained flag is stale the moment after it is written
+          and needs an actor nothing guarantees; a derived flag is correct at every read.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-srp-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="orchestrator"
+               data-capability-verification="strict"
+               data-written-by="reckon-3a" data-written-at="2026-08-26"
+               data-recommends-skill="/reckon-ship sprint-review-persistence"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Ship the review resource, composed reads, roadmap wiring, SPA view, and skill refresh</h4>
+        <div class="r-fu-body"><p>All six sections are executable now; §2 gates §3/§4, which gate §5;
+          §6 lands last against the built surface. The reviewing worker in a mounted project holds a
+          finding set ready to persist the moment the write path exists.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship sprint-review-persistence</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
