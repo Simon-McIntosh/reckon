@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="8">
-<meta name="plan-impl" content="0.57">
+<meta name="plan-version" content="9">
+<meta name="plan-impl" content="0.71">
 </head>
 <body>
   <main class="plan-doc">
@@ -378,6 +378,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s8-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§8 landed — commit <code>30b1fa0</code> (merged <code>340c7aa</code>); gate passed. Both duplicate pairs are collapsed into <code>mcp_views.compose_review</code> plus <code>mcp_views.load_composed_review</code>, now serving discovery, typed review reads and the roadmap from one derivation; <code>roadmap._review_projection</code> and <code>roadmap._load_review</code> are <strong>deleted</strong>, verified as zero remaining definitions rather than left beside their replacements. Measure: 50 passed / 0 failed on the four targeted suites, delta +2 passing against the node base and 0 new failures; ruff 21 → 21; 200 insertions against 137 deletions across 5 files — a consolidation that removed nearly as much as it added.</p><p>The discriminator is proven in both directions on the real corpus, which is the part that matters: nova's 35 findings with 34 resolved yield <strong>exactly one</strong> stale subject, and it is the right one (<code>rf-035</code>, the single genuinely open row) rather than the 34 healthy closed loops the previous implementation would have reported. A resolved-then-moved finding is excluded while an open-then-moved finding is included; a moved <em>landed</em> rank is excluded while a moved unlanded rank is included. No full-suite or rendered-browser run was attempted, per the host-contention fence.</p><p>One defect deliberately left open and recorded: the derived sprint order still returns <code>S12, S13, S6, S8, S9</code> from a string sort where natural order is <code>S6, S8, S9, S12, S13</code>. It was outside this node's done-when, and it is now a one-line fix in <em>one</em> place — which is the consolidation paying for itself immediately.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s6-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§6 landed — commit <code>74c5137</code> (merged <code>7d9af57</code>); gate passed. <code>skills/reckon-sprint/SKILL.md</code> grew 246 → 400 lines (+154 measured, not claimed), carrying copyable create/read/update/resolve calls, the fixed finding and priority schemas, the whole-ranking and derived-resolution invariants, the strict-refusal contract, and the consumption side through the shared composed-review path.</p><p>The gate is the part worth keeping: it pastes each validator definition beside the documentation line that mirrors it and states the comparison, rather than asserting agreement — five vocabularies (category, severity, validated, action verbs, subject kinds), all character-identical, plus <code>quick_validate</code> at exit 0. It also documents the <em>post-consolidation</em> contract it was told to read rather than the two-implementation shape at its own base: <code>compose_review</code> and <code>load_composed_review</code>, not the deleted roadmap-local pair.</p><p>Its divergence report is the reason to trust the rest: the plan proposes <code>category=safety</code> in §7 and the validator accepts only six categories, so the skill states that <code>safety</code> is currently refused rather than documenting a proposal as though it shipped. The node first blocked on an impossible gate — <code>audit-doc</code> validates plan HTML and demands <code>plan-slug</code>/<code>plan-status</code> meta, which a Markdown skill can never carry. That was a coordinator authoring error, not a worker failure, and refusing it was correct.</p></div>
 </div>
 </section>
 </main>
