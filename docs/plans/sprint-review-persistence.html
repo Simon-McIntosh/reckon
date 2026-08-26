@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-impl" content="0.4">
 </head>
 <body>
@@ -236,6 +236,41 @@
     <p><em>Done when:</em> the sprint skill documents write path, schema, and consumption
       against the landed implementation with copyable calls that a fresh session can run
       verbatim against a scratch project; cross-references stay one line each.</p>
+
+    <h2 id="s7">§7 — The category vocabulary is missing the isolation class</h2>
+    <p>
+      Found by using the resource rather than by reviewing it. Within hours of §2 landing,
+      a verified fleet-wide finding could not be expressed: a worker with a declared
+      worktree boundary wrote into the shared main checkout, because the execution tier
+      resolves to a fully unsandboxed process and the boundary is the worker's obedience
+      rather than an enforced limit. The write vocabulary refused
+      <code>category="safety"</code> and named the six it accepts, which is the validator
+      behaving correctly — the vocabulary itself is short one class.
+    </p>
+    <p>
+      The interim disposition was to file it under <code>provenance</code>, which is
+      defensible because the demonstrated harm was an unaudited write landing in a file two
+      other sessions held, under the wrong author. But the <em>mechanism</em> is isolation,
+      not attribution, and the two want different readers: a provenance finding asks who
+      wrote this, while an isolation finding asks what the declared boundary actually
+      enforces. Collapsing them means the fleet-wide class is discoverable only by reading
+      evidence lines. Note the alternative that was rejected: inflating
+      <code>severity</code> to carry the meaning the category could not. That would have
+      distorted the one field every consumer sorts on.
+    </p>
+    <p>
+      Add <code>safety</code> to the finding category vocabulary. Keep the enum closed —
+      an open vocabulary here would fragment into four spellings of the same word inside a
+      week, which is the failure the fixed schema exists to prevent. The <code>code</code>
+      field stays open by design and is where a pattern name like a fence with the wrong
+      blast radius belongs.
+    </p>
+    <p><em>Done when:</em> a review write carrying <code>category="safety"</code> is
+      accepted; a test pins the complete category vocabulary so a future addition is a
+      deliberate edit rather than a silent widening; the refusal for an unknown category
+      still names the offending field and lists the accepted set; and the finding currently
+      filed under <code>provenance</code> is recategorised in the same pass with its
+      evidence unchanged.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
