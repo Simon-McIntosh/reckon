@@ -173,7 +173,12 @@ def client_runtime_assets() -> dict[str, bytes]:
 
 def compile_jsx(source: str, *, filename: str) -> bytes:
     """Compile JSX through the pinned server-side compiler and cache by content."""
-    digest = hashlib.sha256(source.encode()).hexdigest()
+    digest = hashlib.sha256(
+        b"scope-isolated-script\0"
+        + filename.encode()
+        + b"\0"
+        + source.encode()
+    ).hexdigest()
     destination = _client_cache_root() / "compiled" / f"{digest}.js"
     if destination.is_file():
         return destination.read_bytes()
@@ -190,7 +195,7 @@ process.stdin.on("end", () => {
     presets: [["react", {runtime: "classic"}]],
     sourceType: "script",
   });
-  process.stdout.write(result.code + `\n//# sourceURL=${filename}\n`);
+  process.stdout.write(result.code);
 });
 """
     try:
@@ -207,7 +212,12 @@ process.stdin.on("end", () => {
     if result.returncode:
         detail = result.stderr.strip() or f"node exited {result.returncode}"
         raise ClientAssetError(f"could not compile {filename}: {detail}")
-    payload = result.stdout.encode()
+    payload = (
+        "(function () {\n"
+        + result.stdout
+        + "\n}).call(window);\n"
+        + f"//# sourceURL={filename}\n"
+    ).encode()
     with _CLIENT_ASSET_LOCK:
         if not destination.is_file():
             destination.parent.mkdir(parents=True, exist_ok=True)

@@ -22,6 +22,18 @@ from tests.spa_browser_harness import (
 from reckon import __version__, cli, pages, serve
 
 REPO_ROOT = Path(__file__).parents[1]
+SPA_COMPILED_MODULES = (
+    "glyphs",
+    "_shared",
+    "ui",
+    "bits",
+    "decision",
+    "plan",
+    "sprint",
+    "graph",
+    "crew",
+    "shell",
+)
 
 
 def test_cli_version_matches_installed_distribution():
@@ -320,6 +332,142 @@ def test_spa_entry_points_use_local_runtime_without_browser_transforms(
         assert "react.js" in html, name
         assert "react-dom.js" in html, name
         assert not re.search(r'<script[^>]+src="[^"]+\.jsx"', html), name
+
+
+def test_compiled_spa_modules_isolate_scope_and_preserve_window_exports(
+    built_source_site, tmp_path
+):
+    docs_dir, _, _ = built_source_site
+    compiled_dir = docs_dir / "_ui"
+    compiled_sources = {
+        path.stem: (compiled_dir / f"{path.stem}.js").read_text()
+        for path in (REPO_ROOT / "docs" / "ui").glob("*.jsx")
+    }
+    assert set(SPA_COMPILED_MODULES) <= set(compiled_sources)
+    for source in compiled_sources.values():
+        assert source.startswith("(function () {\n")
+        assert "\n}).call(window);\n//# sourceURL=" in source
+
+    exports = {
+        "glyphs": ("GLYPHS", "ACCENTS"),
+        "_shared": (
+            "ProjectPicker",
+            "ProjectVisibilityPanel",
+            "SettingsMenu",
+            "Sparkline",
+            "Chip",
+            "ProjectCard",
+        ),
+        "ui": (
+            "Status",
+            "Roi",
+            "Bar",
+            "Stack",
+            "Heat",
+            "Spark",
+            "Tag",
+            "Who",
+            "Icon",
+            "Persist",
+            "flashSaved",
+        ),
+        "bits": (
+            "reckon",
+            "planUtils",
+            "planSave",
+            "planLoad",
+            "withHandoffProvenance",
+            "PromptModal",
+            "CommentPopover",
+            "CommentReviewPopover",
+            "useSelectionToComment",
+            "SectionComments",
+        ),
+        "decision": ("Decision", "DecisionRow"),
+        "plan": ("Plan", "GenericBody"),
+        "sprint": ("Sprint", "SprintView"),
+        "graph": (
+            "GraphView",
+            "DependencyChainView",
+            "CriticalPathView",
+            "PathPromptModal",
+            "RadialFan",
+        ),
+        "crew": ("CrewView",),
+        "shell": (),
+    }
+    prelude = """
+globalThis.window = globalThis;
+window.location = {
+  pathname: "/fixture/",
+  hostname: "127.0.0.1",
+  origin: "http://127.0.0.1",
+  hash: "#plans",
+};
+globalThis.location = window.location;
+globalThis.localStorage = { getItem() { return null; }, setItem() {} };
+globalThis.document = {
+  querySelector() { return null; },
+  getElementById() { return {}; },
+  createElement() { return { dataset: {}, style: {}, appendChild() {} }; },
+  body: { appendChild() {} },
+  addEventListener() {},
+  removeEventListener() {},
+};
+const noop = () => {};
+globalThis.React = {
+  createElement(type, props, ...children) { return { type, props, children }; },
+  Fragment: Symbol("Fragment"),
+  useState(value) { return [typeof value === "function" ? value() : value, noop]; },
+  useEffect: noop,
+  useLayoutEffect: noop,
+  useMemo(fn) { return fn(); },
+  useRef(value) { return { current: value }; },
+  useCallback(fn) { return fn; },
+};
+globalThis.ReactDOM = { createRoot() { return { render: noop }; } };
+globalThis.navigator = { clipboard: null };
+globalThis.alert = noop;
+function assertExports(moduleName, names) {
+  const missing = names.filter(name => !(name in window));
+  if (missing.length) throw new Error(`${moduleName} missing exports: ${missing.join(", ")}`);
+}
+"""
+    bundle = [prelude]
+    for module in SPA_COMPILED_MODULES:
+        bundle.append(compiled_sources[module])
+        bundle.append(
+            f"assertExports({json.dumps(module)}, {json.dumps(exports[module])});\n"
+        )
+    expected_export_count = sum(len(names) for names in exports.values())
+    bundle.append(
+        "process.stdout.write(JSON.stringify("
+        f"{{ modules: {len(SPA_COMPILED_MODULES)}, exports: {expected_export_count} }}"
+        "));\n"
+    )
+    bundle_path = tmp_path / "compiled-spa.js"
+    bundle_path.write_text("\n".join(bundle))
+
+    parsed = subprocess.run(
+        ["node", "--check", str(bundle_path)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert parsed.returncode == 0, parsed.stderr
+    executed = subprocess.run(
+        ["node", str(bundle_path)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert executed.returncode == 0, executed.stderr
+    assert json.loads(executed.stdout) == {
+        "modules": len(SPA_COMPILED_MODULES),
+        "exports": expected_export_count,
+    }
 
 
 def test_served_and_static_pages_request_only_their_own_origin(
