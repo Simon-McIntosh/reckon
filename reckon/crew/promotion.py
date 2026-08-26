@@ -128,6 +128,36 @@ def _cumulative_diff(*, cwd: Path, base: str, head: str) -> _CumulativeDiff:
     )
 
 
+def _resolve_commits(
+    *, cwd: Path, revisions: Iterable[str], run_id: str
+) -> list[str]:
+    """Resolve every recorded revision to its canonical commit object id."""
+    commits = []
+    for revision in revisions:
+        resolved = subprocess.run(
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                f"{revision}^{{commit}}",
+            ],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        commit = resolved.stdout.strip()
+        if resolved.returncode or not commit:
+            raise CrewError(
+                f"run {run_id!r} commit {revision!r} does not resolve to a "
+                "commit object in the run repository"
+            )
+        commits.append(commit)
+    return commits
+
+
 def _repository_scope_paths(
     declared_paths: Iterable[str], *, worktree: Path, repository: Path
 ) -> tuple[Path, ...]:
@@ -602,6 +632,10 @@ def _complete_locked(
         )
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    if commit_list:
+        commit_list = _resolve_commits(
+            cwd=tree, revisions=commit_list, run_id=run_id
+        )
     shadow_patch = ""
     if shadow:
         artifact = _write_shadow_patch(record)

@@ -137,3 +137,45 @@ def test_primary_advance_before_first_run_commit_is_outside_the_measured_span(
 
     assert stored["changed_lines"] == {"added": 1, "removed": 0, "files": 1}
     assert stored["commits"] == [commit]
+
+
+def test_unresolvable_commit_is_refused_before_ledger_write(
+    repository: Path,
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    (repository / "allowed.txt").write_text("seed\nworker\n", encoding="utf-8")
+    _git(repository, "add", "allowed.txt")
+    _git(repository, "commit", "-q", "-m", "test: update declared path")
+    commit = _git(repository, "rev-parse", "HEAD")
+    missing = "0123456789abcdef0123456789abcdef01234567"
+    run_id = "r-missing-commit"
+    _pointer(repository, run_id, base)
+
+    with pytest.raises(crew.CrewError, match=missing):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit, missing, commit],
+            root=repository,
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_abbreviated_commit_is_stored_as_canonical_object_id(
+    repository: Path,
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    (repository / "allowed.txt").write_text("seed\nworker\n", encoding="utf-8")
+    _git(repository, "add", "allowed.txt")
+    _git(repository, "commit", "-q", "-m", "test: update declared path")
+    commit = _git(repository, "rev-parse", "HEAD")
+    run_id = "r-abbreviated-commit"
+    _pointer(repository, run_id, base)
+
+    stored = crew.complete(
+        run_id, gate="passed", commits=[commit[:12]], root=repository
+    )["record"]
+
+    assert stored["commits"] == [commit]
