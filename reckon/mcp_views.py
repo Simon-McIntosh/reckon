@@ -16,6 +16,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
     unresolved_dependencies,
 )
+from reckon.project_state import _natural_identifier_key
 
 VIEW_NAMES = frozenset({"summary", "detail", "history", "version", "raw", "schema"})
 RESOURCE_TYPES = frozenset(
@@ -199,11 +200,14 @@ def compose_review(
         priority.append(row)
     composed["priority"] = priority
     open_sprints = sorted(
-        str(sprint.get("id"))
-        for sprint in sprints
-        if isinstance(sprint, dict)
-        and sprint.get("id")
-        and str(sprint.get("status") or "planned") not in TERMINAL_STATUSES
+        (
+            str(sprint.get("id"))
+            for sprint in sprints
+            if isinstance(sprint, dict)
+            and sprint.get("id")
+            and str(sprint.get("status") or "planned") not in TERMINAL_STATUSES
+        ),
+        key=_natural_identifier_key,
     )
     composed["sprint_order"] = ranked_sprints + [
         sprint_id for sprint_id in open_sprints if sprint_id not in ranked_sprints
