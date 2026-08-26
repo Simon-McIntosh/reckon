@@ -162,7 +162,9 @@ def _audit_review(docs: Path) -> Path:
     }
     path = docs / "state" / "sample" / "review.html"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_render_resource("sample", "review", "review", review), encoding="utf-8")
+    path.write_text(
+        _render_resource("sample", "review", "review", review), encoding="utf-8"
+    )
     return path
 
 
