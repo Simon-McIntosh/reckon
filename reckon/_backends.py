@@ -159,6 +159,7 @@ class LaunchPlan:
     argv: list[str]
     cwd: str
     stdin_text: str
+    environment: dict[str, str]
     final_message_path: str | None
     resumed_session: str | None
 
@@ -745,6 +746,10 @@ def launch_plan(
         argv=argv,
         cwd=working_directory,
         stdin_text=prompt if dialect.stdin_prompt else "",
+        environment={
+            str(key): str(value)
+            for key, value in (backend.get("environment") or {}).items()
+        },
         final_message_path=final_path,
         resumed_session=resume_session,
     )

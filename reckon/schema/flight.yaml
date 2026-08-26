@@ -167,6 +167,18 @@ slots:
       Availability probing reports the result and never acts on it.
     multivalued: true
 
+  environment:
+    description: >-
+      Environment variables added when this backend's worker is spawned,
+      keyed by variable name. Values are strings and may reference a variable
+      from the dispatcher's environment using `${NAME}`.
+    range: EnvironmentVariable
+    multivalued: true
+    inlined: true
+
+  value:
+    description: Value associated with an environment-variable name.
+
   model:
     description: >-
       Model identifier passed to this backend. User data; free text so that no
@@ -338,12 +350,19 @@ classes:
       - launch
       - command
       - auth_check
+      - environment
       - model
       - effort
       - sandbox
       - session_reuse
       - budget_check
       - time_budget
+
+  EnvironmentVariable:
+    description: One environment-variable name and its string value.
+    slots:
+      - name
+      - value
 
   RoleConfig:
     description: >-

@@ -1783,6 +1783,7 @@ def _spawn(
         process = subprocess.Popen(
             plan.argv,
             cwd=plan.cwd,
+            env={**os.environ, **plan.environment},
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,

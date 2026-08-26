@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import copy
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -44,6 +45,7 @@ LAYER_ORDER = ("shipped", "host", "project", "override")
 _KEYED_MAPS = ("backends", "roles")
 
 _AUTH_PROBE_TIMEOUT_SECONDS = 10
+_ENVIRONMENT_REFERENCE = re.compile(r"\$\{([^{}]+)\}")
 
 
 class FlightConfigError(Exception):
@@ -300,6 +302,25 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
             source, key_path, first.get("msg", "is invalid")
         ) from exc
 
+    for backend_name, backend in (data.get("backends") or {}).items():
+        if not isinstance(backend, Mapping) or "environment" not in backend:
+            continue
+        environment = backend["environment"]
+        key_path = f"backends.{backend_name}.environment"
+        if not isinstance(environment, Mapping):
+            raise FlightConfigError(source, key_path, "must be a mapping")
+        for variable, value in environment.items():
+            if not isinstance(variable, str) or not variable:
+                raise FlightConfigError(
+                    source, key_path, "variable names must be non-empty strings"
+                )
+            if not isinstance(value, str):
+                raise FlightConfigError(
+                    source,
+                    f"{key_path}.{variable}",
+                    "must be a string",
+                )
+
 
 def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
     """Check the rules that only a fully merged config can be judged against."""
@@ -409,6 +430,34 @@ def _sorted(value: Any) -> Any:
     return value
 
 
+def _expand_backend_environments(config: dict[str, Any], source: str) -> None:
+    """Expand backend environment references without accepting missing values."""
+    for backend_name, backend in (config.get("backends") or {}).items():
+        if not isinstance(backend, Mapping):
+            continue
+        environment = backend.get("environment")
+        if not isinstance(environment, Mapping):
+            continue
+        expanded: dict[str, str] = {}
+        for variable, raw_value in environment.items():
+            key_path = f"backends.{backend_name}.environment.{variable}"
+
+            def replace_reference(match: re.Match[str]) -> str:
+                referenced = match.group(1)
+                if referenced not in os.environ:
+                    raise FlightConfigError(
+                        source,
+                        key_path,
+                        f"references unset environment variable {referenced!r}",
+                    )
+                return os.environ[referenced]
+
+            expanded[str(variable)] = _ENVIRONMENT_REFERENCE.sub(
+                replace_reference, str(raw_value)
+            )
+        backend["environment"] = expanded
+
+
 def resolve(
     project: str | None = None,
     *,
@@ -479,6 +528,7 @@ def resolve(
         )
 
     _validate_resolved(merged, " + ".join(contributing))
+    _expand_backend_environments(merged, " + ".join(contributing))
     return ResolvedFlight(
         config=ResolvedConfig(_sorted(merged), warnings=warnings),
         provenance=dict(sorted(provenance.items())),
