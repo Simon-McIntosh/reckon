@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T11:58:39",
+  "updated": "2026-08-26T12:02:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -25082,9 +25082,111 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T100053246780-n-stale-gate-contract-test",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a77",
+        "node": "n-stale-gate-contract-test",
+        "node_definition": {
+          "done_when": "pytest over tests/test_ledger.py exits 0 where it currently reports one failure in test_complete_command_assumes_utc_for_a_naive_completion_stamp; that test keeps its original subject and its naive-stamp-is-assumed-UTC assertion and satisfies the new requirement by passing gate-evidence flags rather than by weakening the assertion or changing the gate verdict; and pytest over tests/test_gate_evidence.py and tests/test_ledger.py reports no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "Update the one test encoding the superseded contract that a passing promotion needs no gate evidence",
+          "id": "n-stale-gate-contract-test",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T100053246780-n-stale-gate-contract-test/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "15m",
+          "write_paths": [
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "claude-a",
+        "backend": "claude",
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T10:00:56Z",
+        "completed_at": "2026-08-26T10:01:42.750Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 39,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 46,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "358956bcfdd0d6d5b956b50cd93750cec91058ba",
+        "commits": [
+          "6f501c9"
+        ],
+        "changed_lines": {
+          "added": 6,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_ledger.py tests/test_gate_evidence.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate_contract_fix.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T100053246780-n-stale-gate-contract-test/manifest.md",
+        "scope_changed": false,
+        "session_id": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 7478,
+            "cache_creation_input_tokens_cumulative": 225261,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 2009152,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 18,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 2759,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.0,
+          "detail": "rate-limit event carried no numeric utilisation",
+          "cost_usd_cumulative": 1.3305004
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 438
+    "_version": 439
   }
 }

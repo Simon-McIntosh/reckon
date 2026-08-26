@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="self-hosted-worker-backends">
   <meta name="plan-title" content="Self-Hosted Worker Backends">
   <meta name="plan-summary" content="Let a backend name a self-hosted inference endpoint, then qualify the local GPU model against the incumbent through the shadow ladder.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="22">
 <meta name="plan-artifacts" content="docs/evidence/archive/self-hosted-worker-backends-landed.html,~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/reports/failure-classification-backfill.md">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-commits" content="072112a,5dbf304,bc95a74,479d286,6ddb052,91ccc03,b490cf9">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-commits" content="072112a,5dbf304,bc95a74,479d286,6ddb052,91ccc03,f05f85b,6f501c9">
 </head>
 <body>
   <main class="plan-doc">
@@ -476,6 +476,17 @@
     </p>
 
     <h2 id="s7">&sect;7 &mdash; The gate is an assertion, not a measurement</h2>
+    <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-26</span>
+      A passing promotion now requires the command, the exit status, and a log path or
+      digest, refused by name when absent; a failing or not-run gate needs none. Shadow
+      control gets one accessor &mdash; true only when the substituted dimensions are
+      backend, launch and model &mdash; consulted by both promotion and capability
+      derivation, and qualification depth counts distinct primaries rather than shadow
+      rows. Commits <code>f05f85b</code>, <code>6f501c9</code>; 8 new tests, 157 passed
+      across every touched module. <strong>Its own promotion is the first record in a
+      1,534-row corpus to cite the check that produced it.</strong> Full record:
+      <a href="/reckon/evidence/archive/self-hosted-worker-backends-landed#s7">&sect;7 landed</a>.
+    </p>
     <p>
       &sect;6 found the failure classes pooled into one word. The audit that produced
       &sect;4's powered-depth figure found something upstream of that and worse: nothing
@@ -561,13 +572,19 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-shwb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship self-hosted-worker-backends" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-shwb-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship self-hosted-worker-backends" data-resolved-at="2026-08-26T10:03:36+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Land the environment map, wire the endpoint, and run the shadow wave</h4>
     <div class="r-fu-body"><p>§2 is the enabling change and everything else waits on it. §3 is
           configuration only once §2 lands, and the lead has asked for it to be in
           place immediately as a defined-not-defaulted option. §4 and §5 are the
           qualification the ladder requires before anything routes there.</p></div>
     <pre class="r-fu-prompt">/reckon-ship self-hosted-worker-backends</pre>
+    <p class="r-fu-outcome">All four sections landed. The environment map and its selection-time expansion shipped (072112a, 5dbf304); the endpoint is wired in the host layer by the wrapper alias, verified inert (479d286, 6ddb052); six controlled shadow pairs ran with four passing, and both failures were fence failures rather than engineering failures; the gate became a measurement (f05f85b, 6f501c9). Verdict recorded: read-only roles now, no repository write access until the declared sandbox tier is enforced. Two blockers found that this plan does not own.</p>
+    </article>
+<article class="r-fu" data-id="f-shwb-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The declared sandbox tier is a binding rule with no bound check</h4>
+    <div class="r-fu-body"><p>Pointer, not work: this belongs to <code>binding-rules-need-bound-checks</code>, whose own thesis is that a binding rule with no bound check decays. <code>sandbox: worktree-full</code> is declared per backend and never enforced — both dialects launch with confinement disabled and the directory flag adds to the allowed set rather than restricting to it. Measured here: two of six workers left their worktree and one wrote a false statement into a file two other sessions held. It gates this plan's own adoption verdict, and it governs every backend rather than only a self-hosted one, so it is that plan's section to author and not this one's.</p><p>The second blocker, promotions reporting success while dropping their ledger row, is persisted as a cross-cutting review finding with both disconfirmations recorded; it needs a reproduction no current plan owns.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks</pre>
     </article>
 </section>
 
@@ -592,6 +609,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260826T094215451888-n-gate-carries-its-evidence" data-who="claude-a" data-when="2026-08-26T09:57:06.793Z">
     <div class="r-comment-body"><p>A passing gate now requires command, exit status and a log path or digest, refused by name when absent; shadow control gets one accessor consulted by both promotion and capability derivation, and qualification depth counts distinct primaries; 8 new tests pass, 362 of 363 focused tests pass with the one failure being a test that encodes the superseded contract</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260826T100053246780-n-stale-gate-contract-test" data-who="claude-a" data-when="2026-08-26T10:01:42.750Z">
+    <div class="r-comment-body"><p>Six lines supplying the gate evidence the new contract requires, keeping the test's own naive-stamp-is-UTC assertion and its passed verdict intact rather than weakening either; 69 passed across the two modules</p></div>
 </div>
 </section>
 </main>
