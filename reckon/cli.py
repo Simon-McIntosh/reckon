@@ -1445,6 +1445,27 @@ def _ledger_module():
     type=click.Path(path_type=Path),
     help="Repo root whose ledger receives the record (default: the run's own).",
 )
+@click.option(
+    "--gate-command",
+    default="",
+    help="The check a passing gate ran, e.g. the test command.",
+)
+@click.option(
+    "--gate-exit-status",
+    type=int,
+    default=None,
+    help="The check command's exit status.",
+)
+@click.option(
+    "--gate-log-path",
+    default="",
+    help="Path to the check's captured output.",
+)
+@click.option(
+    "--gate-log-digest",
+    default="",
+    help="Digest of the check's captured output, when the log itself is not kept.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -1456,15 +1477,29 @@ def crew_complete(
     scope_changed,
     completed_at,
     checkout_path,
+    gate_command,
+    gate_exit_status,
+    gate_log_path,
+    gate_log_digest,
     pretty,
 ):
     """Promote a finished run into the owning repository's committed ledger.
 
     The ledger append happens before the pointer is deleted, so an interruption
-    between them leaves a recoverable pointer rather than a lost record.
+    between them leaves a recoverable pointer rather than a lost record. A
+    passing gate is refused unless it carries the check that produced it —
+    this is the sole route by which a run is promoted, so the requirement is
+    unconditional here even though the underlying ledger call remains
+    permissive for internal callers assembling records from other evidence.
     """
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
+    gate_check = {
+        "command": gate_command,
+        "exit_status": gate_exit_status,
+        "log_path": gate_log_path,
+        "log_digest": gate_log_digest,
+    }
     try:
         result = crew_module.complete(
             run_id,
@@ -1476,6 +1511,8 @@ def crew_complete(
             scope_changed=scope_changed,
             completed_at=completed_at,
             root=checkout_path,
+            gate_check=gate_check,
+            require_gate_check=True,
         )
     except (crew_module.CrewError, ledger_module.LedgerError) as exc:
         raise click.ClickException(str(exc)) from exc

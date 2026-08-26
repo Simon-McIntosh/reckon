@@ -372,6 +372,8 @@ def complete(
     changed_lines: Mapping[str, Any] | None = None,
     completed_at: str = "",
     root: str | Path | None = None,
+    gate_check: Mapping[str, Any] | None = None,
+    require_gate_check: bool = False,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -412,6 +414,8 @@ def complete(
             changed_lines=changed_lines,
             completed_at=completed_at,
             root=root,
+            gate_check=gate_check,
+            require_gate_check=require_gate_check,
         )
 
 
@@ -427,6 +431,8 @@ def _complete_locked(
     changed_lines: Mapping[str, Any] | None = None,
     completed_at: str = "",
     root: str | Path | None = None,
+    gate_check: Mapping[str, Any] | None = None,
+    require_gate_check: bool = False,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -589,6 +595,8 @@ def _complete_locked(
         lineage=record.get("lineage"),
         shadow_patch=shadow_patch,
         unreconciled_override=record.get("unreconciled_override"),
+        gate_check=gate_check,
+        require_gate_check=require_gate_check,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")

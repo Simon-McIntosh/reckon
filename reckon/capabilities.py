@@ -206,6 +206,10 @@ def derive_capabilities(
                             if primary
                             else None
                         ),
+                        # The sole control predicate: a confounded pair must
+                        # never be pooled with a controlled one when this
+                        # slice is read for a qualification verdict.
+                        "controlled": ledger.shadow_controlled(lineage),
                     }
                 )
                 shadow_observations[
@@ -252,12 +256,25 @@ def derive_capabilities(
             rows,
             key=lambda item: (item["project"], item["run_id"]),
         )
+        controlled = [item for item in observations if item["controlled"]]
+        # Qualification depth is distinct primaries covered, not shadow rows —
+        # two shadows of the same primary demonstrate the harness can produce
+        # a controlled pair, not that a second node was qualified.
+        qualification_depth = len(
+            {
+                item["primary_run_id"]
+                for item in controlled
+                if item.get("primary_run_id")
+            }
+        )
         shadow_slices.append(
             {
                 "key": key,
                 "configuration": _configuration_from_key(key),
                 "spec_level": spec_level or None,
                 "runs": len(observations),
+                "controlled_runs": len(controlled),
+                "qualification_depth": qualification_depth,
                 "observations": observations,
             }
         )

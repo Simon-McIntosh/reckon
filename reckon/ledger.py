@@ -58,6 +58,11 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+# Substitutions attributable only to the backend swap a shadow exists to
+# measure. Any other key in a lineage's "substituted" map means something
+# besides the candidate backend changed, which confounds the comparison.
+_SHADOW_BACKEND_ONLY_KEYS = frozenset({"backend", "launch", "model"})
+
 FAILURE_CLASSIFICATIONS = (
     "work-rejected",
     "correct-refusal",
@@ -99,6 +104,7 @@ RECORD_FIELDS = (
     "changed_lines",
     "tests_added",
     "gate",
+    "gate_check",
     "failure_classification",
     "outcome",
     "manifest_path",
@@ -106,6 +112,7 @@ RECORD_FIELDS = (
     "session_id",
     "budget",
     "lineage",
+    "shadow_controlled",
     "shadow_patch",
     "unreconciled_override",
 )
@@ -120,6 +127,68 @@ def normalize_section(value: Any) -> str:
     section = re.sub(r"\s+", " ", str(value or "").strip())
     match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
     return f"§{match.group(1)}" if match else section
+
+
+def shadow_controlled(lineage: Any) -> bool:
+    """Return whether a shadow's recorded lineage reproduced its primary's configuration.
+
+    The sole definition of the control predicate: read ``lineage.configuration``
+    (written once, at shadow dispatch, by comparing the resolved primary and
+    shadow agent settings) and check that every key it marks "substituted" is
+    the candidate backend, its launch mode, or its model — the differences a
+    backend swap necessarily produces. A substituted effort, sandbox, or time
+    budget means the pair also varied on a dimension the shadow ladder is not
+    measuring, so the comparison is confounded. Lineage carrying no recorded
+    configuration cannot be verified either way and is not controlled.
+    """
+    if not isinstance(lineage, Mapping) or lineage.get("kind") != "shadow":
+        return False
+    configuration = lineage.get("configuration")
+    if not isinstance(configuration, Mapping):
+        return False
+    substituted = configuration.get("substituted")
+    if not isinstance(substituted, Mapping) or not substituted:
+        return False
+    return all(str(key) in _SHADOW_BACKEND_ONLY_KEYS for key in substituted)
+
+
+def gate_check_missing_fields(gate_check: Any) -> list[str]:
+    """Name which required fields a gate-check mapping is missing, if any."""
+    check = gate_check if isinstance(gate_check, Mapping) else {}
+    missing: list[str] = []
+    if not str(check.get("command") or "").strip():
+        missing.append("command")
+    exit_status = check.get("exit_status")
+    if (
+        exit_status is None
+        or isinstance(exit_status, bool)
+        or not isinstance(exit_status, int)
+    ):
+        missing.append("exit_status")
+    if (
+        not str(check.get("log_path") or "").strip()
+        and not str(check.get("log_digest") or "").strip()
+    ):
+        missing.append("log path or digest")
+    return missing
+
+
+def _normalized_gate_check(gate_check: Any) -> dict[str, Any] | None:
+    """Return the stored shape of a gate check, or None when nothing was given."""
+    if not isinstance(gate_check, Mapping):
+        return None
+    command = str(gate_check.get("command") or "").strip()
+    exit_status = gate_check.get("exit_status")
+    log_path = str(gate_check.get("log_path") or "").strip()
+    log_digest = str(gate_check.get("log_digest") or "").strip()
+    if not command and exit_status is None and not log_path and not log_digest:
+        return None
+    return {
+        "command": command,
+        "exit_status": exit_status,
+        "log_path": log_path or None,
+        "log_digest": log_digest or None,
+    }
 
 
 def evidence_records_for_plan(
@@ -443,8 +512,18 @@ def build_record(
     lineage: Mapping[str, Any] | None = None,
     shadow_patch: str = "",
     unreconciled_override: Mapping[str, Any] | None = None,
+    gate_check: Mapping[str, Any] | None = None,
+    require_gate_check: bool = False,
 ) -> dict[str, Any]:
-    """Assemble one completed-run record, refusing an unknown gate verdict."""
+    """Assemble one completed-run record, refusing an unknown gate verdict.
+
+    ``gate_check`` is stored whenever given, independent of ``require_gate_check``
+    — a caller that already has the evidence should record it even when not
+    asking for enforcement. ``require_gate_check=True`` is what makes a passing
+    verdict with no check unfalsifiable-by-construction: it is refused rather
+    than stored, naming exactly which of command, exit status, and log
+    path/digest is missing.
+    """
     verdict = str(gate).strip().lower()
     if verdict not in GATE_VERDICTS:
         raise LedgerError(
@@ -457,6 +536,23 @@ def build_record(
             f"failure classification {failure_classification!r} is not one of "
             f"{', '.join(FAILURE_CLASSIFICATIONS)}"
         )
+    if require_gate_check and verdict == "passed":
+        missing = gate_check_missing_fields(gate_check)
+        if missing:
+            raise LedgerError(
+                "a passing gate requires the check that produced it; missing "
+                + ", ".join(missing)
+            )
+    stored_lineage = None if lineage is None else dict(lineage)
+    # Completion consults the same accessor capability derivation will read
+    # later, but the verdict lands as its own field rather than mutating the
+    # lineage a caller (e.g. shadow dispatch) already holds a copy of.
+    is_shadow_lineage = (
+        isinstance(stored_lineage, Mapping) and stored_lineage.get("kind") == "shadow"
+    )
+    stored_shadow_controlled = (
+        shadow_controlled(stored_lineage) if is_shadow_lineage else None
+    )
     return {
         "run_id": str(run_id),
         "plan": str(plan),
@@ -485,6 +581,7 @@ def build_record(
         "changed_lines": None if changed_lines is None else dict(changed_lines),
         "tests_added": None if tests_added is None else int(tests_added),
         "gate": verdict,
+        "gate_check": _normalized_gate_check(gate_check),
         "failure_classification": classification or None,
         "outcome": str(outcome),
         "manifest_path": str(manifest_path),
@@ -495,7 +592,8 @@ def build_record(
         # and a pre-flight that has to make a call to learn headroom spends the
         # very resource it is measuring — most often when it is scarcest.
         "budget": dict(budget or {}),
-        "lineage": None if lineage is None else dict(lineage),
+        "lineage": stored_lineage,
+        "shadow_controlled": stored_shadow_controlled,
         "shadow_patch": str(shadow_patch),
         "unreconciled_override": (
             None if unreconciled_override is None else dict(unreconciled_override)
