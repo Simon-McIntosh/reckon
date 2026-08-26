@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -370,6 +370,49 @@
         </tr>
       </tbody>
     </table>
+
+    <h2 id="s8">§8 — A browser gate must say why it could not start a browser</h2>
+
+    <p>Every rendered gate in this plan depends on starting a headless browser, and when the
+    host cannot start one the harness reports a bare timeout. A timeout is indistinguishable
+    from a code defect, so the worker reads it as its own failure, retries once inside its
+    fence, and stops. That is not a hypothetical reading of the code: four nodes across two
+    sessions spent their time budgets on it in a single afternoon, each concluding
+    independently that its own change might be at fault.</p>
+
+    <p><strong>The mechanism, measured.</strong> <code>fs.inotify.max_user_instances</code> is
+    128 per user. A browser needs at least one instance. Leaked browsers hold theirs forever
+    because no parent survives to reap them, so once roughly 128 accumulate, every subsequent
+    <code>inotify_init</code> in the account fails with <em>Too many open files</em> and no
+    browser can start again — for any session, until someone kills processes by hand. The
+    observed state was 328 leaked browser processes holding all 128 instances, aged 3.9 to
+    4.6 hours, spawned in one 20-minute window in batches of about ten, which is the
+    signature of a single full-suite run leaking every browser it opened. Reaping them
+    restored usage to 52 of 128 and browsers started immediately.</p>
+
+    <p><strong>This section is not the leak.</strong> The leak is a separate defect and it is
+    already fixed: the harness now signals the process group with <code>SIGKILL</code> rather
+    than politely asking a browser that has already missed its deadline, and the cleanup path
+    no longer swallows the probe's failure. What remains unfixed is the <em>diagnosis</em>.
+    The code stopped leaking hours before the outage ended, because a fix that does not clean
+    up what the old code already produced leaves the symptom running at full strength. During
+    that window the failure was invisible in exactly the wrong way: the suite reported test
+    failures, so every reader looked at the tests.</p>
+
+    <p><strong>Two deliverables, and the first is the one that matters.</strong> The harness
+    must distinguish <em>the host could not start a browser</em> from <em>the page did not
+    become ready</em>, and say which. On a startup failure it reports the browser's own
+    stderr and the inotify instance count against the ceiling, and it fails fast rather than
+    consuming a navigation deadline it cannot meet. Second, it should decline to leave stale
+    profile directories behind — 1.3 GB of them had accumulated under the per-user runtime
+    directory, which is a scarce shared allocation.</p>
+
+    <p><strong>Done when:</strong> a probe run with the inotify ceiling deliberately exhausted
+    fails in a few seconds with a message naming the instance count and the limit, and a test
+    asserts that message rather than asserting a timeout; the same probe still passes
+    unchanged on a healthy host; and a completed run leaves no profile directory behind. The
+    negative case is the point — a gate that cannot run must be loud about the reason, because
+    the alternative already cost four nodes and four hours.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
