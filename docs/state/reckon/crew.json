@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T17:18:30",
+  "updated": "2026-08-26T17:41:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -291,6 +291,15 @@
         "sessions": {
           "gpt-5.6-sol": "01a03e92-f086-7f52-a6ac-c3ed7f1079c1"
         },
+        "created": "2026-08-26"
+      },
+      {
+        "id": "impl-liverace",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-08-26"
       },
       {
@@ -26345,9 +26354,170 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260826T153809938526-n-promotion-scope-suite-alignment",
+        "plan": "execution-orchestration-hardening",
+        "section": "",
+        "node": "n-promotion-scope-suite-alignment",
+        "node_definition": {
+          "done_when": "PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_ledger.py tests/test_crew_promotion_scope.py -p no:cacheprovider passes with no new failures against the current repository HEAD; ruff adds no findings on the staged path",
+          "estimated_hours": null,
+          "goal": "The pre-existing ledger test aligned with the repaired promotion contract: test_changed_lines_are_measured_from_the_scoped_diff asserts that a run whose cumulative diff touches an undeclared path is refused with CrewError naming that path, instead of expecting the path to be silently ignored",
+          "id": "n-promotion-scope-suite-alignment",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T153809938526-n-promotion-scope-suite-alignment/manifest.md",
+          "plan": "execution-orchestration-hardening",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "15m",
+          "write_paths": [
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "dispatch-repair",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T15:38:15Z",
+        "completed_at": "2026-08-26T15:41:11Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 176,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 176,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "10f1bd69b7333971519670e270bf0900a4ceb193",
+        "commits": [
+          "de5789a"
+        ],
+        "changed_lines": {
+          "added": 16,
+          "removed": 15,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_ledger.py tests/test_crew_promotion_scope.py -p no:cacheprovider",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T153809938526-n-promotion-scope-suite-alignment/pytest-after-fix.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T153809938526-n-promotion-scope-suite-alignment/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03e92-f086-7f52-a6ac-c3ed7f1079c1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 447232,
+            "cached_input_tokens_cumulative": 3794432,
+            "input_tokens": 430678,
+            "input_tokens_cumulative": 3853570,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 5815,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 763
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 23,
+              "budget_seconds": 1500,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: required rendered reachability evidence remains unmet: the single authorized post-clear run produced 0/2 usable 900x420 captures and 2/2 75-second subprocess timeouts before any geometry payload",
+              "elapsed_seconds": 1523,
+              "log_age_seconds": 1241,
+              "log_fresh": false,
+              "manifest_commits": [
+                "034dc5d"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-scroll-owner",
+              "phase": "working",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T142253087856-n-scroll-owner",
+              "terminal_age_seconds": 1262,
+              "terminal_at": "2026-08-26T15:17:12Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-horizon-w2/n-scroll-owner"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: The post-cleanup rendered gate starts Chrome but hangs in Page.navigate before reaching the SPA; the required DOM and request-cost evidence remains unmet; and the user prohibited another retry",
+              "elapsed_seconds": 1522,
+              "log_age_seconds": 1214,
+              "log_fresh": false,
+              "manifest_commits": [
+                "85d10ce86e03313e1f0e90ae058cab2f62e7ec53"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-live-refresh",
+              "phase": "working",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T142302069688-n-live-refresh",
+              "terminal_age_seconds": 1232,
+              "terminal_at": "2026-08-26T15:17:42Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-horizon-w2/n-live-refresh"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_ledger.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 450
+    "_version": 452
   }
 }
