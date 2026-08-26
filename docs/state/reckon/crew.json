@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T12:26:21",
+  "updated": "2026-08-26T16:15:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -25591,9 +25591,244 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T102811504230-sprint-view-review-surface",
+        "plan": "sprint-review-persistence",
+        "section": "\u00a75",
+        "node": "sprint-view-review-surface",
+        "node_definition": {
+          "done_when": "docs/ui/sprint.jsx and sprints.css render, entirely from the composed discovery payload the shell already loads and with no client-side plan parsing and no new fetch: sprints in derived sprint_order with a fallback to natural id order; the derived active sprint visibly distinct; any disagreement between the derived active pointer and the set of sprints carrying active status surfaced as a finding badge rather than resolved silently to one; a per-sprint metric strip showing item count, counts by effective_status, mean implementation and the current-work items by name; open review-finding badges on the sprints and plans they subject, carrying severity and code and linking to the finding evidence; and a priority panel of ranked plans with reason chips from the fixed vocabulary, each row showing live status and implementation, with landed rows demoted to a muted tail rather than removed. Verify against the running server at http://127.0.0.1:8765 for project reckon, whose review resource currently holds 22 findings and zero priority rows, so the priority panel must render its empty state honestly; also verify against a fixture carrying priority rows so the populated panel is exercised. A project with no review resource must render the same view minus every review affordance and must not error. Gate: extend the existing SPA test modules \u2014 tests/test_spa_composition.py, tests/test_spa_rendered_semantics.py and the spa_browser_harness \u2014 reporting the pass count and zero new failures against your node base; capture rendered evidence through the existing harness rather than inventing a second capture path, and name the captured artifact paths in your manifest. Scoped ruff check and format must show zero new findings; do not fold the file's pre-existing backlog into this commit.",
+          "estimated_hours": null,
+          "goal": "The SPA sprint view renders derived order, live per-sprint metrics, review finding badges and the reason-chip priority panel from composed endpoints",
+          "id": "sprint-view-review-surface",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T102811504230-sprint-view-review-surface/manifest.md",
+          "plan": "sprint-review-persistence",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_composition.py",
+            "tests/test_spa_rendered_semantics.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-i",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T10:28:14Z",
+        "completed_at": "2026-08-26T10:51:53Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1419,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1419,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "fbaa751c3dafbf3c99e2ed780c4fb0dc8aeb0662",
+        "commits": [
+          "a436951",
+          "b421fd4"
+        ],
+        "changed_lines": {
+          "added": 314,
+          "removed": 35,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "not-run",
+        "gate_check": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T102811504230-sprint-view-review-surface/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0333a-d46a-7131-b032-c4ceea354f65",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8006912,
+            "cached_input_tokens_cumulative": 46983936,
+            "input_tokens": 8514001,
+            "input_tokens_cumulative": 49910337,
+            "output_tokens": 30665,
+            "output_tokens_cumulative": 154168,
+            "reasoning_output_tokens": 5736,
+            "reasoning_output_tokens_cumulative": 46036
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T134248457391-honour-section-anchor",
+        "plan": "dependency-edge-semantics",
+        "section": "\u00a72",
+        "node": "honour-section-anchor",
+        "node_definition": {
+          "done_when": "Run PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_roadmap.py tests/test_review_roadmap.py and report exit 0 with the pass count, at least 3 above the node-base count, and zero new failures. One new test asserts that a plan whose depends_on carries a section anchor such as other-plan#s3 reports its unanchored sections dispatchable while only anchored sections report blocked and the plan appears in the roadmap ready set; show that test failing at the node base and passing after, pasting both pytest outputs into the manifest. A second new test asserts a staged ref naming a section absent from the target emits a wiring finding. A third asserts an unstaged ref yields blocking identical to the node base. State scoped ruff check finding counts and ruff format hunk counts as base-versus-after numbers. Do not attempt a full-suite or rendered-browser run and do not fold pre-existing lint backlog into this commit.",
+          "estimated_hours": null,
+          "goal": "Section-anchored dependency refs honoured when deciding blocking, so a partial prerequisite stops blocking a whole plan",
+          "id": "honour-section-anchor",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T134248457391-honour-section-anchor/manifest.md",
+          "plan": "dependency-edge-semantics",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/roadmap.py",
+            "reckon/_schema.py",
+            "tests/test_roadmap.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T13:42:55Z",
+        "completed_at": "2026-08-26T13:51:09Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 494,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 494,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "8d4bd4ed79e8b8131506dffd13d66d945661cb9d",
+        "commits": [
+          "9e666e39b0024b149070fe6d99080f3fb44e199f"
+        ],
+        "changed_lines": {
+          "added": 235,
+          "removed": 18,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_roadmap.py tests/test_review_roadmap.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T134248457391-honour-section-anchor/targeted-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T134248457391-honour-section-anchor/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1665792,
+            "cached_input_tokens_cumulative": 4896256,
+            "input_tokens": 1743057,
+            "input_tokens_cumulative": 5088751,
+            "output_tokens": 7695,
+            "output_tokens_cumulative": 18999,
+            "reasoning_output_tokens": 3743,
+            "reasoning_output_tokens_cumulative": 5474
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 9330,
+              "budget_seconds": 1500,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: Rendered gate unmet after the permitted retry. The first attempt produced two pre-assertion subprocess timeouts; after doubling navigation allowance; the first DevTools Runtime.evaluate request remained pending for more than two minutes and emitted 0 browser runtime/console events while peer PID 3115507 and its Chrome children were still active. The worker commits are clean and recoverable.",
+              "elapsed_seconds": 10830,
+              "log_age_seconds": 10260,
+              "log_fresh": false,
+              "manifest_commits": [
+                "a436951ddcd73b5b5da3d8996b44dfbc46283d56",
+                "b421fd423411b17480642c7a36b15438a77c7a44"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T102811504230-sprint-view-review-surface/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T102811504230-sprint-view-review-surface/manifest.md; resolve the blocker before resuming the run",
+              "node": "sprint-view-review-surface",
+              "phase": "working",
+              "plan": "sprint-review-persistence",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T102811504230-sprint-view-review-surface",
+              "terminal_age_seconds": 10278,
+              "terminal_at": "2026-08-26T10:51:35Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/c00d46c3-b799-42ab-b0ad-0f6437397106/sprint-view-review-surface"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 443
+    "_version": 445
   }
 }

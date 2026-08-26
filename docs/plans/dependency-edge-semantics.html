@@ -22,6 +22,9 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -157,50 +160,50 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="staged-ref-semantics" data-choice="honour-the-anchor" data-by="reckon-3a" data-when="2026-08-26">
-        <p class="r-dec-q">A dependency ref carries a section anchor. What should happen?</p>
-        <p class="r-dec-ctx">The grammar accepts it, the parser captures it, and the roadmap discards it.
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="staged-ref-semantics" data-choice="honour-the-anchor" data-by="reckon-3a" data-when="2026-08-26">
+    <p class="r-dec-q">A dependency ref carries a section anchor. What should happen?</p>
+    <p class="r-dec-ctx">The grammar accepts it, the parser captures it, and the roadmap discards it.
           Whole-plan blocking measurably hid eight hours of dispatchable work in a real portfolio.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="honour-the-anchor">honour the anchor in blocking</button>
-          <button class="r-opt" data-value="refuse-at-write">refuse a staged ref at the write boundary</button>
-          <button class="r-opt" data-value="leave">leave it parsed and ignored</button>
-        </p>
-        <p class="r-dec-rat">Partial dependency is the dominant real shape here, not a fringe request:
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="honour-the-anchor">honour the anchor in blocking</button>
+      <button class="r-opt" data-value="refuse-at-write">refuse a staged ref at the write boundary</button>
+      <button class="r-opt" data-value="leave">leave it parsed and ignored</button>
+      </p>
+    <p class="r-dec-rat">Partial dependency is the dominant real shape here, not a fringe request:
           plans are authored as ordered rungs and a late rung waiting on foreign work is normal. Refusal
           is honest but throws away the case that matters; leaving it is the only option that actively
           misleads, since the author believes they expressed something the system silently drops.</p>
-      </div>
-      <div class="r-dec" data-key="transition-gate-shape" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Is a closure gate the same edge type as a decision gated by a foreign outcome?</p>
-        <p class="r-dec-ctx">Both gate a transition rather than an activity — one gates a plan reaching a
+    </div>
+<div class="r-dec" data-key="transition-gate-shape" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Is a closure gate the same edge type as a decision gated by a foreign outcome?</p>
+    <p class="r-dec-ctx">Both gate a transition rather than an activity — one gates a plan reaching a
           terminal status, one gates a decision being lockable. Modelling them as one edge with a stated
           transition is smaller; modelling them separately is clearer to read in a roadmap payload.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="one-edge-with-transition">one edge naming the transition it gates</button>
-          <button class="r-opt" data-value="two-edge-types">two distinct edge types</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="one-edge-with-transition">one edge naming the transition it gates</button>
+      <button class="r-opt" data-value="two-edge-types">two distinct edge types</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-des-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-capability-verification="strict"
-               data-written-by="reckon-3a" data-written-at="2026-08-26"
-               data-recommends-skill="/reckon-ship dependency-edge-semantics §2"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Honour the section anchor first — it is the one that makes the roadmap stop lying</h4>
-        <div class="r-fu-body"><p>§2 is first on severity: it is the only section whose absence makes an
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-des-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship dependency-edge-semantics §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Honour the section anchor first — it is the one that makes the roadmap stop lying</h4>
+    <div class="r-fu-body"><p>§2 is first on severity: it is the only section whose absence makes an
           existing answer wrong rather than missing, and its decision is already locked. §3 is
           independent and cheap. §4 waits on its own decision, which is a design question rather than an
           implementation choice.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §2</pre>
-      </article>
-    </section>
-  </main>
+    <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §2</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§2 landed — commit <code>9e666e3</code> (merged <code>1790e61</code>); gate passed. The roadmap now reads the stage the grammar always accepted and the parser always captured. An unresolved staged prerequisite yields <code>section_readiness</code> with <code>ready_sections</code> and <code>blocked_sections</code> while <strong>leaving the containing plan in <code>ready_now</code></strong>; target section completion derives from semantic gate verdicts with no new persisted field; an absent target anchor emits <code>missing-dependency-section</code> instead of being silently satisfied; and a bare ref keeps byte-identical whole-plan behaviour. The worker also found and covered a case the section did not name: graph-target readiness and critical-path blocking ignored section-only edges too, while retaining those targets in closure membership.</p><p>The measure is the part worth keeping, because this defect looked correct until someone checked. The required regression was run against the prior implementation and <em>failed</em> — <code>assert False is True</code> on a consumer whose only unmet prerequisite was one foreign section — then passed after the change, with both pytest outputs pasted into the manifest rather than summarised. Targeted gate 33 passed against a node base of 30, so +3 and zero new failures; a graph-target regression added 12 passed; scoped ruff 12 → 12 findings and 2 → 2 format hunks, with the pre-existing backlog explicitly left alone. Verified again after merge: 33 passed.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
