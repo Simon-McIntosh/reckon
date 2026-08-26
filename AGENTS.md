@@ -18,12 +18,14 @@ The repo provides:
 
 ### Ruff compliance is the target state
 
-This project keeps `uv run ruff check` and `uv run ruff format --check` clean.
-That is the goal, not yet the measurement: on 2026-08-26 the tree carried 297
-findings, 216 of them autofixable, and 51 of 169 files that `ruff format` would
-rewrite. Read that as a backlog with a deadline of "before it grows", and treat
-the two obligations below as separate, because conflating them is how the
-backlog first got in.
+This project keeps `uv run ruff check` and `uv run ruff format --check .`
+clean. That is the goal and not yet the measurement — there is a real backlog,
+currently a few hundred findings with most autofixable and roughly a third of
+the files unformatted. Measure it, never quote a figure from here: the count
+moves with every commit, and a number written down in a document is the fuse
+described under *A test must not encode the current date*. Treat the two
+obligations below as separate, because conflating them is how the backlog
+first got in.
 
 **Your commit adds no findings.** Lint and format only the paths it stages,
 never `.` — the whole-tree fixer rewrites files you did not touch, and in a tree
@@ -37,13 +39,16 @@ and sequenced when no peer holds uncommitted work — a sweep touches ~50 files
 and will collide with anything in flight. Several sessions commonly share this
 checkout, so check `git status` and ask on the peer socket before starting one.
 
-**Declare the rule set in the same commit that clears the backlog.** The
-dependency is `ruff>=0.16.4` with no `[tool.ruff.lint] select`, so "compliant"
-currently means whatever the installed ruff defaults to — 413 rules at 0.16.4 —
-and a version bump can enlarge that set and turn a green tree red with no code
-change, for everyone at once. That is the moving-number fuse described under
-*A test must not encode the current date*: pin the selection, or the definition
-of compliance keeps moving underneath the commitment.
+**The rule set is declared, not inherited.** `[tool.ruff.lint]` in
+`pyproject.toml` carries the selection, and the dependency carries an upper
+bound for the same reason: an inherited default makes "compliant" mean whatever
+the installed ruff happens to check, so an upgrade would redefine the contract
+for everyone at once with no code change. Every entry in `ignore` names a
+pattern this codebase uses deliberately — asserts in tests, subprocess-driven
+tooling, lazy imports, long refusal messages, stdout as the CLI's interface.
+Adding one because a finding is tedious to fix is how a lint config stops
+meaning anything; that belongs in the backlog. Changing either list is a
+deliberate edit with its reason in the comment beside it.
 
 ## Tests
 

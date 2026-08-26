@@ -690,6 +690,29 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             assert flag in ship
 
 
+def test_every_leakage_exemption_still_earns_itself() -> None:
+    """A carve-out that covers nothing is a hole, not an exemption.
+
+    The exempt set is a hand-maintained list of paths, so it fails silently in
+    both directions: rename an exempt file and the guard quietly starts scanning
+    a file nobody decided to scan, while a file that has stopped naming any
+    identifier keeps a standing licence to name one. Neither shows up as a
+    failure anywhere, because the leak test above passes either way -- so assert
+    the boundary itself rather than trusting that someone will notice it move.
+    """
+    for relative in sorted(LEAKAGE_EXEMPT):
+        path = ROOT / relative
+        assert path.is_file(), f"{relative} is exempt from the leak scan and does not exist"
+        earned = any(
+            ROUTING_IDENTIFIERS.search(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+        )
+        assert earned, (
+            f"{relative} names no routing identifier any more, so its exemption "
+            "only widens what may leak — drop the entry"
+        )
+
+
 def test_ship_dispatch_section_names_the_session_attach() -> None:
     """Dispatch arms a producer; the dispatch section must not let that read as a
     wake-up.

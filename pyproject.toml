@@ -33,7 +33,10 @@ dependencies = [
 dev = [
     "linkml>=1.9",
     "pytest>=8.0",
-    "ruff>=0.16.4",
+    # Upper bound paired with the declared selection above: within a major line a
+    # new ruff adds rules to categories this project selects, which would enlarge
+    # the contract without anyone choosing to. Raise it deliberately.
+    "ruff>=0.16.4,<0.17",
 ]
 
 [project.scripts]
@@ -49,6 +52,48 @@ Source = "https://github.com/Simon-McIntosh/reckon"
 # Generated from reckon/schema/flight.yaml. Linting it would invite hand edits
 # that desynchronise it from its source; regenerate instead.
 extend-exclude = ["reckon/_flight_schema.py"]
+
+# The selection is declared rather than inherited, because an inherited default
+# makes "compliant" mean whatever the installed ruff happens to check: a version
+# bump then turns a green tree red for everyone at once with no code change. The
+# rules below are the project's own contract, so the only thing a ruff upgrade
+# can change is how well it implements them.
+#
+# Measured against the inherited default when declared: about a third more
+# findings, and not one rule the default caught is dropped. The delta rather
+# than the totals, because the totals move with every commit. What it adds are
+# ordinary quality signals -- manual comprehensions, an unraised `raise ...
+# from`, suppressible try/except, loop variables reassigned in the body.
+[tool.ruff.lint]
+select = [
+    "ASYNC", "B", "BLE", "C4", "DTZ", "E4", "E7", "E9", "EXE", "F",
+    "FA", "FLY", "FURB", "G", "I", "ISC", "LOG", "N", "PERF", "PGH",
+    "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PYI", "RET", "RUF",
+    "S", "SIM", "T", "TC", "TRY", "UP", "W", "YTT",
+]
+# Deliberately absent, and absent rather than ignored so the lists stay honest:
+# D (docstring shape — every symbol is documented, not to pydocstyle's form),
+# PTH (os.path -> pathlib is a migration to run in its own commit), C90 and the
+# other complexity counters, and the annotation/message families this project
+# has never adopted. A category listed in `select` and then wholly ignored, or
+# ignored while never selected, reads as a decision and is really dead config.
+
+# Each entry is a pattern this codebase uses on purpose, not a finding deferred.
+# Anything merely tedious to fix belongs in the backlog instead.
+ignore = [
+    "T201",                                     # stdout IS the interface: crew commands emit JSON on it by contract
+    "S101",                                     # assert is pytest's mechanism
+    "S603", "S607",                             # driving git, ruff and worker CLIs by subprocess is the product
+    "PLC0415",                                  # imports are deliberately lazy, to break module cycles and keep startup cheap
+    "TRY003",                                   # refusals deliberately carry long messages naming the command that resolves them
+    "TRY300",                                   # a return inside try reads better than an else branch here
+    "PLR2004",                                  # comparisons against literal counts and exit codes are clearer inline
+    "PLR0911", "PLR0912", "PLR0913",            # branch, return and argument counts are not the project's complexity measure
+    "PLR0915", "PLR0917",
+    "N803", "N806",                             # argument and local naming follows the surrounding call site
+    "PT001", "PT006", "PT018",                  # pytest cosmetics
+    "TC001", "TC002", "TC003",                  # moving imports into TYPE_CHECKING blocks is churn without a runtime win
+]
 
 [tool.hatch.version]
 source = "vcs"
