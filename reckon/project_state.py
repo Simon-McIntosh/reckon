@@ -89,7 +89,15 @@ _SCRIPT_RE = re.compile(
 )
 _FINDING_CODE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _REVIEW_CATEGORIES = frozenset(
-    {"sprint", "dag", "lifecycle", "provenance", "references", "calibration"}
+    {
+        "sprint",
+        "dag",
+        "lifecycle",
+        "provenance",
+        "references",
+        "calibration",
+        "safety",
+    }
 )
 _REVIEW_SEVERITIES = frozenset({"error", "warn", "info"})
 _REVIEW_SUBJECT_KINDS = frozenset(

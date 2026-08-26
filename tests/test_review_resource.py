@@ -9,12 +9,49 @@ import pytest
 
 from reckon import mcp as mcp_module
 from reckon.project_state import (
+    _REVIEW_ACTIONS,
+    _REVIEW_CATEGORIES,
+    _REVIEW_SEVERITIES,
+    _REVIEW_SUBJECT_KINDS,
+    _REVIEW_VALIDATIONS,
     RESOURCE_SCRIPT_ID,
     create_project_state,
     read_resource,
     resource_path,
     write_resource,
 )
+
+
+def test_review_vocabularies_are_closed_and_explicit() -> None:
+    assert _REVIEW_CATEGORIES == {
+        "sprint",
+        "dag",
+        "lifecycle",
+        "provenance",
+        "references",
+        "calibration",
+        "safety",
+    }
+    assert _REVIEW_SEVERITIES == {"error", "warn", "info"}
+    assert _REVIEW_VALIDATIONS == {"confirmed", "stale", "conflicting"}
+    assert _REVIEW_ACTIONS == {
+        "close",
+        "resequence",
+        "rescope",
+        "recalibrate",
+        "resolve",
+        "repair-pointer",
+        "reopen",
+    }
+    assert _REVIEW_SUBJECT_KINDS == {
+        "plan",
+        "sprint",
+        "milestone",
+        "blocker",
+        "followup",
+        "decision",
+        "project",
+    }
 
 
 def _finding() -> dict:
@@ -147,6 +184,50 @@ def test_edit_plan_round_trips_a_versioned_review_and_derives_resolution(
     ).group(1)
     stored = json.loads(state_text)
     assert "status" not in stored["findings"][0]
+
+
+def test_review_round_trips_a_safety_finding(tmp_path: Path) -> None:
+    checkout, _ = _distributed_checkout(tmp_path)
+    finding = {**_finding(), "category": "safety"}
+
+    created = mcp_module._edit_plan_tool(
+        "sample",
+        "review",
+        expected_version=0,
+        ops=_review_ops(finding=finding),
+        create=True,
+        checkout_path=str(checkout),
+        doc_type="review",
+    )
+    read_back = mcp_module._read_plan(
+        "sample", "review", checkout_path=str(checkout), doc_type="review"
+    )
+
+    assert created["ok"] is True
+    assert read_back["data"]["findings"][0]["category"] == "safety"
+
+
+def test_unknown_review_category_names_field_and_complete_vocabulary(
+    tmp_path: Path,
+) -> None:
+    checkout, _ = _distributed_checkout(tmp_path)
+    finding = {**_finding(), "category": "unknown"}
+
+    rejected = mcp_module._edit_plan_tool(
+        "sample",
+        "review",
+        expected_version=0,
+        ops=_review_ops(finding=finding),
+        create=True,
+        checkout_path=str(checkout),
+        doc_type="review",
+    )
+
+    assert rejected["ok"] is False
+    assert rejected["detail"] == (
+        "findings[0].category must be one of calibration, dag, lifecycle, "
+        "provenance, references, safety, sprint"
+    )
 
 
 @pytest.mark.parametrize(
