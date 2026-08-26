@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T17:04:35",
+  "updated": "2026-08-26T17:18:30",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -26155,9 +26155,199 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260826T151210786291-n-promotion-scope-truth",
+        "plan": "execution-orchestration-hardening",
+        "section": "",
+        "node": "n-promotion-scope-truth",
+        "node_definition": {
+          "done_when": "New tests prove a two-commit run touching an undeclared path is refused at reckon crew complete and that the stored changed_lines equal the cumulative base-to-tip diff rather than the last commit's; the focused promotion test file passes via PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider; ruff adds no findings on staged paths",
+          "estimated_hours": null,
+          "goal": "A promotion path that computes one cumulative base-to-tip name and numstat diff, refuses any changed path outside the run's declared write_paths before ledger mutation, and stores file/add/remove counts equal to that same cumulative diff",
+          "id": "n-promotion-scope-truth",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T151210786291-n-promotion-scope-truth/manifest.md",
+          "plan": "execution-orchestration-hardening",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "dispatch-repair",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T15:12:28Z",
+        "completed_at": "2026-08-26T15:17:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 321,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 321,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "5827f3f6d55462f3ea4715dc0b5c862b313234c9",
+        "commits": [
+          "6580bc7"
+        ],
+        "changed_lines": {
+          "added": 233,
+          "removed": 10,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_crew_promotion_scope.py -p no:cacheprovider",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T151210786291-n-promotion-scope-truth/pytest.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T151210786291-n-promotion-scope-truth/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03e92-f086-7f52-a6ac-c3ed7f1079c1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 646656,
+            "cached_input_tokens_cumulative": 3347200,
+            "input_tokens": 591090,
+            "input_tokens_cumulative": 3422892,
+            "output_tokens": 1743,
+            "output_tokens_cumulative": 12913,
+            "reasoning_output_tokens": 863,
+            "reasoning_output_tokens_cumulative": 4130
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1466,
+              "budget_seconds": 1500,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: required rendered evidence cannot be produced in this run because every Chrome probe timed out after 75 seconds with empty stdout on two attempts; while non-browser source checks pass",
+              "elapsed_seconds": 2966,
+              "log_age_seconds": 2130,
+              "log_fresh": false,
+              "manifest_commits": [
+                "034dc5d"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-scroll-owner",
+              "phase": "starting",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T142253087856-n-scroll-owner",
+              "terminal_age_seconds": 2144,
+              "terminal_at": "2026-08-26T14:36:42Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-horizon-w2/n-scroll-owner"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1155,
+              "budget_seconds": 1800,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: The required rendered evidence and measured steady-state request cost cannot be produced on the current Chrome host; two bounded attempts timed out before application readiness; triggering the node's mandatory stop rule",
+              "elapsed_seconds": 2955,
+              "log_age_seconds": 2091,
+              "log_fresh": false,
+              "manifest_commits": [
+                "85d10ce86e03313e1f0e90ae058cab2f62e7ec53"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-live-refresh",
+              "phase": "starting",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T142302069688-n-live-refresh",
+              "terminal_age_seconds": 2113,
+              "terminal_at": "2026-08-26T14:37:12Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-horizon-w2/n-live-refresh"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the implementation is committed and safe; but the rendered evidence remains OWED until orphaned Chrome processes are reaped at the orchestrator level; no browser retry was made because waiting cannot release instances held by ppid-1 orphans and a further run would reproduce the same kernel-limit failure",
+              "elapsed_seconds": 2005,
+              "log_age_seconds": 1803,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f9080fd38ca1d9096e9f5602a5afead10d2417f0"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142313605618-n-client-load/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142313605618-n-client-load/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-client-load",
+              "phase": "working",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T142313605618-n-client-load",
+              "terminal_age_seconds": 1828,
+              "terminal_at": "2026-08-26T14:41:57Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-horizon-w2/n-client-load"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 449
+    "_version": 450
   }
 }
