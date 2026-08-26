@@ -1909,9 +1909,6 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
   <meta name=\"docs-project\" content=\"{proj_name}\">
   <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
   <title>reckon · {proj_name}</title>
-  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
-  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
-  <link href=\"https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">
   <link rel=\"stylesheet\" href=\"/_shared/foundation.css\">
   <link rel=\"stylesheet\" href=\"/_shared/dashboard.css\">
   <link rel=\"stylesheet\" href=\"/_ui/project.css\">
@@ -1924,24 +1921,23 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
   <link rel=\"stylesheet\" href=\"/_ui/sprints.css\">
   <link rel=\"stylesheet\" href=\"/_ui/crew.css\">
   <link rel=\"stylesheet\" href=\"/_ui/graph.css\">
-  <script src=\"https://unpkg.com/react@18.3.1/umd/react.development.js\" integrity=\"sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L\" crossorigin=\"anonymous\"></script>
-  <script src=\"https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js\" integrity=\"sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm\" crossorigin=\"anonymous\"></script>
-  <script src=\"https://unpkg.com/@babel/standalone@7.29.0/babel.min.js\" integrity=\"sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y\" crossorigin=\"anonymous\"></script>
+  <script src=\"/_runtime/react.js\"></script>
+  <script src=\"/_runtime/react-dom.js\"></script>
 </head>
 <body>
   <div id=\"root\"></div>
   <script src=\"/_ui/state-loader.js\"></script>
-  <script type=\"text/babel\" src=\"/_ui/glyphs.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/_shared.jsx\"></script>
+  <script src=\"/_ui/glyphs.js\"></script>
+  <script src=\"/_ui/_shared.js\"></script>
   <script src=\"/_ui/prompts.js\"></script>
-  <script type=\"text/babel\" src=\"/_ui/ui.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/bits.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/decision.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/plan.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/sprint.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/graph.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/crew.jsx\"></script>
-  <script type=\"text/babel\" src=\"/_ui/shell.jsx\"></script>
+  <script src=\"/_ui/ui.js\"></script>
+  <script src=\"/_ui/bits.js\"></script>
+  <script src=\"/_ui/decision.js\"></script>
+  <script src=\"/_ui/plan.js\"></script>
+  <script src=\"/_ui/sprint.js\"></script>
+  <script src=\"/_ui/graph.js\"></script>
+  <script src=\"/_ui/crew.js\"></script>
+  <script src=\"/_ui/shell.js\"></script>
 </body>
 </html>
 """
@@ -2099,10 +2095,9 @@ def build(docs_path, project):
 
     DOCS_PATH is the path to the project's docs/ directory.
 
-    Copies all JSX + CSS from the reckon install into docs/_ui/ and docs/_shared/,
-    generates an index.html with relative asset paths (compatible with GitHub Pages),
-    and writes a complete index.json with live-discovered inventory + sprints/milestones
-    so the SPA works without a running reckon server.
+    Copies the canonical frontend sources, compiles JSX into browser-ready JavaScript,
+    writes local production runtimes and an index with relative asset paths, then writes
+    complete project state so the SPA works without a running reckon server.
 
     Intended for CI (e.g. GitHub Actions). For local development, use reckon sync
     instead — it uses canonical server routes and doesn't need local asset copies.
@@ -2121,6 +2116,27 @@ def build(docs_path, project):
     ui_dest = docs_dir / "_ui"
     copied_ui = _copy_asset_directory(ui_src, ui_dest)
     click.echo(f"  copied _ui/ ({copied_ui} files)")
+
+    from reckon.serve import client_runtime_assets, compile_jsx
+
+    compiled_ui = 0
+    for jsx_source in sorted(ui_src.glob("*.jsx")):
+        output = ui_dest / f"{jsx_source.stem}.js"
+        output.write_bytes(
+            compile_jsx(
+                jsx_source.read_text(encoding="utf-8"),
+                filename=jsx_source.name,
+            )
+        )
+        compiled_ui += 1
+    click.echo(f"  compiled _ui/ ({compiled_ui} JSX modules)")
+
+    runtime_dest = docs_dir / "_runtime"
+    runtime_dest.mkdir(parents=True, exist_ok=True)
+    runtimes = client_runtime_assets()
+    for name, payload in runtimes.items():
+        (runtime_dest / name).write_bytes(payload)
+    click.echo(f"  wrote _runtime/ ({len(runtimes)} production bundles)")
 
     # ── Copy shared CSS + state.js ─────────────────────────────────────────
     shared_src = asset_root / "_shared"
@@ -2695,9 +2711,6 @@ _BUILD_INDEX_TEMPLATE = """\
   <meta name="docs-project" content="{project}">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>reckon · {project}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="_shared/foundation.css">
   <link rel="stylesheet" href="_shared/dashboard.css">
   <link rel="stylesheet" href="_ui/project.css">
@@ -2710,24 +2723,23 @@ _BUILD_INDEX_TEMPLATE = """\
   <link rel="stylesheet" href="_ui/sprints.css">
   <link rel="stylesheet" href="_ui/crew.css">
   <link rel="stylesheet" href="_ui/graph.css">
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="_runtime/react.js"></script>
+  <script src="_runtime/react-dom.js"></script>
 </head>
 <body>
   <div id="root"></div>
   <script src="_ui/state-loader.js"></script>
-  <script type="text/babel" src="_ui/glyphs.jsx"></script>
-  <script type="text/babel" src="_ui/_shared.jsx"></script>
+  <script src="_ui/glyphs.js"></script>
+  <script src="_ui/_shared.js"></script>
   <script src="_ui/prompts.js"></script>
-  <script type="text/babel" src="_ui/ui.jsx"></script>
-  <script type="text/babel" src="_ui/bits.jsx"></script>
-  <script type="text/babel" src="_ui/decision.jsx"></script>
-  <script type="text/babel" src="_ui/plan.jsx"></script>
-  <script type="text/babel" src="_ui/sprint.jsx"></script>
-  <script type="text/babel" src="_ui/graph.jsx"></script>
-  <script type="text/babel" src="_ui/crew.jsx"></script>
-  <script type="text/babel" src="_ui/shell.jsx"></script>
+  <script src="_ui/ui.js"></script>
+  <script src="_ui/bits.js"></script>
+  <script src="_ui/decision.js"></script>
+  <script src="_ui/plan.js"></script>
+  <script src="_ui/sprint.js"></script>
+  <script src="_ui/graph.js"></script>
+  <script src="_ui/crew.js"></script>
+  <script src="_ui/shell.js"></script>
 </body>
 </html>
 """

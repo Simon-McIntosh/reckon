@@ -45,12 +45,14 @@ import re
 import socket
 import subprocess
 import tempfile
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
+from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, crew, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
@@ -98,6 +100,131 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
 CREW_LOG_TAIL_BYTES = 64 * 1024
+
+CLIENT_ASSETS = {
+    "babel.js": (
+        "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "2623a9e22809915ce789b4461154e277ddce520d5a4320c14d44332a5d0dcea0",
+    ),
+    "react.js": (
+        "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
+        "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+    ),
+    "react-dom.js": (
+        "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
+        "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+    ),
+}
+_CLIENT_ASSET_LOCK = threading.Lock()
+
+
+class ClientAssetError(RuntimeError):
+    """A pinned client runtime or JSX transformation could not be produced."""
+
+
+def _client_cache_root() -> Path:
+    configured = os.environ.get("RECKON_CLIENT_CACHE")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    return cache_home / "reckon" / "client"
+
+
+def _client_asset(name: str) -> Path:
+    """Return one content-verified local runtime asset, downloading it once."""
+    if name not in CLIENT_ASSETS:
+        raise ClientAssetError(f"unknown client asset: {name}")
+    url, expected = CLIENT_ASSETS[name]
+    destination = _client_cache_root() / name
+    with _CLIENT_ASSET_LOCK:
+        if destination.is_file():
+            payload = destination.read_bytes()
+            if hashlib.sha256(payload).hexdigest() == expected:
+                return destination
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with urlopen(url, timeout=30) as response:  # noqa: S310
+                payload = response.read()
+        except OSError as exc:
+            raise ClientAssetError(
+                f"could not cache pinned client asset {name} from {url}: {exc}"
+            ) from exc
+        actual = hashlib.sha256(payload).hexdigest()
+        if actual != expected:
+            raise ClientAssetError(
+                f"client asset {name} digest mismatch: expected {expected}, got {actual}"
+            )
+        with tempfile.NamedTemporaryFile(
+            dir=destination.parent, prefix=f".{name}.", delete=False
+        ) as handle:
+            handle.write(payload)
+            temporary = Path(handle.name)
+        temporary.replace(destination)
+    return destination
+
+
+def client_runtime_assets() -> dict[str, bytes]:
+    """Return the production browser runtimes that entry points serve locally."""
+    return {
+        name: _client_asset(name).read_bytes()
+        for name in ("react.js", "react-dom.js")
+    }
+
+
+def compile_jsx(source: str, *, filename: str) -> bytes:
+    """Compile JSX through the pinned server-side compiler and cache by content."""
+    digest = hashlib.sha256(source.encode()).hexdigest()
+    destination = _client_cache_root() / "compiled" / f"{digest}.js"
+    if destination.is_file():
+        return destination.read_bytes()
+    compiler = _client_asset("babel.js")
+    script = """
+const Babel = require(process.argv[1]);
+const filename = process.argv[2];
+let source = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", chunk => source += chunk);
+process.stdin.on("end", () => {
+  const result = Babel.transform(source, {
+    filename,
+    presets: [["react", {runtime: "classic"}]],
+    sourceType: "script",
+  });
+  process.stdout.write(result.code + `\n//# sourceURL=${filename}\n`);
+});
+"""
+    try:
+        result = subprocess.run(
+            ["node", "-e", script, str(compiler), filename],
+            input=source,
+            text=True,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ClientAssetError(f"could not compile {filename}: {exc}") from exc
+    if result.returncode:
+        detail = result.stderr.strip() or f"node exited {result.returncode}"
+        raise ClientAssetError(f"could not compile {filename}: {detail}")
+    payload = result.stdout.encode()
+    with _CLIENT_ASSET_LOCK:
+        if not destination.is_file():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                dir=destination.parent, prefix=f".{digest}.", delete=False
+            ) as handle:
+                handle.write(payload)
+                temporary = Path(handle.name)
+            temporary.replace(destination)
+    return payload
+
+
+def _ui_root() -> Path:
+    configured = os.environ.get("RECKON_UI_ROOT")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return Path(__file__).parent.parent / "docs" / "ui"
 
 # Fields that are updated on every write and therefore excluded from the
 # content-equality check in _content_equal.
@@ -1159,9 +1286,6 @@ def _render_spa_html(project: str) -> str:
   <meta name="docs-project" content="{project}">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>reckon · {project}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
   <link rel="stylesheet" href="/_ui/project.css">
@@ -1174,24 +1298,23 @@ def _render_spa_html(project: str) -> str:
   <link rel="stylesheet" href="/_ui/sprints.css">
   <link rel="stylesheet" href="/_ui/crew.css">
   <link rel="stylesheet" href="/_ui/graph.css">
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="/_runtime/react.js"></script>
+  <script src="/_runtime/react-dom.js"></script>
 </head>
 <body>
   <div id="root"></div>
   <script src="/_ui/state-loader.js"></script>
-  <script type="text/babel" src="/_ui/glyphs.jsx"></script>
-  <script type="text/babel" src="/_ui/_shared.jsx"></script>
+  <script src="/_ui/glyphs.js"></script>
+  <script src="/_ui/_shared.js"></script>
   <script src="/_ui/prompts.js"></script>
-  <script type="text/babel" src="/_ui/ui.jsx"></script>
-  <script type="text/babel" src="/_ui/bits.jsx"></script>
-  <script type="text/babel" src="/_ui/decision.jsx"></script>
-  <script type="text/babel" src="/_ui/plan.jsx"></script>
-  <script type="text/babel" src="/_ui/sprint.jsx"></script>
-  <script type="text/babel" src="/_ui/graph.jsx"></script>
-  <script type="text/babel" src="/_ui/crew.jsx"></script>
-  <script type="text/babel" src="/_ui/shell.jsx"></script>
+  <script src="/_ui/ui.js"></script>
+  <script src="/_ui/bits.js"></script>
+  <script src="/_ui/decision.js"></script>
+  <script src="/_ui/plan.js"></script>
+  <script src="/_ui/sprint.js"></script>
+  <script src="/_ui/graph.js"></script>
+  <script src="/_ui/crew.js"></script>
+  <script src="/_ui/shell.js"></script>
 </body>
 </html>
 """
@@ -1331,13 +1454,42 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
             return
 
+        if path.startswith("/_runtime/"):
+            fname = path[len("/_runtime/") :].lstrip("/")
+            if fname not in ("react.js", "react-dom.js"):
+                self._send(HTTPStatus.NOT_FOUND, b"runtime asset not found")
+                return
+            try:
+                self._send(
+                    HTTPStatus.OK,
+                    _client_asset(fname).read_bytes(),
+                    "application/javascript",
+                )
+            except (OSError, ClientAssetError) as exc:
+                self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc).encode())
+            return
+
         if path.startswith("/_ui/"):
             rel = path[len("/_ui/") :]
             fname = rel.lstrip("/")
             if not SAFE_NAME.match(fname):
                 self._send(HTTPStatus.BAD_REQUEST, b"bad ui filename")
                 return
-            target = Path(__file__).parent.parent / "docs" / "ui" / fname
+            target = _ui_root() / fname
+            jsx_source = target.with_suffix(".jsx") if target.suffix == ".js" else None
+            if not target.is_file() and jsx_source and jsx_source.is_file():
+                try:
+                    self._send(
+                        HTTPStatus.OK,
+                        compile_jsx(
+                            jsx_source.read_text(encoding="utf-8"),
+                            filename=jsx_source.name,
+                        ),
+                        "application/javascript",
+                    )
+                except (OSError, ClientAssetError) as exc:
+                    self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc).encode())
+                return
             if not target.is_file():
                 self._send(HTTPStatus.NOT_FOUND, b"ui asset not found")
                 return

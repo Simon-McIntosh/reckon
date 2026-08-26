@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -11,7 +12,12 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-from tests.spa_browser_harness import installed_browser, served_spa
+from tests.spa_browser_harness import (
+    _evaluate_browser_url,
+    _served_document,
+    installed_browser,
+    served_spa,
+)
 
 from reckon import __version__, cli, pages, serve
 
@@ -187,10 +193,20 @@ def built_source_site(tmp_path):
 def test_build_copies_every_canonical_asset(built_source_site):
     docs_dir, _, _ = built_source_site
     expected_ui = {path.name for path in (REPO_ROOT / "docs" / "ui").iterdir()}
+    compiled_ui = {
+        f"{path.stem}.js"
+        for path in (REPO_ROOT / "docs" / "ui").glob("*.jsx")
+    }
     expected_shared = {path.name for path in (REPO_ROOT / "docs" / "_shared").iterdir()}
 
-    assert {path.name for path in (docs_dir / "_ui").iterdir()} == expected_ui
+    assert {path.name for path in (docs_dir / "_ui").iterdir()} == (
+        expected_ui | compiled_ui
+    )
     assert {path.name for path in (docs_dir / "_shared").iterdir()} == expected_shared
+    assert {path.name for path in (docs_dir / "_runtime").iterdir()} == {
+        "react.js",
+        "react-dom.js",
+    }
     assert (docs_dir / "_shared" / "state.js").read_bytes() == (
         REPO_ROOT / "docs" / "_shared" / "state.js"
     ).read_bytes()
@@ -207,10 +223,12 @@ def test_build_writes_relative_index_and_nojekyll(built_source_site):
 
     assert local_references
     assert all(not value.startswith("/") for value in local_references)
-    assert "_ui/glyphs.jsx" in local_references
-    assert "_ui/_shared.jsx" in local_references
+    assert "_runtime/react.js" in local_references
+    assert "_runtime/react-dom.js" in local_references
+    assert "_ui/glyphs.js" in local_references
+    assert "_ui/_shared.js" in local_references
     assert "_ui/prompts.js" in local_references
-    assert "_ui/crew.jsx" in local_references
+    assert "_ui/crew.js" in local_references
     assert (docs_dir / ".nojekyll").is_file()
 
 
@@ -237,17 +255,17 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
 
     expected_modules = (
         "_ui/state-loader.js",
-        "_ui/glyphs.jsx",
-        "_ui/_shared.jsx",
+        "_ui/glyphs.js",
+        "_ui/_shared.js",
         "_ui/prompts.js",
-        "_ui/ui.jsx",
-        "_ui/bits.jsx",
-        "_ui/decision.jsx",
-        "_ui/plan.jsx",
-        "_ui/sprint.jsx",
-        "_ui/graph.jsx",
-        "_ui/crew.jsx",
-        "_ui/shell.jsx",
+        "_ui/ui.js",
+        "_ui/bits.js",
+        "_ui/decision.js",
+        "_ui/plan.js",
+        "_ui/sprint.js",
+        "_ui/graph.js",
+        "_ui/crew.js",
+        "_ui/shell.js",
     )
     entry_points = {
         "checked-in": (REPO_ROOT / "docs" / "index.html").read_text(),
@@ -258,12 +276,127 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
     loaded = {name: _loaded_spa_modules(html) for name, html in entry_points.items()}
 
     assert loaded == {name: expected_modules for name in entry_points}
-    assert all("_ui/cockpit.jsx" not in modules for modules in loaded.values())
+    assert all("_ui/cockpit.js" not in modules for modules in loaded.values())
     assert not (REPO_ROOT / "docs" / "ui" / "cockpit.jsx").exists()
     assert not (docs_dir / "_ui" / "cockpit.jsx").exists()
     assert all((docs_dir / module).is_file() for module in expected_modules)
     shell = (REPO_ROOT / "docs" / "ui" / "shell.jsx").read_text()
     assert shell.count("function CockpitBody(") == 1
+
+
+def test_spa_entry_points_use_local_runtime_without_browser_transforms(
+    built_source_site, tmp_path
+):
+    docs_dir, _, _ = built_source_site
+    synced_docs = tmp_path / "synced-runtime" / "docs"
+    synced_docs.mkdir(parents=True)
+    sync_result = CliRunner().invoke(
+        cli.main,
+        [
+            "sync",
+            str(synced_docs),
+            "--project",
+            "synced-runtime",
+            "--mounts",
+            str(tmp_path / "mounts-runtime.json"),
+            "--state-root",
+            str(tmp_path / "state-runtime"),
+        ],
+    )
+    assert sync_result.exit_code == 0, sync_result.output
+
+    entry_points = {
+        "checked-in": (REPO_ROOT / "docs" / "index.html").read_text(),
+        "served": serve._render_spa_html("fixture"),
+        "synced": (synced_docs / "index.html").read_text(),
+        "built": (docs_dir / "index.html").read_text(),
+    }
+    for name, html in entry_points.items():
+        assert "text/babel" not in html, name
+        assert "@babel/standalone" not in html, name
+        assert "unpkg.com" not in html, name
+        assert "fonts.googleapis.com" not in html, name
+        assert "fonts.gstatic.com" not in html, name
+        assert "react.js" in html, name
+        assert "react-dom.js" in html, name
+        assert not re.search(r'<script[^>]+src="[^"]+\.jsx"', html), name
+
+
+def test_served_and_static_pages_request_only_their_own_origin(
+    tmp_path, built_source_site
+):
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    docs_dir, _, _ = built_source_site
+    expression = """
+      (() => ({
+        pageOrigin: location.origin,
+        resourceOrigins: [...new Set(
+          performance.getEntriesByType('resource').map(entry => new URL(entry.name).origin)
+        )],
+      }))()
+    """
+
+    with served_spa(
+        tmp_path,
+        browser,
+        docs=docs_dir,
+        project="fixture",
+        route="#plan/alpha",
+    ) as spa:
+        served = spa.run_probe(
+            expression,
+            ready_expression="Boolean(document.querySelector('.r-list-body'))",
+        )
+
+    with _served_document(tmp_path, docs_dir / "index.html") as page_url:
+        static = _evaluate_browser_url(
+            tmp_path,
+            browser,
+            f"{page_url}#plan/alpha",
+            expression,
+            viewport=(1374, 900),
+            ready_expression="Boolean(document.querySelector('.r-list-body'))",
+        )
+
+    for result in (served, static):
+        assert result["resourceOrigins"] == [result["pageOrigin"]]
+
+
+def test_served_component_edit_is_visible_on_the_next_load(
+    tmp_path, monkeypatch, built_source_site
+):
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    docs_dir, _, _ = built_source_site
+    ui_root = tmp_path / "editable-ui"
+    shutil.copytree(REPO_ROOT / "docs" / "ui", ui_root)
+    monkeypatch.setenv("RECKON_UI_ROOT", str(ui_root))
+    shell = ui_root / "shell.jsx"
+
+    with served_spa(
+        tmp_path,
+        browser,
+        docs=docs_dir,
+        project="fixture",
+        route="#plan/alpha",
+    ) as spa:
+        before = spa.run_probe(
+            "document.querySelector('.r-topbar-brand span')?.textContent",
+            ready_expression="Boolean(document.querySelector('.r-topbar-brand span'))",
+        )
+        shell.write_text(
+            shell.read_text().replace("<span>reckon</span>", "<span>edited live</span>")
+        )
+        after = spa.run_probe(
+            "document.querySelector('.r-topbar-brand span')?.textContent",
+            ready_expression="Boolean(document.querySelector('.r-topbar-brand span'))",
+        )
+
+    assert before == "reckon"
+    assert after == "edited live"
 
 
 def test_spa_entry_points_load_the_same_surface_stylesheets(
@@ -642,8 +775,9 @@ def installed_static_site(tmp_path_factory, built_wheel):
 def test_installed_wheel_build_emits_complete_static_site(installed_static_site):
     docs_dir, _, result, version_result, metadata_result = installed_static_site
 
-    assert len(list((docs_dir / "_ui").iterdir())) == len(
-        list((REPO_ROOT / "docs" / "ui").iterdir())
+    source_assets = list((REPO_ROOT / "docs" / "ui").iterdir())
+    assert len(list((docs_dir / "_ui").iterdir())) == len(source_assets) + sum(
+        path.suffix == ".jsx" for path in source_assets
     )
     assert len(list((docs_dir / "_shared").iterdir())) == len(
         list((REPO_ROOT / "docs" / "_shared").iterdir())
@@ -661,7 +795,7 @@ def test_installed_wheel_build_emits_usable_state(installed_static_site):
     index_html = (docs_dir / "index.html").read_text()
     state = json.loads(index_path.read_text())["data"]
 
-    assert 'src="_ui/shell.jsx"' in index_html
+    assert 'src="_ui/shell.js"' in index_html
     assert 'href="_shared/foundation.css"' in index_html
     assert "portable" in {item["slug"] for item in state["inventory"]}
     assert {item["id"] for item in state["sprints"]} == {"S7", "S8"}
