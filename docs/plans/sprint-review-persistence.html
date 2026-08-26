@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="0.2">
+<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.4">
 </head>
 <body>
   <main class="plan-doc">
@@ -293,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§2 landed — commit <code>388a714</code> (merged <code>56217f1</code>); gate passed. The review singleton is registered on the existing distributed-state path: <code>edit_plan(create=True, doc_type="review")</code> writes <code>docs/state/&lt;project&gt;/review.html</code> through <code>RESOURCE_TYPES</code>, <code>resource_path</code>, <code>write_resource</code>, <code>apply_resource_ops</code>, the <code>_store</code> route and the MCP typed-resource branch. Measure: 7 new tests (5 parameterized strict-write refusals), full suite 2471 passed / 0 failed, so zero new failures against the node base; 503 lines added across 4 files. The <code>active-sprint-mismatch</code> fixture round-trips with both evidence lines at version 1; resolving it advances only the review resource to version 2 while a sibling sprint stays at 1, returns derived <code>status="resolved"</code>, and stores no status field. Refusals name <code>findings[0].category</code>, <code>findings[0].evidence</code>, <code>priority[0].rank</code>, <code>priority[1].ref</code> and <code>findings[0].subject.id</code>; a dotted <code>priority.0.rank</code> set is refused so only a complete ranking may be written. Artifacts: the registered type and canonical path; no standalone binary. Worker reported no follow-ons and no blockers.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s4-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§4 landed — commit <code>1908da4</code> (merged <code>625379f</code>, tests formatted in <code>872bc71</code>); gate passed. <code>build_roadmap</code> now reads the optional review singleton (or accepts an explicitly composed review), joins local priority rows to <code>status</code>/<code>effective_status</code>/<code>impl</code>/<code>sprint</code>/<code>landed</code>, derives per-finding <code>subject_found</code>/<code>subject_status</code>/<code>current</code> and <code>sprint_order</code>, and returns <code>review=None</code> when no resource exists — absent is never an error. Measure: focused regression 51 passed / 0 failed; 2 tests covering the 8 required cases; 493 lines across 3 files; lint findings fell 12 → 11 across the two changed modules. The two advisory codes <code>priority-order-inversion</code> and <code>review-stale</code> are warn-level in <code>wiring_findings</code> and provably do not affect readiness — the constructed prerequisite-behind-successor case retained only the prerequisite in <code>ready_now</code>. <code>audit_links</code> registers <code>review-enum-violation</code>, <code>review-priority-noncontiguous</code> and <code>dangling-review-subject</code>, reading the review state island without writing it. Worker follow-on recorded for §3: consume this returned review block as the single roadmap contract rather than deriving the same fields twice.</p></div>
 </div>
 </section>
 </main>
