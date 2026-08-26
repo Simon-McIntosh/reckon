@@ -394,6 +394,26 @@
       sessions having written this ledger throughout, but that is a hypothesis and not a
       finding. Confirming it needs a reproduction this plan does not own.
     </p>
+    <p>
+      <strong>A verification trap worth knowing before anyone re-checks this: a
+      presence check by node name returns a false PRESENT for every lost row.</strong>
+      Shadowing re-runs a <em>committed</em> node, so the primary bearing that same node
+      name is still in the ledger by construction. Grepping the name finds the primary
+      and reports the pair as recorded. Two independent attempts to disconfirm the loss
+      failed this way before a lookup by run id settled it. The trap is worst exactly
+      where it is most likely to be used, because re-running committed nodes is what
+      shadow qualification <em>is</em>. Check by run id, and treat
+      <code>lineage.kind</code> rather than a name prefix as the shadow predicate.
+    </p>
+    <p>
+      <strong>The consequence for this plan is a prerequisite, not a caveat.</strong> The
+      six-pair result above rests on diffs audited directly in the run directories, so it
+      survives; but a qualification ladder that needs ten controlled pairs to open a
+      pilot, and 161 for a powered claim, cannot be accumulated on a store that silently
+      drops rows while reporting success. Nothing downstream can detect the loss, so
+      every calibration read afterwards inherits it. Fixing the ledger write is therefore
+      upstream of collecting any further pairs.
+    </p>
 
     <h2 id="s5">&sect;5 &mdash; Verdict and adoption recommendation</h2>
     <p>
@@ -435,9 +455,12 @@
         &mdash; investigation, review, reporting &mdash; where its capability is already
         demonstrated and a stray write cannot reach a shared file. It has one clean
         end-to-end investigate run on record already.</li>
-      <li><strong>Keep accumulating pairs</strong> toward a powered claim, and keep them
-        durable somewhere other than the ledger until the lost-update question is
-        answered.</li>
+      <li><strong>Fix the ledger write before collecting another pair.</strong> Half the
+        promotions in this benchmark reported success and left no row. Any further
+        accumulation toward the ten-pair pilot threshold or the 161-pair powered depth is
+        measured on a store that loses rows undetectably, so this is a prerequisite for
+        the ladder rather than a parallel concern. Until it is fixed, pair evidence lives
+        in the run directories and in records like this one.</li>
       <li><strong>Run verification on a scheduler compute node, not on the shared
         interactive login host.</strong> This is a correction of a claim made earlier in
         this session and it reverses the remedy. Concurrent local workers were blamed for
