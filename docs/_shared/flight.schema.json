@@ -35,6 +35,27 @@
                         "null"
                     ]
                 },
+                "environment": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EnvironmentVariable__identifier_optional"
+                            },
+                            {
+                                "description": "Value associated with an environment-variable name.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
                 "launch": {
                     "$ref": "#/$defs/LaunchMode",
                     "description": "How this backend's workers are started."
@@ -111,6 +132,27 @@
                         "null"
                     ]
                 },
+                "environment": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EnvironmentVariable__identifier_optional"
+                            },
+                            {
+                                "description": "Value associated with an environment-variable name.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
                 "launch": {
                     "$ref": "#/$defs/LaunchMode",
                     "description": "How this backend's workers are started."
@@ -184,6 +226,48 @@
                 }
             },
             "title": "BudgetConfig",
+            "type": "object"
+        },
+        "EnvironmentVariable": {
+            "additionalProperties": false,
+            "description": "One environment-variable name and its string value.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "Value associated with an environment-variable name.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "EnvironmentVariable",
+            "type": "object"
+        },
+        "EnvironmentVariable__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One environment-variable name and its string value.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "Value associated with an environment-variable name.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "EnvironmentVariable",
             "type": "object"
         },
         "FenceConfig": {
