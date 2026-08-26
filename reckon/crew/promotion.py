@@ -364,6 +364,7 @@ def complete(
     run_id: str,
     *,
     gate: str,
+    failure_classification: str = "",
     commits: Iterable[str] = (),
     outcome: str = "",
     tests_added: int | None = None,
@@ -385,6 +386,14 @@ def complete(
             "a non-passing gate requires --outcome; write what failed or why "
             "the evidence could not be produced"
         )
+    classification = str(failure_classification).strip().lower()
+    if verdict == "failed" and classification not in ledger.FAILURE_CLASSIFICATIONS:
+        raise CrewError(
+            "a failing gate requires --failure-classification from: "
+            + ", ".join(ledger.FAILURE_CLASSIFICATIONS)
+        )
+    if verdict != "failed" and classification:
+        raise CrewError("--failure-classification is valid only when --gate failed")
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -395,6 +404,7 @@ def complete(
         return _complete_locked(
             run_id,
             gate=gate,
+            failure_classification=classification,
             commits=commit_list,
             outcome=outcome,
             tests_added=tests_added,
@@ -409,6 +419,7 @@ def _complete_locked(
     run_id: str,
     *,
     gate: str,
+    failure_classification: str = "",
     commits: Iterable[str] = (),
     outcome: str = "",
     tests_added: int | None = None,
@@ -569,6 +580,7 @@ def _complete_locked(
         changed_lines=changed_lines,
         tests_added=tests_added,
         gate=gate,
+        failure_classification=failure_classification,
         outcome="" if comment.get("recorded") else outcome,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
