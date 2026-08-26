@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-25T21:47:00",
+  "updated": "2026-08-26T06:44:02",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -22981,9 +22981,366 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260825T143538008344-second-checkpoint-slice-read",
+        "plan": "crew-effort-routing",
+        "section": "\u00a712",
+        "node": "second-checkpoint-slice-read",
+        "node_definition": {
+          "done_when": "The report at the write path gives, per (configuration x declared level x size bucket) over all three mounted ledgers, pass rate with its usable-run count, median worker minutes, and redispatch-charged totals, with shadow-lineage rows labelled and excluded from live figures; it carries an explicit written verdict for each of the four \u00a712 components including the negative ones; and docs/figures/crew-effort-routing/spec-level-slices.png is regenerated in place from the current data with its generating code stated in the report.",
+          "estimated_hours": 0.8,
+          "goal": "A durable slice report renders every \u00a712 verdict from the three committed ledgers.",
+          "id": "second-checkpoint-slice-read",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T143538008344-second-checkpoint-slice-read/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/second-checkpoint-slices.md",
+            "docs/figures/crew-effort-routing/spec-level-slices.png"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-25T14:35:44Z",
+        "completed_at": "2026-08-25T14:50:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 911,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 911,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "97f9b2b6177a4af2ca0fad9fc1139af91f054011",
+        "commits": [
+          "8476b70"
+        ],
+        "changed_lines": {
+          "available": false,
+          "reason": "diff_unavailable"
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T143538008344-second-checkpoint-slice-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a03804-4354-78d2-8cda-589df3a42ef1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4975872,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 5166798,
+            "output_tokens": 11085,
+            "output_tokens_cumulative": 31093,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 5112
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the same ruff command failed twice after two different import fixes; the second failure is I001 on the import block containing from tests import spa_browser_harness; so the mandatory two-attempt stop fence prevents another edit; final-state tests; staging; and commit",
+              "elapsed_seconds": 1611,
+              "log_age_seconds": 1427,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-last-probe-joins-the-harness",
+              "phase": "working",
+              "plan": "spa-surface-redesign",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T135855027127-n-last-probe-joins-the-harness",
+              "terminal_age_seconds": 1457,
+              "terminal_at": "2026-08-25T14:11:25Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s9-20260825-surfacefix/n-last-probe-joins-the-harness"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T142832299679-n-readyqueuegap",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "",
+        "node": "n-readyqueuegap",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon-readyqueue-gap.md reports a count of unshipped deliverables in the plan with each one's current code state cited by file and symbol, and classifies each of ordered-next-work, safe-concurrency-by-file-claim, tag-or-topic-scoped work selection and duration-capped work-taking as implemented, planned-but-unbuilt, or absent, citing the function or the plan section that decides each verdict",
+          "estimated_hours": null,
+          "goal": "A statement of what remains unbuilt in concurrency-and-schedule-visibility and whether a ready-queue dispatch loop is already covered by it",
+          "id": "n-readyqueuegap",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142832299679-n-readyqueuegap/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon-readyqueue-gap.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-25T14:28:37Z",
+        "completed_at": "2026-08-25T14:36:10Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 453,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 453,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "c9f2809509835f5b0497cc51160b59191499b856",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142832299679-n-readyqueuegap/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e4-7ad0-7d90-854c-9051ebabb2a8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1990912,
+            "cached_input_tokens_cumulative": 5281536,
+            "input_tokens": 2089653,
+            "input_tokens_cumulative": 5563878,
+            "output_tokens": 3930,
+            "output_tokens_cumulative": 14367,
+            "reasoning_output_tokens": 2600,
+            "reasoning_output_tokens_cumulative": 5885
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the same ruff command failed twice after two different import fixes; the second failure is I001 on the import block containing from tests import spa_browser_harness; so the mandatory two-attempt stop fence prevents another edit; final-state tests; staging; and commit",
+              "elapsed_seconds": 1184,
+              "log_age_seconds": 1000,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-last-probe-joins-the-harness",
+              "phase": "working",
+              "plan": "spa-surface-redesign",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T135855027127-n-last-probe-joins-the-harness",
+              "terminal_age_seconds": 1030,
+              "terminal_at": "2026-08-25T14:11:25Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s9-20260825-surfacefix/n-last-probe-joins-the-harness"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260825T142838652415-n-taggingmaturity",
+        "plan": "resource-tagging-system",
+        "section": "",
+        "node": "n-taggingmaturity",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon-tagging-maturity.md states the count of tagging deliverables shipped versus unshipped with each cited by file and symbol, the live count of distinct tags and total tag usages across every mounted project measured rather than estimated, and a verdict on whether roadmap or crew can already select work by tag - citing the accessor if it can and naming the missing seam if it cannot",
+          "estimated_hours": null,
+          "goal": "A verdict on how much of the tagging system is built versus adopted, and whether shipping from a tag-scoped queue is reachable",
+          "id": "n-taggingmaturity",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142838652415-n-taggingmaturity/manifest.md",
+          "plan": "resource-tagging-system",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon-tagging-maturity.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "codex-b",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-25T14:28:43Z",
+        "completed_at": "2026-08-25T14:37:45Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 542,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 542,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "c9f2809509835f5b0497cc51160b59191499b856",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T142838652415-n-taggingmaturity/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e7-fa6e-7333-af51-50f8a42a3220",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2202368,
+            "cached_input_tokens_cumulative": 5143808,
+            "input_tokens": 2302686,
+            "input_tokens_cumulative": 5383230,
+            "output_tokens": 2672,
+            "output_tokens_cumulative": 15236,
+            "reasoning_output_tokens": 2703,
+            "reasoning_output_tokens_cumulative": 6572
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the same ruff command failed twice after two different import fixes; the second failure is I001 on the import block containing from tests import spa_browser_harness; so the mandatory two-attempt stop fence prevents another edit; final-state tests; staging; and commit",
+              "elapsed_seconds": 1190,
+              "log_age_seconds": 1007,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260825T135855027127-n-last-probe-joins-the-harness/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-last-probe-joins-the-harness",
+              "phase": "working",
+              "plan": "spa-surface-redesign",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260825T135855027127-n-last-probe-joins-the-harness",
+              "terminal_age_seconds": 1037,
+              "terminal_at": "2026-08-25T14:11:25Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s9-20260825-surfacefix/n-last-probe-joins-the-harness"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 407
+    "_version": 410
   }
 }
