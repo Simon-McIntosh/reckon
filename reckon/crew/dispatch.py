@@ -46,10 +46,11 @@ from reckon.crew.routing import (
     _session_member_id,
     _signal_process_group,
     _workspace_roots,
+    mounted_repository_projects,
     reap_idle_session_members,
     require_plan_section_visible,
     resolve_dispatch_authority,
-    mounted_repository_projects,
+    resolve_dispatch_ledger_root,
     resolve_scope_repository,
     resolve_role,
     resolved_time_budget,
@@ -1382,6 +1383,7 @@ def dispatch(
     if lineage_override is not None and shadow_lineage is None:
         raise CrewError("only shadow lineage may be supplied explicitly at dispatch")
     authority = resolve_dispatch_authority(project, repo_root)
+    ledger_root = resolve_dispatch_ledger_root(authority)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -1457,7 +1459,7 @@ def dispatch(
         # would leave write scope claimed by a node nobody is running.
         verdict = _budget_verdict(
             project=project,
-            root=repo_root,
+            root=ledger_root,
             config=config,
             backend_name=resolution.backend,
             backend=resolution.backend_settings,
@@ -1479,12 +1481,12 @@ def dispatch(
 
     reap_idle_session_members(
         project,
-        root=repo_root,
+        root=ledger_root,
         idle_window=str(fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW),
     )
     named_member = bool(member)
     effective_member = member or _session_member_id(session)
-    roster_member = ledger.member(project, effective_member, root=repo_root)
+    roster_member = ledger.member(project, effective_member, root=ledger_root)
     if named_member:
         if roster_member is None:
             raise CrewError(
@@ -1494,8 +1496,7 @@ def dispatch(
     if roster_member is not None:
         for pointer in list_live(project=project):
             if (
-                Path(str(pointer.get("repo") or "")).resolve() == repo_root
-                and pointer.get("member") == effective_member
+                pointer.get("member") == effective_member
                 and pointer.get("phase") not in _TERMINAL_RUN_PHASES
             ):
                 raise MemberInFlight(
@@ -1523,7 +1524,7 @@ def dispatch(
         if roster_member and backend.get("session_reuse")
         else None
     )
-    committed_runs = ledger.runs(project, root=repo_root)
+    committed_runs = ledger.runs(project, root=ledger_root)
     prior_node_runs = [
         item
         for item in committed_runs
@@ -1740,7 +1741,7 @@ def dispatch(
                 effective_member,
                 backend=backend_name,
                 role=node.role,
-                root=repo_root,
+                root=ledger_root,
             )
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
