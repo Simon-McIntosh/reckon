@@ -217,6 +217,8 @@ def _list_live_records(
     for path in sorted(directory.glob("*.json")):
         try:
             data = json.loads(path.read_text())
+        except FileNotFoundError:
+            continue
         except ValueError:
             continue
         if not isinstance(data, dict):
