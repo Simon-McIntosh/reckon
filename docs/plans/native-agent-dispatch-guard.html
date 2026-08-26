@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="native-agent-dispatch-guard">
+  <meta name="plan-title" content="Native Background Agents Are Refused Where the Crew Ledger Rules">
+  <meta name="plan-summary" content="A tool-boundary hook refuses new harness-native background agents in crew-managed repos; waivers cover crew-prepared in-harness runs and explicit override.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S13">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Native Background Agents Are Refused Where the Crew Ledger Rules | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The mechanism: bind the check to the moment that always happens</h2>
+    <p>
+      Two coordinator sessions on one morning launched harness-native background-agent
+      fleets in crew-managed repositories against an explicit codex-worker directive; the
+      evidence and root causes are recorded in the
+      <a href="/reckon/research/native-agent-dispatch-bypass">native-agent-dispatch-bypass</a>
+      research record. The decisive causes were rule locality (the ban lives in a skill
+      those sessions never load) and a binding rule with no bound check. The remedy follows
+      the repository's own doctrine: put a runnable check at the moment that always
+      happens. For this failure that moment is the spawn call itself — a host-harness
+      pre-tool-use hook that sees every attempt to start a new background agent before it
+      runs.
+    </p>
+    <p>
+      The guard changes nothing outside crew-managed repositories, never touches a
+      session's own inline tools (reading files, running commands, and messaging or
+      stopping already-running agents stay free), and refuses exactly the act that starts
+      an unledgered worker: spawning a new background agent where the crew system owns
+      worker execution.
+    </p>
+
+    <h2 id="s2">§2 — The hook</h2>
+    <p>
+      A self-contained hook script, shipped in this repository and wired as a pre-tool-use
+      hook on the harness's agent-spawning tool. Behavior, in order:
+    </p>
+    <ul>
+      <li><strong>Scope test:</strong> resolve the working repository; if it carries no
+        crew management state (no <code>docs/state/&lt;project&gt;/flight.yaml</code> and no
+        crew ledger), exit permissive — non-crew repos are untouched.</li>
+      <li><strong>Waiver — crew-prepared in-harness run:</strong> if a live run pointer for
+        this project has an in-harness launch awaiting attachment, allow the spawn and
+        remind the caller to bind it with <code>reckon crew attach</code>. This keeps the
+        legitimate native backend path alive.</li>
+      <li><strong>Waiver — explicit override:</strong> an environment toggle set for the
+        session allows the spawn; the refusal message names the toggle so the escape is
+        always one visible, deliberate step, never a default.</li>
+      <li><strong>Otherwise refuse</strong>, with a message that does the re-route for the
+        caller: the matching <code>reckon crew dispatch</code> invocation shape for
+        investigate/review work, and the watcher arming line. A refusal that teaches the
+        correct call costs one retry; a bare "no" costs a diagnosis.</li>
+    </ul>
+    <p><em>Done when:</em> hook unit tests cover the four branches — non-crew repo
+      passthrough, in-harness-awaiting-attach waiver, environment override, and the
+      refusal message naming both the dispatch shape and the override; and a synthetic
+      crew-managed temp repo proves the scope test reads only repository-local state.</p>
+
+    <h2 id="s3">§3 — Distribution: reckon-sync owns the wiring</h2>
+    <p>
+      <code>reckon sync</code> installs or refreshes the hook wiring into a crew-managed
+      repository's harness settings the same way it owns CSS, mounts, and skill links —
+      idempotently, with a clean removal path, and never touching a repository that is not
+      crew-managed. The hook script itself stays in reckon so a fix lands once and reaches
+      every synced repository on its next sync.
+    </p>
+    <p><em>Done when:</em> a sync run on a synthetic temp repository installs the wiring
+      exactly once (a second run is a no-op, asserted byte-for-byte), and the removal path
+      leaves settings as found.</p>
+
+    <h2 id="s4">§4 — Fix rule locality: the routing rule lands where the temptation occurs</h2>
+    <p>
+      One binding line in each skill a session can be holding when the spawn temptation
+      arises — status, roadmap, sprint, and create — plus the repository agent guidance:
+      in a crew-managed repository, investigation and review fan-out is
+      <code>reckon crew dispatch</code> work (investigate/review roles); harness-native
+      background agents bypass the run ledger, manifests, and calibration and are refused
+      by the guard. The ship skill already carries the full rule and sits at a measured
+      size ceiling; it gets a pointer at most, not a restatement.
+    </p>
+    <p><em>Done when:</em> each named skill file carries the line, phrased against the
+      mechanism rather than any incident, and a contract test asserts its presence so the
+      next skill rewrite cannot silently drop it.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="enforcement-mode" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the guard hard-refuse new native background agents, or warn and allow?</p>
+        <p class="r-dec-ctx">Both sessions in the motivating incident had counter-signals available
+          (a memory rule in one, general crew discipline in both) and rationalized past them; the
+          reviewing session explicitly judged that a hard block would have caught its batch cleanly
+          with a one-to-one re-route into crew dispatches and zero lost work. A warn is the same
+          prose rule wearing a checkmark.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="hard-refuse">hard refuse with waivers (recommended)</button>
+          <button class="r-opt" data-value="warn-once">warn and allow</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-nag-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-capability-verification="strict"
+               data-written-by="reckon-3a" data-written-at="2026-08-26"
+               data-recommends-skill="/reckon-ship native-agent-dispatch-guard"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Ship the guard once the enforcement mode is locked</h4>
+        <div class="r-fu-body"><p>The enforcement-mode decision is user-owned: it changes the
+          default behavior of every session in every crew-managed repository. §2–§4 are executable
+          the moment it locks; the recommended choice is hard-refuse with waivers.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship native-agent-dispatch-guard</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

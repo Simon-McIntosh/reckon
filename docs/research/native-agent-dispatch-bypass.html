@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="native-agent-dispatch-bypass">
+  <meta name="plan-title" content="Why Two Coordinators Launched Native Fleets Past the Codex Directive">
+  <meta name="plan-summary" content="RCA: two sessions spawned harness-native background agents despite crew/codex instructions; the routing rule was loaded in neither, and nothing checks it.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="native-agent-dispatch-guard">
+  <title>Why Two Coordinators Launched Native Fleets Past the Codex Directive | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What happened</h2>
+    <p>
+      On 2026-08-26, two concurrently running coordinator sessions each launched a fleet of
+      harness-native background agents (the host harness's <code>Agent</code> tool,
+      read-only <code>Explore</code> type) in repositories whose crew configuration routes
+      worker execution to codex CLI backends. A reckon session mapping the codebase for a
+      new plan spawned three; a nova review session validating sprint state spawned seven
+      (six per-sprint validators plus a followup-staleness sweep). Both fleets ran until the
+      lead's stop directive; both sessions then killed their agents and re-routed to
+      <code>reckon crew dispatch</code>. No files were written by the native agents and no
+      work was lost, but ten agent runs consumed harness-model budget outside the run
+      ledger, invisible to <code>crew watch</code>, the manifests, calibration, and the
+      budget signal — and directly against the lead's routing instruction.
+    </p>
+
+    <h2 id="s2">§2 — Evidence from both sessions</h2>
+    <table>
+      <thead>
+        <tr><th></th><th>reckon session</th><th>nova review session</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Native agents spawned</td>
+            <td>3 Explore (repo mapping for plan design)</td>
+            <td>7 Explore (sprint-state validation, followup sweep)</td></tr>
+        <tr><td>Skills loaded at spawn time</td>
+            <td>brainstorming, reckon-sprint</td>
+            <td>reckon-roadmap</td></tr>
+        <tr><td>Was any loaded text carrying the worker-routing rule?</td>
+            <td>No — the rule lives in reckon-ship, loaded only later</td>
+            <td>No — same; a memory one-liner existed and was consciously scoped away as
+                "ship-only"</td></tr>
+        <tr><td>Was crew dispatch considered?</td>
+            <td>Not at that moment — the work was classified as coordinator-side reading
+                for design</td>
+            <td>Considered and rejected: no plan node existed to dispatch against,
+                pre-flight/watcher/member protocol felt heavyweight for a pure read, and
+                the prompt's "if needed" read as latitude</td></tr>
+        <tr><td>Active encouragement in context</td>
+            <td colspan="2">Yes, in both: the harness system prompt promotes background
+                agent fan-out for multi-file reading and parallel batching, surfaces the
+                agent roster every session, and a bundled skill pack rewards dispatching
+                parallel agents. No loaded reckon text pushed back.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Root causes, ranked</h2>
+    <p>
+      <strong>1 — Rule locality.</strong> The only binding text against harness-native
+      background agents ("never a harness-native background agent — that bypasses the run
+      ledger, manifest contract, and calibration") lives inside the ship skill's scout
+      section. Sessions doing review, status, roadmap, or plan-design work legitimately
+      never load that skill, so the rule was in front of neither session when the spawn
+      decision was made. The rule is scoped to where it was first learned, not to where the
+      temptation occurs.
+    </p>
+    <p>
+      <strong>2 — A binding rule with no bound check.</strong> Nothing refuses the spawn at
+      the moment it happens. This repository's own doctrine states the failure mode
+      precisely: a rule that is prose is followed most of the time and skipped exactly when
+      it matters, and the remedy is a check bound to a moment that always happens. The
+      moment that always happens here is the <code>Agent</code> tool call itself.
+    </p>
+    <p>
+      <strong>3 — The affordance gradient points the wrong way.</strong> Native fan-out is
+      one tool call with zero setup; crew dispatch requires a committed plan section, a
+      seven-property node contract, pre-flight, a watcher seat, and a member. Every step of
+      that friction exists for a reason (authority, isolation, delivery, calibration,
+      budget), but a session under time pressure feels only the gradient. Both sessions
+      slid down it.
+    </p>
+    <p>
+      <strong>4 — Classification latitude.</strong> "Read-only scoping" reads as
+      coordinator-permitted work; "investigation" reads as a worker node. Both sessions
+      took the lighter reading of the same activity. The ship skill closes this
+      ("investigation … is a worker node"), but that text was not loaded (cause 1), and no
+      loaded skill owned the classification for non-ship work.
+    </p>
+
+    <h2 id="s4">§4 — Why the bypass costs more than the tokens</h2>
+    <ul>
+      <li>Model routing: the lead directed codex workers; native agents spend the harness
+        session's model family instead, unmetered by crew budget state.</li>
+      <li>Observability: no run pointer, no manifest, no <code>crew watch</code> event, no
+        drain accounting — a native fleet is invisible to every recovery path the crew
+        system builds.</li>
+      <li>Calibration: completed work leaves no ledger record, so effort calibration and
+        gate history silently under-count.</li>
+      <li>Isolation: read-only Explore types are safe, but the same gradient reaches
+        write-capable native types that hold no worktree, scope fence, or commit
+        discipline.</li>
+    </ul>
+
+    <h2 id="s5">§5 — Prevention: recommendation and options</h2>
+    <p>
+      <strong>Recommendation: a hard block at the tool boundary, plus the routing rule in
+      every skill that can face the temptation.</strong> Guidance alone is measured
+      insufficient — the rule existed in memory in one session and in an unloaded skill in
+      both, and was rationalized past twice on the same morning. A warn-level check invites
+      the same rationalization. The block is cheap to obey: at spawn time both sessions
+      held well-formed work lists that translated one-to-one into crew dispatches.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Mechanism</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tool-boundary hook (hard block)</td>
+          <td>A pre-tool-use hook on new background-agent spawns in crew-managed repos
+              (detected by crew/flight state on disk), refusing with the exact
+              <code>reckon crew dispatch</code> re-route. Waivers: a crew-prepared
+              in-harness directive awaiting attach (the legitimate native backend), and an
+              explicit per-session user override.</td>
+          <td>Recommended — binds the check to the moment that always happens</td>
+        </tr>
+        <tr>
+          <td>Routing rule in read-only skills + repo guidance</td>
+          <td>One binding line in the status/roadmap/sprint/create skills and the repo
+              agent guidance: investigation and review fan-out in crew-managed repos is
+              crew dispatch (investigate/review roles); native background agents bypass
+              ledger, manifest, and calibration.</td>
+          <td>Necessary companion — fixes rule locality so the refusal is never a
+              surprise; insufficient alone</td>
+        </tr>
+        <tr>
+          <td>Memory/guidance only</td>
+          <td>Rely on session memory and existing skill text.</td>
+          <td>Rejected — this incident is the measurement of its failure</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Two design notes from the reviewing session, adopted: the block must apply only to
+      spawning <em>new</em> background agents — messaging or stopping existing ones must
+      stay allowed, or cleanup after an incident is itself blocked; and inline reads by the
+      session's own tools stay free, so a single-file lookup never needs a waiver — the
+      block bites only where the ledger bypass begins.
+    </p>
+    <p>
+      The executable design, enforcement-mode decision, and tests are owned by the
+      <code>native-agent-dispatch-guard</code> plan, which this record informs.
+    </p>
+  </main>
+</body>
+</html>

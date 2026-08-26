@@ -21,6 +21,8 @@
   <title>Sprint Review Findings and Priority as Project State | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -235,57 +237,57 @@
       verbatim against a scratch project; cross-references stay one line each.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="review-storage" data-choice="singleton-state-resource" data-by="reckon-3a" data-when="2026-08-26">
-        <p class="r-dec-q">Where does a persisted review live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="singleton-state-resource">one versioned review.html beside timeline</button>
-          <button class="r-opt" data-value="per-review-files">a file per review under docs/reviews/</button>
-          <button class="r-opt" data-value="project-json-field">a field on project.json</button>
-        </p>
-        <p class="r-dec-rat">Findings are resolvable rows in one live stream, like followups — a
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="review-storage" data-choice="singleton-state-resource" data-by="reckon-3a" data-when="2026-08-26">
+    <p class="r-dec-q">Where does a persisted review live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="singleton-state-resource">one versioned review.html beside timeline</button>
+      <button class="r-opt" data-value="per-review-files">a file per review under docs/reviews/</button>
+      <button class="r-opt" data-value="project-json-field">a field on project.json</button>
+      </p>
+    <p class="r-dec-rat">Findings are resolvable rows in one live stream, like followups — a
           singleton with its own version keeps resolve semantics and avoids a growing file-per-review
           corpus nobody reads twice; project.json is identity/presentation-only by contract.
           Superseded judgments are resolved rows, not new files.</p>
-      </div>
-      <div class="r-dec" data-key="priority-grain" data-choice="per-plan-ranks" data-by="reckon-3a" data-when="2026-08-26">
-        <p class="r-dec-q">What grain does the persisted priority order use?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="per-plan-ranks">per-plan ranks with reason vocabulary; sprint order derived</button>
-          <button class="r-opt" data-value="per-sprint-scores">per-sprint numeric scores</button>
-        </p>
-        <p class="r-dec-rat">Coordinated with the reviewing worker producing the real artifact: its
+    </div>
+<div class="r-dec" data-key="priority-grain" data-choice="per-plan-ranks" data-by="reckon-3a" data-when="2026-08-26">
+    <p class="r-dec-q">What grain does the persisted priority order use?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="per-plan-ranks">per-plan ranks with reason vocabulary; sprint order derived</button>
+      <button class="r-opt" data-value="per-sprint-scores">per-sprint numeric scores</button>
+      </p>
+    <p class="r-dec-rat">Coordinated with the reviewing worker producing the real artifact: its
           ordering is a partial order over plans driven by critical-path membership, unlocks,
           deadlines, stored roi, and decision gates — sprint ordering falls out of plan order.
           Storing the derived form would persist what read-time composition already computes.</p>
-      </div>
-      <div class="r-dec" data-key="staleness-derivation" data-choice="composed-at-read" data-by="reckon-3a" data-when="2026-08-26">
-        <p class="r-dec-q">How does a finding or rank expire when the world moves?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="composed-at-read">derived at read time from subject state vs checked_at</button>
-          <button class="r-opt" data-value="writer-maintained">a maintenance job rewrites stored rows</button>
-        </p>
-        <p class="r-dec-rat">Same mechanism as effective_status: derive, never persist, what live
+    </div>
+<div class="r-dec" data-key="staleness-derivation" data-choice="composed-at-read" data-by="reckon-3a" data-when="2026-08-26">
+    <p class="r-dec-q">How does a finding or rank expire when the world moves?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="composed-at-read">derived at read time from subject state vs checked_at</button>
+      <button class="r-opt" data-value="writer-maintained">a maintenance job rewrites stored rows</button>
+      </p>
+    <p class="r-dec-rat">Same mechanism as effective_status: derive, never persist, what live
           state already implies. A writer-maintained flag is stale the moment after it is written
           and needs an actor nothing guarantees; a derived flag is correct at every read.</p>
-      </div>
-    </section>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-srp-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-capability-verification="strict"
-               data-written-by="reckon-3a" data-written-at="2026-08-26"
-               data-recommends-skill="/reckon-ship sprint-review-persistence"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Ship the review resource, composed reads, roadmap wiring, SPA view, and skill refresh</h4>
-        <div class="r-fu-body"><p>All six sections are executable now; §2 gates §3/§4, which gate §5;
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-srp-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-review-persistence" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Ship the review resource, composed reads, roadmap wiring, SPA view, and skill refresh</h4>
+    <div class="r-fu-body"><p>All six sections are executable now; §2 gates §3/§4, which gate §5;
           §6 lands last against the built surface. The reviewing worker in a mounted project holds a
           finding set ready to persist the moment the write path exists.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship sprint-review-persistence</pre>
-      </article>
-    </section>
-  </main>
+    <pre class="r-fu-prompt">/reckon-ship sprint-review-persistence</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260826T050636932486-reuse-map" data-who="codex-a" data-when="2026-08-26T05:08:59Z">
+    <div class="r-comment-body"><p>Reuse map delivered: 29 candidates with fitness verdicts across 5 capability areas; no new persistence/HTTP/SPA architecture needed</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

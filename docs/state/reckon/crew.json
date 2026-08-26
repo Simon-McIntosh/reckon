@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T07:03:48",
+  "updated": "2026-08-26T07:10:32",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -23510,9 +23510,194 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T050636932486-reuse-map",
+        "plan": "sprint-review-persistence",
+        "section": "\u00a71",
+        "node": "reuse-map",
+        "node_definition": {
+          "done_when": "The report at the named path covers, capability-shaped rather than filename-shaped: distributed-resource storage/versioning/op-validation machinery reusable for a new singleton review resource; how composed reads join live plan state into sprint cards today; where the roadmap findings stream and audit conformance checks extend; which endpoints and loaders feed the SPA sprint view; one fitness verdict per candidate",
+          "estimated_hours": null,
+          "goal": "A reuse map for the sprint-review-persistence plan naming the existing modules, symbols, tests, endpoints, and UI data paths that already solve each section in whole or part, each with a one-line fitness verdict",
+          "id": "reuse-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T050636932486-reuse-map/manifest.md",
+          "plan": "sprint-review-persistence",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a71",
+          "spec_level": "",
+          "time_budget": "4m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/sprint-review-persistence-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-26T05:06:39Z",
+        "completed_at": "2026-08-26T05:08:59Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 140,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 140,
+        "stalled": false,
+        "time_budget": "4m",
+        "base_sha": "e3947ae8b71ce7bfdbe7e97676c4fd95e536b2e6",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T050636932486-reuse-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e4-7ad0-7d90-854c-9051ebabb2a8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 1773824,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1824714,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 5965,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 440
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T045918519289-n-backend-environment-map",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a72",
+        "node": "n-backend-environment-map",
+        "node_definition": {
+          "done_when": "uv run python scripts/regen_flight_schema.py leaves both generated artifacts byte-identical to the committed copies; new tests in tests/test_backend_environment.py assert that a backend declaring an environment map resolves through reckon.flight with those values and per-key origin, that the LaunchPlan carries them, that the spawn call receives an environment containing both the declared values and the inherited PATH and HOME, that a dollar-brace reference expands from the dispatcher environment, that an unset reference raises a typed configuration error naming the variable rather than expanding to empty, and that the agent configuration persisted on a run record still contains exactly backend, launch, model, effort and sandbox so no declared value reaches the committed ledger; and the full suite reports no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "A backend entry may declare an environment map that reaches its spawned worker merged over the inherited environment",
+          "id": "n-backend-environment-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045918519289-n-backend-environment-map/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "reckon/flight.py",
+            "reckon/_backends.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_flight.py",
+            "tests/test_backend_environment.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T04:59:20Z",
+        "completed_at": "2026-08-26T05:10:13Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 653,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 653,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "7ef505961afd675d13c4cb6d0afa02b00f3cb7b5",
+        "commits": [
+          "072112a"
+        ],
+        "changed_lines": {
+          "added": 328,
+          "removed": 0,
+          "files": 7
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T045918519289-n-backend-environment-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038ea-cf6c-7593-a14e-22bef4824038",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3457792,
+            "cached_input_tokens_cumulative": 8693248,
+            "input_tokens": 3373828,
+            "input_tokens_cumulative": 9017218,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 18576,
+            "reasoning_output_tokens": 1389,
+            "reasoning_output_tokens_cumulative": 4936
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 412
+    "_version": 414
   }
 }
