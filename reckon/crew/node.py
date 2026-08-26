@@ -229,8 +229,11 @@ class WatcherRequired(CrewError):
         self.watch = dict(watch)
         super().__init__(
             f"project {project!r} has no live crew watcher; arm one with "
-            f"`{watch['arming_line']}`, or pass --no-watch to record an "
-            "explicit waiver for a synchronous dispatch"
+            f"`{watch['arming_line']}`, then attach this session to it with "
+            f"`{watch.get('attach_line') or 'reckon crew follow'}` as a "
+            "background monitor -- a live seat is project-global and does not by "
+            "itself deliver anything to the session that dispatched. Or pass "
+            "--no-watch to record an explicit waiver for a synchronous dispatch"
         )
 
 

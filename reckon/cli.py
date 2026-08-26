@@ -996,7 +996,8 @@ def _follow_watch_lines(
     if not visibility["watcher_live"]:
         raise runs.CrewError(
             f"project {project!r} has no live watcher; "
-            f"arm it with {visibility['arming_line']}"
+            f"arm it with {visibility['arming_line']}, "
+            f"then attach with {visibility['attach_line']}"
         )
 
     cursor = runs.watch_stream_cursor(project)

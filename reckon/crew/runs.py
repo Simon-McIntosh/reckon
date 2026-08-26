@@ -908,6 +908,7 @@ def _project_watch_claim(project: str, stall_window: str):
 def watch_state(project: str) -> dict[str, Any]:
     """Return the paste-ready arming line and kernel-backed watcher liveness."""
     arming_line = _watch_arming_line(project)
+    attach_line = _watch_attach_line(project)
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
@@ -916,16 +917,23 @@ def watch_state(project: str) -> dict[str, Any]:
         except BlockingIOError:
             return {
                 "arming_line": arming_line,
+                "attach_line": attach_line,
                 "watcher_live": True,
                 "watcher": _read_watch_record(handle),
             }
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-    return {"arming_line": arming_line, "watcher_live": False, "watcher": {}}
+    return {
+        "arming_line": arming_line,
+        "attach_line": attach_line,
+        "watcher_live": False,
+        "watcher": {},
+    }
 
 
 def project_watch_visibility(project: str) -> dict[str, Any]:
     """Describe whether a project's pointers have a live watcher."""
     arming_line = _watch_arming_line(project)
+    attach_line = _watch_attach_line(project)
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
@@ -989,13 +997,47 @@ def project_watch_visibility(project: str) -> dict[str, Any]:
         "unwatched": unwatched,
         "pointer_count": pointer_count,
         "arming_line": arming_line,
+        "attach_line": attach_line,
         "stream_path": str(watch_stream_path(project)),
     }
+
+
+# Every state `_watch_snapshot` can emit, split by whether a coordinator has to
+# act on it. A ticker filter built from the first set wakes a session for work it
+# did not think to name; the second set is progress and would only add noise.
+WATCH_ATTENTION_STATES = (
+    "complete",
+    "blocked",
+    "failed",
+    "stopped",
+    "abandoned",
+    "completed_unpromoted",
+    "unknown",
+)
+WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "promoted")
 
 
 def _watch_arming_line(project: str) -> str:
     """Return the exact shell-safe command a dispatch payload carries."""
     return f"reckon crew watch --project {shlex.quote(project)}"
+
+
+def _watch_attach_line(project: str) -> str:
+    """Return the paste-ready follower a session arms to be woken itself.
+
+    A seat existing is not the same as this session hearing about it: the seat is
+    project-global and wake delivery is session-local, so a caller dispatching
+    against another session's seat is told a watcher is live while nothing reaches
+    it. This is the command that closes that gap, filtered and buffered so it
+    survives being pasted verbatim -- the state word is anchored to the transition
+    arrow because every line also carries a `N blocked` summary field that an
+    unanchored alternation would match on every line of the stream.
+    """
+    states = "|".join(WATCH_ATTENTION_STATES)
+    return (
+        f"{{ reckon crew follow --project {shlex.quote(project)}"
+        f" | grep --line-buffered -E '→ +({states})' || true; }}"
+    )
 
 
 def _stream_quiet_seconds(

@@ -66,6 +66,7 @@ from reckon.crew.runs import (
     _scopes_overlap,
     _utc_now,
     _watch_arming_line,
+    _watch_attach_line,
     _write_json,
     list_live,
     new_run_id,
@@ -1675,6 +1676,7 @@ def dispatch(
             "watch_override": watcher_waiver,
             "watch": {
                 "arming_line": _watch_arming_line(project),
+                "attach_line": _watch_attach_line(project),
                 "watcher_live": False,
                 "watcher": {},
             },

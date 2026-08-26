@@ -460,9 +460,10 @@ it reports the resolved config, which layer supplied each value, and which
 backends are actually available.
 
 Dispatch ensures one live `reckon crew watch --project P` producer before it
-creates a worktree. It reuses an existing kernel-backed seat or starts the
-producer detached with a live supervisor, so no session has to follow an arming
-instruction and ending the dispatching process does not orphan the producer.
+creates a worktree, reusing a kernel-backed seat or starting one detached, so
+ending the dispatching process does not orphan it. **That producer is not your
+wake-up.** A seat is project-global and delivery is session-local, so arm the
+payload's `attach_line` as a background monitor or this session hears nothing.
 `--no-watch` is the explicit exception for a genuinely synchronous one-off; it
 records the arming command and observed watcher liveness on both the live run
 and its promoted ledger record.
@@ -594,6 +595,10 @@ automatically. Releasing a seat on purpose is `reckon crew unwatch --project
 <project>` — to replace a watcher, never to quiet a running fleet. A recorded
 worker pid is never the watch's liveness signal, which also keeps in-harness
 runs observable.
+
+**The follower produces lines, not an exit.** It returns only when the seat
+dies — never on a terminal manifest — so arming it as a wake-on-exit background
+command yields silence that reads as a quiet fleet.
 
 **Arm it through the host harness's background mechanism, not a detached
 `nohup`.** A detached watcher writes its transitions to a file that nothing

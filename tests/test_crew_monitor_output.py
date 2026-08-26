@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import select
 import threading
 from pathlib import Path
@@ -10,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from reckon import cli
-from reckon.crew import runs
+from reckon.crew import recovery, runs
 
 
 def _append_line(path: Path, line: str) -> None:
@@ -121,3 +122,71 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     assert "three terminal events" in words
     assert "more than two hours" in words
     assert "run_in_background" not in words
+
+
+def _attach_filter(project: str = "demo") -> re.Pattern[str]:
+    """Extract the regex the paste-ready attach line hands to grep."""
+    line = runs._watch_attach_line(project)
+    return re.compile(re.search(r"-E '([^']+)'", line).group(1))
+
+
+def _transition(
+    to_state: str, *, from_state: str = "dispatched", blocked: int = 3
+) -> str:
+    """Render a ticker line through the formatter a follower actually emits."""
+    return recovery.format_watch_transition(
+        {
+            "observed_at": "2026-08-26T09:15:00Z",
+            "node": "some-node",
+            "from_state": from_state,
+            "to_state": to_state,
+            "live": 4,
+            "blocked": blocked,
+            "unpromoted": 2,
+        }
+    )
+
+
+@pytest.mark.parametrize("state", runs.WATCH_ATTENTION_STATES)
+def test_attach_filter_wakes_the_session_on_every_attention_state(state: str) -> None:
+    assert _attach_filter().search(_transition(state))
+
+
+@pytest.mark.parametrize("state", runs.WATCH_PROGRESS_STATES)
+def test_attach_filter_stays_quiet_through_progress_carrying_a_blocked_count(
+    state: str,
+) -> None:
+    """The summary field names states too, so the filter anchors on the arrow.
+
+    Without that anchor every line matches, because `N blocked / N unpromoted`
+    trails each one -- a firehose that reads as a working channel until the
+    monitor is stopped for volume.
+    """
+    line = _transition(state, blocked=3)
+    assert "blocked" in line
+    assert not _attach_filter().search(line)
+
+
+def test_attention_and_progress_partition_every_recovery_class() -> None:
+    """A new run classification has to be routed before it can go unnoticed."""
+    attention = set(runs.WATCH_ATTENTION_STATES)
+    progress = set(runs.WATCH_PROGRESS_STATES)
+    assert not attention & progress
+    assert set(recovery.RECOVERY_CLASSES) <= attention | progress
+
+
+def test_watch_payloads_carry_the_line_that_attaches_this_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A seat is project-global; only the attach line delivers to this session."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    real = Path.home() / ".config" / "reckon" / "crew" / "watch"
+    before = sorted(q.name for q in real.glob("demo*")) if real.is_dir() else []
+
+    for payload in (runs.watch_state("demo"), runs.project_watch_visibility("demo")):
+        assert payload["attach_line"] == runs._watch_attach_line("demo")
+        assert "crew follow" in payload["attach_line"]
+        assert payload["arming_line"] != payload["attach_line"]
+
+    after = sorted(q.name for q in real.glob("demo*")) if real.is_dir() else []
+    assert after == before, "the redirected home leaked a lock into the real one"

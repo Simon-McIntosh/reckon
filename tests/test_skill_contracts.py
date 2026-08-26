@@ -4,6 +4,7 @@ from typing import get_args
 
 from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
+from reckon.crew.runs import _watch_attach_line
 
 
 ROOT = Path(__file__).parents[1]
@@ -401,16 +402,17 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # budget should bind where a review is actually wanted, so it is set above current
 # size with room for the rule set to grow, and raising it again should require
 # stating why here.
-# Raised from 14_000 when the watcher section gained the affordances its
-# prohibitions had been missing: the script-reachable classifier and its blind
-# spots, the ticker filter shape, observe-before-promote, and the unwatch,
-# discard and gc verbs. A prohibition documented without its affordance is what
-# sends an orchestrator to hand-rolled file polling, so these are rules rather
-# than reference material and belong in the always-loaded file. The prior ceiling
-# left 54 tokens of headroom, which is why any new rule at all has to argue with
-# this number; prefer relocating reference material to references/ over raising
-# it again.
-FIXED_READ_SET_TOKEN_BUDGET = 14_400
+# A ratchet on attention, not a hard limit. Nothing breaks when this file grows:
+# the figure is a word-count proxy rather than a tokenizer, and the file is a few
+# per cent of a session's context. What degrades with length is which rules an
+# agent still applies by the bottom of the file, which is why a ceiling exists and
+# why it moves deliberately instead of silently.
+#
+# So the ordering is: relocate reference material first, raise this second, shave
+# a rule never. A measured failure outranks the number every time -- 82% of
+# dispatches were running in sessions attached to no wake channel at all, and the
+# rules that close that are worth more than the words they cost.
+FIXED_READ_SET_TOKEN_BUDGET = 16_000
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -433,7 +435,9 @@ def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
         "orchestrator does mid-dispatch and has to be in hand before the decision, "
         "so it stays; vocabulary, formats, enumerations, worked examples and "
         "anything consulted only once a decision is made are reference, so they "
-        "move. Raise the budget only with a reason recorded here."
+        "move. This ceiling is a ratchet on attention, not a hard limit: raise "
+        "it with a reason recorded here rather than shaving a rule that earned "
+        "its place."
     )
 
 
@@ -684,6 +688,25 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         assert required_flags <= registered_flags, " ".join(path)
         for flag in required_flags:
             assert flag in ship
+
+
+def test_ship_dispatch_section_names_the_session_attach() -> None:
+    """Dispatch arms a producer; the dispatch section must not let that read as a
+    wake-up.
+
+    The seat is project-global and wake delivery is session-local, so a caller
+    that reads "a watcher is live" and stops there hears nothing about its own
+    fleet. The prohibition on arming a second watch travels in the payload, so
+    the affordance replacing it has to travel beside it.
+    """
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+    attach_line = _watch_attach_line("<project>")
+
+    assert "attach_line" in ship, "the payload field the caller must arm is unnamed"
+    assert "That producer is not your wake-up." in ship
+    assert "crew follow" in attach_line and "crew follow" in ship
+    # A follower never exits on a landing, so wake-on-exit backgrounding is silence.
+    assert "produces lines, not an exit" in ship
 
 
 def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
