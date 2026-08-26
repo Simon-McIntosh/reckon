@@ -9,6 +9,54 @@ const SPRINT_HORIZONS = {
 
 const CLOSED_ITEM_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
 
+function naturalSprintKey(value) {
+  return String(value || "").split(/(\d+)/).filter(Boolean).map(part => /^\d+$/.test(part) ? Number(part) : part.toLowerCase());
+}
+
+function compareNaturalSprintIds(left, right) {
+  const a = naturalSprintKey(left.id);
+  const b = naturalSprintKey(right.id);
+  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+    if (a[index] === undefined) return -1;
+    if (b[index] === undefined) return 1;
+    if (a[index] === b[index]) continue;
+    return a[index] < b[index] ? -1 : 1;
+  }
+  return 0;
+}
+
+function orderedSprints(sprints, review) {
+  const natural = [...(sprints || [])].sort(compareNaturalSprintIds);
+  const derived = Array.isArray(review?.sprint_order) ? review.sprint_order : [];
+  if (!derived.length) return natural;
+  const positions = new Map(derived.map((id, index) => [id, index]));
+  return [...natural].sort((left, right) => {
+    const leftRank = positions.get(left.id);
+    const rightRank = positions.get(right.id);
+    if (leftRank === undefined && rightRank === undefined) return compareNaturalSprintIds(left, right);
+    if (leftRank === undefined) return 1;
+    if (rightRank === undefined) return -1;
+    return leftRank - rightRank;
+  });
+}
+
+function openReviewFindings(review) {
+  return (review?.findings || []).filter(finding => !finding.resolved_at);
+}
+
+function subjectFindings(findings, kind, id) {
+  return findings.filter(finding => finding.subject?.kind === kind && finding.subject?.id === id);
+}
+
+function FindingBadges({ findings }) {
+  if (!findings.length) return null;
+  return <span className="r-review-badges">{findings.map(finding => (
+    <a key={finding.id} className={`r-review-badge ${finding.severity}`} href={`#review-finding-${finding.id}`} title={finding.evidence?.join(" · ") || finding.code}>
+      <span>{finding.severity}</span>{finding.code}
+    </a>
+  ))}</span>;
+}
+
 function sprintInventoryItems(sprint, inventory) {
   return (sprint.items || []).map(item => {
     const slug = typeof item === "string" ? item : item.slug;
@@ -122,7 +170,9 @@ function planFlag(plan, liveRuns) {
 function Sprint({ sprintId, onNav }) {
   const M = window.STATE;
   if (!M) return null;
-  const allSprints = M.sprints || [];
+  const review = M.review || null;
+  const allSprints = useMemo(() => orderedSprints(M.sprints, review), [M.sprints, review]);
+  const reviewFindings = useMemo(() => openReviewFindings(review), [review]);
   const idx = useMemo(() => {
     const requested = allSprints.findIndex(sprint => sprint.id === sprintId);
     return requested >= 0 ? requested : allSprints.findIndex(sprint => sprint.id === M.active_sprint_id);
@@ -228,7 +278,7 @@ function Sprint({ sprintId, onNav }) {
     const percent = Math.round((plan.impl || 0) * 100);
     return (
       <article key={plan.slug} className={`r-kcard ${(plan.effective_status || plan.status) === "blocked" ? "blocked" : ""}`}>
-        <a className="r-card-title" href={`#plan/${plan.slug}`}>{plan.title}</a>
+        <div className="r-card-heading"><a className="r-card-title" href={`#plan/${plan.slug}`}>{plan.title}</a><FindingBadges findings={subjectFindings(reviewFindings, "plan", plan.slug)} /></div>
         <p className="r-card-description" title={plan.summary || plan.description || "No description supplied"}>{plan.summary || plan.description || "No description supplied"}</p>
         <a className="r-card-progress" href={`#plan/${plan.slug}`} aria-label={`${plan.title}: ${percent}% complete`} title={`Open ${plan.title}, ${percent}% complete`}>
           <span className="bar"><i style={{ width: `${percent}%` }}></i></span><span>{percent}%</span>
@@ -254,6 +304,19 @@ function Sprint({ sprintId, onNav }) {
 
       {surface === "overview" ? (
         <section className="r-sprint-overview" aria-label="Sprint timeline overview">
+          {review && <section className="r-priority-panel" aria-label="Review priority">
+            <header><div><span className="r-eyebrow">Review priority</span><h2>Ranked plans</h2></div><span>{review.priority?.length || 0} ranked</span></header>
+            {(review.priority || []).length ? <ol>{[...(review.priority || [])].sort((left, right) => Number(left.landed) - Number(right.landed) || left.rank - right.rank).map(row => (
+              <li key={row.ref} className={row.landed ? "landed" : ""}>
+                <span className="r-priority-rank">{row.rank}</span>
+                <span className="r-priority-name"><a href={`#plan/${row.ref}`}>{row.title || row.ref}</a><FindingBadges findings={subjectFindings(reviewFindings, "plan", row.ref)} /></span>
+                <span className={`r-priority-status ${row.effective_status || row.status}`}>{row.effective_status || row.status || "unknown"}</span>
+                <span className="r-priority-impl">{Math.round((row.impl || 0) * 100)}%</span>
+                <span className="r-reason-chips">{(row.reasons || []).map(reason => <span key={reason}>{reason}</span>)}</span>
+                <span className="r-priority-detail">{row.detail}</span>
+              </li>
+            ))}</ol> : <p className="r-priority-empty">No plans are ranked in the current review.</p>}
+          </section>}
           <div className="r-overview-controls">
             <div className="r-horizon" aria-label="Timeline horizon">{Object.keys(SPRINT_HORIZONS).map(value => <button key={value} aria-pressed={horizon === value} onClick={() => setHorizon(value)}>{value}</button>)}</div>
             <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold sprints with nothing open</label>
@@ -266,8 +329,19 @@ function Sprint({ sprintId, onNav }) {
               const isActive = activeIds.has(row.id);
               const focus = row.id === M.active_sprint_id;
               const label = `${row.id}, ${row.status}, ${openCount} open item${openCount === 1 ? "" : "s"}${focus ? ", legacy focus" : ""}`;
-              return <div className="r-timeline-row" key={row.id}>
-                <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span className="r-sprint-title">{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">legacy focus</em>}</a>
+              const metrics = row.metrics || {};
+              const findings = subjectFindings(reviewFindings, "sprint", row.id);
+              return <div className={`r-timeline-row ${focus ? "derived-active" : ""}`} key={row.id}>
+                <div className="r-sprint-summary">
+                  <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span className="r-sprint-title">{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">derived active</em>}</a>
+                  <FindingBadges findings={findings} />
+                  <div className="r-sprint-metrics" aria-label={`${row.id} live metrics`}>
+                    <span>{metrics.item_count ?? 0} items</span>
+                    {Object.entries(metrics.by_effective_status || {}).map(([status, count]) => <span key={status}>{status} {count}</span>)}
+                    <span>mean {Math.round((metrics.mean_impl || 0) * 100)}%</span>
+                    {(metrics.current_work || []).map(item => <a key={item.slug} href={`#plan/${item.slug}`}>{item.title || item.slug}</a>)}
+                  </div>
+                </div>
                 <div className="r-timeline-track">{axis.subDay ? (
                   row.id === sprint.id && finishedRuns.map(run => {
                     const left = axis.timestampPosition(run);
@@ -278,6 +352,7 @@ function Sprint({ sprintId, onNav }) {
             })}
           </div>
           <div className="r-sprint-legend" aria-label="Timeline legend"><span><i className="active"></i> Active</span><span><i className="planned"></i> Planned</span><span><i className="shipped"></i> Shipped</span><span><b>legacy focus</b> Stored board focus</span></div>
+          {review && reviewFindings.length > 0 && <section className="r-review-findings" aria-label="Open review findings"><header><span className="r-eyebrow">Open findings</span><strong>{reviewFindings.length}</strong></header>{reviewFindings.map(finding => <article id={`review-finding-${finding.id}`} key={finding.id}><FindingBadges findings={[finding]} /><span>{finding.subject?.kind}: {finding.subject?.id}</span><p>{(finding.evidence || []).join(" ")}</p></article>)}</section>}
           <section className="r-completed-work" aria-live="polite" aria-label={`${sprint.id} completed work`}>
             <header><div><span className="r-eyebrow">Recorded work</span><h2>{sprint.id} · {sprint.theme || sprint.summary}</h2></div><span>{finishedRuns.length} completed {finishedRuns.length === 1 ? "run" : "runs"}</span></header>
             {finishedRunsState === "loading" && <p className="r-completed-work-state">Loading completed work…</p>}

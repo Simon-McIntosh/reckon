@@ -90,6 +90,19 @@ INDEX_STATE = {
                 "starts": "2026-08-25",
                 "ends": "2026-08-26",
                 "items": [{"slug": "rendered-contract"}],
+                "metrics": {
+                    "item_count": 1,
+                    "by_effective_status": {"active": 1},
+                    "mean_impl": 0.42,
+                    "current_work": [
+                        {
+                            "slug": "rendered-contract",
+                            "title": "Rendered contract",
+                            "effective_status": "active",
+                            "impl": 0.42,
+                        }
+                    ],
+                },
             },
             {
                 "id": "concurrent",
@@ -98,6 +111,12 @@ INDEX_STATE = {
                 "starts": "2026-08-25",
                 "ends": "2026-08-27",
                 "items": [],
+                "metrics": {
+                    "item_count": 0,
+                    "by_effective_status": {},
+                    "mean_impl": 0.0,
+                    "current_work": [],
+                },
             },
         ],
         "milestones": [],
@@ -105,6 +124,56 @@ INDEX_STATE = {
         "timeline": [],
         "north_stars": [],
     },
+}
+
+REVIEW_STATE = {
+    "reviewed_at": "2026-08-26",
+    "reviewed_by": "reviewer",
+    "sprint_order": ["concurrent", "focus"],
+    "findings": [
+        {
+            "id": "active-pointer-conflict",
+            "code": "active-sprint-mismatch",
+            "category": "sprint",
+            "severity": "warn",
+            "subject": {"kind": "sprint", "id": "concurrent"},
+            "evidence": ["Stored focus differs from the active sprint set."],
+            "resolved_at": "",
+        },
+        {
+            "id": "plan-scope",
+            "code": "scope-needs-review",
+            "category": "sprint",
+            "severity": "info",
+            "subject": {"kind": "plan", "id": "rendered-contract"},
+            "evidence": ["The plan remains broader than its current work."],
+            "resolved_at": "",
+        },
+    ],
+    "priority": [
+        {
+            "rank": 1,
+            "ref": "rendered-contract",
+            "reasons": ["critical-path", "decision-first"],
+            "detail": "Resolve the live contract first.",
+            "status": "active",
+            "effective_status": "active",
+            "impl": 0.42,
+            "sprint": "focus",
+            "landed": False,
+        },
+        {
+            "rank": 2,
+            "ref": "landed-contract",
+            "reasons": ["roi"],
+            "detail": "Retained as review history.",
+            "status": "shipped",
+            "effective_status": "shipped",
+            "impl": 1.0,
+            "sprint": "concurrent",
+            "landed": True,
+        },
+    ],
 }
 
 NODE_PROBE = r"""
@@ -227,6 +296,7 @@ async function main() {
       source: `{
           const fixtureIndex = ${JSON.stringify(input.fixtureIndex)};
           const fixtureSprints = fixtureIndex.data.sprints;
+          const fixtureReview = ${JSON.stringify(input.fixtureReview)};
           const nativeFetch = window.fetch.bind(window);
           window.fetch = (resource, options) => {
             const url = String(resource);
@@ -242,6 +312,7 @@ async function main() {
                   ...payload,
                   sprints: fixtureSprints,
                   active_sprint_id: fixtureIndex.data.active_sprint_id,
+                  review: fixtureReview,
                   source_format: "distributed",
                   resource_versions: {
                     "project:reckon": 4,
@@ -382,6 +453,7 @@ def _rendered_probe(
     remove_signal: str,
     fail_plan_html: bool = False,
     prepare_signal: str = "undefined",
+    review: dict[str, object] | None = None,
 ) -> dict[str, dict[str, object]]:
     with (
         temporary_browser_profile(tmp_path) as profile,
@@ -404,6 +476,7 @@ def _rendered_probe(
                         "removeSignal": remove_signal,
                         "failPlanHtml": fail_plan_html,
                         "fixtureIndex": INDEX_STATE,
+                        "fixtureReview": review,
                     }
                 ),
             ],
@@ -455,6 +528,66 @@ def test_overview_renders_every_active_sprint_and_focus_conflict(tmp_path: Path)
 
     _assert_rendered_signal(result["baseline"], "active sprint conflict")
     _assert_removal_is_detected(result["removed"], "active sprint conflict")
+
+
+def test_sprint_view_renders_composed_metrics_findings_order_and_priority(
+    tmp_path: Path,
+) -> None:
+    result = _rendered_probe(
+        tmp_path,
+        route="#sprint/focus",
+        wait_selector=".r-priority-panel",
+        review=REVIEW_STATE,
+        prepare_signal="document.querySelector('.r-overview-controls input')?.click()",
+        probe="""(() => {
+          const rows = [...document.querySelectorAll(".r-timeline-row")];
+          const priorities = [...document.querySelectorAll(".r-priority-panel li")];
+          const reasons = [...document.querySelectorAll(".r-reason-chips span")]
+            .map(chip => chip.textContent.trim());
+          const findingLinks = [...document.querySelectorAll(".r-review-badge")];
+          const focus = rows.find(row => row.textContent.includes("focus"));
+          return {
+            ok: rows[0]?.textContent.includes("concurrent")
+              && focus?.classList.contains("derived-active")
+              && focus?.textContent.includes("1 items")
+              && focus?.textContent.includes("mean 42%")
+              && focus?.textContent.includes("Rendered contract")
+              && priorities.length === 2
+              && !priorities[0].classList.contains("landed")
+              && priorities[1].classList.contains("landed")
+              && reasons.includes("critical-path")
+              && reasons.includes("decision-first")
+              && findingLinks.some(link => link.textContent.includes("active-sprint-mismatch"))
+              && findingLinks.every(link => link.getAttribute("href")?.startsWith("#review-finding-")),
+            order: rows.map(row => row.querySelector("strong")?.textContent),
+            priorities: priorities.map(row => row.textContent.replace(/\\s+/g, " ").trim()),
+            reasons,
+            findings: findingLinks.map(link => link.textContent.trim()),
+          };
+        })()""",
+        remove_signal="document.querySelector('.r-priority-panel')?.remove()",
+    )
+
+    _assert_rendered_signal(result["baseline"], "composed sprint review")
+    _assert_removal_is_detected(result["removed"], "composed sprint review")
+
+
+def test_sprint_view_without_review_has_no_review_affordances(tmp_path: Path) -> None:
+    result = _rendered_probe(
+        tmp_path,
+        route="#sprint/focus",
+        wait_selector=".r-sprint-overview",
+        probe="""(() => ({
+          ok: Boolean(document.querySelector(".r-sprint-overview"))
+            && !document.querySelector(".r-priority-panel")
+            && !document.querySelector(".r-review-badge")
+            && !document.querySelector(".r-review-findings"),
+        }))()""",
+        remove_signal="document.querySelector('.r-sprint-overview')?.remove()",
+    )
+
+    _assert_rendered_signal(result["baseline"], "review-optional sprint view")
+    _assert_removal_is_detected(result["removed"], "review-optional sprint view")
 
 
 def test_plan_row_renders_authored_to_effective_transition_and_open_gate_count(
