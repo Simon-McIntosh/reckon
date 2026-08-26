@@ -162,8 +162,15 @@ def temporary_browser_profile(tmp_path: Path) -> Iterator[Path]:
     try:
         yield profile
     finally:
+        # No jump statement may leave this block: returning from a `finally`
+        # discards whatever exception was propagating, and because this runs as a
+        # contextmanager generator the suppression reaches the caller -- the probe
+        # timeout below it vanished and surfaced as an UnboundLocalError on the
+        # `result` the swallowed call never assigned. Record the outcome, leave by
+        # falling off the end.
         deadline = time.monotonic() + 15
         absent_since: float | None = None
+        stayed_removed = False
         while time.monotonic() < deadline:
             if profile.exists():
                 absent_since = None
@@ -177,9 +184,11 @@ def temporary_browser_profile(tmp_path: Path) -> Iterator[Path]:
             elif absent_since is None:
                 absent_since = time.monotonic()
             elif time.monotonic() - absent_since >= 0.5:
-                return
+                stayed_removed = True
+                break
             time.sleep(0.05)
-        raise TimeoutError(f"browser profile did not remain removed: {profile}")
+        if not stayed_removed:
+            raise TimeoutError(f"browser profile did not remain removed: {profile}")
 
 
 def installed_browser() -> str | None:
