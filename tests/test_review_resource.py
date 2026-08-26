@@ -152,7 +152,10 @@ def test_edit_plan_round_trips_a_versioned_review_and_derives_resolution(
 @pytest.mark.parametrize(
     ("mutate", "offending_field"),
     [
-        (lambda finding, priority: finding.update(category="unknown"), "findings[0].category"),
+        (
+            lambda finding, priority: finding.update(category="unknown"),
+            "findings[0].category",
+        ),
         (lambda finding, priority: finding.update(evidence=[]), "findings[0].evidence"),
         (lambda finding, priority: priority[0].update(rank=2), "priority[0].rank"),
         (
