@@ -192,3 +192,57 @@ def test_occupied_project_with_a_live_watcher_accepts_another_dispatch(
     assert accepted["watch"]["watcher_live"] is True
     assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
     assert accepted["watch_override"] is None
+
+
+def test_member_lookup_uses_project_mount_from_another_repository(
+    isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
+) -> None:
+    config_home, plan_repo = isolated_project
+    work_repo = tmp_path / "work-repo"
+    scripts = work_repo / "skills" / "reckon-ship" / "scripts"
+    scripts.mkdir(parents=True)
+    (work_repo / "docs").mkdir()
+    fleet_script = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (scripts / "worktree_fleet.py").write_text(
+        fleet_script.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (work_repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "skills"],
+        ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(
+            ["git", *arguments], cwd=work_repo, check=True, capture_output=True
+        )
+    mounts = json.loads((config_home / "mounts.json").read_text(encoding="utf-8"))
+    mounts["work"] = str(work_repo / "docs")
+    (config_home / "mounts.json").write_text(json.dumps(mounts), encoding="utf-8")
+    crew.ledger.register_member("sample", "worker-a", harness="alpha", root=plan_repo)
+    monkeypatch.chdir(work_repo)
+    report = crew.reports_dir() / "sample" / "member-lookup.json"
+    node = _node(config_home, "mounted-member")
+    node.write_paths = [str(report)]
+
+    record = crew.dispatch(
+        node=node,
+        project="sample",
+        repo=Path.cwd(),
+        config=CONFIG,
+        session="mounted-member-session",
+        member="worker-a",
+        launcher=lambda *args, **kwargs: 4242,
+    )
+
+    assert record["member"] == "worker-a"
+    assert record["repo"] == str(work_repo.resolve())
+    assert record["authority"]["plan"]["repository"] == str(plan_repo.resolve())
+    assert record["node"]["write_paths"] == [str(report)]

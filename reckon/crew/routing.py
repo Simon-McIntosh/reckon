@@ -670,6 +670,15 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
     }
 
 
+def resolve_dispatch_ledger_root(authority: Mapping[str, Any]) -> Path:
+    """Return the registered repository that owns the dispatch project's ledger."""
+    plan = authority.get("plan")
+    repository = plan.get("repository") if isinstance(plan, Mapping) else None
+    if not repository:
+        raise CrewError("dispatch authority does not name a project ledger repository")
+    return Path(str(repository)).expanduser().resolve()
+
+
 def mounted_repository_projects() -> dict[Path, tuple[str, ...]]:
     """Return mounted project identities grouped by repository root."""
     try:
