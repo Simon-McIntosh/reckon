@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="7">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="8">
+<meta name="plan-impl" content="0.57">
 </head>
 <body>
   <main class="plan-doc">
@@ -375,6 +375,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s3-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§3 landed — commit <code>076e18b</code> (merged <code>ab998a8</code>, formatted <code>3ce9265</code>); gate passed. Composed discovery now gives each sprint <code>metrics.item_count</code>, <code>metrics.by_effective_status</code>, <code>metrics.mean_impl</code> and <code>metrics.current_work</code>; review findings gain <code>subject_found</code>/<code>subject_status</code>/<code>current</code>; priority rows gain live <code>status</code>/<code>effective_status</code>/<code>impl</code>/<code>sprint</code>/<code>landed</code>; open sprint order is ranked first appearance then remaining ids. Liveness proved directly: a one-member sprint moved from <code>mean_impl</code> 0.5 and <code>current_work</code> 1 to 1.0 and 0 on re-read <em>while the stored review version stayed unchanged</em> — the composition is a join, not a cache. Derived <code>sprint_order</code> matched the hand-computed S2,S1,S3.</p><p>Measure, and the shape of it matters: the focused gate is 46/46 at the exact commit, and the two tests failing on merged <code>main</code> pass <strong>80/80 at this commit</strong>, because the commit that broke them (<code>479d286</code>) is not an ancestor of it. Delta attributable to this node: <strong>0 new failures</strong>. The node first refused rather than claim a full-suite run it could not finish; the authorized exclusion run reached 93 percent, accumulated 21 rendered-browser timeout markers under a saturated shared host, and was <em>explicitly not counted as test evidence</em> — the correct disposition, since a figure produced under contention nobody controls is not a measurement. 410 lines across 3 files; lint 24 → 23.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s8-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§8 landed — commit <code>30b1fa0</code> (merged <code>340c7aa</code>); gate passed. Both duplicate pairs are collapsed into <code>mcp_views.compose_review</code> plus <code>mcp_views.load_composed_review</code>, now serving discovery, typed review reads and the roadmap from one derivation; <code>roadmap._review_projection</code> and <code>roadmap._load_review</code> are <strong>deleted</strong>, verified as zero remaining definitions rather than left beside their replacements. Measure: 50 passed / 0 failed on the four targeted suites, delta +2 passing against the node base and 0 new failures; ruff 21 → 21; 200 insertions against 137 deletions across 5 files — a consolidation that removed nearly as much as it added.</p><p>The discriminator is proven in both directions on the real corpus, which is the part that matters: nova's 35 findings with 34 resolved yield <strong>exactly one</strong> stale subject, and it is the right one (<code>rf-035</code>, the single genuinely open row) rather than the 34 healthy closed loops the previous implementation would have reported. A resolved-then-moved finding is excluded while an open-then-moved finding is included; a moved <em>landed</em> rank is excluded while a moved unlanded rank is included. No full-suite or rendered-browser run was attempted, per the host-contention fence.</p><p>One defect deliberately left open and recorded: the derived sprint order still returns <code>S12, S13, S6, S8, S9</code> from a string sort where natural order is <code>S6, S8, S9, S12, S13</code>. It was outside this node's done-when, and it is now a one-line fix in <em>one</em> place — which is the consolidation paying for itself immediately.</p></div>
 </div>
 </section>
 </main>

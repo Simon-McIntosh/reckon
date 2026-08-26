@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T12:02:21",
+  "updated": "2026-08-26T12:11:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -25184,9 +25184,113 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260826T100244933500-one-review-contract",
+        "plan": "sprint-review-persistence",
+        "section": "\u00a78",
+        "node": "one-review-contract",
+        "node_definition": {
+          "done_when": "Collapse the duplicate pairs the prior node named \u2014 mcp_views.compose_review with roadmap._review_projection for joined priority fields, plan-subject freshness and sprint_order, and serve._attach_composed_review with roadmap._load_review for loading the singleton \u2014 deleting the superseded member of each pair rather than leaving it beside its replacement. A test asserts both surfaces report identical joined fields, freshness and sprint_order for one fixture. The discriminator lands once in that shared derivation: a resolved finding whose subject moved after resolution does NOT raise review-stale while an open finding whose subject moved does, and a ranked plan that moved raises it only while it is not landed. Assert against the real corpus at /home/ITER/mcintos/.config/reckon/crew/reports/nova-review-staging.json, whose 35 findings include 34 resolved, requiring exactly one stale subject rather than 34. Gate on targeted suites only, namely tests/test_review_composition.py tests/test_review_roadmap.py tests/test_review_resource.py tests/test_mcp_views.py, and report the pass count plus the delta against your node base. Do not attempt a full-suite or rendered-browser run because another user saturates this shared host and such a figure would not be a measurement.",
+          "estimated_hours": null,
+          "goal": "One shared composed-review derivation serving both read surfaces with a staleness discriminator that separates a closed loop from decay",
+          "id": "one-review-contract",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T100244933500-one-review-contract/manifest.md",
+          "plan": "sprint-review-persistence",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "reckon/roadmap.py",
+            "reckon/serve.py",
+            "tests/test_review_composition.py",
+            "tests/test_review_roadmap.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T10:02:47Z",
+        "completed_at": "2026-08-26T10:10:02Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 435,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 435,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "3fa87aad6e05e703a75ae25a21502c90ab14ed42",
+        "commits": [
+          "30b1fa07ee4a86d19ed371c4bb74db7b345339c7"
+        ],
+        "changed_lines": {
+          "added": 200,
+          "removed": 137,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_composition.py tests/test_review_roadmap.py tests/test_review_resource.py tests/test_mcp_views.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T100244933500-one-review-contract/targeted-postcleanup.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T100244933500-one-review-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3063808,
+            "cached_input_tokens_cumulative": 4555776,
+            "input_tokens": 3147382,
+            "input_tokens_cumulative": 4749893,
+            "output_tokens": 13582,
+            "output_tokens_cumulative": 18249,
+            "reasoning_output_tokens": 3884,
+            "reasoning_output_tokens_cumulative": 4794
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 439
+    "_version": 440
   }
 }
