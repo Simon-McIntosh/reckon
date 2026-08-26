@@ -77,6 +77,102 @@ def scoped_diff_stat(
     return {"added": added, "removed": removed, "files": files}
 
 
+@dataclass(frozen=True)
+class _CumulativeDiff:
+    paths: tuple[str, ...]
+    changed_lines: dict[str, Any]
+
+
+def _cumulative_diff(*, cwd: Path, base: str, head: str) -> _CumulativeDiff:
+    """Return paths and counts from one unfiltered base-to-tip diff."""
+    if not base:
+        return _CumulativeDiff((), {"available": False, "reason": "missing_base"})
+    for revision in (base, head):
+        resolved = subprocess.run(
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                f"{revision}^{{commit}}",
+            ],
+            cwd=cwd,
+            capture_output=True,
+            check=False,
+        )
+        if resolved.returncode:
+            return _CumulativeDiff(
+                (), {"available": False, "reason": "unresolvable_revision"}
+            )
+    result = subprocess.run(
+        ["git", "diff", "--numstat", "--no-renames", "-z", f"{base}..{head}", "--"],
+        cwd=cwd,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        return _CumulativeDiff((), {"available": False, "reason": "diff_unavailable"})
+    added = removed = files = 0
+    paths: list[str] = []
+    for raw_line in (item for item in result.stdout.split(b"\0") if item):
+        fields = raw_line.split(b"\t", 2)
+        if len(fields) != 3:
+            continue
+        files += 1
+        added += int(fields[0]) if fields[0].isdigit() else 0
+        removed += int(fields[1]) if fields[1].isdigit() else 0
+        paths.append(os.fsdecode(fields[2]))
+    return _CumulativeDiff(
+        tuple(paths), {"added": added, "removed": removed, "files": files}
+    )
+
+
+def _repository_scope_paths(
+    declared_paths: Iterable[str], *, worktree: Path, repository: Path
+) -> tuple[Path, ...]:
+    """Map declared paths into repository-relative roots when possible."""
+    roots: list[Path] = []
+    for declared in declared_paths:
+        raw = Path(str(declared)).expanduser()
+        if raw.is_absolute():
+            relative = None
+            for base in (worktree, repository):
+                try:
+                    relative = raw.resolve().relative_to(base.resolve())
+                    break
+                except ValueError:
+                    continue
+            if relative is None:
+                continue
+        else:
+            relative = raw
+        if relative.is_absolute() or ".." in relative.parts:
+            continue
+        roots.append(relative)
+    return tuple(roots)
+
+
+def _outside_declared_scope(
+    changed_paths: Iterable[str],
+    declared_paths: Iterable[str],
+    *,
+    record: Mapping[str, Any],
+    tree: Path,
+) -> tuple[str, ...]:
+    """Return changed repository paths not contained by a declared write root."""
+    repository = Path(str(record.get("repo") or tree))
+    roots = _repository_scope_paths(
+        declared_paths, worktree=tree, repository=repository
+    )
+    outside = []
+    for changed in changed_paths:
+        path = Path(changed)
+        if not any(path == root or path.is_relative_to(root) for root in roots):
+            outside.append(changed)
+    return tuple(outside)
+
+
 def _is_shadow(record: Mapping[str, Any]) -> bool:
     """Return whether a live or committed record is shadow evidence."""
     lineage = record.get("lineage")
@@ -511,17 +607,27 @@ def _complete_locked(
         artifact = _write_shadow_patch(record)
         changed_lines = _shadow_patch_stat(artifact, cwd=tree)
         shadow_patch = str(artifact)
-    else:
-        changed_lines = (
-            scoped_diff_stat(
-                cwd=tree,
-                base=str(record.get("base_sha") or ""),
-                head=commit_list[-1],
-                paths=node.get("write_paths") or (),
-            )
-            if commit_list
-            else None
+    elif commit_list:
+        cumulative = _cumulative_diff(
+            cwd=tree,
+            base=str(record.get("base_sha") or ""),
+            head=commit_list[-1],
         )
+        if cumulative.changed_lines.get("available", True):
+            outside = _outside_declared_scope(
+                cumulative.paths,
+                node.get("write_paths") or (),
+                record=record,
+                tree=tree,
+            )
+            if outside:
+                raise CrewError(
+                    f"run {run_id!r} changed paths outside its declared "
+                    f"write scope: {', '.join(outside)}"
+                )
+        changed_lines = cumulative.changed_lines
+    else:
+        changed_lines = None
 
     session_id = record.get("session_id") or stream.session_id
     previous = next(
