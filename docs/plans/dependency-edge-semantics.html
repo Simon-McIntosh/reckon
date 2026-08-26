@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="dependency-edge-semantics">
+  <meta name="plan-title" content="Edges That Mean What They Say">
+  <meta name="plan-summary" content="A dependency ref accepts a section anchor and the roadmap discards it, so partial dependencies block whole plans and hide ready work.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-informs" content="">
+  <title>Edges That Mean What They Say | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — A feature that is parsed and then discarded</h2>
+    <p>
+      The ref grammar is documented as <code>[project:]slug[#stage]</code> and
+      <code>parse_plan_ref</code> captures the stage group. <code>reckon/roadmap.py</code>
+      contains no reference to that stage at all. So an author may write
+      <code>plan-depends-on="catalog#s3"</code>, reasonably believe they have declared a
+      dependency on one rung, and receive whole-plan blocking instead. Nothing refuses the
+      ref and nothing reports the discard.
+    </p>
+    <p>
+      This is worse than an absent feature, and the asymmetry is the whole argument. An
+      absent feature is refused at the write boundary by <code>validate_for_write</code> and
+      the author learns in the same second. A parsed-then-ignored feature accepts the input,
+      silently overstates blocking, and then reports the plan as <code>blocked</code> while
+      dispatchable work sits inside it. The author cannot distinguish <em>reckon does not
+      support this</em> from <em>reckon supports this and the work really is blocked</em>,
+      and the roadmap — the one artifact every coordinator reads to decide what to run —
+      is confidently wrong.
+    </p>
+    <p>
+      Measured in a consuming portfolio of 67 plans: a catalog plan whose first two rungs
+      were dispatchable and whose third waited on a demonstration reported
+      <code>effective_status=blocked</code>, hiding roughly eight hours of ready work. The
+      same shape recurred inside a second sprint, where three profile-owned sections were
+      ready while one waited on a separatrix section. Both were coped with by prose that the
+      graph cannot read.
+    </p>
+    <p>
+      The resolution machinery already exists elsewhere in the codebase:
+      <code>plan-verifies</code> consumes <code>slug#section</code> anchors today. The gap is
+      that dependency resolution never asks.
+    </p>
+
+    <h2 id="s2">§2 — Honour the anchor, or refuse it</h2>
+    <p>
+      There are exactly two honest outcomes for a staged dependency ref, and the current
+      behaviour is neither. Either blocking honours the anchor — a dependency on
+      <code>catalog#s3</code> blocks only the sections that need <code>s3</code>, and the
+      plan stays dispatchable for everything else — or the write boundary refuses a staged
+      ref with the grammar stated, so an author who wanted partial blocking learns
+      immediately that it does not exist. Accepting the ref and discarding its meaning is
+      the one option that misleads, and it is what ships today.
+    </p>
+    <p>
+      Honour it. Refusal would be defensible if partial dependency were a fringe request,
+      but it is the dominant real shape: plans here are authored as ordered rungs, and a
+      late rung waiting on foreign work is the normal case rather than the exception.
+      Whole-plan blocking then systematically understates what can run, which is the failure
+      the roadmap exists to prevent.
+    </p>
+    <p>
+      Derived state stays derived. A staged dependency does not introduce a new persisted
+      field: <code>effective_status</code> continues to be computed, and gains the ability
+      to be partial — a plan with a satisfied section-level prerequisite for its ready rungs
+      is not <code>blocked</code>, while the specific sections whose anchors are unmet are
+      reported as such. Readiness answers a question about sections, and the plan-level
+      answer becomes a rollup of them rather than a separate judgement.
+    </p>
+    <p><em>Done when:</em> a plan carrying <code>depends_on="other#s3"</code> reports its
+      unanchored sections dispatchable while the anchored ones report blocked, asserted by a
+      test that fails against current behaviour and passes after; the roadmap's ready set
+      contains that plan rather than excluding it; a staged ref naming a section that does
+      not exist in the target is reported as a wiring finding rather than silently treated
+      as satisfied or as blocking everything; an unstaged ref behaves exactly as it does
+      today, asserted by the existing dependency tests passing unchanged; and the eight-hour
+      case from the consuming portfolio is reproduced as a fixture showing the work
+      surfacing.</p>
+
+    <h2 id="s3">§3 — An obligation that neither project can see</h2>
+    <p>
+      Three obligations in a consuming portfolio lived as followups pointing at plans in
+      another repository that had already shipped. Each was excluded from the owning
+      project's pending work because its target is terminal, and from the consuming
+      project's because the target is foreign. The work was invisible to both roadmaps at
+      once, and was recovered only by a human hand-appending followups into the other
+      repository's live plans and committing both.
+    </p>
+    <p>
+      This is the hidden-work mechanic already documented for terminal plans, crossing a
+      project boundary where neither side owns the check. Take the cheap half first: an
+      audit finding when a followup names a foreign plan that is terminal. It is a corpus
+      scan with no schema change, it names exactly the rows that went missing, and it is
+      useful whether or not a richer handoff is ever built.
+    </p>
+    <p><em>Done when:</em> the audit reports a followup whose target is a resolvable foreign
+      plan in a terminal state, with the finding naming both the holder and the target;
+      a followup pointing at a live foreign plan is not reported; the check runs over the
+      registered mounts without requiring every project to be present, and an unmounted
+      target is reported distinctly rather than as terminal.</p>
+
+    <h2 id="s4">§4 — Execution is finished and closure is not the same question</h2>
+    <p>
+      A plan can be execution-complete while its closure waits on something else: the work
+      is done, the tests are green, and it must not be marked shipped until a gate on
+      another plan runs. <code>depends_on</code> is the wrong edge, because nothing blocks
+      execution — asserting it would idle work that is ready. Today this is carried in a
+      comment, which is to say it is invisible to the tool that decides what may close.
+    </p>
+    <p>
+      The same shape appears one level down for decisions: a decision gated not by a
+      question someone must answer but by another plan's <em>outcome</em>. The existing
+      decision-blocker machinery models the plan-local case well and has no representation
+      for a foreign result.
+    </p>
+    <p>
+      Both are the same missing distinction — an edge that gates a <em>transition</em>
+      rather than an activity. Design them together, and settle whether they are one edge
+      type with a stated transition or two, before writing a schema for either.
+    </p>
+    <p><em>Done when:</em> the decision below is locked with a stated rationale, then a
+      plan carrying a closure gate is dispatchable and refuses a terminal write until its
+      gate reports a verdict, asserted by test in both directions; and a decision gated by a
+      foreign plan's outcome appears in the roadmap's decision blockers with its gating plan
+      named.</p>
+
+    <h2 id="s5">§5 — What this plan deliberately does not own</h2>
+    <p>
+      Mutual exclusion — write-scope disjointness, suite exclusivity and shared-checkout
+      serialisation — is <strong>not</strong> in scope here, and duplicating it would create
+      exactly the competing authority this repository keeps paying for. That work belongs to
+      <code>concurrency-and-schedule-visibility</code>, which already models comparing file
+      claims and deriving lanes and sits near completion. When both land, an orchestrator can
+      ask which sections are ready <em>and</em> which of them may run together; neither plan
+      answers both alone, and neither should.
+    </p>
+    <p>
+      Priority lane semantics — that ranks one to three are concurrent lanes rather than a
+      sequence — belongs to the review priority schema rather than to the dependency graph,
+      and is recorded as a finding against that resource instead of a section here.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="staged-ref-semantics" data-choice="honour-the-anchor" data-by="reckon-3a" data-when="2026-08-26">
+        <p class="r-dec-q">A dependency ref carries a section anchor. What should happen?</p>
+        <p class="r-dec-ctx">The grammar accepts it, the parser captures it, and the roadmap discards it.
+          Whole-plan blocking measurably hid eight hours of dispatchable work in a real portfolio.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="honour-the-anchor">honour the anchor in blocking</button>
+          <button class="r-opt" data-value="refuse-at-write">refuse a staged ref at the write boundary</button>
+          <button class="r-opt" data-value="leave">leave it parsed and ignored</button>
+        </p>
+        <p class="r-dec-rat">Partial dependency is the dominant real shape here, not a fringe request:
+          plans are authored as ordered rungs and a late rung waiting on foreign work is normal. Refusal
+          is honest but throws away the case that matters; leaving it is the only option that actively
+          misleads, since the author believes they expressed something the system silently drops.</p>
+      </div>
+      <div class="r-dec" data-key="transition-gate-shape" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Is a closure gate the same edge type as a decision gated by a foreign outcome?</p>
+        <p class="r-dec-ctx">Both gate a transition rather than an activity — one gates a plan reaching a
+          terminal status, one gates a decision being lockable. Modelling them as one edge with a stated
+          transition is smaller; modelling them separately is clearer to read in a roadmap payload.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="one-edge-with-transition">one edge naming the transition it gates</button>
+          <button class="r-opt" data-value="two-edge-types">two distinct edge types</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-des-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="orchestrator"
+               data-capability-verification="strict"
+               data-written-by="reckon-3a" data-written-at="2026-08-26"
+               data-recommends-skill="/reckon-ship dependency-edge-semantics §2"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Honour the section anchor first — it is the one that makes the roadmap stop lying</h4>
+        <div class="r-fu-body"><p>§2 is first on severity: it is the only section whose absence makes an
+          existing answer wrong rather than missing, and its decision is already locked. §3 is
+          independent and cheap. §4 waits on its own decision, which is a design question rather than an
+          implementation choice.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
