@@ -931,7 +931,7 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
     }
 
 
-def test_derived_member_guard_ignores_a_run_from_another_repository(home, repo) -> None:
+def test_derived_member_guard_spans_work_repositories(home, repo) -> None:
     session = "shared-coordinator-session"
     member = crew._session_member_id(session)
     ledger.register_member(PROJECT, member, harness="alpha", root=repo)
@@ -944,13 +944,12 @@ def test_derived_member_guard_ignores_a_run_from_another_repository(home, repo) 
     }
     crew._write_json(crew.pointer_path(foreign_run["run_id"]), foreign_run)
 
-    record = _dispatch(repo, session=session, node_kwargs={"id": "node-local"})
+    with pytest.raises(crew.MemberInFlight) as excinfo:
+        _dispatch(repo, session=session, node_kwargs={"id": "node-local"})
 
-    assert record["member"] == member
-    assert {pointer["run_id"] for pointer in crew.list_live()} == {
-        foreign_run["run_id"],
-        record["run_id"],
-    }
+    assert excinfo.value.member == member
+    assert excinfo.value.run_id == foreign_run["run_id"]
+    assert crew.list_live() == [foreign_run]
 
 
 def test_recovery_never_removes_a_worktree(home, repo) -> None:
@@ -1188,7 +1187,7 @@ def test_the_scope_changed_flag_defaults_false_and_is_settable(home, repo) -> No
 
 
 def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
-    """A count over the whole diff would describe the branch, not the node."""
+    """Promotion refuses cumulative changes outside the node's write scope."""
     record = _dispatch(repo)
     worktree = Path(record["worktree"])
     (worktree / "reckon" / "target.py").write_text("value = 1\nvalue2 = 2\n")
@@ -1206,14 +1205,16 @@ def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
         text=True,
     ).stdout.strip()
 
-    stored = crew.complete(
-        record["run_id"],
-        gate="passed",
-        commits=[commit],
-        changed_lines={"detail": "not a measurement"},
-    )["record"]
+    with pytest.raises(crew.CrewError, match=r"other\.py"):
+        crew.complete(
+            record["run_id"],
+            gate="passed",
+            commits=[commit],
+            changed_lines={"detail": "not a measurement"},
+        )
 
-    assert stored["changed_lines"] == {"added": 1, "removed": 0, "files": 1}
+    assert ledger.runs(PROJECT, root=repo) == []
+    assert crew.pointer_path(record["run_id"]).is_file()
 
 
 def test_measured_worker_time_is_reported_against_declared_effort(home, repo) -> None:
