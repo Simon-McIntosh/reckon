@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/audit-metrics.json">
 <meta name="plan-impl" content="0.222">
 </head>
@@ -267,6 +267,39 @@
     </p>
 
     <h2 id="s3">&sect;3 &mdash; Wire the local endpoint, defined and not defaulted</h2>
+    <p class="landed-summary"><span class="badge badge-shipped">&#10003; landed 2026-08-26</span>
+      Landed by a <strong>different route than this section specified</strong>, and the
+      substitute is better. Rather than an environment map naming the endpoint, the
+      backend names the local <em>wrapper</em>, registered as an alias of the agent
+      CLI's dialect because it execs that CLI with its arguments unchanged. The wrapper
+      resolves the endpoint and its credential itself, so <strong>no secret passes
+      through Reckon at all</strong> &mdash; which is what the no-provider-key
+      constraint actually wants. Routing is inert as required: a dry run resolves the
+      incumbent by default and the local backend only under an explicit override.
+      Measured end to end: a worker took a worktree, executed commands and returned a
+      well-formed manifest &mdash; and <strong>contradicted its own dispatch's premise
+      about the hardware</strong> rather than agreeing with the prompt. Commits
+      <code>479d286</code>, <code>eea3c47</code>; full record:
+      <a href="/reckon/evidence/archive/self-hosted-worker-backends-landed#s3">&sect;3 landed</a>.
+    </p>
+    <p>
+      Two things this section got wrong are worth keeping, because both were found by
+      landing it rather than by planning it. The routing entry was first written into the
+      <em>committed project layer</em>, where a path that exists only on one cluster
+      travels to every checkout &mdash; machine-specific routing belongs in the host
+      layer, and &ldquo;global config&rdquo; means exactly that layer. And the backend
+      pinned no effort, so the first run's agent record reads <code>none</code> and the
+      ledger cannot see what ran; it is pinned now as an advisory prior with no audited
+      value behind it yet.
+    </p>
+    <p>
+      The environment map of &sect;2 is <strong>not</strong> also registered against this
+      endpoint. Two backend entries reaching one server would be the parallel-family
+      smell in configuration form: a second way to do the same thing, with nothing
+      saying which is canonical. The map remains the general mechanism for an endpoint
+      with no wrapper, proven by its own tests rather than by a live entry that would
+      duplicate this one.
+    </p>
     <p>
       With &sect;2 landed, the candidate enters the host flight layer as a backend with a
       pinned model, a pinned effort, and its environment naming the endpoint. It is
