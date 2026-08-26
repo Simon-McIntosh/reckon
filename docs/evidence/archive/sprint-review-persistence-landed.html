@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="sprint-review-persistence-landed">
+  <meta name="plan-title" content="Sprint Review Persistence — Execution Record">
+  <meta name="plan-summary" content="Commits, gate verdicts, measured results and negative findings for every node of sprint-review-persistence.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-evidence-for" content="sprint-review-persistence">
+  <meta name="plan-tags" content="reckon-tooling,evidence">
+  <title>Sprint Review Persistence — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="summary">Outcome</h2>
+    <p>
+      Seven sections, seven nodes plus one repair, all on codex workers in detached
+      worktrees. Six gates passed, one deliberately recorded <code>not-run</code>. The
+      design bet — persist only the judgment a machine cannot recompute, and join live plan
+      state at read time — held: no section needed a persisted field that composition could
+      derive, and the one place two derivations were written independently is now one.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Node</th><th>Commit</th><th>Gate</th><th>Measure</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>reuse map (scout)</td><td>—</td><td>passed</td><td>29 candidates over 5 capability areas; no new persistence, HTTP or SPA architecture needed</td></tr>
+        <tr><td><a href="#s2">§2 review resource</a></td><td><code>388a714</code></td><td>passed</td><td>7 tests; full suite 2471 passed / 0 failed</td></tr>
+        <tr><td><a href="#s3">§3 composed reads</a></td><td><code>076e18b</code></td><td>passed</td><td>46/46 focused; 80/80 at own commit on the divergent files; delta 0 new failures</td></tr>
+        <tr><td><a href="#s4">§4 roadmap wiring</a></td><td><code>1908da4</code></td><td>passed</td><td>51 passed / 0 failed; lint 12 → 11</td></tr>
+        <tr><td><a href="#s8">§8 one contract + discriminator</a></td><td><code>30b1fa0</code></td><td>passed</td><td>50 passed; 200 insertions against 137 deletions; 1 stale subject where 34 were false</td></tr>
+        <tr><td><a href="#s8">ordering repair</a></td><td><code>38e5728</code></td><td>passed</td><td>50 passed; live order corrected on the running project</td></tr>
+        <tr><td><a href="#s6">§6 skill contract</a></td><td><code>74c5137</code></td><td>passed</td><td>+154 lines measured; 5 vocabularies compared character-identical against source</td></tr>
+        <tr><td><a href="#s7">§7 isolation category</a></td><td><code>15e1830</code></td><td>passed</td><td>53 passed, +3 functions; ruff 3 → 3, format 6 → 6 hunks</td></tr>
+        <tr><td><a href="#s5">§5 SPA surface</a></td><td><code>a436951</code>, <code>b421fd4</code></td><td><strong>not-run</strong></td><td>source contracts and Babel transform passed; <strong>no rendered capture</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">§2 — The review resource</h2>
+    <p>
+      A singleton distributed resource at <code>docs/state/&lt;project&gt;/review.html</code>,
+      written through <code>edit_plan(create=True, doc_type="review")</code> on the existing
+      distributed-state path. The <code>active-sprint-mismatch</code> fixture round-trips
+      with both evidence lines at version 1; resolving it advances only the review resource
+      to 2 while a sibling sprint stays at 1, returns derived <code>status="resolved"</code>,
+      and stores no status field. Strict writes name the offending field:
+      <code>findings[0].category</code>, <code>findings[0].evidence</code>,
+      <code>priority[0].rank</code>, <code>priority[1].ref</code> and
+      <code>findings[0].subject.id</code>. A dotted <code>priority.0.rank</code> set is
+      refused, so only a complete ranking may be written.
+    </p>
+    <p>
+      Negative finding recorded during integration: a refusal reports its field in the
+      <code>detail</code> key, not <code>message</code>. A coordinator briefly mistook the
+      empty <code>message</code> for a contract violation and nearly filed a false defect.
+    </p>
+
+    <h2 id="s3">§3 — Composition is a join, not a cache</h2>
+    <p>
+      Sprint cards gained <code>metrics.item_count</code>,
+      <code>metrics.by_effective_status</code>, <code>metrics.mean_impl</code> and
+      <code>metrics.current_work</code>; findings gained
+      <code>subject_found</code>/<code>subject_status</code>/<code>current</code>; priority
+      rows gained live <code>status</code>, <code>effective_status</code>, <code>impl</code>,
+      <code>sprint</code> and <code>landed</code>.
+    </p>
+    <p>
+      Liveness was proved directly rather than asserted: a one-member sprint moved from
+      <code>mean_impl</code> 0.5 and <code>current_work</code> 1 to 1.0 and 0 on re-read
+      <em>while the stored review version did not change</em>.
+    </p>
+    <p>
+      This node first <strong>refused</strong> rather than claim a full-suite run it could
+      not finish, and the refusal was correct. Its base predated an unrelated commit that
+      turned two tests red on <code>main</code>; at its own commit those same two files
+      passed 80/80, establishing a delta of zero new failures without waiting for anyone
+      else's repair.
+    </p>
+
+    <h2 id="s4">§4 — A review advises the graph and never gates it</h2>
+    <p>
+      <code>build_roadmap</code> carries the review block and appends two warn-level wiring
+      findings, <code>priority-order-inversion</code> and <code>review-stale</code>. The
+      property that matters was demonstrated, not assumed: on a constructed
+      prerequisite-behind-successor ranking, <code>ready_now</code> retained only the
+      prerequisite — the advisory signals left readiness untouched. A project with no review
+      resource returns <code>review=None</code> rather than an error. Corpus audit gained
+      three report-only codes.
+    </p>
+
+    <h2 id="s8">§8 — One derivation, and a signal that knows a closed loop</h2>
+    <p>
+      Two duplicate pairs were collapsed into <code>mcp_views.compose_review</code> and
+      <code>mcp_views.load_composed_review</code>, now serving discovery, typed reads and
+      the roadmap. <code>roadmap._review_projection</code> and
+      <code>roadmap._load_review</code> were <strong>deleted</strong> — verified as zero
+      remaining definitions — rather than left beside their replacements. 200 insertions
+      against 137 deletions.
+    </p>
+    <p>
+      The discriminator was accepted against a corpus this project did not author: a
+      consuming project's 35 findings with 34 resolved yield <strong>exactly one</strong>
+      stale subject, and it is <code>rf-035</code>, the single genuinely open row. The prior
+      implementation would have reported 34 healthy closed loops as stale — the
+      false-positive flood that makes a surface stop being read.
+    </p>
+    <p>
+      The consolidation paid for itself the same hour. A defect found immediately after —
+      the derived sprint order returning <code>S12, S13, S6, S8, S9</code> from a string
+      sort where <code>_natural_identifier_key</code> already existed and was already used
+      elsewhere — was then a one-line fix in one place instead of two divergent sites. Live
+      order corrected to <code>S6, S8, S9, S12, S13</code>, with a fixture pairing a
+      single-digit and a double-digit identifier because with single digits alone a string
+      sort passes forever.
+    </p>
+
+    <h2 id="s6">§6 — Documentation compared, not transcribed</h2>
+    <p>
+      <code>skills/reckon-sprint/SKILL.md</code> grew 246 → 400 lines. The gate pastes each
+      validator definition beside the documentation line mirroring it and states the
+      comparison for five vocabularies, all character-identical. The node documented the
+      post-consolidation contract rather than the two-implementation shape at its own base,
+      and reported a divergence instead of smoothing it: the plan proposed an isolation
+      category the validator refused, so the skill said <em>refused</em>.
+    </p>
+    <p>
+      Its first gate was impossible by construction — <code>audit-doc</code> validates plan
+      HTML and requires <code>plan-slug</code>/<code>plan-status</code> meta, which a
+      Markdown skill can never carry. That was a coordinator authoring error, not a worker
+      failure, and blocking on it was correct.
+    </p>
+
+    <h2 id="s7">§7 — A closed vocabulary found short by use</h2>
+    <p>
+      <code>safety</code> was added as a seventh category, and all five review vocabularies
+      are now pinned by exact-set assertions so a future addition or removal fails a test.
+      The unknown-category refusal asserts both the field path and the complete sorted
+      accepted set.
+    </p>
+    <p>
+      Two limitations recorded rather than worked around. A finding's
+      <code>category</code> cannot be edited in place — <code>set</code> covers scalars,
+      <code>append</code> adds rows, <code>resolve</code> closes one — so re-filing the
+      isolation finding required resolve-plus-replacement, and the original row remains
+      resolved as the audit trail with an outcome stating that the underlying defect is
+      <strong>not</strong> repaired. And the worker declined to fold the file's pre-existing
+      lint backlog into a feature commit, stating the counts unchanged either side.
+    </p>
+
+    <h2 id="s5">§5 — Behaviour shipped, capture not produced</h2>
+    <p>
+      The sprint view renders derived order with a natural-id fallback, a focus-conflict
+      badge where the derived active pointer disagrees with the sprints actually carrying
+      <code>active</code>, per-sprint metric strips, finding badges linking to evidence
+      anchors, and a priority panel with reason chips whose landed rows fall to a muted
+      tail — all from the composed payload the shell already loads, with no extra fetch and
+      no client-side plan parsing.
+    </p>
+    <p>
+      <strong>The rendered gate was never produced and nothing here claims it.</strong> Both
+      capture attempts stalled with zero browser events while a foreign process fleet held
+      the host at load 60 to 130 and a peer ran a full suite in the shared checkout. The run
+      then died without rewriting its manifest, so the two commits were audited directly.
+      Promoted as <code>gate: not-run</code>, deliberately. The capture obligation transfers
+      with the files to <code>sprint-horizon-surface</code>, which now owns them and whose
+      own gates run in a browser.
+    </p>
+
+    <h2 id="findings">What this plan's own execution surfaced</h2>
+    <p>
+      Twenty-two findings were persisted into this project's review resource while building
+      the thing that persists them, several originating as cross-session measurements that
+      would otherwise have stayed in chat. The load-bearing ones: an execution worker runs
+      unsandboxed so its declared worktree boundary is obedience rather than enforcement; a
+      promotion can report success and drop its ledger row; a resolvable backend command is
+      not a runnable one; a verification gate measured against a shared host another user
+      saturates is not a measurement; and dispatch never provisions the shared-environment
+      link its own contract requires, measured at 26 of 26 worktrees.
+    </p>
+  </main>
+</body>
+</html>

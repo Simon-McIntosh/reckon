@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="sprint-review-persistence">
   <meta name="plan-title" content="Sprint Review Findings and Priority as Project State">
   <meta name="plan-summary" content="Persist sprint-review findings and plan priority order as a versioned review resource, composed live into roadmap, MCP reads, and the SPA sprint view.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="10">
-<meta name="plan-impl" content="0.86">
+<meta name="plan-version" content="13">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -352,12 +352,18 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-srp-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-review-persistence" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-srp-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-review-persistence" data-resolved-at="2026-08-26T14:21:29+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Ship the review resource, composed reads, roadmap wiring, SPA view, and skill refresh</h4>
     <div class="r-fu-body"><p>All six sections are executable now; §2 gates §3/§4, which gate §5;
           §6 lands last against the built surface. The reviewing worker in a mounted project holds a
           finding set ready to persist the moment the write path exists.</p></div>
     <pre class="r-fu-prompt">/reckon-ship sprint-review-persistence</pre>
+    <p class="r-fu-outcome">All seven sections landed; full record at docs/evidence/archive/sprint-review-persistence-landed.html. The review singleton is registered and writable (388a714); composed reads join live plan state without persisting it, proved by a sprint metric moving while the stored review version did not (076e18b); the roadmap carries the review block and two advisory signals shown not to affect readiness (1908da4); one shared derivation replaced two divergent copies with the staleness discriminator inside it, accepted against a 35-finding corpus this project did not author yielding exactly one stale subject (30b1fa0, ordering repair 38e5728); the sprint skill documents the write path by character-identical comparison against the validator (74c5137); the category vocabulary gained the isolation class it was found short of, with all five vocabularies pinned by exact-set assertions (15e1830); and the SPA view renders the composed signals (a436951, b421fd4). Six gates passed and one is recorded not-run: the rendered capture was never produced and is not claimed.</p>
+    </article>
+<article class="r-fu" data-id="f-srp-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-horizon-surface" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The rendered capture is owed by the plan that now owns those files</h4>
+    <div class="r-fu-body"><p>This plan's SPA section shipped its behaviour with source-contract evidence and no rendered capture, because both attempts stalled on a host another user held at load 60 to 130. The obligation is neither abandoned nor this plan's to discharge: <code>docs/ui/sprint.jsx</code> and <code>docs/ui/sprints.css</code> are now owned by <code>sprint-horizon-surface</code>, whose sections consume the composed review block, per-sprint metrics and derived sprint order, and whose own gates run in a browser. Capturing the current version here would verify a view that plan is about to rewrite, and would require re-claiming files this session deliberately released to it. Recorded as a pointer under the foreign-owner exemption, so the obligation stays visible in a live plan's lifecycle rather than hidden on a closed one.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship sprint-horizon-surface</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -384,6 +390,12 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s7-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§7 landed — commit <code>15e1830</code> (merged <code>0f81a13</code>); gate passed. The validator accepts <code>safety</code> as a seventh category, and <strong>all five review vocabularies are now pinned by exact-set assertions</strong>, so a future addition or removal fails a test and must be deliberate — which is the same defect the closed enum was chosen to prevent, caught one level up. The unknown-category refusal asserts both the field path and the complete sorted accepted set. Measure: 53 passed / 0 failed, +3 test functions against the node base; scoped ruff 3 → 3 findings and 6 → 6 format hunks, so zero new drift.</p><p>The worker declined to fold the file's pre-existing ruff backlog into a feature commit and said so explicitly — the correct reading of the no-sweep rule, and worth recording because the tidier-looking choice was available.</p><p>Data migration completed by the coordinator, which the node correctly fenced out: the isolation finding is re-filed from <code>provenance</code> to <code>safety</code> with its evidence intact. It required <em>resolve plus replacement</em>, because a finding's <code>category</code> cannot be edited in place — <code>set</code> covers scalars, <code>append</code> adds rows, <code>resolve</code> closes one. The original row stays resolved as the audit trail with an outcome stating plainly that the defect is <strong>not</strong> repaired: the execution tier still runs unsandboxed. A schema that cannot correct a mis-filing without leaving the mis-filing visible is the honest failure mode, but the missing correction op is worth noting.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s5-landed-partial" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§5 landed its behaviour — commits <code>a436951</code> and <code>b421fd4</code> (merged <code>d5d876f</code>) — <strong>with source-contract evidence only and no rendered capture</strong>. The sprint view consumes the composed payload the shell already loads, with no extra fetch and no client-side plan parsing: derived <code>sprint_order</code> with natural-id fallback, a focus-conflict badge where the derived active pointer disagrees with the sprints actually carrying <code>active</code>, per-sprint metric strips, finding badges linking to evidence anchors, and a priority panel with reason chips whose landed rows fall to a muted tail. Four new test functions assert those contracts, and the exact Babel transform passes.</p><p>The rendered gate was never produced and this record does not claim it. Both capture attempts stalled with zero browser events while a foreign process fleet held the host at load 60 to 130 and a peer ran a full suite in the shared checkout; the run then died without rewriting its manifest, so the commits were audited directly rather than trusting a report that never arrived. Promoted as <code>gate: not-run</code>, deliberately, not as passed. This is the disposition <code>spa-surface-redesign</code> already used for its Graph surface: ship the behaviour, record the missing capture with its reason, and do not fabricate evidence to close a section.</p><p><strong>The capture obligation transfers with the file.</strong> <code>docs/ui/sprint.jsx</code> and <code>sprints.css</code> are now owned by <code>sprint-horizon-surface</code>, whose own section consumes these composed fields and whose gates run in a browser. Capturing this version would verify a view that plan is about to rewrite, and would mean re-claiming files this session released. So the obligation is recorded as a followup pointer rather than held open here.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260826T102811504230-sprint-view-review-surface" data-who="codex-i" data-when="2026-08-26T10:51:53Z">
+    <div class="r-comment-body"><p>Work delivered and merged at d5d876f; the rendered gate was never produced. Both DevTools capture attempts stalled with zero browser events while a foreign MATLAB fleet held the host at load 60-130 and a peer ran a full suite in the shared checkout. Source-contract assertions and the exact Babel transform passed. The run then died without rewriting its manifest, so a coordinator audited the two commits directly: both touch only the four fenced paths, worktree clean. Section stays open; the rendered evidence is owed by whoever next holds the surface.</p></div>
 </div>
 </section>
 </main>
