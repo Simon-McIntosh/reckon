@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="self-hosted-worker-backends">
+  <meta name="plan-title" content="Self-Hosted Worker Backends">
+  <meta name="plan-summary" content="Let a backend name a self-hosted inference endpoint, then qualify the local GPU model against the incumbent through the shadow ladder.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S8">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="">
+  <meta name="plan-depends-on" content="">
+  <title>Self-Hosted Worker Backends | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; The gap, measured</h2>
+    <p>
+      Reckon can route a node to any backend whose <em>command</em> it knows how to
+      translate, and it knows two: <code>codex</code> and <code>claude</code>. What it
+      cannot do is tell that command <em>where to send its requests</em>. A backend
+      declares ten keys &mdash; <code>launch</code>, <code>command</code>,
+      <code>model</code>, <code>effort</code>, <code>sandbox</code>,
+      <code>session_reuse</code>, <code>time_budget</code>, <code>budget_check</code>,
+      <code>auth_check</code>, <code>name</code> &mdash; and none of them carries an
+      endpoint, a base URL, or a credential. The launcher confirms it: the
+      <code>subprocess.Popen</code> call in <code>reckon/crew/dispatch.py</code> passes
+      no <code>env=</code>, so every worker inherits whatever environment the
+      dispatching process happened to hold.
+    </p>
+    <p>
+      That is the whole obstacle. It is not a model problem and not a protocol problem
+      &mdash; both were measured and both are fine. The consequence is that a
+      self-hosted endpoint can only be reached by mutating the orchestrator's own
+      environment, which is global, invisible in the run record, and impossible to vary
+      per node. A wrapper script does not rescue it either: dialect selection matches on
+      the command's basename, so a backend declaring <code>command: clive</code> is
+      refused with <em>no launch translation for command 'clive'</em> before anything
+      launches.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 720 132" width="100%" role="img"
+           aria-label="The launch path from flight config to the spawned worker, with the environment gap marked between the launch plan and the process.">
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1c">
+          <rect x="1" y="34" width="126" height="46" fill="none" stroke="#1a1a1c" stroke-width="1"/>
+          <text x="64" y="53" text-anchor="middle">flight.yaml</text>
+          <text x="64" y="70" text-anchor="middle" font-size="11">backend entry</text>
+
+          <rect x="167" y="34" width="126" height="46" fill="none" stroke="#1a1a1c" stroke-width="1"/>
+          <text x="230" y="53" text-anchor="middle">dialect</text>
+          <text x="230" y="70" text-anchor="middle" font-size="11">argv by command</text>
+
+          <rect x="333" y="34" width="126" height="46" fill="none" stroke="#1a1a1c" stroke-width="1"/>
+          <text x="396" y="53" text-anchor="middle">LaunchPlan</text>
+          <text x="396" y="70" text-anchor="middle" font-size="11">argv, cwd, stdin</text>
+
+          <rect x="499" y="34" width="126" height="46" fill="none" stroke="#1a1a1c" stroke-width="1"/>
+          <text x="562" y="53" text-anchor="middle">Popen</text>
+          <text x="562" y="70" text-anchor="middle" font-size="11">no env passed</text>
+
+          <rect x="641" y="34" width="78" height="46" fill="none" stroke="#1a1a1c" stroke-width="1"/>
+          <text x="680" y="60" text-anchor="middle">worker</text>
+
+          <g stroke="#1a1a1c" stroke-width="1" fill="none">
+            <path d="M127 57 H163"/><path d="M155 52 l8 5 -8 5" fill="#1a1a1c"/>
+            <path d="M293 57 H329"/><path d="M321 52 l8 5 -8 5" fill="#1a1a1c"/>
+            <path d="M459 57 H495"/><path d="M487 52 l8 5 -8 5" fill="#1a1a1c"/>
+            <path d="M625 57 H637"/><path d="M629 52 l8 5 -8 5" fill="#1a1a1c"/>
+          </g>
+
+          <g stroke="#b3261e" stroke-width="1.4" fill="none">
+            <path d="M562 34 V16 H396 V30"/><path d="M391 22 l5 8 5 -8" fill="#b3261e"/>
+          </g>
+          <text x="479" y="12" text-anchor="middle" font-size="11" fill="#b3261e">the endpoint has nowhere to travel</text>
+        </g>
+      </svg>
+      <figcaption>
+        Every stage from configuration to process carries the argument vector and the
+        working directory. None carries an environment, so a backend cannot say which
+        server its command should talk to.
+      </figcaption>
+    </figure>
+
+    <h3 id="s1.1">&sect;1.1 &mdash; What the local endpoint actually does</h3>
+    <p>
+      The GPU job serving the candidate has been running for over five days on the
+      reserved H200 node against an unlimited partition. Probed directly, it publishes
+      one model at a 524,288-token context and answers on both protocol dialects Reckon
+      knows how to drive. The decisive capability is tool use: given an Anthropic-shaped
+      tool schema it returns a well-formed <code>tool_use</code> block with
+      <code>stop_reason: tool_use</code> and correctly extracted arguments, which is the
+      minimum an agent loop requires and the thing that cannot be assumed of a
+      self-hosted model.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Probe</th><th>Result</th><th>Bearing on adoption</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Model listing</td>
+          <td>One model, 524,288 max context</td>
+          <td>Context is not the constraint; it exceeds the incumbent's working range</td>
+        </tr>
+        <tr>
+          <td>OpenAI chat completions</td>
+          <td>Answers, bearer auth</td>
+          <td>The <code>codex</code> dialect is reachable</td>
+        </tr>
+        <tr>
+          <td>Anthropic messages</td>
+          <td>Answers on bearer auth; rejects <code>x-api-key</code></td>
+          <td>The <code>claude</code> dialect is reachable, on one auth header only</td>
+        </tr>
+        <tr>
+          <td>Anthropic tool schema</td>
+          <td><code>stop_reason: tool_use</code>, arguments correct</td>
+          <td>The agent loop is viable rather than merely the chat surface</td>
+        </tr>
+        <tr>
+          <td>Terse instruction following</td>
+          <td>&ldquo;Say PONG&rdquo; produced an essay on the game of Pong</td>
+          <td>A real risk signal &mdash; see the done-when in &sect;4</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      That last row is not a joke at the model's expense; it is the reason this plan
+      qualifies rather than adopts. A model that elaborates when asked to be terse is a
+      model that may not respect a fence, and fences &mdash; exclusive write scope, a
+      manifest at a named path, a time budget &mdash; are how Reckon keeps a worker
+      safe. The shadow ladder in &sect;4 is what converts that worry into a number.
+    </p>
+
+    <h2 id="s2">&sect;2 &mdash; A backend may name its environment</h2>
+    <p>
+      Add one optional key to the backend schema: a map of environment variable names to
+      string values, merged over the dispatching process's environment when the worker is
+      spawned. It is user data in exactly the sense <code>command</code> and
+      <code>model</code> already are &mdash; the schema fixes no variable names, encodes
+      no provider vocabulary, and ships no defaults. That is what keeps the shipped layer
+      provider-neutral while letting a host layer name a machine on its own network.
+    </p>
+    <p>
+      Values expand <code>${VAR}</code> against the dispatcher's environment, so a
+      credential can be referenced rather than written down. A literal value is still
+      permitted: the host flight layer is uncommitted user data by construction, so a
+      literal there is no more exposed than the file the credential already lives in.
+      The expansion exists so that the choice is available, not to forbid the simpler
+      form.
+    </p>
+    <p>
+      The change touches the schema definition, the layered resolution that merges
+      backend entries, the <code>LaunchPlan</code> that carries an invocation, and the
+      one <code>Popen</code> call site. Merging over the inherited environment rather
+      than replacing it matters: a worker still needs <code>PATH</code>,
+      <code>HOME</code> and the harness variables its CLI reads.
+    </p>
+    <p>
+      <strong>Done-when:</strong> a backend declaring an environment map resolves through
+      <code>reckon flight</code> with its values shown and the layer that supplied them;
+      a dispatched worker's process environment contains those values merged over the
+      inherited environment; <code>${VAR}</code> expands from the dispatcher's
+      environment and an unset variable is a stated configuration error rather than an
+      empty string; the schema regenerates byte-identically from its source; and the
+      existing suite passes with no new failures against the base revision.
+    </p>
+
+    <h2 id="s3">&sect;3 &mdash; Wire the local endpoint, defined and not defaulted</h2>
+    <p>
+      With &sect;2 landed, the candidate enters the host flight layer as a backend with a
+      pinned model, a pinned effort, and its environment naming the endpoint. It is
+      defined and nothing routes to it: no role selects it, no
+      <code>by_spec_level</code> mapping resolves to it, and only an explicit override or
+      a shadow run reaches it. This is rung two of the qualification ladder that
+      <code>crew-effort-routing</code> established, and it is the rung the lead asked to
+      have in place immediately &mdash; the option exists in configuration from this
+      point, while live routing stays shut until &sect;4 produces evidence.
+    </p>
+    <p>
+      Effort must be pinned even though the local server has no reasoning-effort
+      vocabulary of its own, because an unpinned backend inherits the user's interactive
+      CLI preference and the ledger then cannot see what actually ran. The endpoint
+      publishes no account-limit surface, so <code>budget_check</code> stays off and its
+      headroom reads <code>unknown</code>; under the locked posture, unknown never holds a
+      wave. That is correct here for a stronger reason than usual &mdash; a reserved GPU
+      node has no quota to exhaust.
+    </p>
+    <p>
+      <strong>Done-when:</strong> <code>reckon flight</code> resolves the backend with
+      its endpoint and pinned effort attributed to the host layer; no role and no
+      specification-level mapping resolves to it, demonstrated by a dry-run dispatch that
+      selects the incumbent; and one node dispatched explicitly to it completes
+      end-to-end through the crew path &mdash; worktree created, prompt delivered,
+      manifest written at its named path, run observable and promotable.
+    </p>
+
+    <h2 id="s4">&sect;4 &mdash; Shadow qualification against the incumbent</h2>
+    <p>
+      A shadow re-runs a committed node at its recorded base revision, inheriting the
+      primary's effort, sandbox and time budget and substituting only the backend, model
+      and launch. It is never merged. That control is what makes the comparison mean
+      something, and it was hardened deliberately: the one Luna pair that had to be
+      discarded was discarded because its budget and effort had drifted from its
+      primary's, not because the model failed.
+    </p>
+    <p>
+      The evidence floor is ten usable pairs. The candidate starts at zero, as Terra
+      still does. Node selection must span the mechanical work the lane would actually
+      receive &mdash; nodes whose done-when is a runnable named check, not a prose
+      measure &mdash; because a pass rate over hand-picked easy nodes measures the
+      picking, not the model.
+    </p>
+    <p>
+      <strong>Done-when:</strong> at least ten controlled shadow pairs are committed with
+      lineage recording backend, launch and model as the only substituted dimensions;
+      each pair reports its gate verdict against the primary's own named check, worker
+      minutes, and tokens; the pass rate and median worker time are stated beside the
+      incumbent's for the same nodes; and every infrastructure failure &mdash; a run
+      dying with no diff and no manifest &mdash; is classified as such rather than
+      counted against the model.
+    </p>
+
+    <h2 id="s5">&sect;5 &mdash; Verdict and adoption recommendation</h2>
+    <p>
+      The checkpoint renders a verdict including a negative one. Three outcomes are
+      possible and all three are results: the candidate clears the success threshold over
+      ten usable pairs and earns a gated pilot under the small-model lane's eligibility
+      rules; it fails and the backend stays defined but unrouted, with the failure mode
+      recorded so the question is not re-asked from scratch; or it cannot produce ten
+      usable pairs, which is a statement about the harness rather than the model and
+      names what blocked them.
+    </p>
+    <p>
+      The adoption case is worth stating plainly because it is large and it is what makes
+      the qualification worth paying for. A reserved local node has no weekly meter, no
+      rate limit, and no per-token cost. The incumbent's dedicated small-model lane was
+      measured at roughly a dozen runs per week before its meter drained; a local
+      endpoint has no such ceiling, so if the model can hold a fence, the constraint on
+      fleet width stops being budget and becomes the roster. That is a different
+      operating regime, not a cheaper version of the current one.
+    </p>
+    <p>
+      <strong>Done-when:</strong> a durable record states the pass rate over usable pairs
+      against the incumbent's on the same nodes, median worker minutes for both, the
+      classified infrastructure-failure count, and one of the three verdicts above with
+      its reasoning; and every routing decision the read changes is locked on this plan.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+
+      <div class="r-dec" data-key="endpoint-dialect" data-choice="anthropic-messages"
+           data-by="reckon-create, from measured probes" data-when="2026-08-26">
+        <p class="r-dec-q">Which protocol dialect drives the self-hosted endpoint?</p>
+        <p class="r-dec-ctx">The server answers on both. Reckon selects its launch translation from the command's basename, so the dialect choice is the choice of which CLI the backend names.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="anthropic-messages">Anthropic messages, via the claude command</button>
+          <button class="r-opt" data-value="openai-responses">OpenAI responses, via the codex command</button>
+          <button class="r-opt" data-value="both">Both, as two backend entries</button>
+        </p>
+        <p class="r-dec-rat">Tool use was verified end-to-end on the Anthropic surface, and that is also the surface the existing local-model wrapper drives, so it is the path with a demonstrated working hookup rather than an inferred one. The choice is cheap to revisit: because the dialect follows the command name and the endpoint follows the environment map, adding the other dialect later is a second backend entry in configuration and no code at all. One caution belongs in the record &mdash; the endpoint rejects the <code>x-api-key</code> header and accepts only bearer authorisation, so the credential variable must be the one the CLI sends as a bearer token.</p>
+      </div>
+
+      <div class="r-dec" data-key="credential-in-config" data-choice="expansion-with-literal-permitted"
+           data-by="reckon-create" data-when="2026-08-26">
+        <p class="r-dec-q">How does a credential reach a worker's environment?</p>
+        <p class="r-dec-ctx">The host flight layer is user data and is not committed to any repository. The credential for this endpoint already sits in a file on a group-readable project path.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="literal-only">Literal values only</button>
+          <button class="r-opt chosen" data-value="expansion-with-literal-permitted">Support <code>${VAR}</code> expansion; permit a literal</button>
+          <button class="r-opt" data-value="expansion-only">Require expansion; refuse a literal</button>
+        </p>
+        <p class="r-dec-rat">Refusing literals would buy no real secrecy while making the common case awkward: the flight layer is uncommitted by construction, so a literal there is no more exposed than the credential file it would be copied from. Expansion is what makes the safer form available for anyone who wants it, and it is the form this plan uses. The failure mode worth guarding is silent rather than loud &mdash; an unset variable expanding to an empty string would present as an authentication error from the server, so &sect;2 requires it to be a stated configuration error instead.</p>
+      </div>
+
+      <div class="r-dec" data-key="lane-on-qualification" data-choice=""
+           data-by="" data-when="">
+        <p class="r-dec-q">If the candidate qualifies, does it enter the existing small-model lane gate or its own?</p>
+        <p class="r-dec-ctx">The small-model lane's eligibility rules were written around a metered backend: keep dispatches token-lean, never plan a wave that assumes the lane can absorb it. A local endpoint has no meter, so the budget half of those rules does not apply while the competence half still does. Deferred until &sect;4 produces a verdict &mdash; there is nothing to route if it does not qualify.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="existing-lane">Existing lane, unchanged</button>
+          <button class="r-opt" data-value="competence-only-lane">A lane carrying the competence rules without the budget rules</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-shwb-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-08-26"
+               data-recommends-skill="/reckon-ship self-hosted-worker-backends">
+        <h4 class="r-fu-title">Land the environment map, wire the endpoint, and run the shadow wave</h4>
+        <div class="r-fu-body">
+          <p>&sect;2 is the enabling change and everything else waits on it. &sect;3 is
+          configuration only once &sect;2 lands, and the lead has asked for it to be in
+          place immediately as a defined-not-defaulted option. &sect;4 and &sect;5 are the
+          qualification the ladder requires before anything routes there.</p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship self-hosted-worker-backends</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
