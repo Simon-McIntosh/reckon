@@ -247,15 +247,12 @@ The top-level scalars are `reviewed_at` (date), `reviewed_by` (non-empty text),
 and `basis` (non-empty text). The collections have these exact contracts:
 
 - `findings[]`: unique safe-segment `id`; kebab-case `code`; `category` in
-  `sprint · dag · lifecycle · provenance · references · calibration`;
+  `sprint · dag · lifecycle · provenance · references · calibration · safety`;
   `severity` in `error · warn · info`; one `subject` with `kind` in
   `plan · sprint · milestone · blocker · followup · decision · project` and a
   non-empty `id`; one or more non-empty `evidence` lines; one
   `recommended_action` containing exactly `verb`, `owner_skill`, and `detail`;
   `validated`; `checked_at`; and the three resolution fields.
-- An isolation category named `safety` is proposed but is not accepted by the
-  current validator; a write using `category="safety"` is refused and names
-  `findings[<index>].category` in `detail`.
 - `recommended_action.verb` is exactly
   `close · resequence · rescope · recalibrate · resolve · repair-pointer · reopen`.
 - `validated` is exactly `confirmed · stale · conflicting`.
