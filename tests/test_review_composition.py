@@ -110,6 +110,7 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
         ("S1", [{"slug": "beta"}]),
         ("S2", [{"slug": "alpha"}]),
         ("S3", []),
+        ("S12", []),
     ):
         write_resource(
             docs,
@@ -149,7 +150,7 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
         "landed": False,
     }
     assert first["review"]["priority"][1]["landed"] is True
-    assert first["review"]["sprint_order"] == ["S2", "S1", "S3"]
+    assert first["review"]["sprint_order"] == ["S2", "S1", "S3", "S12"]
     roadmap = build_roadmap(
         "sample", first["inventory"], first["sprints"], review=_review()
     )
