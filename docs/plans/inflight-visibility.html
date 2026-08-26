@@ -20,8 +20,8 @@
   <title>In-flight Visibility | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="17">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29,9b483972468d977de2ff8a96f1d7be63802449f3,e2fb7886b10535ae66e93e15b01544d0e3288998,1d4543a511f277926028f948b54a8645cf156935,fb95f4f41b864663661608d263bc0c82842c538a,2f1bb2335b21171a78675f2d2c1ddd164c2b0e3f,3f7c6d3983e84bc6c3a77c24f5a4c9c78dd81abc,21288f82216afce3bb5ebaa1d47fbf16c0446337,e96cac111d56e57d0c592a9397a4bbb3138cc083,d59528092057da5cd1642d98bdced3938be807d1">
 <meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/archive/inflight-visibility-landed.html">
 <meta name="plan-impl" content="1.0">
@@ -333,6 +333,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260812T202000" data-who="reckon-ship" data-when="2026-08-12T20:20:00Z">
     <div class="r-comment-body">inflight-bands landed — commit 3f7c6d3983e84bc6c3a77c24f5a4c9c78dd81abc; gate passed; measure: tests/test_build.py 15 passed / 0 failed in 2.7s with 1 new test function and 9 assertions, reckon build exit 0; plan and sprint views poll the project-scoped crew route every 3s without persisting, a plan renders one accessible band listing each matching run's id, member and section, a sprint groups runs by plan slug and badges each matching card with a count and a title naming members and sections, and no match renders no band and no badge so the surfaces stay silent when nothing is in flight. The three-entry-point drift test stayed active and passed. All eight executable nodes of this plan have now landed; the remaining declared measures need the coordinated server restart and a banked screenshot, which are recorded as partial rather than passed. Artifacts docs/evidence/archive/inflight-visibility-landed.html#inflight-bands</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260826T162251621399-n-live-pointer-scan-race" data-who="impl-liverace" data-when="2026-08-26T16:31:38Z">
+    <div class="r-comment-body"><p>Live-pointer scan tolerates pointers removed mid-scan (FileNotFoundError skipped per file); regression forces the race through list_live and project_watch_visibility; 1 passed, ruff clean; lint-only sweep landed separately</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260812T190500" data-who="reckon-ship" data-when="2026-08-12T19:05:00Z">
     <div class="r-comment-body">recovery-classification landed — commit e2fb7886b10535ae66e93e15b01544d0e3288998; gate passed; measure: tests/test_crew.py 72 passed / 0 failed in 4.5s with 6 new tests, ruff clean; the vocabulary grew from three classes to five — running, completed_unpromoted, blocked, failed, abandoned — and status complete is now the only manifest status producing promote advice. A terminal stored phase with no manifest classifies abandoned with a next action naming stderr.log; blocked and failed manifests classify distinctly and never produce promotion advice; the MCP crew live view and CLI crew recover returned identical classification, manifest_status and next_action for the same pointer; and direct, MCP and recovery paths all classify a terminal run with no manifest and no commits as abandoned. This closes the hazard that produced the section: the old advice would have written a success with a nonexistent commit into the ledger that calibration reads as ground truth. Artifacts docs/evidence/archive/inflight-visibility-landed.html#recovery-classification</div>
