@@ -6,6 +6,7 @@ import base64
 import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from reckon.doccheck import lifecycle_staleness, modified_age_days
@@ -128,6 +129,7 @@ def compose_review(
         return False
 
     composed = deepcopy(review)
+    reviewed_at = str(composed.get("reviewed_at") or "")
     findings = []
     for finding in composed.get("findings") or []:
         row = dict(finding)
@@ -147,6 +149,7 @@ def compose_review(
             {
                 "subject_found": live is not None,
                 "subject_status": status,
+                "stale": moved and not bool(row.get("resolved_at")),
                 "current": bool(live)
                 and not row.get("resolved_at")
                 and not moved
@@ -161,20 +164,34 @@ def compose_review(
 
     priority = []
     ranked_sprints: list[str] = []
-    for stored in composed.get("priority") or []:
+    stored_priority = sorted(
+        (row for row in composed.get("priority") or [] if isinstance(row, dict)),
+        key=lambda row: (int(row.get("rank", 10**6)), str(row.get("ref") or "")),
+    )
+    for stored in stored_priority:
         row = dict(stored)
         ref = parse_plan_ref(str(row.get("ref") or ""))
         live = None if ref is None or ref.is_external(project) else plans.get(ref.slug)
         status = str((live or {}).get("status") or "")
         effective = str((live or {}).get("effective_status") or status)
         sprint = (live or {}).get("sprint")
+        landed = effective in TERMINAL_STATUSES
+        modified = str((live or {}).get("modified") or (live or {}).get("last") or "")
+        moved = False
+        try:
+            moved = bool(modified and reviewed_at) and date.fromisoformat(
+                modified[:10]
+            ) > date.fromisoformat(reviewed_at[:10])
+        except ValueError:
+            moved = False
         row.update(
             {
                 "status": status,
                 "effective_status": effective,
                 "impl": float((live or {}).get("impl", 0.0) or 0.0),
                 "sprint": sprint,
-                "landed": effective in TERMINAL_STATUSES,
+                "landed": landed,
+                "stale": moved and not landed,
             }
         )
         if sprint and sprint not in ranked_sprints:
@@ -192,6 +209,29 @@ def compose_review(
         sprint_id for sprint_id in open_sprints if sprint_id not in ranked_sprints
     ]
     return composed
+
+
+def load_composed_review(
+    docs_dir: Path,
+    project: str,
+    inventory: list[dict[str, Any]],
+    sprints: list[dict[str, Any]],
+    project_resources: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any] | None, int | None]:
+    """Read and compose the optional review singleton through one shared path."""
+
+    from reckon.project_state import ProjectStateError, read_resource, resource_path
+
+    if not resource_path(docs_dir, project, "review", "review").is_file():
+        return None, None
+    try:
+        review, version = read_resource(docs_dir, project, "review", "review")
+    except (OSError, ProjectStateError, ValueError):
+        return None, None
+    return (
+        compose_review(review, inventory, sprints, project, project_resources),
+        version,
+    )
 
 
 def in_flight_by_plan(
@@ -1047,8 +1087,6 @@ def resource_view(
 
     selected = normalize_view(view)
     if selector.type == "review" and selected in {"summary", "detail"}:
-        from pathlib import Path
-
         from reckon.serve import discover_plans
 
         checkout = provenance.get("checkout")

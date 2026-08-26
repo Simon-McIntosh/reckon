@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from reckon import _plan_html
 from reckon.project_state import create_project_state, read_resource, write_resource
+from reckon.roadmap import build_roadmap
 from reckon.serve import discover_plans
 
 
@@ -137,6 +139,7 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
     }
     assert first["review"]["findings"][0]["subject_found"] is True
     assert first["review"]["findings"][0]["current"] is True
+    assert first["review"]["findings"][0]["stale"] is False
     assert first["review"]["priority"][0] | {} == {
         **first["review"]["priority"][0],
         "status": "active",
@@ -147,6 +150,29 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
     }
     assert first["review"]["priority"][1]["landed"] is True
     assert first["review"]["sprint_order"] == ["S2", "S1", "S3"]
+    roadmap = build_roadmap(
+        "sample", first["inventory"], first["sprints"], review=_review()
+    )
+    joined_fields = ("subject_found", "subject_status", "current", "stale")
+    assert {
+        field: roadmap["review"]["findings"][0][field] for field in joined_fields
+    } == {field: first["review"]["findings"][0][field] for field in joined_fields}
+    priority_fields = (
+        "status",
+        "effective_status",
+        "impl",
+        "sprint",
+        "landed",
+        "stale",
+    )
+    assert [
+        {field: row[field] for field in priority_fields}
+        for row in roadmap["review"]["priority"]
+    ] == [
+        {field: row[field] for field in priority_fields}
+        for row in first["review"]["priority"]
+    ]
+    assert roadmap["review"]["sprint_order"] == first["review"]["sprint_order"]
     _, review_version = read_resource(docs, "sample", "review", "review")
 
     _write_plan(
@@ -161,7 +187,9 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
 
     assert second["review"]["findings"][0]["subject_status"] == "shipped"
     assert second["review"]["findings"][0]["current"] is False
+    assert second["review"]["findings"][0]["stale"] is True
     assert second["review"]["priority"][0]["landed"] is True
+    assert second["review"]["priority"][0]["stale"] is False
     assert next(s for s in second["sprints"] if s["id"] == "S2")["metrics"] == {
         "item_count": 1,
         "by_effective_status": {"shipped": 1},
@@ -169,3 +197,36 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
         "current_work": [],
     }
     assert read_resource(docs, "sample", "review", "review")[1] == review_version
+
+
+def test_staging_corpus_has_one_stale_open_subject() -> None:
+    review_path = Path(
+        "/home/ITER/mcintos/.config/reckon/crew/reports/nova-review-staging.json"
+    )
+    review = json.loads(review_path.read_text())
+    priority_refs = {row["ref"] for row in review["priority"]}
+    plan_ids = {
+        row["subject"]["id"]
+        for row in review["findings"]
+        if row["subject"]["kind"] == "plan"
+    } | priority_refs
+    inventory = [
+        {
+            "type": "plan",
+            "slug": slug,
+            "status": "shipped" if slug in priority_refs else "active",
+            "effective_status": "shipped" if slug in priority_refs else "active",
+            "impl": 1.0 if slug in priority_refs else 0.5,
+            "modified": "2026-08-27",
+        }
+        for slug in sorted(plan_ids)
+    ]
+
+    from reckon.mcp_views import compose_review
+
+    composed = compose_review(review, inventory, [], "nova")
+    stale = [row for row in composed["findings"] if row["stale"]]
+
+    assert len(review["findings"]) == 35
+    assert sum(bool(row.get("resolved_at")) for row in review["findings"]) == 34
+    assert [row["id"] for row in stale] == ["rf-035"]
