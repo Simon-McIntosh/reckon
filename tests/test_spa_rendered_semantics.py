@@ -305,7 +305,9 @@ async function main() {
           const fixtureIndex = ${JSON.stringify(input.fixtureIndex)};
           const fixtureSprints = fixtureIndex.data.sprints;
           const fixtureReview = ${JSON.stringify(input.fixtureReview)};
+          const fixtureNewPlan = ${JSON.stringify(input.fixtureNewPlan)};
           const nativeFetch = window.fetch.bind(window);
+          window.__discoveryRequestCount = 0;
           window.fetch = (resource, options) => {
             const url = String(resource);
             if (url.endsWith("/state/reckon/index.json")) {
@@ -315,9 +317,14 @@ async function main() {
               }));
             }
             if (url.endsWith("/_discover/reckon")) {
-              return nativeFetch(resource, options).then(response => response.json()).then(payload =>
-                new Response(JSON.stringify({
+              window.__discoveryRequestCount += 1;
+              return nativeFetch(resource, options).then(response => response.json()).then(payload => {
+                const inventory = fixtureNewPlan && window.__discoveryRequestCount > 1
+                  ? [...(payload.inventory || []), fixtureNewPlan]
+                  : payload.inventory;
+                return new Response(JSON.stringify({
                   ...payload,
+                  inventory,
                   sprints: fixtureSprints,
                   active_sprint_id: fixtureIndex.data.active_sprint_id,
                   review: fixtureReview,
@@ -330,8 +337,8 @@ async function main() {
                 }), {
                   status: 200,
                   headers: { "Content-Type": "application/json" },
-                })
-              );
+                });
+              });
             }
             if (${JSON.stringify(input.failPlanHtml)}
                 && url.includes("/plans/")
@@ -344,6 +351,11 @@ async function main() {
     });
 
     await navigateAndWait(devtools, 1);
+    if (input.refreshProbe) {
+      const refreshed = await evaluate(devtools, input.refreshProbe);
+      process.stdout.write(`${JSON.stringify({ refreshed })}\n`);
+      return;
+    }
     await evaluate(devtools, input.prepareSignal || "undefined");
     const baseline = await evaluate(devtools, input.probe);
 
@@ -462,6 +474,8 @@ def _rendered_probe(
     fail_plan_html: bool = False,
     prepare_signal: str = "undefined",
     review: dict[str, object] | None = None,
+    refresh_probe: str | None = None,
+    new_plan: dict[str, object] | None = None,
 ) -> dict[str, dict[str, object]]:
     with (
         temporary_browser_profile(tmp_path) as profile,
@@ -486,6 +500,8 @@ def _rendered_probe(
                             "failPlanHtml": fail_plan_html,
                             "fixtureIndex": INDEX_STATE,
                             "fixtureReview": review,
+                            "refreshProbe": refresh_probe,
+                            "fixtureNewPlan": new_plan,
                         }
                     ),
                 ],
@@ -693,6 +709,66 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
 
     _assert_rendered_signal(result["baseline"], "snapshot receipt")
     _assert_removal_is_detected(result["removed"], "snapshot receipt")
+
+
+def test_refresh_revalidates_discovery_without_document_navigation(
+    tmp_path: Path,
+) -> None:
+    result = _rendered_probe(
+        tmp_path,
+        route="#plans",
+        wait_selector=".r-list",
+        probe="undefined",
+        remove_signal="undefined",
+        new_plan={
+            "slug": "created-while-open",
+            "nav_key": "created-while-open",
+            "title": "Created while open",
+            "type": "plan",
+            "status": "pending",
+            "effective_status": "pending",
+            "path": "plans/created-while-open.html",
+        },
+        refresh_probe="""(async () => {
+          const initialDocument = document;
+          const initialLocation = location.href;
+          const initialNavigations = performance.getEntriesByType("navigation").length;
+          const initialRequests = window.__discoveryRequestCount;
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          const steadyStateRequests = window.__discoveryRequestCount - initialRequests;
+
+          document.querySelector(".r-topbar .settings > button")?.click();
+          const refresh = [...document.querySelectorAll(".settings-menu button")]
+            .find(button => button.textContent.trim() === "Refresh");
+          refresh?.click();
+
+          const deadline = Date.now() + 5000;
+          while (Date.now() < deadline
+              && !document.body.textContent.includes("Created while open")) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          return {
+            newPlanVisible: document.body.textContent.includes("Created while open"),
+            sameDocument: document === initialDocument,
+            sameLocation: location.href === initialLocation,
+            navigationEntriesAdded:
+              performance.getEntriesByType("navigation").length - initialNavigations,
+            discoveryRequests: window.__discoveryRequestCount,
+            steadyStateRequests,
+            steadyStateWindowMs: 1200,
+          };
+        })()""",
+    )["refreshed"]
+
+    assert result == {
+        "newPlanVisible": True,
+        "sameDocument": True,
+        "sameLocation": True,
+        "navigationEntriesAdded": 0,
+        "discoveryRequests": 2,
+        "steadyStateRequests": 0,
+        "steadyStateWindowMs": 1200,
+    }
 
 
 def test_handoff_renders_live_source_and_loaded_plan_version(tmp_path: Path) -> None:
