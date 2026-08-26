@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="14">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/audit-metrics.json">
 <meta name="plan-impl" content="0.222">
 </head>
@@ -131,6 +131,11 @@
           <td>The <code>claude</code> dialect is reachable, on one auth header only</td>
         </tr>
         <tr>
+          <td>Is the endpoint keyed?</td>
+          <td>401 with no header, an empty bearer, <code>Bearer no-auth</code> and <code>Bearer anything</code></td>
+          <td><strong>Keyed</strong> &mdash; a host-local token, not a provider credential</td>
+        </tr>
+        <tr>
           <td>Anthropic tool schema</td>
           <td><code>stop_reason: tool_use</code>, arguments correct</td>
           <td>The agent loop is viable rather than merely the chat surface</td>
@@ -229,6 +234,36 @@
       environment and an unset variable is a stated configuration error rather than an
       empty string; the schema regenerates byte-identically from its source; and the
       existing suite passes with no new failures against the base revision.
+    </p>
+
+    <h3 id="s2.1">&sect;2.1 &mdash; No provider key is not the same as no secret</h3>
+    <p>
+      The governing constraint on this work is that it must run without API keys: the
+      two agent CLIs authenticate through their own logins, and a local endpoint needs
+      no account, no per-token billing, no quota and no rate meter. That is the property
+      worth protecting and it holds completely &mdash; it is most of the adoption case
+      in &sect;5.
+    </p>
+    <p>
+      It does not follow that the endpoint takes no credential, and measurement says it
+      does. The server was started with an API key, so a request with no header, an
+      empty bearer, or a bearer of <code>no-auth</code> or <code>anything</code> is
+      refused with 401. The local wrapper's <code>no-auth</code> fallback exists for a
+      keyless server and this is not one. Removing the requirement means restarting a
+      job that has been serving for days and leaving a cluster-reachable port open, which
+      is a decision about a shared host rather than a configuration detail.
+    </p>
+    <p>
+      So the right distinction is between a <em>provider credential</em> &mdash; costed,
+      metered, per-account, and genuinely absent here &mdash; and a <em>host-local
+      access token</em>, which is present and is only an access control. The
+      consequence for this section is ergonomic rather than architectural, and it is why
+      the credential decision was re-locked: requiring an exported variable would make
+      every fresh session, cron context and service unit configure a secret before the
+      backend works, which reintroduces exactly the key-management burden the no-key
+      principle exists to avoid. A reference to a file whose own permissions guard the
+      token removes that step, and removes the secret from configuration at the same
+      time.
     </p>
 
     <h2 id="s3">&sect;3 &mdash; Wire the local endpoint, defined and not defaulted</h2>
@@ -469,15 +504,15 @@
       </p>
     <p class="r-dec-rat">Tool use was verified end-to-end on the Anthropic surface, and that is also the surface the existing local-model wrapper drives, so it is the path with a demonstrated working hookup rather than an inferred one. The choice is cheap to revisit: because the dialect follows the command name and the endpoint follows the environment map, adding the other dialect later is a second backend entry in configuration and no code at all. One caution belongs in the record — the endpoint rejects the x-api-key header and accepts only bearer authorisation, so the credential variable must be the one the CLI sends as a bearer token.</p>
     </div>
-<div class="r-dec" data-key="credential-in-config" data-choice="expansion-with-literal-permitted" data-by="reckon-create" data-when="2026-08-26">
+<div class="r-dec" data-key="credential-in-config" data-choice="file-reference-preferred" data-by="reckon-cb, on measured endpoint auth and file modes" data-when="2026-08-26T05:17:03+00:00">
     <p class="r-dec-q">How does a credential reach a worker&#x27;s environment?</p>
     <p class="r-dec-ctx">The host flight layer is user data and is not committed to any repository. The credential for this endpoint already sits in a file on a group-readable project path.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="literal-only">Literal values only</button>
-      <button class="r-opt chosen" data-value="expansion-with-literal-permitted">Support ${VAR} expansion; permit a literal</button>
+      <button class="r-opt" data-value="expansion-with-literal-permitted">Support ${VAR} expansion; permit a literal</button>
       <button class="r-opt" data-value="expansion-only">Require expansion; refuse a literal</button>
       </p>
-    <p class="r-dec-rat">Refusing literals would buy no real secrecy while making the common case awkward: the flight layer is uncommitted by construction, so a literal there is no more exposed than the credential file it would be copied from. Expansion is what makes the safer form available for anyone who wants it, and it is the form this plan uses. The failure mode worth guarding is silent rather than loud — an unset variable expanding to an empty string would present as an authentication error from the server, so §2 requires it to be a stated configuration error instead.</p>
+    <p class="r-dec-rat">Re-locked in the same session on evidence that changed the question, and stated rather than done quietly. Two things were measured after the first lock. The endpoint is keyed: no header, an empty bearer, a bearer of &#x27;no-auth&#x27; (the local wrapper&#x27;s own fallback) and a bearer of &#x27;anything&#x27; all return 401, so only the specific token the server was started with is accepted and a keyless path does not exist without restarting a five-day job and opening a cluster-reachable port. And the exposure asymmetry is real rather than theoretical: the host flight layer is mode 0644 while the credential lives in a 0640 group-restricted file, so the literal form this decision previously permitted would widen who can read a secret. That retires &#x27;literal permitted&#x27; as the default. Expansion from the dispatcher&#x27;s environment stays correct but carries an ergonomic cost that works against the project&#x27;s own principle of needing no key management: every fresh session, cron context and service unit must export the variable first or the backend is unavailable. A third form answers both -- a reference to a file whose own permissions guard the secret, read at the point of selection. The token never enters configuration and never needs exporting. Literal and variable forms remain accepted; the file form is what this plan uses and what the documentation should show first.</p>
     </div>
 <div class="r-dec" data-key="lane-on-qualification" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">If the candidate qualifies, does it enter the existing small-model lane gate or its own?</p>
