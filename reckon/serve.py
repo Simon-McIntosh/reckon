@@ -991,23 +991,18 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
 def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
     """Attach the optional stored review after joining its live subjects."""
 
-    from reckon.mcp_views import compose_review
-    from reckon.project_state import ProjectStateError, read_resource, resource_path
+    from reckon.mcp_views import load_composed_review
 
-    path = resource_path(docs_dir, project, "review", "review")
-    if not path.is_file():
-        return
-    try:
-        review, version = read_resource(docs_dir, project, "review", "review")
-    except ProjectStateError:
-        return
-    result["review"] = compose_review(
-        review,
+    review, version = load_composed_review(
+        docs_dir,
+        project,
         result.get("inventory", []),
         result.get("sprints", []),
-        project,
         result,
     )
+    if review is None or version is None:
+        return
+    result["review"] = review
     result.setdefault("resource_versions", {})["review:review"] = version
 
 

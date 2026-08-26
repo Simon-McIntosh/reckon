@@ -14,15 +14,16 @@ def _plan(
     sprint: str,
     depends_on: list[str] | None = None,
     modified: str = "2026-08-25",
+    status: str = "active",
 ) -> dict:
     return {
         "slug": slug,
         "title": slug.title(),
         "type": "plan",
-        "status": "active",
-        "workflow_status": "active",
-        "effective_status": "active",
-        "impl": 0.4,
+        "status": status,
+        "workflow_status": status,
+        "effective_status": status,
+        "impl": 1.0 if status == "shipped" else 0.4,
         "sprint": sprint,
         "depends_on": depends_on or [],
         "modified": modified,
@@ -91,12 +92,13 @@ def test_roadmap_review_block_is_optional_and_advisory() -> None:
     assert absent["review"] is None
     assert report["review"]["reviewed_at"] == "2026-08-25"
     assert report["review"]["reviewed_by"] == "review-session"
-    assert report["review"]["priority"] == _review()["priority"]
+    assert [row["stale"] for row in report["review"]["priority"]] == [False, True]
     assert report["review"]["sprint_order"] == ["later", "earlier"]
     assert report["review"]["findings"][0] == {
         **_review()["findings"][0],
         "subject_found": True,
         "subject_status": "active",
+        "stale": True,
         "current": False,
     }
     by_code = {item["code"]: item for item in report["wiring_findings"]}
@@ -113,6 +115,48 @@ def test_roadmap_review_block_is_optional_and_advisory() -> None:
         "plan:foundation",
     ]
     assert [row["slug"] for row in report["ready_now"]] == ["foundation"]
+
+
+def test_review_staleness_excludes_closed_findings_and_landed_ranks() -> None:
+    review = _review()
+    review["findings"].append(
+        {
+            **review["findings"][0],
+            "id": "closed-loop",
+            "subject": {"kind": "plan", "id": "repaired"},
+            "resolved_at": "2026-08-25",
+        }
+    )
+    review["priority"].append(
+        {
+            "rank": 3,
+            "ref": "landed",
+            "reasons": ["roi"],
+            "detail": "Already delivered.",
+        }
+    )
+    inventory = [
+        _plan("foundation", sprint="earlier", modified="2026-08-26"),
+        _plan("consumer", sprint="later", modified="2026-08-26"),
+        _plan("repaired", sprint="earlier", modified="2026-08-26"),
+        _plan("landed", sprint="earlier", modified="2026-08-26", status="shipped"),
+    ]
+    sprints = [
+        {"id": "earlier", "status": "active", "items": []},
+        {"id": "later", "status": "active", "items": []},
+    ]
+
+    report = build_roadmap("unmounted", inventory, sprints, review=review)
+    stale_subjects = next(
+        row["extra"]["subjects"]
+        for row in report["wiring_findings"]
+        if row["code"] == "review-stale"
+    )
+
+    assert "plan:consumer" in stale_subjects
+    assert "plan:foundation" in stale_subjects
+    assert "plan:repaired" not in stale_subjects
+    assert "plan:landed" not in stale_subjects
 
 
 def _write_plan(docs: Path, slug: str) -> Path:
