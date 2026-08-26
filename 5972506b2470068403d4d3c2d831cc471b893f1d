@@ -1,0 +1,16 @@
+Message provenance: the commit body describes roughly half of what landed.
+
+Authored by a concurrent session (reckon-b9) which had these seven paths staged;
+a second session staged the identical path list three seconds earlier and
+committed, so the content is that session's and the message is the other's.
+
+Also carried, and unmentioned in the body:
+- the measurement that motivated it — 56 dispatching sessions, 36 armed no
+  monitor at all, 261 of 320 dispatches attached to no wake channel, 98 of 201
+  monitors hand-rolled;
+- WATCH_ATTENTION_STATES / WATCH_PROGRESS_STATES, with a test asserting the
+  partition is disjoint and covers every recovery class;
+- a correction to the skill's dispatch section, which had been telling readers
+  the auto-armed producer meant no arming was needed;
+- FIXED_READ_SET_TOKEN_BUDGET raised 14400 -> 16000. This is a governance change
+  to a guard; its reasoning is recorded at the constant.
