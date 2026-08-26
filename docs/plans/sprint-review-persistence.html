@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="9">
-<meta name="plan-impl" content="0.71">
+<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.86">
 </head>
 <body>
   <main class="plan-doc">
@@ -381,6 +381,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s6-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§6 landed — commit <code>74c5137</code> (merged <code>7d9af57</code>); gate passed. <code>skills/reckon-sprint/SKILL.md</code> grew 246 → 400 lines (+154 measured, not claimed), carrying copyable create/read/update/resolve calls, the fixed finding and priority schemas, the whole-ranking and derived-resolution invariants, the strict-refusal contract, and the consumption side through the shared composed-review path.</p><p>The gate is the part worth keeping: it pastes each validator definition beside the documentation line that mirrors it and states the comparison, rather than asserting agreement — five vocabularies (category, severity, validated, action verbs, subject kinds), all character-identical, plus <code>quick_validate</code> at exit 0. It also documents the <em>post-consolidation</em> contract it was told to read rather than the two-implementation shape at its own base: <code>compose_review</code> and <code>load_composed_review</code>, not the deleted roadmap-local pair.</p><p>Its divergence report is the reason to trust the rest: the plan proposes <code>category=safety</code> in §7 and the validator accepts only six categories, so the skill states that <code>safety</code> is currently refused rather than documenting a proposal as though it shipped. The node first blocked on an impossible gate — <code>audit-doc</code> validates plan HTML and demands <code>plan-slug</code>/<code>plan-status</code> meta, which a Markdown skill can never carry. That was a coordinator authoring error, not a worker failure, and refusing it was correct.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s7-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§7 landed — commit <code>15e1830</code> (merged <code>0f81a13</code>); gate passed. The validator accepts <code>safety</code> as a seventh category, and <strong>all five review vocabularies are now pinned by exact-set assertions</strong>, so a future addition or removal fails a test and must be deliberate — which is the same defect the closed enum was chosen to prevent, caught one level up. The unknown-category refusal asserts both the field path and the complete sorted accepted set. Measure: 53 passed / 0 failed, +3 test functions against the node base; scoped ruff 3 → 3 findings and 6 → 6 format hunks, so zero new drift.</p><p>The worker declined to fold the file's pre-existing ruff backlog into a feature commit and said so explicitly — the correct reading of the no-sweep rule, and worth recording because the tidier-looking choice was available.</p><p>Data migration completed by the coordinator, which the node correctly fenced out: the isolation finding is re-filed from <code>provenance</code> to <code>safety</code> with its evidence intact. It required <em>resolve plus replacement</em>, because a finding's <code>category</code> cannot be edited in place — <code>set</code> covers scalars, <code>append</code> adds rows, <code>resolve</code> closes one. The original row stays resolved as the audit trail with an outcome stating plainly that the defect is <strong>not</strong> repaired: the execution tier still runs unsandboxed. A schema that cannot correct a mis-filing without leaving the mis-filing visible is the honest failure mode, but the missing correction op is worth noting.</p></div>
 </div>
 </section>
 </main>
