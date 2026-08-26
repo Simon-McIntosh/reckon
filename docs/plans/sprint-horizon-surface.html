@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -453,6 +453,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260826-scroll-owner-blast-radius" data-who="reckon-ship" data-when="2026-08-26T14:20:00+00:00">
+    <div class="r-comment-body"><p><strong>The scroll trap has two halves, and the upper half sits in a file shared by every project.</strong> Measured while scoping this section, so the node inherits the constraint rather than discovering it after a commit.</p><p><code>docs/_shared/foundation.css:69</code> declares <code>html, body { height: 100% }</code>. That is what stops the document itself from growing past the viewport, which is what forces an inner element to be the only scroller — and <code>.r-sprint-surface</code> then takes that job with <code>flex: 1</code> plus <code>overflow: auto</code>, sized by its container rather than by its content. Either half alone is survivable. Together they make content below the available height unreachable rather than merely below the fold.</p><p><strong>Fix it in the application layer, not in <code>foundation.css</code>.</strong> That file is the canonical shared stylesheet <code>reckon-sync</code> copies into every consuming repository, so a height rule changed there silently changes the scroll behaviour of every plan page in every project — a fleet-wide change made while fixing one screen, and one whose regressions would surface in other people's repositories. The scroll owner should be declared in <code>docs/ui/styles-base.css</code> (which already owns <code>.r-main</code>) or in <code>docs/ui/sprints.css</code>, and <code>foundation.css</code> left alone.</p><p>If the section concludes that the shared file genuinely must change, that is a finding to raise before committing, not a judgement call to make inside the node — the blast radius is other repositories, which is exactly the kind of scope this plan does not hold authority over.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
