@@ -135,9 +135,7 @@ def compose_review(
         live = subject_row(subject)
         status = str((live or {}).get("status") or "")
         checked_at = str(row.get("checked_at") or "")
-        changed_at = str(
-            (live or {}).get("modified") or (live or {}).get("last") or ""
-        )
+        changed_at = str((live or {}).get("modified") or (live or {}).get("last") or "")
         moved = False
         try:
             moved = bool(changed_at) and date.fromisoformat(

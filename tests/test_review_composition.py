@@ -118,9 +118,7 @@ def test_discovery_composes_live_sprint_metrics_review_rows_and_order(
             0,
             create=True,
         )
-    write_resource(
-        docs, "sample", "review", "review", _review(), 0, create=True
-    )
+    write_resource(docs, "sample", "review", "review", _review(), 0, create=True)
 
     first = discover_plans(docs, "sample", docs / "state")
     by_id = {sprint["id"]: sprint for sprint in first["sprints"]}
