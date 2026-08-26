@@ -23,6 +23,8 @@
   <title>Self-Hosted Worker Backends | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -156,6 +158,13 @@
       provider-neutral while letting a host layer name a machine on its own network.
     </p>
     <p>
+      The authored shape is a plain mapping of name to value &mdash; <code>environment:
+      {VARIABLE: value}</code> under a backend entry, one nesting level, not a list of
+      name/value pairs. That is pinned here rather than left to the implementation
+      because &sect;3 writes this YAML by hand and every later host and project layer
+      inherits the spelling.
+    </p>
+    <p>
       Values expand <code>${VAR}</code> against the dispatcher's environment, so a
       credential can be referenced rather than written down. A literal value is still
       permitted: the host flight layer is uncommitted user data by construction, so a
@@ -262,60 +271,49 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-
-      <div class="r-dec" data-key="endpoint-dialect" data-choice="anthropic-messages"
-           data-by="reckon-create, from measured probes" data-when="2026-08-26">
-        <p class="r-dec-q">Which protocol dialect drives the self-hosted endpoint?</p>
-        <p class="r-dec-ctx">The server answers on both. Reckon selects its launch translation from the command's basename, so the dialect choice is the choice of which CLI the backend names.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="anthropic-messages">Anthropic messages, via the claude command</button>
-          <button class="r-opt" data-value="openai-responses">OpenAI responses, via the codex command</button>
-          <button class="r-opt" data-value="both">Both, as two backend entries</button>
-        </p>
-        <p class="r-dec-rat">Tool use was verified end-to-end on the Anthropic surface, and that is also the surface the existing local-model wrapper drives, so it is the path with a demonstrated working hookup rather than an inferred one. The choice is cheap to revisit: because the dialect follows the command name and the endpoint follows the environment map, adding the other dialect later is a second backend entry in configuration and no code at all. One caution belongs in the record &mdash; the endpoint rejects the <code>x-api-key</code> header and accepts only bearer authorisation, so the credential variable must be the one the CLI sends as a bearer token.</p>
-      </div>
-
-      <div class="r-dec" data-key="credential-in-config" data-choice="expansion-with-literal-permitted"
-           data-by="reckon-create" data-when="2026-08-26">
-        <p class="r-dec-q">How does a credential reach a worker's environment?</p>
-        <p class="r-dec-ctx">The host flight layer is user data and is not committed to any repository. The credential for this endpoint already sits in a file on a group-readable project path.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="literal-only">Literal values only</button>
-          <button class="r-opt chosen" data-value="expansion-with-literal-permitted">Support <code>${VAR}</code> expansion; permit a literal</button>
-          <button class="r-opt" data-value="expansion-only">Require expansion; refuse a literal</button>
-        </p>
-        <p class="r-dec-rat">Refusing literals would buy no real secrecy while making the common case awkward: the flight layer is uncommitted by construction, so a literal there is no more exposed than the credential file it would be copied from. Expansion is what makes the safer form available for anyone who wants it, and it is the form this plan uses. The failure mode worth guarding is silent rather than loud &mdash; an unset variable expanding to an empty string would present as an authentication error from the server, so &sect;2 requires it to be a stated configuration error instead.</p>
-      </div>
-
-      <div class="r-dec" data-key="lane-on-qualification" data-choice=""
-           data-by="" data-when="">
-        <p class="r-dec-q">If the candidate qualifies, does it enter the existing small-model lane gate or its own?</p>
-        <p class="r-dec-ctx">The small-model lane's eligibility rules were written around a metered backend: keep dispatches token-lean, never plan a wave that assumes the lane can absorb it. A local endpoint has no meter, so the budget half of those rules does not apply while the competence half still does. Deferred until &sect;4 produces a verdict &mdash; there is nothing to route if it does not qualify.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="existing-lane">Existing lane, unchanged</button>
-          <button class="r-opt" data-value="competence-only-lane">A lane carrying the competence rules without the budget rules</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="endpoint-dialect" data-choice="anthropic-messages" data-by="reckon-create, from measured probes" data-when="2026-08-26">
+    <p class="r-dec-q">Which protocol dialect drives the self-hosted endpoint?</p>
+    <p class="r-dec-ctx">The server answers on both. Reckon selects its launch translation from the command&#x27;s basename, so the dialect choice is the choice of which CLI the backend names.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="anthropic-messages">Anthropic messages, via the claude command</button>
+      <button class="r-opt" data-value="openai-responses">OpenAI responses, via the codex command</button>
+      <button class="r-opt" data-value="both">Both, as two backend entries</button>
+      </p>
+    <p class="r-dec-rat">Tool use was verified end-to-end on the Anthropic surface, and that is also the surface the existing local-model wrapper drives, so it is the path with a demonstrated working hookup rather than an inferred one. The choice is cheap to revisit: because the dialect follows the command name and the endpoint follows the environment map, adding the other dialect later is a second backend entry in configuration and no code at all. One caution belongs in the record — the endpoint rejects the x-api-key header and accepts only bearer authorisation, so the credential variable must be the one the CLI sends as a bearer token.</p>
+    </div>
+<div class="r-dec" data-key="credential-in-config" data-choice="expansion-with-literal-permitted" data-by="reckon-create" data-when="2026-08-26">
+    <p class="r-dec-q">How does a credential reach a worker&#x27;s environment?</p>
+    <p class="r-dec-ctx">The host flight layer is user data and is not committed to any repository. The credential for this endpoint already sits in a file on a group-readable project path.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="literal-only">Literal values only</button>
+      <button class="r-opt chosen" data-value="expansion-with-literal-permitted">Support ${VAR} expansion; permit a literal</button>
+      <button class="r-opt" data-value="expansion-only">Require expansion; refuse a literal</button>
+      </p>
+    <p class="r-dec-rat">Refusing literals would buy no real secrecy while making the common case awkward: the flight layer is uncommitted by construction, so a literal there is no more exposed than the credential file it would be copied from. Expansion is what makes the safer form available for anyone who wants it, and it is the form this plan uses. The failure mode worth guarding is silent rather than loud — an unset variable expanding to an empty string would present as an authentication error from the server, so §2 requires it to be a stated configuration error instead.</p>
+    </div>
+<div class="r-dec" data-key="lane-on-qualification" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">If the candidate qualifies, does it enter the existing small-model lane gate or its own?</p>
+    <p class="r-dec-ctx">The small-model lane&#x27;s eligibility rules were written around a metered backend: keep dispatches token-lean, never plan a wave that assumes the lane can absorb it. A local endpoint has no meter, so the budget half of those rules does not apply while the competence half still does. Deferred until §4 produces a verdict — there is nothing to route if it does not qualify.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="existing-lane">Existing lane, unchanged</button>
+      <button class="r-opt" data-value="competence-only-lane">A lane carrying the competence rules without the budget rules</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-shwb-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-08-26"
-               data-recommends-skill="/reckon-ship self-hosted-worker-backends">
-        <h4 class="r-fu-title">Land the environment map, wire the endpoint, and run the shadow wave</h4>
-        <div class="r-fu-body">
-          <p>&sect;2 is the enabling change and everything else waits on it. &sect;3 is
-          configuration only once &sect;2 lands, and the lead has asked for it to be in
-          place immediately as a defined-not-defaulted option. &sect;4 and &sect;5 are the
-          qualification the ladder requires before anything routes there.</p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship self-hosted-worker-backends</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-shwb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship self-hosted-worker-backends" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the environment map, wire the endpoint, and run the shadow wave</h4>
+    <div class="r-fu-body"><p>§2 is the enabling change and everything else waits on it. §3 is
+          configuration only once §2 lands, and the lead has asked for it to be in
+          place immediately as a defined-not-defaulted option. §4 and §5 are the
+          qualification the ladder requires before anything routes there.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship self-hosted-worker-backends</pre>
+    </article>
+</section>
 
   </main>
 </body>
