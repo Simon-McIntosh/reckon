@@ -16,6 +16,35 @@ The repo provides:
 - Python ≥ 3.12, dynamic versioning via hatch-vcs
 - Tests live under `tests/`, run with `uv run pytest`
 
+### Ruff compliance is the target state
+
+This project keeps `uv run ruff check` and `uv run ruff format --check` clean.
+That is the goal, not yet the measurement: on 2026-08-26 the tree carried 297
+findings, 216 of them autofixable, and 51 of 169 files that `ruff format` would
+rewrite. Read that as a backlog with a deadline of "before it grows", and treat
+the two obligations below as separate, because conflating them is how the
+backlog first got in.
+
+**Your commit adds no findings.** Lint and format only the paths it stages,
+never `.` — the whole-tree fixer rewrites files you did not touch, and in a tree
+with this backlog it will. The general rule, the reason, and the runnable
+before/after count live in `~/.agents/AGENTS.md` under *Pre-Commit Hook Policy*.
+A pre-existing finding in a file you edited is not yours to fix in passing.
+
+**Clearing the backlog is its own commit, and nothing else is in it.** One
+`style(lint):` commit per sweep, no behaviour change, suite green either side,
+and sequenced when no peer holds uncommitted work — a sweep touches ~50 files
+and will collide with anything in flight. Several sessions commonly share this
+checkout, so check `git status` and ask on the peer socket before starting one.
+
+**Declare the rule set in the same commit that clears the backlog.** The
+dependency is `ruff>=0.16.4` with no `[tool.ruff.lint] select`, so "compliant"
+currently means whatever the installed ruff defaults to — 413 rules at 0.16.4 —
+and a version bump can enlarge that set and turn a green tree red with no code
+change, for everyone at once. That is the moving-number fuse described under
+*A test must not encode the current date*: pin the selection, or the definition
+of compliance keeps moving underneath the commitment.
+
 ## Tests
 
 In a detached worktree the shared uv cache may be mounted read-only, and
