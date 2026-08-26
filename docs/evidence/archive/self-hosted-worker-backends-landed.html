@@ -299,22 +299,43 @@
         <tr>
           <td>worktree reclaimable by lineage</td>
           <td>7.5 min</td>
-          <td colspan="3">still running when this record was written</td>
+          <td>+72 routing, +289 tests</td>
+          <td>passed</td>
+          <td>Strongest of the set: five assertions each paired with its negative, and it identified three pre-existing sandbox failures as pre-existing rather than attributing them to its own change</td>
         </tr>
         <tr>
           <td>shadow inherits time budget</td>
           <td>7.8 min</td>
-          <td colspan="3">still running when this record was written</td>
+          <td>5 files, +146/&minus;2</td>
+          <td><strong>failed</strong></td>
+          <td>Work correct and in scope, suite 2,398 passed &mdash; but no manifest was ever written, so nothing was delivered</td>
         </tr>
       </tbody>
     </table>
     <p>
-      <strong>Four of five passed, and on two the candidate's diff was materially
+      <strong>Four of six passed, and on two the candidate's diff was materially
       better</strong> &mdash; wider coverage on one, half the lines for the same outcome
-      on the other. On the pair with both timings measured the candidate took roughly
-      2.3&times; the primary's worker minutes. That is the entire capability result, and
-      at n=5 it is a feasibility signal rather than a rate: the powered depth for a
-      ten-point claim at the measured base rate is 161 pairs.
+      on the other. On the pair with both timings measured it took roughly 2.3&times; the
+      primary's worker minutes. Every one of the six primaries had passed, so the
+      comparison is 4/6 against 6/6. At n=6 that is a feasibility signal and not a rate:
+      the powered depth for a ten-point claim at the measured base rate is 161 pairs.
+    </p>
+    <p>
+      <strong>The shape of the two failures matters more than the count, because neither
+      is an engineering failure.</strong> One left its worktree and wrote into the shared
+      checkout; the other did its work correctly, in scope, with a green suite, and never
+      wrote the manifest that constitutes delivery. Both are fence failures. Nothing in
+      the six pairs suggests the model cannot do the work &mdash; the evidence says it
+      can, and twice did it better than the model it replaced. What it does not yet do
+      reliably is respect the two contracts that make an unattended worker safe: stay
+      inside your scope, and deliver to the named path.
+    </p>
+    <p>
+      A note on the closed failure-class set introduced earlier in this plan: it has no
+      row for <em>did the work, did not deliver it</em>. The undelivered pair is recorded
+      as <code>work-rejected</code> because that is the least wrong of six, with the
+      distinction carried in its outcome text. A seventh class for a delivery failure is
+      a real gap, found by using the vocabulary rather than by designing it.
     </p>
 
     <h3 id="s4-fence">The one failure is a write-fence violation, and the harness does not prevent it</h3>

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T11:02:33",
+  "updated": "2026-08-26T11:38:46",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -291,9 +291,11 @@
         "id": "session-1cf84436686a006f353c",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "e4d95ca5-35ba-468c-9a1c-6d8f8c9bef61",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "e4d95ca5-35ba-468c-9a1c-6d8f8c9bef61"
+        },
         "created": "2026-08-26"
       },
       {
@@ -309,9 +311,11 @@
         "id": "session-3fdde603806a9f699726",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "e5144cb1-1258-4243-bde5-813ccfbb87f5",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "e5144cb1-1258-4243-bde5-813ccfbb87f5"
+        },
         "created": "2026-08-26"
       },
       {
@@ -329,9 +333,11 @@
         "id": "session-ac4a6ea4a92a52f00409",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "6ecaa367-36b3-49e2-858a-0a14df826663",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "6ecaa367-36b3-49e2-858a-0a14df826663"
+        },
         "created": "2026-08-26"
       },
       {
@@ -24356,9 +24362,612 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T084739553348-n-alias-meets-invariants",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a73",
+        "node": "n-alias-meets-invariants",
+        "node_definition": {
+          "done_when": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backends.py tests/test_skill_contracts.py exits 0, where it currently reports two failures; test_recorded_fixtures_cover_every_dialect is repaired by asserting coverage over distinct dialect implementations rather than over map keys, so an alias inherits the recorded stream of the translation it aliases and no duplicate fixture file is added; the routing-identifier leak in the reckon-ship skill text is removed by rewriting that prose to name no provider, model, environment-variable or hardware identifier while preserving every operational fact a coordinator needs, namely that the wrapper supplies the base URL, model tiers and credential for a locally served endpoint and that the alias exists because the wrapper passes its arguments through unchanged; and the full suite reports no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "The local-endpoint dialect alias satisfies the two repository invariants it currently violates",
+          "id": "n-alias-meets-invariants",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T084739553348-n-alias-meets-invariants/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "tests/test_backends.py",
+            "skills/reckon-ship/SKILL.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T08:47:42Z",
+        "completed_at": "2026-08-26T09:06:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1102,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1102,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "eea3c479bce54a3123546065c079af0a7ba38ebf",
+        "commits": [
+          "91ccc03"
+        ],
+        "changed_lines": {
+          "added": 24,
+          "removed": 23,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T084739553348-n-alias-meets-invariants/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e4-7ad0-7d90-854c-9051ebabb2a8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2817280,
+            "cached_input_tokens_cumulative": 4591104,
+            "input_tokens": 3198774,
+            "input_tokens_cumulative": 5023488,
+            "output_tokens": 8209,
+            "output_tokens_cumulative": 14174,
+            "reasoning_output_tokens": 2958,
+            "reasoning_output_tokens_cumulative": 3398
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260826T085039661700-crew-list-classification-fields",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a75",
+        "node": "crew-list-classification-fields",
+        "node_definition": {
+          "done_when": "Widen the crew list CLI projection to carry the classification, process_alive, elapsed_seconds, log_age_seconds, budget_seconds, budget_overrun, manifest_status and next_action that crew view=live already computes, reusing that computation rather than reimplementing it, because list returns only nine fields today and is the only surface a shell loop can reach, so a fleet in trouble reads identically to a healthy one. Pin the two projections against each other in a new tests/test_crew_surface_parity.py so they cannot diverge again. SECOND HALF WITH A HARD CONSTRAINT: skills/reckon-ship/SKILL.md around line 544 asserts that list omits those exact fields, which this falsifies, so correct it in the same commit, because code and its documentation are two halves that must be specified together or neither is owned. That file is at 14314 estimated tokens against a 14400 budget enforced by test_engine_generated_dispatch_keeps_fixed_read_set_bounded, leaving about 64 words. The paragraph must get SHORTER, since the enumeration of omitted fields is most of its length and widening removes the reason for it. Do not raise FIXED_READ_SET_TOKEN_BUDGET and do not shave an unrelated rule; report the before and after estimate. The existing suite passes unchanged.",
+          "estimated_hours": 3.0,
+          "goal": "Give reckon crew list the deciding fields the live view already computes, and shorten the guidance that enumerates their absence",
+          "id": "crew-list-classification-fields",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085039661700-crew-list-classification-fields/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_crew_surface_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-1cf84436686a006f353c",
+        "backend": "clive",
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T08:50:40Z",
+        "completed_at": "2026-08-26T09:09:00.485Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1091,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1100,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f85fa08f258628fbaabcc978a7498065614e4595",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "failure_classification": "work-rejected",
+        "outcome": "Fence violation and a false claim. Wrote into the shared main checkout instead of its worktree: 61 tool inputs referenced the main checkout, zero referenced the worktree, and its single Edit targeted the main checkout's copy; its own worktree ended empty. Reading HEAD rather than its base, it concluded no widening was needed and replaced an accurate sentence with a false one -- CLI list carries 17 fields against the live view's 24, so it is not the equivalent. Diff preserved as rogue-out-of-scope-write.patch and discarded from the tree",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085039661700-crew-list-classification-fields/manifest.md",
+        "scope_changed": false,
+        "session_id": "e4d95ca5-35ba-468c-9a1c-6d8f8c9bef61",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3732022,
+            "input_tokens_cumulative": 3732022,
+            "output_tokens": 11669,
+            "output_tokens_cumulative": 11669,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 21.594375,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 21.594375
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "30m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260825T084013159052-crew-list-classification-fields"
+        },
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085039661700-crew-list-classification-fields/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T085107807203-shadow-worktree-reclaimable-by-lineage",
+        "plan": "crew-effort-routing",
+        "section": "\u00a711.4",
+        "node": "shadow-worktree-reclaimable-by-lineage",
+        "node_definition": {
+          "done_when": "Focused tests in tests/test_crew_gc.py assert five behaviours: a completed shadow run's worktree with a retained shadow.patch is reported disposable rather than unintegrated; it is removed on apply; a shadow worktree whose patch artifact is absent is still withheld; a live-referenced shadow worktree is never offered; and a non-shadow unintegrated worktree is still withheld. Full test suite green with zero failures.",
+          "estimated_hours": 0.6,
+          "goal": "crew gc classifies a completed shadow run's worktree by lineage, reporting it disposable once its patch artifact is retained.",
+          "id": "shadow-worktree-reclaimable-by-lineage",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085107807203-shadow-worktree-reclaimable-by-lineage/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711.4",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/routing.py",
+            "tests/test_crew_gc.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-3fdde603806a9f699726",
+        "backend": "clive",
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T08:51:08Z",
+        "completed_at": "2026-08-26T09:20:50.995Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1773,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1782,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "cd8560d1e560869591844aca12f4e1fa9e4730dd",
+        "commits": [],
+        "changed_lines": {
+          "added": 351,
+          "removed": 10,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "failure_classification": null,
+        "outcome": "Controlled pair, strongest of the set: 72 insertions in routing plus 289 test insertions, five focused assertions each paired with its negative, and it correctly identified three pre-existing sandbox failures as pre-existing rather than attributing them to its own change",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085107807203-shadow-worktree-reclaimable-by-lineage/manifest.md",
+        "scope_changed": false,
+        "session_id": "e5144cb1-1258-4243-bde5-813ccfbb87f5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9612394,
+            "input_tokens_cumulative": 9612394,
+            "output_tokens": 32906,
+            "output_tokens_cumulative": 32906,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 48.884619999999984,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 48.884619999999984
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260825T120327466836-shadow-worktree-reclaimable-by-lineage"
+        },
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085107807203-shadow-worktree-reclaimable-by-lineage/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T085108880803-shadow-inherits-primary-time-budget",
+        "plan": "crew-effort-routing",
+        "section": "\u00a711.5",
+        "node": "shadow-inherits-primary-time-budget",
+        "node_definition": {
+          "done_when": "Focused tests in tests/test_crew.py assert four behaviours: a shadow of a primary recorded at one time budget resolves that same budget rather than the role default; an explicit budget override is used and recorded as substituted; lineage.configuration carries time_budget in its inherited or substituted half accordingly; a primary with no recorded time budget falls back to the role default and records that it did. Full test suite green with zero failures.",
+          "estimated_hours": 0.6,
+          "goal": "A shadow resolves its primary's recorded time budget rather than the role default.",
+          "id": "shadow-inherits-primary-time-budget",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085108880803-shadow-inherits-primary-time-budget/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711.5",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-ac4a6ea4a92a52f00409",
+        "backend": "clive",
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T08:51:09Z",
+        "completed_at": "2026-08-26T09:27:18.111Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2160,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2169,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "b79183f24df4e23acaf07b9b32565c28648af8fd",
+        "commits": [],
+        "changed_lines": {
+          "added": 146,
+          "removed": 2,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "failure_classification": "work-rejected",
+        "outcome": "Delivery fence, not a work failure: did the work correctly in scope with 5 files at 146 insertions and a full suite of 2398 passed reported in its final message, and never wrote the required manifest to its named path. The closed class set has no row for did-the-work-did-not-deliver-it, so work-rejected is the least wrong label and this note carries the distinction",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085108880803-shadow-inherits-primary-time-budget/manifest.md",
+        "scope_changed": false,
+        "session_id": "6ecaa367-36b3-49e2-858a-0a14df826663",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7073931,
+            "input_tokens_cumulative": 7073931,
+            "output_tokens": 40759,
+            "output_tokens_cumulative": 40759,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 37.333045,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 37.333045
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260825T120857694038-shadow-inherits-primary-time-budget"
+        },
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T085108880803-shadow-inherits-primary-time-budget/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T084418827989-composed-reads",
+        "plan": "sprint-review-persistence",
+        "section": "\u00a73",
+        "node": "composed-reads",
+        "node_definition": {
+          "done_when": "Extending serve.py _derive_lifecycle and the mcp_views sprint projections named in the reuse map \u00a72: every sprint card carries item count, counts by effective_status, mean stored implementation and current_work (non-terminal plans with impl strictly between 0 and 1); each review finding row gains subject_found, subject_status and a derived current flag that is false once the subject moved after checked_at or reached a state satisfying the recommended action; each priority row gains live status, effective_status, impl, sprint and a landed flag; and the reader gets derived sprint_order as first-appearance of ranked members followed by remaining open sprints in id order. Tests prove the join is live by editing a member plan and re-reading with no review write, prove current flips when a subject moves after checked_at, and prove sprint_order against a hand-computed case. Use the single effective_status ruler already shared by serve, mcp_views and roadmap; the corpus at /home/ITER/mcintos/.config/reckon/crew/reports/nova-review-staging.json (35 findings, 10 priority rows) is available as realistic fixture input. No new failures against the node base.",
+          "estimated_hours": null,
+          "goal": "Live composition of per-sprint metrics and joined review rows into the composed read surfaces, persisting nothing",
+          "id": "composed-reads",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T084418827989-composed-reads/manifest.md",
+          "plan": "sprint-review-persistence",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/serve.py",
+            "reckon/mcp_views.py",
+            "tests/test_review_composition.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T08:44:23Z",
+        "completed_at": "2026-08-26T09:37:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 3201,
+        "stalled": true,
+        "time_budget": "25m",
+        "base_sha": "4b74b9f2a30cf231fdc65e06d186f43b4e99e58a",
+        "commits": [
+          "076e18b"
+        ],
+        "changed_lines": {
+          "added": 410,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T084418827989-composed-reads/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f8-cc64-7c61-b67c-302b5278f763",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3963136,
+            "cached_input_tokens_cumulative": 14169856,
+            "input_tokens": 3955607,
+            "input_tokens_cumulative": 14388780,
+            "output_tokens": 764,
+            "output_tokens_cumulative": 12270,
+            "reasoning_output_tokens": 1613,
+            "reasoning_output_tokens_cumulative": 4267
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 11267,
+              "budget_seconds": 1200,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 12467,
+              "log_age_seconds": 11996,
+              "log_fresh": false,
+              "manifest_commits": [
+                "5dbf304"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T051630977007-n-expand-at-selection/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260826T051630977007-n-expand-at-selection --gate <verdict> --commit 5dbf304",
+              "node": "n-expand-at-selection",
+              "phase": "starting",
+              "plan": "self-hosted-worker-backends",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T051630977007-n-expand-at-selection",
+              "terminal_age_seconds": 12010,
+              "terminal_at": "2026-08-26T05:24:10Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shwb-impl/n-expand-at-selection"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 10111,
+              "budget_seconds": 240,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 10351,
+              "log_age_seconds": 10108,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none (probe-only node; no code changes)"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T055146762576-ds4-demo-probe/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260826T055146762576-ds4-demo-probe --gate <verdict> --commit none (probe-only node; no code changes)",
+              "node": "ds4-demo-probe",
+              "phase": "complete",
+              "plan": "flight-control-config",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T055146762576-ds4-demo-probe",
+              "terminal_age_seconds": 10116,
+              "terminal_at": "2026-08-26T05:55:43Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/demo-ds4/ds4-demo-probe"
+            }
+          ]
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 427
+    "_version": 435
   }
 }
