@@ -8,14 +8,23 @@ import re
 import shlex
 import tempfile
 import time
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any
 
 from reckon._store import _config_home
-from reckon.crew.node import CrewError, DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS, ScopeConflict, TaskNode, _TERMINAL_RUN_PHASES, parse_duration
+from reckon.crew.node import (
+    _TERMINAL_RUN_PHASES,
+    DEFAULT_WATCH_STALL_WINDOW,
+    RUN_DRAIN_DISPOSITIONS,
+    CrewError,
+    ScopeConflict,
+    TaskNode,
+    parse_duration,
+)
 
 # ── Run records ─────────────────────────────────────────────────────────────
 
@@ -89,7 +98,7 @@ def watch_stream_path(project: str) -> Path:
 
 def _utc_now() -> str:
     return (
-        datetime.now(tz=timezone.utc)
+        datetime.now(tz=UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
@@ -97,7 +106,7 @@ def _utc_now() -> str:
 
 def new_run_id(node_id: str, *, now: datetime | None = None) -> str:
     """Mint a filesystem-safe run id that sorts by dispatch time."""
-    stamp = (now or datetime.now(tz=timezone.utc)).strftime("%Y%m%dT%H%M%S%f")
+    stamp = (now or datetime.now(tz=UTC)).strftime("%Y%m%dT%H%M%S%f")
     token = re.sub(r"[^A-Za-z0-9._-]", "-", node_id).strip("-") or "node"
     return f"r-{stamp}-{token}"
 
@@ -200,7 +209,9 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text())
     except ValueError as exc:
-        raise CrewError(f"live pointer for {run_id!r} is not valid JSON — {exc}")
+        raise CrewError(
+            f"live pointer for {run_id!r} is not valid JSON — {exc}"
+        ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
     return data
@@ -1056,14 +1067,12 @@ def _stream_quiet_seconds(
             latest = pointer.stat().st_mtime
         else:
             try:
-                created = datetime.fromisoformat(
-                    str(record.get("created_at") or "").replace("Z", "+00:00")
-                )
+                created = datetime.fromisoformat(str(record.get("created_at") or ""))
             except ValueError:
                 latest = now_seconds
             else:
                 if created.tzinfo is None:
-                    created = created.replace(tzinfo=timezone.utc)
+                    created = created.replace(tzinfo=UTC)
                 latest = created.timestamp()
     return max(0, int(now_seconds - latest))
 
