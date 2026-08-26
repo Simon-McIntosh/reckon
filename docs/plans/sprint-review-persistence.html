@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="sprint-review-persistence">
   <meta name="plan-title" content="Sprint Review Findings and Priority as Project State">
   <meta name="plan-summary" content="Persist sprint-review findings and plan priority order as a versioned review resource, composed live into roadmap, MCP reads, and the SPA sprint view.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,7 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-impl" content="0.2">
 </head>
 <body>
   <main class="plan-doc">
@@ -286,6 +287,12 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260826T050636932486-reuse-map" data-who="codex-a" data-when="2026-08-26T05:08:59Z">
     <div class="r-comment-body"><p>Reuse map delivered: 29 candidates with fitness verdicts across 5 capability areas; no new persistence/HTTP/SPA architecture needed</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-subject-cardinality" data-who="reckon-3a" data-when="2026-08-26">
+    <div class="r-comment-body"><p>Schema ruling from the first real writer's data (22 staged findings): <strong>a finding carries exactly one subject</strong> — <code>subject.id</code> is a single id, never comma-joined. A sweep that flags N followups splits mechanically into N findings sharing a code. Rationale: resolution is per-subject (3 of 12 stale followups may be fixed today), and every composed join (<code>subject_found</code>, <code>subject_status</code>, <code>current</code>) is defined against one subject. The strict-write validator must reject a comma in <code>subject.id</code> for id-bearing kinds so the contract is checked, not advisory. Staged corpus preserved durably at <code>~/.config/reckon/crew/reports/nova-review-staging.json</code> for the round-trip test.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§2 landed — commit <code>388a714</code> (merged <code>56217f1</code>); gate passed. The review singleton is registered on the existing distributed-state path: <code>edit_plan(create=True, doc_type="review")</code> writes <code>docs/state/&lt;project&gt;/review.html</code> through <code>RESOURCE_TYPES</code>, <code>resource_path</code>, <code>write_resource</code>, <code>apply_resource_ops</code>, the <code>_store</code> route and the MCP typed-resource branch. Measure: 7 new tests (5 parameterized strict-write refusals), full suite 2471 passed / 0 failed, so zero new failures against the node base; 503 lines added across 4 files. The <code>active-sprint-mismatch</code> fixture round-trips with both evidence lines at version 1; resolving it advances only the review resource to version 2 while a sibling sprint stays at 1, returns derived <code>status="resolved"</code>, and stores no status field. Refusals name <code>findings[0].category</code>, <code>findings[0].evidence</code>, <code>priority[0].rank</code>, <code>priority[1].ref</code> and <code>findings[0].subject.id</code>; a dotted <code>priority.0.rank</code> set is refused so only a complete ranking may be written. Artifacts: the registered type and canonical path; no standalone binary. Worker reported no follow-ons and no blockers.</p></div>
 </div>
 </section>
 </main>
