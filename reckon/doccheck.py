@@ -56,7 +56,7 @@ from reckon._store import (
 # their native reckon identity/version metadata instead.
 _REQUIRED_META = ("plan-slug", "plan-status")
 _TYPED_RESOURCE_META = ("reckon-id", "reckon-version")
-_TYPED_RESOURCE_TYPES = {"sprint", "milestone", "blocker", "timeline"}
+_TYPED_RESOURCE_TYPES = {"sprint", "milestone", "blocker", "timeline", "review"}
 # Body-bearing classes the SPA renders as HTML (markdown there renders verbatim).
 _BODY_CLASSES = (
     "r-comment-body",
@@ -806,7 +806,139 @@ def audit_links(
         if findings:
             results[path] = findings
 
+    review_path = docs_dir / "state" / (corpus_project or project or "") / "review.html"
+    if review_path.is_file():
+        review_findings = _audit_review_resource(
+            review_path,
+            docs_dir,
+            corpus_project or project or "",
+        )
+        if review_findings:
+            results[review_path] = review_findings
+
     return results
+
+
+def _audit_review_resource(
+    path: Path,
+    docs_dir: Path,
+    project: str,
+) -> list[Finding]:
+    """Report review enum, ordering, and subject-reference conformance."""
+
+    from reckon.project_state import (
+        _PRIORITY_REASONS,
+        _REVIEW_ACTIONS,
+        _REVIEW_CATEGORIES,
+        _REVIEW_SEVERITIES,
+        _REVIEW_SUBJECT_KINDS,
+        _REVIEW_VALIDATIONS,
+        RESOURCE_SCRIPT_ID,
+    )
+    from reckon.resources import resource_map
+
+    try:
+        soup = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
+        island = soup.find("script", id=RESOURCE_SCRIPT_ID)
+        data = json.loads(island.string or "") if island else None
+    except (OSError, json.JSONDecodeError) as exc:
+        return [
+            Finding(
+                "error",
+                "review-state-malformed",
+                f"cannot parse review state: {exc}",
+            )
+        ]
+    if not isinstance(data, dict):
+        return [
+            Finding("error", "review-state-malformed", "review state must be an object")
+        ]
+
+    findings: list[Finding] = []
+    enum_fields = (
+        ("category", _REVIEW_CATEGORIES),
+        ("severity", _REVIEW_SEVERITIES),
+        ("validated", _REVIEW_VALIDATIONS),
+    )
+    resources = resource_map(
+        docs_dir,
+        project,
+        include_archived=False,
+        ignore_invalid=True,
+    )
+    live_plans = {
+        resource.slug for resource in resources.values() if resource.type == "plan"
+    }
+    for index, row in enumerate(data.get("findings") or []):
+        if not isinstance(row, dict):
+            continue
+        for field, allowed in enum_fields:
+            if row.get(field) not in allowed:
+                findings.append(
+                    Finding(
+                        "warn",
+                        "review-enum-violation",
+                        f"findings[{index}].{field} must be one of {', '.join(sorted(allowed))}",
+                    )
+                )
+        subject = row.get("subject") if isinstance(row.get("subject"), dict) else {}
+        if subject.get("kind") not in _REVIEW_SUBJECT_KINDS:
+            findings.append(
+                Finding(
+                    "warn",
+                    "review-enum-violation",
+                    f"findings[{index}].subject.kind is outside the review vocabulary",
+                )
+            )
+        action = (
+            row.get("recommended_action")
+            if isinstance(row.get("recommended_action"), dict)
+            else {}
+        )
+        if action.get("verb") not in _REVIEW_ACTIONS:
+            findings.append(
+                Finding(
+                    "warn",
+                    "review-enum-violation",
+                    f"findings[{index}].recommended_action.verb is outside the review vocabulary",
+                )
+            )
+        if subject.get("kind") == "plan":
+            raw_ref = str(subject.get("id") or "")
+            local_slug = _local_ref_slug(raw_ref, project)
+            if local_slug is not None and local_slug not in live_plans:
+                findings.append(
+                    Finding(
+                        "warn",
+                        "dangling-review-subject",
+                        f"findings[{index}].subject references unknown plan {raw_ref!r}",
+                    )
+                )
+
+    priority = data.get("priority") or []
+    ranks = [row.get("rank") for row in priority if isinstance(row, dict)]
+    if ranks != list(range(1, len(ranks) + 1)):
+        findings.append(
+            Finding(
+                "warn",
+                "review-priority-noncontiguous",
+                "review priority ranks must be contiguous from 1",
+            )
+        )
+    for index, row in enumerate(priority):
+        if not isinstance(row, dict):
+            continue
+        for reason in row.get("reasons") or []:
+            if reason not in _PRIORITY_REASONS:
+                findings.append(
+                    Finding(
+                        "warn",
+                        "review-enum-violation",
+                        f"priority[{index}].reasons contains {reason!r} outside the review vocabulary",
+                    )
+                )
+    findings.sort(key=lambda item: SEVERITIES.index(item.severity))
+    return findings
 
 
 def run(
