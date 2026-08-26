@@ -1401,6 +1401,21 @@ def _ledger_module():
     help="Gate verdict: passed, failed or not-run.",
 )
 @click.option(
+    "--failure-classification",
+    type=click.Choice(
+        [
+            "work-rejected",
+            "correct-refusal",
+            "malformed-node",
+            "infrastructure-failure",
+            "pre-existing-failure",
+            "negative-result",
+        ]
+    ),
+    default=None,
+    help="Required for a failing gate; names what the failure measures.",
+)
+@click.option(
     "--commit",
     "commits",
     multiple=True,
@@ -1434,6 +1449,7 @@ def _ledger_module():
 def crew_complete(
     run_id,
     gate,
+    failure_classification,
     commits,
     outcome,
     tests_added,
@@ -1453,6 +1469,7 @@ def crew_complete(
         result = crew_module.complete(
             run_id,
             gate=gate,
+            failure_classification=failure_classification or "",
             commits=commits,
             outcome=outcome,
             tests_added=tests_added,

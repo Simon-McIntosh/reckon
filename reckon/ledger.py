@@ -58,6 +58,15 @@ LEDGER_SLUG = "crew"
 # evidence could not be produced is a recorded negative, not a silent pass.
 GATE_VERDICTS = ("passed", "failed", "not-run")
 
+FAILURE_CLASSIFICATIONS = (
+    "work-rejected",
+    "correct-refusal",
+    "malformed-node",
+    "infrastructure-failure",
+    "pre-existing-failure",
+    "negative-result",
+)
+
 USABLE_COMPLETION_SOURCES = frozenset({"terminal_event", "stream_mtime", "provided"})
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -90,6 +99,7 @@ RECORD_FIELDS = (
     "changed_lines",
     "tests_added",
     "gate",
+    "failure_classification",
     "outcome",
     "manifest_path",
     "scope_changed",
@@ -404,6 +414,7 @@ def build_record(
     run_id: str,
     plan: str,
     gate: str,
+    failure_classification: str = "",
     node: str = "",
     node_definition: Mapping[str, Any] | None = None,
     section: str = "",
@@ -440,6 +451,12 @@ def build_record(
             f"gate verdict {gate!r} is not one of {', '.join(GATE_VERDICTS)}; "
             "a gate whose evidence could not be produced is 'not-run'"
         )
+    classification = str(failure_classification).strip().lower()
+    if classification and classification not in FAILURE_CLASSIFICATIONS:
+        raise LedgerError(
+            f"failure classification {failure_classification!r} is not one of "
+            f"{', '.join(FAILURE_CLASSIFICATIONS)}"
+        )
     return {
         "run_id": str(run_id),
         "plan": str(plan),
@@ -468,6 +485,7 @@ def build_record(
         "changed_lines": None if changed_lines is None else dict(changed_lines),
         "tests_added": None if tests_added is None else int(tests_added),
         "gate": verdict,
+        "failure_classification": classification or None,
         "outcome": str(outcome),
         "manifest_path": str(manifest_path),
         "scope_changed": bool(scope_changed),
@@ -1102,6 +1120,13 @@ def summary(
     records = data["runs"]
     hold_records = data["holds"]
     gates: dict[str, dict[str, int]] = {"live": {}, "shadow": {}}
+    worker_gate = {
+        "passed": 0,
+        "work_rejected": 0,
+        "pass_rate": None,
+        "excluded": {classification: 0 for classification in FAILURE_CLASSIFICATIONS[1:]},
+        "unclassified": 0,
+    }
     run_kinds = {"live": 0, "shadow": 0}
     for record in records:
         lineage = record.get("lineage")
@@ -1113,6 +1138,24 @@ def summary(
         run_kinds[kind] += 1
         verdict = str(record.get("gate") or "unknown")
         gates[kind][verdict] = gates[kind].get(verdict, 0) + 1
+        if kind != "live":
+            continue
+        if verdict == "passed":
+            worker_gate["passed"] += 1
+        elif verdict == "failed":
+            classification = str(record.get("failure_classification") or "")
+            if classification == "work-rejected":
+                worker_gate["work_rejected"] += 1
+            elif classification in worker_gate["excluded"]:
+                worker_gate["excluded"][classification] += 1
+            else:
+                worker_gate["unclassified"] += 1
+    denominator = worker_gate["passed"] + worker_gate["work_rejected"]
+    worker_gate["pass_rate"] = (
+        round(worker_gate["passed"] / denominator, 4) if denominator else None
+    )
+    for classification, count in worker_gate["excluded"].items():
+        worker_gate[f"excluded_{classification.replace('-', '_')}"] = count
     sessions = sum(
         1
         for entry in data["members"]
@@ -1131,6 +1174,7 @@ def summary(
             int(record.get("held_seconds") or 0) for record in hold_records
         ),
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
+        "worker_gate": worker_gate,
         "plans": sorted({str(record.get("plan") or "") for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }
