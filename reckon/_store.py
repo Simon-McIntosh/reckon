@@ -646,7 +646,7 @@ def write_plan(
                 raise LegacyIndexReadOnly(
                     "legacy_index_read_only: aggregate index writes are disabled; "
                     "read resource_versions and edit the named sprint, milestone, "
-                    "blocker, timeline, or project resource with doc_type"
+                    "blocker, timeline, project, or review resource with doc_type"
                 )
         return _write_json_envelope(
             state_path(project, slug, root), project, slug, data, expected_version
