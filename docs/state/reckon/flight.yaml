@@ -25,6 +25,23 @@ backends:
     session_reuse: true
     time_budget: 15m
 
+  # clive: wraps `claude` with env vars pointing at the local H200 GPU server
+  # serving deepseek-v4-flash. Registered as a dialect alias for _ClaudeDialect
+  # in reckon/_backends.py — the flags and event stream are identical since
+  # clive passes all args through via `exec claude "${ARGS[@]}"`.
+  #
+  # Route to this backend with --set default_backend=clive (or at the role
+  # level: --set roles.<role>.backend=clive). The clive wrapper resolves auth
+  # from /work/projects/imas_gpu/agents/.env and sets ANTHROPIC_BASE_URL,
+  # ANTHROPIC_AUTH_TOKEN, and all ANTHROPIC_DEFAULT_*_MODEL vars internally.
+  clive:
+    launch: cli
+    command: clive
+    model: deepseek-v4-flash
+    sandbox: worktree-full
+    session_reuse: true
+    time_budget: 25m
+
 # One dial per dispatch: the declared --spec-level resolves routing here.
 # The level overlay wins over the role overlay, so exact nodes get the spark
 # backend's longer budget rather than the implement role's short one. A --set

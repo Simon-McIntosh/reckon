@@ -10,6 +10,9 @@ description: >-
   isolated worktrees by default, audit and integrate worker commits, record
   outcomes continuously, and clean up worktrees. Trigger verbs: "implement /
   execute / ship / land / deliver the sprint / run the sprint / /reckon-ship".
+  Triggers on "use local workers / use local agents / dispatch locally /
+  run on clive" — these route all dispatches to the clive backend
+  (--set default_backend=clive).
   For editing plan text use reckon-edit; for defining or rebalancing sprint
   state use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
@@ -169,6 +172,12 @@ Full detail below.
   live endpoint uniquely claims the token as its graph handle
 - `/reckon-ship graph:<handle>` — the unambiguous long form for that closure
 - Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
+- "use local workers / use local agents / dispatch locally / run on clive" — these
+  are routing instructions that deploy workers on the local DSv4 model. The
+  coordinator routes every dispatched node with `--set default_backend=clive`
+  (or the equivalent role-level override). The task itself may be any
+  implementable plan, investigation, test, or documentation node — "use local
+  workers" selects the *backend*, not the task scope.
 
 **Dual-role:** invoked by human or orchestrator AND records one-line §05 session handoffs.
 
@@ -452,6 +461,29 @@ Three node-contract refusals are easy to mistake for infrastructure failures:
 The engine supplies the full contract, manifest shape, and escape hatch. Read
 `references/worker-protocol.md` only when hand-composing a delegation Reckon did
 not prepare.
+
+### 3c. Local-worker routing (clive backend)
+
+When the invoking phrase includes "use local workers", "use local agents",
+"dispatch locally", or "run on clive", the coordinator routes every dispatched
+node through the clive backend. Concretely, this means appending
+`--set default_backend=clive` to every `reckon crew dispatch` call, which sends
+workers to the local DSv4 model served on the H200 GPU rather than a remote API.
+
+The clive wrapper (at `/work/projects/imas_gpu/agents/clive`) sets
+`ANTHROPIC_BASE_URL`, model tiers, and auth for the local endpoint. The dialect
+is registered in `reckon/_backends.py` — it maps `clive` → `_ClaudeDialect`
+since clive passes all flags through via `exec claude "${ARGS[@]}"`.
+
+No other part of the coordinator workflow changes: the node still gets a
+worktree, a manifest, a gate, and a ledger record. Only the backend selection
+differs. The local backend also supports session reuse and token tracking (no
+rate-limit headroom since it is a local server).
+
+Check that the clive backend resolves before dispatching:
+```bash
+reckon flight --project P --pretty | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['config']['backends'].get('clive', 'NOT FOUND'))"
+```
 
 ### 4. Dispatch workers
 

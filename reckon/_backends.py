@@ -667,6 +667,11 @@ def _phase(obs: Observation) -> str:
 _DIALECTS: dict[str, Dialect] = {
     _CodexDialect.name: _CodexDialect(),
     _ClaudeDialect.name: _ClaudeDialect(),
+    # clive wraps `claude` with env vars pointing at the local GPU server
+    # (ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_MODEL). Its flags
+    # and JSON-lines event stream are identical to claude's since it passes
+    # all args through via `exec claude "${ARGS[@]}"`.
+    "clive": _ClaudeDialect(),
 }
 
 
