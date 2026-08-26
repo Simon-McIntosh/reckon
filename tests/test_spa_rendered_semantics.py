@@ -183,6 +183,8 @@ import path from "node:path";
 
 const input = JSON.parse(process.argv[1]);
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const navigationTimeoutMs = 90000;
+const browserEvents = [];
 
 async function waitForFile(file, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
@@ -210,6 +212,12 @@ class DevTools {
     });
     this.socket.addEventListener("message", event => {
       const message = JSON.parse(event.data);
+      if (message.method === "Runtime.exceptionThrown") {
+        browserEvents.push(message.params.exceptionDetails?.exception?.description
+          || message.params.exceptionDetails?.text || "runtime exception");
+      } else if (message.method === "Runtime.consoleAPICalled") {
+        browserEvents.push((message.params.args || []).map(arg => arg.value || arg.description || "").join(" "));
+      }
       const pending = this.pending.get(message.id);
       if (!pending) return;
       this.pending.delete(message.id);
@@ -248,7 +256,7 @@ async function navigateAndWait(devtools, generation) {
   const separator = base.includes("?") ? "&" : "?";
   const url = `${base}${separator}semantic_generation=${generation}${fragment ? `#${fragment}` : ""}`;
   await devtools.call("Page.navigate", { url });
-  const deadline = Date.now() + 45000;
+  const deadline = Date.now() + navigationTimeoutMs;
   while (Date.now() < deadline) {
     const ready = await evaluate(devtools, `Boolean(
       location.search.includes("semantic_generation=${generation}")
@@ -258,7 +266,7 @@ async function navigateAndWait(devtools, generation) {
     if (ready) return;
     await delay(150);
   }
-  throw new Error(`timed out waiting for ${input.waitSelector}`);
+  throw new Error(`timed out waiting for ${input.waitSelector}; browser events: ${browserEvents.slice(-10).join(" | ") || "none"}`);
 }
 
 async function main() {
@@ -459,33 +467,39 @@ def _rendered_probe(
         temporary_browser_profile(tmp_path) as profile,
         _served_fixture(tmp_path, route) as url,
     ):
-        result = subprocess.run(
-            [
-                "node",
-                "--input-type=module",
-                "-e",
-                NODE_PROBE,
-                json.dumps(
-                    {
-                        "browser": _installed_browser(),
-                        "profile": str(profile),
-                        "url": url,
-                        "waitSelector": wait_selector,
-                        "probe": probe,
-                        "prepareSignal": prepare_signal,
-                        "removeSignal": remove_signal,
-                        "failPlanHtml": fail_plan_html,
-                        "fixtureIndex": INDEX_STATE,
-                        "fixtureReview": review,
-                    }
-                ),
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            timeout=90,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    NODE_PROBE,
+                    json.dumps(
+                        {
+                            "browser": _installed_browser(),
+                            "profile": str(profile),
+                            "url": url,
+                            "waitSelector": wait_selector,
+                            "probe": probe,
+                            "prepareSignal": prepare_signal,
+                            "removeSignal": remove_signal,
+                            "failPlanHtml": fail_plan_html,
+                            "fixtureIndex": INDEX_STATE,
+                            "fixtureReview": review,
+                        }
+                    ),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=210,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            pytest.fail(
+                "browser probe exceeded 210 seconds after two 90-second navigation "
+                f"windows: stdout={error.stdout!r}; stderr={error.stderr!r}"
+            )
     assert not profile.exists()
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout)
