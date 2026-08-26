@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="sprint-horizon-surface">
+  <meta name="plan-title" content="Plan the Next Two Days, Not the Next Two Months">
+  <meta name="plan-summary" content="Rebuild the Sprints screen around a 48-hour horizon and an all-sprints state table, and stop charging a full page reload to see a new plan.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Plan the Next Two Days, Not the Next Two Months | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s0">§0 — What is wrong, measured</h2>
+
+    <p>The Sprints screen was reported unusable by the lead, with a screenshot. Every
+    complaint below was then reproduced against the running service rather than accepted
+    as described, because two of the seven turned out to have a different cause than the
+    one everybody assumed.</p>
+
+    <table>
+      <thead>
+        <tr><th>Reported</th><th>Confirmed cause</th><th>Section</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>The timeline is useless — we plan over one to two days, no more</td>
+          <td>Horizons are <code>1hr, 1D, 4w, 8w, 6m, all</code> and default to <code>8w</code>.
+            The two sub-day settings render <em>nothing but completed run marks for the one
+            selected sprint</em>, so the only horizons that draw sprints are the ones spanning
+            weeks. A sprint is placed from whole-day <code>starts</code>/<code>ends</code>
+            fields, so at a 48-hour zoom a calendar bar carries no information.</td>
+          <td><a href="#s1">§1</a></td>
+        </tr>
+        <tr>
+          <td>We cannot see the current time</td>
+          <td>There is no now-marker of any kind. <code>sprintAxis</code> emits six tick
+            labels and no cursor, and it derives &ldquo;today&rdquo; from
+            <code>M.today</code>, a date string with no time-of-day component.</td>
+          <td><a href="#s1">§1</a></td>
+        </tr>
+        <tr>
+          <td>We cannot scroll down the page</td>
+          <td><code>.r-sprint-surface</code> declares <code>flex: 1</code> with
+            <code>overflow: auto</code>, so the surface scrolls inside a flex child whose
+            height is set by its container rather than by its content. Everything below the
+            fold is reachable only if that container happens to be bounded.</td>
+          <td><a href="#s3">§3</a></td>
+        </tr>
+        <tr>
+          <td>The kanban board adds limited value</td>
+          <td>Three columns keyed on <code>effective_status</code> restate one field of the
+            data the table in §2 shows completely, and its <code>doing</code> column absorbs
+            <code>blocked</code>, so blocked work is displayed as work in progress.</td>
+          <td><a href="#s4">§4</a></td>
+        </tr>
+        <tr>
+          <td>No way to see all sprints — status, implementation, ordering, blocked or
+            delayed work, which are active</td>
+          <td>The overview renders one bar per sprint carrying id, theme, an active badge and
+            an open-item count. Implementation, ordering, and blocked state are absent from
+            the view although the server now composes all three.</td>
+          <td><a href="#s2">§2</a></td>
+        </tr>
+        <tr>
+          <td>A new plan only appears after reloading the site</td>
+          <td>Literal, and by construction: <code>docs/ui/shell.jsx:217</code> wires the
+            refresh control to <code>onRefresh={() =&gt; window.location.reload()}</code>.
+            Discovery is fetched once into <code>window.STATE</code> and there is no
+            revalidation path anywhere in the client.</td>
+          <td><a href="#s5">§5</a></td>
+        </tr>
+        <tr>
+          <td>That reload takes about ten seconds for nova, which is unacceptable</td>
+          <td><strong>Not discovery latency.</strong> See the measurement below — the cost is
+            almost entirely client-side and no plan currently owns it.</td>
+          <td><a href="#s6">§6</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The reload cost was attributed to the wrong layer</h3>
+
+    <p>Two sessions independently attributed the ten-second reload to discovery recompute,
+    and <code>surface-latency-and-legibility</code> §2 owns that half. Measured against the
+    live service, discovery is no longer the dominant term — the cache hits:</p>
+
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Measured</th><th>Paid on every reload?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET /_discover/nova</code>, cold</td><td>2.06 s, 699 KB</td><td>No — once per server start</td></tr>
+        <tr><td><code>GET /_discover/nova</code>, warm</td><td>0.02 s</td><td>Yes</td></tr>
+        <tr><td><code>react.development.js</code> + <code>react-dom.development.js</code> from unpkg.com</td><td>unminified development builds, remote origin</td><td>Yes</td></tr>
+        <tr><td><code>@babel/standalone</code> 7.29 from unpkg.com</td><td>remote origin</td><td>Yes</td></tr>
+        <tr><td>Google Fonts stylesheet + font files</td><td>two further remote origins</td><td>Yes</td></tr>
+        <tr><td>In-browser Babel transform of 10 <code>text/babel</code> tags</td><td><strong>240,579 bytes of JSX</strong></td><td>Yes</td></tr>
+        <tr><td>Stylesheets and plain scripts</td><td>233,673 bytes</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+
+    <p>So the reload re-pays four remote origins, two React <em>development</em> bundles, a
+    2 MB-class compiler, and a quarter-megabyte source transform — while the discovery call
+    everyone suspected costs twenty milliseconds. This is why §6 exists as its own section
+    rather than as a note on someone else's latency plan: the two halves have different
+    causes, different owners, and different fixes.</p>
+
+    <h2 id="s1">§1 — A 48-hour strip with a live now-line</h2>
+
+    <p>The planning horizon is one to two days. The screen must therefore show today and
+    tomorrow, with hour resolution and a cursor at the current instant, and must stop
+    offering horizons that only make sense for a calendar.</p>
+
+    <p>Retire the <code>4w</code>, <code>8w</code>, <code>6m</code> and <code>all</code>
+    settings. The strip spans a fixed 48 hours anchored on the current local day boundary,
+    marks the today/tomorrow division, and carries a now-line that advances without a
+    reload. Sprints are not drawn as calendar bars at this zoom — whole-day
+    <code>starts</code>/<code>ends</code> cannot place a bar meaningfully inside 48 hours,
+    and drawing one anyway is the defect being removed. What the strip carries instead is
+    the work that genuinely has a timestamp: completed runs, live runs, and the now-line.</p>
+
+    <p>The anatomy below is the whole screen, and the proportions are the point — the strip
+    is a thin band and the table is the page.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 300" width="100%" role="img"
+           aria-label="Screen anatomy: a thin 48-hour strip carrying a now-line above a full-height all-sprints state table.">
+        <text x="0" y="12" font-size="11" font-family="system-ui" fill="#444">§1 &nbsp;48-hour strip &mdash; the only time-bearing element</text>
+
+        <line x1="0" y1="46" x2="620" y2="46" stroke="#999" stroke-width="1"/>
+        <line x1="310" y1="34" x2="310" y2="58" stroke="#999" stroke-width="1"/>
+        <text x="120" y="30" font-size="11" font-family="system-ui" fill="#333">TODAY</text>
+        <text x="420" y="30" font-size="11" font-family="system-ui" fill="#333">TOMORROW</text>
+
+        <line x1="230" y1="28" x2="230" y2="64" stroke="#c0392b" stroke-width="2"/>
+        <circle cx="230" cy="46" r="3" fill="#c0392b"/>
+        <text x="238" y="74" font-size="11" font-family="system-ui" fill="#c0392b">now &mdash; advances live</text>
+
+        <circle cx="88" cy="46" r="2.5" fill="#333"/>
+        <circle cx="140" cy="46" r="2.5" fill="#333"/>
+        <circle cx="196" cy="46" r="2.5" fill="#333"/>
+        <text x="0" y="74" font-size="10" font-family="system-ui" fill="#666">completed runs</text>
+
+        <text x="0" y="112" font-size="11" font-family="system-ui" fill="#444">§2 &nbsp;all-sprints state table &mdash; the primary object</text>
+        <rect x="0" y="122" width="620" height="150" fill="none" stroke="#bbb" stroke-width="1"/>
+        <line x1="0" y1="146" x2="620" y2="146" stroke="#bbb" stroke-width="1"/>
+        <text x="8" y="138" font-size="10" font-family="system-ui" fill="#555">#&nbsp;&nbsp;SPRINT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STATUS&nbsp;&nbsp;&nbsp;&nbsp;IMPL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FLAGS</text>
+        <line x1="0" y1="170" x2="620" y2="170" stroke="#eee" stroke-width="1"/>
+        <line x1="0" y1="194" x2="620" y2="194" stroke="#eee" stroke-width="1"/>
+        <line x1="0" y1="218" x2="620" y2="218" stroke="#eee" stroke-width="1"/>
+        <line x1="0" y1="242" x2="620" y2="242" stroke="#eee" stroke-width="1"/>
+        <text x="8" y="162" font-size="10" font-family="system-ui" fill="#333">one row per sprint &mdash; derived order, never authored order</text>
+        <text x="8" y="186" font-size="10" font-family="system-ui" fill="#333">implementation as a bar with its number beside it</text>
+        <text x="8" y="210" font-size="10" font-family="system-ui" fill="#333">blocked and delayed carry their own flag, not a status</text>
+        <text x="8" y="234" font-size="10" font-family="system-ui" fill="#333">every sprint carrying active is badged &mdash; not just one</text>
+        <text x="8" y="262" font-size="10" font-family="system-ui" fill="#777">sprints with nothing open fold into a single line</text>
+      </svg>
+      <figcaption>Screen anatomy. The strip is the only element that encodes time; everything
+      that encodes state is a table row. The now-line is the one mark that moves on its
+      own.</figcaption>
+    </figure>
+
+    <p><strong>Done when:</strong> the served Sprints screen offers no horizon longer than
+    48 hours; a now-line is present and its position is derived from the current instant
+    rather than from <code>M.today</code>; and the now-line advances without a page reload.
+    Evidence is a rendered capture plus a source-contract assertion that the retired
+    horizon keys are absent.</p>
+
+    <h2 id="s2">§2 — The all-sprints state table</h2>
+
+    <p>This section answers the complaint that there is no way to see all sprints at once,
+    and it is the primary object on the screen. One row per sprint, carrying every field the
+    lead named: status, implementation, ordering, blocked or delayed work, and which sprints
+    are active.</p>
+
+    <p><strong>The data already exists.</strong> A peer session landed the composition at
+    merge <code>d5d876f</code>, so <code>GET /_discover/&lt;project&gt;</code> now carries a
+    derived <code>sprint_order</code>, per-sprint <code>metrics</code>
+    (<code>item_count</code>, <code>by_effective_status</code>, <code>mean_impl</code>,
+    <code>current_work</code>) and a <code>review</code> findings block. This section is
+    therefore wiring and layout, not new server work, and it must consume those fields
+    rather than recompute them client-side.</p>
+
+    <p><strong>Ordering is derived, never authored.</strong> The row order is
+    <code>sprint_order</code> from the server, with a natural-id fallback when it is absent.
+    A sprint's position in the list is a claim about dependency order, so reading it from an
+    authored field would let the display disagree with the graph.</p>
+
+    <p><strong>Disagreement about which sprint is active is shown, not resolved.</strong>
+    This project currently reports <code>active_sprint_id: S6</code> while S6 carries status
+    <code>planned</code>, and S9 and S12 both carry <code>active</code> — so the stored
+    pointer names a sprint that is not active and misses two that are. Another project
+    reports four simultaneously-active sprints as its designed mode. The table badges every
+    sprint carrying <code>active</code> and surfaces the conflict with the pointer as a
+    visible badge. Silently picking one is the failure this badge exists to prevent, and a
+    peer's merge already established that treatment — preserve it.</p>
+
+    <p><strong>Blocked and delayed are flags, not statuses.</strong> A sprint holding blocked
+    items shows a blocked flag with its count; a sprint whose <code>ends</code> date has
+    passed while items remain open shows a delayed flag. Neither replaces the status column,
+    because an active sprint with blocked work is both things at once and the current kanban
+    loses exactly that distinction.</p>
+
+    <p><strong>Done when:</strong> every sprint in the project appears as a row carrying
+    status, an implementation figure, its derived order position, and blocked/delayed/active
+    flags; the order matches the server's <code>sprint_order</code> under assertion; and a
+    project whose stored active pointer disagrees with its active set renders the conflict
+    badge. Evidence is a rendered capture against live state plus assertions on order and
+    conflict rendering.</p>
+
+    <h2 id="s3">§3 — Make the page scroll</h2>
+
+    <p>The surface cannot be scrolled to its foot. <code>.r-sprint-surface</code> combines
+    <code>flex: 1</code> with <code>overflow: auto</code>, which makes the scroll container
+    a flex child sized by its parent rather than by its content, so content below the
+    available height is unreachable rather than merely below the fold. The repair belongs
+    with the layout work because the two new elements in §1 and §2 change the page's
+    height profile, and a taller page makes the defect worse rather than incidental.</p>
+
+    <p>The fix is to establish one intentional scroll container for the view and to state
+    which element owns scrolling, rather than to add a second <code>overflow</code> and hope
+    the cascade resolves it. That statement is the deliverable as much as the behaviour is:
+    the plan <code>sprint-scope-and-surface</code> has a locked decision recording that this
+    cascade has no stated ownership boundary, and this section must not make that worse.</p>
+
+    <p><strong>Done when:</strong> the full content of both surfaces is reachable by
+    scrolling at a viewport height that previously truncated it, demonstrated by a rendered
+    capture at a constrained viewport that reaches the last element; and the view declares
+    exactly one scroll owner.</p>
+
+    <h2 id="s4">§4 — Retire the kanban for what-runs-next</h2>
+
+    <p>The board's three columns are keyed on one field the §2 table shows in full, and the
+    keying is lossy: <code>blocked</code> maps into <code>doing</code>, so blocked work
+    renders as work in progress. Removing it costs nothing that §2 does not already carry
+    better.</p>
+
+    <p>What replaces it is the question the board was being used to answer badly: what
+    should run next. That is a derived answer the roadmap already computes — the ready set,
+    with each row's reason — and rendering it directly is both smaller and more honest than
+    three columns a reader must infer an ordering from.</p>
+
+    <p>Two cautions carried from a peer's consumer report. Ready work is a set of concurrent
+    lanes rather than a sequence, so a rank column would invite serialising work that should
+    fan out — show the lanes, not a ranking. And a landed row must be demoted rather than
+    deleted, so a reader can see what closed without it competing with open work.</p>
+
+    <p><strong>Done when:</strong> the board surface is gone from the Sprints screen; the
+    replacement renders the ready set with a per-row reason and no rank column implying a
+    sequence; blocked work is visually distinct from in-progress work; and no orphan CSS for
+    the retired component remains. Evidence is a rendered capture plus a source assertion
+    that the retired component and its selectors are absent.</p>
+
+    <h2 id="s5">§5 — See a new plan without reloading the site</h2>
+
+    <p>A new plan currently appears only after a full page reload, and the reason is
+    explicit in the source rather than emergent: <code>docs/ui/shell.jsx:217</code> wires the
+    refresh control to <code>window.location.reload()</code>. Discovery is read once into
+    <code>window.STATE</code> at hydration and never revalidated, so the refresh control has
+    no cheaper mechanism to call.</p>
+
+    <p>The deliverable is a client-side refresh that refetches discovery and re-renders from
+    the new payload, without re-executing the page. It must be triggerable explicitly by the
+    control that exists today, and it must not become a busy poll — the surface already
+    polls live crew runs every three seconds and adding a second unconditional interval over
+    a 699 KB payload would trade one complaint for a slower one. Revalidation that can
+    return &ldquo;unchanged&rdquo; cheaply is what makes this affordable, and the discovery
+    cache measured at twenty milliseconds warm is what makes it fast.</p>
+
+    <p><strong>Done when:</strong> a plan file created while the page is open becomes visible
+    without a page reload; the refresh path performs no full document navigation, asserted
+    rather than observed; and the added steady-state request cost is stated as a measured
+    figure rather than assumed negligible.</p>
+
+    <h2 id="s6">§6 — Stop charging ten seconds for a reload</h2>
+
+    <p>This section owns the client-side half of the reload cost measured in §0, which no
+    other plan covers. <code>surface-latency-and-legibility</code> §2 owns the cold-scan
+    half and is separately blocked on a decision contradiction; the two do not overlap.</p>
+
+    <p>Three costs, each independently removable:</p>
+
+    <ul>
+      <li><strong>React and ReactDOM are fetched as <code>.development.js</code> builds from
+        a remote CDN.</strong> Development builds are unminified and carry warning
+        machinery; production builds are a fraction of the size. Serving them locally also
+        removes two remote origins from the critical path, which matters more than the byte
+        count on a network that does not reach unpkg quickly.</li>
+      <li><strong>240,579 bytes of JSX are transformed in the browser on every load,</strong>
+        by a compiler that is itself fetched from that same CDN. The transform result is
+        identical for every visitor and every reload.</li>
+      <li><strong>Google Fonts adds two further remote origins,</strong> which a peer's own
+        measurement already flagged as making a published build not self-contained.</li>
+    </ul>
+
+    <p><strong>The repository's stated architecture is a constraint on the fix, not a
+    casualty of it.</strong> <code>AGENTS.md</code> describes the SPA as compiled in-browser
+    with no build step, and that property is worth keeping: it is why a plan author can edit
+    a component and reload. So the acceptable shapes are ones that remove the client cost
+    without introducing an authoring build step — for instance transforming and caching
+    server-side, since the server already serves these files — and the unacceptable shape is
+    one that requires a build before a local edit is visible. <code>reckon build</code>
+    already produces a self-contained static bundle, so the transform capability may already
+    exist in the tree; establishing that is the section's first task, not an assumption.</p>
+
+    <p><strong>Done when:</strong> a served page load fetches zero third-party origins and
+    performs zero in-browser JSX transformation; first-load and reload wall-clock are
+    reported before and after against the same project on the same host; and editing a
+    component followed by a reload still shows the change with no build command run. The
+    last clause is the one that keeps the fix from costing more than it saves.</p>
+
+    <h2 id="s7">§7 — What this plan deliberately does not touch</h2>
+
+    <p>Four neighbouring plans overlap this brief, and the lead chose a new plan precisely so
+    none of them is disturbed. Recording the boundary here keeps a later session from
+    re-opening them by accident.</p>
+
+    <table>
+      <thead><tr><th>Plan</th><th>State</th><th>Boundary</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>spa-surface-redesign</code></td>
+          <td>S9, active, impl 0.99</td>
+          <td>It redrew seven surfaces answering an earlier set of complaints, and its one
+            remaining node is authority-gated on the lead naming a real graph handle. Its
+            surfaces are not re-opened here; this plan changes the Sprints screen's
+            information design, not that plan's scope.</td>
+        </tr>
+        <tr>
+          <td><code>surface-latency-and-legibility</code></td>
+          <td>S9, active, impl 0.8</td>
+          <td>Owns the cold-scan half of latency and is blocked on a locked-decision
+            contradiction about persisting the git creation map. §6 takes only the
+            client-side terms, which that plan does not cover.</td>
+        </tr>
+        <tr>
+          <td><code>sprint-scope-and-surface</code></td>
+          <td>S12, draft, prerequisite unmet</td>
+          <td>Owns cross-repository sprint identity, the tag backfill, the layout migration
+            and the shell decomposition. Its locked <code>shell-decomposition-timing</code>
+            decision — that a redesign landing as a diff to a 1,544-line
+            <code>shell.jsx</code> is unreviewable — constrains this plan: sections here
+            touch the Sprints surface files, and any change that would require restructuring
+            <code>shell.jsx</code> belongs to that plan instead.</td>
+        </tr>
+        <tr>
+          <td><code>sprint-review-persistence</code></td>
+          <td>Composition merged at <code>d5d876f</code>; its §5 stays open</td>
+          <td>Supplies the derived order, metrics and review block this plan consumes. The
+            rendered evidence it still owes is its own; this plan builds on the merged
+            fields and does not re-implement them.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="screen-shape" data-choice="table-plus-strip" data-by="Simon McIntosh" data-when="2026-08-26">
+    <p class="r-dec-q">What replaces the gantt and the kanban on the Sprints screen?</p>
+    <p class="r-dec-ctx">The server already composes derived sprint_order ,
+          per-sprint metrics and a review findings block, so all candidate shapes are wiring
+          rather than new data. The planning horizon is one to two days.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="table-plus-strip">All-sprints state table as the primary object, above it a compact 48-hour strip carrying only the now-line and the day boundary</button>
+      <button class="r-opt" data-value="two-day-grid">A Today/Tomorrow two-column grid with hour ticks, work placed into its due day</button>
+      <button class="r-opt" data-value="rescale-timeline">Keep the existing timeline component, drop the long horizons, default it to 48 hours and add a table below</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-26. The table answers the
+          all-sprints complaint directly and degrades gracefully at any window width, while
+          the strip carries the one thing a table cannot express — the current instant. The
+          two-day grid was rejected on a measured property of the data rather than on taste:
+          sprint items carry whole-day dates only, so most rows could not be placed by hour
+          and the grid would read emptier than the data actually is. Rescaling the existing
+          timeline was rejected as partly cosmetic, since it preserves the bar-per-sprint
+          metaphor the lead had already called useless.</p>
+    </div>
+<div class="r-dec" data-key="kanban-disposition" data-choice="retire-for-ready-set" data-by="Simon McIntosh" data-when="2026-08-26">
+    <p class="r-dec-q">Does the kanban board survive in any form?</p>
+    <p class="r-dec-ctx">The lead judged it to add limited value. Its three columns are
+          keyed on a single field the state table renders in full, and the keying folds blocked into doing .</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="retire-for-ready-set">Retire it; render the derived ready set with per-row reasons in its place</button>
+      <button class="r-opt" data-value="keep-secondary">Keep it as a secondary tab behind the table</button>
+      </p>
+    <p class="r-dec-rat">Locked by the lead 2026-08-26 as part of the screen-shape
+          selection. Keeping it as a secondary tab preserves a lossy view of data shown
+          losslessly elsewhere, and the column mapping actively misreports blocked work as
+          in progress. The ready set is the question the board was being used to answer, and
+          the roadmap already derives it.</p>
+    </div>
+<div class="r-dec" data-key="no-build-step-constraint" data-choice="preserve-no-authoring-build" data-by="reckon-create" data-when="2026-08-26">
+    <p class="r-dec-q">May the fix for the client-side reload cost introduce an authoring build step?</p>
+    <p class="r-dec-ctx">AGENTS.md describes the SPA as pure client-side
+          React with JSX compiled in-browser and no build step, and that property is why a
+          component can be edited and reloaded. Removing the in-browser transform is the
+          largest single win available in §6, so the two pull against each other.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="preserve-no-authoring-build">No. Remove the client cost by any means that keeps an edited component visible on reload with no build command</button>
+      <button class="r-opt" data-value="accept-build-step">Yes. Accept a build step and update the documented architecture</button>
+      </p>
+    <p class="r-dec-rat">Locked at authoring, and it is a constraint rather than a
+          mechanism: it forbids an outcome, not a technique. Server-side transform with
+          caching satisfies it because the server already serves these files, and reckon build already produces a self-contained bundle, so the
+          capability may exist in the tree. Accepting a build step was rejected because the
+          edit-and-reload loop is the reason the architecture was chosen and losing it would
+          cost more than the ten seconds being recovered. If the constraint turns out to be
+          unsatisfiable, that is a finding to bring back through the dissent flow rather than
+          a licence to quietly add a build.</p>
+    </div>
+<div class="r-dec" data-key="active-sprint-conflict" data-choice="surface-the-conflict" data-by="reckon-create" data-when="2026-08-26">
+    <p class="r-dec-q">When the stored active-sprint pointer disagrees with the set of sprints carrying active, which wins?</p>
+    <p class="r-dec-ctx">Measured in this project: active_sprint_id names
+          S6, whose status is planned , while S9 and S12 both carry active . Another project reports four simultaneously-active sprints as
+          its designed mode, so this is not a data defect to be normalised away.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="surface-the-conflict">Neither. Badge every sprint carrying active and render the disagreement with the pointer as a visible conflict</button>
+      <button class="r-opt" data-value="pointer-wins">The stored pointer wins; it is the single source of focus</button>
+      <button class="r-opt" data-value="status-wins">The per-sprint status wins; the pointer is legacy</button>
+      </p>
+    <p class="r-dec-rat">Locked at authoring, consistent with the treatment a peer
+          already merged at d5d876f . Either resolving rule produces a screen
+          that is confidently wrong: the pointer currently names a sprint nobody is working
+          in, and declaring the pointer legacy discards a field other surfaces still read.
+          A conflict that is displayed gets fixed; a conflict that is resolved silently
+          becomes permanent.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-shs-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-horizon-surface" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Rebuild the Sprints screen: 48-hour strip, all-sprints table, scroll, ready set, live refresh, client load</h4>
+    <div class="r-fu-body"><p>Six sections, and the order is not arbitrary. §3 comes early because both new elements change the page's height profile and the scroll defect gets worse as the page grows, so fixing it after §1 and §2 means fixing it twice. §2 is the largest single win and is pure wiring over fields a peer already merged at <code>d5d876f</code> — the derived <code>sprint_order</code>, per-sprint <code>metrics</code> and the <code>review</code> block — so it must consume them rather than recompute anything client-side. §4 is safe to run beside §2 only if the ready-set replacement lands in a different file than the table.</p><p>§5 and §6 are independent of the whole surface group and of each other, and neither touches <code>sprint.jsx</code>, so they can run concurrently with the rest. §6 carries a hard constraint from its locked decision: it may not introduce an authoring build step, because the edit-and-reload loop is why the architecture was chosen. If that turns out to be unsatisfiable, bring it back through the dissent flow rather than adding a build quietly.</p><p>Two cautions for whoever executes. Do not key anything on the derived active sprint — this project's pointer names a <code>planned</code> sprint while two others carry <code>active</code>, and the conflict badge exists to show that rather than resolve it. And any rendered-browser gate is only trustworthy on a quiet host: an earlier run on this surface lost its gate to DevTools stalls under a foreign load that held the box at 60–130, and the correct response was to record the evidence as owed rather than fake a capture.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship sprint-horizon-surface</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
