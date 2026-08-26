@@ -610,7 +610,7 @@ def _complete_locked(
     elif commit_list:
         cumulative = _cumulative_diff(
             cwd=tree,
-            base=str(record.get("base_sha") or ""),
+            base=f"{commit_list[0]}^",
             head=commit_list[-1],
         )
         if cumulative.changed_lines.get("available", True):
