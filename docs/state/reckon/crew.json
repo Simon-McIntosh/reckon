@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T12:17:23",
+  "updated": "2026-08-26T12:18:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -25388,9 +25388,110 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T101543694975-natural-sprint-order",
+        "plan": "sprint-review-persistence",
+        "section": "\u00a78",
+        "node": "natural-sprint-order",
+        "node_definition": {
+          "done_when": "The derived sprint_order fallback in the shared composed-review derivation uses the existing natural-identifier ordering helper already used when composing sprints, instead of sorting identifiers as strings. Measured against this project's live review: reckon's derived sprint_order returns S6, S8, S9, S12, S13 rather than the current S12, S13, S6, S8, S9. A test asserts the order for a fixture containing at least one double-digit and one single-digit sprint id, because with single-digit ids only a string sort passes forever and the regression would be invisible. Gate: tests/test_review_composition.py tests/test_review_roadmap.py tests/test_review_resource.py tests/test_mcp_views.py report their pass count with zero new failures against your node base, and paste the before and after sprint_order values read from the live project. Do not attempt a full-suite or rendered-browser run; another user saturates this shared host.",
+          "estimated_hours": null,
+          "goal": "Natural-identifier ordering in the shared composed-review sprint-order fallback",
+          "id": "natural-sprint-order",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T101543694975-natural-sprint-order/manifest.md",
+          "plan": "sprint-review-persistence",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "15m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "tests/test_review_composition.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-j",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T10:15:46Z",
+        "completed_at": "2026-08-26T10:18:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 159,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 159,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "7cd9546f64190c09a2f9ad7e7365216190c70d93",
+        "commits": [
+          "38e5728870c6fc997acdb9eed20607c667c9155d"
+        ],
+        "changed_lines": {
+          "added": 11,
+          "removed": 6,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider tests/test_review_composition.py tests/test_review_roadmap.py tests/test_review_resource.py tests/test_mcp_views.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T101543694975-natural-sprint-order/focused-tests.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T101543694975-natural-sprint-order/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a037d2-4e07-79e1-a7a1-7b2c63dca81d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1410048,
+            "cached_input_tokens_cumulative": 2729472,
+            "input_tokens": 1242207,
+            "input_tokens_cumulative": 2903753,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 6054,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 1113
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 441
+    "_version": 442
   }
 }
