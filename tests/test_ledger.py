@@ -767,6 +767,12 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
             "passed",
             "--completed-at",
             "2027-01-01T02:00:00",
+            "--gate-command",
+            "pytest tests/test_ledger.py",
+            "--gate-exit-status",
+            "0",
+            "--gate-log-path",
+            "/durable/r-node-a/gate.log",
         ],
     )
 
