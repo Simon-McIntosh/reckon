@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="5">
-<meta name="plan-impl" content="0.4">
+<meta name="plan-version" content="7">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -272,6 +272,47 @@
       filed under <code>provenance</code> is recategorised in the same pass with its
       evidence unchanged.</p>
 
+    <h2 id="s8">§8 — One composed-review contract, and a staleness signal that knows a closed loop</h2>
+    <p>
+      Two independent reports converged on the same place, which is why they are one
+      section rather than two. The §3 worker mapped the duplication exactly:
+      <code>mcp_views.compose_review</code> overlaps <code>roadmap._review_projection</code>
+      for joined priority fields, plan-subject freshness and <code>sprint_order</code>, and
+      <code>serve._attach_composed_review</code> overlaps <code>roadmap._load_review</code>
+      for loading and attaching the singleton. Both pairs were authored the same afternoon
+      from the same reuse map and neither knew the other existed.
+    </p>
+    <p>
+      Meanwhile the first real corpus falsified the staleness signal. A reviewing session
+      persisted 35 findings and then repaired 34 of them in the same session, recording each
+      resolution. The landed signal iterates <em>every</em> finding, resolved and open alike,
+      so all 34 healthy closed loops report as stale and drown the single open row that
+      genuinely needs attention. The priority half has the same flaw and worse reach: it
+      fires for any ranked plan whose modification postdates the review, which during an
+      active sprint is close to every plan on the list. <strong>The signal is loudest exactly
+      when the project is healthiest</strong>, which is the same defect shape as a check that
+      fires on callers unrelated to what it checks.
+    </p>
+    <p>
+      Collapse the two pairs into one shared composed-review derivation, then land the
+      discriminator there once. A subject that moved after its finding was resolved is a
+      closed loop and is not staleness — the movement <em>was</em> the repair. A subject that
+      moved while its finding is still open is the decay the signal exists to catch. A ranked
+      plan that moved is only stale while it is not landed; a landed plan moving is progress.
+      The consolidation is the reason to fix it once: the same discriminator implemented twice
+      would diverge, and a health signal that disagrees with itself between two read surfaces
+      is worse than no signal.
+    </p>
+    <p><em>Done when:</em> one derivation serves both the discovery/typed-read surface and the
+      roadmap payload, with the duplicate pair in each direction deleted rather than left
+      beside its replacement; a test asserts both surfaces report identical joined fields,
+      freshness and <code>sprint_order</code> for one fixture; a resolved finding whose subject
+      moved does not raise <code>review-stale</code> while an open finding whose subject moved
+      does; a landed ranked plan that moved does not raise it while an unlanded one does; and
+      the nova corpus of 35 findings with 34 resolved yields exactly one stale subject rather
+      than 34. Targeted suites only — do not gate this on a full run while the shared host is
+      contended, and never on rendered-browser evidence.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="review-storage" data-choice="singleton-state-resource" data-by="reckon-3a" data-when="2026-08-26">
@@ -331,6 +372,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s4-landed" data-who="reckon-ship" data-when="2026-08-26">
     <div class="r-comment-body"><p>§4 landed — commit <code>1908da4</code> (merged <code>625379f</code>, tests formatted in <code>872bc71</code>); gate passed. <code>build_roadmap</code> now reads the optional review singleton (or accepts an explicitly composed review), joins local priority rows to <code>status</code>/<code>effective_status</code>/<code>impl</code>/<code>sprint</code>/<code>landed</code>, derives per-finding <code>subject_found</code>/<code>subject_status</code>/<code>current</code> and <code>sprint_order</code>, and returns <code>review=None</code> when no resource exists — absent is never an error. Measure: focused regression 51 passed / 0 failed; 2 tests covering the 8 required cases; 493 lines across 3 files; lint findings fell 12 → 11 across the two changed modules. The two advisory codes <code>priority-order-inversion</code> and <code>review-stale</code> are warn-level in <code>wiring_findings</code> and provably do not affect readiness — the constructed prerequisite-behind-successor case retained only the prerequisite in <code>ready_now</code>. <code>audit_links</code> registers <code>review-enum-violation</code>, <code>review-priority-noncontiguous</code> and <code>dangling-review-subject</code>, reading the review state island without writing it. Worker follow-on recorded for §3: consume this returned review block as the single roadmap contract rather than deriving the same fields twice.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s3-landed" data-who="reckon-ship" data-when="2026-08-26">
+    <div class="r-comment-body"><p>§3 landed — commit <code>076e18b</code> (merged <code>ab998a8</code>, formatted <code>3ce9265</code>); gate passed. Composed discovery now gives each sprint <code>metrics.item_count</code>, <code>metrics.by_effective_status</code>, <code>metrics.mean_impl</code> and <code>metrics.current_work</code>; review findings gain <code>subject_found</code>/<code>subject_status</code>/<code>current</code>; priority rows gain live <code>status</code>/<code>effective_status</code>/<code>impl</code>/<code>sprint</code>/<code>landed</code>; open sprint order is ranked first appearance then remaining ids. Liveness proved directly: a one-member sprint moved from <code>mean_impl</code> 0.5 and <code>current_work</code> 1 to 1.0 and 0 on re-read <em>while the stored review version stayed unchanged</em> — the composition is a join, not a cache. Derived <code>sprint_order</code> matched the hand-computed S2,S1,S3.</p><p>Measure, and the shape of it matters: the focused gate is 46/46 at the exact commit, and the two tests failing on merged <code>main</code> pass <strong>80/80 at this commit</strong>, because the commit that broke them (<code>479d286</code>) is not an ancestor of it. Delta attributable to this node: <strong>0 new failures</strong>. The node first refused rather than claim a full-suite run it could not finish; the authorized exclusion run reached 93 percent, accumulated 21 rendered-browser timeout markers under a saturated shared host, and was <em>explicitly not counted as test evidence</em> — the correct disposition, since a figure produced under contention nobody controls is not a measurement. 410 lines across 3 files; lint 24 → 23.</p></div>
 </div>
 </section>
 </main>
