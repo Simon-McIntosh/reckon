@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
-from reckon.flight import FlightConfigError, resolve
+from reckon.flight import FlightConfigError, flight_report, resolve
 from tests.test_crew import CONFIG, _node
 
 pytest_plugins = ("tests.test_crew",)
@@ -38,51 +38,113 @@ roles:
 
 
 def test_backend_environment_resolves_values_and_per_key_origins(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("DISPATCH_TOKEN", "secret-from-dispatcher")
     resolved = resolve(
-        host_path=_host_layer(tmp_path / "flight.yaml"),
+        host_path=_host_layer(tmp_path / "flight.yaml", "literal-token"),
         project_path=tmp_path / "missing-project.yaml",
     )
 
     environment = resolved.config["backends"]["endpoint"]["environment"]
     assert environment == {
         "API_BASE": "https://endpoint.invalid/api",
-        "API_TOKEN": "secret-from-dispatcher",
+        "API_TOKEN": "literal-token",
     }
     assert resolved.origin("backends.endpoint.environment.API_BASE") == "host"
     assert resolved.origin("backends.endpoint.environment.API_TOKEN") == "host"
 
 
-def test_unset_environment_reference_is_a_typed_configuration_error(
+def test_unselected_unset_reference_is_reported_without_blocking_resolution(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.delenv("ABSENT_DISPATCH_TOKEN", raising=False)
-    host = _host_layer(tmp_path / "flight.yaml", "${ABSENT_DISPATCH_TOKEN}")
+    host = tmp_path / "flight.yaml"
+    host.write_text(
+        """backends:
+  unavailable:
+    launch: cli
+    command: python3
+    environment:
+      API_TOKEN: ${ABSENT_DISPATCH_TOKEN}
+  available:
+    launch: cli
+    command: python3
+    environment:
+      API_TOKEN: literal-token
+"""
+    )
+
+    report = flight_report(
+        host_path=host,
+        project_path=tmp_path / "missing-project.yaml",
+    )
+
+    assert report["config"]["backends"]["unavailable"]["environment"] == {
+        "API_TOKEN": "${ABSENT_DISPATCH_TOKEN}"
+    }
+    unavailable = report["availability"]["unavailable"]
+    absent_command_shape = {
+        "launch",
+        "command",
+        "command_found",
+        "command_path",
+        "authenticated",
+        "detail",
+    }
+    assert set(unavailable) == absent_command_shape
+    assert "API_TOKEN" in unavailable["detail"]
+    assert "ABSENT_DISPATCH_TOKEN" in unavailable["detail"]
+    assert report["config"]["backends"]["available"]["environment"] == {
+        "API_TOKEN": "literal-token"
+    }
+
+
+def test_selected_unset_reference_is_a_typed_configuration_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ABSENT_DISPATCH_TOKEN", raising=False)
+    backend = {
+        "launch": "cli",
+        "command": "codex",
+        "environment": {"API_TOKEN": "${ABSENT_DISPATCH_TOKEN}"},
+    }
 
     with pytest.raises(FlightConfigError) as excinfo:
-        resolve(host_path=host, project_path=tmp_path / "missing-project.yaml")
+        _backends.launch_plan(
+            backend_name="unavailable",
+            backend=backend,
+            prompt="perform the bounded task",
+            worktree="/tmp/worktree",
+        )
 
-    assert excinfo.value.key_path == "backends.endpoint.environment.API_TOKEN"
+    assert excinfo.value.key_path == "backends.unavailable.environment.API_TOKEN"
     assert "ABSENT_DISPATCH_TOKEN" in excinfo.value.constraint
     assert "unset environment variable" in excinfo.value.constraint
 
 
-def test_launch_plan_carries_backend_environment() -> None:
+def test_launch_plan_expands_and_carries_selected_backend_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DISPATCH_TOKEN", "secret-from-dispatcher")
     plan = _backends.launch_plan(
         backend_name="endpoint",
         backend={
             "launch": "cli",
             "command": "codex",
             "sandbox": "worktree-full",
-            "environment": {"API_BASE": "https://endpoint.invalid/api"},
+            "environment": {
+                "API_BASE": "https://endpoint.invalid/api",
+                "API_TOKEN": "${DISPATCH_TOKEN}",
+            },
         },
         prompt="perform the bounded task",
         worktree="/tmp/worktree",
     )
 
-    assert plan.environment == {"API_BASE": "https://endpoint.invalid/api"}
+    assert plan.environment == {
+        "API_BASE": "https://endpoint.invalid/api",
+        "API_TOKEN": "secret-from-dispatcher",
+    }
 
 
 def test_spawn_merges_declared_environment_over_inherited_values(

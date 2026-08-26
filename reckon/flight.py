@@ -430,32 +430,52 @@ def _sorted(value: Any) -> Any:
     return value
 
 
-def _expand_backend_environments(config: dict[str, Any], source: str) -> None:
-    """Expand backend environment references without accepting missing values."""
-    for backend_name, backend in (config.get("backends") or {}).items():
-        if not isinstance(backend, Mapping):
-            continue
-        environment = backend.get("environment")
-        if not isinstance(environment, Mapping):
-            continue
-        expanded: dict[str, str] = {}
-        for variable, raw_value in environment.items():
-            key_path = f"backends.{backend_name}.environment.{variable}"
+def unresolved_environment_references(
+    backend: Mapping[str, Any],
+) -> list[tuple[str, str]]:
+    """Return configured variable names paired with missing references."""
+    unresolved: list[tuple[str, str]] = []
+    environment = backend.get("environment")
+    if not isinstance(environment, Mapping):
+        return unresolved
+    for variable, raw_value in environment.items():
+        for match in _ENVIRONMENT_REFERENCE.finditer(str(raw_value)):
+            referenced = match.group(1)
+            if referenced not in os.environ:
+                unresolved.append((str(variable), referenced))
+    return unresolved
 
-            def replace_reference(match: re.Match[str]) -> str:
-                referenced = match.group(1)
-                if referenced not in os.environ:
-                    raise FlightConfigError(
-                        source,
-                        key_path,
-                        f"references unset environment variable {referenced!r}",
-                    )
-                return os.environ[referenced]
 
-            expanded[str(variable)] = _ENVIRONMENT_REFERENCE.sub(
-                replace_reference, str(raw_value)
-            )
-        backend["environment"] = expanded
+def expand_backend_environment(
+    backend_name: str,
+    backend: Mapping[str, Any],
+    *,
+    source: str = "<resolved flight>",
+) -> dict[str, str]:
+    """Expand one selected backend's environment or raise a typed error."""
+    environment = backend.get("environment")
+    if not isinstance(environment, Mapping):
+        return {}
+    expanded: dict[str, str] = {}
+    for variable, raw_value in environment.items():
+        key_path = f"backends.{backend_name}.environment.{variable}"
+
+        def replace_reference(
+            match: re.Match[str], *, resolved_key_path: str = key_path
+        ) -> str:
+            referenced = match.group(1)
+            if referenced not in os.environ:
+                raise FlightConfigError(
+                    source,
+                    resolved_key_path,
+                    f"references unset environment variable {referenced!r}",
+                )
+            return os.environ[referenced]
+
+        expanded[str(variable)] = _ENVIRONMENT_REFERENCE.sub(
+            replace_reference, str(raw_value)
+        )
+    return expanded
 
 
 def resolve(
@@ -528,7 +548,6 @@ def resolve(
         )
 
     _validate_resolved(merged, " + ".join(contributing))
-    _expand_backend_environments(merged, " + ".join(contributing))
     return ResolvedFlight(
         config=ResolvedConfig(_sorted(merged), warnings=warnings),
         provenance=dict(sorted(provenance.items())),
@@ -581,7 +600,14 @@ def probe_availability(
             "authenticated": None,
             "detail": "",
         }
-        if not command:
+        unresolved = unresolved_environment_references(backend)
+        if unresolved:
+            variable, referenced = unresolved[0]
+            entry["detail"] = (
+                f"environment variable {variable!r} references unset "
+                f"dispatcher variable {referenced!r}"
+            )
+        elif not command:
             entry["detail"] = "backend declares launch: cli but no command"
         elif located is None:
             entry["detail"] = f"'{command}' is not on PATH"
