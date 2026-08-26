@@ -17,8 +17,8 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="12">
+<meta name="plan-modified" content="2026-08-26">
+<meta name="plan-version" content="14">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -152,6 +152,12 @@ Done-when
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s4" data-id="c-20260822-quota-death-budget-gap" data-who="reckon-ship:nova" data-when="2026-08-22T16:30:00+00:00">
     <div class="r-comment-body">MEASURED GAP filed from a live nova incident (run r-20260822T151117616586, 2026-08-22): a codex worker whose usage limit exhausted MID-TURN died with phase failed, no manifest, and a stream tail of turn.started, error, turn.failed - and that death NEVER FED THE BUDGET TRACKER. crew preflight read headroom unknown and held nothing during an actual exhaustion, so a fresh dispatch could have run straight into the same wall before the reset; the budget contract says holds happen only where exhaustion was actually reported, and this exhaustion was observable in the stream but unclassified. Proposed tool work, two halves: (1) the failure classifier inspects the terminal error event of a failed run and, on the backend quota signature, records an exhaustion into the budget state with its reset time so preflight holds until then; (2) the live/recover classification labels such runs quota-exhausted-resumable rather than bare failed, since the proven recovery is one crew resume into the same session after reset - the member context survives and only uncommitted in-flight edits are lost. The orchestrator-facing half of this incident (the watcher signature and the manual treat-as-held rule) is already documented in reckon-ship SKILL.md at bc9f6b5; this comment files the product half with the plan that owns bounded, resumable execution.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260826T145634363629-n-dispatch-root-resolution" data-who="dispatch-repair" data-when="2026-08-26T15:01:50Z">
+    <div class="r-comment-body"><p>Ledger root now derives from authority.plan.repository; roster/budget/history/ephemeral-member access follow the project mount while write scope stays on the working repository; 5/5 focused tests, ruff delta -3</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260826-dispatch-root-resolution" data-who="reckon-d8" data-when="2026-08-26T15:12:00+00:00">
+    <div class="r-comment-body">n-dispatch-root-resolution landed — commit 4c5a3ee, merged to main; gate: focused suite tests/test_crew_dispatch_guard.py 5/5 passed, ruff delta -3. Defect: crew dispatch resolved the roster/budget ledger through the caller's working repository, so a registered member was invisible when dispatching report-only nodes from a foreign cwd (observed refusing the nova S16 review fleet). Fix routes roster, budget, history and ephemeral-member access through authority.plan.repository while worktree creation and write-scope confinement stay on authority.write.repository; regression covers a mounted cross-repository caller.</div>
 </div>
 </section>
 </main>
