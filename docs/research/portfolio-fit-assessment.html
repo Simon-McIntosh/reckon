@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="portfolio-fit-assessment">
+  <meta name="plan-title" content="Does the Model Fit a Portfolio That Actually Ran?">
+  <meta name="plan-summary" content="A 67-plan, 17-sprint portfolio measured against reckon's plan, sprint and graph model: what held, what has no schema home, and one feature parsed but ignored.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-informs" content="sprint-scope-and-surface,sprint-review-persistence">
+  <title>Does the Model Fit a Portfolio That Actually Ran? | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What was measured, and why this is not a survey</h2>
+    <p>
+      A consuming project reorganised its whole portfolio and then reviewed it: 67 plans
+      across 17 sprints over roughly five weeks, producing 35 validated findings and a
+      ten-row plan priority order. The assessment below is that portfolio's practice
+      reported against reckon's model by the session that did the reorganising — practice as
+      lived rather than as documented. It is worth more than a design review because every
+      misfit below is a workaround somebody already paid for, and because the reporter had
+      no stake in reckon's schema being right.
+    </p>
+    <p>
+      Two claims were checked against reckon's source rather than accepted: the absence of a
+      sprint-item remove operation, and the treatment of section anchors in dependency refs.
+      Both hold, and the second turned out sharper than reported.
+    </p>
+
+    <h2 id="s2">§2 — What held, including one position worth defending harder</h2>
+    <p>
+      <strong>Composed-live item state is right, and it earned its keep.</strong> The
+      schema refuses a persisted <code>status</code> or <code>impl</code> on a sprint item
+      and composes both from plan HTML at read time. That refusal is what let the review
+      detect drift at all: had item state been stored, the sprint would have agreed with
+      itself while disagreeing with reality, and nothing would have surfaced. The reporting
+      session called the position right after having been refused by it, which is the
+      useful direction for that verdict to arrive from.
+    </p>
+    <p>
+      <strong>Per-plan priority with derived sprint order is the correct altitude.</strong>
+      This was the design decision most at risk of being wrong — a portfolio that thinks in
+      sprints first would have made the whole ranking schema the wrong shape. It sequenced
+      plans and sections, consumed the persisted ranking directly as dispatch order, and
+      the derived sprint order matched what it would have written by hand.
+    </p>
+    <p>
+      <strong>Decisions are the highest-value state in the system</strong> — the locks and
+      their rationales, above sprints, blockers and followups. Worth knowing when deciding
+      what the surface should show first.
+    </p>
+
+    <h2 id="s3">§3 — The misfits, ranked by cost</h2>
+    <table>
+      <thead>
+        <tr><th>Gap</th><th>What it costs today</th><th>Assessment</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Section-level dependencies are parsed and ignored</strong></td>
+          <td>A plan whose early rungs are dispatchable and whose last rung waits reports
+              <code>effective_status=blocked</code>, hiding roughly eight hours of ready
+              work. Measured twice in one portfolio.</td>
+          <td>The most expensive gap, and see §4 — it is worse than absent.</td>
+        </tr>
+        <tr>
+          <td><strong>Write-scope disjointness has no schema home</strong></td>
+          <td>Four sprints run in parallel partitioned by which subsystem they mutate,
+              because concurrent sessions must not collide in a shared checkout. That is a
+              real membership force expressed nowhere.</td>
+          <td>Reckon already enforces path exclusivity at <em>dispatch</em> time and models
+              nothing at <em>planning</em> time. The constraint exists in both places; only
+              one has a vocabulary.</td>
+        </tr>
+        <tr>
+          <td><strong>Must-not-run-concurrently is invisible to the graph</strong></td>
+          <td>Suite exclusivity and shared-checkout serialisation live in memory files and
+              agent instructions. A planner cannot see them.</td>
+          <td>Same root as the row above: scheduling constraints are not dependencies and
+              have no edge type.</td>
+        </tr>
+        <tr>
+          <td><strong>Cross-project obligations are invisible to both roadmaps</strong></td>
+          <td>Three obligations lived as followups pointing at foreign plans that had
+              shipped — excluded from the owning project's pending work because the target
+              was terminal, and from the consumer's because it was foreign. Coped with by
+              hand-appending followups in the other repository.</td>
+          <td>The cheap first move is an audit check: a followup naming a foreign plan that
+              is terminal. The full fix is a handoff that surfaces in both projects.</td>
+        </tr>
+        <tr>
+          <td><strong>Closure gated by a foreign result</strong></td>
+          <td>A plan is execution-complete but must not <em>ship</em> until a gate on
+              another plan runs. Not <code>depends_on</code>, because nothing blocks
+              execution — the closure is what is gated.</td>
+          <td>No edge type. Coped with by a comment, which is invisible to the DAG.</td>
+        </tr>
+        <tr>
+          <td><strong>A decision gated by a foreign plan's outcome</strong></td>
+          <td>The dominant blocker class in that portfolio is open decisions, and
+              <code>decision_blockers</code> models the plan-local case only.</td>
+          <td>A decision waiting on another plan's <em>result</em> has no representation.</td>
+        </tr>
+        <tr>
+          <td><strong>No sprint-item remove operation</strong></td>
+          <td>Repairing one duplicated membership required a wholesale <code>set</code> of a
+              hand-reproduced twelve-kilobyte item list, because <code>move</code> refuses a
+              duplicate. Verified: the only sprint-item verb is <code>move</code>.</td>
+          <td>A data-loss shaped hazard for a one-row repair. Cheap to fix.</td>
+        </tr>
+        <tr>
+          <td><strong>Item <code>done_when</code> rots silently</strong></td>
+          <td>One item's <code>done_when</code> contradicted its own plan's locked deferral
+              decision for six days. It is prose duplicated from the plan with no freshness
+              check.</td>
+          <td>Either compose it from the plan's gate state or stop storing it. A second copy
+              with no equality check is the same defect class as a persisted item status.</td>
+        </tr>
+        <tr>
+          <td><strong>Derived active sprint is arbitrary under parallel actives</strong></td>
+          <td>With four sprints legitimately active, the derived pointer picks one, so
+              "focus" and "the active sprint" have quietly diverged.</td>
+          <td>Multiple-active as a warning is correct for that portfolio. The derivation
+              needs to admit a set, or the concept needs renaming.</td>
+        </tr>
+        <tr>
+          <td><strong>Legacy effort letters poison capacity silently</strong></td>
+          <td>A four-hour letter placeholder made a sixteen-hour programme look trivial at
+              sprint level; the per-plan uncalibrated warnings did not carry.</td>
+          <td>A sprint-level "capacity N% uncalibrated" rollup would surface it where the
+              decision is made.</td>
+        </tr>
+        <tr>
+          <td><strong>Priority ranks read as a sequence when they are lanes</strong></td>
+          <td>Ranks one to three were concurrent lanes. A consumer treating rank as strict
+              order would serialise work that should fan out.</td>
+          <td>Rank ties, or an explicit concurrency marker. The reasons vocabulary hints at
+              it but does not say it.</td>
+        </tr>
+        <tr>
+          <td><strong>The reasons vocabulary lacks a cost reason</strong></td>
+          <td>A two-hour item ranked almost purely on cheapness-to-clear was labelled
+              <code>roi</code> for want of a better word.</td>
+          <td>Same discovery shape as the missing isolation category: a closed vocabulary
+              found short by use, not by design.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — The sharpest finding: a feature parsed and then discarded</h2>
+    <p>
+      Section-level dependencies are not missing. The ref grammar is documented as
+      <code>[project:]slug[#stage]</code>, and <code>parse_plan_ref</code> captures the
+      stage group — so an author can legitimately write
+      <code>plan-depends-on="catalog#s3"</code> and reasonably believe they have expressed a
+      dependency on one rung. The roadmap then contains <strong>no reference to that stage
+      at all</strong>, so blocking is decided whole-plan.
+    </p>
+    <p>
+      That is worse than the feature being absent. An absent feature produces a malformed-ref
+      refusal at the write boundary and the author learns immediately. A parsed-then-ignored
+      feature accepts the input, silently overstates blocking, and reports the plan as
+      <code>blocked</code> while dispatchable work sits inside it. The author cannot tell
+      the difference between "reckon does not support this" and "reckon supports this and
+      the work really is blocked", and the roadmap — the thing every coordinator reads to
+      decide what to run — is confidently wrong.
+    </p>
+    <p>
+      <code>plan-verifies</code> already consumes <code>slug#section</code> anchors, so the
+      machinery to resolve one exists in the codebase. The gap is that dependency
+      resolution never asks.
+    </p>
+
+    <h2 id="s5">§5 — Three surfaces nobody used, and the honest reading</h2>
+    <p>
+      Across 67 plans: <strong>zero milestones</strong>, empty north stars, a timeline with
+      six id-only events nobody reads back, and three active sprints whose start and end
+      dates were empty until backfilled during the review. It would be comfortable to read
+      that as an adoption problem. The more useful reading is that these surfaces ask for
+      information the work does not naturally produce, while the surfaces that did get used
+      — sprint membership and ordering, blockers, followups, and above all decisions — ask
+      for information somebody was going to write down anyway.
+    </p>
+    <p>
+      Graph handles are the one genuine discoverability failure rather than a shape failure.
+      A campaign spanning two repositories is exactly what a derived cross-project closure
+      is for, and the reviewing session met the feature only once, in a tool docstring — no
+      plan, no skill walkthrough, and no audit finding points at it. A feature nobody adopts
+      because it is obscure needs a different remedy from one nobody needs, and these two
+      have been indistinguishable in the usage data until now.
+    </p>
+
+    <h2 id="s6">§6 — What this implies for the work in flight</h2>
+    <p>
+      The persistence and composition layer is validated: refusing derivable state, composing
+      it live, and ranking per plan all survived contact with a portfolio that did not design
+      them. The gaps cluster in one place, and it is not persistence — it is
+      <strong>expressiveness of the edges</strong>. Six of the twelve rows above are a
+      relationship the graph cannot express: partial dependency, mutual exclusion, closure
+      gating, foreign decision gating, cross-project obligation, and concurrency lanes. Each
+      was coped with by a comment or a memory file, which is to say each is currently invisible
+      to exactly the tool built to answer what can run now.
+    </p>
+    <p>
+      That is a coherent next body of work rather than twelve scattered repairs, and it should
+      be sequenced by cost: the audit check for a followup naming a terminal foreign plan and
+      the sprint-item remove operation are hours; section-anchored blocking is the one that
+      makes the roadmap stop being wrong; the exclusion and closure-gating edges are a design
+      question that deserves its own decision before anyone writes a schema for them.
+    </p>
+  </main>
+</body>
+</html>
