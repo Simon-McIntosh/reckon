@@ -53,6 +53,7 @@ fields runs **only** at the explicit write boundary, via
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -264,6 +265,37 @@ def parse_plan_ref(ref: str) -> PlanRef | None:
     if m is None:
         return None
     return PlanRef(m.group("project"), m.group("slug"), m.group("stage"))
+
+
+def plan_section_anchors(plan: Mapping[str, Any]) -> frozenset[str]:
+    """Return the section identities carried by a plan's semantic state.
+
+    Gates bind evidence to authored sections and may name downstream sections
+    they hold. Comment mapping keys are also authored section anchors. These
+    derived identities let graph consumers validate staged refs without adding
+    another persisted field to plan state.
+    """
+
+    anchors: set[str] = set()
+    for gate in plan.get("gates") or []:
+        if not isinstance(gate, Mapping):
+            continue
+        candidates = [gate.get("section"), *(gate.get("gated_sections") or [])]
+        anchors.update(
+            value
+            for candidate in candidates
+            if (value := str(candidate or "").strip())
+            and _RESOURCE_SEGMENT_RE.fullmatch(value)
+        )
+    comments = plan.get("comments") or {}
+    if isinstance(comments, Mapping):
+        anchors.update(
+            value
+            for candidate in comments
+            if (value := str(candidate or "").strip()) != "_top"
+            and _RESOURCE_SEGMENT_RE.fullmatch(value)
+        )
+    return frozenset(anchors)
 
 
 def split_refs(

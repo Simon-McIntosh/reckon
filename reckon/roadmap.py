@@ -17,6 +17,7 @@ from reckon._schema import (
     LEGACY_EFFORT_HOURS,
     is_graph_handle,
     parse_plan_ref,
+    plan_section_anchors,
 )
 from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
 from reckon.lifecycle import (
@@ -166,6 +167,22 @@ def _north_star_rows(
 
 def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
+
+
+def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
+    """Return whether a target plan has completed one named section."""
+
+    if _status(plan) in COMPLETED_STATUSES:
+        return True
+    section_gates = [
+        gate
+        for gate in plan.get("gates") or []
+        if isinstance(gate, dict) and str(gate.get("section") or "") == section
+    ]
+    return bool(section_gates) and all(
+        str(gate.get("verdict") or "").strip().lower() == "passed"
+        for gate in section_gates
+    )
 
 
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -625,6 +642,7 @@ def resolve_graph_target(
 
     endpoint = endpoints[0]
     graph: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    plan_blocking_graph: dict[tuple[str, str], list[tuple[str, str]]] = {}
     pending = [endpoint]
     while pending:
         key = pending.pop()
@@ -633,6 +651,7 @@ def resolve_graph_target(
         project, slug = key
         plan = plans[key]
         dependencies: list[tuple[str, str]] = []
+        plan_blocking_dependencies: list[tuple[str, str]] = []
         for raw_ref in plan.get("depends_on") or []:
             parsed = parse_plan_ref(raw_ref)
             if parsed is None:
@@ -657,8 +676,11 @@ def resolve_graph_target(
                     f"dependency {raw_ref!r} names no live plan",
                 )
             dependencies.append(dependency)
+            if not parsed.stage:
+                plan_blocking_dependencies.append(dependency)
             pending.append(dependency)
         graph[key] = sorted(set(dependencies))
+        plan_blocking_graph[key] = sorted(set(plan_blocking_dependencies))
 
     def longest_path(
         key: tuple[str, str], active: frozenset[tuple[str, str]] = frozenset()
@@ -670,7 +692,7 @@ def resolve_graph_target(
             raise GraphTargetError(target_handle, f"dependency cycle: {cycle}")
         candidates = [
             longest_path(dependency, active | {key})
-            for dependency in graph.get(key, [])
+            for dependency in plan_blocking_graph.get(key, [])
         ]
         if not candidates:
             return [key]
@@ -707,7 +729,7 @@ def resolve_graph_target(
         decision_blockers.extend(open_decisions)
         dependencies_complete = all(
             _status(plans[dependency]) in COMPLETED_STATUSES
-            for dependency in graph[key]
+            for dependency in plan_blocking_graph[key]
         )
         explicit_blockers = [
             row
@@ -883,6 +905,8 @@ def build_roadmap(
                     "status": blocking.get("status", "") if blocking else "satisfied",
                     "satisfied": satisfied,
                 }
+                if parsed.stage:
+                    row["stage"] = parsed.stage
                 dependency_rows[slug].append(row)
                 if not satisfied and not row["found"]:
                     findings.append(
@@ -940,18 +964,43 @@ def build_roadmap(
                 continue
 
             target_status = _status(target)
-            satisfied = target_status in COMPLETED_STATUSES
-            dependency_rows[slug].append(
-                {
-                    "ref": ref,
-                    "scope": "local",
-                    "slug": parsed.slug,
-                    "found": True,
-                    "status": target_status,
-                    "satisfied": satisfied,
-                }
-            )
-            if not satisfied and parsed.slug in plans:
+            target_sections = plan_section_anchors(target)
+            section_found = not parsed.stage or parsed.stage in target_sections
+            if parsed.stage:
+                satisfied = section_found and _section_satisfied(target, parsed.stage)
+            else:
+                satisfied = target_status in COMPLETED_STATUSES
+            dependency_row = {
+                "ref": ref,
+                "scope": "local",
+                "slug": parsed.slug,
+                "found": True,
+                "status": target_status,
+                "satisfied": satisfied,
+            }
+            if parsed.stage:
+                dependency_row.update(
+                    {"stage": parsed.stage, "section_found": section_found}
+                )
+            dependency_rows[slug].append(dependency_row)
+            if parsed.stage and not section_found:
+                findings.append(
+                    _finding(
+                        "missing-dependency-section",
+                        "error",
+                        (
+                            f"{slug}: dependency {ref!r} names no section "
+                            f"{parsed.stage!r} on {parsed.slug}"
+                        ),
+                        slug=slug,
+                        extra={
+                            "ref": ref,
+                            "section": parsed.stage,
+                            "target": parsed.slug,
+                        },
+                    )
+                )
+            if not satisfied and not parsed.stage and parsed.slug in plans:
                 local_graph[slug].append(parsed.slug)
                 dependents[parsed.slug].add(slug)
             if target_status in TERMINAL_STATUSES - COMPLETED_STATUSES:
@@ -1082,6 +1131,12 @@ def build_roadmap(
         dependency_blockers = [
             row for row in dependency_rows.get(slug, []) if not row.get("satisfied")
         ]
+        plan_dependency_blockers = [
+            row for row in dependency_blockers if not row.get("stage")
+        ]
+        section_dependency_blockers = [
+            row for row in dependency_blockers if row.get("stage")
+        ]
         explicit_blockers = [
             row
             for row in plan.get("blocking") or []
@@ -1098,7 +1153,7 @@ def build_roadmap(
         if (
             status == "blocked"
             and not explicit_blockers
-            and not dependency_blockers
+            and not plan_dependency_blockers
             and not gate_blockers
             and not decision_blockers
         ):
@@ -1108,14 +1163,14 @@ def build_roadmap(
         is_ready = (
             dispatchable
             and authorised
-            and not dependency_blockers
+            and not plan_dependency_blockers
             and not explicit_blockers
             and not gate_blockers
             and not decision_blockers
             and slug not in cycle_members
         )
         is_blocked = bool(
-            dependency_blockers
+            plan_dependency_blockers
             or explicit_blockers
             or gate_blockers
             or decision_blockers
@@ -1144,7 +1199,7 @@ def build_roadmap(
             "effective_status": effective_status(
                 status,
                 [
-                    *dependency_blockers,
+                    *plan_dependency_blockers,
                     *explicit_blockers,
                     *gate_blockers,
                     *decision_blockers,
@@ -1177,6 +1232,30 @@ def build_roadmap(
             if is_schedule_deferred
             else None,
         }
+        if section_dependency_blockers:
+            section_blockers = {
+                str(blocker["stage"]): [
+                    row
+                    for row in section_dependency_blockers
+                    if row.get("stage") == blocker["stage"]
+                ]
+                for blocker in section_dependency_blockers
+            }
+            sections = sorted(plan_section_anchors(plan) | section_blockers.keys())
+            row["section_readiness"] = [
+                {
+                    "section": section,
+                    "ready": section not in section_blockers,
+                    "blockers": section_blockers.get(section, []),
+                }
+                for section in sections
+            ]
+            row["ready_sections"] = [
+                section for section in sections if section not in section_blockers
+            ]
+            row["blocked_sections"] = [
+                section for section in sections if section in section_blockers
+            ]
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         pending.append(row)

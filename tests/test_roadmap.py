@@ -57,6 +57,18 @@ def _project_with_north_stars(*ids: str) -> dict:
     }
 
 
+def _section_gate(section: str, *, passed: bool = True) -> dict:
+    return {
+        "id": f"{section}-evidence",
+        "section": section,
+        "gated_sections": [],
+        "status": "closed" if passed else "open",
+        "measure": f"Evidence for {section}",
+        "verdict": "passed" if passed else "",
+        "evidence": "recorded" if passed else "",
+    }
+
+
 def test_roadmap_returns_ready_work_and_hourly_critical_path() -> None:
     inventory = [
         _plan("foundation", effort="S"),
@@ -101,6 +113,100 @@ def test_completed_dependency_clears_without_hiding_stored_progress() -> None:
     assert [item["slug"] for item in result["ready_now"]] == ["integration"]
     assert result["completion"]["lifecycle_completion_pct"] == 50.0
     assert result["completion"]["implementation_pct"] == 62.5
+
+
+def test_section_dependency_blocks_only_its_matching_section() -> None:
+    prerequisite = _plan("catalog")
+    prerequisite["gates"] = [
+        _section_gate("s1"),
+        _section_gate("s2"),
+        _section_gate("s3", passed=False),
+    ]
+    consumer = _plan("consumer", depends_on=["catalog#s3"], effort_hours=8.0)
+    consumer["gates"] = [
+        _section_gate("s1"),
+        _section_gate("s2"),
+        _section_gate("s3"),
+    ]
+
+    result = build_roadmap("sample", [prerequisite, consumer], [])
+    row = next(item for item in result["pending_work"] if item["slug"] == "consumer")
+
+    assert row["ready"] is True
+    assert row["effective_status"] == "active"
+    assert [item["slug"] for item in result["ready_now"]] == ["consumer"]
+    assert row["ready_sections"] == ["s1", "s2"]
+    assert row["blocked_sections"] == ["s3"]
+    assert row["section_readiness"] == [
+        {"section": "s1", "ready": True, "blockers": []},
+        {"section": "s2", "ready": True, "blockers": []},
+        {
+            "section": "s3",
+            "ready": False,
+            "blockers": [
+                {
+                    "ref": "catalog#s3",
+                    "scope": "local",
+                    "slug": "catalog",
+                    "stage": "s3",
+                    "found": True,
+                    "section_found": True,
+                    "status": "active",
+                    "satisfied": False,
+                }
+            ],
+        },
+    ]
+
+
+def test_section_dependency_reports_an_anchor_absent_from_its_target() -> None:
+    prerequisite = _plan("catalog")
+    prerequisite["gates"] = [_section_gate("parser"), _section_gate("writer")]
+    consumer = _plan("consumer", depends_on=["catalog#deployment"])
+    consumer["gates"] = [_section_gate("deployment")]
+
+    result = build_roadmap("sample", [prerequisite, consumer], [])
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "missing-dependency-section"
+    )
+
+    assert finding["severity"] == "error"
+    assert finding["slug"] == "consumer"
+    assert finding["extra"] == {
+        "ref": "catalog#deployment",
+        "section": "deployment",
+        "target": "catalog",
+    }
+    assert (
+        next(item for item in result["pending_work"] if item["slug"] == "consumer")[
+            "ready"
+        ]
+        is True
+    )
+
+
+def test_unstaged_dependency_remains_plan_wide() -> None:
+    prerequisite = _plan("catalog")
+    consumer = _plan("consumer", depends_on=["catalog"])
+
+    result = build_roadmap("sample", [prerequisite, consumer], [])
+    row = next(item for item in result["pending_work"] if item["slug"] == "consumer")
+
+    assert row["ready"] is False
+    assert row["effective_status"] == "blocked"
+    assert row["depends_on"] == [
+        {
+            "ref": "catalog",
+            "scope": "local",
+            "slug": "catalog",
+            "found": True,
+            "status": "active",
+            "satisfied": False,
+        }
+    ]
+    assert "section_readiness" not in row
 
 
 def test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind() -> None:
