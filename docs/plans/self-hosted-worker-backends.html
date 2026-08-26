@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -268,6 +268,89 @@
       against the incumbent's on the same nodes, median worker minutes for both, the
       classified infrastructure-failure count, and one of the three verdicts above with
       its reasoning; and every routing decision the read changes is locked on this plan.
+    </p>
+
+    <h2 id="s6">&sect;6 &mdash; The failure denominator is contaminated</h2>
+    <p>
+      Every verdict in &sect;4 and &sect;5 is a ratio, and the denominator is currently
+      wrong. Across the three mounted ledgers, 1,281 usable records carry 1,192 passed
+      and 89 failed &mdash; a 93.1% pass rate. Reading the 89 shows they are not one
+      population. <code>gate: failed</code> is the only word available for at least six
+      distinct outcomes, and only the first of them says anything about the worker:
+    </p>
+    <table>
+      <thead>
+        <tr><th>What actually happened</th><th>Observed outcome text</th><th>What it indicts</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>The named check ran against a delivered diff and failed</td>
+          <td><em>&ldquo;the change makes units_agree compare by pint dimensionality &hellip; wrong in general&rdquo;</em></td>
+          <td>The worker, or the specification</td>
+        </tr>
+        <tr>
+          <td>The worker refused correctly at a fence</td>
+          <td><em>&ldquo;refused correctly: 3 pre-existing untracked plots lie outside the migration roots&rdquo;</em></td>
+          <td>Nothing &mdash; this is the fence working</td>
+        </tr>
+        <tr>
+          <td>The node's own fences were malformed</td>
+          <td><em>&ldquo;blocked by a coordinator-side fence defect: the fenced receipt path lay outside the read-only sandbox roots&rdquo;</em></td>
+          <td>The coordinator that wrote the node</td>
+        </tr>
+        <tr>
+          <td>The run died producing nothing</td>
+          <td>No diff and no manifest</td>
+          <td>The transport</td>
+        </tr>
+        <tr>
+          <td>A check failed on a pre-existing condition</td>
+          <td><em>&ldquo;full suite on integrated 279b6f1: 1826 passed, 5 failed&rdquo;</em></td>
+          <td>The tree the worker was given</td>
+        </tr>
+        <tr>
+          <td>An experiment returned the negative result it was built to be able to return</td>
+          <td><em>&ldquo;GENERALIZATION NOT HELD &hellip; this is the phase working as intended&rdquo;</em></td>
+          <td>Nothing &mdash; it is a result</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Twenty-three of the 89 carry no commit at all, and the sample above is drawn from
+      them. One reads <em>&ldquo;nova MIGRATED and parity-verified &hellip; 225 compared /
+      225 matched / 0 mismatches&rdquo;</em> and is recorded as a failure. The doctrine
+      already draws the most important line &mdash; a run that dies with no diff and no
+      manifest is an infrastructure failure, redispatched without indicting the
+      specification and excluded from the lane's circuit breaker &mdash; but nothing in
+      the record stores which kind a failure was, so no reader and no reducer can apply
+      it.
+    </p>
+    <p>
+      This belongs to this plan rather than to a followup because the candidate's
+      verdict is computed from exactly this denominator. Two consequences are concrete.
+      A candidate's measured pass rate is depressed by whatever share of its failures
+      were refusals, malformed nodes or bad trees, and there is no reason to expect that
+      share to be equal between a candidate and the incumbent it is compared against.
+      And the small-model lane's circuit breaker closes a lane on two consecutive gate
+      failures &mdash; which, on this vocabulary, two correct refusals would trip.
+    </p>
+    <p>
+      The fix is a classification stored beside the verdict, supplied when a run is
+      promoted with a failing gate, and consumed by the ledger reducer so that pass
+      rates are computed over the one class that measures the worker. The historical 89
+      are classifiable from their recorded outcome text, which is what makes the
+      existing corpus usable rather than merely the runs from here on.
+    </p>
+    <p>
+      <strong>Done-when:</strong> promoting a run with a failing gate requires a
+      classification from a closed set, refused with the set named when it is absent;
+      the ledger reducer reports pass rate over the work-rejected class with the other
+      classes counted separately, in the same shape as the existing measurement
+      exclusions; all 89 historical failures across the three mounted ledgers are
+      classified from their recorded outcome text, with the per-class counts stated and
+      any record fitting no class reported by run id rather than forced into one; the
+      recomputed pass rate is stated beside the pooled 93.1%; and the existing suite
+      passes with no new failures against the base revision.
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
