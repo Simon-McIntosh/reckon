@@ -17,8 +17,8 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="18">
+<meta name="plan-modified" content="2026-08-27">
+<meta name="plan-version" content="19">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -172,6 +172,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260826-promotion-scope-landed" data-who="reckon-d8" data-when="2026-08-26T15:43:00+00:00">
     <div class="r-comment-body">Promotion scope-truth repair fully landed: n-promotion-scope-truth (commit 6580bc7) makes promotion validate the cumulative base-to-tip diff against declared write roots before any ledger mutation and store counts from that same diff, and n-promotion-scope-suite-alignment (commit de5789a) aligns the stale ledger expectations — 63/63 combined tests green on main. This closes repair 1 of the six in f-eoh-promotion-truth (the scope-escape class the S16 audit observed at ea5d17e8); repairs 2-6 (orphaned verification edges, retroactive gate rewrites, static-audit promotion, persisted authority snapshots, failure-class semantic checks) remain open on that followup. Operational note: the first suite-alignment dispatch died on the codex-spark usage limit (exhausted to Aug 31) via spec-level exact routing — guided routing landed it.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260826T222421846236-n-promotion-scope-base" data-who="dispatch-repair" data-when="2026-08-26T22:28:09Z">
+    <div class="r-comment-body"><p>Promotion diff spans first-commit-parent to last commit; fast-forwarded workers promote cleanly; own-commit scope escapes still refused; 64/64</p></div>
 </div>
 </section>
 </main>
