@@ -168,6 +168,160 @@ edit_plan(
 10. Re-run `roadmap` and `audit`; clear new graph or membership errors and
     report both completion percentages.
 
+## Persist a sprint review
+
+A project has at most one review resource. It lives at
+`docs/state/<project>/review.html`, has id `review`, and is written only through
+the version-safe MCP resource path. Read it before every update:
+
+```python
+review = read_plan(project="sample", slug="review", doc_type="review")
+# review["data"] is the stored judgment; review["version"] is the write token.
+```
+
+If that read reports the resource missing, create it at version zero. This
+complete example is valid against a scratch distributed project:
+
+```python
+created = edit_plan(
+    project="sample",
+    slug="review",
+    doc_type="review",
+    create=True,
+    expected_version=0,
+    ops=[
+        {"op": "set", "path": "reviewed_at", "value": "2026-08-26"},
+        {"op": "set", "path": "reviewed_by", "value": "review-session"},
+        {"op": "set", "path": "basis", "value": "roadmap at commit c62a9fa"},
+        {"op": "set", "path": "priority", "value": [{
+            "rank": 1,
+            "ref": "alpha",
+            "reasons": ["critical-path", "unlock"],
+            "detail": "Unblocks the remaining project-state consumers.",
+        }]},
+        {"op": "append", "target": "findings", "item": {
+            "id": "active-pointer",
+            "code": "active-sprint-mismatch",
+            "category": "sprint",
+            "severity": "error",
+            "subject": {"kind": "sprint", "id": "current"},
+            "evidence": ["Project pointer names a sprint that is not active."],
+            "recommended_action": {
+                "verb": "repair-pointer",
+                "owner_skill": "/reckon-sprint",
+                "detail": "Point the project at the uniquely active sprint.",
+            },
+            "validated": "confirmed",
+            "checked_at": "2026-08-26",
+            "resolved_at": "",
+            "resolved_by": "",
+            "outcome": "",
+        }},
+    ],
+)
+```
+
+On an existing resource, re-read and pass its current version. A ranking is one
+review judgment, so replace the complete `priority` list in one top-level `set`:
+
+```python
+review = read_plan(project="sample", slug="review", doc_type="review")
+updated = edit_plan(
+    project="sample",
+    slug="review",
+    doc_type="review",
+    expected_version=review["version"],
+    ops=[{"op": "set", "path": "priority", "value": complete_priority}],
+)
+```
+
+Never set a dotted rank such as `priority.0.rank`; the resource refuses dotted
+review paths so independently authored fragments cannot interleave into a
+ranking nobody produced. A strict-write refusal returns `ok=False` and names
+the offending field, such as `findings[0].category` or `priority[0].rank`, in
+its `detail` key.
+
+### Fixed review schema
+
+The top-level scalars are `reviewed_at` (date), `reviewed_by` (non-empty text),
+and `basis` (non-empty text). The collections have these exact contracts:
+
+- `findings[]`: unique safe-segment `id`; kebab-case `code`; `category` in
+  `sprint · dag · lifecycle · provenance · references · calibration`;
+  `severity` in `error · warn · info`; one `subject` with `kind` in
+  `plan · sprint · milestone · blocker · followup · decision · project` and a
+  non-empty `id`; one or more non-empty `evidence` lines; one
+  `recommended_action` containing exactly `verb`, `owner_skill`, and `detail`;
+  `validated`; `checked_at`; and the three resolution fields.
+- An isolation category named `safety` is proposed but is not accepted by the
+  current validator; a write using `category="safety"` is refused and names
+  `findings[<index>].category` in `detail`.
+- `recommended_action.verb` is exactly
+  `close · resequence · rescope · recalibrate · resolve · repair-pointer · reopen`.
+- `validated` is exactly `confirmed · stale · conflicting`.
+- A plan subject id and every `priority[].ref` use the project-qualifiable plan
+  reference grammar. Other subject kinds use one safe id segment; `project` is
+  a first-class subject kind.
+- `priority[]`: 1-based contiguous `rank`, unique plan `ref`, non-empty unique
+  `reasons` drawn only from
+  `critical-path · unlock · deadline · roi · decision-first`, and non-empty
+  `detail`.
+
+Open findings store `resolved_at`, `resolved_by`, and `outcome` as empty
+strings. They do not store `status`: reads derive `status="resolved"` exactly
+when `resolved_at` is non-empty, otherwise `status="open"`. If `resolved_at` is
+set, both `resolved_by` and `outcome` must be non-empty.
+
+### Resolve findings when acting on them
+
+Whoever executes a finding's `recommended_action` resolves that finding in the
+same session. Re-read after the repair, then apply the dedicated operation:
+
+```python
+review = read_plan(project="sample", slug="review", doc_type="review")
+resolved = edit_plan(
+    project="sample",
+    slug="review",
+    doc_type="review",
+    expected_version=review["version"],
+    ops=[{
+        "op": "resolve",
+        "target": "findings",
+        "id": "active-pointer",
+        "by": "repair-session",
+        "outcome": "The pointer now names the active sprint.",
+    }],
+)
+```
+
+Do not set resolution fields directly. The `resolve` operation stamps
+`resolved_at`, records the actor and outcome, and leaves the derived status out
+of storage.
+
+### Consume a review from the roadmap
+
+Call `roadmap(project)` before proposing, starting, or rebalancing work and read
+its optional `review` block. When present it contains `reviewed_at`,
+`reviewed_by`, unresolved `findings`, `priority`, and `sprint_order`. Each
+priority row is joined live with `status`, `effective_status`, `impl`, `sprint`,
+and `landed`; `sprint_order` is derived from the first appearance of ranked
+members followed by the remaining open sprint ids. Neither the joined fields
+nor `sprint_order` is persisted in the review resource.
+
+This is one shared read contract, not parallel derivations. Stored-review
+attachment for discovery and roadmap goes through
+`mcp_views.load_composed_review`; that loader and typed review views delegate
+every live join to `mcp_views.compose_review`. Consumers must read that composed
+result rather than reconstructing finding freshness, priority joins, or sprint
+ordering themselves.
+
+The top-level roadmap `wiring_findings` may also contain the advisory warnings
+`priority-order-inversion` and `review-stale`. Both have severity `warn`; they
+surface review decay or a rank that contradicts dependency order, but do not
+gate readiness. Repair the review or its subject as appropriate, then resolve
+the corresponding persisted finding in the same session when its recommended
+action has been executed.
+
 ## Execution handoff
 
 After a sprint is defined or started, surface the executable handle:
