@@ -10,9 +10,10 @@ from typing import Any
 
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
+    TERMINAL_STATUSES,
     effective_status,
-    unresolved_dependencies,
     unpassed_gate_blockers,
+    unresolved_dependencies,
 )
 
 VIEW_NAMES = frozenset({"summary", "detail", "history", "version", "raw", "schema"})
@@ -26,6 +27,7 @@ RESOURCE_TYPES = frozenset(
         "blocker",
         "timeline",
         "project",
+        "review",
         "audit",
     }
 )
@@ -37,6 +39,161 @@ MAX_CURSOR_LENGTH = 256
 MAX_ERROR_TEXT_LENGTH = 512
 MAX_ERROR_COLLECTION_ITEMS = 25
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarise live sprint-member lifecycle state without storing it."""
+
+    rows = [item for item in items if isinstance(item, dict)]
+    counts: dict[str, int] = {}
+    current_work: list[dict[str, Any]] = []
+    implementations: list[float] = []
+    for item in rows:
+        status = str(item.get("effective_status") or item.get("status") or "pending")
+        counts[status] = counts.get(status, 0) + 1
+        impl = float(item.get("impl", 0.0) or 0.0)
+        implementations.append(impl)
+        if status not in TERMINAL_STATUSES and 0.0 < impl < 1.0:
+            current_work.append(
+                {
+                    key: item[key]
+                    for key in ("slug", "title", "effective_status", "impl")
+                    if item.get(key) is not None
+                }
+            )
+    return {
+        "item_count": len(rows),
+        "by_effective_status": counts,
+        "mean_impl": round(sum(implementations) / len(rows), 4) if rows else 0.0,
+        "current_work": current_work,
+    }
+
+
+def compose_review(
+    review: dict[str, Any],
+    inventory: list[dict[str, Any]],
+    sprints: list[dict[str, Any]],
+    project: str,
+    project_resources: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Join a stored review to current project state."""
+
+    from copy import deepcopy
+    from datetime import date
+
+    from reckon._schema import parse_plan_ref
+
+    plans = {
+        str(item.get("slug")): item
+        for item in inventory
+        if isinstance(item, dict)
+        and item.get("type", "plan") == "plan"
+        and item.get("slug")
+    }
+    resources: dict[tuple[str, str], dict[str, Any]] = {
+        ("plan", slug): item for slug, item in plans.items()
+    }
+    resource_groups = project_resources or {}
+    for kind, rows in (
+        ("sprint", sprints),
+        ("milestone", resource_groups.get("milestones") or []),
+        ("blocker", resource_groups.get("blockers") or []),
+    ):
+        resources.update(
+            {
+                (kind, str(item.get("id"))): item
+                for item in rows
+                if isinstance(item, dict) and item.get("id")
+            }
+        )
+    resources[("project", project)] = {"id": project, "status": "active"}
+
+    def subject_row(subject: dict[str, Any]) -> dict[str, Any] | None:
+        kind = str(subject.get("kind") or "")
+        subject_id = str(subject.get("id") or "")
+        if kind == "plan":
+            ref = parse_plan_ref(subject_id)
+            if ref is None or ref.is_external(project):
+                return None
+            subject_id = ref.slug
+        return resources.get((kind, subject_id))
+
+    def action_satisfied(verb: str, status: str) -> bool:
+        if verb == "close":
+            return status in TERMINAL_STATUSES
+        if verb == "reopen":
+            return bool(status) and status not in TERMINAL_STATUSES
+        if verb == "resolve":
+            return status in {*TERMINAL_STATUSES, "resolved", "closed"}
+        return False
+
+    composed = deepcopy(review)
+    findings = []
+    for finding in composed.get("findings") or []:
+        row = dict(finding)
+        subject = row.get("subject") if isinstance(row.get("subject"), dict) else {}
+        live = subject_row(subject)
+        status = str((live or {}).get("status") or "")
+        checked_at = str(row.get("checked_at") or "")
+        changed_at = str(
+            (live or {}).get("modified") or (live or {}).get("last") or ""
+        )
+        moved = False
+        try:
+            moved = bool(changed_at) and date.fromisoformat(
+                changed_at[:10]
+            ) > date.fromisoformat(checked_at)
+        except ValueError:
+            moved = False
+        row.update(
+            {
+                "subject_found": live is not None,
+                "subject_status": status,
+                "current": bool(live)
+                and not row.get("resolved_at")
+                and not moved
+                and not action_satisfied(
+                    str((row.get("recommended_action") or {}).get("verb") or ""),
+                    status,
+                ),
+            }
+        )
+        findings.append(row)
+    composed["findings"] = findings
+
+    priority = []
+    ranked_sprints: list[str] = []
+    for stored in composed.get("priority") or []:
+        row = dict(stored)
+        ref = parse_plan_ref(str(row.get("ref") or ""))
+        live = None if ref is None or ref.is_external(project) else plans.get(ref.slug)
+        status = str((live or {}).get("status") or "")
+        effective = str((live or {}).get("effective_status") or status)
+        sprint = (live or {}).get("sprint")
+        row.update(
+            {
+                "status": status,
+                "effective_status": effective,
+                "impl": float((live or {}).get("impl", 0.0) or 0.0),
+                "sprint": sprint,
+                "landed": effective in TERMINAL_STATUSES,
+            }
+        )
+        if sprint and sprint not in ranked_sprints:
+            ranked_sprints.append(str(sprint))
+        priority.append(row)
+    composed["priority"] = priority
+    open_sprints = sorted(
+        str(sprint.get("id"))
+        for sprint in sprints
+        if isinstance(sprint, dict)
+        and sprint.get("id")
+        and str(sprint.get("status") or "planned") not in TERMINAL_STATUSES
+    )
+    composed["sprint_order"] = ranked_sprints + [
+        sprint_id for sprint_id in open_sprints if sprint_id not in ranked_sprints
+    ]
+    return composed
 
 
 def in_flight_by_plan(
@@ -197,6 +354,23 @@ def storage_schema_for(resource_type: str) -> dict[str, Any]:
                     },
                 },
             },
+        }
+    if resource_type == "review":
+        return {
+            "title": "reckon ReviewResource",
+            "schemaVersion": RESPONSE_SCHEMA_VERSION,
+            "type": "object",
+            "additionalProperties": True,
+            "required": [
+                "id",
+                "type",
+                "version",
+                "reviewed_at",
+                "reviewed_by",
+                "basis",
+                "findings",
+                "priority",
+            ],
         }
 
     raise ViewRequestError(
@@ -525,6 +699,7 @@ def _state(
             "items": len(items),
             "completed": sum(status in {"shipped", "done"} for status in statuses),
             "blocked": sum(status == "blocked" for status in statuses),
+            "metrics": data.get("metrics") or sprint_metrics(items),
             "capacity": _sprint_capacity(data),
         }
     if resource_type == "milestone":
@@ -549,6 +724,17 @@ def _state(
             "open_followups": summary.get("open_followups", 0),
             "open_questions": summary.get("open_questions", 0),
             "open_decisions": summary.get("open_decisions", 0),
+        }
+    if resource_type == "review":
+        findings = list(data.get("findings") or [])
+        priority = list(data.get("priority") or [])
+        return {
+            "reviewed_at": data.get("reviewed_at", ""),
+            "reviewed_by": data.get("reviewed_by", ""),
+            "findings": len(findings),
+            "current_findings": sum(bool(row.get("current")) for row in findings),
+            "priority_rows": len(priority),
+            "sprint_order": list(data.get("sprint_order") or []),
         }
     return {}
 
@@ -639,6 +825,10 @@ def _detail(
         ]
     elif selector.type == "timeline":
         result["events"] = list(data.get("events") or [])
+    elif selector.type == "review":
+        result["findings"] = list(data.get("findings") or [])
+        result["priority"] = list(data.get("priority") or [])
+        result["sprint_order"] = list(data.get("sprint_order") or [])
     return result
 
 
@@ -858,6 +1048,23 @@ def resource_view(
     """Transform one canonical resource into the requested response view."""
 
     selected = normalize_view(view)
+    if selector.type == "review" and selected in {"summary", "detail"}:
+        from pathlib import Path
+
+        from reckon.serve import discover_plans
+
+        checkout = provenance.get("checkout")
+        if checkout:
+            discovered = discover_plans(
+                Path(checkout) / "docs", selector.project, Path(checkout) / "docs/state"
+            )
+            data = compose_review(
+                data,
+                discovered.get("inventory", []),
+                discovered.get("sprints", []),
+                selector.project,
+                discovered,
+            )
     dependencies = deps or []
     result: dict[str, Any]
     if selected == "summary":
@@ -1066,6 +1273,8 @@ def discovery_view(
         "resources": page,
         "pagination": pagination,
     }
+    if isinstance(raw.get("review"), dict):
+        result["review"] = raw["review"]
     if selected == "detail":
         result["source_format"] = raw.get("source_format")
         result["resource_versions"] = raw.get("resource_versions") or {}

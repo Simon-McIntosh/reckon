@@ -930,6 +930,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "source_format": "distributed",
             "resource_versions": composed.get("resource_versions", {}),
         }
+        _attach_composed_review(result, docs_dir, project)
         return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
     # ── Legacy project state ───────────────────────────────────────────────
@@ -985,6 +986,29 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         "source_format": "legacy-index",
     }
     return _cache_discovery_result(cache_key, sig, project, state_root, result)
+
+
+def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
+    """Attach the optional stored review after joining its live subjects."""
+
+    from reckon.mcp_views import compose_review
+    from reckon.project_state import ProjectStateError, read_resource, resource_path
+
+    path = resource_path(docs_dir, project, "review", "review")
+    if not path.is_file():
+        return
+    try:
+        review, version = read_resource(docs_dir, project, "review", "review")
+    except ProjectStateError:
+        return
+    result["review"] = compose_review(
+        review,
+        result.get("inventory", []),
+        result.get("sprints", []),
+        project,
+        result,
+    )
+    result.setdefault("resource_versions", {})["review:review"] = version
 
 
 def _read_readiness_state(path: Path) -> tuple[list[dict], list[dict]]:
@@ -1108,6 +1132,9 @@ def _derive_lifecycle(
                         item[key] = plan[key]
             items.append(item)
         sprint["items"] = items
+        from reckon.mcp_views import sprint_metrics
+
+        sprint["metrics"] = sprint_metrics(items)
     return plans, hydrated_sprints
 
 
