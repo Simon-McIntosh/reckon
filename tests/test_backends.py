@@ -461,6 +461,10 @@ def test_observation_serialises_with_sorted_keys() -> None:
 
 
 def test_recorded_fixtures_cover_every_dialect() -> None:
-    """A dialect with no recorded stream is an untested translation."""
+    """Every distinct launch translation has a recorded event stream."""
     recorded = {path.name.split("-")[0] for path in FIXTURES.glob("*.jsonl")}
-    assert set(_backends.known_dialects()) <= recorded
+    translations = {
+        _backends.dialect_for({"launch": "cli", "command": command}).name
+        for command in _backends.known_dialects()
+    }
+    assert translations <= recorded
