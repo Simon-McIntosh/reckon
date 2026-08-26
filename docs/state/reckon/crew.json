@@ -1,9 +1,20 @@
 {
-  "updated": "2026-08-26T11:38:46",
+  "updated": "2026-08-26T11:58:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
     "members": [
+      {
+        "id": "claude-a",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+        "session_model": "claude-sonnet-5",
+        "sessions": {
+          "claude-sonnet-5": "f8e24777-00b7-4e26-853a-45e35ad401b8"
+        },
+        "created": "2026-08-26"
+      },
       {
         "id": "codex-a",
         "harness": "codex",
@@ -24965,9 +24976,115 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T094215451888-n-gate-carries-its-evidence",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a77",
+        "node": "n-gate-carries-its-evidence",
+        "node_definition": {
+          "done_when": "New tests in tests/test_gate_evidence.py assert that promoting a run with a passing gate and no recorded check is refused naming what is missing, that a passing promotion carrying a command, an exit status and a log path or digest is accepted and stores all three on the ledger record, that a single accessor decides shadow control by comparing the recorded primary and shadow configurations and is the only definition of that predicate, that capability derivation consults it so a confounded shadow is never pooled with a controlled one demonstrated over two synthetic shadow records differing only in inherited effort, and that qualification depth counts distinct primary run identifiers rather than shadow rows; and the focused suite over the changed modules reports no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "A promoted gate verdict carries the check that produced it, and one accessor decides whether a shadow reproduced its primary's configuration",
+          "id": "n-gate-carries-its-evidence",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T094215451888-n-gate-carries-its-evidence/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "reckon/crew/promotion.py",
+            "reckon/cli.py",
+            "reckon/capabilities.py",
+            "tests/test_gate_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "claude-a",
+        "backend": "claude",
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T09:42:17Z",
+        "completed_at": "2026-08-26T09:57:06.793Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 882,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 889,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "d524cd1539f79b4438860012700ee84979a1770c",
+        "commits": [
+          "f05f85b"
+        ],
+        "changed_lines": {
+          "added": 580,
+          "removed": 3,
+          "files": 5
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_evidence.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T094215451888-n-gate-carries-its-evidence/logs/gate_evidence_test.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T094215451888-n-gate-carries-its-evidence/manifest.md",
+        "scope_changed": false,
+        "session_id": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 217783,
+            "cache_creation_input_tokens_cumulative": 217783,
+            "cache_read_input_tokens": 16636635,
+            "cache_read_input_tokens_cumulative": 16636635,
+            "inference_geo": "not_available",
+            "input_tokens": 186,
+            "input_tokens_cumulative": 186,
+            "output_tokens": 62888,
+            "output_tokens_cumulative": 62888,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 4.827711,
+          "detail": "rate-limit event carried no numeric utilisation",
+          "cost_usd_cumulative": 4.827711
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 435
+    "_version": 438
   }
 }
