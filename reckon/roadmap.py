@@ -9,7 +9,8 @@ graph traversal in each surface.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from reckon._schema import (
     GRAPH_HANDLE_GRAMMAR,
@@ -273,6 +274,171 @@ def _finding(
     if extra:
         result["extra"] = extra
     return result
+
+
+def _load_review(project: str) -> dict[str, Any] | None:
+    """Read the optional review singleton through the distributed-state path."""
+
+    docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return None
+    from reckon.project_state import ProjectStateError, read_resource
+
+    try:
+        review, _version = read_resource(docs_dir, project, "review", "review")
+    except (OSError, ProjectStateError, ValueError):
+        return None
+    return review
+
+
+def _review_projection(
+    project: str,
+    review: dict[str, Any] | None,
+    plans: dict[str, dict[str, Any]],
+    sprints: list[dict[str, Any]],
+    local_graph: Mapping[str, list[str]],
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    """Project persisted review advice onto the live dependency graph."""
+
+    if not review:
+        return None, []
+    priority = sorted(
+        (dict(row) for row in review.get("priority") or [] if isinstance(row, dict)),
+        key=lambda row: (int(row.get("rank", 10**6)), str(row.get("ref") or "")),
+    )
+    for row in priority:
+        parsed = parse_plan_ref(row.get("ref"))
+        if parsed is None or parsed.is_external(project):
+            continue
+        plan = plans.get(parsed.slug)
+        if plan is None:
+            continue
+        status = _status(plan)
+        row.update(
+            {
+                "status": status,
+                "effective_status": plan.get("effective_status") or status,
+                "impl": _progress(plan),
+                "sprint": plan.get("sprint"),
+                "landed": status in TERMINAL_STATUSES,
+            }
+        )
+    rank_by_slug: dict[str, int] = {}
+    for row in priority:
+        parsed = parse_plan_ref(row.get("ref"))
+        if parsed is None or parsed.is_external(project):
+            continue
+        rank_by_slug[parsed.slug] = int(row.get("rank", 10**6))
+
+    health: list[dict[str, Any]] = []
+    for successor, dependencies in local_graph.items():
+        successor_rank = rank_by_slug.get(successor)
+        if successor_rank is None:
+            continue
+        for dependency in dependencies:
+            dependency_rank = rank_by_slug.get(dependency)
+            if dependency_rank is None or successor_rank >= dependency_rank:
+                continue
+            inversion = {
+                "plan": successor,
+                "rank": successor_rank,
+                "dependency": dependency,
+                "dependency_rank": dependency_rank,
+            }
+            health.append(
+                _finding(
+                    "priority-order-inversion",
+                    "warn",
+                    (
+                        f"{successor}: review rank {successor_rank} places it ahead "
+                        f"of unshipped prerequisite {dependency} at rank {dependency_rank}"
+                    ),
+                    slug=successor,
+                    extra=inversion,
+                )
+            )
+
+    reviewed_at = str(review.get("reviewed_at") or "")
+    moved_subjects: set[str] = set()
+    composed_findings: list[dict[str, Any]] = []
+    for raw in review.get("findings") or []:
+        if not isinstance(raw, dict):
+            continue
+        row = dict(raw)
+        subject = row.get("subject") or {}
+        if subject.get("kind") == "plan":
+            parsed = parse_plan_ref(subject.get("id"))
+            plan = (
+                plans.get(parsed.slug)
+                if parsed is not None and not parsed.is_external(project)
+                else None
+            )
+            row["subject_found"] = plan is not None
+            row["subject_status"] = _status(plan) if plan is not None else None
+            checked_at = str(row.get("checked_at") or reviewed_at)
+            modified = str(
+                (plan or {}).get("modified") or (plan or {}).get("last") or ""
+            )
+            row["current"] = bool(
+                plan is not None
+                and (not checked_at or not modified or modified[:10] <= checked_at[:10])
+            )
+        composed_findings.append(row)
+        if row.get("current") is False:
+            moved_subjects.add(
+                f"{subject.get('kind', 'subject')}:{subject.get('id', '')}"
+            )
+    for slug in rank_by_slug:
+        plan = plans.get(slug, {})
+        modified = str(plan.get("modified") or plan.get("last") or "")
+        if reviewed_at and modified and modified[:10] > reviewed_at[:10]:
+            moved_subjects.add(f"plan:{slug}")
+    if moved_subjects:
+        subjects = sorted(moved_subjects)
+        health.append(
+            _finding(
+                "review-stale",
+                "warn",
+                (
+                    f"reviewed {reviewed_at or 'at an unknown time'}; subjects moved "
+                    f"after review: {', '.join(subjects)}"
+                ),
+                extra={"reviewed_at": reviewed_at, "subjects": subjects},
+            )
+        )
+
+    sprint_order = list(review.get("sprint_order") or [])
+    if not sprint_order:
+        seen: set[str] = set()
+        for row in priority:
+            sprint = str(row.get("sprint") or "")
+            if sprint and sprint not in seen:
+                seen.add(sprint)
+                sprint_order.append(sprint)
+        sprint_order.extend(
+            sorted(
+                str(sprint.get("id") or "")
+                for sprint in sprints
+                if sprint.get("id")
+                and sprint.get("status") not in COMPLETED_STATUSES
+                and str(sprint.get("id")) not in seen
+            )
+        )
+
+    return (
+        {
+            "reviewed_at": reviewed_at,
+            "reviewed_by": review.get("reviewed_by") or "",
+            "findings": [
+                dict(row)
+                for row in composed_findings
+                if isinstance(row, dict) and not row.get("resolved_at")
+            ],
+            "priority": priority,
+            "sprint_order": sprint_order,
+        },
+        health,
+    )
 
 
 def _canonical_cycle(nodes: list[str]) -> tuple[str, ...]:
@@ -698,6 +864,7 @@ def build_roadmap(
     sprint_id: str | None = None,
     max_paths: int = 5,
     project_manifest: dict[str, Any] | None = None,
+    review: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return pending work, execution paths, progress, blockers, and wiring findings."""
 
@@ -1280,6 +1447,14 @@ def build_roadmap(
     completed_count = sum(_status(plan) in COMPLETED_STATUSES for plan in plan_values)
     uncalibrated = _uncalibrated_plans(plans)
     allocation = (project_manifest or {}).get("scope") or {}
+    review_block, review_findings = _review_projection(
+        project,
+        review if review is not None else _load_review(project),
+        all_plans,
+        sprints,
+        local_graph,
+    )
+    findings.extend(review_findings)
     return {
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
@@ -1319,6 +1494,7 @@ def build_roadmap(
                 "Validate plan ownership against project scope and repository instructions before creation or relocation."
             ),
         },
+        "review": review_block,
         "north_stars": _north_star_rows(plans, north_stars),
         "sprints": sprint_rows,
         "pending_work": pending,
