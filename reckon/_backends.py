@@ -722,6 +722,9 @@ def launch_plan(
             "backend can be spawned — an in-harness backend is dispatched by "
             "the calling harness against a prepared directive"
         )
+    from reckon.flight import expand_backend_environment
+
+    environment = expand_backend_environment(backend_name, backend)
     dialect = dialect_for(backend)
     worktree_path = str(Path(worktree))
     manifest = None if manifest_path is None else str(Path(manifest_path))
@@ -746,10 +749,7 @@ def launch_plan(
         argv=argv,
         cwd=working_directory,
         stdin_text=prompt if dialect.stdin_prompt else "",
-        environment={
-            str(key): str(value)
-            for key, value in (backend.get("environment") or {}).items()
-        },
+        environment=environment,
         final_message_path=final_path,
         resumed_session=resume_session,
     )
