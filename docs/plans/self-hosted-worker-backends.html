@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="11">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/audit-metrics.json">
 <meta name="plan-impl" content="0.222">
 </head>
@@ -136,18 +136,34 @@
           <td>The agent loop is viable rather than merely the chat surface</td>
         </tr>
         <tr>
-          <td>Terse instruction following</td>
+          <td>Terse instruction following, bare prompt</td>
           <td>&ldquo;Say PONG&rdquo; produced an essay on the game of Pong</td>
-          <td>A real risk signal &mdash; see the done-when in &sect;4</td>
+          <td>Read as a risk signal, then qualified by the row below</td>
+        </tr>
+        <tr>
+          <td>Full agent-loop turn: <code>tool_use</code> &rarr; <code>tool_result</code> &rarr; answer</td>
+          <td>Consumed the tool result and replied <code>1</code> &mdash; two output tokens, no elaboration</td>
+          <td>The loop closes, and under a task with tools the model is terse</td>
         </tr>
       </tbody>
     </table>
     <p>
-      That last row is not a joke at the model's expense; it is the reason this plan
-      qualifies rather than adopts. A model that elaborates when asked to be terse is a
-      model that may not respect a fence, and fences &mdash; exclusive write scope, a
-      manifest at a named path, a time budget &mdash; are how Reckon keeps a worker
-      safe. The shadow ladder in &sect;4 is what converts that worry into a number.
+      Those last two rows have to be read together, and the order they were measured in
+      matters. The bare &ldquo;Say PONG&rdquo; probe carried no tools and no system
+      prompt, and its essay looked like a model that would not respect a fence &mdash;
+      which would be disqualifying, because fences are how Reckon keeps a worker safe:
+      exclusive write scope, a manifest at a named path, a time budget. Adding a tool
+      schema and a concrete task reversed it. Given a job, the model emitted a
+      well-formed call, consumed the result, and answered with the single number asked
+      for and nothing else.
+    </p>
+    <p>
+      So the honest reading is that a bare-prompt probe measures the wrong thing for
+      this purpose, and the loop test measures closer to the right one. Neither settles
+      the question that actually decides adoption, which is whether fence adherence
+      holds over a twenty-minute autonomous node rather than one turn. Nothing short of
+      a real dispatch tests that, which is what &sect;3's end-to-end measure and the
+      &sect;4 pairs exist to do.
     </p>
 
     <h2 id="s2">&sect;2 &mdash; A backend may name its environment</h2>
@@ -167,8 +183,32 @@
       inherits the spelling.
     </p>
     <p>
+      <strong>Expansion happens where the backend is selected, not when the config is
+      read</strong> &mdash; and the first implementation got this wrong in a way worth
+      recording, because the specification asked for it. The done-when below requires an
+      unset reference to raise a typed error naming the variable, which is right for a
+      backend a call actually routes to and wrong for every other caller: expanding
+      eagerly at whole-config resolution made one unresolved reference in one
+      defined-not-defaulted backend a hard failure for every dispatch in the project,
+      including dispatches routing to an entirely different backend. A concurrent
+      session's work stopped on it within a minute of the config landing.
+    </p>
+    <p>
+      The precedent to follow was already there: a backend whose <code>command</code> is
+      absent reports <code>command_found: false</code> as an availability finding and
+      breaks nothing. An unresolvable environment reference belongs in that same shape.
+      The check itself was not wrong &mdash; it fired correctly, on callers who had
+      nothing to do with what it was checking. A fence with the wrong blast radius is
+      invisible in a single-session test, which is exactly how it passed: it was
+      validated from a shell that happened to have the variable exported.
+    </p>
+    <p>
       Values expand <code>${VAR}</code> against the dispatcher's environment, so a
-      credential can be referenced rather than written down. A literal value is still
+      credential can be referenced rather than written down. That is not a nicety here:
+      the host flight layer is mode <code>0644</code> while the credential this plan
+      needs lives in a <code>0640</code> group-restricted file, so writing the literal
+      would widen who can read a secret. The expansion form keeps it out of the file
+      entirely. A literal value is still
       permitted: the host flight layer is uncommitted user data by construction, so a
       literal there is no more exposed than the file the credential already lives in.
       The expansion exists so that the choice is available, not to forbid the simpler
@@ -466,8 +506,14 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260826T045020895396-n-backend-env-reuse-map" data-who="codex-a" data-when="2026-08-26T04:55:41Z">
     <div class="r-comment-body"><p>Reuse map: all four touch points have reusable mechanisms needing bounded extensions; shadow substrate already replays at base sha with controlled substitution; no existing symbol computes pairwise candidate-versus-incumbent rates</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260826T045918519289-n-backend-environment-map" data-who="codex-c" data-when="2026-08-26T05:10:13Z">
+    <div class="r-comment-body"><p>Backend environment map lands: layered resolution with per-leaf provenance, dispatcher reference expansion with a typed error naming the variable, merged over os.environ at the single spawn boundary, and excluded from the persisted agent record; schema regen byte-identical, full suite 2460 passed</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260826T045236576569-n-eval-robustness-audit" data-who="codex-b" data-when="2026-08-26T05:03:09Z">
     <div class="r-comment-body"><p>Eval audit over 1534 records / 12 mounts: 1 controlled shadow pair against a floor of 10 and a powered target of 161; gate is coordinator-asserted with 0 of 1534 records carrying a gate command, exit code or log; 11 weaknesses, 9 inflating</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260826T045931609067-n-failure-classification" data-who="codex-d" data-when="2026-08-26T05:11:12Z">
+    <div class="r-comment-body"><p>Closed six-class failure cause required on a failing gate and retained in the ledger; backfill reclassified all 89 historical failures as 17 work-rejected, 28 negative-result, 11 infrastructure, 10 pre-existing, 6 correct-refusal, 6 malformed-node and 11 unclassified empty outcomes; worker pass rate 1192/1209 = 98.6% versus pooled 93.1%; full suite 2457 passed</p></div>
 </div>
 </section>
 </main>
