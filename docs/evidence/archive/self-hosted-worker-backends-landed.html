@@ -369,19 +369,30 @@
 
     <h3 id="s4-ledger">Three of these results were destroyed while promotion reported success</h3>
     <p>
-      The three passing pairs were promoted with <code>crew complete</code>, each
-      returning <code>ok: true</code> with a fresh ledger version. <strong>None of the
-      three exists in any ledger</strong> &mdash; not in the working tree, not in any
-      commit, not in any worktree copy. Version numbers were consumed without records
-      being appended, and two promotions reported the same version. The surviving
-      evidence is the run directories, manifests, streams and the audited diffs, which is
-      why this record rather than the ledger carries the result.
+      Six pairs were promoted with <code>crew complete</code>, every call returning
+      <code>ok: true</code>. <strong>Three of the six do not exist in the run
+      ledger</strong> &mdash; absent from the working tree, from every commit, and from
+      every worktree copy, confirmed by run id against <code>data.runs</code>, which is
+      the only run key the file has. The three that persisted include both a pass and a
+      fail, so the loss does not track the verdict; the three that vanished were the
+      three promoted earliest and in quickest succession. The surviving evidence is the
+      run directories, manifests, streams and the diffs audited above, which is why this
+      record rather than the ledger carries the result.
     </p>
     <p>
-      The likely mechanism is a concurrent-promotion lost update while several sessions
-      wrote one ledger &mdash; the defect class the state-integrity work was meant to
-      close. It is recorded as an observation with its evidence rather than as a
-      diagnosis: confirming it needs a reproduction this plan does not own.
+      <strong>Two supports offered for this earlier do not hold, and are withdrawn
+      here.</strong> Consumed version numbers prove nothing: the counter increments on
+      any write to the file &mdash; holds, observes and pre-flights included &mdash; so
+      versions advancing faster than records is expected. And the claim that two
+      promotions reported the same version was not established: only one of the two
+      figures was ever actually read, the other having been truncated in the output. What
+      survives is the run-id lookup, which is sufficient on its own and is the whole of
+      the evidence.
+    </p>
+    <p>
+      A concurrent-promotion lost update remains the most plausible mechanism, several
+      sessions having written this ledger throughout, but that is a hypothesis and not a
+      finding. Confirming it needs a reproduction this plan does not own.
     </p>
 
     <h2 id="s5">&sect;5 &mdash; Verdict and adoption recommendation</h2>
