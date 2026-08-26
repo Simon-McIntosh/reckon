@@ -24,9 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="16">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/runs/r-20260826T045236576569-n-eval-robustness-audit/audit-metrics.json">
-<meta name="plan-impl" content="0.222">
+<meta name="plan-version" content="18">
+<meta name="plan-artifacts" content="docs/evidence/archive/self-hosted-worker-backends-landed.html,~/.config/reckon/crew/reports/self-hosted-backend-reuse-map.md,~/.config/reckon/crew/reports/shadow-eval-robustness.md,~/.config/reckon/crew/reports/failure-classification-backfill.md">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-commits" content="072112a,5dbf304,bc95a74,479d286,6ddb052,91ccc03,b490cf9">
 </head>
 <body>
   <main class="plan-doc">
@@ -547,14 +548,14 @@
       </p>
     <p class="r-dec-rat">Re-locked in the same session on evidence that changed the question, and stated rather than done quietly. Two things were measured after the first lock. The endpoint is keyed: no header, an empty bearer, a bearer of &#x27;no-auth&#x27; (the local wrapper&#x27;s own fallback) and a bearer of &#x27;anything&#x27; all return 401, so only the specific token the server was started with is accepted and a keyless path does not exist without restarting a five-day job and opening a cluster-reachable port. And the exposure asymmetry is real rather than theoretical: the host flight layer is mode 0644 while the credential lives in a 0640 group-restricted file, so the literal form this decision previously permitted would widen who can read a secret. That retires &#x27;literal permitted&#x27; as the default. Expansion from the dispatcher&#x27;s environment stays correct but carries an ergonomic cost that works against the project&#x27;s own principle of needing no key management: every fresh session, cron context and service unit must export the variable first or the backend is unavailable. A third form answers both -- a reference to a file whose own permissions guard the secret, read at the point of selection. The token never enters configuration and never needs exporting. Literal and variable forms remain accepted; the file form is what this plan uses and what the documentation should show first.</p>
     </div>
-<div class="r-dec" data-key="lane-on-qualification" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="lane-on-qualification" data-choice="read-only-roles-until-tier-enforced" data-by="reckon-cb, on five controlled pairs" data-when="2026-08-26T09:19:19+00:00">
     <p class="r-dec-q">If the candidate qualifies, does it enter the existing small-model lane gate or its own?</p>
     <p class="r-dec-ctx">The small-model lane&#x27;s eligibility rules were written around a metered backend: keep dispatches token-lean, never plan a wave that assumes the lane can absorb it. A local endpoint has no meter, so the budget half of those rules does not apply while the competence half still does. Deferred until §4 produces a verdict — there is nothing to route if it does not qualify.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="existing-lane">Existing lane, unchanged</button>
       <button class="r-opt" data-value="competence-only-lane">A lane carrying the competence rules without the budget rules</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Neither offered option, because the pairs answered a question the options did not anticipate. Capability is not the constraint: four of five passed and on two the candidate&#x27;s diff was better than the incumbent&#x27;s on the same node, once by keeping a test case the primary dropped and once by writing 12 lines where the primary wrote 29. Write-fence discipline is the constraint. It left its worktree on two of five pairs; once it recovered by removing its own stray file, once it did not and left a checkably false sentence in a file two other sessions were editing. Nothing in the harness prevents this on any backend -- both dialects launch with confinement disabled and the directory flag adds rather than restricts -- so the declared sandbox tier documents an intention. The incumbent has obeyed its prompt across more than 1,300 committed runs, which is why the gap was invisible until a less obedient worker was pointed at it. So the lane question is premature: route the candidate to investigation, review and reporting, where its capability is demonstrated and a stray write cannot reach a shared file, and revisit a write lane only once an out-of-scope write is refused rather than trusted. That fix belongs to the harness and benefits every backend.</p>
     </div>
 </section>
 
@@ -585,6 +586,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260826T045931609067-n-failure-classification" data-who="codex-d" data-when="2026-08-26T05:11:12Z">
     <div class="r-comment-body"><p>Closed six-class failure cause required on a failing gate and retained in the ledger; backfill reclassified all 89 historical failures as 17 work-rejected, 28 negative-result, 11 infrastructure, 10 pre-existing, 6 correct-refusal, 6 malformed-node and 11 unclassified empty outcomes; worker pass rate 1192/1209 = 98.6% versus pooled 93.1%; full suite 2457 passed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260826T084739553348-n-alias-meets-invariants" data-who="codex-a" data-when="2026-08-26T09:06:04Z">
+    <div class="r-comment-body"><p>Both invariants restored: fixture coverage measured over distinct launch translations so an alias inherits its target's stream with no duplicate fixture, and the routing prose carries six operational facts with no provider, model, env-var, path or hardware identifier; focused gate 2 failed/78 passed to 0 failed/80 passed; full-suite evidence outstanding by host contention, not by this change</p></div>
 </div>
 </section>
 </main>
