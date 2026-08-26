@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-26T10:42:12",
+  "updated": "2026-08-26T10:46:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -23898,9 +23898,257 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260826T051630977007-n-expand-at-selection",
+        "plan": "self-hosted-worker-backends",
+        "section": "\u00a72",
+        "node": "n-expand-at-selection",
+        "node_definition": {
+          "done_when": "A new test asserts that resolving a config in which one backend references an unset variable succeeds rather than raising, that reckon flight reports that backend carrying its reference unexpanded together with an availability finding in the same shape as an absent command, and that a different backend in the same config resolves normally; a further test asserts the typed error naming both the variable and the backend key path still raises when a launch plan is built for the backend holding the unresolved reference, so the check survives at the point of selection; scripts/regen_flight_schema.py leaves both generated artifacts byte-identical to the committed copies; and the full suite reports no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "An unresolved environment reference in a backend the call does not select must not fail whole-config resolution",
+          "id": "n-expand-at-selection",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T051630977007-n-expand-at-selection/manifest.md",
+          "plan": "self-hosted-worker-backends",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "reckon/flight.py",
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "reckon/_backends.py",
+            "tests/test_backend_environment.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T05:16:33Z",
+        "completed_at": "2026-08-26T05:24:24Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 471,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 471,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "6fb483f80c7883c3138112494be521b42777056a",
+        "commits": [
+          "5dbf304"
+        ],
+        "changed_lines": {
+          "added": 132,
+          "removed": 44,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T051630977007-n-expand-at-selection/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038ea-cf6c-7593-a14e-22bef4824038",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4871168,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4985091,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 13144,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2934
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T055146762576-ds4-demo-probe",
+        "plan": "flight-control-config",
+        "section": "\u00a71",
+        "node": "ds4-demo-probe",
+        "node_definition": {
+          "done_when": "worker writes ANTHROPIC_MODEL and hostname to report; file contains >=4 non-empty key=value lines",
+          "estimated_hours": null,
+          "goal": "Probe that the worktree worker runs on DSv4 via local GPU",
+          "id": "ds4-demo-probe",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T055146762576-ds4-demo-probe/manifest.md",
+          "plan": "flight-control-config",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a71",
+          "spec_level": "",
+          "time_budget": "4m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/ds4-demo-probe.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "",
+        "member": "session-a75c47b7f404d8983772",
+        "backend": "clive",
+        "agent": {
+          "backend": "clive",
+          "effort": null,
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-08-26T05:51:49Z",
+        "completed_at": "2026-08-26T05:55:52.474Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 228,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 243,
+        "stalled": false,
+        "time_budget": "4m",
+        "base_sha": "3714e3a8c376e34874eaf904ac4df86c6533119e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T055146762576-ds4-demo-probe/manifest.md",
+        "scope_changed": false,
+        "session_id": "6622ec09-216e-4563-ae2a-a45e56284211",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 929049,
+            "input_tokens_cumulative": 929049,
+            "output_tokens": 9041,
+            "output_tokens_cumulative": 9041,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 4.871270000000001,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 4.871270000000001
+        },
+        "lineage": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 829,
+              "budget_seconds": 1500,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 2329,
+              "log_age_seconds": 1698,
+              "log_fresh": false,
+              "manifest_commits": [
+                "388a7143d8e630c0435346b4b4491c4d4522ff55"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T051256787498-review-resource/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260826T051256787498-review-resource --gate <verdict> --commit 388a7143d8e630c0435346b4b4491c4d4522ff55",
+              "node": "review-resource",
+              "phase": "starting",
+              "plan": "sprint-review-persistence",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T051256787498-review-resource",
+              "terminal_age_seconds": 1719,
+              "terminal_at": "2026-08-26T05:23:09Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/c00d46c3-b799-42ab-b0ad-0f6437397106/review-resource"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 915,
+              "budget_seconds": 1200,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 2115,
+              "log_age_seconds": 1644,
+              "log_fresh": false,
+              "manifest_commits": [
+                "5dbf304"
+              ],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T051630977007-n-expand-at-selection/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260826T051630977007-n-expand-at-selection --gate <verdict> --commit 5dbf304",
+              "node": "n-expand-at-selection",
+              "phase": "starting",
+              "plan": "self-hosted-worker-backends",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260826T051630977007-n-expand-at-selection",
+              "terminal_age_seconds": 1658,
+              "terminal_at": "2026-08-26T05:24:10Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shwb-impl/n-expand-at-selection"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 418
+    "_version": 420
   }
 }
