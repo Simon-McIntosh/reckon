@@ -6,6 +6,7 @@ import http.server
 import json
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -13,7 +14,7 @@ import tempfile
 import threading
 import time
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import URLError
@@ -154,6 +155,23 @@ try {
   }
 }
 """
+
+
+def _terminate_process_group(process: subprocess.Popen[str]) -> None:
+    """Reap a timed-out probe and every process it started.
+
+    The group is signalled rather than the leader, because the browser is a
+    child the driver spawned and outlives it otherwise. SIGKILL rather than
+    SIGTERM: the driver is already past its deadline, and a browser asked to
+    shut down politely can take longer than the timeout it just missed.
+    """
+    try:
+        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        process.kill()
+    finally:
+        with suppress(subprocess.TimeoutExpired):
+            process.communicate(timeout=15)
 
 
 @contextmanager
@@ -366,7 +384,16 @@ def _evaluate_browser_url(
         environment = dict(os.environ)
         environment["RECKON_BROWSER_EXPRESSION"] = expression
         environment["RECKON_BROWSER_READY_EXPRESSION"] = ready_expression
-        result = subprocess.run(
+        # Run the driver in its own process group so a timeout can reap the
+        # browser with it. `subprocess.run(timeout=...)` kills only the process
+        # it started, and the driver kills the browser from a JavaScript
+        # `finally` that a killed process never reaches -- so every timed-out
+        # probe used to leave a full browser tree alive. Those survivors then
+        # hold the profile directory that cleanup is waiting to remove, and load
+        # the machine enough to time out the next probe: 30 timeouts in one run
+        # left 410 browser processes behind and a load average above 10, which
+        # is a suite that makes itself slower the longer it runs.
+        probe = subprocess.Popen(
             [
                 "node",
                 "--input-type=module",
@@ -380,10 +407,18 @@ def _evaluate_browser_url(
             ],
             cwd=ROOT,
             env=environment,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=75,
-            check=False,
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = probe.communicate(timeout=75)
+        except subprocess.TimeoutExpired:
+            _terminate_process_group(probe)
+            raise
+        result = subprocess.CompletedProcess(
+            probe.args, probe.returncode, stdout=stdout, stderr=stderr
         )
     if result.returncode != 0:
         raise AssertionError(result.stderr or result.stdout)
