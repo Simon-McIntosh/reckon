@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -459,6 +459,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260826-ready-set-is-section-granular" data-who="reckon-ship" data-when="2026-08-26T14:25:00+00:00">
     <div class="r-comment-body"><p><strong>The ready set this section renders became finer-grained twenty minutes before the section was scoped, so build against the new shape rather than the one the plan text assumes.</strong> Merged at <code>1790e61</code>: an unresolved staged prerequisite now yields <code>section_readiness</code> carrying <code>ready_sections</code> and <code>blocked_sections</code> <em>while the containing plan stays in <code>ready_now</code></em>. Target-section completion derives from gate verdicts with no new persisted field, and a dependency ref whose anchor does not exist emits <code>missing-dependency-section</code> rather than passing silently.</p><p>Two consequences for this section, and the first inverts a natural assumption. <strong>A plan appearing in <code>ready_now</code> no longer means all of it is runnable</strong> — it can be ready with some sections blocked, so a ready-set view keyed on plan-level readiness alone will offer work that is in fact fenced. Render section granularity where the payload supplies it. And <strong>a graph target now behaves the same way</strong>: section-only edges were being ignored by graph-target readiness and critical-path blocking while those targets stayed in closure membership, which is fixed in the same merge — so a reader of either path sees one consistent answer.</p><p>This does not change the section's own contract. The ready set is still concurrent lanes rather than a sequence, still carries a per-row reason, and still shows no rank column.</p></div>
+</div>
+<div class="r-comment" data-section="s0" data-id="c-run-r-20260826T141430870697-n-reuse-map" data-who="codex-a" data-when="2026-08-26T14:19:10Z">
+    <div class="r-comment-body"><p>Reuse map delivered and audited directly: 6/6 plan sections, 52 candidate verdicts (22 reuse, 19 extend, 11 unfit-with-reason), 3 served endpoint families plus the /_ui asset boundary, and the explicit finding that reckon build copies JSX unchanged rather than precompiling it. Gate recorded not-run because the worker&#x27;s report-contract validator kept no log path, so no gate evidence exists to attach; the artifact itself demonstrates the done-when and was read in full before promotion. Highest-value finding exceeded the brief: no served roadmap endpoint exposes ready_now, so the ready-lane section cannot be built until a composed read is exposed.</p></div>
 </div>
 </section>
 </main>
