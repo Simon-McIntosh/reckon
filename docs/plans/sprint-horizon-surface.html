@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080">
 <meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
 <meta name="plan-impl" content="0.43">
@@ -445,12 +445,25 @@
     profile directories behind — 1.3 GB of them had accumulated under the per-user runtime
     directory, which is a scarce shared allocation.</p>
 
-    <p><strong>Done when:</strong> a probe run with the inotify ceiling deliberately exhausted
-    fails in a few seconds with a message naming the instance count and the limit, and a test
-    asserts that message rather than asserting a timeout; the same probe still passes
-    unchanged on a healthy host; and a completed run leaves no profile directory behind. The
-    negative case is the point — a gate that cannot run must be loud about the reason, because
-    the alternative already cost four nodes and four hours.</p>
+    <p><strong>There are three start failures, not one, and the investigation found the third.</strong>
+    A browser can fail to start because the per-user inotify ceiling is full; because the
+    sandbox denies socket creation outright, which returns <code>EPERM</code> on
+    <code>AF_INET</code> in about 0.14 s with a crashpad <code>setsockopt</code> error and is
+    instantly distinguishable; or it can start cleanly and then never complete a navigation,
+    which is the unresolved host fault. Each needs a different response — wait and retry, use a
+    different worker role, or stop and report — and today all three arrive as the same bare
+    timeout.</p>
+
+    <p><strong>Done when:</strong> the harness classifies a failed probe into
+    <em>ceiling-exhausted</em>, <em>sandbox-denied</em> or <em>navigation-never-completed</em>
+    and reports the browser's own stderr with the inotify count against the limit; tests assert
+    each classification from an injected condition rather than by exhausting the real host,
+    since exhausting a shared ceiling to prove a message would inflict the outage this section
+    exists to prevent; a preflight refuses to start a probe at all when an
+    <code>AF_INET</code> socket cannot be created, naming the role as the likely cause; and a
+    completed run leaves no profile directory behind. The negative case is the point — a gate
+    that cannot run must be loud about the reason, because the alternative cost four nodes,
+    two sessions and four hours, with every one of them independently blaming its own code.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
