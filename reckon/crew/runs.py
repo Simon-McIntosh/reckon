@@ -145,27 +145,9 @@ def _descriptor_kind(mode: int) -> str:
     return "unknown"
 
 
-def delivery_mode(descriptor: int = 1, *, hops: int = 4) -> str:
-    """Classify what will actually consume a follower's lines.
-
-    A follower is only a wake-up if something reads its lines as they are
-    written. A socket or terminal has a reader doing exactly that; a regular
-    file is read by whoever opens it later, which for a command that never
-    exits is nobody.
-
-    A pipe answers neither way by itself, and that is the case that matters:
-    a filter between the follower and a file looks like a live consumer at the
-    first hop while the chain still ends in a file nothing reads. So the pipe
-    is followed to the process on its other end and the question is asked
-    again of *that* process's output, up to ``hops`` links. The verdict belongs
-    to the end of the chain, because that is where the lines stop.
-    """
-    try:
-        info = os.fstat(descriptor)
-    except OSError:
-        return "unknown"
+def _trace_delivery(info: os.stat_result, *, pid: int, hops: int) -> str:
+    """Follow one output descriptor to whatever finally consumes its lines."""
     seen: set[int] = set()
-    pid = os.getpid()
     for _hop in range(hops):
         kind = _descriptor_kind(info.st_mode)
         if kind != "pipe":
@@ -187,6 +169,43 @@ def delivery_mode(descriptor: int = 1, *, hops: int = 4) -> str:
             # reader: refusing on an unknown would refuse the ordinary case.
             return "stream"
     return "stream"
+
+
+def delivery_mode(descriptor: int = 1, *, hops: int = 4) -> str:
+    """Classify what will actually consume this process's lines.
+
+    A follower is only a wake-up if something reads its lines as they are
+    written. A socket or terminal has a reader doing exactly that; a regular
+    file is read by whoever opens it later, which for a command that never
+    exits is nobody.
+
+    A pipe answers neither way by itself, and that is the case that matters: a
+    filter between the follower and a file looks like a live consumer at the
+    first hop while the chain still ends in a file nothing reads. So the pipe
+    is followed to the process on its other end and the question is asked
+    again of *that* process's output. The verdict belongs to the end of the
+    chain, because that is where the lines stop.
+    """
+    try:
+        info = os.fstat(descriptor)
+    except OSError:
+        return "unknown"
+    return _trace_delivery(info, pid=os.getpid(), hops=hops)
+
+
+def delivery_mode_of(pid: int, *, hops: int = 4) -> str | None:
+    """Classify what consumes another process's output, or None if unreadable.
+
+    Read live rather than trusted from the registration, so a follower is
+    judged by where its lines go *now*. A recorded verdict is a snapshot: it
+    survives the consumer at the end of the chain going away, and it answers
+    with whatever the check understood on the day it was written.
+    """
+    try:
+        info = os.stat(f"/proc/{pid}/fd/1")
+    except OSError:
+        return None
+    return _trace_delivery(info, pid=pid, hops=hops)
 
 
 # Descriptor kinds whose reader sees a line when it is written. Anything else
@@ -1173,13 +1192,27 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
             parent_pid = 0
         consumer_alive = parent_pid > 1 and process_alive(parent_pid) is True
 
-    delivery = str(record.get("delivery") or "unknown")
+    # Prefer what the descriptor says now over what registration recorded: a
+    # recorded verdict survives its consumer going away, and answers with
+    # whatever the check understood when it was written. The one reader that
+    # keeps the declaration is the registering process itself, where the
+    # declaration is a statement about its own output and deceives nobody
+    # else; a dispatch guard is always a different process, which is the case
+    # this measures.
+    observed = (
+        delivery_mode_of(pid)
+        if isinstance(pid, int) and running and pid != os.getpid()
+        else None
+    )
+    delivery = observed or str(record.get("delivery") or "unknown")
     return {
         "registered": registered,
         "live": bool(
             registered and running and consumer_alive and delivery in DELIVERING_MODES
         ),
         "delivery": delivery,
+        "delivery_recorded": str(record.get("delivery") or "unknown"),
+        "delivery_observed": observed,
         "consumer_alive": consumer_alive,
         "follower": record,
     }

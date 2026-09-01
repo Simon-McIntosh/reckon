@@ -418,3 +418,48 @@ def test_a_filter_between_the_follower_and_a_file_is_still_a_file(
     assert (
         _delivery_under("{{ {probe} | grep -E . | cat; }} > {out}", tmp_path) == "file"
     )
+
+
+def test_a_registration_is_judged_by_where_its_lines_land_now(home, tmp_path) -> None:
+    """A recorded verdict is a snapshot; the guard reads the descriptor instead.
+
+    Two ways a snapshot goes stale, and the second is why this is measured from
+    outside: the consumer at the end of the chain can go away after
+    registration, and a registration written before the check understood pipe
+    chains claims a delivery it never had. So the follower here declares
+    `stream` while its lines go to a file, and the reader must disagree with it.
+    """
+    holder = tmp_path / "holder.py"
+    holder.write_text(
+        "import sys, time\n"
+        f"sys.path.insert(0, {str(Path(runs.__file__).parents[2])!r})\n"
+        "from reckon.crew.runs import follower_claim\n"
+        'with follower_claim("proj", "declared", delivery="stream"):\n'
+        "    print('registered', flush=True)\n"
+        "    time.sleep(30)\n"
+    )
+    log = tmp_path / "holder.out"
+    with log.open("w") as sink:
+        process = subprocess.Popen(
+            [sys.executable, str(holder)],
+            stdout=sink,
+            stderr=subprocess.DEVNULL,
+            env={**os.environ, "RECKON_HOME": str(home)},
+        )
+    try:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            state = runs.follower_state("proj", "declared")
+            if state["registered"]:
+                break
+            time.sleep(0.02)
+        assert state["registered"] is True, "the follower never registered"
+        assert state["delivery_recorded"] == "stream", "it declared a stream"
+        assert state["delivery_observed"] == "file", "its lines end in a file"
+        assert state["delivery"] == "file", "measurement outranks the declaration"
+        assert state["live"] is False, "so it is not delivery"
+    finally:
+        process.terminate()
+        process.wait(timeout=10)
+
+    assert runs.follower_state("proj", "declared")["live"] is False
