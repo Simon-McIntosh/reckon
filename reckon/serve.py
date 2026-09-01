@@ -42,7 +42,9 @@ import logging
 import mimetypes
 import os
 import re
+import select
 import socket
+import struct
 import subprocess
 import tempfile
 import threading
@@ -64,6 +66,7 @@ from reckon.lifecycle import (
 from reckon.resources import (
     ROOT_TYPES,
     ResourceCollision,
+    composed_provenance,
     resource_map,
     resolve_resource,
     resolve_route,
@@ -79,6 +82,83 @@ _MOUNTS_FILE: Path | None = None
 _STATE_ROOT: Path | None = None
 _HOME_HTML: Path | None = None
 _SHARED_ROOT: Path | None = None
+
+_INOTIFY_EVENT = struct.Struct("iIII")
+_INOTIFY_CHANGE_MASK = 0x00000FCC
+_INOTIFY_DIRECTORY = 0x40000000
+
+
+class _ProjectChangeWatch:
+    """Block on kernel filesystem notifications for one mounted docs tree."""
+
+    def __init__(self, root: Path) -> None:
+        import ctypes
+
+        self.root = root.resolve()
+        self._libc = ctypes.CDLL(None, use_errno=True)
+        initializer = getattr(self._libc, "inotify_init1", None)
+        add_watch = getattr(self._libc, "inotify_add_watch", None)
+        if initializer is None or add_watch is None:
+            raise OSError("filesystem change notifications are unavailable")
+        self.fd = initializer(os.O_CLOEXEC)
+        if self.fd < 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
+        self._add_watch = add_watch
+        self._directories: dict[int, Path] = {}
+        try:
+            self._watch_tree(self.root)
+        except Exception:
+            os.close(self.fd)
+            raise
+
+    def _watch_tree(self, root: Path) -> None:
+        for directory, subdirectories, _files in os.walk(root):
+            self._watch(Path(directory))
+            subdirectories[:] = [
+                name for name in subdirectories if name not in {".git", "node_modules"}
+            ]
+
+    def _watch(self, directory: Path) -> None:
+        encoded = os.fsencode(directory)
+        descriptor = self._add_watch(self.fd, encoded, _INOTIFY_CHANGE_MASK)
+        if descriptor < 0:
+            import ctypes
+
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error), str(directory))
+        self._directories[descriptor] = directory
+
+    def wait(self, connection: socket.socket) -> bool:
+        """Return false when the browser disconnects, true on a tree change."""
+        readable, _, _ = select.select([self.fd, connection], [], [])
+        if connection in readable:
+            try:
+                if not connection.recv(1, socket.MSG_PEEK):
+                    return False
+            except (ConnectionError, OSError):
+                return False
+        if self.fd not in readable:
+            return False
+        events = os.read(self.fd, 64 * 1024)
+        offset = 0
+        while offset + _INOTIFY_EVENT.size <= len(events):
+            descriptor, mask, _cookie, name_length = _INOTIFY_EVENT.unpack_from(
+                events, offset
+            )
+            offset += _INOTIFY_EVENT.size
+            name = events[offset : offset + name_length].rstrip(b"\0")
+            offset += name_length
+            if mask & _INOTIFY_DIRECTORY and name:
+                candidate = self._directories.get(descriptor, self.root) / os.fsdecode(
+                    name
+                )
+                if candidate.is_dir():
+                    self._watch_tree(candidate)
+        return True
+
+    def close(self) -> None:
+        os.close(self.fd)
 
 
 def _resolve_paths(mounts_file: Path | None = None) -> None:
@@ -935,6 +1015,11 @@ def _cache_discovery_result(
     return result
 
 
+def _attach_discovery_provenance(result: dict, docs_dir: Path) -> dict:
+    result["provenance"] = composed_provenance(docs_dir.parent, result)
+    return result
+
+
 def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dict:
     """Return {inventory, sprints, milestones} by scanning HTML doc pages.
 
@@ -1072,7 +1157,13 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         }
         _attach_composed_review(result, docs_dir, project)
         _attach_ready_set(result, project)
-        return _cache_discovery_result(cache_key, sig, project, state_root, result)
+        return _cache_discovery_result(
+            cache_key,
+            sig,
+            project,
+            state_root,
+            _attach_discovery_provenance(result, docs_dir),
+        )
 
     # ── Legacy project state ───────────────────────────────────────────────
     # Marker absence/staging means the JSON index is the only canonical store.
@@ -1127,7 +1218,13 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         "source_format": "legacy-index",
     }
     _attach_ready_set(result, project)
-    return _cache_discovery_result(cache_key, sig, project, state_root, result)
+    return _cache_discovery_result(
+        cache_key,
+        sig,
+        project,
+        state_root,
+        _attach_discovery_provenance(result, docs_dir),
+    )
 
 
 def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
@@ -1437,6 +1534,44 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
+
+    def _send_project_changes(self, project: str, docs_dir: Path) -> None:
+        try:
+            watch = _ProjectChangeWatch(docs_dir)
+        except OSError as exc:
+            self._send_json(
+                HTTPStatus.NOT_IMPLEMENTED,
+                {"error": "change_notifications_unavailable", "detail": str(exc)},
+            )
+            return
+
+        try:
+            initial = discover_plans(docs_dir, project, _STATE_ROOT)
+            digest = initial.get("provenance", {}).get("content_digest", "")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            self._write_project_event("ready", digest)
+            while watch.wait(self.connection):
+                _DISC_CACHE.pop((project, str(docs_dir.resolve())), None)
+                current = discover_plans(docs_dir, project, _STATE_ROOT)
+                next_digest = current.get("provenance", {}).get("content_digest", "")
+                if next_digest == digest:
+                    continue
+                digest = next_digest
+                self._write_project_event("change", digest)
+        except (BrokenPipeError, ConnectionResetError):
+            return
+        finally:
+            watch.close()
+
+    def _write_project_event(self, event: str, content_digest: str) -> None:
+        payload = json.dumps({"content_digest": content_digest}, separators=(",", ":"))
+        self.wfile.write(f"event: {event}\ndata: {payload}\n\n".encode())
+        self.wfile.flush()
 
     def do_GET(self) -> None:  # noqa: N802
         path = unquote(urlsplit(self.path).path)
@@ -1801,6 +1936,18 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
             self._send_json(HTTPStatus.OK, result)
+            return
+
+        if path.startswith("/_changes/"):
+            project = path[len("/_changes/") :].strip("/")
+            if not project or not SAFE_NAME.match(project):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
+                return
+            change_mounts = load_mounts()
+            if project not in change_mounts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            self._send_project_changes(project, Path(change_mounts[project]))
             return
 
         parts = path.lstrip("/").split("/", 1)
