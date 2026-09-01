@@ -10,8 +10,7 @@ from bs4 import BeautifulSoup
 
 from reckon import _plan_html
 from reckon._schema import PlanState
-from reckon.doccheck import audit_html, audit_links, derived_plan_age
-
+from reckon.doccheck import audit_html, audit_links, derived_plan_age, run
 
 ROOT = Path(__file__).parents[1]
 CANONICAL_EXEMPLAR = ROOT / "docs" / "_exemplar-plan.html"
@@ -205,6 +204,36 @@ def test_dangling_link_slug_not_found(tmp_path):
     assert bad in result
     codes = [f.code for f in result[bad]]
     assert "dangling-link" in codes
+
+
+def test_check_links_audits_nested_corpus_without_write_validation(
+    tmp_path, monkeypatch, capsys
+):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _write_plan(docs_dir, "root", relative="plans/root.html")
+    _write_plan(
+        docs_dir,
+        "09-llm-compose",
+        body='<a href="/proj/research/standard-names/missing.html">missing</a>',
+        artifact_type="research",
+        relative="research/standard-names/09-llm-compose.html",
+    )
+    paths = sorted(docs_dir.rglob("*.html"))
+
+    def reject_write_validation(self):
+        raise AssertionError("read-only link audit invoked write validation")
+
+    monkeypatch.setattr(
+        "reckon._schema.ResourceIdentity.validate_for_write",
+        reject_write_validation,
+    )
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = run([str(path) for path in paths], project="proj", check_links=True)
+
+    assert exit_code == 0
+    assert "dangling-link" in capsys.readouterr().out
 
 
 def test_typed_links_resolve_duplicate_leaf_to_correct_artifact(tmp_path):
