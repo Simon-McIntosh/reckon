@@ -274,7 +274,9 @@ def _shadow_patch_retained(record: Mapping[str, Any]) -> bool:
     run_id = str(record.get("run_id") or "")
     artifact = Path(str(record.get("shadow_patch") or ""))
     expected = runs_dir() / run_id / "shadow.patch"
-    return bool(run_id) and artifact.resolve() == expected.resolve() and artifact.is_file()
+    return (
+        bool(run_id) and artifact.resolve() == expected.resolve() and artifact.is_file()
+    )
 
 
 def _shadow_worktree_records(
@@ -671,9 +673,20 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
         name for name, docs in mounts.items() if docs.parent.resolve() == work_repo
     )
     if not work_projects:
+        # Two remedies, because registering is the wrong one for a repository
+        # that should not carry Reckon's UI at all — a data-only catalog that is
+        # pull-requested to another organisation, say. A refusal naming only the
+        # remedy that does not apply pushes the caller out of the pattern
+        # entirely, which is how one hand-rolled delegation left an uncommitted
+        # edit in a shared repository with nothing recording who made it.
         raise CrewError(
-            f"repository {work_repo} is outside the resolved mount authority set; "
-            "register its project with `reckon sync` before dispatching writes"
+            f"repository {work_repo} is outside the resolved mount authority set. "
+            "Either register its project with `reckon sync` before dispatching "
+            "writes, or — when carrying Reckon's scaffolding there is "
+            "inappropriate — hand-compose the delegation per reckon-ship "
+            "references/sprint-orchestration.md §6, which keeps the worktree, "
+            "write fence, manifest and ledger record that a bare subagent has "
+            "none of"
         )
     return {
         "plan": {

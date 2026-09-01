@@ -351,6 +351,28 @@ configured backend needs none of it typed out. Compose it by hand only for a
 delegation reckon did not prepare; when both exist, they must say the same thing,
 and the composed prompt is the copy to change.
 
+**A hand-composed sandbox must make three things writable, and two of them are
+outside the worktree.** A detached worktree's git index is not in the worktree:
+it lives at `<main-repo>/.git/worktrees/<node>/index`, so a tier that permits
+only the workspace cannot create `index.lock` and the worker dies at `git
+commit` having already done the work. The manifest path is outside it too. So
+grant, explicitly:
+
+1. the assigned worktree;
+2. the **main repository root** — this is what covers the worktree's git
+   directory, and it is what `reckon crew dispatch` itself passes as the
+   sandbox's repository root rather than the worktree;
+3. the directory holding the manifest path.
+
+Measured: a hand-composed dispatch at the `workspace-write` tier completed a
+node, self-verified it, then failed with `fatal: Unable to create
+'…/index.lock': Read-only file system` and delivered no commit — and because the
+mandated manifest path was unreachable for the same reason, it wrote a fallback
+to `/tmp` instead of failing loudly. A delivery contract that degrades quietly
+is worse than one that refuses, so check the grants before dispatching rather
+than reading a tier's name as a description of the job. Per-backend flag
+translation is `worker-backends.md`'s subject, not this file's.
+
 Embed this contract in every delegated prompt:
 
 ```text
