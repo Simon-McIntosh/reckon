@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:53:54",
+  "updated": "2026-09-01T20:58:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -31080,9 +31080,111 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T185000851180-n-pages-publication-guard",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a76",
+        "node": "n-pages-publication-guard",
+        "node_definition": {
+          "done_when": "The existing validate job in .github/workflows/reckon-pages.yml is unchanged and a deploy job is added that runs only on main and only when this repository's own tree carries an explicit publication declaration, with pages write and id-token write permissions scoped to that job alone; a test proves the guard refuses a repository whose declaration is absent even when its metadata reports isPrivate false and isFork true, which is the measured Simon-McIntosh/imas-codex case, and admits one whose declaration is present, so 2 cases assert both directions; a test proves the deployed build renders from the same JSX and CSS sources as the served instance rather than a divergent second path, by comparing the built asset set against docs/ui and docs/_shared with 0 files differing; reckon's own declaration is added since the locked decision names its planning state as the example; the workflow file parses under a YAML load with exit 0; and the manifest states explicitly whether GitHub Pages is enabled in repository settings, because the deploy is inert until it is and that toggle is not ours to set",
+          "estimated_hours": null,
+          "goal": "The already-validated static build gains a deploy job whose publication guard is a per-repository declaration in the repository's own tree, never a central predicate",
+          "id": "n-pages-publication-guard",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185000851180-n-pages-publication-guard/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            ".github/workflows/reckon-pages.yml",
+            "reckon/pages.py",
+            "tests/test_pages_publication_guard.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-tags",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:50:04Z",
+        "completed_at": "2026-09-01T18:57:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 420,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 420,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "da462439472c7d89ab199858942cd3b85df7037d",
+        "commits": [
+          "9e408dbb719cfa0260441b528e440c9f8c7d7371"
+        ],
+        "changed_lines": {
+          "added": 160,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_pages.py tests/test_build.py tests/test_pages_publication_guard.py, a PyYAML safe_load of the workflow, and an authenticated Pages settings read",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185000851180-n-pages-publication-guard/pages-tests.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185000851180-n-pages-publication-guard/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e4e-99a7-7280-9b97-ef1e8bf0b676",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3452928,
+            "cached_input_tokens_cumulative": 3452928,
+            "input_tokens": 3602406,
+            "input_tokens_cumulative": 3602406,
+            "output_tokens": 14755,
+            "output_tokens_cumulative": 14755,
+            "reasoning_output_tokens": 5039,
+            "reasoning_output_tokens_cumulative": 5039
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 511
+    "_version": 512
   }
 }
