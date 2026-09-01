@@ -1496,12 +1496,36 @@ window.STATE_READY.then(
     return json.loads(result.stdout)
 
 
-def _render_project_state_load_panel(load: dict) -> dict:
-    shell = Path("docs/ui/shell.jsx").resolve()
-    source = shell.read_text(encoding="utf-8")
-    start = source.index("function ProjectStateLoadPanel")
-    end = source.index("\nfunction ReadyGate", start)
-    component = source[start:end]
+def _authored_spa_sources() -> tuple[Path, ...]:
+    root = Path(__file__).resolve().parents[1]
+    index = (root / "docs/index.html").read_text(encoding="utf-8")
+    sources = []
+    for reference in re.findall(r'<script[^>]+src="(/_ui/[^"]+\.js)"', index):
+        source = root / "docs/ui" / reference.removeprefix("/_ui/")
+        if not source.is_file():
+            source = source.with_suffix(".jsx")
+        assert source.is_file(), f"missing authored source for {reference}"
+        sources.append(source)
+    return tuple(sources)
+
+
+def _render_project_state_load_panel(
+    load: dict, mutation: tuple[str, str] | None = None
+) -> dict:
+    components = []
+    for source_path in _authored_spa_sources():
+        source = source_path.read_text(encoding="utf-8")
+        if "function ProjectStateLoadPanel" not in source:
+            continue
+        start = source.index("function ProjectStateLoadPanel")
+        end = source.index("\nfunction ReadyGate", start)
+        components.append(source[start:end])
+    assert len(components) == 1
+    component = components[0]
+    if mutation:
+        mutated = component.replace(mutation[0], mutation[1], 1)
+        assert mutated != component
+        component = mutated
     script = f"""
 const React = {{
   createElement: (type, props, ...children) => ({{
@@ -1528,6 +1552,16 @@ console.log(JSON.stringify({{role: tree.props.role, text: textContent(tree)}}));
     return json.loads(result.stdout)
 
 
+def _assert_project_state_failure_panel(pending: dict, failed: dict) -> None:
+    assert pending["role"] == "status"
+    assert "Loading plan state" in pending["text"]
+    assert "3s elapsed" in pending["text"]
+    assert failed["role"] == "alert"
+    assert "/_discover/sample" in failed["text"]
+    assert "HTTP 503" in failed["text"]
+    assert "Loading plan state" not in failed["text"]
+
+
 def test_spa_static_projection_allows_explicit_discovery_not_found():
     result = _run_state_loader(404)
     assert result == {"resolved": True, "inventory": ["alpha"]}
@@ -1545,13 +1579,13 @@ def test_spa_discovery_failure_panel_replaces_pending_status():
     pending = _render_project_state_load_panel(result["pending_view"])
     failed = _render_project_state_load_panel(result["error_view"])
 
-    assert pending["role"] == "status"
-    assert "Loading plan state" in pending["text"]
-    assert "3s elapsed" in pending["text"]
-    assert failed["role"] == "alert"
-    assert "/_discover/sample" in failed["text"]
-    assert "HTTP 503" in failed["text"]
-    assert "Loading plan state" not in failed["text"]
+    _assert_project_state_failure_panel(pending, failed)
+
+    muted_failure = _render_project_state_load_panel(
+        result["error_view"], ('{ role: "alert"', '{ role: "status"')
+    )
+    with pytest.raises(AssertionError):
+        _assert_project_state_failure_panel(pending, muted_failure)
 
 
 def test_a_superseded_aggregate_says_so_in_the_file(tmp_path) -> None:

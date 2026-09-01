@@ -151,6 +151,22 @@ def _loaded_spa_modules(html: str) -> tuple[str, ...]:
     )
 
 
+def _authored_spa_source(module: str) -> Path:
+    relative = Path(*Path(module).parts[1:])
+    source = REPO_ROOT / "docs" / "ui" / relative
+    if source.is_file():
+        return source
+    jsx_source = source.with_suffix(".jsx")
+    assert jsx_source.is_file(), f"missing authored source for {module}"
+    return jsx_source
+
+
+def _assert_spa_module_lists_match(
+    loaded: dict[str, tuple[str, ...]], expected: tuple[str, ...]
+) -> None:
+    assert loaded == dict.fromkeys(loaded, expected)
+
+
 def _loaded_stylesheets(html: str) -> tuple[str, ...]:
     return tuple(
         reference.lstrip("/")
@@ -293,20 +309,6 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
     )
     assert sync_result.exit_code == 0, sync_result.output
 
-    expected_modules = (
-        "_ui/state-loader.js",
-        "_ui/glyphs.js",
-        "_ui/_shared.js",
-        "_ui/prompts.js",
-        "_ui/ui.js",
-        "_ui/bits.js",
-        "_ui/decision.js",
-        "_ui/plan.js",
-        "_ui/sprint.js",
-        "_ui/graph.js",
-        "_ui/crew.js",
-        "_ui/shell.js",
-    )
     entry_points = {
         "checked-in": (REPO_ROOT / "docs" / "index.html").read_text(),
         "served": serve._render_spa_html("fixture"),
@@ -314,14 +316,21 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
         "built": (docs_dir / "index.html").read_text(),
     }
     loaded = {name: _loaded_spa_modules(html) for name, html in entry_points.items()}
+    expected_modules = loaded["checked-in"]
 
-    assert loaded == {name: expected_modules for name in entry_points}
+    assert len(entry_points) == 4
+    _assert_spa_module_lists_match(loaded, expected_modules)
+    mutated = {**loaded, "served": loaded["served"][:-1]}
+    with pytest.raises(AssertionError):
+        _assert_spa_module_lists_match(mutated, expected_modules)
     assert all("_ui/cockpit.js" not in modules for modules in loaded.values())
     assert not (REPO_ROOT / "docs" / "ui" / "cockpit.jsx").exists()
     assert not (docs_dir / "_ui" / "cockpit.jsx").exists()
     assert all((docs_dir / module).is_file() for module in expected_modules)
-    shell = (REPO_ROOT / "docs" / "ui" / "shell.jsx").read_text()
-    assert shell.count("function CockpitBody(") == 1
+    authored_sources = "\n".join(
+        _authored_spa_source(module).read_text() for module in expected_modules
+    )
+    assert authored_sources.count("function CockpitBody(") == 1
 
 
 def test_spa_entry_points_use_local_runtime_without_browser_transforms(
@@ -780,11 +789,12 @@ def test_build_rejects_non_directory_asset_destination(tmp_path, destination):
     assert f"{destination} exists but is not a directory" in result.output
 
 
-def test_build_fails_loudly_when_packaged_and_source_assets_are_missing(
-    tmp_path, monkeypatch
-):
+def test_build_fails_loudly_when_packaged_index_is_missing(tmp_path, monkeypatch):
     fake_package = tmp_path / "installed" / "reckon"
     fake_package.mkdir(parents=True)
+    packaged_assets = fake_package / "_assets"
+    shutil.copytree(REPO_ROOT / "docs/ui", packaged_assets / "ui")
+    shutil.copytree(REPO_ROOT / "docs/_shared", packaged_assets / "_shared")
     monkeypatch.setattr(cli, "__file__", str(fake_package / "cli.py"))
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
@@ -879,6 +889,7 @@ def test_wheel_contains_canonical_frontend_assets(built_wheel):
     }
     assert expected_ui <= names
     assert expected_shared <= names
+    assert "reckon/_assets/index.html" in names
     assert "reckon/_assets/_shared/state.js" in names
 
 
@@ -972,6 +983,9 @@ def test_installed_wheel_build_emits_complete_static_site(installed_static_site)
     )
     assert (docs_dir / "_shared" / "state.js").is_file()
     assert (docs_dir / ".nojekyll").is_file()
+    assert _loaded_spa_modules((docs_dir / "index.html").read_text()) == (
+        _loaded_spa_modules((REPO_ROOT / "docs/index.html").read_text())
+    )
     assert "Build complete" in result.stdout
     installed_version = metadata_result.stdout.strip()
     assert installed_version != "dev"

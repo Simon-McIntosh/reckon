@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -40,6 +41,33 @@ def _write_artifact(docs: Path, slug: str, state: dict) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+def _authored_spa_source_text(root: Path) -> str:
+    index = (root / "docs/index.html").read_text(encoding="utf-8")
+    sources = []
+    for reference in re.findall(r'<script[^>]+src="(/_ui/[^"]+\.js)"', index):
+        source = root / "docs/ui" / reference.removeprefix("/_ui/")
+        if not source.is_file():
+            source = source.with_suffix(".jsx")
+        assert source.is_file(), f"missing authored source for {reference}"
+        sources.append(source.read_text(encoding="utf-8"))
+    return "\n".join(sources)
+
+
+def _assert_spa_typed_facets_and_provenance(
+    authored: str, plan: str, graph: str, home: str
+) -> None:
+    facet_labels = {
+        "plan": "Plans",
+        "research": "Research",
+        "evidence": "Evidence",
+        "archive": "Archive",
+    }
+    assert all(f'{kind}: "{label}"' in authored for kind, label in facet_labels.items())
+    assert "evidence_for" in plan and "verifies" in plan
+    assert "research → plan → evidence" in graph
+    assert "p.type" in home and ".slice(0, 40)" in home
 
 
 @pytest.fixture()
@@ -287,11 +315,13 @@ def test_link_audit_understands_qualified_and_stage_refs(tmp_path):
 
 def test_spa_sources_keep_typed_facets_and_provenance_direction():
     root = Path(__file__).resolve().parents[1]
-    shell = (root / "docs/ui/shell.jsx").read_text(encoding="utf-8")
+    authored = _authored_spa_source_text(root)
     plan = (root / "docs/ui/plan.jsx").read_text(encoding="utf-8")
     graph = (root / "docs/ui/graph.jsx").read_text(encoding="utf-8")
     home = (root / "docs/ui/home.jsx").read_text(encoding="utf-8")
-    assert all(label in shell for label in ("Plans", "Research", "Evidence", "Archive"))
-    assert "evidence_for" in plan and "verifies" in plan
-    assert "research → plan → evidence" in graph
-    assert "p.type" in home and ".slice(0, 40)" in home
+    _assert_spa_typed_facets_and_provenance(authored, plan, graph, home)
+
+    muted_facets = authored.replace('research: "Research"', 'research: ""', 1)
+    assert muted_facets != authored
+    with pytest.raises(AssertionError):
+        _assert_spa_typed_facets_and_provenance(muted_facets, plan, graph, home)
