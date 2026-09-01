@@ -57,9 +57,16 @@ def _successful_git(monkeypatch, heads_by_repo):
 
     def run(args, **kwargs):
         calls.append(list(args))
-        repo = str(kwargs["cwd"])
+        if "cwd" in kwargs:
+            repo = str(kwargs["cwd"])
+        elif args[:2] == ["git", "-C"]:
+            repo = args[2]
+        else:
+            raise AssertionError(f"Unsupported Git invocation: {args}")
         if args[1:3] == ["rev-parse", "HEAD"]:
             return subprocess.CompletedProcess(args, 0, heads_by_repo[repo] + "\n", "")
+        if args[1] == "-C" and args[3] == "symbolic-ref":
+            return subprocess.CompletedProcess(args, 0, "main\n", "")
         return subprocess.CompletedProcess(args, 0, "", "")
 
     monkeypatch.setattr(serve.subprocess, "run", run)
@@ -96,6 +103,10 @@ def test_repeat_discovery_skips_git_and_metadata_for_all_mounts(
         for project, project_docs in docs.items()
     }
     assert git_calls
+    provenance_calls = [args for args in git_calls if args[1] == "-C"]
+    assert [args[2] for args in provenance_calls] == [
+        str(docs[project].parent) for project in docs
+    ]
     assert parse_calls
 
     git_calls.clear()
