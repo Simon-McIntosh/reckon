@@ -316,3 +316,12 @@ window.STATE_READY = window.revalidateProjectState().catch(error => {
   window.STATE_ERROR = error;
   throw error;
 });
+
+window.watchProjectStateChanges = function (onChange) {
+  const project = (document.querySelector('meta[name="docs-project"]')?.content) ||
+                  window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
+                  "unknown";
+  const changes = new EventSource(`/_changes/${project}`);
+  changes.addEventListener("change", () => onChange());
+  return changes;
+};

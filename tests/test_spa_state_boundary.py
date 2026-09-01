@@ -1,11 +1,28 @@
 import json
 import subprocess
+import threading
 from datetime import datetime
 from pathlib import Path
+
+from reckon import serve
 
 
 ROOT = Path(__file__).resolve().parents[1]
 LOADER = ROOT / "docs" / "ui" / "state-loader.js"
+SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+CREW = ROOT / "docs" / "ui" / "crew.jsx"
+
+
+def _plan_html(slug: str) -> str:
+    return f"""<!doctype html>
+<html><head>
+<meta name="docs-project" content="sample">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="{slug}">
+<meta name="plan-title" content="{slug}">
+<meta name="plan-status" content="active">
+</head><body><main><h2>Work</h2></main></body></html>
+"""
 
 
 def _load_discovery_state(payload: dict) -> dict:
@@ -126,6 +143,114 @@ window.STATE_READY.then(async firstState => {{
         "secondInventory": ["present", "created-later"],
         "publishedCurrentState": True,
     }
+
+
+def test_open_page_receives_new_plan_without_navigation_or_polling(
+    tmp_path: Path, monkeypatch
+) -> None:
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    (plans / "present.html").write_text(_plan_html("present"), encoding="utf-8")
+
+    monkeypatch.setattr(serve, "load_mounts", lambda: {"sample": docs})
+    monkeypatch.setattr(serve, "_STATE_ROOT", docs / "state")
+    serve._DISC_CACHE.clear()
+    server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    origin = f"http://127.0.0.1:{server.server_address[1]}"
+
+    script = f"""
+const fs = require("fs");
+const http = require("http");
+const origin = {json.dumps(origin)};
+let documentNavigations = 0;
+global.window = {{
+  location: {{pathname: "/sample/", reload: () => {{ documentNavigations += 1; }}}},
+}};
+global.document = {{querySelector: () => ({{content: "sample"}})}};
+const nativeFetch = global.fetch;
+global.fetch = (url, options) => nativeFetch(new URL(url, origin + "/sample/"), options);
+
+class TestEventSource {{
+  constructor(path) {{
+    this.listeners = {{}};
+    this.request = http.get(origin + path, response => {{
+      response.setEncoding("utf8");
+      let buffer = "";
+      response.on("data", chunk => {{
+        buffer += chunk;
+        let boundary;
+        while ((boundary = buffer.indexOf("\\n\\n")) >= 0) {{
+          const frame = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          const event = frame.split("\\n").find(line => line.startsWith("event: "))?.slice(7);
+          for (const listener of this.listeners[event] || []) listener();
+        }}
+      }});
+    }});
+  }}
+  addEventListener(event, listener) {{
+    (this.listeners[event] ||= []).push(listener);
+  }}
+  close() {{ this.request.destroy(); }}
+}}
+global.EventSource = TestEventSource;
+
+eval(fs.readFileSync({json.dumps(str(LOADER))}, "utf8"));
+window.STATE_READY.then(() => {{
+  let invalidationRevision = 0;
+  const changes = window.watchProjectStateChanges(async () => {{
+    await window.revalidateProjectState();
+    invalidationRevision += 1;
+    if (window.STATE.inventory.some(item => item.slug === "created-later")) {{
+      console.log(JSON.stringify({{
+        inventory: window.STATE.inventory.map(item => item.slug),
+        invalidationRevision,
+        documentNavigations,
+      }}));
+      changes.close();
+    }}
+  }});
+  changes.addEventListener("ready", () => console.log("READY"));
+}});
+"""
+    process = subprocess.Popen(
+        ["node", "-e", script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert process.stdout is not None
+        assert process.stdout.readline().strip() == "READY"
+        (plans / "created-later.html").write_text(
+            _plan_html("created-later"), encoding="utf-8"
+        )
+        stdout, stderr = process.communicate(timeout=15)
+    finally:
+        if process.poll() is None:
+            process.kill()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert process.returncode == 0, stderr
+    assert json.loads(stdout) == {
+        "inventory": ["created-later", "present"],
+        "invalidationRevision": 1,
+        "documentNavigations": 0,
+    }
+
+    loader_source = LOADER.read_text(encoding="utf-8")
+    shell_source = SHELL.read_text(encoding="utf-8")
+    crew_source = CREW.read_text(encoding="utf-8")
+    assert "setInterval(" not in loader_source
+    assert "watchProjectStateChanges?.(refreshProjectState)" in shell_source
+    assert "const [invRev, setInvRev] = useState(0)" in shell_source
+    assert "const CREW_POLL_INTERVAL_MS = 3000" in crew_source
+    assert "window.setInterval(poll, CREW_POLL_INTERVAL_MS)" in crew_source
 
 
 def test_plan_effort_hours_survives_discovery_and_central_fallback() -> None:

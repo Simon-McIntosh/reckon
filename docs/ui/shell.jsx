@@ -1080,6 +1080,10 @@ function App() {
     bumpInv();
   }, [bumpInv]);
   useEffect(() => {
+    const changes = window.watchProjectStateChanges?.(refreshProjectState);
+    return () => changes?.close();
+  }, [refreshProjectState]);
+  useEffect(() => {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
   }, [filtersHidden]);
   const [groupBy, setGroupBy] = useState(() => {
