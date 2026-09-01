@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:01:18",
+  "updated": "2026-09-01T20:07:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -378,9 +378,11 @@
         "id": "surface-browser",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a05e1e-fd56-7f52-9478-1d0cb472d051",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a05e1e-fd56-7f52-9478-1d0cb472d051"
+        },
         "created": "2026-09-01"
       },
       {
@@ -405,9 +407,11 @@
         "id": "surface-scout",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e"
+        },
         "created": "2026-09-01"
       },
       {
@@ -29455,9 +29459,104 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T175736891823-n-surface-reuse-map",
+        "plan": "surface-latency-and-legibility",
+        "section": "\u00a73",
+        "node": "n-surface-reuse-map",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/surface-wave-reuse-map.md exists and carries 4 headed areas \u2014 plan-state caching and change-signalling inside project-state composition, tag backfill from a preserved path pre-image, a shared browser-probe harness, and a populated-graph rendered capture \u2014 each stating its candidate count and listing every candidate as file:line with a verdict of reuse, extend or absent; an area with 0 candidates states that count rather than being omitted",
+          "estimated_hours": null,
+          "goal": "A capability-shaped reuse map for the 4 ready surface work areas, naming what already exists that solves each in whole or part",
+          "id": "n-surface-reuse-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T175736891823-n-surface-reuse-map/manifest.md",
+          "plan": "surface-latency-and-legibility",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a73",
+          "spec_level": "open",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/surface-wave-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "surface-scout",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-01T17:57:42Z",
+        "completed_at": "2026-09-01T18:05:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 479,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 479,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "a97cf3d6acb363521f58f4cb4dc9d9ff1a386190",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "structural validation of the report: 4 required headings, enumerated verdict counts, and resolution of every file:line reference",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T175736891823-n-surface-reuse-map/manifest.md",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T175736891823-n-surface-reuse-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4448128,
+            "cached_input_tokens_cumulative": 4448128,
+            "input_tokens": 4718650,
+            "input_tokens_cumulative": 4718650,
+            "output_tokens": 18240,
+            "output_tokens_cumulative": 18240,
+            "reasoning_output_tokens": 6830,
+            "reasoning_output_tokens_cumulative": 6830
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "investigation artifact lives outside the repository; the read-only sandbox has no repo write scope by design",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 490
+    "_version": 493
   }
 }
