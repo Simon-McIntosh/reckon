@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T16:33:13",
+  "updated": "2026-09-01T16:34:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -28524,9 +28524,141 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T143022995519-n-evidence-workspace-hygiene",
+        "plan": "crew-workspace-hygiene",
+        "section": "\u00a72",
+        "node": "n-evidence-workspace-hygiene",
+        "node_definition": {
+          "done_when": "python -m reckon.doccheck docs/evidence/archive/crew-workspace-hygiene-landed.html exits 0 with no ERROR lines, the appended section carries a stable id, and every commit sha named in the plan comment appears in it",
+          "estimated_hours": null,
+          "goal": "append one anchored section to the cumulative evidence record for crew-workspace-hygiene",
+          "id": "n-evidence-workspace-hygiene",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143022995519-n-evidence-workspace-hygiene/manifest.md",
+          "plan": "crew-workspace-hygiene",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a72",
+          "spec_level": "",
+          "time_budget": "20m",
+          "write_paths": [
+            "docs/evidence/archive/crew-workspace-hygiene-landed.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "",
+        "member": "ev-hygiene",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T14:30:29Z",
+        "completed_at": "2026-09-01T14:33:33Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 184,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 184,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "0cdd52e1ffeea4d712c1407fbf02051a3edbafc2",
+        "commits": [
+          "881b6e2c1df6452faeb226e56f6b1ce84ec2683f"
+        ],
+        "changed_lines": {
+          "added": 73,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m reckon.doccheck docs/evidence/archive/crew-workspace-hygiene-landed.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143022995519-n-evidence-workspace-hygiene/doccheck.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143022995519-n-evidence-workspace-hygiene/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05d60-f46f-7903-8672-81a69664cf61",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1319424,
+            "cached_input_tokens_cumulative": 1319424,
+            "input_tokens": 1420050,
+            "input_tokens_cumulative": 1420050,
+            "output_tokens": 6869,
+            "output_tokens_cumulative": 6869,
+            "reasoning_output_tokens": 2282,
+            "reasoning_output_tokens_cumulative": 2282
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 803,
+              "budget_seconds": 1500,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the same focused pytest command failed twice after different fixes; triggering the mandatory stop fence; the remaining observable failure is TypeError reading window.location.pathname in the test harness; not a ReferenceError or product-source failure",
+              "elapsed_seconds": 2303,
+              "log_age_seconds": 1755,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T135157985051-n-resolve-cross-module-refs/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T135157985051-n-resolve-cross-module-refs/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-resolve-cross-module-refs",
+              "phase": "starting",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260901T135157985051-n-resolve-cross-module-refs",
+              "session": "d8-repair",
+              "terminal_age_seconds": 1777,
+              "terminal_at": "2026-09-01T14:00:51Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-repair/n-resolve-cross-module-refs"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 477
+    "_version": 478
   }
 }
