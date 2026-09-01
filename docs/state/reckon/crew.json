@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:47:33",
+  "updated": "2026-09-01T20:53:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -30973,9 +30973,116 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T184232893991-n-shell-surface-contract-assertions",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-shell-surface-contract-assertions",
+        "node_definition": {
+          "done_when": "All 3 remaining baseline failures over shell-owned surfaces pass \u2014 test_spa_overview_geometry.py::test_empty_overview_sections_omit_their_heading_at_canvas_width, test_spa_reading_mode.py::test_focus_mode_reuses_reader_with_provenance_banners and test_spa_topbar_snapshot.py::test_snapshot_receipt_counts_payload_resource_versions, each listed in /home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md; 0 tests are deleted, skipped or marked xfail to achieve it, verified by comparing collected test counts before and after; for each the manifest states whether the assertion was stale or the behaviour was absent with the evidence that decided it; each replacement is proven to fail when its behaviour is deleted rather than when wording changes, shown by 1 recorded mutation run per test; and the 3 modules report 0 new failures against the node's own base revision",
+          "estimated_hours": null,
+          "goal": "The three red assertions over shell-owned surfaces are restated as the contracts they stand for, and any behaviour they find genuinely missing is restored",
+          "id": "n-shell-surface-contract-assertions",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T184232893991-n-shell-surface-contract-assertions/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "tests/test_spa_overview_geometry.py",
+            "tests/test_spa_reading_mode.py",
+            "tests/test_spa_topbar_snapshot.py",
+            "docs/ui/shell.jsx",
+            "docs/ui/plan.jsx",
+            "docs/ui/_shared.jsx",
+            "docs/ui/overview.css",
+            "docs/ui/topbar.css"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-scout",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:42:38Z",
+        "completed_at": "2026-09-01T18:51:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 558,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 558,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "864ba211a6e3f00885b534f1e71554371111e861",
+        "commits": [
+          "1e9a8fcc3227a03a6a14026beadcff919d637d25"
+        ],
+        "changed_lines": {
+          "added": 123,
+          "removed": 126,
+          "files": 5
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q over the three modules, collection counts either side, and one behaviour-deletion mutation per named test",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T184232893991-n-shell-surface-contract-assertions/landed-tests.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T184232893991-n-shell-surface-contract-assertions/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 650496,
+            "cached_input_tokens_cumulative": 5067264,
+            "input_tokens": 696875,
+            "input_tokens_cumulative": 5277256,
+            "output_tokens": 3413,
+            "output_tokens_cumulative": 17631,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3406
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 510
+    "_version": 511
   }
 }
