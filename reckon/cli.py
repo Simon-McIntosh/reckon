@@ -397,6 +397,74 @@ def tag_rename(project, checkout_path, dry_run, source, target):
     _emit(report, pretty=False)
 
 
+@tag.command(name="backfill")
+@click.option("--project", required=True, help="Project owning the resource corpus.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help=(
+        "Optional repository checkout root for worktrees; defaults to mounted "
+        "project path."
+    ),
+)
+@click.option(
+    "--preimage",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Saved source-to-destination layout move list.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Report the complete census without writing resource files.",
+)
+def tag_backfill(project, checkout_path, preimage, dry_run):
+    """Backfill topical tags from a preserved layout pre-image."""
+    from tempfile import TemporaryDirectory
+
+    from reckon.tags import (
+        _contained_resource_path,
+        _parse_layout_moves,
+        backfill_tags_from_preimage,
+    )
+
+    docs_dir = _project_docs_root(project, checkout_path)
+    if dry_run:
+        moves = _parse_layout_moves(preimage.read_text(encoding="utf-8"))
+        with TemporaryDirectory(
+            dir=docs_dir.parent,
+            prefix=".reckon-tag-backfill-",
+        ) as preview_root:
+            preview_docs = Path(preview_root) / "docs"
+            for source, destination in moves:
+                source_path = _contained_resource_path(docs_dir, source)
+                destination_path = _contained_resource_path(docs_dir, destination)
+                existing = next(
+                    (
+                        path
+                        for path in (source_path, destination_path)
+                        if path.is_file()
+                    ),
+                    None,
+                )
+                if existing is None:
+                    continue
+                preview_path = _contained_resource_path(preview_docs, source)
+                preview_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(existing, preview_path)
+            report = backfill_tags_from_preimage(preview_docs, preimage)
+    else:
+        report = backfill_tags_from_preimage(docs_dir, preimage)
+    report.update(
+        {
+            "dry_run": dry_run,
+            "written": 0 if dry_run else report["changed"],
+        }
+    )
+    _emit(report, pretty=False)
+
+
 @main.group(name="crew")
 def crew():
     """Dispatch and observe workers through one backend-agnostic call.

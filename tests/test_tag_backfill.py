@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from click.testing import CliRunner
+
 from reckon._plan_html import read_state, write_state
+from reckon.cli import main
 from reckon.tags import backfill_tags_from_preimage
 
 
@@ -85,3 +89,59 @@ def test_backfill_preserves_every_group_from_synthetic_move_preimage(
 
     for item in report["resources"]:
         assert item["tag"] in item["tags"]
+
+
+def test_backfill_command_dry_run_reports_census_without_writing(
+    tmp_path: Path,
+) -> None:
+    checkout = tmp_path / "corpus"
+    docs = checkout / "docs"
+    compose = docs / "research" / "compose.html"
+    overview = docs / "research" / "archive" / "overview.html"
+    control = docs / "plans" / "control.html"
+    flat = docs / "plans" / "delivery.html"
+    _resource(compose, "research", "compose", ["language-models"])
+    _resource(overview, "research", "overview", ["standard-names"])
+    _resource(control, "plan", "control", [])
+    _resource(flat, "plan", "delivery", [])
+
+    preimage = tmp_path / "layout-moves-preimage.txt"
+    preimage.write_text(
+        "research/Standard_Names/compose.html -> research/compose.html\n"
+        "archive/research/Standard_Names/overview.html -> research/archive/overview.html\n"
+        "plans/Plasma_Control/control.html -> plans/control.html\n"
+        "delivery.html -> plans/delivery.html\n",
+        encoding="utf-8",
+    )
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "tag",
+            "backfill",
+            "--project",
+            "sample",
+            "--checkout-path",
+            str(checkout),
+            "--preimage",
+            str(preimage),
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.output)
+    assert report == {
+        "changed": 2,
+        "dry_run": True,
+        "grouped_resources": 3,
+        "grouping_loss": 0,
+        "lost_resources": [],
+        "moves": 4,
+        "resources": report["resources"],
+        "unchanged": 1,
+        "written": 0,
+    }
+    after = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    assert after == before
