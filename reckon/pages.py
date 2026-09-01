@@ -38,6 +38,30 @@ class PagesConflictError(PagesError):
     """An existing publisher requires repository-owner coordination."""
 
 
+def publication_is_declared(repository: str, declared_repository: object) -> bool:
+    """Return whether this checkout explicitly names itself for publication.
+
+    The declaration names one repository instead of carrying a reusable boolean.
+    Copying an opted-in workflow into a fork therefore does not opt the fork in.
+    Repository visibility and fork metadata are deliberately irrelevant.
+    """
+    if not isinstance(declared_repository, str):
+        return False
+    return declared_repository.strip().casefold() == repository.strip().casefold()
+
+
+def require_publication_declaration(
+    repository: str, declared_repository: object
+) -> None:
+    """Refuse publication unless the repository-local declaration matches."""
+    if publication_is_declared(repository, declared_repository):
+        return
+    raise PagesUndeterminedError(
+        "GitHub Pages publication is not declared for this repository; refusing "
+        "to infer consent from repository visibility or fork metadata"
+    )
+
+
 @dataclass(frozen=True)
 class RepositoryCoordinates:
     owner: str
