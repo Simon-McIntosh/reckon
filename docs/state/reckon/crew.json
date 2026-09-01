@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T17:40:25",
+  "updated": "2026-09-01T18:09:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29296,9 +29296,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T160238002303-n-resolve-react-hook-scope",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a76",
+        "node": "n-resolve-react-hook-scope",
+        "node_definition": {
+          "done_when": "A check asserts no compiled module calls a React hook or React member it has not bound in its own scope, that check fails on the pre-fix tree and passes after, a headless browser loading the inlined bundle over a file URL reports zero uncaught ReferenceErrors and a populated root element, and the existing 39-export and cross-module-ownership checks still pass",
+          "estimated_hours": null,
+          "goal": "Make every module that uses a React hook obtain it in its own scope so the shell renders",
+          "id": "n-resolve-react-hook-scope",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T160238002303-n-resolve-react-hook-scope/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/decision.jsx",
+            "docs/ui/plan.jsx",
+            "docs/ui/sprint.jsx",
+            "docs/ui/crew.jsx",
+            "docs/ui/shell.jsx",
+            "tests/test_spa_module_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-p",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T16:02:43Z",
+        "completed_at": "2026-09-01T16:08:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 369,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 369,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "fa370ad75d72f0a6ad6df0d81de05da64cf89508",
+        "commits": [
+          "048d60150c93230a959a0e6a114526b34a6dee7f"
+        ],
+        "changed_lines": {
+          "added": 142,
+          "removed": 0,
+          "files": 6
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_module_scope.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T160238002303-n-resolve-react-hook-scope/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T160238002303-n-resolve-react-hook-scope/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d1-bbfe-7343-a316-eeff6ebd712e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 288256,
+            "cached_input_tokens_cumulative": 2853376,
+            "input_tokens": 432453,
+            "input_tokens_cumulative": 3179278,
+            "output_tokens": 5301,
+            "output_tokens_cumulative": 12073,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2687
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 483
+    "_version": 484
   }
 }
