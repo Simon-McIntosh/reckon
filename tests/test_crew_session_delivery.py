@@ -786,3 +786,37 @@ def test_the_descriptor_trace_is_paid_once_per_process(home, monkeypatch) -> Non
     with (home / "sink.log").open("w") as sink:
         assert runs.delivery_mode(sink.fileno()) == "file"
     assert scans == 0
+
+
+def test_an_orphaned_producer_is_unreadable_to_nobody(home) -> None:
+    """Admission and readability are different questions about one process.
+
+    A producer whose supervisor dies is reparented to init. It stops satisfying
+    the dispatch guard, correctly, because nothing is listening to the seat it
+    holds — but it keeps appending real transitions, and a follower that refuses
+    to read them waits forever on data that is arriving. Measured: an orphaned
+    producer with 51 KB of stream and a live run left its session's pane empty
+    for four minutes with no way to tell why.
+    """
+    path = runs.watch_lock_path("proj")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        runs._write_watch_record(
+            handle,
+            {
+                "project": "proj",
+                "pid": os.getpid(),
+                "pid_start_time": runs._process_start_time(os.getpid()),
+                # Reparented to init: the supervisor that made it observable
+                # is gone.
+                "parent_pid": 1,
+                "parent_start_time": "23",
+                "started_at": runs._utc_now(),
+            },
+        )
+
+    assert runs.producer_live("proj") is True, "its stream is still being written"
+    assert runs.project_watch_visibility("proj")["watcher_live"] is False, (
+        "and it must not admit a dispatch, because nothing is listening to it"
+    )
+    assert runs.project_watch_visibility("proj")["observer_alive"] is False

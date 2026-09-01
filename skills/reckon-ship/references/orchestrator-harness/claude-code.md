@@ -110,10 +110,11 @@ own state, which is why neither can repeat the three shell-filter mistakes:
 withholding lines in a stage's buffer, matching the `· N blocked · N unpromoted`
 summary that trails every line, or hiding a refusal behind `|| true`.
 
-The column between the transition and the figures is the model and effort that
-ran the node, read from the configuration persisted at dispatch rather than from
-current flight config — so a later config change cannot silently restate what
-ran. It is what a reader needs to judge whether a stall is the model or the work.
+The column after the clock is the model and effort that ran the node, read from
+the configuration persisted at dispatch rather than from current flight config —
+so a later config change cannot silently restate what ran. It sits with the
+timestamp because a reader scanning a wave compares agents down a column, and it
+is what distinguishes a stall in the model from a stall in the work.
 
 The three figures partition the fleet as it stands after each line: `working` is
 work in progress, `blocked` is everything stopped and needing the coordinator (a
@@ -125,9 +126,9 @@ Attaching opens with one line per live run, so the pane is never blank while
 work exists:
 
 ```
-12:30:11  hdg-cache-replay    → dispatched        <model>/<effort>   2 working · 0 blocked · 0 unpromoted
-12:30:11  hdg-measured-map    → working           <model>/<effort>   2 working · 0 blocked · 0 unpromoted
-12:30:12  hdg-measured-map    working → blocked   <model>/<effort>   2 working · 1 blocked · 0 unpromoted · tried: …
+12:30:11  <model>/<effort>   hdg-cache-replay    → dispatched        2 working · 0 blocked · 0 unpromoted
+12:30:11  <model>/<effort>   hdg-measured-map    → working           2 working · 0 blocked · 0 unpromoted
+12:30:12  <model>/<effort>   hdg-measured-map    working → blocked   2 working · 1 blocked · 0 unpromoted · tried: …
 ```
 
 **The stream carries worker transitions and fleet posture, and nothing else.**

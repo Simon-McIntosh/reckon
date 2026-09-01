@@ -165,9 +165,10 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
 
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
-    assert line.startswith(
-        f"{recovery.local_clock(_event()['observed_at'])}  ticker-node"
-    )
+    # clock, then what ran it, then which node — the agent column sits between,
+    # because a reader scanning a wave compares agents down a column.
+    assert line.startswith(recovery.local_clock(_event()["observed_at"]))
+    assert line.index("ticker-node") < line.index("working → blocked")
     assert "working → blocked" in line
     assert "3 working · 1 blocked · 0 unpromoted" in line
     assert line.endswith("· first clause")
@@ -317,8 +318,12 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
         _event(agent=snapshot["agent"], to_state="working", from_state="dispatched")
     )
     assert "gpt-5.6-sol/high" in line
-    assert line.index("gpt-5.6-sol/high") > line.index("dispatched → working")
-    assert line.index("gpt-5.6-sol/high") < line.index("working ·")
+    # Between the clock and the node: what ran it belongs with when, because a
+    # reader scanning a wave compares agents down a column.
+    assert line.index("gpt-5.6-sol/high") < line.index("ticker-node")
+    assert line.index("gpt-5.6-sol/high") > line.index(
+        recovery.local_clock(_event()["observed_at"])
+    )
 
     # Half a label beats none; no label at all renders without a stray column.
     assert recovery._agent_label({"agent": {"model": "gpt-5.6-sol"}}) == "gpt-5.6-sol"

@@ -1015,13 +1015,22 @@ def watch_stream_cursor(
 
 
 def producer_live(project: str) -> bool:
-    """Report whether a project's watcher seat is held, without locking it.
+    """Report whether a project's stream is being written, without locking it.
 
-    A reader must never need an exclusive lock to observe. Probing the seat
-    with one makes an observer able to deny an arming for the microseconds it
-    holds it, which is a producer that fails to start because something looked
-    at it. The registered pid, paired with its start time so a recycled pid
-    cannot impersonate it, answers the same question and touches nothing.
+    A reader must never need an exclusive lock to observe. Probing the seat with
+    one makes an observer able to deny an arming for the microseconds it holds
+    it, which is a producer that fails to start because something looked at it.
+    The registered pid, paired with its start time so a recycled pid cannot
+    impersonate it, answers the same question and touches nothing.
+
+    Deliberately *not* the orphan check that :func:`watch_state` applies. A
+    producer whose supervisor died is reparented to init and stops satisfying
+    the dispatch guard, because nothing is listening to the seat it holds — but
+    it is still appending real transitions to the stream, and a follower that
+    refuses to read them waits forever on data that is arriving. Measured: an
+    orphaned producer with 51 KB of stream and a live run left its session's
+    pane empty for four minutes. Admission and readability are different
+    questions about the same process.
     """
     path = watch_lock_path(project)
     if not path.is_file():
@@ -1032,18 +1041,7 @@ def producer_live(project: str) -> bool:
     if process_alive(pid) is not True:
         return False
     expected = record.get("pid_start_time")
-    if expected is not None and _process_start_time(pid) != expected:
-        return False
-    if "parent_pid" in record:
-        try:
-            parent_pid = int(record.get("parent_pid") or 0)
-        except (TypeError, ValueError):
-            return False
-        if parent_pid <= 1 or process_alive(parent_pid) is not True:
-            return False
-        if _process_start_time(parent_pid) != record.get("parent_start_time"):
-            return False
-    return True
+    return expected is None or _process_start_time(pid) == expected
 
 
 # A seat is held for the life of its watcher, so a lock that is unavailable for

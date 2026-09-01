@@ -132,7 +132,8 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     assert len(lines) == 2
     assert sum("working → blocked" in line for line in lines) == 1
     assert lines[-1].endswith("· dependency unavailable")
-    assert re.match(r"^\d{2}:\d{2}:\d{2}  only-node", lines[-1])
+    # clock, then the agent column, then the node
+    assert re.match(r"^\d{2}:\d{2}:\d{2}\s+\S*\s*only-node", lines[-1])
     assert "0 working · 1 blocked · 0 unpromoted" in lines[-1]
     assert events[-1]["run_id"] == "r-only"
 

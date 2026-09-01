@@ -679,7 +679,7 @@ def format_watch_transition(
     movement = f"{previous} → {current}" if previous else f"→ {current}"
     agent = str(event.get("agent") or "")
     line = (
-        f"{clock}  {node:<28}  {movement:<24}  {agent:<18}  "
+        f"{clock}  {agent:<18}  {node:<28}  {movement:<24}  "
         f"{int(event.get('working') or 0)} working · "
         f"{int(event.get('blocked') or 0)} blocked · "
         f"{int(event.get('unpromoted') or 0)} unpromoted"
