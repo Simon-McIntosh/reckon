@@ -2,8 +2,10 @@ import json
 import subprocess
 from pathlib import Path
 
+from tests.spa_browser_harness import authored_shell_source
+
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "ui" / "shell.jsx"
+SOURCE = authored_shell_source(ROOT)
 
 
 def _function_source(name: str) -> str:
@@ -24,7 +26,7 @@ def _function_source(name: str) -> str:
 def _evaluate(functions: list[str], expression: str):
     script = "\n".join(_function_source(name) for name in functions)
     result = subprocess.run(
-        ["node", "-e", f'{script}\nconsole.log(JSON.stringify({expression}));'],
+        ["node", "-e", f"{script}\nconsole.log(JSON.stringify({expression}));"],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -106,7 +108,7 @@ def test_status_transition_reports_the_real_open_gate_count() -> None:
     assert count == 1
     assert "authored !== effective" in source
     assert '"gate-state-heading"' in source
-    assert "open {gates === 1 ? \"gate\" : \"gates\"}" in source
+    assert 'open {gates === 1 ? "gate" : "gates"}' in source
 
 
 def test_compact_signals_have_labels_tooltips_and_navigation_targets() -> None:

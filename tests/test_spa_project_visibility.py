@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from tests.spa_browser_harness import (
+    AuthoredSource,
     BrowserProbeError,
+    authored_shell_source,
     installed_browser,
     run_browser_probe,
     served_spa,
@@ -18,7 +20,7 @@ from tests.test_spa_rendered_semantics import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHELL = authored_shell_source(ROOT)
 SHARED = ROOT / "docs" / "ui" / "_shared.jsx"
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 TOPBAR = ROOT / "docs" / "ui" / "topbar.css"
@@ -41,7 +43,7 @@ def rendered_browser(tmp_path_factory) -> str:
     return browser
 
 
-def _function_source(path: Path, name: str) -> str:
+def _function_source(path: Path | AuthoredSource, name: str) -> str:
     source = path.read_text()
     start = source.index(f"function {name}(")
     brace = source.index(") {", start) + 2
@@ -56,7 +58,10 @@ def _function_source(path: Path, name: str) -> str:
     raise AssertionError(f"unterminated function {name}")
 
 
-def _evaluate(functions: list[tuple[Path, str]], expression: str):
+def _evaluate(
+    functions: list[tuple[Path | AuthoredSource, str]],
+    expression: str,
+):
     script = "\n".join(_function_source(path, name) for path, name in functions)
     result = subprocess.run(
         ["node", "-e", f"{script}\nconsole.log(JSON.stringify({expression}));"],
@@ -75,13 +80,22 @@ def test_topbar_is_one_row_with_four_within_project_tabs() -> None:
     assert "display: flex" in css
     assert "flex-wrap: nowrap" in css
     assert "margin-left: auto" in css
-    assert source.index('className="r-topbar-brand"') < source.index('className="r-project-manage"')
-    assert source.index('className="r-project-manage"') < source.index('className="r-glyph-tabs"')
+    assert source.index('className="r-topbar-brand"') < source.index(
+        'className="r-project-manage"'
+    )
+    assert source.index('className="r-project-manage"') < source.index(
+        'className="r-glyph-tabs"'
+    )
     assert source.index('className="r-glyph-tabs"') < source.index('className="top-r"')
-    assert source.index('className="top-r"') < source.index('className="r-cmdk-trigger"')
+    assert source.index('className="top-r"') < source.index(
+        'className="r-cmdk-trigger"'
+    )
     assert source.index('className="r-cmdk-trigger"') < source.index("<SM")
-    assert '>Overview<' not in source
-    assert [f"\n          {label}\n" in source for label in ("Plans", "Sprints", "Graph", "Crew")] == [True] * 4
+    assert ">Overview<" not in source
+    assert [
+        f"\n          {label}\n" in source
+        for label in ("Plans", "Sprints", "Graph", "Crew")
+    ] == [True] * 4
 
 
 @pytest.mark.parametrize("width", [1280, 1440, 1920])
@@ -124,7 +138,9 @@ def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
     assert geometry["headerReceipt"] is False
 
 
-def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_entry() -> None:
+def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_entry() -> (
+    None
+):
     projects = [
         {"project": "alpha", "plans_count": 4},
         {"project": "beta", "plans_count": 7},
@@ -279,7 +295,10 @@ def test_hidden_projects_leave_crew_and_overview_aggregates() -> None:
 def test_hidden_project_remains_selectable_through_palette() -> None:
     projects = [
         {"project": "alpha", "state": {"inventory": []}},
-        {"project": "beta", "state": {"inventory": [{"slug": "hidden-plan", "title": "Hidden plan"}]}},
+        {
+            "project": "beta",
+            "state": {"inventory": [{"slug": "hidden-plan", "title": "Hidden plan"}]},
+        },
     ]
     palette_projects = _evaluate(
         [(SHELL, "paletteItems")],

@@ -7,13 +7,14 @@ import pytest
 
 from tests.spa_browser_harness import (
     BrowserProbeError,
+    authored_shell_source,
     installed_browser,
     run_browser_probe,
     served_spa,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHELL = authored_shell_source(ROOT)
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 PLANS_CSS = ROOT / "docs" / "ui" / "plans.css"
 TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
