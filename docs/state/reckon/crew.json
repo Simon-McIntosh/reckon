@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T21:04:30",
+  "updated": "2026-09-01T21:09:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -31387,9 +31387,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T185938677534-n-skip-reason-names-the-fault",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a75",
+        "node": "n-skip-reason-names-the-fault",
+        "node_definition": {
+          "done_when": "The skip reason emitted for a browser-unavailable case names the diagnosed boundary rather than only the symptom, cites /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md, and states that the case is owed against the host change; a test asserts the emitted string contains the report path and the diagnosis, and asserts it does NOT appear for the sandbox-denied or ceiling-exhausted classifications, which have different causes and different remedies, so 3 classifications are distinguished; the existing boundary regression proving an AssertionError is never converted into a skip still passes unedited; and tests/test_spa_browser_harness.py, tests/test_spa_rendered_semantics.py and tests/test_spa_reader_provenance.py report 0 failures, held to that absolute because the tree is green",
+          "estimated_hours": null,
+          "goal": "A skipped browser case states the diagnosed cause and where its evidence lives, so a green run says out loud what it did not check",
+          "id": "n-skip-reason-names-the-fault",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185938677534-n-skip-reason-names-the-fault/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/spa_browser_harness.py",
+            "tests/test_spa_browser_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-sprintref",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:59:43Z",
+        "completed_at": "2026-09-01T19:09:06Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 563,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 563,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "1dedaa16a7904a88b8011dccdebe582627c05f61",
+        "commits": [
+          "42297eb817d2c9c1854d5fbc0277c42609891fd1"
+        ],
+        "changed_lines": {
+          "added": 24,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest over the harness and its two skipping consumers at base and final, plus a three-classification discrimination check and the unedited AssertionError boundary gate",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185938677534-n-skip-reason-names-the-fault/logs/final-tests.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185938677534-n-skip-reason-names-the-fault/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e37-a971-7be3-8d90-cbf4b4629dac",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3227648,
+            "cached_input_tokens_cumulative": 6552576,
+            "input_tokens": 3136933,
+            "input_tokens_cumulative": 6653907,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 11721,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2255
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 514
+    "_version": 515
   }
 }

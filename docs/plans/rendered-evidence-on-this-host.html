@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-artifacts" content="docs/evidence/archive/rendered-evidence-on-this-host-landed.html,/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md,/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-commits" content="dcfeea0ece80be5f66db1a6658698d0c8e55b7e5,ac0ea9aab888394b64b4b36f3e50d45c5963d23e">
@@ -245,6 +245,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260901T180119327253-n-suite-baseline" data-who="surface-baseline" data-when="2026-09-01T18:32:27Z">
     <div class="r-comment-body"><p>Base 35d4657 is red and now measured: 2559 passed, 24 failed, 30 skipped, 0 errors in 1516.23s. 9 failures are browser-navigation (5 TimeoutExpired, 4 BrowserProbeError) and 15 are current-tip surface assertions; 28 browser-dependent cases skip with the stated reason while these 9 still fail opaquely, so the classifier does not cover every case. All 24 nodeids enumerated for delta judgement</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260901T185938677534-n-skip-reason-names-the-fault" data-who="surface-sprintref" data-when="2026-09-01T19:09:06Z">
+    <div class="r-comment-body"><p>A navigation-never-completed skip now names the Network Service boundary, cites the probe report path, and states the case is owed against the host runtime change; ceiling-exhausted and sandbox-denied carry neither, with all 3 classifications distinguished by test; the AssertionError boundary regression is unedited and passes; 16 passed / 11 skipped / 0 failures either side, scoped ruff findings 4 to 4. The skips become real results the moment the runtime is repaired, with nobody needing to remember how it was diagnosed</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260901-three-costumes" data-who="reckon-ship" data-when="2026-09-01T18:56:00+00:00">
     <div class="r-comment-body">Reframing this plan's subject, from a cross-session review of the cleared baseline. The host fault presented in THREE forms across the 24 measured failures, and only one of them was legible as itself: 28 cases skipped honestly with a stated reason, 13 failed opaquely as TimeoutExpired outside the classifier's wrap, and 2 more were filed as stale assertions predating the window when in truth their claim had never been decided either way — their harness could not reach the surface, so nothing was ever exercised. The durable statement, and it is wider than this plan: A TEST WHOSE SUBJECT WAS NEVER ACTUALLY EXERCISED IS INDISTINGUISHABLE FROM A TEST WHOSE SUBJECT REGRESSED, UNTIL THE RENDER PATH WORKS. Calling that second class stale flatters it. This changes what the plan's value is. Clearing 24 red tests is the visible outcome; making the class decidable is the one that matters, because an undecidable test is worse than a failing one — it accrues silently and every reader who meets it has to re-derive whether it means anything. That is the same defect as an unread log or a guard that never runs, and it is why §6's file-URL path counts for more than the captures it unblocks.</div>
