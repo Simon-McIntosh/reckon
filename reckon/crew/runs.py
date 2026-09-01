@@ -193,6 +193,14 @@ def delivery_mode(descriptor: int = 1, *, hops: int = 4) -> str:
     return _trace_delivery(info, pid=os.getpid(), hops=hops)
 
 
+# The pipe-chain walk scans every process's descriptors — 211 ms on a host with
+# 1663 of them — so a repeated reader must not pay it repeatedly. Keyed on the
+# process identity rather than the pid alone, and expiring, so a recycled pid
+# and a genuinely changed descriptor are both noticed.
+_DELIVERY_TRACE_TTL_SECONDS = 5.0
+_DELIVERY_TRACE_CACHE: dict[tuple[int, str], tuple[float, str]] = {}
+
+
 def delivery_mode_of(pid: int, *, hops: int = 4) -> str | None:
     """Classify what consumes another process's output, or None if unreadable.
 
@@ -205,7 +213,23 @@ def delivery_mode_of(pid: int, *, hops: int = 4) -> str | None:
         info = os.stat(f"/proc/{pid}/fd/1")
     except OSError:
         return None
-    return _trace_delivery(info, pid=pid, hops=hops)
+    kind = _descriptor_kind(info.st_mode)
+    if kind != "pipe":
+        # The cheap answer, and the common one: no scan is needed to see that a
+        # descriptor is a socket, a terminal or a file.
+        return kind
+    identity = (int(pid), str(_process_start_time(pid) or ""))
+    cached = _DELIVERY_TRACE_CACHE.get(identity)
+    now = time.monotonic()
+    if cached is not None and now - cached[0] < _DELIVERY_TRACE_TTL_SECONDS:
+        return cached[1]
+    resolved = _trace_delivery(info, pid=pid, hops=hops)
+    _DELIVERY_TRACE_CACHE[identity] = (now, resolved)
+    if len(_DELIVERY_TRACE_CACHE) > 256:
+        for key, (stamp, _) in list(_DELIVERY_TRACE_CACHE.items()):
+            if now - stamp >= _DELIVERY_TRACE_TTL_SECONDS:
+                _DELIVERY_TRACE_CACHE.pop(key, None)
+    return resolved
 
 
 # Descriptor kinds whose reader sees a line when it is written. Anything else

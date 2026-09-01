@@ -125,9 +125,9 @@ Attaching opens with one line per live run, so the pane is never blank while
 work exists:
 
 ```
-12:30:11  hdg-cache-replay    → dispatched        gpt-5.6-sol/high   2 working · 0 blocked · 0 unpromoted
-12:30:11  hdg-measured-map    → working           gpt-5.6-sol/high   2 working · 0 blocked · 0 unpromoted
-12:30:12  hdg-measured-map    working → blocked   claude-opus-5/max  2 working · 1 blocked · 0 unpromoted · tried: …
+12:30:11  hdg-cache-replay    → dispatched        <model>/<effort>   2 working · 0 blocked · 0 unpromoted
+12:30:11  hdg-measured-map    → working           <model>/<effort>   2 working · 0 blocked · 0 unpromoted
+12:30:12  hdg-measured-map    working → blocked   <model>/<effort>   2 working · 1 blocked · 0 unpromoted · tried: …
 ```
 
 **The stream carries worker transitions and fleet posture, and nothing else.**

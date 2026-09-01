@@ -743,3 +743,46 @@ def test_a_follower_whose_consumer_exited_names_that(home) -> None:
     state = runs._follower_liveness(runs.follower_lock_path("proj", "absent"))
     assert state["live"] is False
     assert state["not_live_because"] == "no registration remains"
+
+
+def test_the_descriptor_trace_is_paid_once_per_process(home, monkeypatch) -> None:
+    """A hot path must not pay an unbounded scan repeatedly.
+
+    Resolving where a *foreign* process's lines end walks every process's
+    descriptors — 211 ms on a host with 1663 of them. Dispatch's producer-arming
+    loop polls liveness twenty times a second, so putting that trace on it spent
+    the entire arming budget on measurement: the watcher tests went from 5 s to
+    42 s and began failing `watcher-required` against a producer that was fine.
+    Measured by counting the scans rather than the milliseconds, so the guard
+    cannot pass on a fast host and fail on a slow one.
+    """
+    scans = 0
+    real = runs._pipe_reader_pids
+
+    def counted(inode, *, exclude):
+        nonlocal scans
+        scans += 1
+        return real(inode, exclude=exclude)
+
+    monkeypatch.setattr(runs, "_pipe_reader_pids", counted)
+
+    read_end, write_end = os.pipe()
+    try:
+        # A pipe is the only descriptor kind whose end needs finding; the cheap
+        # kinds must never reach the scan at all.
+        runs._trace_delivery(os.fstat(write_end), pid=os.getpid(), hops=4)
+        assert scans == 1
+    finally:
+        os.close(read_end)
+        os.close(write_end)
+
+    scans = 0
+    for _ in range(5):
+        runs.delivery_mode_of(os.getpid())
+    assert scans <= 1, "a live process's descriptor is traced once, then cached"
+
+    # And the cheap kinds answer without a scan on every call.
+    scans = 0
+    with (home / "sink.log").open("w") as sink:
+        assert runs.delivery_mode(sink.fileno()) == "file"
+    assert scans == 0

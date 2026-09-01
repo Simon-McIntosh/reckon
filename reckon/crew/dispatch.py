@@ -140,9 +140,12 @@ def _ensure_watch_producer(
         supervisor = _start_watch_producer(project)
         deadline = time.monotonic() + _WATCH_START_TIMEOUT_SECONDS
         while time.monotonic() < deadline:
-            state = watch_state(project, session=session)
-            if state["watcher_live"]:
-                return state
+            # Poll producer liveness only. Resolving this session's delivery
+            # costs a descriptor trace, and a trace on a loop that runs twenty
+            # times a second spent the whole arming budget on measurement — the
+            # session's attachment is read once, after the producer is up.
+            if watch_state(project)["watcher_live"]:
+                return watch_state(project, session=session)
             if supervisor.poll() is not None:
                 break
             time.sleep(0.05)
