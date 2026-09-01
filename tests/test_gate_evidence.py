@@ -7,6 +7,12 @@ configuration actually isolated the backend swap. These tests cover both: the
 CLI promotion path refuses an unfalsifiable passing gate and stores the check
 when one is given, and capability derivation consults the single control
 predicate rather than trusting ``lineage.kind`` alone.
+
+The suite-delta regressions reconstruct a measured promotion incident: one
+promotion added twenty Standard Names editing failures behind a pre-existing
+collection failure, while fifteen subsequent repair promotions inherited red
+suites without adding failures. The exact counts pin why promotion is judged
+by newly added failure identities rather than absolute suite health.
 """
 
 from __future__ import annotations
@@ -24,6 +30,92 @@ from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
 PLAN = "plan-a"
+
+_DOCUMENTATION_LAYOUT_COLLECTION_FAILURE = (
+    "tests/docs/test_documentation_layout.py::collection"
+)
+_STANDARD_NAME_EDIT_FAILURE_IDS = [
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_eligible_stage_rename_applies[accepted]"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_eligible_stage_rename_applies[reviewed]"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_eligible_stage_rename_applies[exhausted]"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_eligible_stage_rename_applies[drafted]"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_superseded_without_successor_is_eligible"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_edit_fields_stamped_on_successor"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameEligibility::"
+        "test_run_id_stamped_on_successor_and_plan"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRefineRotationPropagation::"
+        "test_open_edit_fields_propagate_across_refine"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRefineRotationPropagation::"
+        "test_closed_edit_does_not_propagate"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRefineRotationPropagation::"
+        "test_explicit_edit_kwargs_are_not_overridden_by_propagation"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameCascadeProtections::"
+        "test_default_flags_recorded_false_on_successor"
+    ),
+    (
+        "tests/standard_names/test_edit_engine.py::TestRenameCascadeProtections::"
+        "test_opt_in_flags_recorded_on_successor"
+    ),
+    (
+        "tests/standard_names/test_edit_parity.py::TestRenameParity::"
+        "test_semantically_invalid_successor_quarantined"
+    ),
+    (
+        "tests/standard_names/test_edit_parity.py::TestRenameParity::"
+        "test_clean_rename_successor_is_valid"
+    ),
+    (
+        "tests/standard_names/test_edit_parity.py::TestRenameParity::"
+        "test_quarantined_successor_cannot_reach_accepted"
+    ),
+    (
+        "tests/standard_names/test_edit_scope.py::TestSharedBaseGuard::"
+        "test_leaf_shared_base_edit_remains_local_without_family"
+    ),
+    (
+        "tests/standard_names/test_edit_scope.py::TestSharedBaseGuard::"
+        "test_qualifier_only_change_does_not_trigger_guard"
+    ),
+    (
+        "tests/standard_names/test_edit_scope.py::TestSharedBaseGuard::"
+        "test_no_siblings_no_guard"
+    ),
+    (
+        "tests/standard_names/test_edit_scope.py::TestFamilyMapping::"
+        "test_leaf_family_scope_never_lifts_across_locus_parent"
+    ),
+    (
+        "tests/standard_names/test_edit_scope.py::TestSubtreeCascadePlanning::"
+        "test_subtree_rename_on_parent_target"
+    ),
+]
 
 
 @pytest.fixture()
@@ -449,6 +541,81 @@ def test_real_cited_commit_and_clean_suite_delta_promote_together(
     assert record["commits"] == [landed_sha]
     assert record["suite_delta"]["status"] == "clean"
     assert record["suite_delta"]["added_failure_ids"] == []
+
+
+def test_known_bad_promotion_with_twenty_added_failures_is_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T091000000000-node-a"
+    manifest = tmp_path / "known-bad.md"
+    baseline_failures = [_DOCUMENTATION_LAYOUT_COLLECTION_FAILURE]
+    _write_suite_manifest(
+        manifest,
+        baseline=_suite_observation("base-abc", baseline_failures),
+        after=_suite_observation(
+            "after-abc", [*baseline_failures, *_STANDARD_NAME_EDIT_FAILURE_IDS]
+        ),
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"] == "suite-delta-refused"
+    assert payload["added_failure_ids"] == sorted(_STANDARD_NAME_EDIT_FAILURE_IDS)
+    pointer = json.loads(pointer_path(run_id).read_text())
+    assert pointer["suite_delta_refusal"]["added_failure_ids"] == sorted(
+        _STANDARD_NAME_EDIT_FAILURE_IDS
+    )
+
+
+def test_fifteen_repair_promotions_with_no_added_failures_are_accepted(
+    repository: Path, tmp_path: Path
+) -> None:
+    inherited_failures = [
+        _DOCUMENTATION_LAYOUT_COLLECTION_FAILURE,
+        (
+            "tests/features/test_search.py::TestSearchFeatures::"
+            "test_basic_search_functionality"
+        ),
+    ]
+    accepted = 0
+
+    for index in range(15):
+        run_id = f"r-20260826T10{index:02d}00000000-node-a"
+        manifest = tmp_path / f"repair-{index}.md"
+        after_failures = (
+            inherited_failures
+            if index % 2 == 0
+            else [_DOCUMENTATION_LAYOUT_COLLECTION_FAILURE]
+        )
+        _write_suite_manifest(
+            manifest,
+            baseline=_suite_observation("base-abc", inherited_failures),
+            after=_suite_observation(f"repair-{index}", after_failures),
+        )
+        _write_pointer(
+            run_id,
+            repository,
+            suite_command="pytest -q",
+            manifest_path=str(manifest),
+        )
+
+        result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+        assert result.exit_code == 0, result.output
+        suite_delta = json.loads(result.output)["record"]["suite_delta"]
+        assert suite_delta["status"] == "clean"
+        assert suite_delta["added_failure_ids"] == []
+        accepted += 1
+
+    assert accepted == 15
 
 
 # ── The single control predicate ─────────────────────────────────────────────
