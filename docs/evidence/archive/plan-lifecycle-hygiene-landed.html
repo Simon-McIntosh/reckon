@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="plan-lifecycle-hygiene-landed">
+  <meta name="plan-title" content="Plan lifecycle hygiene — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence for lifecycle findings that distinguish untidy plan state from state that makes work unschedulable.">
+  <meta name="plan-evidence-for" content="plan-lifecycle-hygiene">
+  <meta name="plan-verifies" content="plan-lifecycle-hygiene#s4">
+  <meta name="plan-commits" content="ec3b9fb">
+  <meta name="plan-recorded-at" content="2026-09-01">
+  <title>Plan lifecycle hygiene — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>Plan lifecycle hygiene — landed evidence</h1>
+      <p class="plan-summary">This cumulative record preserves the measured lifecycle failures, the enforcement rules derived from them, and the boundaries that remain subject to design review.</p>
+    </header>
+
+    <section id="closed-sprint-severity">
+      <h2>Closed-sprint findings become actionable errors</h2>
+      <p><strong>Measured miss:</strong> one session was told twice that two new plans were absent from their declared sprint, acted on neither finding, and left both plans attached to a closed sprint. The finding therefore produced <strong>0 corrective actions from 2 warnings</strong>. Its shared warning severity and generic message hid the consequential case among ordinary hygiene findings.</p>
+      <p><strong>Landed rule:</strong> absence from an open sprint remains <code>plan-sprint-missing-item</code> at <code>warn</code> severity because the state is untidy but recoverable. Declaring a sprint whose status is <code>done</code>, <code>shipped</code>, <code>closed</code>, or <code>archived</code> now produces <code>plan-sprint-closed</code> at <code>error</code> severity because the plan is invisible to the advancing scheduling horizon. Both the roadmap scan and MCP audit use the shared <code>CLOSED_SPRINT_STATUSES</code> vocabulary and name the status and scheduling consequence.</p>
+      <p><strong>Actionability standard:</strong> the result follows the example set by <code>sprint-order-inversion</code>: a lifecycle finding must identify the affected plan, the specific failed relationship or state, and the consequence that requires action. The general severity boundary is now explicit: <em>untidy is a warning; unschedulable is an error</em>.</p>
+      <p><strong>Verification and provenance:</strong> <code>tests/test_mcp_audit.py</code> pins the two-case split—closed sprint to an error naming its status and invisibility, open sprint to a warning. The implementation landed in commit <code>ec3b9fb</code>.</p>
+      <p><strong>Scope boundary:</strong> this adds the enforcement half of the audit-cadence mechanism. Write-time lifecycle invariants, the plan-creation diet, and the sprint-close gate remain pending the lead’s strictness decision; this finding does not pre-empt those choices.</p>
+    </section>
+  </main>
+</body>
+</html>
