@@ -22,8 +22,8 @@
   <title>Uniform Worker Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="26">
+<meta name="plan-modified" content="2026-09-01">
+<meta name="plan-version" content="27">
 <meta name="plan-verifies" content="">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-north-star" content="portable-across-harnesses">
@@ -684,6 +684,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s10" data-id="c-uwd-close" data-who="reckon-ship" data-when="2026-08-12T17:22:00Z">
     <div class="r-comment-body">Plan closed — done, no followup. Five sections landed in one run (§6 worktree-visibility guard, §7 contract precision, §8 scope sufficiency, §9 followup id integrity, §10 continuation trigger), every one of them work that surfaced during the run rather than being deferred out of it. Four followups were drained to zero: one closed against the plan that had since shipped its work, three folded into sections. Suite 1,717 green. Two workers reported blocked rather than claiming complete, both times against a suite made red by a concurrent session; the escape hatch and the ownership rule between them cost nothing and hid nothing.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260901T1620" data-who="reckon-ship" data-when="2026-09-01T16:20:00+00:00">
+    <div class="r-comment-body"><p><strong>Landed 2026-09-01 in <code>1c6f609</code>, needs an evidence section &mdash; and it extends this section's rule.</strong> &#167;7 says the contract must not refuse a well-formed node. The measured case is adjacent and worse: a <em>correct</em> refusal that names only a remedy which does not apply.</p><p>Dispatching into an unregistered repository offered one remedy, <code>reckon sync</code>. For a data-only catalog that is pull-requested to another organisation, that remedy means writing Reckon's UI scaffolding into someone else's repository, so it was unavailable. With the only offered route closed, the caller left the pattern entirely and used a bare subagent &mdash; no worktree, no write fence, no manifest, no ledger record &mdash; and it left an uncommitted edit in a shared repository with nothing recording who made it. The second-order cause is the more useful one: that session's context had been compacted and carried the skill truncated, so the hand-composition fallback was not loaded, and nothing in the refusal pointed at it. A refusal that names only the inapplicable remedy pushes a <em>degraded</em> caller out of the pattern.</p><p>The refusal now names both routes: register the project, or hand-compose per the orchestration reference &#167;6 when carrying the scaffolding there is inappropriate. A third route was found and proved by test: registering <strong>write authority</strong> is a <code>mounts.json</code> entry in the config home and touches nothing in the target repository &mdash; the refusal fires, one config entry is added, the docs directory it names is never created, the dispatch is admitted, and the repository still holds exactly the file it started with.</p><p><strong>What the evidence record needs:</strong> a section in <code>docs/evidence/archive/uniform-worker-dispatch-landed.html</code> with a stable anchor, carrying the incident, the three routes with their blast radii, and the general rule this establishes for every refusal on the dispatch path &mdash; a refusal is a surface a blocked caller is provably reading, so it is where the instruction belongs, and naming one remedy is only safe when that remedy always applies.</p></div>
 </div>
 </section>
 </main>

@@ -15,9 +15,9 @@
   <title>Reckon skill overhaul | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-modified" content="2026-09-01">
 <meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 </head>
@@ -395,6 +395,9 @@ Done-when
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s4" data-id="c-living-ledger" data-who="reckon-ship" data-when="2026-08-12T16:14:00Z">
     <div class="r-comment-body">living-ledger landed — commit f6e2518; gate §4 passed on all five measures; measure 1,671 tests pass with 5 new contract tests, 523 s worker-time, 157 lines in scope; artifacts skills/reckon-ship/SKILL.md, references/sprint-orchestration.md, tests/test_skill_contracts.py. Writeback is now bound to reckon crew complete, impl advances per node landing over the orchestrator's executable-node denominator, the commit and gate measure travel with it, and same-plan follow-on work becomes a section. The four prescribed ops were checked against a real plan copy before integration — set impl, set commits, set artifacts and append comment all apply. Integration into main is queued behind a concurrent session's uncommitted edits to the same skill file; the commit is safe in the object store.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260901T1620" data-who="reckon-ship" data-when="2026-09-01T16:20:00+00:00">
+    <div class="r-comment-body"><p><strong>Landed 2026-09-01, needs an evidence record.</strong> Five skill defects, all of the same class this plan diagnoses: guidance that exists but is not where the agent is looking, or that contradicts the tool.</p><ul><li><code>ff0e950</code> &mdash; the correct arming rule lived in the harness reference while the section read <em>at arming time</em> never pointed there and ended with &ldquo;background the bare command and read its output file&rdquo;, which selects the primitive that delivers nothing. Rule locality, the same failure class as the native-agent dispatch bypass.</li><li><code>0df6d7a</code> &mdash; the exit-4 row said &ldquo;commit the plan&rdquo; without saying why that is right, so a session asked whether a <code>--brief</code> flag should carry findings to a worker. The plan is the passing surface; the beat is record, commit, dispatch; a second store is a second stale source of truth; large inputs travel by reference. Pinned by test.</li><li><code>b0bb725</code> &mdash; a hand-composed delegation is strictly weaker in observability, not merely more typing: no pointer, so nothing classifies it, no drain count, no ledger record, no follower line. My own advice to &ldquo;trust the classification&rdquo; had assumed a pointer such a run does not have.</li><li><code>aabb23f</code>, <code>e67c776</code> &mdash; three documents showed an arming line the code had stopped emitting, and this file's own example put first-person prose into three sessions' notification rows. A status claim repeating unchanged reads as a liveness assertion, and an unchanging one reads as stale: one lead's first hypothesis was a hung follower, from a healthy stream.</li><li><code>48e1fe4</code>, plus &#167;6 sandbox grants in <code>1c6f609</code> &mdash; a hand-composed dispatch must grant the two write roots outside the worktree, and a worktree's git index is one of them.</li></ul><p><strong>What the evidence record needs:</strong> <code>docs/evidence/archive/reckon-skill-overhaul-landed.html</code> does not exist yet and must be created, with <code>reckon-type=evidence</code> and <code>plan-evidence-for=reckon-skill-overhaul</code>. Its subject is the pattern rather than the five instances: every one was found by a session <em>using</em> the skill, not by review, and in four of the five the correct rule already existed somewhere the acting agent had no trigger to open. Record that contract tests moved from wording checks to intent checks, and that the skill's own examples are a distribution channel &mdash; three sessions copied a bad description verbatim.</p></div>
 </div>
 </section>
 </main>
