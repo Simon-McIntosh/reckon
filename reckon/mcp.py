@@ -482,13 +482,27 @@ def _typed_resource_provenance(
             selector.type,
             selector.id,
         )
-        if not content_path.is_file():
+        if not content_path.is_file() and not _distributed(docs_dir):
+            # Only a project whose aggregate is still canonical may cite it as
+            # provenance. In distributed mode that file is superseded, and
+            # naming it as the source of a typed resource attributes live state
+            # to a record frozen at migration.
             content_path = legacy_index_path(docs_dir, selector.project)
         if not content_path.is_file() and checkout_path is None:
             content_path = state_path(selector.project, "index")
     if not content_path.is_file() and composed_content is not None:
         return composed_provenance(docs_dir.parent, composed_content)
     return content_provenance(docs_dir.parent, content_path)
+
+
+def _distributed(docs_dir: Path) -> bool:
+    """Report whether a docs tree's typed resources are the canonical store."""
+    from reckon.project_state import ProjectStateError, project_state_mode
+
+    try:
+        return project_state_mode(docs_dir).format == "distributed"
+    except ProjectStateError:
+        return False
 
 
 def _read_legacy_project_resource(

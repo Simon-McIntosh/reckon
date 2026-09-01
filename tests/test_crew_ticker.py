@@ -289,3 +289,39 @@ def test_cli_watch_treats_exit_on_empty_as_selecting_single_event(
     assert result.exit_code == 0
     assert payload["event"] == "empty"
     assert payload["classification"] == "no_live_pointers"
+
+
+def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
+    """A reader judging progress needed this and had to leave the ticker for it.
+
+    Read from the configuration persisted at dispatch, never from current flight
+    config: a later config change must not silently restate what ran. A partial
+    label is still useful, so an absent field is omitted rather than invented.
+    """
+    _write_pointer(home, "r-agent", "agent-node", phase="working")
+    pointer = crew.read_pointer("r-agent")
+    pointer["agent"] = {
+        "backend": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "high",
+        "launch": "cli",
+    }
+    crew._write_json(crew.pointer_path("r-agent"), pointer)
+
+    snapshot = recovery._watch_snapshot(
+        crew.read_pointer("r-agent"), moment=recovery._utc_seconds(), stall_seconds=900
+    )
+    assert snapshot["agent"] == "gpt-5.6-sol/high"
+
+    line = recovery.format_watch_transition(
+        _event(agent=snapshot["agent"], to_state="working", from_state="dispatched")
+    )
+    assert "gpt-5.6-sol/high" in line
+    assert line.index("gpt-5.6-sol/high") > line.index("dispatched → working")
+    assert line.index("gpt-5.6-sol/high") < line.index("working ·")
+
+    # Half a label beats none; no label at all renders without a stray column.
+    assert recovery._agent_label({"agent": {"model": "gpt-5.6-sol"}}) == "gpt-5.6-sol"
+    assert recovery._agent_label({"agent": {"effort": "high"}}) == "high"
+    assert recovery._agent_label({}) == ""
+    assert "  ·" not in recovery.format_watch_transition(_event(agent=""))

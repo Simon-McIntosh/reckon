@@ -453,6 +453,24 @@ def _single_clause(value: Any, *, limit: int = 96) -> str:
     return clause[:boundary].rstrip(" ,:") + "…"
 
 
+def _agent_label(pointer: Mapping[str, Any]) -> str:
+    """Compact `model/effort` for the ticker, from the run's own record.
+
+    Read from the configuration persisted at dispatch rather than from current
+    flight config, because a later config change must not silently restate what
+    ran. Absent fields are simply omitted: a partial label is still useful and
+    an invented one is not.
+    """
+    agent = pointer.get("agent")
+    if not isinstance(agent, Mapping):
+        return ""
+    model = str(agent.get("model") or "").strip()
+    effort = str(agent.get("effort") or "").strip()
+    if model and effort:
+        return f"{model}/{effort}"
+    return model or effort
+
+
 def _watch_snapshot(
     pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> dict[str, Any]:
@@ -498,6 +516,10 @@ def _watch_snapshot(
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
         "session": str(pointer.get("session") or ""),
+        # What ran it. A reader comparing two nodes' progress, or judging whether
+        # a stall is the model or the work, needs this and had to leave the
+        # ticker to get it.
+        "agent": _agent_label(pointer),
         "state": state,
         "reason": _single_clause(detail),
     }
@@ -603,6 +625,7 @@ def _watch_transition(
         "run_id": snapshot.get("run_id"),
         "node": snapshot.get("node"),
         "session": snapshot.get("session") or "",
+        "agent": snapshot.get("agent") or "",
         "from_state": previous,
         "to_state": current,
         "working": counts["working"],
@@ -654,8 +677,9 @@ def format_watch_transition(
     previous = str(event.get("from_state") or "")
     current = str(event.get("to_state") or "unknown")
     movement = f"{previous} → {current}" if previous else f"→ {current}"
+    agent = str(event.get("agent") or "")
     line = (
-        f"{clock}  {node:<28}  {movement:<24}  "
+        f"{clock}  {node:<28}  {movement:<24}  {agent:<18}  "
         f"{int(event.get('working') or 0)} working · "
         f"{int(event.get('blocked') or 0)} blocked · "
         f"{int(event.get('unpromoted') or 0)} unpromoted"

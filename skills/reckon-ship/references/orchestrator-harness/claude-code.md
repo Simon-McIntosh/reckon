@@ -40,7 +40,7 @@ as the session lasts, and silence reads exactly like a quiet fleet.
 ```
 Monitor({
   command: 'reckon crew follow --project <project> --session <session>',
-  description: '<project> fleet',
+  description: '<project> <sprint-or-plan>',   // e.g. 'imas-codex S9'
   persistent: true,
 })
 ```
@@ -48,10 +48,14 @@ Monitor({
 `persistent: true` because a wave outlives the default timeout, and the
 follower is meant to cover the whole session rather than one wave.
 
-**Keep the description a label, not a sentence.** This host prints it verbatim
-as the visible row of every notification — `Monitor event: "<description>"` —
-so it repeats identically for each event and never carries the transition. Name
-the fleet and stop: `imas-codex fleet`.
+**Make the description name the work, and stop.** This host prints it verbatim
+as the visible row of every notification — `Monitor event: "<description>"` — so
+it repeats identically for each event and never carries the transition. What it
+*can* carry is the one thing known before the first event and true for all of
+them: the target being executed. `imas-codex S9` for a sprint,
+`nova hex-grid-derisk-gates` for a single plan. `<project> fleet` is not wrong
+but it is not informative either — every follower on a project would render the
+same row, and the target is what distinguishes this stream from the next one.
 
 First-person prose there is worse than clutter, and the failure mode is
 specific: a status claim that repeats unchanged across events reads as a
@@ -106,6 +110,11 @@ own state, which is why neither can repeat the three shell-filter mistakes:
 withholding lines in a stage's buffer, matching the `· N blocked · N unpromoted`
 summary that trails every line, or hiding a refusal behind `|| true`.
 
+The column between the transition and the figures is the model and effort that
+ran the node, read from the configuration persisted at dispatch rather than from
+current flight config — so a later config change cannot silently restate what
+ran. It is what a reader needs to judge whether a stall is the model or the work.
+
 The three figures partition the fleet as it stands after each line: `working` is
 work in progress, `blocked` is everything stopped and needing the coordinator (a
 stall or a failure included), and `unpromoted` is delivered work awaiting a gate.
@@ -116,9 +125,9 @@ Attaching opens with one line per live run, so the pane is never blank while
 work exists:
 
 ```
-12:30:11  hdg-cache-replay    → dispatched        2 working · 0 blocked · 0 unpromoted
-12:30:11  hdg-measured-map    → working           2 working · 0 blocked · 0 unpromoted
-12:30:12  hdg-measured-map    working → blocked   2 working · 1 blocked · 0 unpromoted · tried: …
+12:30:11  hdg-cache-replay    → dispatched        gpt-5.6-sol/high   2 working · 0 blocked · 0 unpromoted
+12:30:11  hdg-measured-map    → working           gpt-5.6-sol/high   2 working · 0 blocked · 0 unpromoted
+12:30:12  hdg-measured-map    working → blocked   claude-opus-5/max  2 working · 1 blocked · 0 unpromoted · tried: …
 ```
 
 **The stream carries worker transitions and fleet posture, and nothing else.**
