@@ -69,6 +69,65 @@ window.STATE_READY.then(() => console.log(JSON.stringify(window.STATE)));
     return json.loads(result.stdout)
 
 
+def test_project_state_revalidation_reassembles_discovery_inventory() -> None:
+    discoveries = [
+        {"inventory": [{"slug": "present", "type": "plan", "status": "active"}]},
+        {
+            "inventory": [
+                {"slug": "present", "type": "plan", "status": "active"},
+                {"slug": "created-later", "type": "plan", "status": "pending"},
+            ]
+        },
+    ]
+    script = f"""
+const fs = require("fs");
+global.window = {{location: {{pathname: "/sample/"}}}};
+global.document = {{querySelector: () => ({{content: "sample"}})}};
+const discoveries = {json.dumps(discoveries)};
+let discoveryRequests = 0;
+global.fetch = async (url) => {{
+  if (url === "state/sample/projection.json") {{
+    return {{ok: false, status: 404, json: async () => ({{}})}};
+  }}
+  if (url === "state/sample/index.json") {{
+    return {{ok: true, status: 200, json: async () => ({{data: {{}}}})}};
+  }}
+  if (url === "/_discover/sample") {{
+    const payload = discoveries[Math.min(discoveryRequests, discoveries.length - 1)];
+    discoveryRequests += 1;
+    return {{ok: true, status: 200, json: async () => payload}};
+  }}
+  throw new Error("unexpected fetch " + url);
+}};
+eval(fs.readFileSync({json.dumps(str(LOADER))}, "utf8"));
+window.STATE_READY.then(async firstState => {{
+  const secondState = await window.revalidateProjectState();
+  console.log(JSON.stringify({{
+    callable: typeof window.revalidateProjectState === "function",
+    discoveryRequests,
+    firstInventory: firstState.inventory.map(item => item.slug),
+    secondInventory: secondState.inventory.map(item => item.slug),
+    publishedCurrentState: window.STATE === secondState,
+  }}));
+}});
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    observation = json.loads(result.stdout)
+
+    assert observation == {
+        "callable": True,
+        "discoveryRequests": 2,
+        "firstInventory": ["present"],
+        "secondInventory": ["present", "created-later"],
+        "publishedCurrentState": True,
+    }
+
+
 def test_plan_effort_hours_survives_discovery_and_central_fallback() -> None:
     discovery_state = _load_discovery_state(
         {

@@ -7,8 +7,9 @@
 //   3. /_discover/<project>        — auto-discovery from HTML meta tags
 //
 // window.STATE_READY is a Promise. Templates wait on it before rendering.
+// The same assembly remains callable so an open page can revalidate its state.
 
-window.STATE_READY = (async function () {
+window.revalidateProjectState = async function () {
   const PROJECT = (document.querySelector('meta[name="docs-project"]')?.content) ||
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
                   "unknown";
@@ -307,7 +308,11 @@ window.STATE_READY = (async function () {
     attachment_relations: attachmentRelations,
     plans,
   };
-})().catch(error => {
+  window.STATE_ERROR = null;
+  return window.STATE;
+};
+
+window.STATE_READY = window.revalidateProjectState().catch(error => {
   window.STATE_ERROR = error;
   throw error;
 });

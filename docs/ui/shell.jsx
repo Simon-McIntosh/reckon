@@ -98,7 +98,7 @@ function snapshotReceipt(state) {
   };
 }
 
-function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleFilters, theme, setTheme, density, setDensity, projects, hiddenProjects, onToggleProject }) {
+function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleFilters, theme, setTheme, density, setDensity, projects, hiddenProjects, onToggleProject, onRefresh }) {
   const M = window.STATE;
   const view = route.view;
   const currentProject = M?.project
@@ -214,7 +214,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             requestedPanel={requestedSettingsPanel}
             onPanelOpened={() => setRequestedSettingsPanel(null)}
             snapshot={snapshot}
-            onRefresh={() => window.location.reload()}
+            onRefresh={onRefresh}
           />
         ) : null}
         {view === "plan" && (
@@ -1073,6 +1073,10 @@ function App() {
   // views (filter list, graph) recompute against the updated inventory record.
   const [invRev, setInvRev] = useState(0);
   const bumpInv = useCallback(() => setInvRev(r => r + 1), []);
+  const refreshProjectState = useCallback(async () => {
+    await window.revalidateProjectState?.();
+    bumpInv();
+  }, [bumpInv]);
   useEffect(() => {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
   }, [filtersHidden]);
@@ -1290,6 +1294,7 @@ function App() {
           projects={projects}
           hiddenProjects={hiddenProjects}
           onToggleProject={toggleProject}
+          onRefresh={refreshProjectState}
         />}
       {canvasView === "plan" ? (
         <div className={`r-canvas-view r-plans-view ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`}>
