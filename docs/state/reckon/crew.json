@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:33:56",
+  "updated": "2026-09-01T20:34:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -30276,9 +30276,206 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T180119327253-n-suite-baseline",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a75",
+        "node": "n-suite-baseline",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md records the exact base commit sha, the pytest summary line with passed, failed, skipped and error counts and the wall-clock in seconds, the full list of nodeids under 'FAILED' if any, and the count of browser-dependent cases that skipped together with each distinct skip reason string; the log is captured once to a file and read from there rather than re-run for formatting",
+          "estimated_hours": null,
+          "goal": "A committed baseline of the full suite at the current tip, so every later node's claim is judged as a delta rather than an absolute",
+          "id": "n-suite-baseline",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T180119327253-n-suite-baseline/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "surface-baseline",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:01:25Z",
+        "completed_at": "2026-09-01T18:32:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1862,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1862,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "35d4657e0100df2f49c3a7bfd1fbf6e8ba249950",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q, captured once to a file",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T180119327253-n-suite-baseline/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e22-0eec-7081-8319-420848736205",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6344704,
+            "cached_input_tokens_cumulative": 6344704,
+            "input_tokens": 6512601,
+            "input_tokens_cumulative": 6512601,
+            "output_tokens": 19871,
+            "output_tokens_cumulative": 19871,
+            "reasoning_output_tokens": 7296,
+            "reasoning_output_tokens_cumulative": 7296
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "report-only measurement node; its fence was the report path and no repository change was in scope",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest summary",
+          "override": false,
+          "role": "test",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260901T182742269540-n-shared-asset-parity",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a75",
+        "node": "n-shared-asset-parity",
+        "node_definition": {
+          "done_when": "The divergence is first characterised as measured numbers in the manifest: canonical docs/_shared/dashboard.css is 1733 lines and 363 selectors against 1285 and 291 in skills/reckon-sync/assets/dashboard.css, and the report states whether the shipped copy is a strict subset of canonical or has independent rules canonical lacks, giving the count of selectors present in only one side in each direction; if it is drift the shipped copy is regenerated from canonical per this repository's stated rule that docs/_shared is the canonical source, and if it is a deliberate subset the subset relation is recorded and the copy is left alone; either way tests/test_shared_asset_parity.py then fails when the two are made to disagree, proven by a recorded run against a copy with 1 selector altered, and passes on the tree as landed; and tests/test_build.py and tests/test_shared_token_contrast.py are run in the worktree and report 0 new failures against the node's own base revision even though they are outside its write fence",
+          "estimated_hours": null,
+          "goal": "The duplicated dashboard stylesheet stops being able to diverge from its canonical source unnoticed",
+          "id": "n-shared-asset-parity",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182742269540-n-shared-asset-parity/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/_shared/dashboard.css",
+            "skills/reckon-sync/assets/dashboard.css",
+            "tests/test_shared_asset_parity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-scout",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:27:46Z",
+        "completed_at": "2026-09-01T18:34:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 416,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 416,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "22fd1d6951ae9c4417c4423e61f177e9c774e007",
+        "commits": [
+          "cfe96ab51451c07ff99a036056ac4173f520b00d"
+        ],
+        "changed_lines": {
+          "added": 476,
+          "removed": 4,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "parity test plus a one-selector mutation control, against the required existing suites at base and landed",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182742269540-n-shared-asset-parity/parity-landed.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182742269540-n-shared-asset-parity/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4416768,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4580381,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 14218,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 5318
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 502
+    "_version": 504
   }
 }
