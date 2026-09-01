@@ -414,7 +414,7 @@ def _single_clause(value: Any, *, limit: int = 96) -> str:
     return clause[:boundary].rstrip(" ,:") + "…"
 
 
-def _agent_label(pointer: Mapping[str, Any]) -> str:
+def agent_label(pointer: Mapping[str, Any]) -> str:
     """Compact `model/effort` for the ticker, from the run's own record.
 
     Read from the configuration persisted at dispatch rather than from current
@@ -480,7 +480,7 @@ def _watch_snapshot(
         # What ran it. A reader comparing two nodes' progress, or judging whether
         # a stall is the model or the work, needs this and had to leave the
         # ticker to get it.
-        "agent": _agent_label(pointer),
+        "agent": agent_label(pointer),
         "state": state,
         "reason": _single_clause(detail),
     }

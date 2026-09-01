@@ -1398,16 +1398,34 @@ def crew_unwatch(project, pretty):
 @crew.command(name="list")
 @click.option("--project", default=None, help="Return runs for one project only.")
 @click.option("--phase", default=None, help="Return runs in one phase only.")
+@click.option(
+    "--session",
+    default=None,
+    help="Mark rows dispatched by this session as mine, and report its follower.",
+)
+@click.option("--mine", is_flag=True, help="Return only rows this --session owns.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_list(project, phase, pretty):
-    """List matching live run pointers, so a fresh session can pick them up."""
+def crew_list(project, phase, session, mine, pretty):
+    """List matching live run pointers, so a fresh session can pick them up.
+
+    Every row names its owning session and, when one is supplied, whether that
+    session owns it. The first question a recovering orchestrator asks is which
+    of these runs are its own, and a node name is not evidence of ownership.
+    """
+    from reckon.crew.recovery import agent_label
     from reckon.crew.runs import project_watch_visibility
+
+    if mine and session is None:
+        raise click.ClickException("--mine needs --session to say whose runs to keep.")
 
     crew_module, _ = _crew_modules()
     project_records = crew_module.list_live(project=project)
     runs = []
     for record in project_records:
         if phase is not None and str(record.get("phase") or "") != phase:
+            continue
+        owner = str(record.get("session") or "") or None
+        if mine and owner != session:
             continue
         classified = crew_module.classify_pointer(record)
         runs.append(
@@ -1416,6 +1434,10 @@ def crew_list(project, phase, pretty):
                 "node": (record.get("node") or {}).get("id"),
                 "project": record.get("project"),
                 "plan": (record.get("node") or {}).get("plan"),
+                "session": owner,
+                "member": record.get("member"),
+                "agent": agent_label(record) or None,
+                "mine": None if session is None else owner == session,
                 "backend": record.get("backend"),
                 "launch": record.get("launch"),
                 "phase": record.get("phase"),
@@ -1433,7 +1455,7 @@ def crew_list(project, phase, pretty):
         )
     payload = {"ok": True, "runs": runs}
     if project is not None:
-        payload["watcher"] = project_watch_visibility(project)
+        payload["watcher"] = project_watch_visibility(project, session=session)
     else:
         projects = sorted(
             {
@@ -1443,7 +1465,8 @@ def crew_list(project, phase, pretty):
             }
         )
         payload["watchers"] = [
-            project_watch_visibility(project_name) for project_name in projects
+            project_watch_visibility(project_name, session=session)
+            for project_name in projects
         ]
     _emit(payload, pretty)
 

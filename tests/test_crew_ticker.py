@@ -326,7 +326,7 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     )
 
     # Half a label beats none; no label at all renders without a stray column.
-    assert recovery._agent_label({"agent": {"model": "gpt-5.6-sol"}}) == "gpt-5.6-sol"
-    assert recovery._agent_label({"agent": {"effort": "high"}}) == "high"
-    assert recovery._agent_label({}) == ""
+    assert recovery.agent_label({"agent": {"model": "gpt-5.6-sol"}}) == "gpt-5.6-sol"
+    assert recovery.agent_label({"agent": {"effort": "high"}}) == "high"
+    assert recovery.agent_label({}) == ""
     assert "  ·" not in recovery.format_watch_transition(_event(agent=""))
