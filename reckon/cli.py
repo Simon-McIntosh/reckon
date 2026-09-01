@@ -1615,6 +1615,13 @@ def _ledger_module():
 )
 @click.option("--outcome", default="", help="One line on what the run produced.")
 @click.option(
+    "--no-commit",
+    default="",
+    help="Declare deliberately that a passing node produced no commit, and why. "
+    "Recorded on the ledger row, so a commitless promotion is distinguishable "
+    "from one that recorded nothing by accident.",
+)
+@click.option(
     "--tests-added",
     type=int,
     default=None,
@@ -1665,6 +1672,7 @@ def crew_complete(
     failure_classification,
     commits,
     outcome,
+    no_commit,
     tests_added,
     scope_changed,
     completed_at,
@@ -1699,6 +1707,7 @@ def crew_complete(
             failure_classification=failure_classification or "",
             commits=commits,
             outcome=outcome,
+            no_commit=no_commit,
             tests_added=tests_added,
             scope_changed=scope_changed,
             completed_at=completed_at,

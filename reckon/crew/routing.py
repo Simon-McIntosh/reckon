@@ -297,6 +297,27 @@ def _shadow_worktree_records(
     return result
 
 
+# What `--apply` removes, and why each of the rest stays. Kept beside the removal
+# branch so the report and the behaviour cannot drift: a classification named
+# here as reclaimable must be one that branch acts on.
+RECLAIMABLE_CLASSES = ("integrated", "disposable")
+WITHHELD_REASONS = {
+    "dirty": (
+        "uncommitted changes in the worktree; commit or discard them, and "
+        "nothing reclaims a worktree holding work that exists nowhere else"
+    ),
+    "unintegrated": (
+        "its HEAD is not reachable from the integration revision, so removing "
+        "it would destroy the only copy of that commit; merge it or discard it "
+        "deliberately"
+    ),
+    "live-referenced": (
+        "a live run pointer still claims this worktree; reconcile or stop that "
+        "run first"
+    ),
+}
+
+
 def garbage_collect(
     *,
     repo: str | Path,
@@ -399,6 +420,20 @@ def garbage_collect(
                 report["removed"] = True
             run_reports.append(report)
 
+    # `--apply` removes the integrated and the disposable, so a report whose
+    # headline figure is `disposable` says 0 while it would in fact reclaim
+    # dozens. A caller reading that concludes nothing is reclaimable and the
+    # accumulation grows — measured at 46 worktrees in one project, 40 of them
+    # integrated. So every row states whether it would be reclaimed, and a row
+    # that would not says which condition holds it back.
+    for item in worktrees:
+        classification = str(item["classification"])
+        item["reclaimable"] = classification in RECLAIMABLE_CLASSES
+        if not item["reclaimable"]:
+            item["withheld"] = WITHHELD_REASONS.get(
+                classification, "unrecognised classification"
+            )
+
     counts = {
         name: sum(item["classification"] == name for item in worktrees)
         for name in (
@@ -409,6 +444,7 @@ def garbage_collect(
             "live-referenced",
         )
     }
+    counts["reclaimable"] = sum(bool(item["reclaimable"]) for item in worktrees)
     return {
         "dry_run": not apply,
         "repo": str(repo_root),

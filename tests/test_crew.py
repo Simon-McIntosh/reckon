@@ -3712,7 +3712,10 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
         launcher=lambda *args, **kwargs: 0,
     )
     _deliver_manifest(first, "complete", commits="HEAD")
-    crew.complete(first["run_id"], gate="passed")
+    # Cite what the manifest recorded: a passing gate that leaves the run's own
+    # commits uncited is refused, because that is how a node's work ends up
+    # surviving only as long as its worktree.
+    crew.complete(first["run_id"], gate="passed", commits=["HEAD"])
 
     second = crew.dispatch(
         node=_node(manifest_path=str(manifest)),

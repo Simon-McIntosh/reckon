@@ -234,3 +234,127 @@ def test_citing_a_merge_says_it_is_the_wrong_commit_not_a_scope_breach(tmp_path)
 
     assert promotion._merge_revisions(repo, [merge_sha]) == [merge_sha]
     assert promotion._merge_revisions(repo, [worker_sha]) == []
+
+
+def test_a_passing_gate_may_not_leave_the_run_s_own_commits_uncited(
+    tmp_path, monkeypatch
+):
+    """The ledger row is the binding between a node and its work.
+
+    Measured in one project's ledger: a run recorded `gate: passed` with
+    `commits: []` while its worktree held a commit unreachable from the
+    integration branch. Only the workspace collector's `unintegrated`
+    classification stood between that work and deletion, and it would have gone
+    the moment someone believed the ledger. A commitless promotion stays legal —
+    a report-only node has no commit and that is its deliverable — so the check
+    reads whether the worktree actually committed rather than guessing from the
+    node's role.
+    """
+    from reckon.crew import promotion
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    tree = tmp_path / "worktree"
+    tree.mkdir()
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tree, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.email", "worker@example.invalid")
+    git("config", "user.name", "Worker")
+    (tree / "seed.txt").write_text("seed\n")
+    git("add", "seed.txt")
+    git("commit", "-q", "-m", "chore: seed")
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    record = {"worktree": str(tree), "base_sha": base, "node": {"role": "implement"}}
+
+    # A worktree still at its base committed nothing: silence is honest.
+    promotion._require_gate_evidence(
+        "r-report-only", record, verdict="passed", commits=(), no_commit_reason=""
+    )
+
+    (tree / "work.py").write_text("real work\n")
+    git("add", "work.py")
+    git("commit", "-q", "-m", "feat: the work the ledger would have lost")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        promotion._require_gate_evidence(
+            "r-uncited", record, verdict="passed", commits=(), no_commit_reason=""
+        )
+    message = str(refusal.value)
+    assert "cites no commit" in message
+    assert "discarded the moment someone believes the ledger" in message
+    assert "--no-commit" in message
+
+    # Citing the commit, or declaring the absence deliberately, both pass.
+    promotion._require_gate_evidence(
+        "r-cited", record, verdict="passed", commits=("HEAD",), no_commit_reason=""
+    )
+    promotion._require_gate_evidence(
+        "r-declared",
+        record,
+        verdict="passed",
+        commits=(),
+        no_commit_reason="artifact retained out-of-tree by design",
+    )
+
+    # A failing gate is already answerable through --outcome, and an
+    # unmeasurable worktree is never refused on a guess.
+    promotion._require_gate_evidence(
+        "r-failed", record, verdict="failed", commits=(), no_commit_reason=""
+    )
+    promotion._require_gate_evidence(
+        "r-unmeasurable",
+        {"worktree": str(tmp_path / "gone"), "base_sha": base},
+        verdict="passed",
+        commits=(),
+        no_commit_reason="",
+    )
+
+
+def test_the_manifest_answers_before_the_repository_does(tmp_path, monkeypatch):
+    """Reckon was holding the answer and discarding it.
+
+    The worker's manifest records the commits it made. `complete` recorded only
+    what `--commit` passed and never consulted that line, so a coordinator who
+    omitted one flag produced a ledger row saying the node succeeded with
+    nothing pointing at the work — found five days later only because the
+    workspace collector classified the worktree `unintegrated`. Naming the exact
+    revisions the worker already reported is more use than describing the
+    condition, so the manifest is read before the repository.
+    """
+    from reckon.crew import promotion
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text(
+        "node: n-west-demo-rc2\nstatus: complete\n"
+        "commits: d52bbc56, 9f1c2b7\nblockers: none\n"
+    )
+    record = {
+        "manifest_path": str(manifest),
+        "manifest_baseline_mtime_ns": 0,
+        "node": {"role": "implement"},
+    }
+
+    with pytest.raises(crew.CrewError) as refusal:
+        promotion._require_gate_evidence(
+            "r-uncited", record, verdict="passed", commits=(), no_commit_reason=""
+        )
+    message = str(refusal.value)
+    assert "manifest records 2" in message
+    assert "d52bbc56" in message and "9f1c2b7" in message
+    assert "Reckon is holding the answer" in message
+
+    # A manifest that states none is the honest commitless case.
+    manifest.write_text("node: n\nstatus: complete\ncommits: none\nblockers: none\n")
+    promotion._require_gate_evidence(
+        "r-report-only", record, verdict="passed", commits=(), no_commit_reason=""
+    )

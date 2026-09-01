@@ -13,7 +13,9 @@ from typing import Any, Iterable, Mapping
 from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
+from reckon.crew.reports import parse_manifest
 from reckon.crew.runs import (
+    _manifest_freshness,
     _pointer_lock,
     _utc_now,
     pointer_path,
@@ -180,6 +182,88 @@ def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
         except OSError:
             continue
     return None
+
+
+def _require_gate_evidence(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    commits: tuple[str, ...],
+    no_commit_reason: str,
+) -> None:
+    """Refuse a passing gate that leaves the run's own commits uncited.
+
+    Gate correctness and integration completeness are two separate claims, and a
+    ledger row must carry both: a gate can be independently defensible — the
+    node's externally visible goal met, exit status 0 — while repository
+    integration is recorded nowhere at all.
+
+    A commitless promotion is normal: a report-only node produces a manifest and
+    no commit, and that is its deliverable. The defect is narrower and it is
+    measurable — a worktree whose HEAD has moved off its base *made* commits, so
+    a passing gate citing none loses the binding between the ledger row and the
+    work. Measured: one run promoted `gate: passed` with `commits: []` while its
+    worktree held a commit unreachable from the integration branch. Only the
+    workspace collector's `unintegrated` classification saved that work, and it
+    would have gone the moment someone believed the ledger.
+
+    Inferring this from the node's role or sandbox tier instead would refuse
+    every honest commitless promotion, so it reads the repository rather than
+    the metadata, and stays silent whenever it cannot measure.
+    """
+    if verdict != "passed" or commits or str(no_commit_reason).strip():
+        return
+
+    # First ask the worker, because it already answered. The manifest's
+    # `commits:` line is delivered evidence that Reckon holds and, until now,
+    # discarded: a coordinator that omitted one flag produced a ledger saying
+    # the node succeeded with nothing pointing at the work. Naming the exact
+    # revisions is more use than describing the condition, so this runs before
+    # the repository check below.
+    manifest_present, fresh = _manifest_freshness(record)
+    if manifest_present and fresh:
+        try:
+            delivered = parse_manifest(
+                Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+            )
+        except (OSError, KeyError, ValueError):
+            delivered = {}
+        stated = [str(sha).strip() for sha in (delivered.get("commits") or [])]
+        stated = [sha for sha in stated if sha and sha.lower() not in {"none", "n/a"}]
+        if stated:
+            raise CrewError(
+                f"run {run_id!r} has a passing gate and cites no commit, but its "
+                f"manifest records {len(stated)}: {', '.join(stated)}. Reckon is "
+                "holding the answer and would discard it — the ledger row would "
+                "say the node succeeded with nothing pointing at the work, and "
+                "the commit would survive only as long as its worktree. Pass "
+                "--commit for each, or --no-commit '<why>' to record "
+                "deliberately that they are not being registered"
+            )
+
+    tree = Path(str(record.get("worktree") or ""))
+    base = str(record.get("base_sha") or "").strip()
+    if not base or not tree.is_dir():
+        return
+    head = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    tip = head.stdout.strip()
+    if head.returncode or not tip or tip == base:
+        return
+    raise CrewError(
+        f"run {run_id!r} has a passing gate and cites no commit, but its "
+        f"worktree is at {tip[:12]} rather than its base {base[:12]}: it "
+        "committed, and nothing on the record says what. Work left only in a "
+        "worktree is discarded the moment someone believes the ledger. Cite the "
+        "commit, or pass --no-commit '<why>' to record deliberately that this "
+        "node's commits are not being registered"
+    )
 
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
@@ -584,6 +668,7 @@ def complete(
     root: str | Path | None = None,
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
+    no_commit: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -613,11 +698,19 @@ def complete(
             raise CrewError(
                 f"shadow run {run_id!r} is commitless evidence; --commit is refused"
             )
+        _require_gate_evidence(
+            run_id,
+            record,
+            verdict=verdict,
+            commits=commit_list,
+            no_commit_reason=no_commit,
+        )
         return _complete_locked(
             run_id,
             gate=gate,
             failure_classification=classification,
             commits=commit_list,
+            no_commit=no_commit,
             outcome=outcome,
             tests_added=tests_added,
             scope_changed=scope_changed,
@@ -635,6 +728,7 @@ def _complete_locked(
     gate: str,
     failure_classification: str = "",
     commits: Iterable[str] = (),
+    no_commit: str = "",
     outcome: str = "",
     tests_added: int | None = None,
     scope_changed: bool = False,
@@ -839,6 +933,10 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # A deliberate commitless promotion survives on the record with its reason,
+    # so a later reader can tell it from one that recorded nothing by accident.
+    if str(no_commit).strip():
+        run["no_commit"] = str(no_commit).strip()
     watch_override = record.get("watch_override")
     if isinstance(watch_override, Mapping):
         run["watch_override"] = dict(watch_override)

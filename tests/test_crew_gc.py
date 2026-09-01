@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import subprocess
 import sys
@@ -129,6 +130,11 @@ def test_gc_dry_run_itemizes_worktrees_without_touching_them(
         "integrated": 1,
         "live-referenced": 1,
         "unintegrated": 0,
+        # What `--apply` would actually reclaim. `disposable` alone read as the
+        # headline said 0 while dozens of integrated worktrees were removable,
+        # so a caller concluded nothing was reclaimable and the accumulation
+        # grew — measured at 46 worktrees in one project, 40 of them integrated.
+        "reclaimable": 1,
     }
     by_path = {item["path"]: item for item in payload["worktrees"]}
     assert by_path[str(integrated)]["classification"] == "integrated"
@@ -249,9 +255,7 @@ def test_gc_withholds_a_shadow_whose_patch_is_absent(
     assert shadow.exists()
 
 
-def test_gc_never_offers_a_live_referenced_shadow(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_gc_never_offers_a_live_referenced_shadow(tmp_path: Path, monkeypatch) -> None:
     home = tmp_path / "config"
     monkeypatch.setenv("RECKON_HOME", str(home))
     repo = repository(tmp_path)
@@ -302,3 +306,57 @@ def test_gc_still_withholds_a_non_shadow_unintegrated_worktree(
     assert item["classification"] == "unintegrated"
     assert str(unintegrated) not in payload["removed_worktrees"]
     assert unintegrated.exists()
+
+
+def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch):
+    """A caller cannot tell "withheld on purpose" from "the classifier missed it".
+
+    Both look like an integrated worktree that was not offered, and the remedies
+    are opposite: one is a condition to clear, the other a defect to report. So
+    every row that `--apply` would not reclaim names the condition.
+    """
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    integrated = create_worktree(repo, "audit", "integrated")
+    dirty = create_worktree(repo, "audit", "dirty")
+    live = create_worktree(repo, "audit", "live")
+    (dirty / "untracked.txt").write_text("dirty\n")
+    write_pointer(home, "run-live", live)
+
+    result = CliRunner().invoke(cli.main, ["crew", "gc", "--repo", str(repo)])
+    payload = json.loads(result.output)
+    rows = {Path(item["path"]).name: item for item in payload["worktrees"]}
+
+    assert rows[integrated.name]["reclaimable"] is True
+    assert "withheld" not in rows[integrated.name]
+
+    assert rows[dirty.name]["reclaimable"] is False
+    assert "uncommitted changes" in rows[dirty.name]["withheld"]
+    assert "exists nowhere else" in rows[dirty.name]["withheld"]
+
+    assert rows[live.name]["reclaimable"] is False
+    assert "live run pointer" in rows[live.name]["withheld"]
+
+
+def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch):
+    """The report and the removal branch must not drift apart.
+
+    The report is what a caller decides from, so a classification the report
+    calls reclaimable has to be one `--apply` acts on, and the reverse. Asserted
+    against the vocabulary rather than by running a destructive pass.
+    """
+    from reckon.crew import routing
+
+    assert set(routing.RECLAIMABLE_CLASSES) == {"integrated", "disposable"}
+    assert set(routing.WITHHELD_REASONS) == {
+        "dirty",
+        "unintegrated",
+        "live-referenced",
+    }
+    assert not set(routing.RECLAIMABLE_CLASSES) & set(routing.WITHHELD_REASONS)
+
+    source = inspect.getsource(routing.garbage_collect)
+    branch = source.split('if item["classification"] not in (', 1)[1].split(")", 1)[0]
+    for name in routing.RECLAIMABLE_CLASSES:
+        assert f'"{name}"' in branch, f"{name} is reported reclaimable but not removed"
