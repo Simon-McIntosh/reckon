@@ -2,23 +2,31 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
+from tests import spa_module_eval
 
 ROOT = Path(__file__).parents[1]
 SOURCE = ROOT / "docs" / "ui" / "sprint.jsx"
 
 
 def _evaluate_helpers(expression: str):
-    source = SOURCE.read_text()
-    helpers = source[: source.index("function Sprint(")]
-    script = f"{helpers}\nconsole.log(JSON.stringify({expression}));"
-    result = subprocess.run(
-        ["node", "-e", script],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
+    return spa_module_eval.evaluate_jsx_module(SOURCE, expression)
+
+
+def test_module_evaluator_rejects_raw_jsx(monkeypatch, tmp_path):
+    source = tmp_path / "component.jsx"
+    source.write_text("function component() { return <span>raw</span>; }")
+    monkeypatch.setattr(
+        spa_module_eval,
+        "compile_jsx",
+        lambda text, *, filename: text.encode(),
     )
-    return json.loads(result.stdout)
+
+    with pytest.raises(subprocess.CalledProcessError) as failure:
+        spa_module_eval.evaluate_jsx_module(source, "component()")
+
+    assert "Unexpected token '<'" in failure.value.stderr
 
 
 def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows():
