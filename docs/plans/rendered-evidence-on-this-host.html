@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="rendered-evidence-on-this-host">
+  <meta name="plan-title" content="A Browser That Can Reach the Server It Is Testing">
+  <meta name="plan-summary" content="Headless Chrome here completes no HTTP navigation, so every rendered gate is unprovable. Fix the host condition, then take the captures owed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S9">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-informs" content="sprint-horizon-surface">
+  <title>A Browser That Can Reach the Server It Is Testing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-01">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Why this exists as its own plan</h2>
+
+    <p>Every rendered gate in this repository is currently unprovable, and the cause is a host
+    condition rather than any repository's code. The sprint-surface rebuild finished with seven
+    sections landed on browser-free evidence and a list of captures it could not take. Those
+    captures are real obligations, but hanging them on a completed plan would hide them:
+    <code>roadmap</code> excludes a completed plan from pending work, so the followup would
+    render on the page and appear nowhere anyone looks to decide what to do next.</p>
+
+    <p>They are also not that plan's work. The fault affects every rendered gate in the
+    project, so it needs an owner of its own rather than a corner of a surface plan.</p>
+
+    <h2 id="s2">§2 — The fault, bounded by elimination</h2>
+
+    <p>Headless Chrome on this host accepts a navigation and never completes the request.</p>
+
+    <table>
+      <thead><tr><th>Probe</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>about:blank</code>, <code>data:</code>, <code>file://</code></td><td>load in 0.4 s</td></tr>
+        <tr><td><code>http://127.0.0.1:8765/…</code></td><td>no DOM at 18 s, 25 s, 45 s</td></tr>
+        <tr><td>a 507-byte static file from that server</td><td>hangs — not the SPA, not payload size</td></tr>
+        <tr><td>a plain <code>python -m http.server</code></td><td>hangs — not the reckon server</td></tr>
+        <tr><td><code>https://example.com/</code></td><td>hangs — not loopback</td></tr>
+        <tr><td>DevTools channel, node <code>fetch</code>, <code>curl</code></td><td>all 200 in milliseconds</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Eliminated with disproving evidence:</strong> proxy configuration, SELinux
+    (permissive, no denials), <code>/dev/shm</code> (1% of 252 GB), process limits (3,514 of
+    50,000), Chrome background services and component updates, <code>--headless=old</code>,
+    <code>--no-zygote</code>, an in-process network service, and the separate inotify-ceiling
+    exhaustion that was reaped earlier. Chrome's verbose log shows the local request issued at
+    0.2 s and never completing, so the boundary is inside its HTTP request-completion path.
+    Full detail:
+    <code>~/.config/reckon/crew/reports/headless-chrome-navigation-fault.md</code>.</p>
+
+    <p><strong>A second, separable fault was found alongside it.</strong> The read-only
+    investigate sandbox denies <code>AF_INET</code> and <code>AF_INET6</code> outright, so
+    Chrome aborts every scheme in 0.135–0.142 s on a crashpad <code>setsockopt</code> instead
+    of hanging. That is why an investigate-role worker cannot reproduce the navigation fault at
+    all, and it is already preflighted by the gate classifier.</p>
+
+    <p><strong>Done when:</strong> a rendered probe on this host loads a page from the local
+    server and returns a DOM, or the cause is identified with the trace that demonstrates it
+    and the required host change is stated to whoever can make it.</p>
+
+    <h2 id="s3">§3 — The next discriminating test, already specified</h2>
+
+    <p>The investigation named the shortest path and deliberately stopped rather than
+    overclaim. Run the probe in an execution-capable, network-enabled sandbox behind three
+    preflights: a Python <code>AF_INET</code> socket succeeds rather than returning
+    <code>EPERM</code>; Chrome starts with a fresh profile and loads a <code>data:</code> URL;
+    and inotify use is below the 128-instance per-user ceiling so the earlier startup leak is
+    not mistaken for this fault. If HTTP still hangs after those pass, capture one Chrome
+    NetLog or syscall trace from that single run and A/B the installed Chrome 150.0.7871.128
+    against a known-good build. That is the shortest test separating a browser regression from
+    a host interaction.</p>
+
+    <p><strong>Done when:</strong> either the trace names the cause, or the A/B shows the fault
+    follows the browser build rather than the host, with the command output either way.</p>
+
+    <h2 id="s4">§4 — The captures owed once a browser works</h2>
+
+    <p>Each of these has landed behaviour and browser-free evidence already; only the rendered
+    confirmation is missing. They are listed so the debt is enumerable rather than remembered.</p>
+
+    <table>
+      <thead><tr><th>Owed capture</th><th>From</th></tr></thead>
+      <tbody>
+        <tr><td>Now-line advancing without navigation, at 48-hour scale</td><td><code>sprint-horizon-surface</code> §1</td></tr>
+        <tr><td>Table rows, order, and the active-pointer conflict badge rendered</td><td>§2</td></tr>
+        <tr><td>Reachability at a constrained 900×420 viewport</td><td>§3</td></tr>
+        <tr><td>Ready lanes with their handles rendered</td><td>§4</td></tr>
+        <tr><td>New plan visible with document identity unchanged and zero navigation entries</td><td>§5</td></tr>
+        <tr><td>Zero third-party origins counted in a real load, and paired first-load/reload wall clock</td><td>§6</td></tr>
+      </tbody>
+    </table>
+
+    <p>The last one is the one the lead actually asked for: <strong>the end-to-end reload time
+    is still unmeasured.</strong> Server-side terms are all small — the document is 13 ms, warm
+    discovery 0.02 s, the in-browser transform was 470 ms before it was removed entirely — and
+    the remaining weight is transfer through a forwarded port, which only a browser at the far
+    end can measure.</p>
+
+    <p><strong>Done when:</strong> every row above has its capture, or a row is retired with
+    the reason its behaviour is adequately covered without one.</p>
+
+    <h2 id="s5">§5 — What is already in place, so it is not rebuilt</h2>
+
+    <p>Two mechanisms landed while this fault was being diagnosed, and they are why the fault
+    is now visible rather than silent. A failed probe classifies as
+    <em>ceiling-exhausted</em>, <em>sandbox-denied</em> or
+    <em>navigation-never-completed</em> and reports the browser's stderr with the inotify count
+    against the limit. And every browser-dependent case across seven test modules skips with
+    that stated reason rather than accumulating as an opaque timeout — 28 cases, down from 11
+    opaque failures to zero, with a boundary regression proving an
+    <code>AssertionError</code> is still never converted into a skip.</p>
+
+    <p>So this plan starts from a suite that is honest about what it cannot run. Do not remove
+    those skips to "restore coverage": they are what makes the debt visible, and the boundary
+    regression is what stops them becoming a blindfold.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="own-the-fault-separately" data-choice="separate-plan" data-by="reckon-ship" data-when="2026-09-01">
+    <p class="r-dec-q">Where do the owed rendered captures live once the surface plan closes?</p>
+    <p class="r-dec-ctx">The surface plan landed seven sections on browser-free evidence and
+          cannot take its own captures. A followup on a completed plan is excluded from roadmap &#x27;s pending work, so it would render on the page and be invisible
+          everywhere a reader decides what to do next.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="separate-plan">A plan of its own, since the fault affects every rendered gate in the project rather than one surface</button>
+      <button class="r-opt" data-value="followup-on-surface-plan">A followup on the surface plan</button>
+      <button class="r-opt" data-value="keep-surface-plan-active">Keep the surface plan active until a browser works</button>
+      </p>
+    <p class="r-dec-rat">Locked at authoring. A followup on a completed plan is the
+          documented way to lose work while leaving a paper trail that looks like tracking.
+          Keeping the surface plan active would be honest but wrong in a different way: its
+          seven sections are done, and holding it open on a host condition it does not own
+          would misreport both its state and the reason. The fault is shared, so the owner
+          should be too.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-reoth-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship rendered-evidence-on-this-host" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Reproduce the navigation fault in a network-enabled sandbox, then discharge the six owed captures</h4>
+    <div class="r-fu-body"><p>Start with §3, because it is the only step whose result changes what the rest costs. The three preflights exist so a negative result means something: an <code>AF_INET</code> socket that succeeds rules out the sandbox denial, a <code>data:</code> URL that loads rules out startup, and an inotify count under 128 rules out the ceiling exhaustion that produced an identical symptom earlier. Only with all three green is a still-hanging HTTP navigation the fault this plan is about.</p><p>Note the role matters more than usual here: an investigate-role worker <em>cannot</em> reproduce this at all, because its sandbox denies socket creation outright and Chrome aborts in 0.14s before navigating. Use an execution-capable role, or the run will produce a confident negative that measures the sandbox rather than the fault.</p><p>§4's captures are cheap once a browser works and worthless before, so do not attempt them first. The one the lead actually wants is the paired first-load and reload wall clock: every server-side term is already measured and small, so the remaining weight is transfer through a forwarded port, which only a browser at the far end can see.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship rendered-evidence-on-this-host</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

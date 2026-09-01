@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="sprint-horizon-surface">
   <meta name="plan-title" content="Plan the Next Two Days, Not the Next Two Months">
   <meta name="plan-summary" content="Rebuild the Sprints screen around a 48-hour horizon and an all-sprints state table, and stop charging a full page reload to see a new plan.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="30">
-<meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080,83d2b23,fd9a499,5af7c7b,6979f98,3d38ac1">
-<meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
-<meta name="plan-impl" content="0.71">
+<meta name="plan-version" content="33">
+<meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080,83d2b23,fd9a499,5af7c7b,6979f98,3d38ac1,475fe56,f6193ee,416e314,48732f1,95d2085,8a2a203">
+<meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html,/home/ITER/mcintos/.config/reckon/crew/reports/sprint-horizon-surface-reuse-map.md,/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -126,7 +126,20 @@
     rather than as a note on someone else's latency plan: the two halves have different
     causes, different owners, and different fixes.</p>
 
-    <h2 id="s1">§1 — A 48-hour strip with a live now-line</h2>
+    <h2 id="s1" class="section-landed">§1 — A 48-hour strip with a live now-line</h2>
+
+    <p class="landed-summary"><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      The calendar timeline is retired and replaced by a fixed 48-hour strip. Verified on the
+      <em>served</em> module: <strong>0</strong> occurrences of the <code>4w</code>,
+      <code>8w</code>, <code>6m</code> keys or <code>SPRINT_HORIZONS</code>. The strip spans 48
+      hours from local hour 0 with a today/tomorrow division, places completed and live run
+      timestamps rather than sprint spans, and its now-line derives from the current instant
+      and refreshes every 30 s with no navigation — a one-hour change moves it by 100/48
+      percentage points. A sprint with empty dates stays in the rows, which matters because in
+      one consumer project undated sprints are three of four active lanes. Gate
+      <strong>passed</strong>, browser-free; rendered now-line capture owed. Record:
+      <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s1">§1 landed</a>
+      (commits <code>475fe56</code>, <code>f6193ee</code>).</p>
 
     <p>The planning horizon is one to two days. The screen must therefore show today and
     tomorrow, with hour resolution and a cursor at the current instant, and must stop
@@ -262,7 +275,22 @@
         (commit <code>034dc5d</code>).</p>
     </section>
 
-    <h2 id="s4">§4 — Retire the kanban for what-runs-next</h2>
+    <h2 id="s4" class="section-landed">§4 — Retire the kanban for what-runs-next</h2>
+
+    <p class="landed-summary"><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      Landed in two halves, because the reuse map found the client could not render readiness
+      honestly at all: no HTTP route exposed it. <strong>Server</strong>
+      (<code>3d38ac1</code>): discovery serves a <code>ready_set</code> projected from
+      <code>build_roadmap</code>, guaranteed by an equality assertion so a second derivation is
+      impossible rather than discouraged; 13 rows live. <strong>View</strong>
+      (<code>48732f1</code>, <code>95d2085</code>): verified on the served module at
+      <strong>0</strong> occurrences of <code>r-kanban</code>, <code>r-kcard</code> or
+      <code>renderCard</code>. Each lane carries its <code>why_now</code> and a paste-ready
+      invocation naming the section; no rank column, since ready work is concurrent lanes and
+      an ordinal invites serialising what should fan out; blocked rows carry their cause class,
+      because a bare blocked chip sends a reader to dispatch when the fix is a lead lock;
+      landed rows demote rather than vanish. Gate <strong>passed</strong> both halves. Record:
+      <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s4a">§4 landed</a>.</p>
 
     <p>The board's three columns are keyed on one field the §2 table shows in full, and the
     keying is lossy: <code>blocked</code> maps into <code>doing</code>, so blocked work
@@ -572,10 +600,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-shs-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-horizon-surface" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-shs-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship sprint-horizon-surface" data-resolved-at="2026-09-01T11:47:54+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Rebuild the Sprints screen: 48-hour strip, all-sprints table, scroll, ready set, live refresh, client load</h4>
     <div class="r-fu-body"><p>Six sections, and the order is not arbitrary. §3 comes early because both new elements change the page's height profile and the scroll defect gets worse as the page grows, so fixing it after §1 and §2 means fixing it twice. §2 is the largest single win and is pure wiring over fields a peer already merged at <code>d5d876f</code> — the derived <code>sprint_order</code>, per-sprint <code>metrics</code> and the <code>review</code> block — so it must consume them rather than recompute anything client-side. §4 is safe to run beside §2 only if the ready-set replacement lands in a different file than the table.</p><p>§5 and §6 are independent of the whole surface group and of each other, and neither touches <code>sprint.jsx</code>, so they can run concurrently with the rest. §6 carries a hard constraint from its locked decision: it may not introduce an authoring build step, because the edit-and-reload loop is why the architecture was chosen. If that turns out to be unsatisfiable, bring it back through the dissent flow rather than adding a build quietly.</p><p>Two cautions for whoever executes. Do not key anything on the derived active sprint — this project's pointer names a <code>planned</code> sprint while two others carry <code>active</code>, and the conflict badge exists to show that rather than resolve it. And any rendered-browser gate is only trustworthy on a quiet host: an earlier run on this surface lost its gate to DevTools stalls under a foreign load that held the box at 60–130, and the correct response was to record the evidence as owed rather than fake a capture.</p></div>
     <pre class="r-fu-prompt">/reckon-ship sprint-horizon-surface</pre>
+    <p class="r-fu-outcome">All seven executable sections landed across 15 commits and 11 worker nodes; implementation 1.0. Every complaint the lead raised is answered and verified on the SERVED modules rather than in a worktree: the calendar timeline retired with 0 occurrences of the 4w/8w/6m keys, replaced by a 48-hour strip whose now-line derives from the current instant and refreshes every 30s without navigation; every sprint a table row with status, implementation, derived order and blocked/delayed/active flags, with the active-pointer conflict badged rather than resolved; one declared scroll owner with the shared stylesheet byte-identical; the kanban retired at 0 occurrences of r-kanban, r-kcard and renderCard, replaced by 13 live ready rows each carrying its why_now and a paste-ready invocation; window.revalidateProjectState replacing window.location.reload(); and 0 remote origins with 0 bytes transformed in-browser, down from 3 origins and 242,601 bytes. Two defects were caught by non-browser checks that a rendered gate would have masked - compiled modules sharing one lexical scope, which would have stopped the SPA rendering entirely, and a served 500 from a bare node the service unit's PATH excluded. Two more were caught by the orchestrator running a test file outside a worker's fence before merging, which is now filed as its own review finding because a fence blinds a worker to what its change breaks. One thing the lead asked for is NOT delivered: the end-to-end reload time is unmeasured, because measuring it needs a browser and headless Chrome on this host completes no HTTP navigation. That, and five other owed captures, are carried by rendered-evidence-on-this-host rather than hidden as a followup here.</p>
+    </article>
+<article class="r-fu" data-id="f-shs-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship rendered-evidence-on-this-host" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Pointer: the owed rendered captures are carried by rendered-evidence-on-this-host</h4>
+    <div class="r-fu-body"><p>This plan is complete and this followup is a pointer, not work. Six rendered captures are owed against sections that have landed with browser-free evidence, and the one the lead actually asked for is among them: the end-to-end reload wall clock, which no measurement from the server side can supply.</p><p>They are <strong>not</strong> recorded here, because a followup on a completed plan is excluded from <code>roadmap</code>'s pending work and would be invisible exactly where someone decides what to do next. They live on <code>rendered-evidence-on-this-host</code>, which owns the host fault itself and is in S9 with its own followup. Nothing in this pointer needs executing from where it sits.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship rendered-evidence-on-this-host</pre>
     </article>
 </section>
 
@@ -650,7 +684,7 @@
     <div class="r-comment-body"><p>The four browser-dependent build cases now report skipped with a stated navigation-never-completed reason carrying the browser stage, its stderr and the inotify usage at the time (57/128 in that run), instead of four indistinguishable 75-second timeouts. tests/test_build.py is 18 passed and 4 skipped in 80s where it previously spent roughly five minutes producing no assertion. The classifier runs once per module and pytest reuses its reason for all four dependants. The clause that keeps the skip honest is tested rather than promised: a regression case proves an AssertionError is NOT converted into a skip when a browser is available, so this cannot decay into a permanent blindfold. Ruff delta improved by one. Two of the four cases originated in this plan's own client-load commit.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260901T072057074744-n-classify-remaining-probes" data-who="codex-n" data-when="2026-09-01T07:37:56Z">
-    <div class="r-comment-body"><p>The unavailable-browser classifier now covers the six rendered modules outside the build file: 25 passed and 24 skipped with a stated reason, where those 24 previously accumulated as opaque timeouts producing no assertion. The passing set includes the classifier-boundary regression proving an AssertionError is still not converted into a skip, so the same honesty clause holds across every rendered module rather than only in the build file. Scoped ruff clean; the format baseline is unchanged at the same 3 legacy files. With the build file&#x27;s 4, the suite&#x27;s opaque browser failures go from 11 to 0 while none of the assertions are weakened.</p></div>
+    <div class="r-comment-body"><p>The unavailable-browser classifier now covers the six rendered modules outside the build file: 25 passed and 24 skipped with a stated reason, where those 24 previously accumulated as opaque timeouts producing no assertion. The passing set includes the classifier-boundary regression proving an AssertionError is still not converted into a skip, so the same honesty clause holds across every rendered module rather than only in the build file. Scoped ruff clean; the format baseline is unchanged at the same 3 legacy files. With the build file's 4, the suite's opaque browser failures go from 11 to 0 while none of the assertions are weakened.</p></div>
 </div>
 </section>
 </main>
