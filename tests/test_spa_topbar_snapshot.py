@@ -2,8 +2,10 @@ import json
 import subprocess
 from pathlib import Path
 
+from tests.spa_browser_harness import authored_shell_source
+
 ROOT = Path(__file__).resolve().parents[1]
-SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHELL = authored_shell_source(ROOT)
 TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
 
 

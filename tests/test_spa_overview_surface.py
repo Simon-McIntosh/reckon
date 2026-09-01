@@ -6,13 +6,14 @@ import pytest
 
 from tests.spa_browser_harness import (
     BrowserProbeError,
+    authored_shell_source,
     installed_browser,
     run_browser_probe,
     served_spa,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "ui" / "shell.jsx"
+SOURCE = authored_shell_source(ROOT)
 
 
 @pytest.fixture(scope="module")

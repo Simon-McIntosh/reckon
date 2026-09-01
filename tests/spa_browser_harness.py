@@ -17,6 +17,7 @@ import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 from unittest import SkipTest
 from urllib.error import URLError
@@ -43,19 +44,62 @@ _SPA_STYLESHEETS = (
     "ui/crew.css",
     "ui/graph.css",
 )
-_SPA_MODULES = (
-    "glyphs.jsx",
-    "_shared.jsx",
-    "prompts.js",
-    "ui.jsx",
-    "bits.jsx",
-    "decision.jsx",
-    "plan.jsx",
-    "sprint.jsx",
-    "graph.jsx",
-    "crew.jsx",
-    "shell.jsx",
-)
+
+
+class _IndexScriptParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.sources: list[str] = []
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        if tag != "script":
+            return
+        source = dict(attrs).get("src")
+        if source and source.startswith("/_ui/"):
+            self.sources.append(source)
+
+
+def authored_ui_module_paths(root: Path = ROOT) -> tuple[Path, ...]:
+    """Resolve UI module sources in the order authored by the SPA index."""
+
+    parser = _IndexScriptParser()
+    parser.feed((root / "docs" / "index.html").read_text(encoding="utf-8"))
+    ui_root = root / "docs" / "ui"
+    paths: list[Path] = []
+    for source in parser.sources:
+        path = ui_root / source.removeprefix("/_ui/")
+        if not path.exists() and path.suffix == ".js":
+            path = path.with_suffix(".jsx")
+        if not path.is_file():
+            raise FileNotFoundError(f"authored UI module has no source: {source}")
+        paths.append(path)
+    return tuple(paths)
+
+
+@dataclass(frozen=True)
+class AuthoredSource:
+    """Path-like reader over an ordered set of authored SPA modules."""
+
+    paths: tuple[Path, ...]
+
+    def read_text(self, encoding: str = "utf-8") -> str:
+        return "\n".join(path.read_text(encoding=encoding) for path in self.paths)
+
+
+def authored_shell_source(root: Path = ROOT) -> AuthoredSource:
+    """Return the complete shell contract without inventing another module list."""
+
+    return AuthoredSource(
+        tuple(
+            path
+            for path in authored_ui_module_paths(root)
+            if path.stem == "shell" or path.stem.startswith("shell-")
+        )
+    )
 
 
 class BrowserProbeError(RuntimeError):
@@ -537,11 +581,12 @@ def write_file_spa_document(
             "window.revalidateProjectState = async () => window.STATE;"
         ),
     ]
-    ui_root = ROOT / "docs" / "ui"
-    for filename in _SPA_MODULES:
-        source = (ui_root / filename).read_text(encoding="utf-8")
-        if filename.endswith(".jsx"):
-            source = compile_jsx(source, filename=filename).decode("utf-8")
+    for path in authored_ui_module_paths():
+        if path.name == "state-loader.js":
+            continue
+        source = path.read_text(encoding="utf-8")
+        if path.suffix == ".jsx":
+            source = compile_jsx(source, filename=path.name).decode("utf-8")
         scripts.append(source)
 
     document = "\n".join(

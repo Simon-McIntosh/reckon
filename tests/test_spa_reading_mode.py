@@ -2,12 +2,14 @@ import json
 import subprocess
 from pathlib import Path
 
+from tests.spa_browser_harness import AuthoredSource, authored_shell_source
+
 ROOT = Path(__file__).resolve().parents[1]
-SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHELL = authored_shell_source(ROOT)
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 
 
-def _function_source(name: str, path: Path = SHELL) -> str:
+def _function_source(name: str, path: Path | AuthoredSource = SHELL) -> str:
     source = path.read_text()
     start = source.index(f"function {name}(")
     brace = source.index("{", start)
@@ -22,7 +24,11 @@ def _function_source(name: str, path: Path = SHELL) -> str:
     raise AssertionError(f"unterminated function {name}")
 
 
-def _evaluate(functions: list[str], expression: str, path: Path = SHELL):
+def _evaluate(
+    functions: list[str],
+    expression: str,
+    path: Path | AuthoredSource = SHELL,
+):
     script = "\n".join(_function_source(name, path) for name in functions)
     result = subprocess.run(
         ["node", "-e", f"{script}\nconsole.log(JSON.stringify({expression}));"],

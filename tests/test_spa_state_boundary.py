@@ -5,11 +5,11 @@ from datetime import datetime
 from pathlib import Path
 
 from reckon import serve
-
+from tests.spa_browser_harness import authored_shell_source
 
 ROOT = Path(__file__).resolve().parents[1]
 LOADER = ROOT / "docs" / "ui" / "state-loader.js"
-SHELL = ROOT / "docs" / "ui" / "shell.jsx"
+SHELL = authored_shell_source(ROOT)
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 
 

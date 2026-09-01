@@ -3,9 +3,11 @@ import re
 import subprocess
 from pathlib import Path
 
+from tests.spa_browser_harness import authored_shell_source
+
 ROOT = Path(__file__).resolve().parents[1]
 STYLES = (ROOT / "docs" / "ui" / "overview.css").read_text()
-SHELL = (ROOT / "docs" / "ui" / "shell.jsx").read_text()
+SHELL = authored_shell_source(ROOT).read_text()
 
 
 def _function_source(name: str) -> str:
