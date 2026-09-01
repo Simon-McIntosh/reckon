@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-graph-handle" content="sprint-federation">
 <meta name="plan-impl" content="0.78">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
@@ -267,6 +267,25 @@
       The shape is one this plan already knows. Exit 2 is an error rather than a failure, so a
       summary reporting no failures is true and useless — the same reason a zero-collecting
       test scores as having no signal, indistinguishable from a test that does not exist.
+    </p>
+
+    <p>
+      <strong>Collection was restored, and it exposed 49 pre-existing failures repo-wide.</strong>
+      That is the other half of the same finding: a week of whole-tree collection error was not
+      merely suppressing one layout check, it was hiding real failures across the suite. The
+      target repository has opened a plan of its own to own those 49, and none of them is a
+      layout failure — so this migration's census should be clean on that axis. If it is not,
+      those violations predate the move and route to that plan rather than reading as damage
+      this migration caused. That routing is agreed with its owner in advance, which is the
+      cheap half of not being blamed for a week of someone else's silence.
+    </p>
+    <p>
+      <strong>The before-state has now moved twice</strong>, which is itself the argument for
+      the rule rather than an inconvenience against it. Between the first capture and the
+      handover the target gained four evidence files, then two more plans, two sprint edits, and
+      an evidence record that grew from four anchored sections to ten. A snapshot taken at any
+      moment other than immediately before the move is not a before-state; it is a description
+      of a corpus that no longer exists.
     </p>
 
     <h2 id="s4">§4 — Wiring findings the migration surfaced, and one that predates it</h2>
