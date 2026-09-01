@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080,83d2b23,fd9a499,5af7c7b,6979f98,3d38ac1">
 <meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
 <meta name="plan-impl" content="0.71">
@@ -648,6 +648,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260901T065657987909-n-skip-unavailable-browser" data-who="codex-l" data-when="2026-09-01T07:19:57Z">
     <div class="r-comment-body"><p>The four browser-dependent build cases now report skipped with a stated navigation-never-completed reason carrying the browser stage, its stderr and the inotify usage at the time (57/128 in that run), instead of four indistinguishable 75-second timeouts. tests/test_build.py is 18 passed and 4 skipped in 80s where it previously spent roughly five minutes producing no assertion. The classifier runs once per module and pytest reuses its reason for all four dependants. The clause that keeps the skip honest is tested rather than promised: a regression case proves an AssertionError is NOT converted into a skip when a browser is available, so this cannot decay into a permanent blindfold. Ruff delta improved by one. Two of the four cases originated in this plan's own client-load commit.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260901T072057074744-n-classify-remaining-probes" data-who="codex-n" data-when="2026-09-01T07:37:56Z">
+    <div class="r-comment-body"><p>The unavailable-browser classifier now covers the six rendered modules outside the build file: 25 passed and 24 skipped with a stated reason, where those 24 previously accumulated as opaque timeouts producing no assertion. The passing set includes the classifier-boundary regression proving an AssertionError is still not converted into a skip, so the same honesty clause holds across every rendered module rather than only in the build file. Scoped ruff clean; the format baseline is unchanged at the same 3 legacy files. With the build file&#x27;s 4, the suite&#x27;s opaque browser failures go from 11 to 0 while none of the assertions are weakened.</p></div>
 </div>
 </section>
 </main>

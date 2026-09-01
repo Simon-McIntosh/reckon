@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T09:37:03",
+  "updated": "2026-09-01T13:44:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -28233,9 +28233,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T072057074744-n-classify-remaining-probes",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a78",
+        "node": "n-classify-remaining-probes",
+        "node_definition": {
+          "done_when": "Every browser-dependent case in the six remaining rendered test modules reports skipped with the stated classifier reason on this host rather than a timeout, a regression case proves an AssertionError is still not converted into a skip, the per-module classifier probe runs once rather than per case, and the suite wall clock and the before and after counts of opaque browser failures are reported",
+          "estimated_hours": null,
+          "goal": "Apply the unavailable-browser classifier to the rendered tests outside the build module so no browser-dependent case fails as an opaque timeout",
+          "id": "n-classify-remaining-probes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T072057074744-n-classify-remaining-probes/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/test_spa_plans_geometry.py",
+            "tests/test_spa_project_visibility.py",
+            "tests/test_spa_overview_surface.py",
+            "tests/test_spa_reader_provenance.py",
+            "tests/test_spa_reader_geometry.py",
+            "tests/test_spa_rendered_semantics.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-n",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T07:21:05Z",
+        "completed_at": "2026-09-01T07:37:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1011,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1011,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "69cb7033cc2f81c43c160e1fc0060d4b1dbee0c5",
+        "commits": [
+          "8a2a203d7e89f1692e4506606ddedbf5b972aed6"
+        ],
+        "changed_lines": {
+          "added": 178,
+          "removed": 47,
+          "files": 6
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider over the six rendered SPA modules",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T072057074744-n-classify-remaining-probes/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T072057074744-n-classify-remaining-probes/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038d0-0eb0-7eb2-8d76-d1edf61f4577",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1739008,
+            "cached_input_tokens_cumulative": 9186560,
+            "input_tokens": 1692618,
+            "input_tokens_cumulative": 9511398,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 18067,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 4689
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 469
+    "_version": 470
   }
 }
