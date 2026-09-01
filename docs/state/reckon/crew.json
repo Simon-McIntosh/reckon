@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:28:49",
+  "updated": "2026-09-01T20:31:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29970,9 +29970,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T182203043015-n-live-work-contract-assertion",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-live-work-contract-assertion",
+        "node_definition": {
+          "done_when": "tests/test_build.py::test_plan_and_sprint_views_surface_only_matching_live_work passes; the assertion no longer contains the literal source string it currently pins, verified by 0 grep matches for 'in flight \u00b7 ' as a source-text assertion in tests/test_build.py; the replacement is proven to fail when the behaviour is removed rather than when the wording changes, demonstrated by a recorded run against a copy with the live-work surfacing deleted; and tests/test_build.py reports 0 new failures against the node's own base revision, where 1 failure and 3 wheel errors from missing archive VCS metadata are the base state",
+          "estimated_hours": null,
+          "goal": "The red build assertion on the sprint view is restated as the contract it stood in for, so it proves the behaviour instead of a source line",
+          "id": "n-live-work-contract-assertion",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182203043015-n-live-work-contract-assertion/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "tests/test_build.py",
+            "docs/ui/sprint.jsx"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-tags",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:22:08Z",
+        "completed_at": "2026-09-01T18:30:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 516,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 516,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "810194166ca4fb03ec053f1d93d6218e34db3e16",
+        "commits": [
+          "c672fb7296cbad5f173f22b9aae26d70326d733d"
+        ],
+        "changed_lines": {
+          "added": 42,
+          "removed": 24,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_build.py at base and after, plus a mutation control with the live-run input deleted",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182203043015-n-live-work-contract-assertion/test-build-after.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T182203043015-n-live-work-contract-assertion/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e35-0782-7740-b561-880c43347c15",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6251776,
+            "cached_input_tokens_cumulative": 6251776,
+            "input_tokens": 6443614,
+            "input_tokens_cumulative": 6443614,
+            "output_tokens": 13915,
+            "output_tokens_cumulative": 13915,
+            "reasoning_output_tokens": 4282,
+            "reasoning_output_tokens_cumulative": 4282
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 499
+    "_version": 500
   }
 }
