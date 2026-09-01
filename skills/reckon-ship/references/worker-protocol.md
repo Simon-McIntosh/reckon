@@ -109,11 +109,27 @@ commits: <sha list>
 changed_paths: <explicit list>
 tests: <concise command/result summary>
 test_logs: <paths on disk>
+baseline_suite: <inline JSON observation when the project suite is armed, otherwise none>
+after_suite: <inline JSON observation when the project suite is armed, otherwise none>
 artifacts: <paths/urls plus headline metrics>
 evidence_inputs: <facts needed for reckon writeback>
 follow_ons: <work discovered but fenced out of scope, or none>
 blockers: <none or exact unmet condition>
 ```
+
+`tests` remains the concise human summary. When flight configuration declares
+`gates.suite_command`, `baseline_suite` and `after_suite` are both required and
+each is one inline JSON object with these fields:
+
+```text
+{"revision":"<sha>","command":"<exact command>","exit_status":<integer>,"log_path":"<path or empty>","log_digest":"<digest or empty>","completed":<true|false>,"failure_count":<integer>,"failure_ids":["<test id>"]}
+```
+
+At least one of `log_path` or `log_digest` is required. `completed=false`
+means the suite result is absent — collection failure, cancellation, skipping,
+or another unfinished measurement — and must never be interpreted as an empty
+failure set. `revision` binds each observation to the tree it measured;
+`failure_count` must equal the number of `failure_ids`.
 
 `follow_ons` is the worker end of the continuation chain. Work a worker
 discovered but was fenced out of otherwise has nowhere to go but prose, where it

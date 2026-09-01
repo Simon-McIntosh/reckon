@@ -3858,6 +3858,8 @@ commits: 1a2b3c4
 changed_paths: reckon/_backends.py
 tests: uv run pytest tests/test_backends.py -q -> 28 passed
 test_logs: /tmp/backends.log
+baseline_suite: {"revision":"base123","command":"uv run pytest","exit_status":1,"log_path":"/tmp/baseline.log","log_digest":"","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
+after_suite: {"revision":"after456","command":"uv run pytest","exit_status":1,"log_path":"","log_digest":"sha256:abc","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
 artifacts: none
 evidence_inputs: 28 new tests, all four fixtures parsed
 follow_ons: the observe command needs a --wait flag, the fixture README needs a diagram
@@ -3873,6 +3875,14 @@ def test_a_manifest_parses_into_structured_fields() -> None:
     assert manifest["blockers"] == []
     assert manifest["artifacts"] == []
     assert len(manifest["follow_ons"]) == 2
+    assert manifest["baseline_suite"]["revision"] == "base123"
+    assert manifest["baseline_suite"]["exit_status"] == 1
+    assert manifest["baseline_suite"]["completed"] is True
+    assert manifest["baseline_suite"]["failure_ids"] == [
+        "tests/test_a.py::test_a",
+        "tests/test_b.py::test_b",
+    ]
+    assert manifest["after_suite"]["log_digest"] == "sha256:abc"
 
 
 def test_an_audited_manifest_catches_out_of_scope_changes() -> None:
@@ -3893,6 +3903,45 @@ def test_a_complete_manifest_without_a_commit_is_incomplete() -> None:
 
 def test_a_clean_manifest_audits_clean() -> None:
     assert crew.audit_manifest(MANIFEST, _node())["ok"] is True
+
+
+@pytest.mark.parametrize("missing", ["baseline_suite", "after_suite"])
+def test_an_armed_manifest_names_a_missing_suite_observation(missing) -> None:
+    text = "\n".join(
+        line for line in MANIFEST.splitlines() if not line.startswith(f"{missing}:")
+    )
+
+    audit = crew.audit_manifest(text, _node(), suite_armed=True)
+
+    assert audit["ok"] is False
+    assert any(missing in finding for finding in audit["findings"])
+
+
+def test_an_unarmed_manifest_accepts_absent_suite_observations() -> None:
+    text = "\n".join(
+        line
+        for line in MANIFEST.splitlines()
+        if not line.startswith(("baseline_suite:", "after_suite:"))
+    )
+
+    assert crew.audit_manifest(text, _node(), suite_armed=False)["ok"] is True
+
+
+def test_an_unfinished_suite_is_absent_evidence_not_an_empty_failure_set() -> None:
+    text = MANIFEST.replace(
+        '"completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]',
+        '"completed":false,"failure_count":0,"failure_ids":[]',
+        1,
+    )
+
+    audit = crew.audit_manifest(text, _node(), suite_armed=True)
+
+    assert audit["manifest"]["baseline_suite"]["completed"] is False
+    assert audit["manifest"]["baseline_suite"]["failure_ids"] == []
+    assert any(
+        "baseline_suite.completed is not true" in finding
+        for finding in audit["findings"]
+    )
 
 
 NEEDS_HELP = """\

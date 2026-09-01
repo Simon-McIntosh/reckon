@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, TaskNode
 from reckon.crew.runs import _utc_now
@@ -18,6 +19,19 @@ _MANIFEST_LIST_KEYS = (
     "blockers",
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
+
+
+class SuiteObservation(TypedDict):
+    """One machine-readable suite result carried by a worker manifest."""
+
+    revision: str
+    command: str
+    exit_status: int | None
+    log_path: str
+    log_digest: str
+    completed: bool | None
+    failure_count: int | None
+    failure_ids: list[str] | None
 
 
 def parse_manifest(text: str) -> dict[str, Any]:
@@ -40,8 +54,56 @@ def parse_manifest(text: str) -> dict[str, Any]:
             fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
     for name in _MANIFEST_LIST_KEYS:
         fields[name] = _as_list(fields.get(name))
+    for name in ("baseline_suite", "after_suite"):
+        fields[name] = _parse_suite_observation(fields.get(name))
     fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
+
+
+def _parse_suite_observation(value: Any) -> SuiteObservation | str | None:
+    """Decode an inline JSON observation while preserving malformed evidence."""
+    if value is None or str(value).strip().lower() in _NONE_VALUES:
+        return None
+    try:
+        raw = json.loads(str(value))
+    except (TypeError, json.JSONDecodeError):
+        return str(value)
+    if not isinstance(raw, dict):
+        return str(value)
+
+    exit_status = raw.get("exit_status")
+    if isinstance(exit_status, bool) or not isinstance(exit_status, int):
+        exit_status = None
+    completed = raw.get("completed")
+    if not isinstance(completed, bool):
+        completed = None
+    failure_count = raw.get("failure_count")
+    if (
+        isinstance(failure_count, bool)
+        or not isinstance(failure_count, int)
+        or failure_count < 0
+    ):
+        failure_count = None
+    failure_ids = raw.get("failure_ids")
+    if not isinstance(failure_ids, list) or any(
+        not isinstance(item, str) or not item.strip() for item in failure_ids
+    ):
+        failure_ids = None
+
+    def string_field(name: str) -> str:
+        candidate = raw.get(name)
+        return candidate.strip() if isinstance(candidate, str) else ""
+
+    return {
+        "revision": string_field("revision"),
+        "command": string_field("command"),
+        "exit_status": exit_status,
+        "log_path": string_field("log_path"),
+        "log_digest": string_field("log_digest"),
+        "completed": completed,
+        "failure_count": failure_count,
+        "failure_ids": failure_ids,
+    }
 
 
 def _as_list(value: Any) -> list[str]:
@@ -89,7 +151,12 @@ def parse_needs_help(text: str) -> dict[str, Any]:
     }
 
 
-def audit_manifest(text: str, node: TaskNode | None = None) -> dict[str, Any]:
+def audit_manifest(
+    text: str,
+    node: TaskNode | None = None,
+    *,
+    suite_armed: bool = False,
+) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
     manifest = parse_manifest(text)
     findings: list[str] = []
@@ -100,6 +167,38 @@ def audit_manifest(text: str, node: TaskNode | None = None) -> dict[str, Any]:
         findings.append("status is complete but no commit is recorded")
     if status == "complete" and not manifest.get("tests"):
         findings.append("status is complete but no test result is recorded")
+    if status == "complete" and suite_armed:
+        for name in ("baseline_suite", "after_suite"):
+            observation = manifest.get(name)
+            if observation is None:
+                findings.append(f"status is complete but {name} is missing")
+                continue
+            if not isinstance(observation, dict):
+                findings.append(f"{name} must be an inline JSON object")
+                continue
+            findings.extend(
+                f"{name}.{field} is missing"
+                for field in ("revision", "command")
+                if not observation[field]
+            )
+            if observation["exit_status"] is None:
+                findings.append(f"{name}.exit_status is missing or not an integer")
+            if observation["completed"] is not True:
+                findings.append(
+                    f"{name}.completed is not true; the suite result is absent"
+                )
+            if observation["failure_count"] is None:
+                findings.append(
+                    f"{name}.failure_count is missing or not a non-negative integer"
+                )
+            if observation["failure_ids"] is None:
+                findings.append(f"{name}.failure_ids is missing or not a string list")
+            elif observation["failure_count"] is not None and observation[
+                "failure_count"
+            ] != len(observation["failure_ids"]):
+                findings.append(f"{name}.failure_count does not match failure_ids")
+            if not observation["log_path"] and not observation["log_digest"]:
+                findings.append(f"{name} needs log_path or log_digest")
     if node is not None and manifest["changed_paths"]:
         allowed = set(node.write_paths)
         stray = sorted(

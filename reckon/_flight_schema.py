@@ -290,6 +290,7 @@ class GateConfig(ConfiguredBaseModel):
     enforce: Optional[GateEnforcement] = Field(default=None)
     require_evidence: Optional[bool] = Field(default=None, description="""Whether a gate must produce recorded evidence to be considered met.""")
     on_fail: Optional[GateFailureAction] = Field(default=None)
+    suite_command: Optional[str] = Field(default=None, description="""Project test-suite command whose presence arms promotion consequence checks. Absent means the project is unarmed; no command is supplied by shipped defaults.""")
 
 
 class BudgetConfig(ConfiguredBaseModel):

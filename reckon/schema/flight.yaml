@@ -280,6 +280,12 @@ slots:
   on_fail:
     range: GateFailureAction
 
+  suite_command:
+    description: >-
+      Project test-suite command whose presence arms promotion consequence
+      checks. Absent means the project is unarmed; no command is supplied by
+      shipped defaults.
+
   needs_help_after_failures:
     description: >-
       Consecutive failures after which a worker stops retrying and asks for
@@ -400,6 +406,7 @@ classes:
       - enforce
       - require_evidence
       - on_fail
+      - suite_command
 
   BudgetConfig:
     description: >-
