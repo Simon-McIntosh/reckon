@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="sprint-scope-and-surface-landed">
+  <meta name="plan-title" content="A Sprint Should Span Repositories — Execution Record">
+  <meta name="plan-summary" content="Execution evidence for cross-repository sprint identity, the layout migration, the cascade contract and per-repository publication.">
+  <meta name="plan-evidence-for" content="sprint-scope-and-surface">
+  <meta name="plan-verifies" content="sprint-scope-and-surface#s2,sprint-scope-and-surface#s3,sprint-scope-and-surface#s4,sprint-scope-and-surface#s5,sprint-scope-and-surface#s6">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>A Sprint Should Span Repositories — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="overview">Overview</h2>
+
+    <p>Execution record for the plan that took a sprint across repositories and repaired the
+    surface underneath it. Every section landed on 2026-09-01. The record leads with the
+    migration because it is the only section that wrote into another repository, and because
+    its gate is the one number that decided whether the whole thing was correct.</p>
+
+    <table>
+      <thead><tr><th>Section</th><th>Gate</th><th>Commit</th><th>Measure</th></tr></thead>
+      <tbody>
+        <tr><td>§2 — qualified sprint membership</td><td>passed</td><td><code>39778a0</code>, <code>26b19db</code></td>
+            <td>Same sprint resolves to the same 2 ordered members from either repository; 275 live items, 0 parse errors</td></tr>
+        <tr><td>§3 — the layout migration</td><td>passed</td><td><code>49e1422</code>, <code>af3782b</code></td>
+            <td><strong>newly-broken links 0</strong>; 115 moved, 73 tagged at grouping loss 0</td></tr>
+        <tr><td>§4 — wiring findings</td><td>passed</td><td><code>a5bab9e</code>, <code>5ee5a20</code></td>
+            <td>0 error and 0 warn findings across 50 plans; north-star write route restored</td></tr>
+        <tr><td>§5 — shell and cascade</td><td>passed</td><td><code>cfe96ab</code>, <code>0fd3ce8</code>, <code>62ab4d7</code></td>
+            <td>shell 1837 → 350 lines; selector overlap 4 → 0; renders byte-identical</td></tr>
+        <tr><td>§6 — publication</td><td>passed</td><td><code>9e408db</code>, <code>9e19f53</code>, <code>5768609</code>, <code>df5167b</code></td>
+            <td>Guard asserted both directions; reckon publishes nothing; badge guarded at both ends</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — The layout migration</h2>
+
+    <p>The gate was a comparison, not a count. Both states were measured with the same
+    instrument, and the before-state was captured by the migrating node as its first action at
+    the revision it moved from — because the corpus moved twice during the session, and a
+    snapshot taken at any other moment describes a corpus that no longer exists.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Before <code>55db4635</code></th><th>After <code>af3782b0</code></th></tr></thead>
+      <tbody>
+        <tr><td>HTML resources</td><td>214</td><td>214</td></tr>
+        <tr><td>Internal links</td><td>346</td><td>346</td></tr>
+        <tr><td>Resolving targets</td><td>299</td><td>299</td></tr>
+        <tr><td>Missing targets / anchors</td><td>46 / 1</td><td>46 / 1</td></tr>
+        <tr><td>Layout check collects</td><td>true</td><td>true</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>newly_broken_links 0</strong>, was_already_broken 47, repaired_in_passing 0,
+    redirected_resolved_targets 3, unmatched_after_links 0. 144 links rewritten across 135
+    suffixed and 9 extensionless forms — the half that silently fixes some references and
+    breaks others when only one form is handled. The full suite is identical either side at
+    12,020 passed and 50 failed, compared as an <em>exact failure set</em> rather than by
+    matching totals: 0 new, 0 resolved.</p>
+
+    <p>Reconciliation closes exactly: 115 moved plus 34 already at destination equals the
+    149-row preserved pre-image, with all 115 sources absent and all 115 destinations present
+    and tracked. The tag census ran over all 149 rows and wrote 73 grouped resources at
+    grouping loss 0, so no document lost the programme its directory used to assert.</p>
+
+    <h3 id="s3-partial">Why it was a third done already, and why nobody knew</h3>
+
+    <p>The migrating node refused its own acceptance contract before starting. The contract
+    demanded 149 moves in one commit; only 115 sources existed, because an August
+    canonicalization commit had already moved 34. That commit's message says it flattened the
+    research documents, updated every legacy reference, <em>and added a guard driven by
+    Reckon's authoritative typed-root map</em>.</p>
+
+    <p><strong>That guard is the layout check whose import raises.</strong> Reckon was not a
+    declared dependency of the target repository, the import failed, and because its pytest
+    configuration collects that directory by default the error interrupted collection for the
+    entire tree. So one commit performed a third of this migration, added the test that would
+    have verified it, and shipped that test unable to execute — dead on arrival rather than
+    decayed. The canonicalization was left half-finished and its own check was blind, which is
+    why neither half was noticed for a week. It is also the best available explanation for the
+    46 already-missing link targets: they have the shape of a partially applied move whose
+    guard never ran.</p>
+
+    <p>Two disclosures the worker made rather than smoothed: it measured 50 pre-existing suite
+    failures where a peer had reported 49 and kept its own figure; and it created 34 temporary
+    compatibility symlinks so the real backfill could write through to the already-moved
+    destinations, removed them before the migration, and kept them out of the commit.</p>
+
+    <h3 id="s3-collection">What the collection column supports, and what it does not</h3>
+
+    <p>
+      Both receipts record whether the typed-layout check collects, and that column is doing
+      narrower work than it first appears. It shows the suite was not silently broken between
+      the two measurements, which is what it was built for and why the newly-broken figure can
+      be trusted. It does <em>not</em> show the layout invariant was verified either side.
+    </p>
+    <p>
+      The distinction is the conditional import. The check now opens with
+      <code>pytest.importorskip("reckon.resources")</code>, and <code>reckon</code> is neither
+      declared in the target repository's dependencies nor installed in its environment — so in
+      that repository the module is skipped whole and the file reports <strong>exit 5, zero
+      tests collected</strong>. A measurement of two passing tests was taken where
+      <code>reckon</code> was importable, which is real and is not representative of the
+      repository the check lives in. Corrected here on a peer's measurement rather than left
+      standing; the migration's own gate does not depend on it, so no conclusion moves.
+    </p>
+    <p>
+      <strong>The shape is worth more than the correction.</strong> Before the conditional
+      import, a missing dependency aborted the whole tree at exit 2 — catastrophic, and
+      impossible to miss. After it, the suite collects, which is a genuine improvement and was
+      the point. But the check itself still never executes there and nothing says so, which is
+      the zero-signal state this project's own guidance names for a disabled test: not run,
+      invisible, nobody knows it exists. A loud failure became a silent no-op. The remedy is a
+      decision rather than a repair — declare the dependency so the check runs, or remove a
+      check that cannot — and it belongs to the repository that owns it.
+    </p>
+
+    <h3 id="s3-coordination">Coordination</h3>
+
+    <p>The write was authorised by the lead and scheduled by asking. Both live sessions in the
+    target repository were consulted directly; one handed the tree over after finishing its own
+    plan, the other confirmed its live run wrote no <code>docs/</code> path and then
+    <em>deferred its own promotion</em> until the window closed, because promoting would have
+    written a plan comment into a file whose links were being rewritten. That ordering cost a
+    peer a tidy landing beat and bought a falsifiable before and after.</p>
+
+    <h2 id="s2">§2 — A sprint that spans repositories</h2>
+
+    <p>Sprint items and <code>plan-sprint</code> both accept the project qualifier every other
+    ref already took, resolved through the one shared grammar — the scoped diffs add zero
+    reference-parsing regexes. The bidirectional half is what a qualified item alone does not
+    give: a sprint read from either repository resolves to the same two ordered members, so a
+    person working in either arrives at the same sprint rather than a local subset. An
+    unmounted member yields one <code>found=false</code> row and exactly one unresolved finding
+    rather than vanishing, because absence must never read as completion.</p>
+
+    <p>The read path alone would have shipped a false headline. With the roadmap tests green,
+    the worker probed the canonical write boundary directly and found it still refusing the
+    qualified slug as a filesystem identity segment — then stopped at its fence and reported
+    rather than reaching across. All 275 live items across 12 mounted projects parse with 0
+    read, write and validation errors.</p>
+
+    <h2 id="s5">§5 — The shell and the cascade</h2>
+
+    <p><code>shell.jsx</code> goes from 1,837 lines to 350 plus eight separately loaded
+    modules, with the SPA set held to an absolute zero rather than a delta because the tree was
+    green when the split started: 120 passed, 24 skipped, 0 failed, and collection 144 either
+    side so nothing was traded away. The module-scope regression that enforces the ownership
+    property the split depends on stayed byte-untouched — editing the test that guards the
+    property you are changing removes the only thing checking you.</p>
+
+    <p>The cascade gained a stated owner per file and a test that holds it: selector overlap 4
+    → 0, custom-property definitions outside the token layer 9 → 0, with two mutation controls
+    proving the guard bites on each. The equality that matters is that nothing moved on screen —
+    before and after renders byte-identical at 152 nodes and 22 authored scripts.</p>
+
+    <p>The duplication repair came first and paid for itself within hours. The stylesheet
+    <code>reckon-sync</code> ships had silently drifted 448 lines and 72 selector groups behind
+    canonical, so every synced repository was receiving a stale surface; the direction was
+    established before either file was touched. Its parity guard then caught the very first
+    divergence anyone introduced — an ownership comment — which is exactly what it exists to
+    notice, harmless included.</p>
+
+    <h2 id="s6">§6 — Publication, and the decision that reversed</h2>
+
+    <p>The deploy job gates on an exact repository-identity declaration in the repository's own
+    tree, so a fork that copies the workflow does not inherit consent and no visibility or fork
+    metadata can imply it. That is the locked rule rather than the plausible predicate it
+    replaces: measured, publish-unless-private would have published a personal fork while
+    reporting itself correct. Asset parity is asserted at 0 files differing, so the surface
+    being designed is the surface shipped.</p>
+
+    <p>The lead then reversed the disclosure choice before anything published, on the ground
+    that reckon is infrastructure others adopt and the plans belong to the codes themselves. So
+    reckon withdrew its own declaration while the machinery stayed importable and tested for
+    adopters, and a <code>reckon badge</code> command replaced the central example with a
+    per-repository link. The badge refuses at both ends — no declaration, and no badge asset —
+    so it can neither link to an unpublished site nor render as a broken image. Nothing was
+    retracted because nothing was ever published: GitHub Pages was never enabled, verified by
+    an authenticated read returning 404 while confirming admin.</p>
+
+  </main>
+</body>
+</html>
