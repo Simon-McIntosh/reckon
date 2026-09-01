@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:20:34",
+  "updated": "2026-09-01T22:22:32",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -33004,9 +33004,314 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T201327562680-n-watcher-deadlines-load-robust",
+        "plan": "inflight-visibility",
+        "section": "\u00a73",
+        "node": "n-watcher-deadlines-load-robust",
+        "node_definition": {
+          "done_when": "The four producer-start tests in tests/test_crew_dispatch_arming.py and tests/test_crew_watch_stream.py, the orphan ready-file wait in tests/test_crew_orphan.py and the watcher-required dispatch test poll on their condition with a bound derived from one named constant in reckon/crew/dispatch.py that documents the load assumption it encodes; those tests pass three consecutive runs while two synthetic CPU-busy processes run alongside, with the run log saved beside the manifest; and tests/test_crew_dispatch_arming.py tests/test_crew_orphan.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py show no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "The six watcher startup and registration tests stop measuring host load: they wait on the observed condition with one named, load-scaled bound instead of fixed deadlines",
+          "id": "n-watcher-deadlines-load-robust",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201327562680-n-watcher-deadlines-load-robust/manifest.md",
+          "plan": "inflight-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_dispatch_arming.py",
+            "tests/test_crew_orphan.py",
+            "tests/test_crew_watch_stream.py",
+            "tests/test_crew_session_delivery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:13:35Z",
+        "completed_at": "2026-09-01T20:21:46Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 491,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 491,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "58f9938be9521720d30071938fbbb2c0f2947747",
+        "commits": [
+          "f9123a1ae362616380430ed49424299dfaaa8e32"
+        ],
+        "changed_lines": {
+          "added": 21,
+          "removed": 9,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_dispatch_arming.py tests/test_crew_orphan.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py under two CPU-busy peers, three consecutive runs",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201327562680-n-watcher-deadlines-load-robust/load-stress-three-runs.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201327562680-n-watcher-deadlines-load-robust/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038ea-cf6c-7593-a14e-22bef4824038",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3569408,
+            "cached_input_tokens_cumulative": 5078528,
+            "input_tokens": 3746124,
+            "input_tokens_cumulative": 5387072,
+            "output_tokens": 11194,
+            "output_tokens_cumulative": 16826,
+            "reasoning_output_tokens": 4579,
+            "reasoning_output_tokens_cumulative": 5572
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T201639652678-n-discovery-cache-double-contract",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a74",
+        "node": "n-discovery-cache-double-contract",
+        "node_definition": {
+          "done_when": "tests/test_discovery_cache.py::test_repeat_discovery_skips_git_and_metadata_for_all_mounts and ::test_external_project_change_invalidates_dependant both pass, with the KeyError on cwd gone because the subprocess double accepts the git -C form the provenance attachment now issues rather than because the assertion was relaxed; the tests still assert the same reuse property, proven by a mutation control that reintroduces a per-request git call and observes the test fail; the manifest states whether the extra git invocation is expected behaviour of the provenance attachment or an unintended per-request cost, with the measured call count either way; and tests/test_discovery_cache.py reports 0 failures with collection unchanged",
+          "estimated_hours": null,
+          "goal": "The discovery cache tests survive provenance being attached inside discovery, without weakening what they assert about git and metadata reuse",
+          "id": "n-discovery-cache-double-contract",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201639652678-n-discovery-cache-double-contract/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "tests/test_discovery_cache.py",
+            "reckon/serve.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-cache",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:16:44Z",
+        "completed_at": "2026-09-01T20:22:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 320,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 320,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "18e4efd0bb92bb4e6c28bf3845035060d4dc8824",
+        "commits": [
+          "1ab8b4fae31e2c997cfc9a9a2da43bd6edde588a"
+        ],
+        "changed_lines": {
+          "added": 12,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_discovery_cache.py at baseline and final, plus a mutation control reintroducing per-request HEAD calls",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201639652678-n-discovery-cache-double-contract/final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201639652678-n-discovery-cache-double-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e9d-f209-7043-be57-193f0bd88bdd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3628544,
+            "cached_input_tokens_cumulative": 3628544,
+            "input_tokens": 3783339,
+            "input_tokens_cumulative": 3783339,
+            "output_tokens": 12868,
+            "output_tokens_cumulative": 12868,
+            "reasoning_output_tokens": 4680,
+            "reasoning_output_tokens_cumulative": 4680
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T201320923288-n-prediction-remeasure",
+        "plan": "effort-calibration",
+        "section": "\u00a79",
+        "node": "n-prediction-remeasure",
+        "node_definition": {
+          "done_when": "docs/evidence/archive/effort-calibration-landed.html gains anchor id prediction-remeasure reporting hours-based MAE and legacy-letter MAE in worker-hours, the usable sample size, every exclusion count by reason, and the count of plans whose hours were authored versus mapped, with each prediction reconstructed from plan state at the run's own base_sha exactly as the first comparison did; a tie or a loss is recorded as the result without adjusting the letter weights, and the analysis script used is saved beside the run manifest",
+          "estimated_hours": null,
+          "goal": "The section-9 re-measurement of hours-based against legacy-letter remaining-effort prediction, now that 27 plans carry authored hours, recorded in the cumulative evidence record",
+          "id": "n-prediction-remeasure",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201320923288-n-prediction-remeasure/manifest.md",
+          "plan": "effort-calibration",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/evidence/archive/effort-calibration-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-b",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:13:25Z",
+        "completed_at": "2026-09-01T20:22:03Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 518,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 518,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "58f9938be9521720d30071938fbbb2c0f2947747",
+        "commits": [
+          "ef1eb81d2a60a5b870a3b782c8ad4ceefe7e81f3"
+        ],
+        "changed_lines": {
+          "added": 64,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python prediction_remeasure.py; reckon audit-doc docs/evidence/archive/effort-calibration-landed.html --check-links",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201320923288-n-prediction-remeasure/prediction-remeasure-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201320923288-n-prediction-remeasure/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e7-fa6e-7333-af51-50f8a42a3220",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2533888,
+            "cached_input_tokens_cumulative": 4097792,
+            "input_tokens": 2734620,
+            "input_tokens_cumulative": 4418640,
+            "output_tokens": 11423,
+            "output_tokens_cumulative": 17395,
+            "reasoning_output_tokens": 2614,
+            "reasoning_output_tokens_cumulative": 4041
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 532
+    "_version": 535
   }
 }
