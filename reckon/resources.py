@@ -14,9 +14,10 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
-from typing import Iterable
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 from reckon import _plan_html
@@ -513,6 +514,21 @@ def resolve_resource(
             "supply artifact_type"
         )
     return matches[0]
+
+
+def read_plan_record(docs_dir: Path, project: str, slug: str) -> dict[str, Any]:
+    """Read one live plan's lightweight state through typed resource identity."""
+
+    resource = resolve_resource(
+        docs_dir,
+        project,
+        slug,
+        "plan",
+        include_archived=False,
+    )
+    if resource is None:
+        return {}
+    return _plan_html.parse_meta(resource.path)
 
 
 def resolve_route(

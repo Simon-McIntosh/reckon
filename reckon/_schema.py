@@ -53,7 +53,7 @@ fields runs **only** at the explicit write boundary, via
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -265,6 +265,46 @@ def parse_plan_ref(ref: str) -> PlanRef | None:
     if m is None:
         return None
     return PlanRef(m.group("project"), m.group("slug"), m.group("stage"))
+
+
+def resolve_plan_ref(
+    ref: str,
+    owning_project: str,
+    lookup: Callable[[str, str], Mapping[str, Any] | None],
+) -> dict[str, Any]:
+    """Resolve one plan ref through a caller-provided project lookup.
+
+    Parsing and scope classification stay here so dependency and sprint
+    membership consumers cannot drift into subtly different ref grammars.
+    Storage-specific callers supply only the lookup for ``(project, slug)``.
+    """
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None:
+        return {"ref": ref, "scope": "invalid", "found": False}
+    external = parsed.is_external(owning_project)
+    target_project = str(parsed.project) if external else owning_project
+    row: dict[str, Any] = {
+        "ref": ref,
+        "scope": "external" if external else "local",
+        "project": target_project,
+        "slug": parsed.slug,
+        "found": False,
+    }
+    if parsed.stage:
+        row["stage"] = parsed.stage
+    target = lookup(target_project, parsed.slug)
+    if not target:
+        return row
+    row.update(
+        {
+            "found": True,
+            "status": target.get("status", ""),
+            "impl": target.get("impl", 0),
+            "title": target.get("title", ""),
+        }
+    )
+    return row
 
 
 def plan_section_anchors(plan: Mapping[str, Any]) -> frozenset[str]:

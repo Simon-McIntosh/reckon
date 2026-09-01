@@ -18,6 +18,7 @@ from reckon._schema import (
     is_graph_handle,
     parse_plan_ref,
     plan_section_anchors,
+    resolve_plan_ref,
 )
 from reckon.doccheck import _load_mounts, authorisation_staleness, derived_plan_age
 from reckon.lifecycle import (
@@ -27,6 +28,7 @@ from reckon.lifecycle import (
     unpassed_gate_blockers,
 )
 from reckon.mcp_views import compose_review, in_flight_by_plan, load_composed_review
+from reckon.resources import read_plan_record
 
 _EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
@@ -404,7 +406,7 @@ def _dependency_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
 
 
 def _sprint_membership(
-    sprints: list[dict[str, Any]],
+    sprints: list[dict[str, Any]], owning_project: str = ""
 ) -> tuple[dict[str, list[str]], dict[str, int]]:
     membership: dict[str, list[str]] = defaultdict(list)
     order: dict[str, int] = {}
@@ -417,14 +419,51 @@ def _sprint_membership(
         if str(sprint.get("status") or "").lower() in closed_statuses:
             continue
         for item in sprint.get("items") or []:
-            slug = _item_slug(item)
-            if slug:
-                membership[slug].append(sprint_id)
+            ref = _item_slug(item)
+            parsed = parse_plan_ref(ref)
+            if parsed is not None and not parsed.is_external(owning_project):
+                membership[parsed.slug].append(sprint_id)
+            elif ref:
+                membership[ref].append(sprint_id)
     return dict(membership), order
 
 
+def _resolved_sprint_items(
+    project: str,
+    sprints: list[dict[str, Any]],
+    local_plans: Mapping[str, dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Resolve authored sprint membership without changing its order."""
+
+    mounts = _load_mounts()
+    external_cache: dict[tuple[str, str], dict[str, Any]] = {}
+
+    def lookup(target_project: str, slug: str) -> Mapping[str, Any] | None:
+        if target_project == project:
+            return local_plans.get(slug)
+        key = (target_project, slug)
+        if key not in external_cache:
+            docs_dir = mounts.get(target_project)
+            external_cache[key] = (
+                read_plan_record(docs_dir, target_project, slug) if docs_dir else {}
+            )
+        return external_cache[key]
+
+    return {
+        str(sprint.get("id") or ""): [
+            resolve_plan_ref(_item_slug(item), project, lookup)
+            for item in sprint.get("items") or []
+            if _item_slug(item)
+        ]
+        for sprint in sprints
+        if sprint.get("id")
+    }
+
+
 def _open_sprints(
-    sprints: list[dict[str, Any]], plans: dict[str, dict[str, Any]]
+    sprints: list[dict[str, Any]],
+    plans: dict[str, dict[str, Any]],
+    resolved_items: Mapping[str, list[dict[str, Any]]] | None = None,
 ) -> list[str]:
     """Return ordered sprints that still contain executable work."""
 
@@ -433,6 +472,15 @@ def _open_sprints(
         sprint_id = str(sprint.get("id") or "")
         status = str(sprint.get("status") or "").lower()
         if not sprint_id or status in TERMINAL_STATUSES:
+            continue
+        if resolved_items is not None:
+            members = resolved_items.get(sprint_id, [])
+            if any(
+                not member.get("found")
+                or str(member.get("status") or "") not in TERMINAL_STATUSES
+                for member in members
+            ):
+                result.append(sprint_id)
             continue
         item_plans = [
             plans[slug]
@@ -813,8 +861,9 @@ def build_roadmap(
         if item.get("type", "plan") == "plan":
             all_plans[str(item["slug"])] = item
 
-    membership, sprint_order = _sprint_membership(sprints)
-    open_sprints = _open_sprints(sprints, all_plans)
+    membership, sprint_order = _sprint_membership(sprints, project)
+    resolved_sprint_items = _resolved_sprint_items(project, sprints, all_plans)
+    open_sprints = _open_sprints(sprints, all_plans, resolved_sprint_items)
     schedule_horizon = _schedule_horizon(project_manifest)
     schedule_ready_sprints = (
         open_sprints[:schedule_horizon]
@@ -835,6 +884,30 @@ def build_roadmap(
         if isinstance(item, dict) and str(item.get("id") or "").strip()
     ]
     declared_north_stars = {str(item["id"]).strip() for item in north_stars}
+
+    for membership_sprint_id, members in resolved_sprint_items.items():
+        for member in members:
+            parsed = parse_plan_ref(str(member.get("ref") or ""))
+            if (
+                parsed is not None
+                and parsed.project is not None
+                and not member.get("found")
+            ):
+                findings.append(
+                    _finding(
+                        "unresolved-sprint-item",
+                        "warn",
+                        (
+                            f"sprint {membership_sprint_id}: qualified item "
+                            f"{member['ref']!r} does not resolve"
+                        ),
+                        slug=str(member.get("slug") or ""),
+                        extra={
+                            "sprint": membership_sprint_id,
+                            "ref": member["ref"],
+                        },
+                    )
+                )
 
     for slug, plan in plans.items():
         status = _status(plan)
@@ -1433,24 +1506,31 @@ def build_roadmap(
     for position, sprint in enumerate(sprints, start=1):
         sprint_name = str(sprint.get("id") or "")
         sprint_status = str(sprint.get("status") or "planned")
-        items = [_item_slug(item) for item in sprint.get("items") or []]
-        items = [slug for slug in items if slug]
-        item_plans = [all_plans[slug] for slug in items if slug in all_plans]
-        completed = sum(_status(plan) in COMPLETED_STATUSES for plan in item_plans)
-        progress = sum(_progress(plan) for plan in item_plans)
+        members = resolved_sprint_items.get(sprint_name, [])
+        completed = sum(
+            bool(member.get("found"))
+            and str(member.get("status") or "") in COMPLETED_STATUSES
+            for member in members
+        )
+        progress = sum(
+            max(0.0, min(1.0, float(member.get("impl", 0.0) or 0.0)))
+            for member in members
+            if member.get("found")
+        )
         sprint_rows.append(
             {
                 "order": position,
                 "id": sprint_name,
                 "status": sprint_status,
-                "items": len(items),
-                "resolved_items": len(item_plans),
+                "items": len(members),
+                "members": members,
+                "resolved_items": sum(bool(member.get("found")) for member in members),
                 "completed": completed,
-                "lifecycle_completion_pct": round(100 * completed / len(items), 1)
-                if items
+                "lifecycle_completion_pct": round(100 * completed / len(members), 1)
+                if members
                 else (100.0 if sprint_status in COMPLETED_STATUSES else 0.0),
-                "implementation_pct": round(100 * progress / len(item_plans), 1)
-                if item_plans
+                "implementation_pct": round(100 * progress / len(members), 1)
+                if members
                 else (100.0 if sprint_status in COMPLETED_STATUSES else 0.0),
                 "ready": sum(row.get("sprint") == sprint_name for row in ready),
                 "blocked": sum(row.get("sprint") == sprint_name for row in blocked),
