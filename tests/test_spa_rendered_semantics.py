@@ -13,10 +13,47 @@ from urllib.request import urlopen
 
 import pytest
 
-from tests.spa_browser_harness import temporary_browser_profile
+from tests.spa_browser_harness import (
+    BrowserProbeError,
+    installed_browser,
+    run_browser_probe,
+    temporary_browser_profile,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
+
+
+@contextmanager
+def _skip_when_browser_is_unavailable():
+    try:
+        yield
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    with _skip_when_browser_is_unavailable():
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    return browser
+
+
+def test_browser_classifier_does_not_mask_assertion_failure() -> None:
+    with (
+        pytest.raises(AssertionError, match="rendered assertion is wrong"),
+        _skip_when_browser_is_unavailable(),
+    ):
+        raise AssertionError("rendered assertion is wrong")
+
 
 PLAN_HTML = """<!doctype html>
 <html lang="en">
@@ -533,7 +570,9 @@ def _assert_removal_is_detected(
         _assert_rendered_signal(observation, name)
 
 
-def test_overview_renders_every_active_sprint_and_focus_conflict(tmp_path: Path) -> None:
+def test_overview_renders_every_active_sprint_and_focus_conflict(
+    tmp_path: Path, rendered_browser: str
+) -> None:
     result = _rendered_probe(
         tmp_path,
         route="#cockpit",
@@ -562,6 +601,7 @@ def test_overview_renders_every_active_sprint_and_focus_conflict(tmp_path: Path)
 
 def test_sprint_view_renders_composed_metrics_findings_order_and_priority(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,
@@ -602,7 +642,9 @@ def test_sprint_view_renders_composed_metrics_findings_order_and_priority(
     _assert_removal_is_detected(result["removed"], "composed sprint review")
 
 
-def test_sprint_view_without_review_has_no_review_affordances(tmp_path: Path) -> None:
+def test_sprint_view_without_review_has_no_review_affordances(
+    tmp_path: Path, rendered_browser: str
+) -> None:
     result = _rendered_probe(
         tmp_path,
         route="#sprint/focus",
@@ -622,6 +664,7 @@ def test_sprint_view_without_review_has_no_review_affordances(tmp_path: Path) ->
 
 def test_plan_row_renders_authored_to_effective_transition_and_open_gate_count(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,
@@ -646,6 +689,7 @@ def test_plan_row_renders_authored_to_effective_transition_and_open_gate_count(
 
 def test_reader_renders_partial_source_status_missing_sections_and_retry(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,
@@ -675,6 +719,7 @@ def test_reader_renders_partial_source_status_missing_sections_and_retry(
 
 def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,
@@ -713,6 +758,7 @@ def test_shell_renders_snapshot_source_resource_count_load_time_and_refresh(
 
 def test_refresh_revalidates_discovery_without_document_navigation(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,
@@ -771,7 +817,9 @@ def test_refresh_revalidates_discovery_without_document_navigation(
     }
 
 
-def test_handoff_renders_live_source_and_loaded_plan_version(tmp_path: Path) -> None:
+def test_handoff_renders_live_source_and_loaded_plan_version(
+    tmp_path: Path, rendered_browser: str
+) -> None:
     result = _rendered_probe(
         tmp_path,
         route="#plan/rendered-contract",
@@ -803,6 +851,7 @@ def test_handoff_renders_live_source_and_loaded_plan_version(tmp_path: Path) -> 
 
 def test_compact_progress_renders_label_tooltip_and_navigation_target(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
     result = _rendered_probe(
         tmp_path,

@@ -6,8 +6,9 @@ from pathlib import Path
 import pytest
 
 from tests.spa_browser_harness import (
-    BROWSER_NAMES,
+    BrowserProbeError,
     installed_browser,
+    run_browser_probe,
     served_spa,
 )
 
@@ -16,6 +17,23 @@ SHELL = ROOT / "docs" / "ui" / "shell.jsx"
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 PLANS_CSS = ROOT / "docs" / "ui" / "plans.css"
 TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    try:
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+    return browser
 
 
 def _function_source(name: str) -> str:
@@ -178,14 +196,12 @@ def test_reader_typography_is_preserved_without_a_width_floor() -> None:
     [(1280, 384), (1440, 432), (1920, 480)],
 )
 def test_rendered_plan_workspace_fits_the_window_and_clamps_the_index(
-    tmp_path: Path, viewport_width: int, expected_index_width: int
+    tmp_path: Path,
+    rendered_browser: str,
+    viewport_width: int,
+    expected_index_width: int,
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip(
-            "rendered plan workspace check requires an installed browser; tried "
-            + ", ".join(BROWSER_NAMES)
-        )
+    browser = rendered_browser
 
     probe = r"""(() => {
       const root = document.documentElement;
@@ -226,13 +242,9 @@ def test_rendered_plan_workspace_fits_the_window_and_clamps_the_index(
 
 def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip(
-            "rendered plan-filter check requires an installed browser; tried "
-            + ", ".join(BROWSER_NAMES)
-        )
+    browser = rendered_browser
 
     probe = r"""(async () => {
       const countRows = () => document.querySelectorAll(".r-list-body > .r-row").length;
@@ -283,14 +295,9 @@ def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
 
 @pytest.mark.parametrize("viewport_width", [1280, 1440, 1920])
 def test_rendered_plan_rows_and_controls_are_legible(
-    tmp_path: Path, viewport_width: int
+    tmp_path: Path, rendered_browser: str, viewport_width: int
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip(
-            "rendered plan-list check requires an installed browser; tried "
-            + ", ".join(BROWSER_NAMES)
-        )
+    browser = rendered_browser
 
     probe = r"""(() => {
       const list = document.querySelector(".r-list-body");

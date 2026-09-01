@@ -6,7 +6,9 @@ from pathlib import Path
 import pytest
 
 from tests.spa_browser_harness import (
+    BrowserProbeError,
     installed_browser,
+    run_browser_probe,
     served_spa,
     temporary_browser_profile,
 )
@@ -15,6 +17,23 @@ from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE, PLAN_HTML
 ROOT = Path(__file__).parents[1]
 READER_CSS = (ROOT / "docs" / "ui" / "reader.css").read_text()
 PLAN_SOURCE = (ROOT / "docs" / "ui" / "plan.jsx").read_text()
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    try:
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+    return browser
 
 
 def _declarations(selector: str) -> dict[str, str]:
@@ -91,10 +110,10 @@ def test_focus_header_paging_and_attachment_bars_keep_existing_navigation_paths(
     assert cards["gap"] == "9px"
 
 
-def test_titlebar_omits_absent_metadata_and_remains_one_line(tmp_path: Path) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("rendered titlebar checks require an installed Chromium browser")
+def test_titlebar_omits_absent_metadata_and_remains_one_line(
+    tmp_path: Path, rendered_browser: str
+) -> None:
+    browser = rendered_browser
 
     docs = tmp_path / "docs"
     plans = docs / "plans"

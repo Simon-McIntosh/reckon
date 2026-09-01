@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from tests.spa_browser_harness import (
+    BrowserProbeError,
     installed_browser,
     run_browser_probe,
     served_spa,
@@ -12,6 +13,23 @@ from tests.spa_browser_harness import (
 REPO_ROOT = Path(__file__).parents[1]
 PLAN_SOURCE = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
 BITS_SOURCE = (REPO_ROOT / "docs" / "ui" / "bits.jsx").read_text()
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    try:
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+    return browser
 
 
 def _between(source: str, start: str, end: str) -> str:
@@ -41,10 +59,8 @@ def test_inflight_band_identifies_work_without_rendering_a_run_hash():
     assert "reckon crew observe --run ${run.run_id}" in band
 
 
-def test_inflight_band_fits_reader_at_minimum_width(tmp_path):
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("browser-backed geometry check requires an installed browser")
+def test_inflight_band_fits_reader_at_minimum_width(tmp_path, rendered_browser):
+    browser = rendered_browser
 
     reader_css = (REPO_ROOT / "docs" / "ui" / "reader.css").read_text()
     document = f"""<!doctype html>
@@ -160,10 +176,10 @@ def test_absent_reader_values_are_omitted_instead_of_rendered_as_placeholders():
     assert ': "—"' not in PLAN_SOURCE
 
 
-def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(tmp_path):
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("browser-backed reader check requires an installed browser")
+def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(
+    tmp_path, rendered_browser
+):
+    browser = rendered_browser
 
     docs = tmp_path / "docs"
     plans = docs / "plans"
