@@ -39,7 +39,10 @@ def declared_badge(docs_dir: Path) -> tuple[str, PublicationStrategy]:
     declared_coordinates = RepositoryCoordinates(declared_owner, declared_name)
     site_url = _pages_site_base(declared_coordinates, 404, {})
     docs_relative = PurePosixPath(resolved_docs.relative_to(repo_root).as_posix())
-    image_target = (docs_relative / "_shared" / "badge.svg").as_posix()
+    badge_asset = resolved_docs / "_shared" / "badge.svg"
+    if not badge_asset.is_file():
+        raise PagesUndeterminedError(_badge_asset_requirement(resolved_docs))
+    image_target = PurePosixPath(badge_asset.relative_to(repo_root).as_posix())
     markdown = f"[![Plans]({image_target})]({site_url})"
     strategy = PublicationStrategy(
         name="declared-workflow",
@@ -82,4 +85,11 @@ def _declaration_requirement(path: Path) -> str:
     return (
         "plans publication is not declared; add "
         f"`env.{DECLARATION_NAME}: owner/repository` to {path}"
+    )
+
+
+def _badge_asset_requirement(docs_dir: Path) -> str:
+    return (
+        f"plans badge asset is missing from {docs_dir / '_shared' / 'badge.svg'}; "
+        f"run `reckon sync {docs_dir}` before rendering or installing the badge"
     )
