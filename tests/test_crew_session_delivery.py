@@ -532,10 +532,13 @@ def test_a_registration_is_judged_by_where_its_lines_land_now(home, tmp_path) ->
             env={**os.environ, "RECKON_HOME": str(home)},
         )
     try:
+        # Wait for the settled registration, not merely for the lock: a claim
+        # takes the lock and then writes its record, and reading the instant
+        # between the two is what this fixture used to race.
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             state = runs.follower_state("proj", "declared")
-            if state["registered"]:
+            if state["registered"] and state["follower"].get("pid"):
                 break
             time.sleep(0.02)
         assert state["registered"] is True, "the follower never registered"
@@ -655,3 +658,38 @@ def test_a_followers_owner_is_readable_without_reaching_for_ps(home) -> None:
     assert row["pid"] == os.getpid()
     assert row["consumer_pid"] == os.getppid(), "the process reading its stdout"
     assert row["since"], "and when it attached"
+
+
+def test_a_registration_mid_write_is_not_read_as_unknown_delivery(home) -> None:
+    """The instant between taking the lock and writing the record is not a verdict.
+
+    A claim flocks and then writes, so a reader arriving between the two sees a
+    held lock and an empty file. Reporting that as `delivery: unknown` would
+    refuse a dispatch against a follower that is perfectly fine — found when
+    suite load widened the window enough to lose a race that passed alone.
+    """
+    path = runs.follower_lock_path("proj", "mine")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    settled: list[dict] = []
+
+    def hold() -> None:
+        with runs.follower_claim("proj", "mine", delivery="stream"):
+            settled.append(runs.follower_state("proj", "mine"))
+            time.sleep(0.4)
+
+    # An empty file whose lock is held by nobody is not a registration at all.
+    path.write_text("")
+    state = runs.follower_state("proj", "mine")
+    assert state["registered"] is False
+    assert state["live"] is False
+
+    thread = threading.Thread(target=hold, daemon=True)
+    thread.start()
+    try:
+        _wait_for(lambda: bool(settled))
+        observed = runs.follower_state("proj", "mine")
+        assert observed["registered"] is True
+        assert observed["delivery_recorded"] == "stream"
+        assert observed["follower"].get("pid") == os.getpid()
+    finally:
+        thread.join(timeout=2)

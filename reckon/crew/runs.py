@@ -1197,20 +1197,32 @@ def follower_claim(
         )
 
 
+# A claim takes the lock and then writes its record, so a reader can arrive
+# between the two and see a held lock with nothing in it. Settling is measured in
+# microseconds; treating that instant as "delivery unknown" would refuse a
+# dispatch against a follower that is fine, so a reader waits out the gap.
+_REGISTRATION_SETTLE_SECONDS = 0.25
+
+
 def _follower_liveness(path: Path) -> dict[str, Any]:
     """Read one registration and decide whether it still delivers."""
     if not path.is_file():
         return {"registered": False, "live": False, "delivery": None, "follower": {}}
-    with path.open("a+b") as handle:
-        try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            registered = True
-            record = _read_watch_record(handle)
-        else:
-            registered = False
-            record = _read_watch_record(handle)
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    deadline = time.monotonic() + _REGISTRATION_SETTLE_SECONDS
+    while True:
+        with path.open("a+b") as handle:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                registered = True
+                record = _read_watch_record(handle)
+            else:
+                registered = False
+                record = _read_watch_record(handle)
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        if record or not registered or time.monotonic() >= deadline:
+            break
+        time.sleep(0.005)
 
     pid = record.get("pid")
     running = process_alive(pid) is True
