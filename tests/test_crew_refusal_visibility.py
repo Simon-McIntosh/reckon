@@ -136,7 +136,7 @@ def test_a_missing_fleet_script_is_refused_identically_on_both_paths(
     def missing() -> Path:
         raise crew.CrewError("the reckon installation is missing its fleet script")
 
-    monkeypatch.setattr(crew, "fleet_script", missing)
+    monkeypatch.setattr(crew, "_fleet_script", missing)
 
     result = CliRunner().invoke(
         cli_module.main, _arguments(repo, "--no-watch", dry_run=dry_run)

@@ -806,7 +806,7 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     # work and the refusal it named was unreachable by any repair. Pin the
     # arrangement that replaced it instead.
     assert "needs nothing installed in the dispatched repository" in ship
-    assert "def fleet_script" in crew_source
+    assert "def _fleet_script" in crew_source
     assert "reckon sync" not in ship
     # A refusal the caller cannot read is indistinguishable from silence.
     assert "answers with a json document on stdout" in ship

@@ -2063,7 +2063,7 @@ def test_dispatch_refuses_when_reckon_itself_cannot_supply_the_fleet_script(
             "the reckon installation is missing its worktree fleet script"
         )
 
-    monkeypatch.setattr(crew, "fleet_script", missing)
+    monkeypatch.setattr(crew, "_fleet_script", missing)
 
     with pytest.raises(crew.CrewError, match=r"reckon installation is missing"):
         crew.dispatch(

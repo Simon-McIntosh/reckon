@@ -419,7 +419,7 @@ def garbage_collect(
     }
 
 
-def fleet_script() -> Path:
+def _fleet_script() -> Path:
     """Resolve the worktree fleet script from the running reckon installation.
 
     The script is repository-agnostic: it derives every path it touches from
@@ -449,7 +449,7 @@ def _create_worktree(
     repo: Path, session: str, worker: str, base: str
 ) -> dict[str, Any]:
     """Create a detached worktree through the fleet script, or raise."""
-    script = fleet_script()
+    script = _fleet_script()
     result = subprocess.run(
         [
             sys.executable,

@@ -42,7 +42,7 @@ from reckon.crew.routing import (
     _competence_verdict,
     _create_worktree,
     _register_session_member,
-    fleet_script,
+    _fleet_script,
     _remove_worktree,
     _session_member_id,
     _signal_process_group,
@@ -990,7 +990,7 @@ def plan_dispatch(
     # Proven here rather than at worktree creation so that a dry run, whose
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
-    fleet_script()
+    _fleet_script()
     backend_name, backend = resolve_role(config, node.role, node.spec_level)
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
