@@ -8,6 +8,7 @@ const SPRINT_HORIZONS = {
 };
 
 const CLOSED_ITEM_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
+const CLOSED_SPRINT_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
 
 function naturalSprintKey(value) {
   return String(value || "").split(/(\d+)/).filter(Boolean).map(part => /^\d+$/.test(part) ? Number(part) : part.toLowerCase());
@@ -70,22 +71,29 @@ function sprintInventoryItems(sprint, inventory) {
   }).filter(Boolean);
 }
 
-function sprintOpenCount(sprint, inventory) {
-  return sprintInventoryItems(sprint, inventory)
-    .filter(plan => !CLOSED_ITEM_STATUSES.has(plan.effective_status || plan.status)).length;
+function sprintStateRows(sprints, todayValue) {
+  const today = String(todayValue || "").slice(0, 10);
+  return (sprints || []).map((sprint, index) => {
+    const metrics = sprint.metrics || {};
+    const counts = metrics.by_effective_status || {};
+    const closedItems = [...CLOSED_ITEM_STATUSES].reduce((total, status) => total + Number(counts[status] || 0), 0);
+    const openCount = Math.max(0, Number(metrics.item_count || 0) - closedItems);
+    return {
+      sprint,
+      position: index + 1,
+      metrics,
+      openCount,
+      blockedCount: Number(counts.blocked || 0),
+      active: sprint.status === "active",
+      delayed: Boolean(today && sprint.ends && sprint.ends < today && openCount > 0),
+      closed: CLOSED_SPRINT_STATUSES.has(sprint.status),
+    };
+  });
 }
 
-function sprintOverviewRows(sprints, inventory, foldClosed) {
-  const rows = (sprints || []).map(sprint => ({
-    sprint,
-    openCount: sprintOpenCount(sprint, inventory),
-  }));
-  const folded = foldClosed ? rows.filter(row => row.openCount === 0) : [];
-  return {
-    visible: foldClosed ? rows.filter(row => row.openCount > 0) : rows,
-    folded,
-    foldedCount: folded.length,
-  };
+function activeSprintConflict(activeSprints, activePointer) {
+  const ids = (activeSprints || []).map(row => typeof row === "string" ? row : row.id).filter(Boolean);
+  return ids.length !== 1 || ids[0] !== activePointer;
 }
 
 function parseSprintDate(value) {
@@ -181,7 +189,6 @@ function Sprint({ sprintId, onNav }) {
   if (!sprint) return <div className="r-page">No sprint.</div>;
 
   const [surface, setSurface] = useState("overview");
-  const [horizon, setHorizon] = useState("8w");
   const [foldClosed, setFoldClosed] = useState(true);
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
   const [sprintPromptText, setSprintPromptText] = useState(null);
@@ -261,10 +268,10 @@ function Sprint({ sprintId, onNav }) {
     if (rows.length) return rows.map(decision => ({ plan, label: decision.question || decision.key || "Open decision" }));
     return Array.from({ length: plan.dec_open || 0 }, (_, index) => ({ plan, label: `Open decision ${index + 1}` }));
   });
-  const overview = sprintOverviewRows(allSprints, M.inventory, foldClosed);
+  const stateRows = sprintStateRows(allSprints, M.today);
+  const foldedCount = stateRows.filter(row => row.closed).length;
   const finishedRuns = useMemo(() => sprintCompletedRuns(sprint, finishedRunsByPlan), [sprint, finishedRunsByPlan]);
-  const axis = sprintAxis(allSprints, horizon, M.today, finishedRuns);
-  const activeIds = new Set((M.active_sprints || allSprints.filter(row => row.status === "active")).map(row => typeof row === "string" ? row : row.id));
+  const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
 
   const navigateSprint = (event, id) => {
     if (!onNav) return;
@@ -303,7 +310,36 @@ function Sprint({ sprintId, onNav }) {
       </header>
 
       {surface === "overview" ? (
-        <section className="r-sprint-overview" aria-label="Sprint timeline overview">
+        <section className="r-sprint-overview" aria-label="All-sprints state overview">
+          <section className="r-sprint-state" aria-labelledby="sprint-state-heading">
+            <header>
+              <div><span className="r-eyebrow">Project state</span><h2 id="sprint-state-heading">Every sprint</h2></div>
+              <div className="r-sprint-state-summary">
+                <span>{stateRows.length} total</span>
+                {activeConflict && <strong className="r-sprint-conflict">Active pointer conflict</strong>}
+                <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold closed</label>
+              </div>
+            </header>
+            <div className="r-sprint-table-wrap">
+              <table className="r-sprint-table">
+                <thead><tr><th scope="col">Order</th><th scope="col">Sprint</th><th scope="col">Status</th><th scope="col">Implementation</th><th scope="col">Flags</th><th scope="col">Current work</th></tr></thead>
+                <tbody>{stateRows.map(row => {
+                  const { sprint: listedSprint, metrics } = row;
+                  const percent = Math.round(Number(metrics.mean_impl || 0) * 100);
+                  const findings = subjectFindings(reviewFindings, "sprint", listedSprint.id);
+                  return <tr key={listedSprint.id} hidden={foldClosed && row.closed} className={row.closed ? "closed" : ""}>
+                    <td className="r-sprint-order"><span>{row.position}</span></td>
+                    <th scope="row"><a href={`#sprint/${listedSprint.id}`} onClick={event => navigateSprint(event, listedSprint.id)}><strong>{listedSprint.id}</strong><span>{listedSprint.theme || listedSprint.summary || "Untitled sprint"}</span></a></th>
+                    <td><span className={`r-sprint-status ${listedSprint.status || "planned"}`}>{listedSprint.status || "planned"}</span></td>
+                    <td><div className="r-sprint-implementation" aria-label={`${listedSprint.id}: ${percent}% implemented`}><span><i style={{ width: `${percent}%` }}></i></span><strong>{percent}%</strong></div></td>
+                    <td><div className="r-sprint-flags">{row.active && <span className="active">active</span>}{row.blockedCount > 0 && <span className="blocked">blocked {row.blockedCount}</span>}{row.delayed && <span className="delayed">delayed</span>}{listedSprint.id === M.active_sprint_id && <span className="focus">focus</span>}<FindingBadges findings={findings} /></div></td>
+                    <td><div className="r-sprint-current">{(metrics.current_work || []).map(item => <a key={item.slug} href={`#plan/${item.slug}`}>{item.title || item.slug}</a>)}{!(metrics.current_work || []).length && <span>None</span>}</div></td>
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+            {foldClosed && foldedCount > 0 && <button className="r-folded-sprints" onClick={() => setFoldClosed(false)}><strong>{foldedCount}</strong> closed {foldedCount === 1 ? "sprint" : "sprints"} folded · show all</button>}
+          </section>
           {review && <section className="r-priority-panel" aria-label="Review priority">
             <header><div><span className="r-eyebrow">Review priority</span><h2>Ranked plans</h2></div><span>{review.priority?.length || 0} ranked</span></header>
             {(review.priority || []).length ? <ol>{[...(review.priority || [])].sort((left, right) => Number(left.landed) - Number(right.landed) || left.rank - right.rank).map(row => (
@@ -317,41 +353,6 @@ function Sprint({ sprintId, onNav }) {
               </li>
             ))}</ol> : <p className="r-priority-empty">No plans are ranked in the current review.</p>}
           </section>}
-          <div className="r-overview-controls">
-            <div className="r-horizon" aria-label="Timeline horizon">{Object.keys(SPRINT_HORIZONS).map(value => <button key={value} aria-pressed={horizon === value} onClick={() => setHorizon(value)}>{value}</button>)}</div>
-            <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold sprints with nothing open</label>
-          </div>
-          <div className="r-time-axis" aria-hidden="true"><span></span><div>{axis.ticks.map(tick => <span key={tick.left}>{tick.label}</span>)}</div></div>
-          {overview.foldedCount > 0 && <div className="r-folded-band"><div className="r-folded-summary"><strong>{overview.foldedCount}</strong><span>{overview.foldedCount === 1 ? "sprint" : "sprints"} with nothing open</span></div><div className="r-folded-track" aria-hidden="true"><i></i></div></div>}
-          <div className="r-timeline-rows">
-            {overview.visible.map(({ sprint: row, openCount }) => {
-              const geometry = axis.position(row);
-              const isActive = activeIds.has(row.id);
-              const focus = row.id === M.active_sprint_id;
-              const label = `${row.id}, ${row.status}, ${openCount} open item${openCount === 1 ? "" : "s"}${focus ? ", legacy focus" : ""}`;
-              const metrics = row.metrics || {};
-              const findings = subjectFindings(reviewFindings, "sprint", row.id);
-              return <div className={`r-timeline-row ${focus ? "derived-active" : ""}`} key={row.id}>
-                <div className="r-sprint-summary">
-                  <a href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} title={`Open ${label}`} aria-label={`Open ${label}`}><strong>{row.id}</strong><span className="r-sprint-title">{row.theme || row.summary}</span>{isActive && <em>active</em>}{focus && <em className="focus">derived active</em>}</a>
-                  <FindingBadges findings={findings} />
-                  <div className="r-sprint-metrics" aria-label={`${row.id} live metrics`}>
-                    <span>{metrics.item_count ?? 0} items</span>
-                    {Object.entries(metrics.by_effective_status || {}).map(([status, count]) => <span key={status}>{status} {count}</span>)}
-                    <span>mean {Math.round((metrics.mean_impl || 0) * 100)}%</span>
-                    {(metrics.current_work || []).map(item => <a key={item.slug} href={`#plan/${item.slug}`}>{item.title || item.slug}</a>)}
-                  </div>
-                </div>
-                <div className="r-timeline-track">{axis.subDay ? (
-                  row.id === sprint.id && finishedRuns.map(run => {
-                    const left = axis.timestampPosition(run);
-                    return left === null ? null : <i className={`r-completed-run-mark ${run.gate || "unknown"}`} key={run.run_id} style={{ left: `${left}%` }} title={`${run.node || run.plan} completed ${run.completed_at || run.dispatched_at}`} />;
-                  })
-                ) : <a className={`r-sprint-mark ${row.status}`} href={`#sprint/${row.id}`} onClick={event => navigateSprint(event, row.id)} style={{ left: `${geometry.left}%`, width: `${geometry.width}%` }} title={`Open ${label}`} aria-label={`Open ${label}`}><span className="r-sprint-mark-label">{row.id}</span></a>}</div>
-              </div>;
-            })}
-          </div>
-          <div className="r-sprint-legend" aria-label="Timeline legend"><span><i className="active"></i> Active</span><span><i className="planned"></i> Planned</span><span><i className="shipped"></i> Shipped</span><span><b>legacy focus</b> Stored board focus</span></div>
           {review && reviewFindings.length > 0 && <section className="r-review-findings" aria-label="Open review findings"><header><span className="r-eyebrow">Open findings</span><strong>{reviewFindings.length}</strong></header>{reviewFindings.map(finding => <article id={`review-finding-${finding.id}`} key={finding.id}><FindingBadges findings={[finding]} /><span>{finding.subject?.kind}: {finding.subject?.id}</span><p>{(finding.evidence || []).join(" ")}</p></article>)}</section>}
           <section className="r-completed-work" aria-live="polite" aria-label={`${sprint.id} completed work`}>
             <header><div><span className="r-eyebrow">Recorded work</span><h2>{sprint.id} · {sprint.theme || sprint.summary}</h2></div><span>{finishedRuns.length} completed {finishedRuns.length === 1 ? "run" : "runs"}</span></header>
