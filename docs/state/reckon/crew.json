@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T09:20:21",
+  "updated": "2026-09-01T09:37:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -28129,9 +28129,113 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T071520981500-n-ready-lanes",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a74",
+        "node": "n-ready-lanes",
+        "node_definition": {
+          "done_when": "Tests assert the board component and its selectors are absent from the source, that each ready row renders its why_now and a paste-ready reckon-ship invocation naming the section where the payload supplies section granularity, that rows carry no rank column implying a sequence, that blocked work is visually distinct from in-progress work and carries its cause class, that landed rows are demoted rather than removed, and that the view consumes the served ready_set without deriving readiness itself",
+          "estimated_hours": null,
+          "goal": "Replace the kanban board with the derived ready lanes the server now exposes",
+          "id": "n-ready-lanes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T071520981500-n-ready-lanes/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_composition.py",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-m",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T07:15:29Z",
+        "completed_at": "2026-09-01T07:36:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1286,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1286,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "78b873badf045d78a5a997c17a8f3b8c40130379",
+        "commits": [
+          "48732f129a437f4e836d797c20a35e26d29bac0b",
+          "95d2085eca6e059f80488dd71ef391f5fa8e6854"
+        ],
+        "changed_lines": {
+          "added": 208,
+          "removed": 87,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_sprint_surface.py + tests/test_spa_composition.py -k sprint",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T071520981500-n-ready-lanes/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T071520981500-n-ready-lanes/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a038cf-cb84-7f23-ba61-617cbb4c91b1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3171072,
+            "cached_input_tokens_cumulative": 5169664,
+            "input_tokens": 3350711,
+            "input_tokens_cumulative": 5531878,
+            "output_tokens": 7094,
+            "output_tokens_cumulative": 18928,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3495
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 468
+    "_version": 469
   }
 }
