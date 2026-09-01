@@ -531,6 +531,22 @@ def read_plan_record(docs_dir: Path, project: str, slug: str) -> dict[str, Any]:
     return _plan_html.parse_meta(resource.path)
 
 
+def read_sprint_record(docs_dir: Path, project: str, sprint_id: str) -> dict[str, Any]:
+    """Read one sprint through the owning project's state abstraction."""
+
+    from reckon.project_state import compose_project_state
+
+    state = compose_project_state(docs_dir, project)
+    return next(
+        (
+            dict(sprint)
+            for sprint in state.get("sprints", [])
+            if str(sprint.get("id") or "") == sprint_id
+        ),
+        {},
+    )
+
+
 def resolve_route(
     docs_dir: Path, project: str, route: str
 ) -> tuple[Resource | None, bool]:

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon._plan_html import write_state
-from reckon._schema import Sprint, parse_plan_ref
+from reckon._plan_html import from_html, to_html, write_state
+from reckon._schema import PlanState, Sprint, parse_plan_ref
 from reckon.project_state import (
     create_project_state,
     read_resource,
@@ -42,6 +42,7 @@ def _write_plan(
     *,
     status: str,
     impl: float,
+    sprint: str | None = None,
 ) -> None:
     path = docs / "plans" / f"{slug}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,8 +61,22 @@ def _write_plan(
                 "title": slug.title(),
                 "status": status,
                 "impl": impl,
+                "sprint": sprint,
             },
         )
+    )
+
+
+def _create_sprint(docs: Path, project: str, items: list[dict[str, str]]) -> None:
+    create_project_state(docs, project)
+    write_resource(
+        docs,
+        project,
+        "sprint",
+        "shared",
+        {"theme": "Shared", "status": "active", "items": items},
+        0,
+        create=True,
     )
 
 
@@ -255,3 +270,133 @@ def test_qualified_sprint_item_round_trips_through_canonical_edit(
             {**stored, "items": [{"slug": "bad ref"}]},
             round_trip_version,
         )
+
+
+def test_qualified_plan_sprint_resolves_the_same_membership_from_either_project(
+    tmp_path: Path, monkeypatch
+) -> None:
+    docs_by_project = {
+        project: tmp_path / project / "docs" for project in ("alpha", "beta")
+    }
+    for docs in docs_by_project.values():
+        docs.mkdir(parents=True)
+    mounts_path = tmp_path / "mounts.json"
+    mounts_path.write_text(
+        json.dumps({project: str(docs) for project, docs in docs_by_project.items()})
+    )
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_path))
+
+    _write_plan(
+        docs_by_project["alpha"],
+        "alpha",
+        "member-a",
+        status="active",
+        impl=0.25,
+        sprint="beta:shared",
+    )
+    _write_plan(
+        docs_by_project["beta"],
+        "beta",
+        "member-b",
+        status="shipped",
+        impl=1.0,
+        sprint="shared",
+    )
+    _create_sprint(
+        docs_by_project["beta"],
+        "beta",
+        [{"slug": "alpha:member-a"}, {"slug": "member-b"}],
+    )
+
+    from_alpha = build_roadmap(
+        "alpha",
+        [{**_plan("alpha", "member-a", impl=0.25), "sprint": "beta:shared"}],
+        [],
+    )
+    sprint, _version = read_resource(
+        docs_by_project["beta"], "beta", "sprint", "shared"
+    )
+    from_beta = build_roadmap(
+        "beta",
+        [
+            {
+                **_plan("beta", "member-b", status="shipped", impl=1.0),
+                "sprint": "shared",
+            }
+        ],
+        [sprint],
+    )
+
+    alpha_row = from_alpha["sprints"][0]
+    beta_row = from_beta["sprints"][0]
+    assert alpha_row["ref"] == "beta:shared"
+    assert alpha_row["scope"] == "external"
+    assert alpha_row["found"] is True
+    assert beta_row["ref"] == "shared"
+    assert beta_row["scope"] == "local"
+    assert alpha_row["members"] == beta_row["members"]
+    assert [member["ref"] for member in alpha_row["members"]] == [
+        "alpha:member-a",
+        "member-b",
+    ]
+    assert not any(
+        finding["code"].startswith("plan-sprint-")
+        for finding in from_alpha["wiring_findings"]
+    )
+
+
+def test_unmounted_qualified_plan_sprint_remains_explicit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mounts_path = tmp_path / "mounts.json"
+    mounts_path.write_text(json.dumps({"alpha": str(tmp_path / "alpha" / "docs")}))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_path))
+    report = build_roadmap(
+        "alpha",
+        [{**_plan("alpha", "member"), "sprint": "missing:shared"}],
+        [],
+    )
+
+    assert len(report["sprints"]) == 1
+    assert report["sprints"][0]["ref"] == "missing:shared"
+    assert report["sprints"][0]["scope"] == "external"
+    assert report["sprints"][0]["found"] is False
+    unresolved = [
+        finding
+        for finding in report["wiring_findings"]
+        if finding["code"] == "unresolved-plan-sprint"
+    ]
+    assert len(unresolved) == 1
+    assert unresolved[0]["extra"] == {"ref": "missing:shared"}
+
+
+def test_qualified_plan_sprint_round_trips_and_malformed_ref_is_refused() -> None:
+    source = (
+        '<!doctype html><html><head><meta name="docs-project" content="alpha">'
+        "<title>Member</title></head><body><main></main></body></html>"
+    )
+    state = PlanState.model_validate(
+        {
+            "project": "alpha",
+            "type": "plan",
+            "slug": "member",
+            "title": "Member",
+            "status": "active",
+            "sprint": "beta:shared",
+        }
+    ).validate_for_write()
+    round_trip = from_html(to_html(source, state))
+
+    assert round_trip.sprint == "beta:shared"
+    assert round_trip.validate_for_write() is round_trip
+    with pytest.raises(ValueError, match=r"expected \[project:\]id"):
+        PlanState.model_validate(
+            {
+                "project": "alpha",
+                "type": "plan",
+                "slug": "member",
+                "title": "Member",
+                "status": "active",
+                "sprint": "bad ref",
+            }
+        ).validate_for_write()
