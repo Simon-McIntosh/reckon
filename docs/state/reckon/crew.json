@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:53:51",
+  "updated": "2026-09-01T23:08:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -33731,9 +33731,100 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T205231777672-n-entry-point-shape-assertions",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-entry-point-shape-assertions",
+        "node_definition": {
+          "done_when": "tests/test_service_unit.py::test_all_served_jsx_modules_compile_without_node_on_path, tests/test_spa_crew_stylesheet.py::test_crew_stylesheet_registers_with_every_spa_entry_point and tests/test_spa_crew_stylesheet.py::test_spa_entry_points_register_only_local_compiled_runtime_assets all pass, each resolving the module and asset set through the authored docs/index.html the generated entry points now derive from rather than through its own list; no assertion is weakened to achieve it, proven by 1 mutation control per test that removes the behaviour and observes the failure; the whole grep-derived set of entry-point assertions then runs in one command \u2014 the 15 modules matching index.html, entry_point, SPA_MODULES or canonical_modules plus the 4 matching the served template surfaces \u2014 and reports 0 failures, so a fence derived from what was noticed is replaced by one derived from what is true; collection counts are unchanged across every module touched; and the manifest reports the module and stylesheet counts each of the 4 entry points registers, which must agree. If a production change in reckon/serve.py or reckon/cli.py turns out to be required rather than a test-side resolution, stop and report that with the specific reason instead of editing outside this fence, because a peer session currently holds reckon/cli.py",
+          "estimated_hours": null,
+          "goal": "Every remaining assertion about entry-point shape agrees with the one authority the entry points now derive from",
+          "id": "n-entry-point-shape-assertions",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205231777672-n-entry-point-shape-assertions/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "tests/test_service_unit.py",
+            "tests/test_spa_crew_stylesheet.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-linkcheck",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:52:37Z",
+        "completed_at": "2026-09-01T21:08:26Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 949,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 949,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "e3d386d9528665b1d25e8300322e275128105232",
+        "commits": [
+          "a82fe4904a16b224f550f770fe490218290cc673"
+        ],
+        "changed_lines": {
+          "added": 118,
+          "removed": 31,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "the three named contracts, both touched modules, and the grep-derived 15-module gate at baseline and after",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205231777672-n-entry-point-shape-assertions/logs/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205231777672-n-entry-point-shape-assertions/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e53-bc89-7030-a92c-40b22dae1d05",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 539
+    "_version": 540
   }
 }
