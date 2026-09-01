@@ -1,11 +1,6 @@
-const SPRINT_HORIZONS = {
-  "1hr": { milliseconds: 60 * 60 * 1000, subDay: true },
-  "1D": { milliseconds: 24 * 60 * 60 * 1000, subDay: true },
-  "4w": { days: 28 },
-  "8w": { days: 56 },
-  "6m": { days: 183 },
-  all: {},
-};
+const HORIZON_HOURS = 48;
+const HORIZON_REFRESH_MS = 30 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 
 const CLOSED_ITEM_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
 const CLOSED_SPRINT_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
@@ -96,12 +91,6 @@ function activeSprintConflict(activeSprints, activePointer) {
   return ids.length !== 1 || ids[0] !== activePointer;
 }
 
-function parseSprintDate(value) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
 function completedRunTime(run) {
   for (const field of ["completed_at", "dispatched_at"]) {
     const timestamp = Date.parse(run?.[field] || "");
@@ -118,48 +107,53 @@ function sprintCompletedRuns(sprint, runsByPlan) {
     .sort((left, right) => (completedRunTime(right) || 0) - (completedRunTime(left) || 0));
 }
 
-function sprintAxis(sprints, horizon, todayValue, completedRuns = []) {
-  const starts = (sprints || []).map(row => parseSprintDate(row.starts)).filter(Boolean);
-  const ends = (sprints || []).map(row => parseSprintDate(row.ends)).filter(Boolean);
-  const today = parseSprintDate(todayValue) || new Date();
-  const setting = SPRINT_HORIZONS[horizon] || SPRINT_HORIZONS["8w"];
-  const recordedTimes = completedRuns.map(completedRunTime).filter(value => value !== null);
-  const latestRecorded = recordedTimes.length ? Math.max(...recordedTimes) : today.getTime();
-  let start;
-  let end;
-  if (setting.subDay) {
-    end = new Date(latestRecorded);
-    start = new Date(end.getTime() - setting.milliseconds);
-  } else if (setting.days) {
-    start = new Date(today.getTime() - 7 * 86400000);
-    end = new Date(start.getTime() + setting.days * 86400000);
-  } else {
-    start = new Date(Math.min(...starts.map(date => date.getTime()), today.getTime()));
-    end = new Date(Math.max(...ends.map(date => date.getTime()), today.getTime()));
-  }
-  if (end <= start) end = new Date(start.getTime() + 86400000);
-  const span = end - start;
-  const position = sprint => {
-    const itemStart = parseSprintDate(sprint.starts) || start;
-    const itemEnd = parseSprintDate(sprint.ends) || itemStart;
-    const left = Math.max(0, Math.min(100, ((itemStart - start) / span) * 100));
-    const right = Math.max(left + 1.5, Math.min(100, ((itemEnd - start) / span) * 100));
-    return { left, width: Math.max(1.5, right - left) };
+function horizonStrip(currentInstant, completedRuns = [], liveRuns = []) {
+  const instant = new Date(currentInstant);
+  const safeInstant = Number.isNaN(instant.getTime()) ? new Date() : instant;
+  const start = new Date(
+    safeInstant.getFullYear(),
+    safeInstant.getMonth(),
+    safeInstant.getDate()
+  ).getTime();
+  const span = HORIZON_HOURS * HOUR_MS;
+  const end = start + span;
+  const tomorrow = new Date(
+    safeInstant.getFullYear(),
+    safeInstant.getMonth(),
+    safeInstant.getDate() + 1
+  ).getTime();
+  const position = timestamp => {
+    if (timestamp === null || timestamp < start || timestamp > end) return null;
+    return ((timestamp - start) / span) * 100;
   };
-  const timestampPosition = run => {
-    const timestamp = completedRunTime(run);
-    if (timestamp === null || timestamp < start.getTime() || timestamp > end.getTime()) return null;
-    return Math.max(0, Math.min(100, ((timestamp - start) / span) * 100));
-  };
-  const tickCount = 6;
-  const ticks = Array.from({ length: tickCount }, (_, index) => {
-    const date = new Date(start.getTime() + span * index / (tickCount - 1));
-    const format = setting.subDay
-      ? { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }
-      : { month: "short", day: "numeric", timeZone: "UTC" };
-    return { left: index * 100 / (tickCount - 1), label: date.toLocaleString(undefined, format) };
+  const events = [
+    ...(completedRuns || []).map(run => ({ kind: "completed", run, timestamp: completedRunTime(run) })),
+    ...(liveRuns || []).map(run => {
+      const timestamp = Date.parse(run?.dispatched_at || "");
+      return { kind: "live", run, timestamp: Number.isNaN(timestamp) ? null : timestamp };
+    }),
+  ].map(event => ({ ...event, left: position(event.timestamp) }))
+    .filter(event => event.left !== null)
+    .sort((left, right) => left.timestamp - right.timestamp);
+  const ticks = Array.from({ length: 9 }, (_, index) => {
+    const timestamp = start + index * 6 * HOUR_MS;
+    return {
+      left: index * 12.5,
+      label: new Date(timestamp).toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+    };
   });
-  return { position, timestampPosition, ticks, start: start.toISOString(), end: end.toISOString(), subDay: Boolean(setting.subDay) };
+  return {
+    start: new Date(start).toISOString(),
+    end: new Date(end).toISOString(),
+    nowPosition: position(safeInstant.getTime()),
+    tomorrowPosition: position(tomorrow),
+    ticks,
+    events,
+  };
 }
 
 function openGateCount(plan) {
@@ -195,6 +189,7 @@ function Sprint({ sprintId, onNav }) {
   const [liveRuns, setLiveRuns] = useState([]);
   const [finishedRunsByPlan, setFinishedRunsByPlan] = useState({});
   const [finishedRunsState, setFinishedRunsState] = useState("loading");
+  const [currentInstant, setCurrentInstant] = useState(() => Date.now());
   const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const items = sprintInventoryItems(sprint, M.inventory);
   const sprintPlanSlugs = useMemo(
@@ -241,6 +236,11 @@ function Sprint({ sprintId, onNav }) {
   }, [project, sprint.id, sprintPlanKey]);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setCurrentInstant(Date.now()), HORIZON_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (!showSprintPrompt) { setSprintPromptText(null); return; }
     let alive = true;
     const windowLabel = (sprint.starts || "") + (sprint.ends ? ` → ${sprint.ends}` : "");
@@ -271,6 +271,10 @@ function Sprint({ sprintId, onNav }) {
   const stateRows = sprintStateRows(allSprints, M.today);
   const foldedCount = stateRows.filter(row => row.closed).length;
   const finishedRuns = useMemo(() => sprintCompletedRuns(sprint, finishedRunsByPlan), [sprint, finishedRunsByPlan]);
+  const strip = useMemo(
+    () => horizonStrip(currentInstant, finishedRuns, liveRuns),
+    [currentInstant, finishedRuns, liveRuns]
+  );
   const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
 
   const navigateSprint = (event, id) => {
@@ -311,6 +315,30 @@ function Sprint({ sprintId, onNav }) {
 
       {surface === "overview" ? (
         <section className="r-sprint-overview" aria-label="All-sprints state overview">
+          <section className="r-horizon-strip" aria-label="48-hour activity strip">
+            <header>
+              <span>Today</span>
+              <span>Tomorrow</span>
+            </header>
+            <div className="r-horizon-track">
+              <i className="r-tomorrow-line" style={{ left: `${strip.tomorrowPosition}%` }} aria-hidden="true"></i>
+              {strip.ticks.map(tick => <span key={tick.left} className="r-horizon-tick" style={{ left: `${tick.left}%` }}>{tick.label}</span>)}
+              {strip.events.map(event => {
+                const run = event.run;
+                const title = `${event.kind === "live" ? "Live" : "Completed"}: ${run.node || run.plan || "run"}`;
+                return <a
+                  key={`${event.kind}-${run.run_id}`}
+                  className={`r-horizon-event ${event.kind} ${run.gate || ""}`}
+                  href={run.plan ? `#plan/${run.plan}` : "#sprints"}
+                  style={{ left: `${event.left}%` }}
+                  aria-label={title}
+                  title={title}
+                ></a>;
+              })}
+              <i className="r-now-line" style={{ left: `${strip.nowPosition}%` }} aria-label="Current time"></i>
+            </div>
+            <footer><span><i className="completed"></i> completed</span><span><i className="live"></i> live</span><span>{strip.events.length} timestamped {strip.events.length === 1 ? "event" : "events"}</span></footer>
+          </section>
           <section className="r-sprint-state" aria-labelledby="sprint-state-heading">
             <header>
               <div><span className="r-eyebrow">Project state</span><h2 id="sprint-state-heading">Every sprint</h2></div>
