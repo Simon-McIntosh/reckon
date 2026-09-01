@@ -973,11 +973,11 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             continue
         html_file = resource.path
 
-        # Scalar inventory stays on the lightweight meta path. Named gate and
-        # decision rows are the body state needed to explain roadmap blockers.
-        # The SPA fetches the remaining full state from the per-document route.
+        # Scalar inventory stays on the lightweight meta path. Gates, decisions,
+        # and open followups are the body state needed to explain roadmap
+        # readiness. The SPA fetches the remaining full state per document.
         rec = _plan_html.parse_meta(html_file)
-        gates, decisions = _read_readiness_state(html_file)
+        gates, decisions, followups = _read_readiness_state(html_file)
         slug = resource.slug
         artifact_type = resource.type
         item = {
@@ -1037,6 +1037,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "impl": rec["impl"],
                     "dec_open": rec["dec_open"],
                     "decisions": decisions,
+                    "followups": followups,
                     "blockers": rec["blockers"],
                     "gates": gates,
                     "depends_on": rec.get("depends_on", []),
@@ -1070,6 +1071,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "resource_versions": composed.get("resource_versions", {}),
         }
         _attach_composed_review(result, docs_dir, project)
+        _attach_ready_set(result, project)
         return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
     # ── Legacy project state ───────────────────────────────────────────────
@@ -1124,6 +1126,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         "north_stars": north_stars,
         "source_format": "legacy-index",
     }
+    _attach_ready_set(result, project)
     return _cache_discovery_result(cache_key, sig, project, state_root, result)
 
 
@@ -1145,19 +1148,33 @@ def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
     result.setdefault("resource_versions", {})["review:review"] = version
 
 
-def _read_readiness_state(path: Path) -> tuple[list[dict], list[dict]]:
+def _attach_ready_set(result: dict, project: str) -> None:
+    """Attach the HTTP projection of the roadmap's canonical readiness."""
+
+    from reckon.mcp_views import ready_set_view
+    from reckon.roadmap import build_roadmap
+
+    roadmap = build_roadmap(
+        project,
+        result.get("inventory", []),
+        result.get("sprints", []),
+        active_sprint_id=result.get("active_sprint_id"),
+        project_manifest=result,
+        review=result.get("review") or {},
+    )
+    result["ready_set"] = ready_set_view(roadmap)
+
+
+def _read_readiness_state(
+    path: Path,
+) -> tuple[list[dict], list[dict], list[dict]]:
     """Read named gate and decision state used to explain readiness."""
 
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return [], []
+        return [], [], []
     has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
-    has_decisions = (
-        'data-reckon="decisions"' in text or "data-reckon='decisions'" in text
-    )
-    if not has_gates and not has_decisions:
-        return [], []
     state = _plan_html.read_state(text)
     gates = list(state.get("gates") or []) if has_gates else []
     decisions = state.get("decisions") or {}
@@ -1165,7 +1182,8 @@ def _read_readiness_state(path: Path) -> tuple[list[dict], list[dict]]:
         {"key": key, **(decision if isinstance(decision, dict) else {})}
         for key, decision in decisions.items()
     ]
-    return gates, decision_rows
+    followups = list(state.get("followups") or [])
+    return gates, decision_rows, followups
 
 
 def _derive_lifecycle(

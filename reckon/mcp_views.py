@@ -71,6 +71,31 @@ def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
+    """Project the canonical roadmap's ready rows for composed clients."""
+
+    readiness_by_slug = {
+        str(row.get("slug")): row
+        for row in roadmap.get("ready_now", [])
+        if isinstance(row, dict) and row.get("slug")
+    }
+    ready = []
+    for summary in roadmap.get("immediate_roadmap", []):
+        if not isinstance(summary, dict):
+            continue
+        row = dict(summary)
+        readiness = readiness_by_slug.get(str(row.get("slug")), {})
+        for key in ("section_readiness", "ready_sections", "blocked_sections"):
+            if key in readiness:
+                row[key] = readiness[key]
+        ready.append(row)
+    return {
+        "project": roadmap.get("project"),
+        "ready": ready,
+        "review": roadmap.get("review"),
+    }
+
+
 def compose_review(
     review: dict[str, Any],
     inventory: list[dict[str, Any]],
