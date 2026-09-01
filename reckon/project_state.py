@@ -25,7 +25,7 @@ import os
 import re
 import shutil
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
@@ -199,6 +199,74 @@ def marker_path(docs_dir: Path) -> Path:
 
 def legacy_index_path(docs_dir: Path, project: str) -> Path:
     return docs_dir / "state" / _safe_segment(project, "project") / "index.json"
+
+
+SUPERSEDED_NOTE = (
+    "This aggregate is no longer authoritative. Sprints, milestones, blockers "
+    "and the timeline are independently versioned resources; read those. It is "
+    "retained as a record of the state at migration, and its contents are "
+    "frozen at that moment rather than maintained."
+)
+
+
+def stamp_legacy_index(
+    docs_dir: Path, project: str, marker: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    """Mark a superseded legacy aggregate as superseded, in the file itself.
+
+    A migrated project keeps ``index.json`` as the record of what it held at
+    migration. It keeps the shape of a live resource too — same ``project``,
+    ``doc``, ``updated`` and ``data`` keys, and a stamp that looks recent — and
+    nothing in it says it has been superseded. Measured: a session read one,
+    concluded from its sprint list that two later sprints had no resource, and
+    reported false sprint state to its lead. The authoritative marker sits in a
+    sibling directory, which does not help a reader who opened this path.
+
+    Idempotent, and it never touches ``data``: the immutable receipt is the
+    frozen snapshot the marker hashes, not this file.
+    """
+    path = legacy_index_path(docs_dir, project)
+    if not path.is_file():
+        return {"ok": True, "changed": False, "reason": "no legacy aggregate"}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ProjectStateError(f"legacy aggregate is unreadable: {path}") from exc
+    if not isinstance(payload, dict):
+        raise ProjectStateError(f"legacy aggregate is malformed: {path}")
+    if isinstance(payload.get("superseded"), dict):
+        return {"ok": True, "changed": False, "reason": "already stamped"}
+
+    resolved = dict(marker or {})
+    if not resolved:
+        mode = project_state_mode(docs_dir)
+        if mode.format != "distributed" or mode.marker is None:
+            return {
+                "ok": True,
+                "changed": False,
+                "reason": "project is not in distributed mode",
+            }
+        resolved = dict(mode.marker)
+
+    payload["superseded"] = {
+        "by": "distributed",
+        "at": resolved.get("completed_at")
+        or datetime.now(UTC).isoformat(timespec="seconds"),
+        "marker": str(MARKER_RELATIVE),
+        "canonical": ["sprints/", "milestones/", "blockers/", "state/*/timeline.html"],
+        "note": SUPERSEDED_NOTE,
+    }
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        _durable_replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return {"ok": True, "changed": True, "path": str(path)}
 
 
 def resource_path(
@@ -506,8 +574,12 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
         code = _review_text(raw.get("code"), f"{field}.code")
         if not _FINDING_CODE_RE.fullmatch(code):
             raise ValueError(f"{field}.code must be kebab-case")
-        category = _review_enum(raw.get("category"), f"{field}.category", _REVIEW_CATEGORIES)
-        severity = _review_enum(raw.get("severity"), f"{field}.severity", _REVIEW_SEVERITIES)
+        category = _review_enum(
+            raw.get("category"), f"{field}.category", _REVIEW_CATEGORIES
+        )
+        severity = _review_enum(
+            raw.get("severity"), f"{field}.severity", _REVIEW_SEVERITIES
+        )
         subject = raw.get("subject")
         if not isinstance(subject, dict):
             raise TypeError(f"{field}.subject must be an object")
@@ -559,7 +631,9 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
             try:
                 datetime.fromisoformat(str(resolved_at))
             except ValueError as exc:
-                raise ValueError(f"{field}.resolved_at must be an ISO date or datetime") from exc
+                raise ValueError(
+                    f"{field}.resolved_at must be an ISO date or datetime"
+                ) from exc
             resolved_by = _review_text(resolved_by, f"{field}.resolved_by")
             outcome = _review_text(outcome, f"{field}.outcome")
         elif resolved_by or outcome:
@@ -594,7 +668,9 @@ def _validate_review(data: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(raw, dict):
             raise TypeError(f"{field} must be an object")
         if set(raw) != {"rank", "ref", "reasons", "detail"}:
-            raise ValueError(f"{field} must contain only rank, ref, reasons, and detail")
+            raise ValueError(
+                f"{field} must contain only rank, ref, reasons, and detail"
+            )
         rank = raw.get("rank")
         if type(rank) is not int or rank != index + 1:
             raise ValueError(f"{field}.rank must be contiguous from 1")
@@ -1153,9 +1229,7 @@ def _order_distributed_sprints(
 ) -> list[dict[str, Any]]:
     """Use a marker's authored sequence when distinguishable, else natural order."""
     marker_ids = [
-        str(row.get("id", ""))
-        for row in resources
-        if row.get("type") == "sprint"
+        str(row.get("id", "")) for row in resources if row.get("type") == "sprint"
     ]
     marker_is_lexicographic = marker_ids == sorted(marker_ids)
     if marker_ids and not marker_is_lexicographic:
@@ -1165,15 +1239,15 @@ def _order_distributed_sprints(
         return sorted(
             sprints,
             key=lambda item: (
-                0,
-                positions[str(item.get("id", ""))],
-            )
-            if str(item.get("id", "")) in positions
-            else (1, _natural_identifier_key(item.get("id", ""))),
+                (
+                    0,
+                    positions[str(item.get("id", ""))],
+                )
+                if str(item.get("id", "")) in positions
+                else (1, _natural_identifier_key(item.get("id", "")))
+            ),
         )
-    return sorted(
-        sprints, key=lambda item: _natural_identifier_key(item.get("id", ""))
-    )
+    return sorted(sprints, key=lambda item: _natural_identifier_key(item.get("id", "")))
 
 
 def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
@@ -1431,9 +1505,7 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
             },
         }
         stage_root = Path(
-            tempfile.mkdtemp(
-                prefix="project-state-create-", dir=docs_dir / ".reckon"
-            )
+            tempfile.mkdtemp(prefix="project-state-create-", dir=docs_dir / ".reckon")
         )
         staging_docs = stage_root / "docs"
         staged: list[tuple[str, str, Path]] = []
@@ -1499,6 +1571,10 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                 _durable_replace(marker_tmp, target)
             finally:
                 marker_tmp.unlink(missing_ok=True)
+            # The aggregate stays as the record of what was migrated, and now
+            # says so in the file itself rather than only in a sibling marker
+            # the reader has no reason to open.
+            stamp_legacy_index(docs_dir, project, marker)
             return {"ok": True, "changed": True, **marker}
         except BaseException:
             _durable_unlink(marker_path(docs_dir))

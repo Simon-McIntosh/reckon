@@ -251,9 +251,7 @@ def test_audit_ignores_closed_sprint_history_for_live_membership(setup):
 
     result = mcp_module._audit(project)
     sprint_codes = {
-        item["code"]
-        for item in result["findings"]
-        if item["category"] == "sprint"
+        item["code"] for item in result["findings"] if item["category"] == "sprint"
     }
 
     assert "sprint-item-missing-plan" not in sprint_codes
@@ -350,3 +348,44 @@ def test_audit_checkout_path_uses_worktree(setup, tmp_path):
     wt_codes = {(f["category"], f["code"]) for f in worktree_r["findings"]}
     assert ("lifecycle", "MISSING_IMPL") not in main_codes
     assert ("lifecycle", "MISSING_IMPL") in wt_codes
+
+
+def test_a_plan_in_a_closed_sprint_is_an_error_that_says_so() -> None:
+    """Two failures wore one badge, and the worse one was the quieter.
+
+    A plan absent from an OPEN sprint's items is untidy. A plan declaring a
+    sprint that has CLOSED will never be scheduled, and a reader who meets that
+    as one `warn` among others cannot tell which they are looking at. Measured:
+    a session authored two plans into a closed sprint, was told twice by this
+    very finding, and walked past it both times because nothing said the sprint
+    was closed.
+    """
+    index = {
+        "sprints": [
+            {"id": "S8", "status": "done", "items": []},
+            {"id": "S9", "status": "active", "items": []},
+        ]
+    }
+    plans = [
+        {"slug": "in-closed", "sprint": "S8", "status": "active"},
+        {"slug": "in-open", "sprint": "S9", "status": "active"},
+    ]
+
+    from reckon import mcp as mcp_module
+
+    findings = mcp_module._audit_sprint_findings(index, plans)
+    by_slug = {
+        finding.get("slug"): finding
+        for finding in findings
+        if finding.get("code") in {"plan-sprint-closed", "plan-sprint-missing-item"}
+    }
+
+    closed = by_slug["in-closed"]
+    assert closed["code"] == "plan-sprint-closed"
+    assert closed["severity"] == "error"
+    assert "done" in closed["message"], "the message has to say the sprint is closed"
+    assert "invisible to the advancing horizon" in closed["message"]
+
+    open_sprint = by_slug["in-open"]
+    assert open_sprint["code"] == "plan-sprint-missing-item"
+    assert open_sprint["severity"] == "warn", "untidy is not the same as unschedulable"

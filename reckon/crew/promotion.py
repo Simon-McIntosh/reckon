@@ -182,9 +182,7 @@ def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
     return None
 
 
-def _resolve_commits(
-    *, cwd: Path, revisions: Iterable[str], run_id: str
-) -> list[str]:
+def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
     """Resolve every recorded revision to its canonical commit object id."""
     commits = []
     for revision in revisions:
@@ -249,6 +247,24 @@ def _repository_scope_paths(
             continue
         roots.append(relative)
     return tuple(roots)
+
+
+def _merge_revisions(cwd: Path, revisions: Iterable[str]) -> list[str]:
+    """Return the cited revisions that are merges rather than a worker's commit."""
+    merges = []
+    for revision in revisions:
+        parents = subprocess.run(
+            ["git", "rev-list", "--parents", "-n", "1", revision],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if parents.returncode:
+            continue
+        if len(parents.stdout.split()) > 2:
+            merges.append(revision)
+    return merges
 
 
 def _outside_declared_scope(
@@ -701,9 +717,7 @@ def _complete_locked(
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
     if commit_list:
-        commit_list = _resolve_commits(
-            cwd=tree, revisions=commit_list, run_id=run_id
-        )
+        commit_list = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
     shadow_patch = ""
     if shadow:
         artifact = _write_shadow_patch(record)
@@ -723,6 +737,23 @@ def _complete_locked(
                 tree=tree,
             )
             if outside:
+                # A merge's first-parent diff carries everything its other
+                # parent brought — the orchestrator's own plan edits included —
+                # so citing the merge attributes those to the worker. Same
+                # check, but the caller needs to know which of the two it is:
+                # a worker that exceeded its fence, or an orchestrator that
+                # named the wrong commit.
+                merges = _merge_revisions(tree, commit_list)
+                if merges:
+                    raise CrewError(
+                        f"run {run_id!r} cites merge commit "
+                        f"{', '.join(merges)}, whose diff includes everything "
+                        "its other parent brought — so these paths are outside "
+                        f"the node's write scope: {', '.join(outside)}. This is "
+                        "the wrong commit rather than a worker that exceeded "
+                        "its scope: cite the worker's own commit, which "
+                        "`reckon crew recover` reports as the run's next action"
+                    )
                 raise CrewError(
                     f"run {run_id!r} changed paths outside its declared "
                     f"write scope: {', '.join(outside)}"

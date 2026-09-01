@@ -233,12 +233,7 @@ def _write_distributed_receipt(docs: Path, index: Path) -> dict:
     legacy = envelope["data"]
     source_sha = _sha256_path(index)
     snapshot = (
-        docs
-        / ".reckon"
-        / "snapshots"
-        / "project-state"
-        / source_sha
-        / "index.json"
+        docs / ".reckon" / "snapshots" / "project-state" / source_sha / "index.json"
     )
     snapshot.parent.mkdir(parents=True, exist_ok=True)
     snapshot.write_bytes(source_bytes)
@@ -830,6 +825,7 @@ def test_distributed_resource_access_rejects_before_activation(tmp_path):
     )
     assert write_result["error"] == "project_state_error"
     assert "distributed_resource_inactive" in write_result["detail"]
+
 
 def test_independent_versions_and_same_resource_conflict(migrated):
     docs, _, _ = migrated
@@ -1556,3 +1552,64 @@ def test_spa_discovery_failure_panel_replaces_pending_status():
     assert "/_discover/sample" in failed["text"]
     assert "HTTP 503" in failed["text"]
     assert "Loading plan state" not in failed["text"]
+
+
+def test_a_superseded_aggregate_says_so_in_the_file(tmp_path) -> None:
+    """A migrated aggregate keeps the shape of a live resource, so it must not
+    keep its silence too.
+
+    Measured: a session opened `state/<project>/index.json` in a distributed
+    project, read its sprint list as current, concluded that two later sprints
+    had no resource, and reported false sprint state to its lead. The
+    authoritative marker sits in a sibling directory, which does not help a
+    reader who opened this path. Its `data` is untouched, because the immutable
+    receipt is the frozen snapshot the marker hashes rather than this file.
+    """
+    from reckon.project_state import stamp_legacy_index
+
+    docs = tmp_path / "docs"
+    index = docs / "state" / "proj" / "index.json"
+    index.parent.mkdir(parents=True)
+    original = {
+        "updated": "2026-08-23T08:44:55",
+        "project": "proj",
+        "doc": "index",
+        "data": {"sprints": [{"id": "S1"}], "milestones": []},
+    }
+    index.write_text(json.dumps(original, indent=2))
+
+    marker = {
+        "format": "distributed",
+        "status": "complete",
+        "project": "proj",
+        "completed_at": "2026-08-24T08:05:56+00:00",
+    }
+    result = stamp_legacy_index(docs, "proj", marker)
+    assert result["changed"] is True
+
+    stamped = json.loads(index.read_text())
+    assert stamped["data"] == original["data"], "the record's contents are untouched"
+    assert stamped["superseded"]["by"] == "distributed"
+    assert stamped["superseded"]["at"] == marker["completed_at"]
+    assert "no longer authoritative" in stamped["superseded"]["note"]
+    assert "sprints/" in stamped["superseded"]["canonical"]
+
+    # Idempotent: a second pass neither duplicates nor rewrites.
+    again = stamp_legacy_index(docs, "proj", marker)
+    assert again == {"ok": True, "changed": False, "reason": "already stamped"}
+    assert json.loads(index.read_text()) == stamped
+
+
+def test_stamping_an_unmigrated_project_changes_nothing(tmp_path) -> None:
+    """Without the completion marker the aggregate is still canonical."""
+    from reckon.project_state import stamp_legacy_index
+
+    docs = tmp_path / "docs"
+    index = docs / "state" / "proj" / "index.json"
+    index.parent.mkdir(parents=True)
+    index.write_text(json.dumps({"project": "proj", "doc": "index", "data": {}}))
+
+    result = stamp_legacy_index(docs, "proj")
+    assert result["changed"] is False
+    assert "not in distributed mode" in result["reason"]
+    assert "superseded" not in json.loads(index.read_text())

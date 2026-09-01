@@ -612,9 +612,7 @@ def resolve_graph_target(
     endpoints: list[tuple[str, str]] = []
     for project, raw_state in projects.items():
         state = (
-            {"inventory": raw_state}
-            if isinstance(raw_state, list)
-            else dict(raw_state)
+            {"inventory": raw_state} if isinstance(raw_state, list) else dict(raw_state)
         )
         inventory = [
             dict(item)
@@ -660,9 +658,7 @@ def resolve_graph_target(
                     f"{_qualified_plan(project, slug)} has invalid dependency {raw_ref!r}",
                 )
             dependency_project = (
-                str(parsed.project)
-                if parsed.is_external(project)
-                else project
+                str(parsed.project) if parsed.is_external(project) else project
             )
             dependency = (dependency_project, parsed.slug)
             if dependency_project not in project_state:
@@ -786,6 +782,11 @@ def resolve_graph_target(
             "members": deferred_members,
         },
     }
+
+
+# Sprint statuses that mean the sprint will not schedule anything again. A plan
+# declaring one of these is not merely mis-filed: nothing will pick it up.
+CLOSED_SPRINT_STATUSES = frozenset({"done", "shipped", "closed", "archived"})
 
 
 def build_roadmap(
@@ -1066,15 +1067,50 @@ def build_roadmap(
         declared_sprint = str(plan.get("sprint") or "")
         assigned_sprints = membership.get(slug, [])
         if declared_sprint and declared_sprint not in assigned_sprints:
-            findings.append(
-                _finding(
-                    "plan-sprint-missing-item",
-                    "warn",
-                    f"{slug}: declares sprint {declared_sprint} but is absent from its items",
-                    slug=slug,
-                    extra={"sprint": declared_sprint},
+            # Two failures wore one badge, and the worse one was the quieter.
+            # A plan absent from an OPEN sprint's items is untidy. A plan
+            # declaring a sprint that has CLOSED is invisible to the advancing
+            # horizon — the work will never be scheduled — and a reader who
+            # meets it as one `warn` among others has no way to tell which they
+            # are looking at. Measured: a session authored two plans into a
+            # closed sprint, was told twice, and walked past both times.
+            declared_status = str(
+                next(
+                    (
+                        sprint.get("status")
+                        for sprint in sprints
+                        if str(sprint.get("id") or "") == declared_sprint
+                    ),
+                    "",
                 )
-            )
+            ).lower()
+            if declared_status in CLOSED_SPRINT_STATUSES:
+                findings.append(
+                    _finding(
+                        "plan-sprint-closed",
+                        "error",
+                        (
+                            f"{slug}: declares sprint {declared_sprint}, which is "
+                            f"{declared_status} — this work is invisible to the "
+                            "advancing horizon until it moves to an open sprint"
+                        ),
+                        slug=slug,
+                        extra={"sprint": declared_sprint, "status": declared_status},
+                    )
+                )
+            else:
+                findings.append(
+                    _finding(
+                        "plan-sprint-missing-item",
+                        "warn",
+                        (
+                            f"{slug}: declares sprint {declared_sprint} but is "
+                            "absent from its items"
+                        ),
+                        slug=slug,
+                        extra={"sprint": declared_sprint},
+                    )
+                )
         if (
             assigned_sprints
             and declared_sprint

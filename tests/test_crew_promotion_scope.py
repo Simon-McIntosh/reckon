@@ -131,9 +131,9 @@ def test_primary_advance_before_first_run_commit_is_outside_the_measured_span(
     run_id = "r-advanced-primary"
     _pointer(repository, run_id, base)
 
-    stored = crew.complete(
-        run_id, gate="passed", commits=[commit], root=repository
-    )["record"]
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
 
     assert stored["changed_lines"] == {"added": 1, "removed": 0, "files": 1}
     assert stored["commits"] == [commit]
@@ -179,3 +179,58 @@ def test_abbreviated_commit_is_stored_as_canonical_object_id(
     )["record"]
 
     assert stored["commits"] == [commit]
+
+
+def test_citing_a_merge_says_it_is_the_wrong_commit_not_a_scope_breach(tmp_path):
+    """Same paths, two very different causes, and the message must separate them.
+
+    A merge's first-parent diff carries everything its other parent brought — an
+    orchestrator's own plan edits included — so citing the merge attributes them
+    to the worker. Measured: a promotion read as a worker scope violation when
+    the worker had stayed inside its fence and the orchestrator had named the
+    wrong commit.
+    """
+    from reckon.crew import promotion
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.email", "worker@example.invalid")
+    git("config", "user.name", "Worker")
+    (repo / "seed.txt").write_text("seed\n")
+    git("add", "seed.txt")
+    git("commit", "-q", "-m", "chore: seed")
+
+    # the worker's own commit, inside its fence
+    git("checkout", "-q", "-b", "node")
+    (repo / "in_scope.py").write_text("worker\n")
+    git("add", "in_scope.py")
+    git("commit", "-q", "-m", "feat: the node's own work")
+    worker_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    # the orchestrator's unrelated edit, on the branch being merged into
+    git("checkout", "-q", "main")
+    (repo / "orchestrator_plan.html").write_text("plan\n")
+    git("add", "orchestrator_plan.html")
+    git("commit", "-q", "-m", "docs: orchestrator plan state")
+    git("merge", "-q", "--no-ff", "node", "-m", "Merge node")
+    merge_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    assert promotion._merge_revisions(repo, [merge_sha]) == [merge_sha]
+    assert promotion._merge_revisions(repo, [worker_sha]) == []

@@ -48,6 +48,7 @@ from reckon import (
     crew as crew_module,
     flight as flight_module,
     ledger as ledger_module,
+    roadmap,
 )
 from reckon._schema import (
     TYPE_ENUM,
@@ -1067,8 +1068,7 @@ def _bounded_edit_distance(left: str, right: str, limit: int) -> int:
                 min(
                     current[-1] + 1,
                     previous[right_index] + 1,
-                    previous[right_index - 1]
-                    + (left_character != right_character),
+                    previous[right_index - 1] + (left_character != right_character),
                 )
             )
             row_minimum = min(row_minimum, current[-1])
@@ -1098,9 +1098,7 @@ def _tag_audit_findings(
         for right in tag_inventory[position + 1 :]:
             shorter_length = min(len(left["tag"]), len(right["tag"]))
             distance_limit = 2 if shorter_length >= 10 else 1
-            distance = _bounded_edit_distance(
-                left["tag"], right["tag"], distance_limit
-            )
+            distance = _bounded_edit_distance(left["tag"], right["tag"], distance_limit)
             if distance > distance_limit:
                 continue
             target, source = sorted(
@@ -1322,16 +1320,39 @@ def _audit_sprint_findings(
             continue
         assigned_sprint = assigned.get(slug)
         if assigned_sprint is None:
-            findings.append(
-                _finding(
-                    "sprint",
-                    "plan-sprint-missing-item",
-                    "warn",
-                    f"plan metadata assigns sprint {plan_sprint!r}, but the index sprint items do not include it",
-                    slug=slug,
-                    extra={"sprint_id": plan_sprint},
+            # A plan absent from an open sprint's items is untidy; a plan
+            # declaring a CLOSED sprint will never be scheduled at all. Same
+            # condition, two severities, and one badge for both is why a session
+            # walked past this warning twice on its own defect.
+            declared_status = str(
+                (sprint_map.get(plan_sprint) or {}).get("status") or ""
+            ).lower()
+            if declared_status in roadmap.CLOSED_SPRINT_STATUSES:
+                findings.append(
+                    _finding(
+                        "sprint",
+                        "plan-sprint-closed",
+                        "error",
+                        (
+                            f"plan metadata assigns sprint {plan_sprint!r}, which is "
+                            f"{declared_status} — this work is invisible to the "
+                            "advancing horizon until it moves to an open sprint"
+                        ),
+                        slug=slug,
+                        extra={"sprint_id": plan_sprint, "status": declared_status},
+                    )
                 )
-            )
+            else:
+                findings.append(
+                    _finding(
+                        "sprint",
+                        "plan-sprint-missing-item",
+                        "warn",
+                        f"plan metadata assigns sprint {plan_sprint!r}, but the index sprint items do not include it",
+                        slug=slug,
+                        extra={"sprint_id": plan_sprint},
+                    )
+                )
         elif assigned_sprint != plan_sprint:
             findings.append(
                 _finding(
@@ -2583,8 +2604,7 @@ def _roadmap(
                     else {}
                 )
                 inventory = [
-                    _inventory_row(item)
-                    for item in discovered.get("inventory", [])
+                    _inventory_row(item) for item in discovered.get("inventory", [])
                 ]
                 followups_by_plan: dict[str, list[dict[str, Any]]] = {}
                 for followup in list_followups_across(
@@ -2799,11 +2819,7 @@ def _crew(
             )
             index_data, _version = read_plan(project, "index", checkout_path)
             projects = index_data.get("projects") or []
-            manifest = (
-                projects[0]
-                if projects and isinstance(projects[0], dict)
-                else {}
-            )
+            manifest = projects[0] if projects and isinstance(projects[0], dict) else {}
             planned = crew_module.plan_scope_lanes(
                 candidates or [],
                 project=project,

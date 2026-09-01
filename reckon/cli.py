@@ -2405,6 +2405,42 @@ def build(docs_path, project):
     )
 
 
+@main.command(name="stamp-superseded-state")
+@click.option("--project", required=True, help="Project whose aggregate to stamp.")
+@click.option(
+    "--docs-path",
+    default=None,
+    help="Docs directory to act on. Defaults to the project's registered mount.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def stamp_superseded_state(project, docs_path, pretty):
+    """Mark a migrated project's legacy index.json as superseded, in the file.
+
+    Activation does this from now on. This repairs a project migrated before it
+    did: the aggregate keeps the shape of a live resource, so a reader who opens
+    it has nothing telling them the sprints, milestones and blockers moved to
+    independently versioned resources — one read a stale sprint list and
+    reported false state. Idempotent, and it never touches `data`.
+    """
+    from reckon._store import _docs_dir_for_project
+    from reckon.project_state import ProjectStateError, stamp_legacy_index
+
+    docs_dir = (
+        Path(docs_path).expanduser().resolve()
+        if docs_path
+        else _docs_dir_for_project(project)
+    )
+    if docs_dir is None or not docs_dir.is_dir():
+        raise click.ClickException(
+            f"no readable docs directory for project {project!r}; pass --docs-path"
+        )
+    try:
+        result = stamp_legacy_index(docs_dir, project)
+    except ProjectStateError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(result, pretty)
+
+
 @main.command(name="migrate-layout")
 @click.argument("docs_path", type=click.Path(path_type=Path))
 @click.option(
