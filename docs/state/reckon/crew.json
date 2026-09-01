@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T08:54:33",
+  "updated": "2026-09-01T09:14:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -27925,9 +27925,113 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T065649878090-n-horizon-strip",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a71",
+        "node": "n-horizon-strip",
+        "node_definition": {
+          "done_when": "Tests assert the retired horizon keys are absent from the source, that the strip spans a fixed 48 hours anchored on the local day boundary with a today and tomorrow division, that the now-line position derives from the current instant rather than a date-only field and advances on a timer without navigation, that the strip places timestamped events rather than sprint spans, and that a sprint carrying no start or end date is never filtered out of the surface",
+          "estimated_hours": null,
+          "goal": "Replace the calendar timeline with a fixed 48-hour strip carrying a now-line that advances without a reload",
+          "id": "n-horizon-strip",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065649878090-n-horizon-strip/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_sprints_geometry.py",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T06:56:56Z",
+        "completed_at": "2026-09-01T07:12:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 960,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 960,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "1d0f425f3ef1ecf2bbc956c7934c0a9386483893",
+        "commits": [
+          "475fe5617523974e6a93f5a16fc07e17035d5a2a",
+          "f6193ee774ef7c4b68b2abdadfc71d6673cf7199"
+        ],
+        "changed_lines": {
+          "added": 263,
+          "removed": 223,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_sprint_surface.py + five browser-free horizon contracts",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065649878090-n-horizon-strip/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065649878090-n-horizon-strip/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a03804-4354-78d2-8cda-589df3a42ef1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 1847808,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 2126371,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 6432,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 1165
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 466
+    "_version": 467
   }
 }
