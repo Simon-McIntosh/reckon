@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T09:14:56",
+  "updated": "2026-09-01T09:20:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -28029,9 +28029,109 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T065657987909-n-skip-unavailable-browser",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a78",
+        "node": "n-skip-unavailable-browser",
+        "node_definition": {
+          "done_when": "The four browser-dependent test_build.py cases report skipped with the classifier reason on this host rather than four 75-second timeouts, a test asserts they still fail rather than skip when the browser is available but the assertion is wrong, and the measured full-suite wall clock saved is reported",
+          "estimated_hours": null,
+          "goal": "Make a browser-dependent test skip with a stated reason when the host cannot run a browser, instead of failing as an opaque timeout",
+          "id": "n-skip-unavailable-browser",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065657987909-n-skip-unavailable-browser/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "tests/test_build.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-l",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T06:57:05Z",
+        "completed_at": "2026-09-01T07:19:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1372,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1372,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "1d0f425f3ef1ecf2bbc956c7934c0a9386483893",
+        "commits": [
+          "416e3140ae530fe1a8fee9944f1084a80e70ba94"
+        ],
+        "changed_lines": {
+          "added": 50,
+          "removed": 15,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_build.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065657987909-n-skip-unavailable-browser/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T065657987909-n-skip-unavailable-browser/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038cc-88c9-78f2-98e0-03e4459c2edd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1193728,
+            "cached_input_tokens_cumulative": 6713600,
+            "input_tokens": 1351838,
+            "input_tokens_cumulative": 7115375,
+            "output_tokens": 2663,
+            "output_tokens_cumulative": 13870,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 4099
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 467
+    "_version": 468
   }
 }
