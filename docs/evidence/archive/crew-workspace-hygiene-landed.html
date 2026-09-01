@@ -109,6 +109,79 @@
       what they did not invoke rather than what did not change around them.
     </p>
 
+    <h2 id="gc-reclaimable-report">Reclaimable inventory matches the apply path</h2>
+    <p>
+      Commit <code>f3e3fad</code> (2026-09-01) repaired a misleading dry-run headline. The
+      collector already removed both <code>integrated</code> and <code>disposable</code> worktrees
+      under <code>--apply</code>, but its report exposed only the latter as the apparent action
+      count. A measured imas-codex inventory therefore read as 0 disposable even though 40 of its
+      46 worktrees were reclaimable.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Classification</th>
+          <th>Measured count</th>
+          <th>Reclaimable</th>
+          <th>Reported meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>integrated</code></td>
+          <td>40</td>
+          <td>yes</td>
+          <td>HEAD is already reachable from the integration revision.</td>
+        </tr>
+        <tr>
+          <td><code>disposable</code></td>
+          <td>0</td>
+          <td>yes</td>
+          <td>A shadow run retains the patch that protects its work.</td>
+        </tr>
+        <tr>
+          <td><code>dirty</code></td>
+          <td>2</td>
+          <td>no</td>
+          <td>Uncommitted work exists nowhere else.</td>
+        </tr>
+        <tr>
+          <td><code>live-referenced</code></td>
+          <td>3</td>
+          <td>no</td>
+          <td>A live run pointer still claims the worktree.</td>
+        </tr>
+        <tr>
+          <td><code>unintegrated</code></td>
+          <td>1</td>
+          <td>no</td>
+          <td>HEAD is not reachable from the integration revision.</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th>Total</th>
+          <th>46</th>
+          <th>40</th>
+          <th>The report now states the same removal set that <code>--apply</code> uses.</th>
+        </tr>
+      </tfoot>
+    </table>
+    <p>
+      Every worktree row now carries a boolean <code>reclaimable</code> field, the aggregate
+      <code>counts.reclaimable</code> is the actionable headline, and each withheld row names the
+      condition that must clear: uncommitted work, an unreachable HEAD, or a live claim. Tests in
+      <code>tests/test_crew_gc.py</code> cover the per-row explanations and pin the reported
+      reclaimable classes exactly to the branch that removes worktrees.
+    </p>
+    <p>
+      <strong>General lesson.</strong> A field that visually answers “is there anything to do?”
+      must count the action the command will take. A narrower implementation category in that
+      position is not merely incomplete detail: it can turn a 40-of-46 cleanup opportunity into
+      an apparent zero, the same failure shape as a follower list that counts dead rows instead of
+      sessions that can receive events.
+    </p>
+
   </main>
 </body>
 </html>
