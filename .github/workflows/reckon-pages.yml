@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  RECKON_PAGES_REPOSITORY: Simon-McIntosh/reckon
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -17,3 +20,33 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv run --frozen reckon build docs
+
+  deploy:
+    needs: validate
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Require this repository's publication declaration
+        env:
+          ACTUAL_REPOSITORY: ${{ github.repository }}
+        run: >-
+          uv run --frozen python -c
+          "import os; from reckon.pages import require_publication_declaration;
+          require_publication_declaration(os.environ['ACTUAL_REPOSITORY'],
+          os.environ.get('RECKON_PAGES_REPOSITORY'))"
+      - run: uv run --frozen reckon build docs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - uses: actions/deploy-pages@v4
+        id: deployment
