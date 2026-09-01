@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 import socket
 import subprocess
 import sys
@@ -14,14 +13,15 @@ from urllib.request import urlopen
 import pytest
 
 from tests.spa_browser_harness import (
+    NODE_PROBE,  # noqa: F401 - compatibility re-export for adjacent browser checks
     BrowserProbeError,
     installed_browser,
+    installed_browser_or_skip,
     run_browser_probe,
-    temporary_browser_profile,
+    served_spa,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
 
 
 @contextmanager
@@ -213,224 +213,6 @@ REVIEW_STATE = {
     ],
 }
 
-NODE_PROBE = r"""
-import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
-import path from "node:path";
-
-const input = JSON.parse(process.argv[1]);
-const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-const navigationTimeoutMs = 90000;
-const browserEvents = [];
-
-async function waitForFile(file, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      return await readFile(file, "utf8");
-    } catch {
-      await delay(100);
-    }
-  }
-  throw new Error(`timed out waiting for ${file}`);
-}
-
-class DevTools {
-  constructor(url) {
-    this.nextId = 1;
-    this.pending = new Map();
-    this.socket = new WebSocket(url);
-  }
-
-  async open() {
-    await new Promise((resolve, reject) => {
-      this.socket.addEventListener("open", resolve, { once: true });
-      this.socket.addEventListener("error", reject, { once: true });
-    });
-    this.socket.addEventListener("message", event => {
-      const message = JSON.parse(event.data);
-      if (message.method === "Runtime.exceptionThrown") {
-        browserEvents.push(message.params.exceptionDetails?.exception?.description
-          || message.params.exceptionDetails?.text || "runtime exception");
-      } else if (message.method === "Runtime.consoleAPICalled") {
-        browserEvents.push((message.params.args || []).map(arg => arg.value || arg.description || "").join(" "));
-      }
-      const pending = this.pending.get(message.id);
-      if (!pending) return;
-      this.pending.delete(message.id);
-      if (message.error) pending.reject(new Error(JSON.stringify(message.error)));
-      else pending.resolve(message.result);
-    });
-  }
-
-  call(method, params = {}) {
-    const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      this.socket.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  close() {
-    this.socket.close();
-  }
-}
-
-async function evaluate(devtools, expression) {
-  const response = await devtools.call("Runtime.evaluate", {
-    expression,
-    returnByValue: true,
-    awaitPromise: true,
-  });
-  if (response.exceptionDetails) {
-    throw new Error(response.exceptionDetails.exception?.description || "browser evaluation failed");
-  }
-  return response.result.value;
-}
-
-async function navigateAndWait(devtools, generation) {
-  const [base, fragment = ""] = input.url.split("#", 2);
-  const separator = base.includes("?") ? "&" : "?";
-  const url = `${base}${separator}semantic_generation=${generation}${fragment ? `#${fragment}` : ""}`;
-  await devtools.call("Page.navigate", { url });
-  const deadline = Date.now() + navigationTimeoutMs;
-  while (Date.now() < deadline) {
-    const ready = await evaluate(devtools, `Boolean(
-      location.search.includes("semantic_generation=${generation}")
-      && window.STATE
-      && document.querySelector(${JSON.stringify(input.waitSelector)})
-    )`);
-    if (ready) return;
-    await delay(150);
-  }
-  throw new Error(`timed out waiting for ${input.waitSelector}; browser events: ${browserEvents.slice(-10).join(" | ") || "none"}`);
-}
-
-async function main() {
-  await access(input.browser);
-  const profile = input.profile;
-  const browser = spawn(input.browser, [
-    "--headless=new",
-    "--no-sandbox",
-    "--disable-gpu",
-    "--remote-debugging-port=0",
-    `--user-data-dir=${profile}`,
-    "--window-size=1374,900",
-    "about:blank",
-  ], { stdio: ["ignore", "ignore", "ignore"] });
-
-  let devtools;
-  try {
-    const activePort = await waitForFile(path.join(profile, "DevToolsActivePort"), 15000);
-    const [port] = activePort.trim().split(/\s+/);
-    const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-    const target = targets.find(candidate => candidate.type === "page");
-    if (!target) throw new Error("browser did not expose a page target");
-
-    devtools = new DevTools(target.webSocketDebuggerUrl);
-    await devtools.open();
-    await devtools.call("Page.enable");
-    await devtools.call("Runtime.enable");
-    await devtools.call("Emulation.setDeviceMetricsOverride", {
-      width: 1374,
-      height: 900,
-      deviceScaleFactor: 1,
-      mobile: false,
-    });
-    await devtools.call("Page.addScriptToEvaluateOnNewDocument", {
-      source: `{
-          const fixtureIndex = ${JSON.stringify(input.fixtureIndex)};
-          const fixtureSprints = fixtureIndex.data.sprints;
-          const fixtureReview = ${JSON.stringify(input.fixtureReview)};
-          const fixtureNewPlan = ${JSON.stringify(input.fixtureNewPlan)};
-          const nativeFetch = window.fetch.bind(window);
-          window.__discoveryRequestCount = 0;
-          window.fetch = (resource, options) => {
-            const url = String(resource);
-            if (url.endsWith("/state/reckon/index.json")) {
-              return Promise.resolve(new Response(JSON.stringify(fixtureIndex), {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-              }));
-            }
-            if (url.endsWith("/_discover/reckon")) {
-              window.__discoveryRequestCount += 1;
-              return nativeFetch(resource, options).then(response => response.json()).then(payload => {
-                const inventory = fixtureNewPlan && window.__discoveryRequestCount > 1
-                  ? [...(payload.inventory || []), fixtureNewPlan]
-                  : payload.inventory;
-                return new Response(JSON.stringify({
-                  ...payload,
-                  inventory,
-                  sprints: fixtureSprints,
-                  active_sprint_id: fixtureIndex.data.active_sprint_id,
-                  review: fixtureReview,
-                  source_format: "distributed",
-                  resource_versions: {
-                    "project:reckon": 4,
-                    "sprint:focus": 2,
-                    "sprint:concurrent": 1,
-                  },
-                }), {
-                  status: 200,
-                  headers: { "Content-Type": "application/json" },
-                });
-              });
-            }
-            if (${JSON.stringify(input.failPlanHtml)}
-                && url.includes("/plans/")
-                && url.endsWith(".html")) {
-              return Promise.resolve(new Response("", { status: 503 }));
-            }
-            return nativeFetch(resource, options);
-          };
-        }`,
-    });
-
-    await navigateAndWait(devtools, 1);
-    if (input.refreshProbe) {
-      const refreshed = await evaluate(devtools, input.refreshProbe);
-      process.stdout.write(`${JSON.stringify({ refreshed })}\n`);
-      return;
-    }
-    await evaluate(devtools, input.prepareSignal || "undefined");
-    const baseline = await evaluate(devtools, input.probe);
-
-    await navigateAndWait(devtools, 2);
-    await evaluate(devtools, input.prepareSignal || "undefined");
-    await evaluate(devtools, input.removeSignal);
-    const removed = await evaluate(devtools, input.probe);
-
-    process.stdout.write(`${JSON.stringify({ baseline, removed })}\n`);
-  } finally {
-    if (devtools) devtools.close();
-    browser.kill("SIGTERM");
-    await new Promise(resolve => {
-      if (browser.exitCode !== null) resolve();
-      else browser.once("exit", resolve);
-    });
-  }
-}
-
-main().catch(error => {
-  console.error(error.stack || error);
-  process.exitCode = 1;
-});
-"""
-
-
-def _installed_browser() -> str:
-    browser = next(
-        (path for name in BROWSER_NAMES if (path := shutil.which(name))),
-        None,
-    )
-    if browser is None:
-        pytest.skip(
-            "rendered semantic checks require an installed browser; tried "
-            + ", ".join(BROWSER_NAMES)
-        )
-    return browser
-
 
 def _unused_port() -> int:
     with socket.socket() as listener:
@@ -484,7 +266,9 @@ def _served_fixture(tmp_path: Path, route: str):
                 stderr = server.stderr.read() if server.stderr else ""
                 raise AssertionError(f"reckon server exited before readiness: {stderr}")
             try:
-                with urlopen(f"http://127.0.0.1:{port}/reckon/", timeout=0.5) as response:
+                with urlopen(
+                    f"http://127.0.0.1:{port}/reckon/", timeout=0.5
+                ) as response:
                     if response.status == 200:
                         break
             except URLError:
@@ -514,48 +298,80 @@ def _rendered_probe(
     refresh_probe: str | None = None,
     new_plan: dict[str, object] | None = None,
 ) -> dict[str, dict[str, object]]:
-    with (
-        temporary_browser_profile(tmp_path) as profile,
-        _served_fixture(tmp_path, route) as url,
-    ):
-        try:
-            result = subprocess.run(
-                [
-                    "node",
-                    "--input-type=module",
-                    "-e",
-                    NODE_PROBE,
-                    json.dumps(
-                        {
-                            "browser": _installed_browser(),
-                            "profile": str(profile),
-                            "url": url,
-                            "waitSelector": wait_selector,
-                            "probe": probe,
-                            "prepareSignal": prepare_signal,
-                            "removeSignal": remove_signal,
-                            "failPlanHtml": fail_plan_html,
-                            "fixtureIndex": INDEX_STATE,
-                            "fixtureReview": review,
-                            "refreshProbe": refresh_probe,
-                            "fixtureNewPlan": new_plan,
-                        }
-                    ),
-                ],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                timeout=210,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as error:
-            pytest.fail(
-                "browser probe exceeded 210 seconds after two 90-second navigation "
-                f"windows: stdout={error.stdout!r}; stderr={error.stderr!r}"
-            )
-    assert not profile.exists()
-    assert result.returncode == 0, result.stderr
-    return json.loads(result.stdout)
+    preload_expression = r"""{
+      const fixtureIndex = __FIXTURE_INDEX__;
+      const fixtureSprints = fixtureIndex.data.sprints;
+      const fixtureReview = __FIXTURE_REVIEW__;
+      const fixtureNewPlan = __FIXTURE_NEW_PLAN__;
+      const nativeFetch = window.fetch.bind(window);
+      window.__discoveryRequestCount = 0;
+      window.fetch = (resource, options) => {
+        const url = String(resource);
+        if (url.endsWith("/state/reckon/index.json")) {
+          return Promise.resolve(new Response(JSON.stringify(fixtureIndex), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }));
+        }
+        if (url.endsWith("/_discover/reckon")) {
+          window.__discoveryRequestCount += 1;
+          return nativeFetch(resource, options).then(response => response.json()).then(payload => {
+            const inventory = fixtureNewPlan && window.__discoveryRequestCount > 1
+              ? [...(payload.inventory || []), fixtureNewPlan]
+              : payload.inventory;
+            return new Response(JSON.stringify({
+              ...payload,
+              inventory,
+              sprints: fixtureSprints,
+              active_sprint_id: fixtureIndex.data.active_sprint_id,
+              review: fixtureReview,
+              source_format: "distributed",
+              resource_versions: {
+                "project:reckon": 4,
+                "sprint:focus": 2,
+                "sprint:concurrent": 1,
+              },
+            }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          });
+        }
+        if (__FAIL_PLAN_HTML__ && url.includes("/plans/") && url.endsWith(".html")) {
+          return Promise.resolve(new Response("", { status: 503 }));
+        }
+        return nativeFetch(resource, options);
+      };
+    }"""
+    replacements = {
+        "__FIXTURE_INDEX__": INDEX_STATE,
+        "__FIXTURE_REVIEW__": review,
+        "__FIXTURE_NEW_PLAN__": new_plan,
+        "__FAIL_PLAN_HTML__": fail_plan_html,
+    }
+    for marker, value in replacements.items():
+        preload_expression = preload_expression.replace(marker, json.dumps(value))
+
+    docs = _write_fixture_docs(tmp_path)
+    ready_expression = (
+        f"Boolean(window.STATE && document.querySelector({json.dumps(wait_selector)}))"
+    )
+    with served_spa(
+        tmp_path,
+        installed_browser_or_skip(),
+        docs=docs,
+        route=route,
+    ) as context:
+        result = context.run_probe(
+            probe,
+            ready_expression=ready_expression,
+            preload_expression=preload_expression,
+            prepare_expression=prepare_signal,
+            remove_expression=None if refresh_probe is not None else remove_signal,
+            refresh_expression=refresh_probe,
+        )
+    assert isinstance(result, dict)
+    return result
 
 
 def _assert_rendered_signal(observation: dict[str, object], name: str) -> None:

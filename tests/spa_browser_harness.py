@@ -185,13 +185,77 @@ import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const [browserPath, profile, pageUrl, widthText, heightText] = process.argv.slice(1);
+const argumentsAfterScript = process.argv.slice(1);
+const legacyInput = argumentsAfterScript.length === 1 && argumentsAfterScript[0].startsWith("{")
+  ? JSON.parse(argumentsAfterScript[0])
+  : null;
+const [browserPath, profile, pageUrl, widthText, heightText] = legacyInput
+  ? [legacyInput.browser, legacyInput.profile, legacyInput.url, "1374", "900"]
+  : argumentsAfterScript;
 const width = Number(widthText);
 const height = Number(heightText);
-const expression = process.env.RECKON_BROWSER_EXPRESSION;
-const readyExpression = process.env.RECKON_BROWSER_READY_EXPRESSION;
+const expression = legacyInput?.probe || process.env.RECKON_BROWSER_EXPRESSION;
+const readyExpression = legacyInput
+  ? `Boolean(window.STATE && document.querySelector(${JSON.stringify(legacyInput.waitSelector)}))`
+  : process.env.RECKON_BROWSER_READY_EXPRESSION;
+const preloadExpression = legacyInput
+  ? `{
+          const fixtureIndex = ${JSON.stringify(legacyInput.fixtureIndex)};
+          const fixtureSprints = fixtureIndex.data.sprints;
+          const fixtureReview = ${JSON.stringify(legacyInput.fixtureReview)};
+          const fixtureNewPlan = ${JSON.stringify(legacyInput.fixtureNewPlan)};
+          const nativeFetch = window.fetch.bind(window);
+          window.__discoveryRequestCount = 0;
+          window.fetch = (resource, options) => {
+            const url = String(resource);
+            if (url.endsWith("/state/reckon/index.json")) {
+              return Promise.resolve(new Response(JSON.stringify(fixtureIndex), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }));
+            }
+            if (url.endsWith("/_discover/reckon")) {
+              window.__discoveryRequestCount += 1;
+              return nativeFetch(resource, options).then(response => response.json()).then(payload => {
+                const inventory = fixtureNewPlan && window.__discoveryRequestCount > 1
+                  ? [...(payload.inventory || []), fixtureNewPlan]
+                  : payload.inventory;
+                return new Response(JSON.stringify({
+                  ...payload,
+                  inventory,
+                  sprints: fixtureSprints,
+                  active_sprint_id: fixtureIndex.data.active_sprint_id,
+                  review: fixtureReview,
+                  source_format: "distributed",
+                  resource_versions: {
+                    "project:reckon": 4,
+                    "sprint:focus": 2,
+                    "sprint:concurrent": 1,
+                  },
+                }), {
+                  status: 200,
+                  headers: { "Content-Type": "application/json" },
+                });
+              });
+            }
+            if (${JSON.stringify(legacyInput.failPlanHtml)}
+                && url.includes("/plans/")
+                && url.endsWith(".html")) {
+              return Promise.resolve(new Response("", { status: 503 }));
+            }
+            return nativeFetch(resource, options);
+          };
+        }`
+  : process.env.RECKON_BROWSER_PRELOAD_EXPRESSION;
+const prepareExpression = legacyInput?.prepareSignal
+  || process.env.RECKON_BROWSER_PREPARE_EXPRESSION;
+const removeExpression = legacyInput?.removeSignal
+  || process.env.RECKON_BROWSER_REMOVE_EXPRESSION;
+const refreshExpression = legacyInput?.refreshProbe
+  || process.env.RECKON_BROWSER_REFRESH_EXPRESSION;
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const stage = value => console.error(`[reckon-browser-stage] ${value}`);
+const browserEvents = [];
 
 async function waitForFile(file, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
@@ -219,6 +283,13 @@ class DevTools {
     });
     this.socket.addEventListener("message", event => {
       const message = JSON.parse(event.data);
+      if (message.method === "Runtime.exceptionThrown") {
+        browserEvents.push(message.params.exceptionDetails?.exception?.description
+          || message.params.exceptionDetails?.text || "runtime exception");
+      } else if (message.method === "Runtime.consoleAPICalled") {
+        browserEvents.push((message.params.args || [])
+          .map(argument => argument.value || argument.description || "").join(" "));
+      }
       const pending = this.pending.get(message.id);
       if (!pending) return;
       this.pending.delete(message.id);
@@ -252,6 +323,35 @@ async function evaluate(devtools, source) {
   return response.result.value;
 }
 
+function navigationUrl(generation) {
+  const [base, fragment = ""] = pageUrl.split("#", 2);
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}browser_generation=${generation}${fragment ? `#${fragment}` : ""}`;
+}
+
+async function navigateAndWait(devtools, generation) {
+  await devtools.call("Page.navigate", { url: navigationUrl(generation) });
+  stage(`navigation-${generation}-started`);
+  const deadline = Date.now() + 45000;
+  let ready = false;
+  while (Date.now() < deadline) {
+    try {
+      ready = Boolean(await evaluate(devtools, `Boolean(
+        location.search.includes("browser_generation=${generation}")
+        && (${readyExpression})
+      )`));
+    } catch {
+      ready = false;
+    }
+    if (ready) return;
+    await delay(100);
+  }
+  throw new Error(
+    `timed out waiting for browser readiness: ${readyExpression}; `
+    + `browser events: ${browserEvents.slice(-10).join(" | ") || "none"}`
+  );
+}
+
 const browser = spawn(browserPath, [
   "--headless=new",
   "--no-sandbox",
@@ -282,24 +382,28 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await devtools.call("Page.navigate", { url: pageUrl });
-  stage("navigation-started");
-
-  const deadline = Date.now() + 45000;
-  let ready = false;
-  while (Date.now() < deadline) {
-    try {
-      ready = Boolean(await evaluate(devtools, readyExpression));
-    } catch {
-      ready = false;
-    }
-    if (ready) break;
-    await delay(100);
+  if (preloadExpression) {
+    await devtools.call("Page.addScriptToEvaluateOnNewDocument", {
+      source: preloadExpression,
+    });
   }
-  if (!ready) throw new Error(`timed out waiting for browser readiness: ${readyExpression}`);
-
-  const value = await evaluate(devtools, expression);
-  process.stdout.write(JSON.stringify(value));
+  await navigateAndWait(devtools, 1);
+  if (refreshExpression) {
+    const refreshed = await evaluate(devtools, refreshExpression);
+    process.stdout.write(JSON.stringify({ refreshed }));
+  } else {
+    await evaluate(devtools, prepareExpression || "undefined");
+    const baseline = await evaluate(devtools, expression);
+    if (removeExpression) {
+      await navigateAndWait(devtools, 2);
+      await evaluate(devtools, prepareExpression || "undefined");
+      await evaluate(devtools, removeExpression);
+      const removed = await evaluate(devtools, expression);
+      process.stdout.write(JSON.stringify({ baseline, removed }));
+    } else {
+      process.stdout.write(JSON.stringify(baseline));
+    }
+  }
 } finally {
   if (devtools) devtools.close();
   browser.kill("SIGTERM");
@@ -309,6 +413,17 @@ try {
   });
 }
 """
+
+# Compatibility for rendered checks that configure the shared driver source
+# directly. New probes use ServedSpa.run_probe; these callers still execute the
+# same browser-launch owner while their migration remains independently scoped.
+NODE_PROBE = _PROBE_DRIVER.replace(
+    "`--window-size=${width},${height}`",
+    '"--window-size=1374,900"',
+).replace(
+    "    width,\n    height,",
+    "    width: 1374,\n    height: 900,",
+)
 
 
 def _terminate_process_group(process: subprocess.Popen[str]) -> tuple[str, str]:
@@ -490,6 +605,10 @@ class ServedSpa:
         *,
         viewport: tuple[int, int] = (1374, 900),
         ready_expression: str = "document.readyState === 'complete'",
+        preload_expression: str | None = None,
+        prepare_expression: str | None = None,
+        remove_expression: str | None = None,
+        refresh_expression: str | None = None,
     ) -> object:
         return _evaluate_browser_url(
             self.tmp_path,
@@ -498,6 +617,10 @@ class ServedSpa:
             expression,
             viewport=viewport,
             ready_expression=ready_expression,
+            preload_expression=preload_expression,
+            prepare_expression=prepare_expression,
+            remove_expression=remove_expression,
+            refresh_expression=refresh_expression,
         )
 
     def run_composition_probe(
@@ -635,12 +758,29 @@ def _evaluate_browser_url(
     *,
     viewport: tuple[int, int],
     ready_expression: str,
+    preload_expression: str | None = None,
+    prepare_expression: str | None = None,
+    remove_expression: str | None = None,
+    refresh_expression: str | None = None,
 ) -> object:
     _preflight_browser_socket()
     with temporary_browser_profile(tmp_path) as profile:
         environment = dict(os.environ)
         environment["RECKON_BROWSER_EXPRESSION"] = expression
         environment["RECKON_BROWSER_READY_EXPRESSION"] = ready_expression
+        optional_expressions = {
+            "RECKON_BROWSER_PRELOAD_EXPRESSION": preload_expression,
+            "RECKON_BROWSER_PREPARE_EXPRESSION": prepare_expression,
+            "RECKON_BROWSER_REMOVE_EXPRESSION": remove_expression,
+            "RECKON_BROWSER_REFRESH_EXPRESSION": refresh_expression,
+        }
+        environment.update(
+            {
+                key: value
+                for key, value in optional_expressions.items()
+                if value is not None
+            }
+        )
         # Run the driver in its own process group so a timeout can reap the
         # browser with it. `subprocess.run(timeout=...)` kills only the process
         # it started, and the driver kills the browser from a JavaScript
@@ -703,6 +843,10 @@ def run_browser_probe(
     viewport: tuple[int, int] = (1374, 900),
     ready_expression: str = "document.readyState === 'complete'",
     route: str = "",
+    preload_expression: str | None = None,
+    prepare_expression: str | None = None,
+    remove_expression: str | None = None,
+    refresh_expression: str | None = None,
 ) -> object:
     with _served_document(tmp_path, document) as url:
         return _evaluate_browser_url(
@@ -712,4 +856,8 @@ def run_browser_probe(
             expression,
             viewport=viewport,
             ready_expression=ready_expression,
+            preload_expression=preload_expression,
+            prepare_expression=prepare_expression,
+            remove_expression=remove_expression,
+            refresh_expression=refresh_expression,
         )
