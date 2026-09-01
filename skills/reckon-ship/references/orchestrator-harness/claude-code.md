@@ -92,22 +92,31 @@ own state, which is why neither can repeat the three shell-filter mistakes:
 withholding lines in a stage's buffer, matching the `· N blocked · N unpromoted`
 summary that trails every line, or hiding a refusal behind `|| true`.
 
-An attach announces itself in the ticker's own columns, so a monitor is never
-silent about being alive:
+The three figures partition the fleet as it stands after each line: `working` is
+work in progress, `blocked` is everything stopped and needing the coordinator (a
+stall or a failure included), and `unpromoted` is delivered work awaiting a gate.
+They add up to the runs in flight, which is why none of them is called `live` —
+a pointer count in that position is read as work in progress and is not.
+
+Attaching opens with one line per live run, so the pane is never blank while
+work exists:
 
 ```
-12:30:11  attached            → 2 live            s18 · 1 dispatched · 1 working · delivery stream
-12:30:11  hdg-cache-replay    → dispatched        2 live · 0 blocked · 0 unpromoted
-12:30:12  hdg-measured-map    working → blocked   3 live · 1 blocked · 0 unpromoted · tried: …
+12:30:11  hdg-cache-replay    → dispatched        2 working · 0 blocked · 0 unpromoted
+12:30:11  hdg-measured-map    → working           2 working · 0 blocked · 0 unpromoted
+12:30:12  hdg-measured-map    working → blocked   2 working · 1 blocked · 0 unpromoted · tried: …
 ```
 
-Every line the follower prints — its own lifecycle (`waiting`, `attached`,
-`read-only`, `registered`, `delivery`) as well as fleet transitions — goes to
-stdout in those columns. Nothing routine goes to stderr, because this host
-prefixes stderr with `[stderr]` into the same pane: it is noise a reader should
-not be shown, and it splits one sequence across two interleaved channels that
-then appear to contradict each other. Clocks are the reader's local time, since
-the pane sits beside a harness that timestamps locally.
+**The stream carries worker transitions and fleet posture, and nothing else.**
+No follower status, no arming advice, no registration chatter — a reader is
+watching a fleet, not a follower, and two streams squeezed into one pane is
+worse than either. Nothing goes to stderr either: this host prefixes it with
+`[stderr]` into the same pane, which is noise, and it splits one sequence across
+two interleaved channels that then appear to contradict each other. Whatever the
+follower needs to say about its own registration is said by the dispatch guard,
+to the session that is trying to dispatch, with the remedy. Clocks are the
+reader's local time, since the pane sits beside a harness that timestamps
+locally.
 
 Leave `--session` off only to watch a project's whole fleet across sessions;
 every line then names its owning session, and the runs it reports are not

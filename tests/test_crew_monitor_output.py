@@ -92,7 +92,11 @@ def test_three_followers_receive_each_subsequent_transition_once(
             "unpromoted": 1 if current == "complete" else 0,
         }
         for index, (previous, current) in enumerate(
-            (("dispatched", "working"), ("working", "blocked"), ("blocked", "complete")),
+            (
+                ("dispatched", "working"),
+                ("working", "blocked"),
+                ("blocked", "complete"),
+            ),
             start=1,
         )
     ]
@@ -264,3 +268,47 @@ def test_watch_payloads_carry_the_line_that_attaches_this_session(
 
     after = sorted(q.name for q in real.glob("demo*")) if real.is_dir() else []
     assert after == before, "the redirected home leaked a lock into the real one"
+
+
+def test_every_emitted_state_lands_in_exactly_one_fleet_bucket() -> None:
+    """A figure a reader adds up has to add up.
+
+    The three summary buckets partition the fleet, so a state that belongs to
+    none of them silently vanishes from every total while the line still prints
+    — the same shape as the routing gap that left `stalled` unmatched by any
+    filter. Read the states out of the function that emits them rather than
+    maintaining a second list beside it.
+    """
+    source = inspect.getsource(recovery._watch_snapshot)
+    emitted = set(re.findall(r'state = "([a-z_]+)"', source))
+    emitted |= {"complete", "blocked", "failed"}  # assigned from manifest_status
+    emitted |= set(recovery.RECOVERY_CLASSES)  # reached through the fallback
+
+    buckets = {
+        "working": set(recovery.FLEET_WORKING_STATES),
+        "blocked": set(recovery.FLEET_BLOCKED_STATES),
+        "unpromoted": set(recovery.FLEET_UNPROMOTED_STATES),
+    }
+    for left, right in (
+        ("working", "blocked"),
+        ("working", "unpromoted"),
+        ("blocked", "unpromoted"),
+    ):
+        assert not buckets[left] & buckets[right], f"{left} and {right} overlap"
+
+    counted = set().union(*buckets.values())
+    assert emitted <= counted, f"uncounted states: {sorted(emitted - counted)}"
+
+
+def test_a_blocked_or_delivered_run_is_not_counted_as_working() -> None:
+    """The reading that prompted this: `live` was a pointer count, and a reader
+    takes the first figure for work in progress."""
+    fleet = {
+        "r-1": {"run_id": "r-1", "state": "working"},
+        "r-2": {"run_id": "r-2", "state": "blocked"},
+        "r-3": {"run_id": "r-3", "state": "complete"},
+        "r-4": {"run_id": "r-4", "state": "stalled"},
+    }
+    counts = recovery._fleet_counts(fleet)
+    assert counts == {"working": 1, "blocked": 2, "unpromoted": 1}
+    assert sum(counts.values()) == len(fleet), "the buckets must account for the fleet"

@@ -92,7 +92,7 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
             assert baselines[0] == baselines[1]
             assert len(baselines[0]) == 2
             assert all(
-                "2 live · 0 blocked · 0 unpromoted" in line for line in baselines[0]
+                "2 working · 0 blocked · 0 unpromoted" in line for line in baselines[0]
             )
 
             _set_phase("r-first", "working")
@@ -133,7 +133,7 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     assert sum("working → blocked" in line for line in lines) == 1
     assert lines[-1].endswith("· dependency unavailable")
     assert re.match(r"^\d{2}:\d{2}:\d{2}  only-node", lines[-1])
-    assert "1 live · 1 blocked · 0 unpromoted" in lines[-1]
+    assert "0 working · 1 blocked · 0 unpromoted" in lines[-1]
     assert events[-1]["run_id"] == "r-only"
 
 
@@ -161,4 +161,4 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
     assert "blocked → complete" in subsequent[0]
     assert "dispatched → working" not in subsequent[0]
     assert "working → blocked" not in subsequent[0]
-    assert "1 live · 0 blocked · 1 unpromoted" in subsequent[0]
+    assert "0 working · 0 blocked · 1 unpromoted" in subsequent[0]

@@ -253,14 +253,25 @@
         and a promotion reported the fleet it had already left. Recomputed per transition now, in
         departure&rarr;arrival&rarr;change order, folded through one function the seat's ticker and
         the durable stream share.</li>
-      <li><strong>An attach announces itself</strong> in the same columns, naming the session, its
-        live runs and their states, the delivery mode and whether this follower holds the
-        registration &mdash; never suppressed by a filter, because being visible when nothing else
-        is is its whole job.</li>
-      <li><strong>One channel.</strong> Status had gone to stderr to stay out of the notification
-        stream; the host prefixes stderr into the same pane, so it was noise, and it split one
-        takeover sequence across two interleaved channels that read as a contradiction while
-        describing something that worked. Lifecycle lines are now ticker lines.</li>
+      <li><strong>An attach opens with one line per live run</strong>, so the pane is never blank
+        while work exists &mdash; in the ticker's own vocabulary rather than as a second kind of
+        line.</li>
+      <li><strong>One stream, and it is the fleet's.</strong> Status first went to stderr to stay
+        out of the notification stream; the host prefixes stderr into the same pane, so it was
+        noise, and it split one takeover sequence across two interleaved channels that read as a
+        contradiction while describing something that worked. Re-rendering that status as ticker
+        lines was the wrong correction &mdash; a reader is watching a fleet, not a follower. The
+        stream now carries worker transitions and fleet posture only, and nothing goes to stderr;
+        what a session must know about its own registration is said by the dispatch guard, to the
+        session trying to dispatch, with the remedy.</li>
+      <li><strong><code>live</code> counted pointers, and a reader takes the first figure for
+        work in progress.</strong> A blocked run and a delivered-but-unpromoted run both sat inside
+        it, so <code>3 live &middot; 0 blocked &middot; 1 unpromoted</code> described two workers
+        working. The summary is now three buckets that partition the fleet &mdash;
+        <code>working</code>, <code>blocked</code> (everything stopped and needing the coordinator,
+        a stall or failure included), <code>unpromoted</code> &mdash; so the figures add up to the
+        runs in flight, and a state belonging to no bucket fails a check rather than vanishing from
+        every total. That last part is the same defect <code>stalled</code> had one layer up.</li>
       <li><strong>The reader's clock.</strong> The pane printed UTC beside a harness stamping local
         time &mdash; two clocks two hours apart. The record stays UTC; the rendering is local.</li>
       <li><strong>Two registration traps.</strong> A read-only follower takes the registration over

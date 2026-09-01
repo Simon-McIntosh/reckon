@@ -66,7 +66,7 @@ def _event(**overrides) -> dict:
         "node": "ticker-node",
         "from_state": "working",
         "to_state": "blocked",
-        "live": 3,
+        "working": 3,
         "blocked": 1,
         "unpromoted": 0,
         "reason": "first clause",
@@ -90,7 +90,7 @@ def test_ticker_opens_with_one_baseline_per_live_run(home) -> None:
     assert [event["from_state"] for event in baseline] == [None, None]
     assert [event["to_state"] for event in baseline] == ["dispatched", "working"]
     assert {
-        (event["live"], event["blocked"], event["unpromoted"]) for event in baseline
+        (event["working"], event["blocked"], event["unpromoted"]) for event in baseline
     } == {(2, 0, 0)}
 
 
@@ -140,13 +140,17 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         ("new-node", "complete", "promoted"),
         ("existing-node", "dispatched", "promoted"),
     ]
+    # Each triple is the fleet after that transition, and the three buckets
+    # partition it — a blocked or delivered run leaves the working count, which
+    # is what a reader takes "working" to mean.
     assert [
-        (event["live"], event["blocked"], event["unpromoted"]) for event in transitions
+        (event["working"], event["blocked"], event["unpromoted"])
+        for event in transitions
     ] == [
         (2, 0, 0),
         (2, 0, 0),
-        (2, 1, 0),
-        (2, 0, 1),
+        (1, 1, 0),
+        (1, 0, 1),
         (1, 0, 0),
         (0, 0, 0),
     ]
@@ -165,7 +169,7 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
         f"{recovery.local_clock(_event()['observed_at'])}  ticker-node"
     )
     assert "working → blocked" in line
-    assert "3 live · 1 blocked · 0 unpromoted" in line
+    assert "3 working · 1 blocked · 0 unpromoted" in line
     assert line.endswith("· first clause")
     assert "second clause" not in line
     assert "\n" not in line
@@ -210,7 +214,7 @@ def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) ->
     assert payload["node"] == "ticker-node"
     assert payload["from_state"] == "working"
     assert payload["to_state"] == "blocked"
-    assert (payload["live"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
+    assert (payload["working"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
 
 
 def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:

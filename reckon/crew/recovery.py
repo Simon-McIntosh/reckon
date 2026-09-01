@@ -503,13 +503,36 @@ def _watch_snapshot(
     }
 
 
+# The three buckets the ticker's summary reports, and every state a snapshot can
+# emit belongs to exactly one of them. A figure a reader adds up has to add up:
+# counting pointers as "live" put blocked and finished runs inside the number a
+# reader takes for work in progress, so `3 live · 0 blocked · 1 unpromoted`
+# described two workers working.
+FLEET_WORKING_STATES = ("dispatched", "working", "running")
+FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
+FLEET_BLOCKED_STATES = (
+    "blocked",
+    "failed",
+    "stalled",
+    "stopped",
+    "abandoned",
+    "unknown",
+)
+
+
 def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
-    """Count the ambient fleet posture included on every transition."""
+    """Partition the fleet into work in progress, work needing you, and work done.
+
+    ``working`` is what a reader means by a live worker. ``blocked`` is
+    everything that has stopped progressing and needs the coordinator, a stall
+    or a failure included. ``unpromoted`` is delivered work waiting on a gate.
+    A run that leaves the fleet is in none of them.
+    """
     states = [str(snapshot.get("state") or "") for snapshot in snapshots.values()]
     return {
-        "live": len(states),
-        "blocked": states.count("blocked"),
-        "unpromoted": states.count("complete"),
+        "working": sum(state in FLEET_WORKING_STATES for state in states),
+        "blocked": sum(state in FLEET_BLOCKED_STATES for state in states),
+        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
     }
 
 
@@ -582,7 +605,7 @@ def _watch_transition(
         "session": snapshot.get("session") or "",
         "from_state": previous,
         "to_state": current,
-        "live": counts["live"],
+        "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
     }
@@ -633,7 +656,7 @@ def format_watch_transition(
     movement = f"{previous} → {current}" if previous else f"→ {current}"
     line = (
         f"{clock}  {node:<28}  {movement:<24}  "
-        f"{int(event.get('live') or 0)} live · "
+        f"{int(event.get('working') or 0)} working · "
         f"{int(event.get('blocked') or 0)} blocked · "
         f"{int(event.get('unpromoted') or 0)} unpromoted"
     )

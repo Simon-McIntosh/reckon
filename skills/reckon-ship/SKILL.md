@@ -641,12 +641,16 @@ with no output.
 **It carries no state filter, deliberately.** A filter that legitimately matches
 nothing produces an empty pane, and an empty pane reads exactly like a follower
 that never started — the failure this whole surface exists to remove. So the
-follower reports every transition, starts included, and opens with a one-line
-receipt naming the session, its live runs and their states, the delivery mode,
-and whether this follower holds the registration. Each line's
-`N live · N blocked · N unpromoted` is the fleet **after** that transition, so
-two landings in one cycle read as two, and a promotion reports the fleet it
-leaves behind.
+follower reports every transition, starts included, and opens with one line per
+live run. The stream carries worker transitions and fleet posture and nothing
+else: follower status is not fleet state, and the session that needs telling
+about its registration is one trying to dispatch, which the guard tells there.
+Each line's
+`N working · N blocked · N unpromoted` is the fleet **after** that transition,
+so two landings in one cycle read as two, and a promotion reports the fleet it
+leaves behind. The three buckets partition the fleet: `working` is work in
+progress, `blocked` is everything that has stopped and needs you (a stall or a
+failure included), `unpromoted` is delivered work waiting on a gate.
 
 `reckon crew follow` also takes `--attention` when a caller deliberately wants
 only the actionable states (terminal, blocked, stalled, stopped, abandoned) and
@@ -657,9 +661,10 @@ and refusals go to stderr so stdout stays one notification per transition.
 
 **Registration is what dispatch checks, and streaming is not registration.** A
 second follower for the same session streams read-only while the first holds the
-registration, and says so. It takes the registration over within a poll once the
-holder goes, so stopping an old follower after arming a new one self-corrects
-rather than leaving lines arriving at an unregistered reader.
+registration, and takes it over within a poll once that holder goes — so
+stopping an old follower after arming a new one self-corrects rather than
+leaving lines arriving at an unregistered reader. Silently, in both directions:
+the fact that matters reaches whoever tries to dispatch.
 
 **One arming covers the session, not one wave.** The producer's seat is released
 when a wave drains and dispatch arms a fresh one for the next; the follower
