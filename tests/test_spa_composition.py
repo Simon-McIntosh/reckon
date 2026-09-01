@@ -2,18 +2,52 @@ from __future__ import annotations
 
 import json
 import subprocess
+from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
+from reckon.serve import discover_plans
 from tests.spa_browser_harness import (
     BROWSER_NAMES,
+    BrowserProbeError,
     ServedSpa,
+    file_spa,
     installed_browser,
-    served_spa,
 )
 
 VIEWPORT_WIDTHS = (1280, 1440, 1920)
+
+
+@contextmanager
+def _skip_when_browser_is_unavailable():
+    try:
+        yield
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+
+
+def _composed_state() -> dict[str, object]:
+    root = Path(__file__).parents[1]
+    state = discover_plans(root / "docs", "reckon", root / "docs/state")
+    active = [
+        sprint
+        for sprint in state.get("sprints", [])
+        if sprint.get("status") == "active"
+    ]
+    inventory = state.get("inventory", [])
+    now = datetime.now(UTC)
+    return {
+        **state,
+        "today": now.date().isoformat(),
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "loaded_at": now.isoformat(),
+        "active_sprints": active,
+        "active_sprint_conflict": len(active) > 1,
+        "plans": {item["slug"]: item for item in inventory},
+    }
 
 
 def _javascript_function(source: str, name: str) -> str:
@@ -288,10 +322,12 @@ def test_plans_surface_never_exceeds_its_window(
         )
 
     screenshot = tmp_path / f"plans-{viewport_width}.png"
-    with served_spa(tmp_path, browser, route="#plans") as context:
+    with (
+        file_spa(tmp_path, browser, _composed_state(), route="#plans") as context,
+        _skip_when_browser_is_unavailable(),
+    ):
         passing = context.run_composition_probe(
-            expected_width=viewport_width,
-            screenshot=screenshot,
+            expected_width=viewport_width, screenshot=screenshot
         )
 
     assert passing.returncode == 0, passing.stderr
@@ -317,7 +353,10 @@ def test_window_containment_fails_when_a_width_floor_returns(tmp_path: Path) -> 
             + ", ".join(BROWSER_NAMES)
         )
 
-    with served_spa(tmp_path, browser, route="#plans") as context:
+    with (
+        file_spa(tmp_path, browser, _composed_state(), route="#plans") as context,
+        _skip_when_browser_is_unavailable(),
+    ):
         conflicting = context.run_composition_probe(
             "--conflicting-width",
             "1374",
