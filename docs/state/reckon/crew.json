@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:53:05",
+  "updated": "2026-09-01T22:53:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -33620,9 +33620,120 @@
           "role": "test",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260901T203734767094-n-delta-refusal-and-waiver",
+        "plan": "promotion-consequence-gate",
+        "section": "\u00a75",
+        "node": "n-delta-refusal-and-waiver",
+        "node_definition": {
+          "done_when": "reckon crew complete on a run whose project is armed (gates.suite_command set, snapshotted onto the run pointer at dispatch in reckon/crew/dispatch.py) requires both completed observations with the baseline revision equal to the pointer's base_sha and refuses otherwise naming the missing field; refuses when after.failure_ids minus baseline.failure_ids is non-empty, listing the added ids in the refusal JSON, and leaves the live pointer recoverable; accepts the same promotion when a reason-taking waiver option is supplied, storing reason, both observations and the added ids on the committed record; an unarmed project's promotion is unchanged; ledger summary counts clean, refused and waived deltas separately; every behaviour above is asserted in tests/test_gate_evidence.py and tests/test_ledger.py, the CLI option inventory in tests/test_skill_contracts.py is updated, and tests/test_gate_evidence.py tests/test_ledger.py tests/test_crew.py tests/test_skill_contracts.py tests/test_failure_classification.py show no new failures against the base revision",
+          "estimated_hours": null,
+          "goal": "The promotion-time consequence: an armed run's promotion computes after minus baseline failure ids from the typed suite observations, refuses a non-empty delta or absent evidence naming the added ids, and accepts an explicit reasoned waiver recorded on the same ledger row",
+          "id": "n-delta-refusal-and-waiver",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T203734767094-n-delta-refusal-and-waiver/manifest.md",
+          "plan": "promotion-consequence-gate",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "reckon/ledger.py",
+            "reckon/crew/node.py",
+            "tests/test_gate_evidence.py",
+            "tests/test_ledger.py",
+            "tests/test_crew.py",
+            "tests/test_skill_contracts.py",
+            "tests/fixtures/crew-public-surface.txt",
+            "tests/test_failure_classification.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:37:46Z",
+        "completed_at": "2026-09-01T20:53:34Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 948,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 948,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e3d386d9528665b1d25e8300322e275128105232",
+        "commits": [
+          "62efee878d7898bd23ee29551b3530a928f88c65"
+        ],
+        "changed_lines": {
+          "added": 532,
+          "removed": 4,
+          "files": 8
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_gate_evidence.py tests/test_ledger.py tests/test_crew.py tests/test_skill_contracts.py tests/test_failure_classification.py at 62efee8",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T203734767094-n-delta-refusal-and-waiver/logs/postcommit-targeted.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T203734767094-n-delta-refusal-and-waiver/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f8-cc64-7c61-b67c-302b5278f763",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 7056384,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 7235149,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 14378,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2821
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 538
+    "_version": 539
   }
 }

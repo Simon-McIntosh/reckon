@@ -23,9 +23,9 @@
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-01">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="4">
-<meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9,62efee878d7898bd23ee29551b3530a928f88c65">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -243,6 +243,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901T223800-arming-landed" data-who="reckon-ship" data-when="2026-09-01T22:38:00Z">
     <div class="r-comment-body">n-suite-arming-and-manifest-contract landed — commit 648f287 (merged 49cb5b5); gate passed; measure: tests/test_flight.py tests/test_crew.py tests/test_skill_contracts.py 281 passed / 0 failed at the commit against 274 / 0 at base 95a7fec, +7 regressions, scoped ruff delta 0; both generated schema artifacts byte-identical to the LinkML source. Delivered: optional gates.suite_command in reckon/schema/flight.yaml with no shipped default, project-layer provenance pinned by test; baseline_suite and after_suite as typed manifest observations each carrying revision, command, integer exit_status, log_path or log_digest, completed, failure_count and failure_ids, with tests kept as the human summary; audit_manifest(suite_armed=True) names a missing observation and treats completed=false as absent evidence while an unarmed project keeps its existing contract; worker-protocol.md documents the pair. Recorded scope-changed: docs/_shared/flight.schema.json was granted mid-flight because the schema generator writes it alongside the assigned Python model and the byte-identity test requires both, so this run is excluded from calibration. impl 1/3.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901T225500-delta-landed" data-who="reckon-ship" data-when="2026-09-01T22:55:00Z">
+    <div class="r-comment-body">n-delta-refusal-and-waiver landed — commit 62efee8 (merged 8c1d260); gate passed; measure: tests/test_gate_evidence.py tests/test_ledger.py tests/test_crew.py tests/test_skill_contracts.py tests/test_failure_classification.py 310 passed / 0 failed at the commit against 302 / 0 at base e3d386d, +8 regressions, scoped ruff delta 0, all eight paths format-clean. Delivered: dispatch snapshots gates.suite_command onto the run pointer so a later config edit cannot restate an in-flight run; an armed promotion requires both completed typed observations with the baseline revision equal to the pointer's base_sha and refuses otherwise naming the missing field; a non-empty after-minus-baseline failure-id set refuses with the added ids in the structured refusal JSON and leaves the pointer recoverable; --waive-suite-delta takes a non-empty reason and stores reason, both observations and the added ids on the committed row; an unarmed project's promotion is unchanged; the ledger summary counts clean, refused and waived deltas separately. The worker stopped once at its two-failure fence: adding base_sha to every synthetic fixture woke the older uncited-commit guard; resolved by a reasoned --no-commit on the report-only fixtures plus one regression on a real temporary repository whose HEAD equals base_sha plus one cited commit, proving the citation guard and the delta gate coexist on the path real runs take. impl 2/3.</div>
 </div>
 </section>
 </main>
