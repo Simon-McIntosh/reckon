@@ -109,12 +109,31 @@
     <p>
       With several agent sessions pushing in quick succession &mdash; roughly twenty pushes
       in one evening from two sessions &mdash; main CI structurally cannot finish. So for the
-      majority of pushes there was nothing to read, not merely something unread. <strong>This
-      is tracked here to be handed on, not fixed here:</strong> it is a workflow policy in the
-      consuming repository, its fix is one conditional expression, and it is separate from the
-      gate because only one of the two problems is about attention. A promotion gate reading a
+      majority of pushes there was nothing to read, not merely something unread. <strong>This is CLAIMED, not merely handed on:</strong> an
+      earlier version of this section recorded it as pending hand-off, which was the exact
+      shape of work that falls between two plans and is never done &mdash; and a reckon plan
+      can name an <code>imas-codex</code> workflow file but cannot change it, so there was no
+      hand to hand it to. <code>imas-codex</code>&rsquo;s <code>hidden-suite-failures</code>
+      plan now owns it explicitly (<code>6c924f83</code>), and also records that this gate is
+      reckon&rsquo;s so no second one is built there. It stays separate from the gate because
+      only one of the two problems is about attention, and because it is a policy decision
+      rather than a defect repair &mdash; more runs reaching a conclusion consumes more
+      minutes, and <code>cancel-in-progress</code> is genuinely correct for pull requests. A promotion gate reading a
       CI conclusion must nonetheless treat <em>cancelled</em> as absence of evidence rather
       than as a pass, which is why the two findings touch.
+    </p>
+    <p>
+      <strong>That seam can fail silently and deserves stating as a rule rather than a
+      caveat.</strong> The naive reading is &ldquo;not <code>failure</code>, therefore
+      fine&rdquo; &mdash; and with 65 of 120 runs cancelled that admits the <em>majority</em>
+      of pushes on a measurement that never happened. <strong>That is
+      absence-as-permission arriving inside the mechanism built to prevent
+      absence-as-permission.</strong> It bites hardest on one specific choice below: if the
+      delta baseline is taken as the previous promotion&rsquo;s CI result, the previous
+      promotion is <em>disproportionately likely to have been cancelled by the next
+      push</em>, so that option inherits the worst of the cancellation problem rather than
+      a random sample of it. Any conclusion-reading implementation must fail closed on
+      absence.
     </p>
 
     <h2 id="s5">&#167;5 &mdash; Deliverables</h2>
@@ -145,6 +164,13 @@
       </div>
       <div class="r-dec" data-key="who-runs-the-suite" data-choice="" data-by="" data-when="">
         <p class="r-dec-q">Who executes the suite whose delta the gate reads?</p>
+        <p class="r-dec-context">Measured input, so the choice is made with the number
+          visible rather than after: reading CI inherits the cancellation problem above and
+          must handle it, while the gate running the suite itself does not &mdash; and pays
+          roughly <strong>487 s per promotion</strong>, which across one real session of
+          fifteen nodes would have been about <strong>two hours of serial waiting</strong>.
+          Consistent with an independent measurement of 210.76 s for the 6,821-test subtree
+          scaling to the 12,021-test whole. This is not an argument for either option.</p>
         <p class="r-dec-opts">
           <button class="r-opt" data-value="worker-evidence">The worker, with the gate reading its captured counts and refusing when they are absent</button>
           <button class="r-opt" data-value="gate-runs-it">The gate itself at promotion time, so the measurement cannot be self-reported</button>
