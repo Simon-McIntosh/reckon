@@ -329,32 +329,75 @@ def test_the_manifest_answers_before_the_repository_does(tmp_path, monkeypatch):
     workspace collector classified the worktree `unintegrated`. Naming the exact
     revisions the worker already reported is more use than describing the
     condition, so the manifest is read before the repository.
+
+    The line is free text, so the check resolves each entry against the
+    repository rather than pattern-matching it: a report-only node writes
+    `commits: none (repository worktree remained clean)`, which is neither a
+    revision nor an omission, and a literal "none" test would refuse it.
     """
     from reckon.crew import promotion
 
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    tree = tmp_path / "worktree"
+    tree.mkdir()
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tree, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.email", "worker@example.invalid")
+    git("config", "user.name", "Worker")
+    (tree / "seed.txt").write_text("seed\n")
+    git("add", "seed.txt")
+    git("commit", "-q", "-m", "chore: seed")
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (tree / "cohort.yaml").write_text("names: [a, b]\n")
+    git("add", "cohort.yaml")
+    git("commit", "-q", "-m", "chore: refresh the review artifact")
+    landed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
     manifest = tmp_path / "manifest.md"
-    manifest.write_text(
-        "node: n-west-demo-rc2\nstatus: complete\n"
-        "commits: d52bbc56, 9f1c2b7\nblockers: none\n"
-    )
     record = {
         "manifest_path": str(manifest),
         "manifest_baseline_mtime_ns": 0,
+        "worktree": str(tree),
+        "base_sha": base,
         "node": {"role": "implement"},
     }
 
+    manifest.write_text(
+        f"node: n-west-demo-rc2\nstatus: complete\n"
+        f"commits: {landed[:8]}\nblockers: none\n"
+    )
     with pytest.raises(crew.CrewError) as refusal:
         promotion._require_gate_evidence(
             "r-uncited", record, verdict="passed", commits=(), no_commit_reason=""
         )
     message = str(refusal.value)
-    assert "manifest records 2" in message
-    assert "d52bbc56" in message and "9f1c2b7" in message
+    assert "manifest records 1" in message
+    assert landed[:8] in message
     assert "Reckon is holding the answer" in message
 
-    # A manifest that states none is the honest commitless case.
-    manifest.write_text("node: n\nstatus: complete\ncommits: none\nblockers: none\n")
+    # Free text that names no revision is the honest commitless report, and the
+    # worktree agrees with it once its HEAD is back at base.
+    manifest.write_text(
+        "node: n\nstatus: complete\n"
+        "commits: none (report-only node; repository worktree remained clean)\n"
+        "blockers: none\n"
+    )
+    git("reset", "-q", "--hard", base)
     promotion._require_gate_evidence(
         "r-report-only", record, verdict="passed", commits=(), no_commit_reason=""
     )

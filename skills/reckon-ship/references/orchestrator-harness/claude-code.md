@@ -40,13 +40,22 @@ as the session lasts, and silence reads exactly like a quiet fleet.
 ```
 Monitor({
   command: 'reckon crew follow --project <project> --session <session>',
-  description: '<project> fleet: my session\'s runs',
+  description: '<project> fleet',
   persistent: true,
 })
 ```
 
 `persistent: true` because a wave outlives the default timeout, and the
 follower is meant to cover the whole session rather than one wave.
+
+**Keep the description a label, not a sentence.** This host prints it verbatim
+as the visible row of every notification — `Monitor event: "<description>"` —
+so it repeats identically for each event and never carries the transition. Name
+the fleet and stop: `imas-codex fleet`. First-person prose there
+("my session's runs") reads as a status claim on a row that is only ever a
+label, and it is the reader's transcript, not the follower's. The event text is
+in the notification body; the description's whole job is to say which stream a
+row came from.
 
 **Measured on this host, which is why reckon can check it rather than ask.** A
 backgrounded shell's stdout is a regular file that the harness reads when the

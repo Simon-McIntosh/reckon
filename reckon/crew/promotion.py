@@ -221,16 +221,28 @@ def _require_gate_evidence(
     # the node succeeded with nothing pointing at the work. Naming the exact
     # revisions is more use than describing the condition, so this runs before
     # the repository check below.
+    tree = Path(str(record.get("worktree") or ""))
     manifest_present, fresh = _manifest_freshness(record)
-    if manifest_present and fresh:
+    if manifest_present and fresh and tree.is_dir():
         try:
             delivered = parse_manifest(
                 Path(str(record["manifest_path"])).read_text(encoding="utf-8")
             )
         except (OSError, KeyError, ValueError):
             delivered = {}
-        stated = [str(sha).strip() for sha in (delivered.get("commits") or [])]
-        stated = [sha for sha in stated if sha and sha.lower() not in {"none", "n/a"}]
+        # Only an entry that resolves to a real commit means Reckon is holding
+        # something. The line is free text a worker wrote: a report-only node
+        # writes `commits: none (repository worktree remained clean)`, which is
+        # neither a revision nor an omission, and matching a literal "none"
+        # would refuse it. Resolving instead of pattern-matching cannot make
+        # that mistake.
+        stated = [
+            candidate
+            for candidate in (
+                str(sha).strip() for sha in (delivered.get("commits") or [])
+            )
+            if candidate and _commit_resolves_in(tree, candidate)
+        ]
         if stated:
             raise CrewError(
                 f"run {run_id!r} has a passing gate and cites no commit, but its "
@@ -242,7 +254,6 @@ def _require_gate_evidence(
                 "deliberately that they are not being registered"
             )
 
-    tree = Path(str(record.get("worktree") or ""))
     base = str(record.get("base_sha") or "").strip()
     if not base or not tree.is_dir():
         return
