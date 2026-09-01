@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -84,9 +85,7 @@ def test_promotion_splits_narrative_from_run_measurements(repository: Path) -> N
         root=repository,
     )
 
-    plan, _version = _store.read_plan(
-        PROJECT, PLAN, repository, artifact_type="plan"
-    )
+    plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     comment = plan["comments"]["s2"][0]
     assert promoted["plan_comment"] == {
         "recorded": True,
@@ -110,9 +109,7 @@ def test_promotion_splits_narrative_from_run_measurements(repository: Path) -> N
 def test_terminal_write_requires_a_back_linking_evidence_record(
     repository: Path,
 ) -> None:
-    plan, version = _store.read_plan(
-        PROJECT, PLAN, repository, artifact_type="plan"
-    )
+    plan, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     with pytest.raises(_store.OpError) as excinfo:
         _store.write_plan(
             PROJECT,
@@ -127,18 +124,14 @@ def test_terminal_write_requires_a_back_linking_evidence_record(
     assert f"docs/evidence/archive/{PLAN}-landed.html" in detail
     assert f'plan-evidence-for" content="{PLAN}' in detail
     with pytest.raises(_store.OpError, match=f"{PLAN}-landed.html"):
-        _store.validate_landing_patch(
-            {**plan, "status": "done"}, {"status": "done"}
-        )
+        _store.validate_landing_patch({**plan, "status": "done"}, {"status": "done"})
     refused, refused_version = _store.read_plan(
         PROJECT, PLAN, repository, artifact_type="plan"
     )
     assert refused["status"] == "active"
     assert refused_version == version
 
-    evidence_path = (
-        repository / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
-    )
+    evidence_path = repository / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
     _write_resource(
         evidence_path,
         {
@@ -166,3 +159,87 @@ def test_terminal_write_requires_a_back_linking_evidence_record(
     )
     assert new_version == stored_version == refused_version + 1
     assert terminal["status"] == "done"
+
+
+def test_a_commit_from_another_repository_names_that_repository(
+    tmp_path, monkeypatch
+) -> None:
+    """A sha that resolves elsewhere is a routing mistake, not a bad sha.
+
+    A node dispatched without ``--repo`` has its run repository set to the
+    dispatching one, so a commit it made in a foreign checkout cannot resolve
+    and the refusal is correct. Stating only that it does not resolve leaves the
+    reader to guess; naming the repository it does belong to makes the refusal
+    the instruction for the next dispatch.
+    """
+    from reckon.crew import promotion
+
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    def _repo(name: str) -> Path:
+        root = tmp_path / name
+        (root / "docs").mkdir(parents=True)
+        (root / "seed.txt").write_text(f"{name}\n")
+        for arguments in (
+            ["init", "-q", "-b", "main"],
+            ["config", "user.email", "worker@example.invalid"],
+            ["config", "user.name", "Worker"],
+            ["add", "seed.txt"],
+            ["commit", "-q", "-m", "chore: seed"],
+        ):
+            subprocess.run(
+                ["git", *arguments], cwd=root, check=True, capture_output=True
+            )
+        return root
+
+    run_repo = _repo("dispatching")
+    foreign = _repo("written-to")
+    (config_home / "mounts.json").write_text(
+        json.dumps(
+            {
+                "dispatching": str(run_repo / "docs"),
+                "written-to": str(foreign / "docs"),
+            }
+        )
+    )
+    stray = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=foreign,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    with pytest.raises(crew.CrewError) as refusal:
+        promotion._resolve_commits(cwd=run_repo, revisions=[stray], run_id="r-x")
+
+    message = str(refusal.value)
+    assert str(run_repo) in message, "the repository it was checked against"
+    assert str(foreign) in message, "the repository it belongs to"
+    assert f"--repo {foreign}" in message, "the remedy for the next dispatch"
+
+
+def test_an_unresolvable_commit_says_what_else_to_check(tmp_path, monkeypatch) -> None:
+    """With no other repository holding it, the likely cause is a worker that
+    staged without committing — so the refusal says that instead of guessing."""
+    from reckon.crew import promotion
+
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    root = tmp_path / "solo"
+    root.mkdir()
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["commit", "-q", "--allow-empty", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        promotion._resolve_commits(cwd=root, revisions=["0" * 40], run_id="r-y")
+
+    assert "committed rather than only staging" in str(refusal.value)

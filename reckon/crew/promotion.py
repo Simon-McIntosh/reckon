@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import subprocess
@@ -128,6 +129,59 @@ def _cumulative_diff(*, cwd: Path, base: str, head: str) -> _CumulativeDiff:
     )
 
 
+def _registered_repository_roots() -> list[Path]:
+    """Return the repository root of every registered project mount."""
+    path = _store._mounts_path()
+    if not path.exists():
+        return []
+    try:
+        mounts = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return []
+    roots: list[Path] = []
+    for raw in (mounts or {}).values():
+        try:
+            docs = Path(str(raw)).expanduser().resolve()
+        except (OSError, RuntimeError, ValueError):
+            continue
+        root = docs.parent
+        if root not in roots and (root / ".git").exists():
+            roots.append(root)
+    return roots
+
+
+def _commit_resolves_in(root: Path, revision: str) -> bool:
+    """Report whether one revision names a commit object in one repository."""
+    probe = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "--end-of-options",
+            f"{revision}^{{commit}}",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return not probe.returncode and bool(probe.stdout.strip())
+
+
+def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
+    """Name the registered repository a stray revision actually belongs to."""
+    for root in _registered_repository_roots():
+        if root == exclude:
+            continue
+        try:
+            if _commit_resolves_in(root, revision):
+                return root
+        except OSError:
+            continue
+    return None
+
+
 def _resolve_commits(
     *, cwd: Path, revisions: Iterable[str], run_id: str
 ) -> list[str]:
@@ -150,9 +204,23 @@ def _resolve_commits(
         )
         commit = resolved.stdout.strip()
         if resolved.returncode or not commit:
+            # A commit that resolves somewhere else is not a bad sha, it is a
+            # node whose write target was not its run repository — dispatched
+            # without --repo and pointed at a foreign checkout by prose. Naming
+            # the repository it does belong to turns a correct-but-opaque
+            # refusal into the instruction for the next dispatch.
+            elsewhere = _foreign_repository(revision, exclude=cwd)
+            remedy = (
+                f"it resolves in {elsewhere} instead, so that node belongs to "
+                f"that repository: redispatch it with `--repo {elsewhere}` "
+                "rather than granting a foreign checkout in its prose"
+                if elsewhere is not None
+                else "check that the worker committed rather than only staging, "
+                "and that it committed in its own worktree"
+            )
             raise CrewError(
                 f"run {run_id!r} commit {revision!r} does not resolve to a "
-                "commit object in the run repository"
+                f"commit object in the run repository ({cwd}); {remedy}"
             )
         commits.append(commit)
     return commits
