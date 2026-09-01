@@ -592,6 +592,25 @@ def _watch_transition(
     return event
 
 
+def local_clock(observed: Any) -> str:
+    """Render a stored UTC stamp as a wall clock in the reader's own zone.
+
+    The record stays UTC because it is compared and sorted; the ticker is read
+    by a person beside a harness that timestamps in local time, and two clocks
+    two hours apart in one pane is a reading error waiting to happen.
+    """
+    text = str(observed or "")
+    if len(text) < 19:
+        return "--:--:--"
+    try:
+        moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return text[11:19]
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone().strftime("%H:%M:%S")
+
+
 def format_watch_transition(
     event: Mapping[str, Any], *, with_session: bool = False
 ) -> str:
@@ -604,8 +623,7 @@ def format_watch_transition(
     """
     if event.get("legacy"):
         return str(event.get("rendered") or "")
-    observed = str(event.get("observed_at") or "")
-    clock = observed[11:19] if len(observed) >= 19 else observed or "--:--:--"
+    clock = local_clock(event.get("observed_at"))
     node = str(event.get("node") or event.get("run_id") or "unknown")
     owner = str(event.get("session") or "")
     if with_session and owner:

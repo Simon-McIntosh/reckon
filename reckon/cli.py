@@ -1079,9 +1079,9 @@ def _follow_watch_lines(
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
-    def _announce(message: str) -> None:
+    def _announce(subject: str, predicate: str, tail: str = "") -> None:
         if notify is not None:
-            notify(message)
+            notify(subject, predicate, tail)
 
     def _tick() -> None:
         """Run the caller's per-wait work — reclaiming a registration, say."""
@@ -1107,9 +1107,10 @@ def _follow_watch_lines(
             if not waiting_announced:
                 waiting_announced = True
                 _announce(
-                    f"waiting for a producer on project {project!r}; "
+                    "waiting",
+                    "→ no producer",
                     f"dispatch arms one, or arm it with "
-                    f"{runs._watch_arming_line(project)}"
+                    f"{runs._watch_arming_line(project)}",
                 )
             _tick()
             sleeper(poll_interval)
@@ -1187,6 +1188,28 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output.flush()
 
 
+def _format_follow_line(subject: str, predicate: str, tail: str = "") -> str:
+    """Render one follower line in the ticker's columns.
+
+    Everything the follower says goes through here and out of stdout: its own
+    lifecycle as well as fleet transitions. Routing status to stderr instead put
+    `[stderr]` lines through the middle of the pane, which is noise a reader
+    should never have been shown, and split one sequence of events across two
+    interleaved channels that then appeared to contradict each other.
+    """
+    from reckon.crew.recovery import local_clock
+
+    clock = local_clock(_utc_stamp())
+    line = f"{clock}  {subject:<28}  {predicate:<24}  {tail}"
+    return line.rstrip()
+
+
+def _utc_stamp() -> str:
+    from reckon.crew.runs import _utc_now
+
+    return _utc_now()
+
+
 def _format_attach_receipt(
     event: Mapping[str, Any], *, delivery: str, registered: bool
 ) -> str:
@@ -1197,31 +1220,32 @@ def _format_attach_receipt(
     otherwise leave them with an empty pane and no way to tell it apart from a
     follower that never started.
     """
-    observed = str(event.get("observed_at") or "")
-    clock = observed[11:19] if len(observed) >= 19 else "--:--:--"
-    verb = "re-attached" if event.get("event") == "reattached" else "attached"
-    scope = str(event.get("session") or "whole project")
+    from reckon.crew.recovery import local_clock
+
+    clock = local_clock(event.get("observed_at"))
+    subject = "re-attached" if event.get("event") == "reattached" else "attached"
     total = int(event.get("runs") or 0)
     states = event.get("states") or {}
-    # Rendered in the ticker's own columns so it reads as the first row of the
-    # same table rather than a foreign line above it.
-    movement = f"→ {total} live"
-    counts = " · ".join(f"{count} {state}" for state, count in sorted(states.items()))
-    line = f"{clock}  {verb:<28}  {movement:<24}  {counts or 'nothing live yet'}"
-    tail = f"{scope} · delivery {delivery}"
-    if not registered:
-        tail += " · READ-ONLY: not registered, dispatch will refuse"
-    return f"{line} · {tail}"
+    breakdown = " · ".join(
+        f"{count} {state}" for state, count in sorted(states.items())
+    )
+    tail = " · ".join(
+        part
+        for part in (
+            str(event.get("session") or "whole project"),
+            breakdown,
+            f"delivery {delivery}",
+            "" if registered else "read-only",
+        )
+        if part
+    )
+    line = f"{clock}  {subject:<28}  {f'→ {total} live':<24}  {tail}"
+    return line.rstrip()
 
 
-def _follow_notice(message: str) -> None:
-    """Report follower status on stderr, keeping stdout the event channel.
-
-    Every stdout line of a follower is one notification in the session that
-    armed it, so status, waiting and refusal text belongs on the other stream —
-    otherwise arming a follower wakes a coordinator to say nothing happened.
-    """
-    click.echo(f"reckon crew follow: {message}", err=True)
+def _follow_notice(subject: str, predicate: str, tail: str = "") -> None:
+    """Print one follower-lifecycle line on the same channel as the ticker."""
+    _echo_follow_line(_format_follow_line(subject, predicate, tail))
 
 
 @crew.command(name="follow")
@@ -1270,20 +1294,22 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
     delivery = runs_module.delivery_mode()
     if delivery not in runs_module.DELIVERING_MODES:
         _follow_notice(
-            f"stdout is a {delivery}, so these transitions reach nobody until "
-            "this command exits -- and it does not exit. Arm it with the "
-            "harness primitive that reports each line as it is written."
+            "delivery",
+            f"→ {delivery}",
+            "these lines reach nobody until this command exits, and it does "
+            "not exit — arm it with the harness primitive that reports each "
+            "line as it is written",
         )
 
     def stream_events(registration):
         if registration is not None and not registration.held:
             holder = registration.blocked_by.get("pid")
             _follow_notice(
-                f"session {session!r} already has a registered follower"
-                f"{f' (pid {holder})' if holder else ''}, so this one streams "
-                "read-only. Only the registration satisfies dispatch: stop the "
-                "other follower and this one takes it over within a poll, or "
-                "stop this one and keep the other."
+                "read-only",
+                "→ not registered",
+                f"another follower{f' (pid {holder})' if holder else ''} holds "
+                "the registration; stop it and this one takes over within a "
+                "poll, or stop this one and keep that",
             )
 
         def poll() -> None:
@@ -1292,9 +1318,9 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
                 return
             if registration.acquire():
                 _follow_notice(
-                    f"registration for session {session!r} acquired: the "
-                    "previous follower is gone and this one now satisfies "
-                    "dispatch"
+                    "registered",
+                    "→ registration taken",
+                    "the previous follower is gone; this one now satisfies dispatch",
                 )
 
         for event in _follow_watch_lines(

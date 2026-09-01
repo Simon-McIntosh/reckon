@@ -159,7 +159,11 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
         _event(reason="first clause; second clause that must not reach the terminal")
     )
 
-    assert line.startswith("19:35:45  ticker-node")
+    # The stamp is stored UTC and rendered in the reader's own zone, because
+    # the pane sits beside a harness that timestamps locally.
+    assert line.startswith(
+        f"{recovery.local_clock(_event()['observed_at'])}  ticker-node"
+    )
     assert "working → blocked" in line
     assert "3 live · 1 blocked · 0 unpromoted" in line
     assert line.endswith("· first clause")

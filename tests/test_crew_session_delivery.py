@@ -395,7 +395,7 @@ def test_the_stream_stores_lossless_events_so_ownership_survives(home) -> None:
     assert record["session"] == "mine"
     assert record["node"] == "one-node"
     assert recovery.format_watch_transition(record).startswith(
-        record["observed_at"][11:19]
+        recovery.local_clock(record["observed_at"])
     )
 
 
@@ -635,4 +635,16 @@ def test_an_attached_follower_says_so_even_when_no_state_needs_attention(
     assert "mine" in rendered and "delivery stream" in rendered
 
     read_only = cli._format_attach_receipt(receipt, delivery="file", registered=False)
-    assert "READ-ONLY" in read_only and "dispatch will refuse" in read_only
+    assert "read-only" in read_only
+
+    # Every follower line is one channel and one shape, because `[stderr]` in
+    # the middle of the pane is noise and splits one sequence of events across
+    # two interleaved channels that then read as contradicting each other.
+    lifecycle = cli._format_follow_line(
+        "waiting", "→ no producer", "arm it with reckon crew watch --project p"
+    )
+    assert lifecycle.split()[1] == "waiting"
+    assert "→ no producer" in lifecycle
+    for line in (rendered, read_only, lifecycle):
+        assert "[stderr]" not in line
+        assert line == line.rstrip()

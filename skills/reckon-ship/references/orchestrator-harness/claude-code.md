@@ -96,10 +96,18 @@ An attach announces itself in the ticker's own columns, so a monitor is never
 silent about being alive:
 
 ```
-10:30:11  attached            → 2 live      1 dispatched · 1 working · s18 · delivery stream
-10:30:11  hdg-cache-replay    → dispatched  2 live · 0 blocked · 0 unpromoted
-10:30:12  hdg-measured-map    working → blocked   3 live · 1 blocked · 0 unpromoted · tried: …
+12:30:11  attached            → 2 live            s18 · 1 dispatched · 1 working · delivery stream
+12:30:11  hdg-cache-replay    → dispatched        2 live · 0 blocked · 0 unpromoted
+12:30:12  hdg-measured-map    working → blocked   3 live · 1 blocked · 0 unpromoted · tried: …
 ```
+
+Every line the follower prints — its own lifecycle (`waiting`, `attached`,
+`read-only`, `registered`, `delivery`) as well as fleet transitions — goes to
+stdout in those columns. Nothing routine goes to stderr, because this host
+prefixes stderr with `[stderr]` into the same pane: it is noise a reader should
+not be shown, and it splits one sequence across two interleaved channels that
+then appear to contradict each other. Clocks are the reader's local time, since
+the pane sits beside a harness that timestamps locally.
 
 Leave `--session` off only to watch a project's whole fleet across sessions;
 every line then names its owning session, and the runs it reports are not
