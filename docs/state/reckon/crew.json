@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:17:16",
+  "updated": "2026-09-01T20:20:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29750,9 +29750,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T180838814993-n-composition-state-cache",
+        "plan": "surface-latency-and-legibility",
+        "section": "\u00a75",
+        "node": "n-composition-state-cache",
+        "node_definition": {
+          "done_when": "A cold compose_project_state over the largest mounted repository is timed in a fresh interpreter before and after, both figures reported in seconds with the after figure under 3.0; tests/test_project_state_cache.py proves _plan_state_by_slug parses each plan exactly 1 time across 2 consecutive compositions and reparses exactly the 1 plan whose file changed, including when the replacement carries an identical mtime; the steady-state per-composition cost is reported as a measured number in seconds; and the 13 test modules that reference project_state are run in the worktree and report 0 new failures against those same modules at the node's own base revision",
+          "estimated_hours": null,
+          "goal": "Composition reads each plan's parsed state from a per-plan cache invalidated when that document changes, so a cold scan stops re-paying the full-document parse",
+          "id": "n-composition-state-cache",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T180838814993-n-composition-state-cache/manifest.md",
+          "plan": "surface-latency-and-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/project_state.py",
+            "tests/test_project_state_cache.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-cache",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:08:45Z",
+        "completed_at": "2026-09-01T18:19:45Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 660,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 660,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "b0b33fd7f3dbcf7bbb855f8d00e43563e5d33121",
+        "commits": [
+          "0ac65e73251c0fcafb4970344bea778add9dec7e"
+        ],
+        "changed_lines": {
+          "added": 145,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "fresh-interpreter cold compose timing before and after on imas-efit, plus the 13 project-state-referencing modules at base and at node revision",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T180838814993-n-composition-state-cache/logs/current-13-modules.txt",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T180838814993-n-composition-state-cache/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e28-c6bf-7c11-ab38-b101dbcb1642",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4718592,
+            "cached_input_tokens_cumulative": 4718592,
+            "input_tokens": 4879073,
+            "input_tokens_cumulative": 4879073,
+            "output_tokens": 17123,
+            "output_tokens_cumulative": 17123,
+            "reasoning_output_tokens": 5804,
+            "reasoning_output_tokens_cumulative": 5804
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 495
+    "_version": 496
   }
 }

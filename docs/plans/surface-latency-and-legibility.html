@@ -22,9 +22,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="18">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-version" content="21">
+<meta name="plan-impl" content="0.86">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
+<meta name="plan-commits" content="5922bcf,cb16b49,00f1a92,0ac65e73251c0fcafb4970344bea778add9dec7e">
+<meta name="plan-artifacts" content="reckon/project_state.py,tests/test_project_state_cache.py,docs/research/spa-legibility-audit.html,/home/ITER/mcintos/.config/reckon/crew/reports/surface-wave-reuse-map.md">
 </head>
 <body>
   <main class="plan-doc">
@@ -182,6 +184,20 @@
         is the cheap way to ask whether anything moved without shipping the payload.
       </li>
     </ul>
+    <div class="section-landed">
+      <p><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      <strong>The cache half.</strong> Cold composition of the largest mounted repository —
+      imas-efit, 937 documents over 61 referenced sprint items — falls from <strong>4.953078 s
+      to 1.946520 s</strong> against the 3 s target, with same-process steady composition at
+      1.242427 s. Entries are per resolved plan path and keyed on device, inode, size and both
+      nanosecond timestamps, which is what lets the test prove the case a coarse key would
+      miss: two plans parse exactly twice across two consecutive compositions, and replacing
+      one document's content while preserving its exact mtime raises the count to exactly three
+      while its neighbour stays cached. Composition also now hydrates only the plans a sprint
+      item references. 13 project-state modules: 214 → 217 passed, 0 new failures, ruff finding
+      count unchanged at 11. Commit <code>0ac65e7</code>.</p>
+    </div>
+
     <p>
       <strong>Two constraints inherited from the horizon work.</strong> No busy poll — the
       surface already polls live runs every three seconds, and a second unconditional
@@ -288,6 +304,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260825T072816984915-crew-route-stops-discovering" data-who="codex-z" data-when="2026-08-25T07:37:51Z">
     <div class="r-comment-body"><p>Discovery is out of the crew route's path. Measured in the same fresh-interpreter way the attribution used: 43.8142 s cold and 3.8612 s warm before, 0.04012 s cold and 0.03701 s warm after — 1092x cold and 104x warm. Confirmed against a restarted live server: 0.086 s on the first call of a fresh process and 0.036 to 0.040 s thereafter, scoped and unscoped alike. The route now reads what it exists to describe rather than enumerating the corpus first, and the SPA Crew tab's three-second poll costs 0.04 s instead of 2.1 s of twelve-project discovery. Every response field is preserved, and a test asserts the route returns its full field set for a synthesised pointer set without calling discover_plans at all and that its cost does not scale with mount count. Full suite 2352 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260901T180838814993-n-composition-state-cache" data-who="surface-cache" data-when="2026-09-01T18:19:45Z">
+    <div class="r-comment-body"><p>Cold compose on imas-efit 4.953078s to 1.946520s against a 3.0s target, steady-state 1.242427s; the focused test proves 2 plans parse exactly twice across 2 compositions and that a same-mtime content replacement reparses exactly that one document; 13 modules 214 to 217 passed with 0 new failures and one pre-existing failure at both revisions</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901-composition-cache" data-who="reckon-ship" data-when="2026-09-01T18:20:00+00:00">
+    <div class="r-comment-body">n-composition-state-cache landed — commit 0ac65e7; gate cold-compose-under-three-seconds PASSED; measure cold compose of imas-efit, the largest mounted repository at 937 documents over 61 referenced sprint items, 4.953078s to 1.946520s against the 3.0s target, a 3.006558s reduction, with same-process steady composition measured at 1.242427s rather than assumed negligible; the focused test proves 2 plans parse exactly 2 times across 2 consecutive compositions and that replacing one document's content while preserving its exact mtime raises the count to exactly 3 while its neighbour stays cached, which is the case a coarse cache key would silently get wrong; 13 project-state-referencing modules 214 to 217 passed with 0 new failures and ruff finding count unchanged at 11; artifacts reckon/project_state.py and tests/test_project_state_cache.py. Cache entries key on device, inode, size and both nanosecond timestamps, and composition now hydrates only plans a sprint item references. The freshness half of the locked decision remains open: no server-to-browser change transport exists yet, and the reuse map found 0 candidates for one anywhere in server or UI. One pre-existing failure, test_plan_and_sprint_views_surface_only_matching_live_work, was reported failing at both base and node revision and is outside this node's fence; it enters the drain queue as its own node rather than being carried as a note.</div>
 </div>
 </section>
 </main>
