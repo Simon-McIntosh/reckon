@@ -42,6 +42,7 @@ from reckon._schema import (
     Sprint,
     TimelineEntry,
     parse_plan_ref,
+    resolve_plan_ref,
 )
 from reckon.lifecycle import COMPLETED_STATUSES
 
@@ -729,7 +730,11 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         seen_slugs: set[str] = set()
         for item in cleaned.get("items", []):
             slug = str(item.get("slug", ""))
-            _safe_segment(slug, "sprint item slug")
+            if parse_plan_ref(slug) is None:
+                raise ValueError(
+                    f"sprint item slug {slug!r} must be a [project:]slug plan ref; "
+                    "each ref segment must be a single safe path segment"
+                )
             if slug in seen_slugs:
                 raise ValueError(f"duplicate sprint item slug {slug!r}")
             seen_slugs.add(slug)
@@ -901,12 +906,39 @@ def _validate_runtime_references(
 ) -> None:
     """Validate references against the complete installed distributed corpus."""
     if resource_type == "sprint":
+        from reckon._store import _mounts_path
+        from reckon.resources import read_plan_record
+
         plan_slugs = _live_plan_slugs(docs_dir, project)
+        try:
+            raw_mounts = json.loads(_mounts_path().read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raw_mounts = {}
+        mounts = {
+            str(name): Path(path).expanduser().resolve()
+            for name, path in raw_mounts.items()
+            if isinstance(name, str) and isinstance(path, str)
+        }
+        external_cache: dict[tuple[str, str], dict[str, Any]] = {}
+
+        def lookup(target_project: str, slug: str) -> dict[str, Any]:
+            if target_project == project:
+                return {"slug": slug} if slug in plan_slugs else {}
+            key = (target_project, slug)
+            if key not in external_cache:
+                target_docs = mounts.get(target_project)
+                external_cache[key] = (
+                    read_plan_record(target_docs, target_project, slug)
+                    if target_docs
+                    else {}
+                )
+            return external_cache[key]
+
         blocker_ids = _distributed_ids(docs_dir, "blockers")
         milestone_ids = _distributed_ids(docs_dir, "milestones")
         for item in data.get("items", []):
             slug = str(item["slug"])
-            if slug not in plan_slugs:
+            if not resolve_plan_ref(slug, project, lookup).get("found"):
                 raise ValueError(
                     f"sprint item {slug!r} does not resolve to a live plan"
                 )
