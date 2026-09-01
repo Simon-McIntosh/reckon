@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="effort-calibration">
   <meta name="plan-title" content="Effort Calibration">
   <meta name="plan-summary" content="Replace the asserted effort letters with neutral worker-hours, then close two separate calibration loops so plan estimates and per-agent speed correct each other from recorded runs, yielding competence horizons that tell a boss how small to split.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
   <meta name="plan-capability-version" content="1.0">
@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="23">
-<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b,b8a9934a178a4606ef89b798c7166dbf4ec27961,5ef88765c8ecb1be01fad7a2bfff257625974759">
+<meta name="plan-version" content="25">
+<meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b,b8a9934a178a4606ef89b798c7166dbf4ec27961,5ef88765c8ecb1be01fad7a2bfff257625974759,ef1eb81d2a60a5b870a3b782c8ad4ceefe7e81f3">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/roadmap.py,reckon/calibration.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_crew.py,tests/test_roadmap.py,tests/test_calibration.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-impl" content="1.0">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
 <body>
@@ -251,27 +251,19 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
       </tbody>
     </table>
 
-    <h2 id="s9">§9 — Re-measure the prediction question once authored hours exist</h2>
-
-    <p><strong>Trigger: at least 10 plans carry an independently authored
-    <code>plan-effort-hours</code> and have accumulated calibration-usable runs.</strong> Until then this
-    section is deliberately not executable, and nothing here should be attempted.</p>
-
-    <p>The closing comparison returned an exact tie — 2.625391 worker-hours by both predictors over 64
-    usable records — because every plan in the sample resolved its hours through the legacy 1/2/4/8
-    fallback. Two identical predictors cannot separate. The tie therefore demonstrates that the
-    migration is lossless and says nothing about whether authored hours predict better, which is the
-    question the plan actually asked.</p>
-
-    <p>The measurement becomes possible once authoring produces hours rather than letters, which the
-    updated guidance now asks for. Re-run the same comparison at that point, on the same reconstruct-at-<code>base_sha</code>
-    method so predictions still carry no hindsight, and report the two errors and the sample size
-    whichever way it falls. A second tie, or a loss, remains a legitimate answer: the point of the
-    external check is that it can fail.</p>
-
-    <p>Do not anticipate the result by adjusting the letter weights in the meantime. They are a
-    compatibility mapping, and tuning them toward the conclusion would destroy the only independent
-    check this plan has.</p>
+    <section id="s9-landed" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+        <h2 id="s9">§9 — Re-measure the prediction question once authored hours exist</h2></header>
+      <p class="landed-summary">Trigger met (27 authored plans, 25 with usable runs) and re-measured
+      over 363 usable records at each run's own <code>base_sha</code>: hours-based MAE
+      4.651012 worker-hours against legacy-letter MAE 1.124560 — <strong>authored hours lose</strong>,
+      recorded as the negative result with the 1/2/4/8 weights untouched. The first comparison's exact
+      tie over 64 records stands as the lossless-migration proof. Whether the loss is about the unit or
+      about a comparator that scores plan-level remaining effort against node-level durations is left
+      as an open question on this plan. Full record:
+      <a href="/reckon/evidence/archive/effort-calibration-landed#prediction-remeasure">§ prediction
+      re-measurement</a> (commit <code>ef1eb81</code>).</p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -391,6 +383,15 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 <div class="r-comment" data-section="s9" data-id="c-20260901T220100-trigger-fired" data-who="reckon-ship" data-when="2026-09-01T22:01:00Z">
     <div class="r-comment-body">Trigger check at sprint pre-flight, 2026-09-01: the §9 condition is met. 27 plans in this project carry an authored plan-effort-hours (the trigger asks for at least 10), and 25 of them have at least one calibration-usable run in the committed ledger (completed_at_source stream_mtime or terminal_event, not scope-changed) — 402 records at ledger version 524, the largest samples being spa-surface-redesign 70, project-state-fleet-migration 33, concurrency-and-schedule-visibility 31. §9 is therefore executable: re-run the hours-versus-letters comparison on the reconstruct-at-base_sha method and record both errors and the sample size whichever way it falls. The letter weights have not been touched since the tie was recorded.</div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-20260901T222600-remeasure" data-who="reckon-ship" data-when="2026-09-01T22:26:00Z">
+    <div class="r-comment-body">n-prediction-remeasure landed — commit ef1eb81 (merged b2c5d80); gate passed (analysis script exit 0, audit-doc with link check exit 0, 16 required facts asserted present); NEGATIVE RESULT: hours-based remaining-effort MAE 4.651012 worker-hours against legacy-letter MAE 1.124560 over 363 usable records, so authored hours LOSE by 3.526452 worker-hours. Sample: 405 ledger records at version 527 = 363 usable + 29 scope-changed + 1 untrustworthy-completion + 5 missing agent configuration + 7 non-positive duration; usable provenance 272 authored-hour records and 91 mapped across 24 authored-snapshot plans and 14 mapped-only plans; census 27 authored plan documents, 24 mapped, 0 live plans missing effort. Each prediction reconstructed at the run's own base_sha; S/M/L/XL weights left at 1/2/4/8 per the plan's constraint. The worker's own reading of the loss is methodological and is recorded as an open question rather than a repair: the declared comparison scores whole-plan remaining effort against single worker-node durations, so the letters, which under-resolve, may win simply because a plan is many small nodes. Artifacts docs/evidence/archive/effort-calibration-landed.html#prediction-remeasure; script and log under /home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201320923288-n-prediction-remeasure/</div>
+</div>
+</section>
+<section data-reckon="questions" id="questions" class="r-questions">
+<h2><span class="sec">§</span> Open questions</h2>
+<div class="r-q" data-id="q-comparison-granularity" data-section="s9" data-status="open" data-opened-by="reckon-ship" data-opened-at="2026-09-01" data-resolved-at="" data-resolved-by="">
+    <p class="r-q-body">The re-measurement scored whole-plan remaining effort against individual worker-node durations and the letters won by a factor of four. Should a future predictive calibration aggregate worker runs to plan completion before comparing, or estimate node duration directly? The answer decides whether the measured loss is a fact about authored hours or about the comparator, and it must be settled before anyone treats this result as a reason to change the unit.</p>
+    </div>
 </section>
 </main>
 </body>
