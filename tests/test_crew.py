@@ -3720,21 +3720,20 @@ def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:
     assert row["manifest_status"] is None
 
 
-def test_unresolvable_commit_records_a_typed_diff_absence(home, repo) -> None:
+def test_promotion_refuses_a_commit_that_names_no_object(home, repo) -> None:
+    """A ledger row citing a commit nobody can resolve is worse than no row.
+
+    Recording the absence instead leaves a promoted record whose evidence
+    cannot be opened, and the pointer is gone by then, so nothing remains to
+    say which revision was meant.
+    """
     record = _dispatched(home, repo)
-    revision = "not-a-revision"
 
-    stored = crew.complete(record["run_id"], gate="passed", commits=[revision])[
-        "record"
-    ]
+    with pytest.raises(crew.CrewError, match="does not resolve to a commit object"):
+        crew.complete(record["run_id"], gate="passed", commits=["not-a-revision"])
 
-    assert stored["commits"] == [revision]
-    assert stored["changed_lines"] == {
-        "available": False,
-        "reason": "unresolvable_revision",
-    }
-    assert "fatal:" not in json.dumps(stored["changed_lines"])
-    assert not crew.pointer_path(record["run_id"]).exists()
+    assert crew.pointer_path(record["run_id"]).is_file()
+    assert ledger.runs("proj", repo) == []
 
 
 def test_complete_clears_a_pointer_when_the_run_is_already_ledgered(home, repo) -> None:
@@ -3781,20 +3780,56 @@ def test_discard_refuses_while_the_recorded_pid_is_alive(home, repo) -> None:
     assert crew.pointer_path(record["run_id"]).is_file()
 
 
-def test_outside_repository_scope_records_absent_changed_lines(
-    home, repo, tmp_path
+def test_a_root_commit_records_an_explicit_absence_rather_than_a_count(
+    home, repo
 ) -> None:
+    """The diff runs from the commit's parent, and a root commit has none.
+
+    An absence with a reason is the honest answer; a zero would read as a run
+    that changed nothing.
+    """
     record = _dispatched(home, repo)
-    pointer = json.loads(crew.pointer_path(record["run_id"]).read_text())
-    pointer["node"]["write_paths"] = [str(tmp_path / "outside.py")]
-    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
 
     stored = crew.complete(record["run_id"], gate="passed", commits=["HEAD"])["record"]
 
     assert stored["changed_lines"] == {
         "available": False,
-        "reason": "diff_unavailable",
+        "reason": "unresolvable_revision",
     }
+    assert "fatal:" not in json.dumps(stored["changed_lines"])
+    assert not crew.pointer_path(record["run_id"]).exists()
+
+
+def test_promotion_refuses_a_commit_touching_a_path_outside_the_declared_scope(
+    home, repo
+) -> None:
+    """Exclusive scope is the fence that lets peers run concurrently.
+
+    A promotion that accepts a commit reaching past it records the breach as
+    ordinary progress, and the next dispatch derives its peer scopes from a
+    ledger that already disagrees with what the worker did.
+    """
+    record = _dispatched(home, repo)
+    tree = Path(record["worktree"])
+    (tree / "unclaimed.txt").write_text("reached past the fence\n")
+    for args in (
+        ["add", "unclaimed.txt"],
+        ["commit", "-q", "-m", "chore: write outside the declared scope"],
+    ):
+        subprocess.run(["git", *args], cwd=tree, check=True, capture_output=True)
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    with pytest.raises(crew.CrewError, match="outside its declared write scope"):
+        crew.complete(record["run_id"], gate="passed", commits=[head])
+
+    assert crew.pointer_path(record["run_id"]).is_file()
+    assert ledger.runs("proj", repo) == []
 
 
 # ── Worker reports ──────────────────────────────────────────────────────────
