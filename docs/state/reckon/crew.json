@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T21:45:22",
+  "updated": "2026-09-01T22:01:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -32224,9 +32224,109 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T192538508249-n-layout-migration",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a73",
+        "node": "n-layout-migration",
+        "node_definition": {
+          "done_when": "A fresh before-state is captured as the node's FIRST action to /home/ITER/mcintos/.config/reckon/crew/reports/layout-migration-before-final.json, recording total internal links, resolving targets, missing targets, missing anchors, and whether tests/docs/test_documentation_layout.py collects at that moment; the tag backfill then runs for real via /home/ITER/mcintos/Code/reckon/.venv/bin/reckon and reports 149 moves with grouping_loss 0 and 73 files written rather than 0; links are rewritten in both the suffixed and extensionless forms and the 149 files are moved, with tags, link rewrites and moves landing in exactly 1 commit so a revert is one operation; an after-state is written to layout-migration-after-final.json in the same directory with the same fields including the collection status, and the comparison reports newly-broken links as a number that must be 0, was-already-broken separately, and repaired-in-passing separately, so an old violation newly detected is distinguishable from a link newly broken; any script written purely to perform or verify this migration is deleted in that same commit with the count reported, 0 being a valid count; and the imas-codex suite is run before and after with both summary lines recorded, expecting the 49 pre-existing failures to be unchanged and 0 new ones",
+          "estimated_hours": null,
+          "goal": "The layout migration lands with provable zero grouping loss and zero newly-broken links, judged against a before-state captured at the same revision it moves from",
+          "id": "n-layout-migration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T192538508249-n-layout-migration/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "write_paths": [
+            "docs/"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-tags",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:25:43Z",
+        "completed_at": "2026-09-01T19:59:11Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2008,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2008,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "55db46350004eded91f20150b5a6292b91ef3897",
+        "commits": [
+          "af3782b0d69070281f43129291985c549db86d56"
+        ],
+        "changed_lines": {
+          "added": 36274,
+          "removed": 34845,
+          "files": 269
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "before/after link census at the same base, the full imas-codex suite either side with an exact failure-set comparison, and the restored layout check",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T192538508249-n-layout-migration/logs/full-suite-after.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "NEWLY BROKEN LINKS 0. Before and after both hold 346 internal links, 299 resolving, 46 missing targets and 1 missing anchor; already-broken 47, repaired-in-passing 0, redirected-resolved 3, unmatched-after 0, with 144 links rewritten across 135 suffixed and 9 extensionless forms. 115 resources moved plus 34 already at destination reconciles the 149-row pre-image exactly; the tag census ran over all 149 rows writing 73 grouped resources at grouping loss 0. Suite identical either side at 12020 passed and 50 failed with 0 new and 0 resolved, layout check now 2 passed rather than never running, 0 one-shot scripts created or deleted, one commit with 115 rename records and no non-docs path",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T192538508249-n-layout-migration/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a05e6f-3d6a-7452-b8d3-fbead447166e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11870208,
+            "cached_input_tokens_cumulative": 11870208,
+            "input_tokens": 12114305,
+            "input_tokens_cumulative": 12114305,
+            "output_tokens": 27683,
+            "output_tokens_cumulative": 27683,
+            "reasoning_output_tokens": 7801,
+            "reasoning_output_tokens_cumulative": 7801
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 524
+    "_version": 525
   }
 }
