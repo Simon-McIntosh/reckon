@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T21:28:56",
+  "updated": "2026-09-01T21:40:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -31919,9 +31919,211 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T193054560850-n-owed-captures-discharged",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a74",
+        "node": "n-owed-captures-discharged",
+        "node_definition": {
+          "done_when": "4 rendered captures land with paired computed geometry, each named in section 4's owed table: the now-line advancing without navigation at 48-hour scale, the sprint table rows with their order and the active-pointer conflict badge, reachability at a constrained 900x420 viewport, and the ready lanes with their handles; each asserts a positive signal with a number rather than a screenshot alone \u2014 a nonzero row or lane count, the badge present, and 0 elements past the viewport at 900x420 \u2014 and each is proven to fail when its signal is removed, so 4 mutation controls are recorded; the 2 captures whose subject is a live fetch are explicitly NOT attempted and are restated in the manifest as owed against the stated host change; residual chrome processes and temporary profile directories are both 0 after the run; and the touched test modules report 0 failures held to that absolute",
+          "estimated_hours": null,
+          "goal": "The four owed captures that need no live fetch are taken through the file-URL path, so the debt shrinks to only what the host change actually gates",
+          "id": "n-owed-captures-discharged",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193054560850-n-owed-captures-discharged/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "tests/test_spa_owed_captures.py",
+            "docs/figures/rendered-evidence/"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-browser",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:30:59Z",
+        "completed_at": "2026-09-01T19:39:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 536,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 536,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "12c97fb5aed4fa986e061d0fb932a7dd74fac3e4",
+        "commits": [
+          "b178f71009c579901890df1fb7c77522c67f9d40"
+        ],
+        "changed_lines": {
+          "added": 755,
+          "removed": 0,
+          "files": 10
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "the capture runner with one mutation control per capture, a pytest pass over the module, and a browser-absent run",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193054560850-n-owed-captures-discharged/capture-run-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193054560850-n-owed-captures-discharged/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-fd56-7f52-9478-1d0cb472d051",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4991488,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 5196204,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 18325,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3725
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T193008687073-n-single-attachment-gate",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-single-attachment-gate",
+        "node_definition": {
+          "done_when": "docs/ui/plan.jsx has exactly 1 emptiness gate for the attachment bars rather than 2, verified by grep showing the outer conditional removed while the component's own early return on 0 rows remains; a test asserts both directions against the surviving gate \u2014 0 bars rendered for a plan with no research and no evidence, and exactly 2 populated bars for one carrying 2 research and 1 evidence entry, ordered Resources before Evidence \u2014 and is proven to fail when that early return is deleted; tests/test_spa_reading_mode.py, tests/test_spa_reader_provenance.py and tests/test_spa_reader_geometry.py report 0 failures with collection counts unchanged before and after",
+          "estimated_hours": null,
+          "goal": "The attachment bars are gated in one place instead of two, so the outer copy cannot drift into hiding what the inner would show",
+          "id": "n-single-attachment-gate",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193008687073-n-single-attachment-gate/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/plan.jsx",
+            "tests/test_spa_reading_mode.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-scout",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:30:14Z",
+        "completed_at": "2026-09-01T19:39:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 581,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 581,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "12c97fb5aed4fa986e061d0fb932a7dd74fac3e4",
+        "commits": [
+          "a44010462b86187ec6caa270c893f78ab3ad2aef"
+        ],
+        "changed_lines": {
+          "added": 38,
+          "removed": 18,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest over the three reader modules at base and landed, collection counts either side, and an early-return deletion mutation",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193008687073-n-single-attachment-gate/landed-tests.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193008687073-n-single-attachment-gate/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-a845-75e3-8a47-bd9cdfbc626e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4309760,
+            "cached_input_tokens_cumulative": 9377024,
+            "input_tokens": 4260563,
+            "input_tokens_cumulative": 9537819,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 13168,
+            "reasoning_output_tokens": 1032,
+            "reasoning_output_tokens_cumulative": 4438
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 520
+    "_version": 522
   }
 }
