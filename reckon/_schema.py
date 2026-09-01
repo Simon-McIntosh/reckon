@@ -591,7 +591,13 @@ class PlanState(BaseModel):
         description="Milestone identifier, or empty when unassigned",
         json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
     )
-    sprint: str | None = None
+    sprint: str | None = Field(
+        None,
+        description=(
+            "Sprint ref this plan belongs to. Bare 'id' = same-project; "
+            "'project:id' = external (cross-project)."
+        ),
+    )
     graph_handle: str | None = Field(
         None,
         description=(
@@ -791,6 +797,13 @@ class PlanState(BaseModel):
             errors.append(
                 f"milestone: {self.milestone!r} must be an identifier or empty"
             )
+        if self.type == "plan" and self.sprint:
+            sprint_ref = parse_plan_ref(self.sprint)
+            if sprint_ref is None or sprint_ref.stage is not None:
+                errors.append(
+                    f"sprint: malformed sprint ref {self.sprint!r} — expected "
+                    "[project:]id"
+                )
         if (
             self.type == "plan"
             and self.graph_handle
