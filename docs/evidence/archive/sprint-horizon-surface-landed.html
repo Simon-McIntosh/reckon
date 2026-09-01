@@ -20,7 +20,7 @@
 
     <h2 id="overview">Overview</h2>
 
-    <p>Execution record for the sprint-surface rebuild. Three of seven executable
+    <p>Execution record for the sprint-surface rebuild. Five of seven executable
     sections have landed. The record leads with a host fault rather than with the code,
     because that fault determined what every section here could and could not prove, and
     a reader who does not know it will misread three gate verdicts.</p>
@@ -28,9 +28,13 @@
     <table>
       <thead><tr><th>Section</th><th>Gate</th><th>Commit</th><th>Measure</th></tr></thead>
       <tbody>
-        <tr><td><a href="#s6">§6 client load</a></td><td>passed</td><td><code>f9080fd</code>, <code>7642080</code></td><td>9/9 scope isolation; 0 remote origins, 0 in-browser transforms on the live service</td></tr>
+        <tr><td><a href="#s2">§2 all-sprints table</a></td><td>passed</td><td><code>5af7c7b</code></td><td>6/6; every sprint a row with status, impl, derived order, blocked/delayed/active</td></tr>
+        <tr><td><a href="#s4a">§4a ready-set endpoint</a></td><td>passed</td><td><code>3d38ac1</code></td><td>38 tests; served payload asserted <em>equal</em> to <code>ready_set_view(roadmap)</code></td></tr>
+        <tr><td><a href="#s8">§8 gate legibility</a></td><td>passed</td><td><code>6979f98</code></td><td>7/7; three start failures separated, each from an injected condition</td></tr>
+        <tr><td><a href="#s6">§6 client load</a></td><td>passed</td><td><code>f9080fd</code>, <code>7642080</code>, <code>fd9a499</code></td><td>9/9 scope isolation; 0 remote origins, 0 in-browser transforms; interpreter resolved</td></tr>
         <tr><td><a href="#s5">§5 live refresh</a></td><td>passed</td><td><code>85d10ce</code></td><td>3/3 boundary; two discovery reads publish inventories of 1 then 2 plans</td></tr>
         <tr><td><a href="#s3">§3 scroll owner</a></td><td>not-run</td><td><code>034dc5d</code></td><td>one declared scroll owner; shared stylesheet byte-identical; rendered capture owed</td></tr>
+        <tr><td>tooling</td><td>passed</td><td><code>83d2b23</code></td><td>6/6; node can evaluate a module containing JSX again, unblocking surface verification</td></tr>
       </tbody>
     </table>
 
@@ -202,6 +206,81 @@
     remaining work: the sections that rebuild the horizon strip, the state table and the ready
     set all modify that file heavily, and they cannot be verified while its helper tests cannot
     run.</p>
+
+    <h2 id="s2">§2 — All-sprints state table</h2>
+
+    <p><strong>Landed <code>5af7c7b</code>; gate passed, 6/6, browser-free.</strong> Every
+    sprint in the project renders as a table row carrying status, an implementation figure,
+    its derived order position and blocked/delayed/active flags, ordered by the server's
+    <code>sprint_order</code> with a natural-id fallback. This is the section that answers the
+    original complaint that there was no way to see all sprints at once.</p>
+
+    <p><strong>Four properties are asserted rather than assumed, and each exists because a
+    consumer project measured the failure it prevents.</strong> The composed metrics and review
+    fields are consumed with no second fetch and no client-side recomputation. A project whose
+    stored active pointer disagrees with its active set renders a conflict badge instead of
+    choosing one — one project reports four simultaneously-active sprints by design while its
+    pointer derives to a sprint that is merely first-with-unfinished-work, so any element
+    naming one active sprint states a falsehood there. A sprint carrying no start or end date
+    is still present, which matters because in that project undated sprints were three of four
+    active lanes. And closed sprints fold by default, since 11 of its 17 sprints are closed.</p>
+
+    <h2 id="s4a">§4a — Readiness served as a projection</h2>
+
+    <p><strong>Landed <code>3d38ac1</code>; gate passed, 38 related tests.</strong> Readiness
+    reaches HTTP for the first time. Before this, <code>build_roadmap</code> was the sole
+    authority for ready work, reasons, blocked sets and critical path, and it was reachable
+    only through the MCP tool and the CLI — so a browser client could not render ready work
+    honestly at all, only recompute it.</p>
+
+    <p><strong>One assertion is the whole guarantee.</strong> The test requires the served
+    <code>ready_set</code> to <em>equal</em> <code>ready_set_view(roadmap)</code> for the same
+    project. Equality rather than consistency is what makes a competing derivation impossible
+    instead of merely discouraged, and the distinction is not theoretical here: two
+    independently written copies of one review derivation, authored the same afternoon from the
+    same reuse map by workers unaware of each other, had already drifted into disagreeing about
+    sprint order. An equality assertion fails on the first commit that introduces the second
+    copy.</p>
+
+    <p>Rows carry their reason and section granularity, so a plan ready at plan level with one
+    blocked section reports both <code>ready_sections</code> and <code>blocked_sections</code>
+    rather than a single verdict. A project with no review resource degrades to
+    <code>review: null</code> without leaving a hole. Verified live after merge: discovery
+    serves 13 ready rows with order, sprint, progress and what each unlocks.</p>
+
+    <h2 id="s8">§8 — Browser-gate failure legibility</h2>
+
+    <p><strong>Landed <code>6979f98</code>; gate passed, 7/7.</strong> A failed probe now
+    reports which of three start failures occurred instead of a bare timeout:
+    <em>ceiling-exhausted</em>, <em>sandbox-denied</em>, or
+    <em>navigation-never-completed</em>, carrying the browser's own stderr and the inotify
+    count against the limit. A preflight refuses to start a probe at all when an
+    <code>AF_INET</code> socket cannot be created, naming the worker role as the likely
+    cause.</p>
+
+    <p><strong>The third failure mode was discovered after the section was written</strong>, by
+    the investigation recorded above: a read-only sandbox denies socket creation outright, so
+    the browser aborts every scheme in 0.135–0.142 s on a crashpad <code>setsockopt</code>
+    rather than timing out. That is instantly separable from both other causes, and it is why
+    an investigate-role worker cannot reproduce the navigation fault at all.</p>
+
+    <p><strong>The gate deliberately does not exhaust the real ceiling.</strong> Each
+    classification is asserted from an injected condition, because proving the message by
+    filling the shared per-user limit would inflict the host-wide outage this section exists to
+    prevent — four nodes across two sessions each independently blamed their own change for it.</p>
+
+    <h3 id="s8-cost">A cost this plan created, and owes</h3>
+
+    <p>§6 added two browser tests that cannot pass on this host. Measured across the full
+    suite by another session: four <code>test_build.py</code> cases each spend 75 seconds
+    producing no assertion — roughly five minutes per run, landing as four indistinguishable
+    timeouts behind which a genuine regression would be invisible. Two of the four trace to
+    <code>f9080fd</code> here; the others predate this plan. Failing closed is correct where a
+    browser works, but on this host it converts a known-unavailable dependency into opaque red.
+    The remedy uses the classifier above to skip with a stated reason, and it carries one clause
+    that keeps it honest: <strong>the tests must still fail, not skip, when a browser is
+    available and the assertion is wrong.</strong> Without that clause a skip becomes a
+    permanent blindfold.</p>
 
   </main>
 </body>
