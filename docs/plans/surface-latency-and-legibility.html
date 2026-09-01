@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -165,6 +165,10 @@
       <button class="r-opt" data-value="stale-while-revalidate">Serve stale immediately and refresh in the background, surfacing the staleness in the SPA</button>
       </p>
     <p class="r-dec-rat">Once the cache actually holds, a cold scan is rare rather than routine, so stale-while-revalidate would add a permanent correctness caveat to every read in exchange for removing a rare wait. Serving data the server knows is out of date is a poor trade for a planning surface whose whole purpose is telling the truth about project state, and it would interact badly with the finding that staleness is currently invisible. The reader-facing remedy belongs in the SPA showing that a scan is running, not in the endpoint answering with data it distrusts.</p>
+    </div>
+<div class="r-dec" data-key="composition-cost-and-freshness" data-choice="cache-on-read-plus-live-update" data-by="Simon McIntosh" data-when="2026-09-01T17:18:23+00:00">
+    <p class="r-dec-q">composition-cost-and-freshness</p>
+    <p class="r-dec-rat">Locked by the lead 2026-09-01, and it answers a question wider than the one asked. The three options put forward were cheap-head-read, cache, and restate-the-criterion; the lead took the cache and attached a requirement none of them carried: the SPA must reflect an added or modified plan WITHOUT the reader refreshing the site. Those two halves are one decision because a cache is what makes the second affordable and also what would make it wrong if it went stale, so neither can be designed without the other. Cache a plan&#x27;s parsed state when it is first read and invalidate it when the file changes, so composition stops re-paying the full-document parse that currently dominates a cold scan: 26.4 s in read_state across 251 calls with 920,845 selector matches, plus 8.7 s in parse_meta over 2,563 calls. The freshness half is a standing requirement rather than a one-off fix: adding or editing a plan must become visible in an open page on its own. The revalidation path landed in this sprint&#x27;s horizon work already removes the document navigation, so what remains is the change signal, and provenance.content_digest already exists on every composed read as a cheap way to ask whether anything moved without shipping the payload. Two constraints inherited from that work: no busy poll, because the surface already polls live runs every three seconds and a second unconditional interval over a payload this size trades one complaint for a slower one; and the steady-state request cost must be reported as a measured figure rather than assumed negligible. The under-three-second cold target stays as authored — the followup&#x27;s own words were do not quietly amend the criterion to match the outcome, and nothing here amends it.</p>
     </div>
 </section>
 
