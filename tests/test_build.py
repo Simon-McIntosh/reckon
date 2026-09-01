@@ -7,19 +7,22 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from contextlib import contextmanager
 from importlib.metadata import version
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
+
+from reckon import __version__, cli, pages, serve
 from tests.spa_browser_harness import (
+    BrowserProbeError,
     _evaluate_browser_url,
     _served_document,
     installed_browser,
+    run_browser_probe,
     served_spa,
 )
-
-from reckon import __version__, cli, pages, serve
 
 REPO_ROOT = Path(__file__).parents[1]
 SPA_COMPILED_MODULES = (
@@ -156,10 +159,35 @@ def _loaded_stylesheets(html: str) -> tuple[str, ...]:
     )
 
 
-def _rendered_north_star_state(tmp_path: Path, docs_dir: Path) -> dict:
+@contextmanager
+def _skip_when_browser_is_unavailable():
+    try:
+        yield
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory):
     browser = installed_browser()
     if browser is None:
         pytest.skip("no supported browser binary is installed")
+
+    with _skip_when_browser_is_unavailable():
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    return browser
+
+
+def _rendered_north_star_state(
+    tmp_path: Path,
+    docs_dir: Path,
+    browser: str,
+) -> dict:
 
     with served_spa(
         tmp_path,
@@ -471,11 +499,9 @@ function assertExports(moduleName, names) {
 
 
 def test_served_and_static_pages_request_only_their_own_origin(
-    tmp_path, built_source_site
+    tmp_path, built_source_site, rendered_browser
 ):
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = rendered_browser
     docs_dir, _, _ = built_source_site
     expression = """
       (() => ({
@@ -513,11 +539,9 @@ def test_served_and_static_pages_request_only_their_own_origin(
 
 
 def test_served_component_edit_is_visible_on_the_next_load(
-    tmp_path, monkeypatch, built_source_site
+    tmp_path, monkeypatch, built_source_site, rendered_browser
 ):
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = rendered_browser
     docs_dir, _, _ = built_source_site
     ui_root = tmp_path / "editable-ui"
     shutil.copytree(REPO_ROOT / "docs" / "ui", ui_root)
@@ -670,7 +694,10 @@ def test_build_bakes_discovery_and_preserves_authored_project_state(
     assert data["_version"] == 5
 
 
-def test_build_carries_directions_into_the_project_surfaces(tmp_path):
+def test_build_carries_directions_into_the_project_surfaces(
+    tmp_path,
+    rendered_browser,
+):
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
     directions = [
@@ -703,7 +730,7 @@ def test_build_carries_directions_into_the_project_surfaces(tmp_path):
     assert result.exit_code == 0, result.output
     data = json.loads(index_path.read_text())["data"]
     alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
-    rendered = _rendered_north_star_state(tmp_path, docs_dir)
+    rendered = _rendered_north_star_state(tmp_path, docs_dir, rendered_browser)
     assert data["north_stars"] == directions
     assert alpha["north_star"] == "reliable-delivery"
     assert rendered == {
@@ -713,12 +740,12 @@ def test_build_carries_directions_into_the_project_surfaces(tmp_path):
 
 
 def test_build_without_directions_preserves_the_unlabelled_shape(
-    tmp_path, built_source_site
+    tmp_path, built_source_site, rendered_browser
 ):
     docs_dir, index_path, _ = built_source_site
     data = json.loads(index_path.read_text())["data"]
     alpha = next(item for item in data["inventory"] if item["slug"] == "alpha")
-    rendered = _rendered_north_star_state(tmp_path, docs_dir)
+    rendered = _rendered_north_star_state(tmp_path, docs_dir, rendered_browser)
 
     assert "north_stars" not in data
     assert "north_star" not in alpha
@@ -726,6 +753,14 @@ def test_build_without_directions_preserves_the_unlabelled_shape(
         "badgeName": None,
         "badgeStatement": None,
     }
+
+
+def test_available_browser_does_not_mask_rendered_assertion_failure():
+    with (
+        pytest.raises(AssertionError, match="rendered assertion is wrong"),
+        _skip_when_browser_is_unavailable(),
+    ):
+        raise AssertionError("rendered assertion is wrong")
 
 
 @pytest.mark.parametrize("destination", ["_ui", "_shared"])
