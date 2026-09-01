@@ -25,6 +25,9 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSITION_PROBE = ROOT / "tests" / "spa_render_capture.mjs"
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
+NAVIGATION_FAULT_REPORT = (
+    "/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md"
+)
 _PROBE_STAGE_PREFIX = "[reckon-browser-stage] "
 _SPA_STYLESHEETS = (
     "_shared/foundation.css",
@@ -141,7 +144,11 @@ def _classify_probe_failure(
     else:
         classification = "navigation-never-completed"
         detail = (
-            f"the browser reached stage {stage!r} but the page did not become ready"
+            f"the browser reached stage {stage!r} but the page did not become ready; "
+            "the diagnosed boundary is Chrome's Network Service above Internet "
+            f"stream-socket creation; evidence: {NAVIGATION_FAULT_REPORT}; "
+            "this rendered case remains owed against the required host/browser "
+            "runtime change"
         )
     return BrowserProbeError(
         classification,

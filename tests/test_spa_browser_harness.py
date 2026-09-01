@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import spa_browser_harness as harness
 from spa_browser_harness import (
+    NAVIGATION_FAULT_REPORT,
     BrowserProbeError,
     _classify_probe_failure,
     _preflight_browser_socket,
@@ -111,6 +112,8 @@ def test_ceiling_exhaustion_names_stderr_and_instance_usage() -> None:
     assert failure.classification == "ceiling-exhausted"
     assert "inotify_init: Too many open files" in str(failure)
     assert "inotify instances 128/128" in str(failure)
+    assert NAVIGATION_FAULT_REPORT not in str(failure)
+    assert "Network Service above Internet stream-socket creation" not in str(failure)
 
 
 def test_socket_preflight_names_sandbox_and_worker_role() -> None:
@@ -128,9 +131,13 @@ def test_socket_preflight_names_sandbox_and_worker_role() -> None:
     assert "worker role 'investigate' is the likely cause" in str(captured.value)
     assert "AF_INET" in str(captured.value)
     assert "inotify instances 46/128" in str(captured.value)
+    assert NAVIGATION_FAULT_REPORT not in str(captured.value)
+    assert "Network Service above Internet stream-socket creation" not in str(
+        captured.value
+    )
 
 
-def test_navigation_timeout_is_distinct_from_start_failure() -> None:
+def test_navigation_timeout_skip_reason_names_the_diagnosed_boundary() -> None:
     failure = _classify_probe_failure(
         stage="navigation-started",
         browser_stderr="DevTools connected; navigation pending",
@@ -138,10 +145,15 @@ def test_navigation_timeout_is_distinct_from_start_failure() -> None:
         inotify_limit=128,
     )
 
+    reason = f"browser unavailable ({failure.classification}): {failure}"
+
     assert failure.classification == "navigation-never-completed"
-    assert "stage 'navigation-started'" in str(failure)
-    assert "DevTools connected; navigation pending" in str(failure)
-    assert "inotify instances 52/128" in str(failure)
+    assert "stage 'navigation-started'" in reason
+    assert "DevTools connected; navigation pending" in reason
+    assert "inotify instances 52/128" in reason
+    assert "Network Service above Internet stream-socket creation" in reason
+    assert NAVIGATION_FAULT_REPORT in reason
+    assert "remains owed against the required host/browser runtime change" in reason
 
 
 def test_completed_profile_scope_leaves_no_directory(tmp_path: Path) -> None:
