@@ -1404,47 +1404,47 @@ def _mounted_plan_record(project: str, slug: str) -> dict:
     return {}
 
 
-def _render_spa_html(project: str) -> str:
-    """Generate a complete index.html for the given project."""
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="docs-project" content="{project}">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>reckon · {project}</title>
-  <link rel="stylesheet" href="/_shared/foundation.css">
-  <link rel="stylesheet" href="/_shared/dashboard.css">
-  <link rel="stylesheet" href="/_ui/project.css">
-  <link rel="stylesheet" href="/_ui/styles-base.css">
-  <link rel="stylesheet" href="/_ui/styles.css">
-  <link rel="stylesheet" href="/_ui/topbar.css">
-  <link rel="stylesheet" href="/_ui/plans.css">
-  <link rel="stylesheet" href="/_ui/reader.css">
-  <link rel="stylesheet" href="/_ui/overview.css">
-  <link rel="stylesheet" href="/_ui/sprints.css">
-  <link rel="stylesheet" href="/_ui/crew.css">
-  <link rel="stylesheet" href="/_ui/graph.css">
-  <script src="/_runtime/react.js"></script>
-  <script src="/_runtime/react-dom.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script src="/_ui/state-loader.js"></script>
-  <script src="/_ui/glyphs.js"></script>
-  <script src="/_ui/_shared.js"></script>
-  <script src="/_ui/prompts.js"></script>
-  <script src="/_ui/ui.js"></script>
-  <script src="/_ui/bits.js"></script>
-  <script src="/_ui/decision.js"></script>
-  <script src="/_ui/plan.js"></script>
-  <script src="/_ui/sprint.js"></script>
-  <script src="/_ui/graph.js"></script>
-  <script src="/_ui/crew.js"></script>
-  <script src="/_ui/shell.js"></script>
-</body>
-</html>
-"""
+def _spa_index_path() -> Path:
+    package_dir = Path(__file__).resolve().parent
+    candidates = (
+        package_dir / "_assets" / "index.html",
+        package_dir.parent / "docs" / "index.html",
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    searched = ", ".join(str(path) for path in candidates)
+    raise ClientAssetError(f"canonical SPA index is missing; searched: {searched}")
+
+
+def _render_spa_html(
+    project: str,
+    *,
+    relative_assets: bool = False,
+    index_path: Path | None = None,
+) -> str:
+    """Render the authored SPA index for one project and asset routing mode."""
+    template = (index_path or _spa_index_path()).read_text(encoding="utf-8")
+    escaped_project = html.escape(project, quote=True)
+    rendered = re.sub(
+        r'(<meta name="docs-project" content=")[^"]*(">)',
+        rf"\g<1>{escaped_project}\g<2>",
+        template,
+        count=1,
+    )
+    rendered = re.sub(
+        r"(<title>reckon · ).*?(</title>)",
+        rf"\g<1>{escaped_project}\g<2>",
+        rendered,
+        count=1,
+    )
+    if relative_assets:
+        rendered = re.sub(
+            r'((?:href|src)=")/(?=(?:_shared|_ui|_runtime)/)',
+            r"\1",
+            rendered,
+        )
+    return rendered
 
 
 def safe_join(root: Path, rel: str) -> Path | None:

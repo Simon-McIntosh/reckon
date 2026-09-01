@@ -21,7 +21,7 @@ def _asset_root() -> Path:
         "_shared": ("foundation.css", "dashboard.css", "state.js", "badge.svg"),
     }
     for root in candidates:
-        if all(
+        if (root / "index.html").is_file() and all(
             (root / directory).is_dir()
             and all((root / directory / name).is_file() for name in names)
             for directory, names in required.items()
@@ -2220,45 +2220,12 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
     )
     is_first_run = not index_html.exists()
     if is_first_run or is_spa:
-        template = f"""<!doctype html>
-<html lang=\"en\">
-<head>
-  <meta charset=\"utf-8\">
-  <meta name=\"docs-project\" content=\"{proj_name}\">
-  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
-  <title>reckon · {proj_name}</title>
-  <link rel=\"stylesheet\" href=\"/_shared/foundation.css\">
-  <link rel=\"stylesheet\" href=\"/_shared/dashboard.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/project.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/styles-base.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/styles.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/topbar.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/plans.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/reader.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/overview.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/sprints.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/crew.css\">
-  <link rel=\"stylesheet\" href=\"/_ui/graph.css\">
-  <script src=\"/_runtime/react.js\"></script>
-  <script src=\"/_runtime/react-dom.js\"></script>
-</head>
-<body>
-  <div id=\"root\"></div>
-  <script src=\"/_ui/state-loader.js\"></script>
-  <script src=\"/_ui/glyphs.js\"></script>
-  <script src=\"/_ui/_shared.js\"></script>
-  <script src=\"/_ui/prompts.js\"></script>
-  <script src=\"/_ui/ui.js\"></script>
-  <script src=\"/_ui/bits.js\"></script>
-  <script src=\"/_ui/decision.js\"></script>
-  <script src=\"/_ui/plan.js\"></script>
-  <script src=\"/_ui/sprint.js\"></script>
-  <script src=\"/_ui/graph.js\"></script>
-  <script src=\"/_ui/crew.js\"></script>
-  <script src=\"/_ui/shell.js\"></script>
-</body>
-</html>
-"""
+        from reckon.serve import _render_spa_html
+
+        template = _render_spa_html(
+            proj_name,
+            index_path=asset_root / "index.html",
+        )
         index_html.write_text(template)
         click.echo(f"  wrote index.html (project={proj_name})")
     else:
@@ -2435,7 +2402,7 @@ def build(docs_path, project):
     copied_ui = _copy_asset_directory(ui_src, ui_dest)
     click.echo(f"  copied _ui/ ({copied_ui} files)")
 
-    from reckon.serve import client_runtime_assets, compile_jsx
+    from reckon.serve import _render_spa_html, client_runtime_assets, compile_jsx
 
     compiled_ui = 0
     for jsx_source in sorted(ui_src.glob("*.jsx")):
@@ -2464,7 +2431,13 @@ def build(docs_path, project):
 
     # ── Generate index.html with RELATIVE paths ────────────────────────────
     index_html = docs_dir / "index.html"
-    index_html.write_text(_BUILD_INDEX_TEMPLATE.format(project=proj_name))
+    index_html.write_text(
+        _render_spa_html(
+            proj_name,
+            relative_assets=True,
+            index_path=asset_root / "index.html",
+        )
+    )
     click.echo(f"  wrote index.html (project={proj_name}, relative paths)")
 
     # ── Drop .nojekyll ─────────────────────────────────────────────────────
@@ -3053,47 +3026,3 @@ def install_skills(repair):
     )
     if updated == 0 and skipped == 0:
         click.echo("(No skills found in the reckon install's skills/ directory.)")
-
-
-# ── Static build index.html template (relative asset paths) ────────────────
-
-_BUILD_INDEX_TEMPLATE = """\
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="docs-project" content="{project}">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>reckon · {project}</title>
-  <link rel="stylesheet" href="_shared/foundation.css">
-  <link rel="stylesheet" href="_shared/dashboard.css">
-  <link rel="stylesheet" href="_ui/project.css">
-  <link rel="stylesheet" href="_ui/styles-base.css">
-  <link rel="stylesheet" href="_ui/styles.css">
-  <link rel="stylesheet" href="_ui/topbar.css">
-  <link rel="stylesheet" href="_ui/plans.css">
-  <link rel="stylesheet" href="_ui/reader.css">
-  <link rel="stylesheet" href="_ui/overview.css">
-  <link rel="stylesheet" href="_ui/sprints.css">
-  <link rel="stylesheet" href="_ui/crew.css">
-  <link rel="stylesheet" href="_ui/graph.css">
-  <script src="_runtime/react.js"></script>
-  <script src="_runtime/react-dom.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script src="_ui/state-loader.js"></script>
-  <script src="_ui/glyphs.js"></script>
-  <script src="_ui/_shared.js"></script>
-  <script src="_ui/prompts.js"></script>
-  <script src="_ui/ui.js"></script>
-  <script src="_ui/bits.js"></script>
-  <script src="_ui/decision.js"></script>
-  <script src="_ui/plan.js"></script>
-  <script src="_ui/sprint.js"></script>
-  <script src="_ui/graph.js"></script>
-  <script src="_ui/crew.js"></script>
-  <script src="_ui/shell.js"></script>
-</body>
-</html>
-"""
