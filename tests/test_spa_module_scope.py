@@ -4,7 +4,10 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from reckon import serve
+from tests.spa_browser_harness import _evaluate_browser_url, installed_browser
 
 ROOT = Path(__file__).parents[1]
 UI_ROOT = ROOT / "docs" / "ui"
@@ -79,6 +82,14 @@ MODULE_DEPENDENCIES = {
     ),
     "shell": ("Plan", "Sprint", "GraphView", "CrewView"),
 }
+REACT_MEMBERS = (
+    "useCallback",
+    "useEffect",
+    "useLayoutEffect",
+    "useMemo",
+    "useRef",
+    "useState",
+)
 
 
 def _module_path(module: str) -> Path:
@@ -95,6 +106,60 @@ def _compiled_modules() -> dict[str, str]:
         for module in MODULE_ORDER
         if module != "prompts"
     }
+
+
+def test_react_members_are_bound_by_the_module_that_calls_them():
+    compiled = _compiled_modules()
+    parser = serve._client_asset("babel.js")
+    script = r"""
+const fs = require("fs");
+const Babel = require(process.argv[1]);
+const input = JSON.parse(fs.readFileSync(0, "utf8"));
+
+function walk(node, visit) {
+  if (!node || typeof node !== "object") return;
+  if (node.type) visit(node);
+  for (const [key, child] of Object.entries(node)) {
+    if (key === "loc" || key === "start" || key === "end") continue;
+    if (Array.isArray(child)) child.forEach(item => walk(item, visit));
+    else if (child && typeof child === "object") walk(child, visit);
+  }
+}
+
+const findings = [];
+for (const [moduleName, source] of Object.entries(input.compiled)) {
+  const ast = Babel.transform(source, {ast: true, code: false, sourceType: "script"}).ast;
+  const bindings = new Set();
+  const calls = [];
+  walk(ast, node => {
+    if (node.type === "VariableDeclarator" && node.id.type === "ObjectPattern"
+        && node.init?.type === "Identifier" && node.init.name === "React") {
+      for (const property of node.id.properties) {
+        if (property.type === "ObjectProperty" && property.value.type === "Identifier") {
+          bindings.add(property.value.name);
+        }
+      }
+    } else if (node.type === "CallExpression" && node.callee.type === "Identifier"
+               && input.members.includes(node.callee.name)) {
+      calls.push({member: node.callee.name, line: node.loc.start.line});
+    }
+  });
+  for (const call of calls) {
+    if (!bindings.has(call.member)) findings.push({module: moduleName, ...call});
+  }
+}
+process.stdout.write(JSON.stringify(findings));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(parser)],
+        input=json.dumps({"compiled": compiled, "members": REACT_MEMBERS}),
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=True,
+    )
+
+    assert json.loads(result.stdout) == []
 
 
 def test_cross_module_references_are_qualified():
@@ -261,3 +326,70 @@ function assertExports(moduleName, names) {
         "functionalExports": 39,
         "modules": len(MODULE_ORDER),
     }
+
+
+def test_inlined_bundle_renders_from_a_file_url_without_reference_errors(tmp_path):
+    browser = installed_browser()
+    if browser is None:
+        pytest.fail(
+            "a supported headless browser is required for the module-scope gate"
+        )
+
+    compiled = _compiled_modules()
+    scripts = [
+        serve._client_asset("react.js").read_text(encoding="utf-8"),
+        serve._client_asset("react-dom.js").read_text(encoding="utf-8"),
+        """
+window.__referenceErrors = [];
+window.addEventListener("error", event => {
+  if (event.error instanceof ReferenceError) window.__referenceErrors.push(event.error.message);
+});
+window.addEventListener("unhandledrejection", event => {
+  if (event.reason instanceof ReferenceError) window.__referenceErrors.push(event.reason.message);
+});
+window.STATE = {
+  project: "fixture",
+  projects: [{project: "fixture", milestones: []}],
+  inventory: [],
+  sprints: [],
+  milestones: [],
+  north_stars: [],
+  timeline: [],
+};
+window.STATE_READY = null;
+window.STATE_ERROR = null;
+""",
+    ]
+    scripts.extend(
+        (
+            _module_path(module).read_text(encoding="utf-8")
+            if module == "prompts"
+            else compiled[module]
+        )
+        for module in MODULE_ORDER
+    )
+    scripts.append(
+        "window.setTimeout(() => { document.documentElement.dataset.probeReady = '1'; }, 250);"
+    )
+    script_tags = "\n".join(
+        f"<script>{source.replace('</script', '<\\/script')}</script>"
+        for source in scripts
+    )
+    page = tmp_path / "inlined-spa.html"
+    page.write_text(
+        "<!doctype html><html><head><meta charset='utf-8'>"
+        "<meta name='docs-project' content='fixture'></head>"
+        f"<body><div id='root'></div>{script_tags}</body></html>",
+        encoding="utf-8",
+    )
+
+    result = _evaluate_browser_url(
+        tmp_path,
+        browser,
+        page.resolve().as_uri(),
+        "({referenceErrors: window.__referenceErrors, rootChildren: document.getElementById('root').childElementCount})",
+        viewport=(1374, 900),
+        ready_expression="document.documentElement.dataset.probeReady === '1'",
+    )
+
+    assert result == {"referenceErrors": [], "rootChildren": 1}

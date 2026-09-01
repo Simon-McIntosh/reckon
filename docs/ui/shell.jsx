@@ -2,6 +2,8 @@
 // Top bar: brand, search, view tabs and settings.
 // Body: plans list · reader · attachments.
 
+const { useCallback, useEffect, useMemo, useRef, useState } = React;
+
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
   if (!h || h === "cockpit") return { view: "cockpit" };
