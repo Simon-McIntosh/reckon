@@ -463,3 +463,60 @@ def test_a_registration_is_judged_by_where_its_lines_land_now(home, tmp_path) ->
         process.wait(timeout=10)
 
     assert runs.follower_state("proj", "declared")["live"] is False
+
+
+def test_the_live_read_can_answer_whether_this_session_is_attached(home) -> None:
+    """The enforcement is in the CLI and the read is in MCP, so both need the
+    session.
+
+    A coordinator is told to read fleet state through the `crew` tool. Without a
+    session argument that read can only report that a producer exists — the
+    project-wide half — while the field that decides whether this caller hears
+    anything is `session_attached`. The refusal then arrives from a surface the
+    coordinator was told not to use for reads.
+    """
+    from reckon import mcp
+
+    _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
+    _write_pointer(home, "r-peer", "peer-node", session="peers", phase="working")
+
+    unscoped = mcp._crew("proj", view="live")
+    assert unscoped["watcher"]["session_attached"] is None
+    assert "--session" not in unscoped["watcher"]["attach_line"]
+    assert all("mine" not in row for row in unscoped["runs"])
+
+    with runs.follower_claim("proj", "mine", delivery="stream"):
+        scoped = mcp._crew("proj", view="live", session="mine")
+
+    assert scoped["watcher"]["session_attached"] is True
+    assert "--session mine" in scoped["watcher"]["attach_line"]
+    assert {row["node"]: row["mine"] for row in scoped["runs"]} == {
+        "my-node": True,
+        "peer-node": False,
+    }
+
+    detached = mcp._crew("proj", view="live", session="mine")
+    assert detached["watcher"]["session_attached"] is False
+
+
+def test_the_refusal_names_where_the_arming_primitive_is_documented() -> None:
+    """A correct line armed the wrong way is the case the refusal has to teach.
+
+    The refusal is the surface a blocked coordinator is provably reading, so the
+    harness-local instruction has to be reachable from there rather than only
+    from a skill section the coordinator has already passed.
+    """
+    refusal = crew.WatcherRequired(
+        "proj",
+        {
+            "arming_line": "reckon crew watch --project proj",
+            "attach_line": runs._watch_attach_line("proj", session="mine"),
+            "follower": {"delivery": "file"},
+        },
+        session="mine",
+    )
+    message = str(refusal)
+    assert "references/orchestrator-harness/" in message
+    assert "reports each line as it is written" in message
+    assert "writes to a file" in message
+    assert "--no-watch" in message

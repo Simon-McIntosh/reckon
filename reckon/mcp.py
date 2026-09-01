@@ -2740,6 +2740,7 @@ def _crew(
     since: str | None = None,
     limit: int | None = None,
     candidates: list[dict[str, Any]] | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Read crew state, including live scope claims and candidate lane plans.
 
@@ -2755,6 +2756,12 @@ def _crew(
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
     exhaustion was actually reported.
+
+    Pass ``session`` — the same id given to ``reckon crew dispatch`` — on
+    ``live``: every run row gains ``mine``, and the watcher block reports
+    ``session_attached`` plus the session-scoped ``attach_line``. Without it the
+    answer is project-wide, which says a producer exists and says nothing about
+    whether this session will hear its own runs finish.
 
     ``checkout_path`` follows the same worktree-routing contract as
     ``read_plan``: with it, the ledger and the routing project layer resolve
@@ -2841,11 +2848,19 @@ def _crew(
                 for record in crew_module.list_live()
                 if str(record.get("project") or "") == project
             ]
+            # `session` is what turns a project-wide read into this session's
+            # read: it marks which rows are the caller's own where several
+            # coordinators share a project, and it is the only way the watcher
+            # block can answer whether this caller will be told anything.
+            if session is not None:
+                for row in runs:
+                    row["mine"] = str(row.get("session") or "") == session
             return {
                 "ok": True,
                 "project": project,
                 "view": view,
-                "watcher": project_watch_visibility(project),
+                "session": session,
+                "watcher": project_watch_visibility(project, session=session),
                 "runs": runs,
             }
         if view == "drain":

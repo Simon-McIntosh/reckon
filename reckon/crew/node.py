@@ -263,10 +263,14 @@ class WatcherRequired(CrewError):
         super().__init__(
             f"session {session!r} would not hear this run finish: {cause}. "
             f"Arm `{attach}` with the harness primitive that reports each line "
-            "as it is written, then dispatch again. A live seat is "
-            "project-global and wake delivery is session-local, so "
-            "`watcher_live` being true says nothing about this session. Or "
-            "pass --no-watch to waive delivery for a synchronous dispatch"
+            "as it is written -- named for this host in reckon-ship "
+            "references/orchestrator-harness/<harness>.md -- then dispatch "
+            "again. A copied-but-wrongly-armed line is the common case: the "
+            "command is right and its lines still end where nothing reads "
+            "them. A live seat is project-global and wake delivery is "
+            "session-local, so `watcher_live` being true says nothing about "
+            "this session. Or pass --no-watch to waive delivery for a "
+            "synchronous dispatch"
         )
 
 
