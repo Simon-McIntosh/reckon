@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="37">
 <meta name="plan-graph-handle" content="sprint-federation">
-<meta name="plan-impl" content="0.78">
+<meta name="plan-impl" content="0.85">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
 <meta name="plan-artifacts" content="reckon/doccheck.py,tests/test_doccheck.py,/home/ITER/mcintos/.config/reckon/crew/reports/layout-migration-link-before-state.json">
 </head>
@@ -666,6 +666,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901-shared-asset-parity" data-who="reckon-ship" data-when="2026-09-01T18:35:00+00:00">
     <div class="r-comment-body">n-shared-asset-parity landed — commit cfe96ab; gate stylesheet-parity-with-mutation-control PASSED; measure both copies now byte-identical at 1733 lines and 363 selector groups, sha256 e5f14911, with a one-selector mutation of .status failing the guard 1/1 and restoration returning it to passing; required suites 21 passed either side, 0 new failures, ruff and format clean on the new test; artifacts docs/_shared/dashboard.css, skills/reckon-sync/assets/dashboard.css, tests/test_shared_asset_parity.py. This section recorded the duplication; the measurement found the worse fact, which is that the copies had diverged — the shipped asset was 1285 lines and 291 selector groups, 448 lines and 72 groups behind, so every repository synced from here was receiving a stale surface. The direction was established before either file was touched: the asset was a strict byte prefix with 72 normalised groups only in canonical and 0 only in the asset, and history showed canonical additions continuing after the asset stopped changing, which is drift rather than a deliberate subset. The node also correctly declined to attribute the one unchanged suite failure to itself, naming the concurrent node that owned those paths.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260901T185537774094-n-shell-decomposition" data-who="surface-linkcheck" data-when="2026-09-01T19:28:42Z">
+    <div class="r-comment-body"><p>shell.jsx 1837 to 350 lines with 8 separately loaded modules; full SPA set 120 passed / 24 skipped / 0 failed absolute, collection 144 before and 144 after so 0 tests were deleted, skipped or xfailed; tests/test_spa_module_scope.py byte-untouched and 4/4; index-ordered file-URL render loads 20 authored scripts with nodeCount 1 and 0 console or runtime errors; docs/index.html is now the sole module-order authority, removing the builder's second copy. Scope was extended mid-flight to the SPA test readers and the harness after the node found my fence excluded the tests that read shell.jsx as a source contract</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901-shell-decomposed" data-who="reckon-ship" data-when="2026-09-01T19:29:00+00:00">
+    <div class="r-comment-body">n-shell-decomposition landed — commit 0fd3ce8; gate spa-suite-absolute-zero PASSED; measure shell.jsx 1837 to 350 lines with 8 separately loaded modules at 44, 203, 373, 308, 113, 57, 343 and 97 lines, full SPA set 120 passed / 24 skipped / 0 FAILED held to an absolute rather than a delta because the tree was green when it started, collection 144 before and 144 after so 0 tests were deleted, skipped or xfailed, tests/test_spa_module_scope.py byte-untouched and 4/4, and an index-ordered file-URL render loading 20 authored scripts with nodeCount 1 and 0 console or runtime errors. This satisfies the locked decompose-first precondition: a visual redesign arriving as a diff to a 1,837-line file is unreviewable, and with concurrent sessions the normal operating mode here that file was a merge magnet before it was an aesthetic problem. Two things worth keeping. docs/index.html is now the SOLE module-order authority — the file-URL builder derives its script list from it rather than carrying a second hardcoded copy, which is the same duplicated-authority defect this sprint already repaired in a stylesheet, caught this time before it shipped. And the node was blocked once by my own fence: I scoped it to docs/ui and docs/index.html while the tests that read shell.jsx as a source contract sat outside it, so it correctly reported 38 failures rather than a clean result, and the extension is recorded as scope-changed so this run is excluded from effort calibration.</div>
 </div>
 </section>
 </main>

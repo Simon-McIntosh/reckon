@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T21:21:14",
+  "updated": "2026-09-01T21:28:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -31794,9 +31794,134 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T185537774094-n-shell-decomposition",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a75",
+        "node": "n-shell-decomposition",
+        "node_definition": {
+          "done_when": "docs/ui/shell.jsx drops below 400 lines with its remaining components moved into separately loaded modules, and the manifest reports the before and after line count of every file it created or shrank; cross-module references use the qualified window ownership the existing module-scope regression already enforces, so tests/test_spa_module_scope.py passes unchanged rather than being edited to accommodate the split; the full SPA test set passes with 0 failures, held to that absolute rather than to a delta because the enumerated 24-failure baseline in /home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md is now cleared and the tree is green; a rendered check through the harness file-URL path confirms the composed page still renders with a node count greater than 0 and 0 console errors after the split; and docs/index.html loads every new module in an order that satisfies its exports, proven by that same rendered check rather than by inspection",
+          "estimated_hours": null,
+          "goal": "The shell is decomposed into modules so a later visual redesign arrives as a reviewable diff rather than as a change to one very large file",
+          "id": "n-shell-decomposition",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185537774094-n-shell-decomposition/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/",
+            "docs/index.html",
+            "tests/test_spa_browser_harness.py",
+            "tests/test_spa_composition.py",
+            "tests/test_spa_crew_cards.py",
+            "tests/test_spa_crew_geometry.py",
+            "tests/test_spa_crew_stylesheet.py",
+            "tests/test_spa_graph_authority.py",
+            "tests/test_spa_graph_geometry.py",
+            "tests/test_spa_module_scope.py",
+            "tests/test_spa_overview_geometry.py",
+            "tests/test_spa_overview_surface.py",
+            "tests/test_spa_plans_geometry.py",
+            "tests/test_spa_plans_surface.py",
+            "tests/test_spa_project_visibility.py",
+            "tests/test_spa_reader_geometry.py",
+            "tests/test_spa_reader_provenance.py",
+            "tests/test_spa_reading_mode.py",
+            "tests/test_spa_rendered_semantics.py",
+            "tests/test_spa_shell_container.py",
+            "tests/test_spa_shell_geometry.py",
+            "tests/test_spa_sprint_surface.py",
+            "tests/test_spa_sprints_geometry.py",
+            "tests/test_spa_state_boundary.py",
+            "tests/test_spa_topbar_snapshot.py",
+            "tests/spa_browser_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-linkcheck",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:55:40Z",
+        "completed_at": "2026-09-01T19:28:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1982,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1982,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d44e87a9dce35fd11cefa490789efbdc333afaf1",
+        "commits": [
+          "0fd3ce82911f683bfe902e6ea89b2ccf13126349"
+        ],
+        "changed_lines": {
+          "added": 1695,
+          "removed": 1556,
+          "files": 20
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_spa_*.py held to absolute zero, plus collect-only counts either side and an index-ordered file-URL render",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185537774094-n-shell-decomposition/logs/spa-full-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T185537774094-n-shell-decomposition/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a05e53-bc89-7030-a92c-40b22dae1d05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8178944,
+            "cached_input_tokens_cumulative": 8178944,
+            "input_tokens": 8400490,
+            "input_tokens_cumulative": 8400490,
+            "output_tokens": 17844,
+            "output_tokens_cumulative": 17844,
+            "reasoning_output_tokens": 6288,
+            "reasoning_output_tokens_cumulative": 6288
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 519
+    "_version": 520
   }
 }
