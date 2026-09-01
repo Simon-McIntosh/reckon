@@ -405,6 +405,22 @@ def test_every_resolved_key_reports_its_originating_layer(layers):
     assert resolved.origin("roles.implement.time_budget") == "shipped"
 
 
+def test_project_suite_command_arms_the_gate_with_visible_provenance(layers):
+    command = 'PYTHONPATH="$PWD" .venv/bin/python -m pytest -q'
+    write(layers["project"], f"gates:\n  suite_command: {json.dumps(command)}\n")
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["gates"]["suite_command"] == command
+    assert resolved.origin("gates.suite_command") == "project"
+
+
+def test_shipped_gates_have_no_suite_command():
+    resolved = resolve(host_path=Path("/nonexistent/flight.yaml"))
+
+    assert "suite_command" not in resolved.config["gates"]
+
+
 def test_provenance_covers_every_leaf_of_the_resolved_config(layers):
     """No resolved leaf is left without an origin."""
     resolved = resolve_files(layers)

@@ -546,6 +546,30 @@ def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
     assert sentence in reference
 
 
+def test_worker_protocol_defines_typed_suite_observations() -> None:
+    protocol = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+        ).read_text()
+    )
+
+    for observation in ("baseline_suite", "after_suite"):
+        assert f"{observation}:" in protocol
+    for field in (
+        "revision",
+        "command",
+        "exit_status",
+        "log_path",
+        "log_digest",
+        "completed",
+        "failure_count",
+        "failure_ids",
+    ):
+        assert field in protocol
+    assert "`completed=false` means the suite result is absent" in protocol
+    assert "must never be interpreted as an empty failure set" in protocol
+
+
 def test_terminal_status_waits_for_the_followup_drain() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     reference = normalized(

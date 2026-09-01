@@ -101,11 +101,8 @@ FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}
 
 FENCE — DELIVERY
-  Write your manifest to {manifest_path} BEFORE finishing, then reply with that
-  path and a summary. The file is the delivery, not the message, which can be
-  lost — the node then looks failed when it is not. If that exact path is not
-  writable, STOP and report a blocker; a manifest written anywhere else reads
-  as a node whose delivery cannot be found. Long output and logs go on disk.
+  Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
+  If that exact path is not writable, STOP and report a blocker; a manifest written anywhere else means delivery cannot be found. Long output and logs go on disk.
 
 MANIFEST (write exactly these keys)
   node: {node.id}
@@ -114,6 +111,8 @@ MANIFEST (write exactly these keys)
   changed_paths: <explicit list>
   tests: <command and result>
   test_logs: <paths on disk>
+  baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
+  after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
   artifacts: <paths plus headline metrics>
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
