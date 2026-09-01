@@ -22,8 +22,8 @@
   <title>Finished Work Should Not Wait to Be Noticed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-09-01">
+<meta name="plan-version" content="12">
 <meta name="plan-impl" content="1.0">
 </head>
 <body>
@@ -209,6 +209,51 @@
     the dispatch payload; the execution skill's recipe is replaced by that one command; and the
     harness reference carries the host-local arming form.</p>
 
+    <h2 id="s6">&#167;6 &mdash; A seat is not an ear <span class="badge badge-shipped">&#10003; landed 2026-09-01</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong>
+    Delivery is now registered per session, scoped to that session's runs, measured rather than
+    declared, and verified at dispatch. <code>reckon crew follow --project P --session S
+    --attention</code> filters the ticker to one session's fleet and registers it as attached; a CLI
+    dispatch whose session has no <em>delivering</em> follower is refused with
+    <code>watcher-required</code> before a worktree exists. Delivery is read from the descriptor the
+    follower's lines are written to and traced through any pipe to the process that ends the chain,
+    so a backgrounded shell &mdash; whose stdout is a regular file read only when the command exits,
+    and a follower does not exit &mdash; is not delivery, with or without a filter in front of it.
+    The follower now outlives a drained wave, waits for a producer instead of refusing, and
+    re-derives state on re-attach. <code>stalled</code> joined the attention states, which no filter
+    had ever selected. Commits <code>c47b3f7</code>, <code>ff0e950</code>, <code>7718c5d</code>;
+    24 tests added, browserless suite 2470 passed with the four hanging SPA browser gates
+    base-identical at <code>2992ef1</code>. Record:
+    <a href="/reckon/evidence/archive/completion-is-not-silent-landed#session-delivery">landed
+    &#167;session-delivery</a>. Analysis:
+    <a href="/reckon/research/fleet-delivery-silence">Why a Finished Worker Reaches Nobody</a>.</p>
+
+    <p><strong>Why this is a section of this plan and not a new one.</strong> It is the same subject
+    as the title: finished work waiting to be noticed. Sections &#167;3 to &#167;5 made the producer
+    guaranteed and its signal load-bearing, and left one link unguarded &mdash; whether the
+    dispatching session read what the producer wrote. The locked decisions both stand: the guard
+    still fires <code>refuse-at-dispatch</code>, and the arrangement is still
+    <code>single-fleet-watch-armed-by-dispatch</code>. Only the guard's <em>predicate</em> changed,
+    from &ldquo;a producer exists for this project&rdquo; to &ldquo;this session will hear this run
+    finish&rdquo;.</p>
+
+    <p><strong>The measurement that reopened it.</strong> Across four mounted projects on
+    2026-09-01: terminal runs unpromoted for 11m, 16m, 41m and 4.25 days, the last behind a watcher
+    process still alive after four days with nothing reading its stream. imas-codex carried four
+    live runs from two concurrent coordinator sessions sharing one stream. Three sessions had
+    independently fallen back to hand-rolled manifest polling loops, which is what agents do when a
+    wake-up delivers nothing. Every one of those sessions had armed the attach line Reckon handed
+    them &mdash; as a background shell, which is where a shell pipeline naturally goes.</p>
+
+    <p><strong>Done when</strong> a session receives only the transitions of runs it dispatched;
+    dispatch refuses a CLI launch whose session has no delivering follower, naming the command to
+    arm; delivery is decided by measuring where the follower's lines actually stop rather than by
+    what its registration claimed; one arming covers a session across waves rather than one wave;
+    every state the ticker emits is routed to attention or progress, checked against the function
+    that emits them; and the execution skill states the arming rule where the arming happens rather
+    than in a cross-reference. All six hold.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="guard-placement" data-choice="refuse-at-dispatch" data-by="reckon-ship" data-when="2026-08-24T12:55:00+00:00">
@@ -241,6 +286,12 @@
     <pre class="r-fu-prompt">/reckon-ship completion-is-not-silent</pre>
     <p class="r-fu-outcome">done — no followup. All three sections landed in one session: §3 the dispatch refusal (cb656ad), §5 the single project watch (8b9a638), §4 the closure drain over run state (bbd7e39). Full suite 2113 passed with 19 tests added across the three nodes and zero new failures. §5 was discovered while executing the plan — a coordinator that waits by asking again — and folded in as a section rather than deferred, per the rule that same-plan work becomes a section. The plan's own subject is closed at all three ends of the loop: dispatching, waiting, and stopping. Follow-on subjects raised in the session (a per-project write-path claim registry with a lane planner, schedule-readiness distinct from dependency-readiness in roadmap, and the sprint-status hygiene disagreement) are different subjects and need the lead's call on plan creation and sprint placement before they can be tracked anywhere.</p>
     </article>
+<article class="r-fu" data-id="f-cns-002" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship completion-is-not-silent §6" data-resolved-at="2026-09-01T10:03:01+00:00" data-resolved-by="reckon-ship">
+    <h4 class="r-fu-title">Close the last unguarded link: a producer is not an ear</h4>
+    <div class="r-fu-body"><p>Sections &#167;3 to &#167;5 guaranteed the producer and made its signal load-bearing, and left one link with no check on it: whether the dispatching session reads what the producer writes. Measured across four projects on 2026-09-01 &mdash; terminal runs unpromoted for 11m, 16m, 41m and 4.25 days, two concurrent sessions sharing one imas-codex stream, and three sessions independently fallen back to manifest polling. Register delivery per session, scope the stream to the session's own runs, measure where a follower's lines actually stop rather than trusting what it declared, and move the guard's predicate from &ldquo;a producer exists&rdquo; to &ldquo;this session will hear this run finish&rdquo;. Both locked decisions stand; only the predicate changes.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship completion-is-not-silent §6</pre>
+    <p class="r-fu-outcome">done — no followup. Landed in the session that wrote it: commits c47b3f7 (session-scoped registered delivery, the dispatch predicate, follower lifetime, the JSONL stream, `stalled` routed, lock-free liveness), ff0e950 (the arming rule moved into the section that arms, both contract tests turned from wording to intent), 7718c5d (delivery re-measured live from the follower's descriptor rather than trusted from its registration — which re-judged a follower already registered under the weaker check). 24 tests added; 15 focused delivery contracts then the browserless suite 2470 passed / 2 skipped; two failures and four hanging SPA browser gates verified base-identical at 2992ef1 in a detached worktree of that revision, owned by a concurrent session's surface work. Lint delta on the twelve edited files 57 → 45, new test file clean. Verified after landing: no project on this workstation has a delivering follower, so every session's next CLI dispatch is refused with the exact arming line — the intended cost of the strictness choice the lead locked. Residual is a different subject and deliberately unchanged: the unreconciled-run refusal, the drain count and the scope-conflict registry stay project-wide, so a session can still be refused because a peer left a manifest unpromoted, and a closure fence still counts pointers it does not own.</p>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -255,6 +306,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260824T1405" data-who="reckon-ship" data-when="2026-08-24T14:05:00+00:00">
     <div class="r-comment-body">closure-drain-over-run-state landed — commit bbd7e39, merged 2281631; gate passed; measure 9 of 9 targeted then full suite 2113 passed in 59.10s, seven added tests and zero new failures against the 2106-pass base at 8cf8f0a; 365 insertions and 19 deletions over 9 files, 799 worker-seconds against a 40m budget. Shipped crew(project, view=drain) returning live_pointers, disposed_runs, unreconciled_runs and classified rows, plus reckon crew drain --project P --leave RUN=handed-off|still-working recording the closed-set disposition on the pointer. Validity is classification-aware: handed-off holds until reconciliation, still-working is valid only while the run is classified running and becomes unreconciled the moment it turns terminal, so a stale disposition cannot hide finished work. Closure ledger template now carries unreconciled-runs beside foldable-remaining. Dogfooded at closure: the drain returned unreconciled_runs 0 from live pointers rather than from memory. Recorded at docs/evidence/archive/completion-is-not-silent-landed.html#closure-drain.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260901T1220" data-who="reckon-ship" data-when="2026-09-01T12:20:00+00:00">
+    <div class="r-comment-body"><p>Two findings worth keeping beyond this section, both of the same class as the defect itself &mdash; a confident, quiet, wrong answer. The lint-delta baseline in this session first measured <strong>zero</strong> findings because its interpreter path did not exist in the temp tree and its stderr was discarded; the real baseline was 57. And a <code>|| true</code> inside the attach line Reckon itself handed out converted the follower's own refusal into an exit-zero with no output. A signal nobody can read is not a signal, and the only durable defence is measuring the end of the chain rather than the first link that looks healthy.</p></div>
 </div>
 </section>
 </main>

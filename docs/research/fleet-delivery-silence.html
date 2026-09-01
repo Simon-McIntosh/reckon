@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"  content="reckon">
+  <meta name="reckon-type"   content="doc">
+  <meta name="plan-slug"     content="fleet-delivery-silence">
+  <meta name="plan-title"    content="Why a Finished Worker Reaches Nobody">
+  <meta name="plan-summary"  content="Delivery was the one link in the wake-up chain nothing could observe, so every guard measured the wrong half">
+  <meta name="plan-status"   content="done">
+  <meta name="plan-owner"    content="Simon McIntosh">
+  <meta name="plan-tags"     content="crew,reckon-tooling">
+  <meta name="plan-informs"  content="completion-is-not-silent">
+  <title>Why a Finished Worker Reaches Nobody | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 &mdash; What was observed</h2>
+
+    <p>Coordinators repeatedly failed to notice that their workers had finished.
+    The reported symptom was intermittent &mdash; &ldquo;sometimes the
+    orchestrator is not notified&rdquo; &mdash; but a single measurement across
+    every mounted project on this workstation, taken at 10:20 on 2026-09-01,
+    found it in every project at once. Each of these runs had written a terminal
+    manifest and was waiting for a coordinator that was not going to look:</p>
+
+    <table>
+      <thead>
+        <tr><th>Project</th><th>Session</th><th>Run state</th><th>Waiting</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>imas-ambix</td><td>glm-matrix-20260826</td><td>completed, unpromoted</td><td><strong>4.25 days</strong></td></tr>
+        <tr><td>reckon</td><td>d8-horizon-w5</td><td>completed, unpromoted, past budget</td><td>41 min</td></tr>
+        <tr><td>imas-codex</td><td>spa-fix-20260901f</td><td>completed, unpromoted</td><td>16 min</td></tr>
+        <tr><td>imas-codex</td><td>spa-fix-20260901f</td><td>completed, unpromoted</td><td>11 min</td></tr>
+        <tr><td>nova</td><td>s18-hexgrid</td><td>blocked</td><td>10 min</td></tr>
+      </tbody>
+    </table>
+
+    <p>Two details make this more than a backlog. The imas-ambix row had a
+    watcher process still alive after four days, holding its project's seat and
+    writing transitions that nothing had read since the session that dispatched
+    it ended. And imas-codex carried four live runs belonging to <em>two</em>
+    concurrent coordinator sessions, sharing one watcher and one event stream
+    between them.</p>
+
+    <p>A second observation arrived while the repair was being written, and
+    confirmed the mechanism from the other direction: three sessions had
+    independently fallen back to hand-rolled polling loops of the form
+    <code>until ok=1; for n in &hellip;; do R=$(ls -td &hellip;)</code>. Agents
+    do not invent manifest polling when a wake-up works.</p>
+
+    <h2 id="s2">§2 &mdash; The chain, and its one session-local link</h2>
+
+    <p>Run state is pull-only. A worker that finishes, blocks, or dies changes a
+    file; nothing is pushed anywhere. Turning that file change into something a
+    coordinator hears takes four links, and only the last one is specific to the
+    session that dispatched:</p>
+
+    <figure>
+      <svg viewBox="0 0 940 250" width="100%" role="img"
+           aria-label="The delivery chain from worker to session, with four measured break points">
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1c">
+
+          <!-- chain boxes -->
+          <rect x="8" y="52" width="126" height="46" fill="#ffffff" stroke="#8a8a8f" stroke-width="1"/>
+          <text x="71" y="72" text-anchor="middle">worker</text>
+          <text x="71" y="89" text-anchor="middle" font-size="11.5" fill="#4a4a50">writes manifest</text>
+
+          <rect x="182" y="52" width="126" height="46" fill="#ffffff" stroke="#8a8a8f" stroke-width="1"/>
+          <text x="245" y="72" text-anchor="middle">live pointer</text>
+          <text x="245" y="89" text-anchor="middle" font-size="11.5" fill="#4a4a50">one file per run</text>
+
+          <rect x="356" y="52" width="126" height="46" fill="#ffffff" stroke="#8a8a8f" stroke-width="1"/>
+          <text x="419" y="72" text-anchor="middle">producer</text>
+          <text x="419" y="89" text-anchor="middle" font-size="11.5" fill="#4a4a50">one per project</text>
+
+          <rect x="530" y="52" width="126" height="46" fill="#ffffff" stroke="#8a8a8f" stroke-width="1"/>
+          <text x="593" y="72" text-anchor="middle">event stream</text>
+          <text x="593" y="89" text-anchor="middle" font-size="11.5" fill="#4a4a50">append-only</text>
+
+          <rect x="704" y="52" width="126" height="46" fill="#ffffff" stroke="#c2410c" stroke-width="1.6"/>
+          <text x="767" y="72" text-anchor="middle">follower</text>
+          <text x="767" y="89" text-anchor="middle" font-size="11.5" fill="#c2410c">per session</text>
+
+          <!-- arrows -->
+          <g stroke="#1a1a1c" stroke-width="1" fill="none">
+            <path d="M134 75 H176"/><path d="M170 70 l7 5 -7 5" fill="#1a1a1c" stroke="none"/>
+            <path d="M308 75 H350"/><path d="M344 70 l7 5 -7 5" fill="#1a1a1c" stroke="none"/>
+            <path d="M482 75 H524"/><path d="M518 70 l7 5 -7 5" fill="#1a1a1c" stroke="none"/>
+            <path d="M656 75 H698"/><path d="M692 70 l7 5 -7 5" fill="#1a1a1c" stroke="none"/>
+          </g>
+          <path d="M830 75 H900" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="5 4" fill="none"/>
+          <text x="866" y="42" text-anchor="middle" font-size="12" fill="#c2410c">the session</text>
+
+          <!-- the guard's reach -->
+          <path d="M356 118 H482" stroke="#4a4a50" stroke-width="1" fill="none"/>
+          <path d="M356 114 V122 M482 114 V122" stroke="#4a4a50" stroke-width="1"/>
+          <text x="419" y="137" text-anchor="middle" font-size="12" fill="#4a4a50">what the guard checked</text>
+
+          <path d="M704 118 H900" stroke="#c2410c" stroke-width="1" fill="none"/>
+          <path d="M704 114 V122 M900 114 V122" stroke="#c2410c" stroke-width="1"/>
+          <text x="802" y="137" text-anchor="middle" font-size="12" fill="#c2410c">what decides whether you hear</text>
+
+          <!-- break annotations -->
+          <text x="8" y="176" font-size="12.5" fill="#4a4a50">One stream, several sessions, no owner on the line &mdash; a woken coordinator cannot tell whose run it is.</text>
+          <text x="8" y="197" font-size="12.5" fill="#4a4a50">The producer's seat is released when a wave drains, and every follower ended with it &mdash; one arming, one wave.</text>
+          <text x="8" y="218" font-size="12.5" fill="#c2410c">The follower produces lines and never exits, so an exit-notified consumer stays silent for the session's whole life.</text>
+          <text x="8" y="239" font-size="12.5" fill="#c2410c">Nothing observed whether a follower existed, so &ldquo;a producer is live&rdquo; stood in for &ldquo;I will be told&rdquo;.</text>
+        </g>
+      </svg>
+      <figcaption>The wake-up chain. Every link except the last is
+      project-global and was already guaranteed; the last is session-local and
+      was guaranteed by nothing. The two brackets show the gap: the dispatch
+      guard measured the third link while the fifth decided the outcome.</figcaption>
+    </figure>
+
+    <h2 id="s3">§3 &mdash; Four causes, each measured</h2>
+
+    <p><strong>The attach line was shaped for the wrong primitive.</strong>
+    Reckon handed the caller a shell pipeline &mdash;
+    <code>{ reckon crew follow --project P | grep --line-buffered -E &hellip; ||
+    true; }</code>. A shell string's natural home is the shell tool, whose one
+    notification arrives when the command <em>exits</em>; the follower returns
+    only when its watch dies. Measured on this host: a backgrounded shell's
+    stdout is a regular file (<code>REG</code>), a per-line monitor's is a
+    socket (<code>SOCK</code>). The observed instance had run 14m23s with four
+    terminal transitions buffered in a file nobody would open until it ended.
+    The trailing <code>|| true</code> compounded it, turning the follower's own
+    refusal into an exit-zero with no output &mdash; indistinguishable from a
+    quiet fleet.</p>
+
+    <p><strong>The correct rule lived where nobody reads it.</strong> The
+    harness reference already said the right thing, with the incident that
+    motivated it. But the section a coordinator reads <em>at arming time</em>
+    never pointed there, and instead ended with &ldquo;background the bare
+    command and read its output file&rdquo; &mdash; a polling loop, three
+    paragraphs after the same document condemned polling. A cross-reference at
+    the end of a 1300-line skill is not a trigger at the moment of action. This
+    is the same rule-locality failure recorded for native-agent dispatch: a
+    correct rule, filed somewhere the acting agent has no reason to open.</p>
+
+    <p><strong>One stream served every session.</strong> The follower had no
+    session filter, the durable stream stored <em>rendered</em> lines so
+    filtering downstream was impossible, and a line carried only a node name.
+    So a coordinator woken by a peer's run could not tell it was a peer's
+    &mdash; and acting on another session's run is worse than not seeing
+    it.</p>
+
+    <p><strong>A stalled worker woke nobody at all.</strong> The ticker emits
+    <code>stalled</code> for a run whose stream has gone quiet past its window,
+    and <code>stalled</code> appeared in neither the attention set nor the
+    progress set, so no filter ever matched it. The check that was supposed to
+    catch an unrouted state asserted against the recovery classes, which do not
+    include the states the ticker derives, so it stayed green over the gap. The
+    single most actionable state was unroutable.</p>
+
+    <h2 id="s4">§4 &mdash; Why the previous ten fixes did not close it</h2>
+
+    <p>This area was not neglected. One hundred and fifty-two commits mention
+    the watch surface; the plan that owns the subject shipped eight days earlier
+    at full implementation, with two decisions locked on measured evidence.
+    Every pass hardened the <em>producer</em>: seat exclusivity, orphan
+    detection, a refusal when no seat exists, the ticker's state vocabulary,
+    stream memory across re-arms, reclaiming a stale registration. One pass was
+    even titled for this exact distinction.</p>
+
+    <p>All of them were correct, and none of them could close the gap, because
+    the guard's predicate was the wrong proposition. &ldquo;A producer exists
+    for this project&rdquo; is satisfied by a peer session's seat, and by a
+    detached producer armed on the caller's behalf &mdash; the four-day-old
+    watcher in §1 satisfied it perfectly. Reckon could observe production and
+    could only <em>advise</em> about delivery, so delivery stayed the one link
+    with no check on it. Ten advisory restatements of an unobservable rule is
+    the signature of a wrong predicate rather than ten failed fixes.</p>
+
+    <h2 id="s5">§5 &mdash; What changed</h2>
+
+    <p>Delivery becomes a first-class, registered, verified thing, with the
+    producer arrangement unchanged &mdash; one seat per project, armed by
+    dispatch, exactly as locked.</p>
+
+    <table>
+      <thead><tr><th>Change</th><th>Why it closes a cause</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>reckon crew follow --project P --session S --attention</code>
+          registers the session and filters to its own runs</td>
+          <td>Each of several sessions sharing a project hears its own fleet and
+          nothing else; the durable stream now carries transition objects, so a
+          line knows which session owns it</td>
+        </tr>
+        <tr>
+          <td>Filtering moved inside the follower, so the attach line is one
+          bare command</td>
+          <td>No pipeline to buffer the ticker, match the trailing fleet
+          summary, or hide a refusal behind <code>|| true</code></td>
+        </tr>
+        <tr>
+          <td>Delivery is measured from the descriptor the lines are written to,
+          and a pipe is traced to the process that ends the chain</td>
+          <td>A follower whose lines stop in a file is not delivery, and a
+          filter in front of that file does not disguise it</td>
+        </tr>
+        <tr>
+          <td>The measurement is re-read live from the follower's own
+          descriptor, not trusted from its registration</td>
+          <td>A registration cannot outlive its consumer, and one written under
+          a weaker check is re-judged rather than grandfathered</td>
+        </tr>
+        <tr>
+          <td>Dispatch refuses a CLI launch whose session has no delivering
+          follower, before a worktree exists</td>
+          <td>The guard's predicate becomes the proposition that matters: will
+          <em>this</em> session hear this run finish</td>
+        </tr>
+        <tr>
+          <td>A follower waits for a producer instead of refusing, and outlives
+          a drained wave, re-deriving state on re-attach</td>
+          <td>Arming ears before dispatching now works, one arming covers a
+          session rather than a wave, and a reconnect repeats nothing</td>
+        </tr>
+        <tr>
+          <td><code>stalled</code> joins the attention states, and the partition
+          check reads the states out of the function that emits them</td>
+          <td>A worker gone quiet inside its budget wakes its coordinator, and a
+          future unrouted state fails the check instead of passing it</td>
+        </tr>
+        <tr>
+          <td>Read-only liveness stops taking the seat's exclusive lock</td>
+          <td>An observer can no longer deny an arming for the moment it held
+          the lock</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The skill and the harness reference were repaired for the second cause.
+    The arming section now states the two-part model where the arming happens,
+    names <code>session_attached</code> as the only field that answers
+    &ldquo;will I be told&rdquo;, and sends the reader to the harness reference
+    at that moment. The polling instruction is gone. The harness reference leads
+    with the discriminator as a table and names the wrong primitive in order to
+    exclude it. Both contract tests moved from wording checks to intent checks:
+    the skill must not recommend reading an output file, and the harness section
+    must state the contrast rather than only the right answer.</p>
+
+    <h2 id="s6">§6 &mdash; Residual, and what to expect</h2>
+
+    <p><strong>Every session on this workstation is currently unattached.</strong>
+    Verified after the change: no project has a delivering follower, so the next
+    CLI dispatch in each will be refused with the exact command to arm. That is
+    the mechanism working, and it is the intended cost of the strictness choice
+    &mdash; a refusal that names its own remedy, rather than another silence.</p>
+
+    <p><strong>Producers hold their code until they restart.</strong> A running
+    <code>reckon crew watch</code> keeps writing rendered lines rather than
+    transition objects. Those lines still reach followers, with their ownership
+    unknown, so session scoping is degraded for a project until its producer
+    turns over &mdash; which happens on its own when a wave drains and the next
+    dispatch arms a fresh one. Nothing needs to be killed by hand.</p>
+
+    <p><strong>What this does not address.</strong> The unreconciled-run
+    refusal, the drain count, and the scope-conflict registry remain
+    project-wide by design, so one session can still be refused a dispatch
+    because a peer left a terminal manifest unpromoted, and a session's closure
+    fence still counts pointers it does not own. That coupling is defensible for
+    scope conflicts, which are genuinely cross-session, and questionable for the
+    other two. It is a separate subject and needs its own decision rather than
+    being changed in passing here.</p>
+
+    <p><strong>The generalisation worth keeping.</strong> Three findings in this
+    investigation had the same shape, and only one of them was about watchers: a
+    command whose failure was swallowed by <code>|| true</code>; a lint baseline
+    that measured zero because its interpreter did not exist and its stderr was
+    discarded; and a state the ticker emits that no filter selected. Each
+    produced a confident, wrong, quiet answer. A signal nobody can read is not a
+    signal, and the only durable defence is to measure the end of the chain
+    rather than the first link that looks healthy.</p>
+
+  </main>
+</body>
+</html>

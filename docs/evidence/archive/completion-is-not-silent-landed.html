@@ -167,6 +167,83 @@
       <code>~/.config/reckon/crew/runs/r-20260824T134554173454-closure-drain-over-run-state/logs/</code>.
     </p>
 
+    <h2 id="session-delivery">Delivery is session-local, and now verified</h2>
+    <p>
+      Commits <code>c47b3f7</code>, <code>ff0e950</code> and <code>7718c5d</code> (2026-09-01,
+      coordinator inline &mdash; dispatching workers to repair the dispatch guard they run behind
+      was declined on the obvious circularity, and one live pointer in this project was already
+      owned by a concurrent session). Root-cause analysis:
+      <a href="/reckon/research/fleet-delivery-silence">Why a Finished Worker Reaches Nobody</a>.
+    </p>
+    <p>
+      <strong>What the earlier sections could not reach.</strong> The three sections above made the
+      producer guaranteed and its signal load-bearing. None of them could establish that the
+      dispatching session <em>read</em> what the producer wrote, so the guard's predicate stayed
+      &ldquo;a producer exists for this project&rdquo; &mdash; satisfied by a peer session's seat,
+      and by the detached producer dispatch arms on the caller's behalf. Measured across four
+      mounted projects on 2026-09-01: terminal runs unpromoted for 11&nbsp;min, 16&nbsp;min,
+      41&nbsp;min and <strong>4.25&nbsp;days</strong>, the last behind a watcher process still alive
+      after four days with nothing reading its stream. The arming form recommended in
+      <a href="#single-fleet-watch">One project watch, armed from dispatch</a> is the form this
+      section refuses.
+    </p>
+    <ul>
+      <li><strong>A follower per session, registered.</strong>
+        <code>reckon crew follow --project P --session S --attention</code> filters the ticker to one
+        session's runs and registers that session as attached. Several coordinator sessions share a
+        project &mdash; two were live in imas-codex during the measurement &mdash; and each now
+        hears only its own fleet.</li>
+      <li><strong>Delivery is measured, not declared.</strong> A backgrounded shell's stdout is a
+        regular file; a per-line monitor's is a socket. A pipe is traced to the process that ends the
+        chain, up to four links, so <code>follow | grep &gt; file</code> is judged by where the lines
+        stop. The verdict is re-read live from the follower's descriptor, so a registration cannot
+        outlive its consumer and one written under a weaker check is re-judged.</li>
+      <li><strong>The guard asks the proposition that matters.</strong> A CLI dispatch whose session
+        has no delivering follower is refused with <code>watcher-required</code> before a worktree
+        exists, naming the command to arm. <code>--no-watch</code> stays the waiver and records the
+        unattached session on the run.</li>
+      <li><strong>One arming covers the session.</strong> The seat is released when a wave drains, so
+        a follower that ended there covered one wave; it now waits for the next producer and
+        re-derives state on re-attach, emitting only what changed. It also waits rather than refusing
+        when no producer exists yet, so arming ears before dispatching works.</li>
+      <li><strong>The stream stores transition objects.</strong> A rendered line cannot say which
+        session owns a run. Lines from a producer that has not restarted still read, with ownership
+        unknown, so scoping degrades rather than breaking while producers turn over.</li>
+      <li><strong>Negative finding, and the most actionable state.</strong> <code>stalled</code> was
+        in neither the attention nor the progress set, so no filter ever woke anyone for a worker
+        gone quiet inside its budget. The check meant to catch an unrouted state asserted against the
+        recovery classes, which do not contain the states the ticker derives, so it stayed green over
+        the gap. It now reads the states out of the function that emits them.</li>
+      <li><strong>Second-order defect found while fixing the first.</strong> Read-only liveness took
+        the seat's exclusive lock, so an observer could deny a producer's arming for the moment it
+        held it. Observation is now lock-free and a claim distinguishes a passing probe from an
+        occupied seat.</li>
+    </ul>
+    <p>
+      <strong>Skill repair &mdash; the second root cause.</strong> The correct arming rule already
+      existed in the Claude Code harness reference, with its incident. The section a coordinator
+      reads at arming time neither pointed there nor repeated it, and ended with &ldquo;background
+      the bare command and read its output file&rdquo;. That section is rewritten around the
+      two-part model, names <code>session_attached</code>, and sends the reader to the harness
+      reference at the moment of arming; both contract tests moved from wording checks to intent
+      checks.
+    </p>
+    <p>
+      Gate: <strong>passed</strong>. 15 focused delivery contracts, then the browserless suite
+      <strong>2470 passed, 2 skipped</strong> with 24 tests added. Two failures and four hanging
+      SPA browser gates are <strong>base-identical</strong> at <code>2992ef1</code>, verified in a
+      detached worktree of that revision &mdash; they belong to a concurrent session's in-flight
+      surface work, with 62 inotify instances held on the host. Lint delta on the twelve edited
+      files: 57 findings at base, 45 after, and the new test file clean.
+    </p>
+    <p>
+      <strong>Residual, and deliberately not changed here.</strong> The unreconciled-run refusal, the
+      drain count and the scope-conflict registry stay project-wide, so one session can still be
+      refused because a peer left a terminal manifest unpromoted, and a closure fence still counts
+      pointers it does not own. Defensible for scope conflicts, questionable for the other two; it
+      needs its own decision rather than a change in passing.
+    </p>
+
     <h2 id="drain-ledger">Drain ledger at closure</h2>
     <pre>DRAIN LEDGER — completion-is-not-silent @ 2026-08-24T14:10:00Z
   f-cns-001 make the existing signal load-bearing    folded → unreconciled-dispatch-refusal,
