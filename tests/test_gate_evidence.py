@@ -12,6 +12,7 @@ predicate rather than trusting ``lineage.kind`` alone.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -44,7 +45,16 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _write_pointer(run_id: str, repository: Path) -> None:
+def _write_pointer(
+    run_id: str,
+    repository: Path,
+    *,
+    suite_command: str | None = None,
+    manifest_path: str = "/durable/manifest.md",
+    base_sha: str | None = None,
+    worktree: str = "",
+    write_paths: tuple[str, ...] = (),
+) -> None:
     _write_json(
         pointer_path(run_id),
         {
@@ -56,16 +66,78 @@ def _write_pointer(run_id: str, repository: Path) -> None:
             "member": "worker-a",
             "backend": "native",
             "created_at": "2026-08-26T09:00:00Z",
-            "manifest_path": "/durable/manifest.md",
+            "manifest_path": manifest_path,
+            "base_sha": (
+                base_sha
+                if base_sha is not None
+                else "base-abc"
+                if suite_command
+                else ""
+            ),
+            "suite_command": suite_command,
+            "worktree": worktree,
             "node": {
                 "id": "node-a",
                 "plan": PLAN,
                 "section": "§2",
                 "time_budget": "20m",
-                "write_paths": [],
+                "write_paths": list(write_paths),
             },
         },
     )
+
+
+def _suite_observation(revision: str, failure_ids: list[str]) -> dict[str, object]:
+    return {
+        "revision": revision,
+        "command": "pytest -q",
+        "exit_status": 1 if failure_ids else 0,
+        "log_path": f"/durable/{revision}.log",
+        "completed": True,
+        "failure_count": len(failure_ids),
+        "failure_ids": failure_ids,
+    }
+
+
+def _write_suite_manifest(
+    path: Path,
+    *,
+    baseline: dict[str, object] | None,
+    after: dict[str, object] | None,
+) -> None:
+    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
+    if baseline is not None:
+        lines.append("baseline_suite: " + json.dumps(baseline))
+    if after is not None:
+        lines.append("after_suite: " + json.dumps(after))
+    path.write_text("\n".join(lines) + "\n")
+
+
+def _complete_arguments(
+    run_id: str,
+    repository: Path,
+    *,
+    report_only: bool = True,
+) -> list[str]:
+    arguments = [
+        "crew",
+        "complete",
+        "--run",
+        run_id,
+        "--gate",
+        "passed",
+        "--checkout-path",
+        str(repository),
+        "--gate-command",
+        "pytest -q",
+        "--gate-exit-status",
+        "0",
+        "--gate-log-path",
+        "/durable/gate.log",
+    ]
+    if report_only:
+        arguments.extend(("--no-commit", "report-only fixture"))
+    return arguments
 
 
 # ── The promotion path refuses an unfalsifiable passing gate ────────────────
@@ -188,6 +260,195 @@ def test_a_failing_or_not_run_gate_needs_no_check_evidence(repository: Path) -> 
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["record"]["gate_check"] is None
+
+
+def test_armed_promotion_refuses_missing_observation_and_keeps_pointer(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T090400000000-node-a"
+    manifest = tmp_path / "missing-after.md"
+    _write_suite_manifest(
+        manifest,
+        baseline=_suite_observation("base-abc", ["tests/test_old.py::test_old"]),
+        after=None,
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"] == "suite-delta-refused"
+    assert "after_suite" in payload["missing_fields"]
+    assert pointer_path(run_id).is_file()
+
+
+def test_armed_promotion_refuses_added_failures_with_ids(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T090500000000-node-a"
+    manifest = tmp_path / "added.md"
+    _write_suite_manifest(
+        manifest,
+        baseline=_suite_observation("base-abc", ["tests/test_old.py::test_old"]),
+        after=_suite_observation(
+            "after-abc",
+            ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+        ),
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["added_failure_ids"] == ["tests/test_new.py::test_regression"]
+    pointer = json.loads(pointer_path(run_id).read_text())
+    assert pointer["suite_delta_refusal"]["status"] == "refused"
+
+
+def test_reasoned_waiver_promotes_and_stores_observations(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T090600000000-node-a"
+    manifest = tmp_path / "waived.md"
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    _write_suite_manifest(manifest, baseline=baseline, after=after)
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, repository),
+            "--waive-suite-delta",
+            "known flaky host probe",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    assert suite_delta["status"] == "waived"
+    assert suite_delta["waiver_reason"] == "known flaky host probe"
+    assert suite_delta["baseline_suite"]["revision"] == "base-abc"
+    assert suite_delta["after_suite"]["revision"] == "after-abc"
+    assert suite_delta["added_failure_ids"] == ["tests/test_new.py::test_regression"]
+
+
+def test_repair_run_with_only_baseline_failures_is_clean(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T090700000000-node-a"
+    manifest = tmp_path / "clean.md"
+    _write_suite_manifest(
+        manifest,
+        baseline=_suite_observation(
+            "base-abc", ["tests/test_old.py::test_one", "tests/test_old.py::test_two"]
+        ),
+        after=_suite_observation("after-abc", ["tests/test_old.py::test_two"]),
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+    assert result.exit_code == 0, result.output
+    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    assert suite_delta["status"] == "clean"
+    assert suite_delta["added_failure_ids"] == []
+
+
+def test_real_cited_commit_and_clean_suite_delta_promote_together(
+    repository: Path, tmp_path: Path
+) -> None:
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "chore: seed repository"),
+    ):
+        subprocess.run(
+            ["git", *arguments], cwd=repository, check=True, capture_output=True
+        )
+    base_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (repository / "change.txt").write_text("landed\n")
+    subprocess.run(
+        ["git", "add", "change.txt"], cwd=repository, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "fix: land scoped change"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    landed_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    manifest = tmp_path / "real-run.md"
+    _write_suite_manifest(
+        manifest,
+        baseline=_suite_observation(base_sha, ["tests/test_old.py::test_old"]),
+        after=_suite_observation(landed_sha, ["tests/test_old.py::test_old"]),
+    )
+    run_id = "r-20260826T090800000000-node-a"
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+        base_sha=base_sha,
+        worktree=str(repository),
+        write_paths=("change.txt",),
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, repository, report_only=False),
+            "--commit",
+            landed_sha,
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(result.output)["record"]
+    assert record["base_sha"] == base_sha
+    assert record["commits"] == [landed_sha]
+    assert record["suite_delta"]["status"] == "clean"
+    assert record["suite_delta"]["added_failure_ids"] == []
 
 
 # ── The single control predicate ─────────────────────────────────────────────

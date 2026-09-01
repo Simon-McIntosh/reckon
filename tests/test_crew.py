@@ -2311,6 +2311,21 @@ def _dispatched(home, repo, fixture: str | None = None, **node_kwargs) -> dict:
     return record
 
 
+def test_dispatch_snapshots_suite_arming_command(home, repo) -> None:
+    armed_config = {**CONFIG, "gates": {"suite_command": "pytest -q"}}
+
+    record = crew.dispatch(
+        node=_node(role="inline", manifest_path=str(home / "armed.md")),
+        project="proj",
+        repo=repo,
+        config=armed_config,
+        session="suite-armed",
+    )
+
+    assert record["suite_command"] == "pytest -q"
+    assert crew.read_pointer(record["run_id"])["suite_command"] == "pytest -q"
+
+
 def test_observe_folds_the_stream_into_the_record(home, repo) -> None:
     record = _dispatched(home, repo, "codex-turn.jsonl")
     observed = crew.observe(record["run_id"])

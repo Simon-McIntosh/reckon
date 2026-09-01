@@ -553,6 +553,37 @@ def test_ledger_summary_keeps_live_only_gate_counts_in_the_live_block(repo) -> N
     }
 
 
+def test_ledger_summary_counts_suite_delta_outcomes(repo) -> None:
+    for run_id, status in (
+        ("r-clean", "clean"),
+        ("r-waived", "waived"),
+    ):
+        ledger.append_run(
+            PROJECT,
+            ledger.build_record(
+                run_id=run_id,
+                plan="plan-a",
+                gate="passed",
+                suite_delta={"status": status},
+            ),
+            root=repo,
+        )
+    crew._write_json(
+        crew.pointer_path("r-refused"),
+        {
+            "run_id": "r-refused",
+            "project": PROJECT,
+            "suite_delta_refusal": {"status": "refused"},
+        },
+    )
+
+    assert ledger.summary(PROJECT, root=repo)["suite_deltas"] == {
+        "clean": 1,
+        "refused": 1,
+        "waived": 1,
+    }
+
+
 def test_completion_repair_reports_event_time_without_writing(home, repo) -> None:
     _historical_record(repo, "historical-event")
     _historical_stream(

@@ -105,6 +105,7 @@ RECORD_FIELDS = (
     "tests_added",
     "gate",
     "gate_check",
+    "suite_delta",
     "failure_classification",
     "outcome",
     "manifest_path",
@@ -120,6 +121,23 @@ RECORD_FIELDS = (
 
 class LedgerError(Exception):
     """A ledger read or write cannot proceed, and the message says why."""
+
+
+class SuiteDeltaError(LedgerError):
+    """An armed promotion lacks evidence or adds suite failures."""
+
+    def __init__(
+        self,
+        detail: str,
+        *,
+        missing_fields: Iterable[str] = (),
+        added_failure_ids: Iterable[str] = (),
+    ) -> None:
+        self.missing_fields = [str(field) for field in missing_fields]
+        self.added_failure_ids = sorted(
+            {str(test_id) for test_id in added_failure_ids if str(test_id).strip()}
+        )
+        super().__init__(detail)
 
 
 def normalize_section(value: Any) -> str:
@@ -188,6 +206,63 @@ def _normalized_gate_check(gate_check: Any) -> dict[str, Any] | None:
         "exit_status": exit_status,
         "log_path": log_path or None,
         "log_digest": log_digest or None,
+    }
+
+
+def suite_observation_missing_fields(
+    observation: Any,
+    *,
+    name: str,
+) -> list[str]:
+    """Name absent evidence in one parsed suite observation."""
+    if not isinstance(observation, Mapping):
+        return [name]
+    missing: list[str] = []
+    missing.extend(
+        f"{name}.{field}"
+        for field in ("revision", "command")
+        if not str(observation.get(field) or "").strip()
+    )
+    exit_status = observation.get("exit_status")
+    if isinstance(exit_status, bool) or not isinstance(exit_status, int):
+        missing.append(f"{name}.exit_status")
+    if observation.get("completed") is not True:
+        missing.append(f"{name}.completed")
+    failure_count = observation.get("failure_count")
+    failure_ids = observation.get("failure_ids")
+    if (
+        isinstance(failure_count, bool)
+        or not isinstance(failure_count, int)
+        or failure_count < 0
+    ):
+        missing.append(f"{name}.failure_count")
+    if not isinstance(failure_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in failure_ids
+    ):
+        missing.append(f"{name}.failure_ids")
+    elif isinstance(failure_count, int) and failure_count != len(failure_ids):
+        missing.append(f"{name}.failure_count_matches_failure_ids")
+    if (
+        not str(observation.get("log_path") or "").strip()
+        and not str(observation.get("log_digest") or "").strip()
+    ):
+        missing.append(f"{name}.log_path_or_log_digest")
+    return missing
+
+
+def normalized_suite_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the stable ledger shape of a validated suite observation."""
+    return {
+        "revision": str(observation.get("revision") or "").strip(),
+        "command": str(observation.get("command") or "").strip(),
+        "exit_status": int(observation["exit_status"]),
+        "log_path": str(observation.get("log_path") or "").strip() or None,
+        "log_digest": str(observation.get("log_digest") or "").strip() or None,
+        "completed": True,
+        "failure_count": int(observation["failure_count"]),
+        "failure_ids": sorted(
+            {str(item).strip() for item in observation["failure_ids"]}
+        ),
     }
 
 
@@ -514,6 +589,7 @@ def build_record(
     unreconciled_override: Mapping[str, Any] | None = None,
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
+    suite_delta: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
 
@@ -582,6 +658,7 @@ def build_record(
         "tests_added": None if tests_added is None else int(tests_added),
         "gate": verdict,
         "gate_check": _normalized_gate_check(gate_check),
+        "suite_delta": None if suite_delta is None else dict(suite_delta),
         "failure_classification": classification or None,
         "outcome": str(outcome),
         "manifest_path": str(manifest_path),
@@ -1222,9 +1299,12 @@ def summary(
         "passed": 0,
         "work_rejected": 0,
         "pass_rate": None,
-        "excluded": {classification: 0 for classification in FAILURE_CLASSIFICATIONS[1:]},
+        "excluded": {
+            classification: 0 for classification in FAILURE_CLASSIFICATIONS[1:]
+        },
         "unclassified": 0,
     }
+    suite_deltas = {"clean": 0, "refused": 0, "waived": 0}
     run_kinds = {"live": 0, "shadow": 0}
     for record in records:
         lineage = record.get("lineage")
@@ -1236,6 +1316,11 @@ def summary(
         run_kinds[kind] += 1
         verdict = str(record.get("gate") or "unknown")
         gates[kind][verdict] = gates[kind].get(verdict, 0) + 1
+        suite_delta = record.get("suite_delta")
+        if kind == "live" and isinstance(suite_delta, Mapping):
+            status = str(suite_delta.get("status") or "")
+            if status in suite_deltas:
+                suite_deltas[status] += 1
         if kind != "live":
             continue
         if verdict == "passed":
@@ -1259,6 +1344,13 @@ def summary(
         for entry in data["members"]
         if entry.get("session_id") or entry.get("sessions")
     )
+    from reckon.crew.runs import list_live
+
+    suite_deltas["refused"] += sum(
+        1
+        for pointer in list_live(project=project)
+        if isinstance(pointer.get("suite_delta_refusal"), Mapping)
+    )
     return {
         "version": version,
         "path": str(ledger_path(project, root)),
@@ -1273,6 +1365,7 @@ def summary(
         ),
         "gates": {kind: dict(sorted(counts.items())) for kind, counts in gates.items()},
         "worker_gate": worker_gate,
+        "suite_deltas": suite_deltas,
         "plans": sorted({str(record.get("plan") or "") for record in records}),
         "effort": effort_report(project, root=root, declared=declared),
     }

@@ -1610,6 +1610,8 @@ def dispatch(
         if watch_override
         else None
     )
+    gates = config.get("gates") or {}
+    suite_command = str(gates.get("suite_command") or "").strip() or None
 
     worktree = _create_worktree(repo_root, session, node.id, base)
     spawned_pid: int | None = None
@@ -1679,6 +1681,7 @@ def dispatch(
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
+            "suite_command": suite_command,
             "prompt_path": str(prompt_path),
             "log_path": str(log_path),
             "stderr_path": str(stderr_path),

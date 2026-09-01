@@ -1782,6 +1782,12 @@ def _ledger_module():
     default="",
     help="Digest of the check's captured output, when the log itself is not kept.",
 )
+@click.option(
+    "--waive-suite-delta",
+    default="",
+    metavar="REASON",
+    help="Promote despite added suite failures and record the reason and delta.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -1798,6 +1804,7 @@ def crew_complete(
     gate_exit_status,
     gate_log_path,
     gate_log_digest,
+    waive_suite_delta,
     pretty,
 ):
     """Promote a finished run into the owning repository's committed ledger.
@@ -1831,7 +1838,20 @@ def crew_complete(
             root=checkout_path,
             gate_check=gate_check,
             require_gate_check=True,
+            suite_delta_waiver=waive_suite_delta,
         )
+    except ledger_module.SuiteDeltaError as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "suite-delta-refused",
+                "detail": str(exc),
+                "missing_fields": exc.missing_fields,
+                "added_failure_ids": exc.added_failure_ids,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(1) from exc
     except (crew_module.CrewError, ledger_module.LedgerError) as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **result}, pretty)
