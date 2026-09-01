@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="16">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-north-star" content="legible-to-human-and-agent">
 </head>
@@ -133,6 +133,71 @@
       console errors.
     </p>
 
+    <h2 id="s5">§5 — Composition pays for a parse it was designed not to pay, and an open page cannot see a new plan</h2>
+    <p>
+      Persisting the git creation map worked and did not clear the criterion.
+      <code>_git_first_committed</code> fell from 7.72 s to 0.098 s and left the hot path
+      entirely; a cold scan of the largest mounted repository still misses the
+      under-three-second target, for a different reason. The new dominant cost is
+      full-document parsing during project-state composition: 26.4 s in
+      <code>read_state</code> across 251 calls, reached through
+      <code>compose_project_state → _hydrate_items → _plan_state_by_slug</code> at 920,845
+      selector matches in one scan, plus 8.7 s in <code>parse_meta</code> over 2,563 calls.
+      Absolute figures were taken under concurrent fleet load; the proportions and the
+      collapse of the git term are the load-robust facts.
+    </p>
+    <p>
+      This contradicts a design intent that is already written down.
+      <code>discover_plans</code> documents itself as a lightweight inventory of head meta
+      plus a regex decision count, with no full-body parse, so that a project holding
+      thousands of documents stays cheap. Composition full-parses every referenced plan,
+      which is exactly what defeats it. So the question is not how to parse faster but
+      whether composition needs full state per plan at inventory time at all.
+    </p>
+    <p>
+      <strong>Why the work lives here.</strong> The mechanism sits in
+      <code>reckon/project_state.py</code>, which belongs to the plan that built distributed
+      project state — and that plan is shipped at an implementation fraction of 1.0. A
+      completed plan is excluded from pending work, so hanging this there would hide it
+      behind a paper trail that looks like tracking. The criterion owner is live, so the
+      criterion owner carries the mechanism.
+    </p>
+    <p>
+      <strong>Deliverables.</strong> The locked composition-cost-and-freshness decision
+      settles both halves together, because the cache is what makes live freshness
+      affordable and also what would make it wrong if it went stale.
+    </p>
+    <ul>
+      <li>
+        <strong>Cache a plan's parsed state on first read and invalidate it when the file
+        changes</strong>, so composition stops re-paying the full-document parse. The cache
+        is keyed on something that moves when the document moves; a stale entry served as
+        current is a correctness defect, not a performance trade.
+      </li>
+      <li>
+        <strong>A plan added or edited becomes visible in an open page without the reader
+        refreshing.</strong> The revalidation path landed in the horizon rebuild already
+        removed the document navigation, so what remains is the change signal.
+        <code>provenance.content_digest</code> is already emitted on every composed read and
+        is the cheap way to ask whether anything moved without shipping the payload.
+      </li>
+    </ul>
+    <p>
+      <strong>Two constraints inherited from the horizon work.</strong> No busy poll — the
+      surface already polls live runs every three seconds, and a second unconditional
+      interval over a payload this size trades one complaint for a slower one. And the
+      steady-state request cost must be reported as a measured figure rather than assumed
+      negligible.
+    </p>
+    <p>
+      <strong>Done when</strong> a cold scan of the largest mounted repository completes
+      under 3 s — the target as authored, which is not amended to match an outcome; a test
+      proves an edited document invalidates its cached state rather than serving the prior
+      parse; a plan created while a page is open becomes visible in that page with zero
+      document navigations; and the steady-state per-request cost is reported as a measured
+      number beside the cold figure.
+    </p>
+
     <h2 id="s4">§4 — Out of scope</h2>
     <p>
       The reported connection failure itself. The service was healthy throughout — active,
@@ -184,10 +249,11 @@
     <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
     <p class="r-fu-outcome">Landed across nine worker nodes on codex, all worktree-isolated. §2 complete: repeat discovery 5.39s → 0.012s on nova (449×), 692× on imas-codex, 197× on imas-ambix, every mounted project now under 40ms against a 100ms target; the boolean cache veto deleted in favour of per-dependency external signatures; the git creation map keyed on HEAD with incremental range refresh; git failures logged rather than swallowed. §3 audit published with 15 ranked findings, of which 6 are fixed including both criticals — the ready-gate rejection branch, honest write acknowledgement, the misleading sprint drag affordance, sprint item rationale and contract, crew project identity, and the resolved config path. Two pre-existing suite failures unrelated to this plan were repaired rather than walked past: repository detection now requires a real repository instead of any ancestor holding a .git entry, and the skill contract assertions were reconciled with roster-authority vocabulary while compacting the document to 11,631 tokens under its unchanged 12,000 bound. Suite 1,951 passed / 0 failed; all eleven worktrees removed after verifying reachability. Two items remain open and are carried in the next followup: the unmet cold-scan criterion, which contradicts a decision locked in the same session, and audit ranks 3, 6, 9-15.</p>
     </article>
-<article class="r-fu" data-id="f-slal-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-08-21" data-recommends-skill="/reckon-ship surface-latency-and-legibility" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-slal-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-08-21" data-recommends-skill="/reckon-ship surface-latency-and-legibility" data-resolved-at="2026-09-01T17:59:06+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Resolve the cold-scan contradiction, then land audit ranks 3, 6 and 9-15</h4>
     <div class="r-fu-body"><p>Two distinct pieces of work remain, and the first needs a lead decision before it can be dispatched.</p><p><strong>The cold-scan criterion is unmet and contradicts a locked decision.</strong> §2 targets a cold scan under 3 seconds; imas-efit still takes 14.8 s and nova 7.1 s on the first call after a server restart, because the locked <code>git-creation-source</code> decision declined disk persistence on the reasoning that restarts are rare. Both were authored in the same session and disagree. Either persist the creation map under the config home so a restart no longer re-pays the history walk — reopening that decision through the dissent flow — or restate the criterion as a steady-state target. Do not quietly amend the criterion to match the outcome.</p><p><strong>Audit rank 3 has a live data half the SPA half cannot fix.</strong> S5 and S9 are both marked active while the legacy index names S5 as focus; S5 has 7 of 8 items shipped with only <code>registered-repo-state-migration</code> outstanding, while all current work sits in S9. The SPA remedy is to show every active sprint and warn on the conflict rather than silently picking one. Whether S5 should close is a sprint decision for the lead, not a rendering fix.</p><p><strong>Remaining findings.</strong> Rank 6 renders authored-versus-effective status with its open-gate count on compact surfaces. Ranks 9 to 15 are medium and low: plan-fetch provenance when a partial document would otherwise look complete, discarded resource-version tokens, graph-tab reading order, crew phase legibility, handoff prompt copying, vocabulary explanation, and blocker ownership. Full detail with source files and remedies is in the audit research resource.</p></div>
     <pre class="r-fu-prompt">/reckon-ship surface-latency-and-legibility</pre>
+    <p class="r-fu-outcome">Superseded in both halves, and neither half was dropped. The cold-scan half was superseded by f-slal-003: persistence was chosen, landed in 00f1a92, and worked — _git_first_committed fell 7.72s to 0.098s — while the under-three-second target stayed missed for a different reason, which §5 now owns. The audit-rank half moved by locked decision: outstanding-rank-ownership chose carried-by-the-redraw on 2026-08-25, so ranks 3, 6 and 9 to 15 are executed by spa-surface-redesign, whose done-when names ranks 3, 6, 9, 10, 13 and 14 by number. No rank is now unowned, and this plan's remaining work is §5.</p>
     </article>
 <article class="r-fu" data-id="f-slal-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-08-25" data-recommends-skill="/reckon-ship surface-latency-and-legibility" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The cold-scan target now needs a project-state composition decision, not a git one</h4>
