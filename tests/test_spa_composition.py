@@ -43,6 +43,7 @@ def _evaluate_sprint_helpers(expression: str):
             "orderedSprints",
             "sprintStateRows",
             "readyLaneRows",
+            "readyLaneState",
             "activeSprintConflict",
         )
     )

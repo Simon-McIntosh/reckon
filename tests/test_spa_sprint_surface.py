@@ -55,7 +55,7 @@ def test_status_transition_flag_names_effective_state_and_open_gates():
         "gates": [{"verdict": "pending"}, {"verdict": "passed"}],
     }
     assert (
-        _evaluate_helpers(f"planFlag({json.dumps(plan)}, [])")
+        _evaluate_helpers(f"readyLaneState({json.dumps(plan)})")
         == "active → blocked · 1 open gate"
     )
 
@@ -63,14 +63,15 @@ def test_status_transition_flag_names_effective_state_and_open_gates():
 def test_surface_keeps_description_concise_and_contract_reachable():
     source = SOURCE.read_text()
 
-    assert 'className="r-card-description"' in source
+    assert 'className="r-ready-lane-description"' in source
+    assert "title={lane.description}" in source
     assert "<summary>Contract</summary>" in source
-    assert "plan.whyNow" in source
-    assert "plan.doneWhen" in source
-    assert 'className="r-card-flag"' in source
-    assert "aria-label={`${plan.title}: ${percent}% complete`}" in source
+    assert "lane.whyNow" in source
+    assert "lane.doneWhen" in source
+    assert 'className="r-ready-lane-plan-state"' in source
+    assert 'className="r-ready-lane-invocation"' in source
     assert 'surface === "overview"' in source
-    assert 'surface === "board"' in source
+    assert 'surface === "ready"' in source
     assert "active_sprints" in source
     assert 'className="r-sprint-conflict"' in source
     assert 'className="r-horizon-strip"' in source
@@ -87,7 +88,12 @@ def test_sprint_styles_do_not_force_a_sideways_canvas():
         ".r-horizon-strip > header { display: grid; grid-template-columns: repeat(2, 1fr)"
         in styles
     )
-    assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in styles
+    assert (
+        "grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr))"
+        in styles
+    )
+    assert ".r-ready-lane { display: grid; gap: 8px; min-width: 0" in styles
+    assert "overflow-wrap: anywhere" in styles
     assert "overflow-x: clip" in styles
     surface_rule = styles.split(".r-sprint-surface {", 1)[1].split("}", 1)[0]
     assert "min-width: 0" in surface_rule

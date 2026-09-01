@@ -87,13 +87,14 @@ function sprintStateRows(sprints, todayValue) {
 }
 
 function readyLaneRows(readySet, sprints, inventory) {
-  const whyNowBySlug = new Map();
+  const contractsBySlug = new Map();
   (sprints || []).forEach(sprint => (sprint.items || []).forEach(item => {
-    if (item && typeof item === "object" && item.slug) whyNowBySlug.set(item.slug, item.why_now || "Not supplied");
+    if (item && typeof item === "object" && item.slug) contractsBySlug.set(item.slug, item);
   }));
   const plansBySlug = new Map((inventory || []).map(plan => [plan.slug, plan]));
   return (readySet?.ready || []).flatMap(row => {
     const plan = plansBySlug.get(row.slug) || {};
+    const contract = contractsBySlug.get(row.slug) || {};
     const effectiveStatus = plan.effective_status || plan.status || "pending";
     const landed = Boolean(row.landed) || CLOSED_ITEM_STATUSES.has(effectiveStatus) || Number(row.progress_pct || 0) >= 100;
     const sections = Array.isArray(row.section_readiness) && row.section_readiness.length
@@ -112,17 +113,28 @@ function readyLaneRows(readySet, sprints, inventory) {
       return {
         ...row,
         title: plan.title || row.title || row.slug,
-        whyNow: row.why_now || whyNowBySlug.get(row.slug) || row.reason || "Not supplied",
+        description: plan.summary || plan.description || "No description supplied",
+        whyNow: row.why_now || contract.why_now || row.reason || "Not supplied",
+        doneWhen: row.done_when || contract.done_when || "Not supplied",
         section,
         ready: sectionRow.ready !== false,
         blockers,
         causeClasses,
         effectiveStatus,
+        stateLabel: readyLaneState(plan),
         landed,
         invocation: `/reckon-ship ${row.slug}${invocationSection ? ` ${invocationSection}` : ""}`,
       };
     });
   }).sort((left, right) => Number(left.landed) - Number(right.landed));
+}
+
+function readyLaneState(plan) {
+  const authored = plan.workflow_status || plan.status || "pending";
+  const effective = plan.effective_status || authored;
+  const openGates = (plan.gates || []).filter(gate => !(gate.passed || gate.verdict === "passed")).length;
+  const gateLabel = `${openGates} open ${openGates === 1 ? "gate" : "gates"}`;
+  return authored === effective ? `${effective} · ${gateLabel}` : `${authored} → ${effective} · ${gateLabel}`;
 }
 
 function activeSprintConflict(activeSprints, activePointer) {
@@ -410,9 +422,10 @@ function Sprint({ sprintId, onNav }) {
             const causeNames = lane.causeClasses.length ? lane.causeClasses : ["dependency"];
             return <article key={`${lane.slug}-${lane.section || "plan"}-${index}`} className={`r-ready-lane ${laneState} ${causeNames.map(cause => `cause-${cause}`).join(" ")}`}>
               <div className="r-ready-lane-title"><a href={`#plan/${lane.slug}`}>{lane.title}</a>{lane.section && <code>{lane.section}</code>}<span className={`r-ready-lane-state ${laneState}`}>{laneState}</span></div>
-              <p className="r-ready-lane-why"><strong>Why now</strong>{lane.whyNow}</p>
+              <p className="r-ready-lane-description" title={lane.description}>{lane.description}</p>
               <p className="r-ready-lane-reason">{lane.ready ? lane.reason : `Blocked · ${causeNames.join(" + ")}`}</p>
-              <div className="r-ready-lane-meta"><span>{lane.sprint || "No sprint"}</span><span>{lane.progress_pct || 0}% implemented</span></div>
+              <div className="r-ready-lane-meta"><span>{lane.sprint || "No sprint"}</span><span>{lane.progress_pct || 0}% implemented</span><span className="r-ready-lane-plan-state">{lane.stateLabel}</span></div>
+              <details className="r-ready-lane-contract"><summary>Contract</summary><dl><dt>Why now</dt><dd>{lane.whyNow}</dd><dt>Done when</dt><dd>{lane.doneWhen}</dd></dl></details>
               <code className="r-ready-lane-invocation">{lane.invocation}</code>
             </article>;
           })}</div> : <p className="r-ready-lanes-empty">No work is currently in the served ready set.</p>}
