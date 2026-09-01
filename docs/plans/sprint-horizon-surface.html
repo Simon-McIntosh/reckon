@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="19">
-<meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080">
+<meta name="plan-version" content="26">
+<meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080,83d2b23,fd9a499,5af7c7b,6979f98,3d38ac1">
 <meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
-<meta name="plan-impl" content="0.43">
+<meta name="plan-impl" content="0.71">
 </head>
 <body>
   <main class="plan-doc">
@@ -187,7 +187,23 @@
     Evidence is a rendered capture plus a source-contract assertion that the retired
     horizon keys are absent.</p>
 
-    <h2 id="s2">§2 — The all-sprints state table</h2>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+        <h2>§2 — The all-sprints state table</h2></header>
+      <p class="landed-summary">Every sprint now renders as a table row carrying status, an
+        implementation figure, its derived order position and blocked/delayed/active flags,
+        ordered by the server's <code>sprint_order</code> with natural-id fallback. Gate
+        <strong>passed 6/6</strong> browser-free. Composed metrics and review fields are
+        consumed with no second fetch and no client-side recomputation; a project whose stored
+        active pointer disagrees with its active set renders a <strong>conflict badge rather
+        than choosing one</strong>; a sprint with empty dates is still present; closed sprints
+        fold by default. Rendered capture owed on the host browser fault. Record:
+        <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s2">§2 landed</a>
+        (commit <code>5af7c7b</code>).</p>
+    </section>
+
+    <details class="section-landed-detail">
+      <summary>Original §2 framing, retained</summary>
 
     <p>This section answers the complaint that there is no way to see all sprints at once,
     and it is the primary object on the screen. One row per sprint, carrying every field the
@@ -228,6 +244,8 @@
     project whose stored active pointer disagrees with its active set renders the conflict
     badge. Evidence is a rendered capture against live state plus assertions on order and
     conflict rendering.</p>
+
+    </details>
 
     <section id="s3" class="section-landed">
       <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
@@ -409,7 +427,21 @@
       </tbody>
     </table>
 
-    <h2 id="s8">§8 — A browser gate must say why it could not start a browser</h2>
+    <h2 id="s8" class="section-landed">§8 — A browser gate must say why it could not start a browser</h2>
+
+    <p class="landed-summary"><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      A failed probe now reports which of three start failures occurred instead of a bare
+      timeout: <em>ceiling-exhausted</em>, <em>sandbox-denied</em> or
+      <em>navigation-never-completed</em>, carrying the browser's stderr and the inotify count
+      against the limit. Gate <strong>passed 7/7</strong>, each classification asserted from an
+      injected condition rather than by exhausting the shared host ceiling — which would have
+      inflicted the outage this section exists to prevent. A preflight refuses to start a probe
+      when an <code>AF_INET</code> socket cannot be created and names the worker role as the
+      likely cause. Record:
+      <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s8">§8 landed</a>
+      (commit <code>6979f98</code>). <strong>Owed:</strong> the four <code>test_build.py</code>
+      cases that spend 75 s each producing no assertion should use this classifier to skip on an
+      unavailable browser rather than fail opaquely.</p>
 
     <p>Every rendered gate in this plan depends on starting a headless browser, and when the
     host cannot start one the harness reports a bare timeout. A timeout is indistinguishable
@@ -566,11 +598,17 @@
 <div class="r-comment" data-section="s4" data-id="c-20260826-ready-rows-carry-the-handle" data-who="reckon-ship" data-when="2026-08-26T14:48:00+00:00">
     <div class="r-comment-body"><p><strong>Each ready row carries its <code>why_now</code> and a paste-ready <code>/reckon-ship</code> invocation — the thing a coordinator actually copies off the screen.</strong> From the nova review session, and it is the difference between a view that reports and a view that is used.</p><p>The reason it matters here specifically: the ready set exists so a reader can act, and the action is always the same shape — a slash invocation naming a plan and optionally a section. A row that shows readiness and reasons but withholds the handle makes the reader reconstruct by hand what the payload already determines. Given the section-readiness note above, the invocation must name the <em>section</em> where the payload supplies section granularity, since a plan-level handle would dispatch work the plan-level flag says is blocked.</p><p>This composes with the existing no-rank-column rule rather than competing with it: concurrent lanes, each with a reason and a handle, and no ordinal implying one must precede another.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260901T060333961141-n-ready-set-endpoint" data-who="codex-j" data-when="2026-09-01T06:09:59Z">
+    <div class="r-comment-body"><p>Readiness now reaches HTTP as a projection rather than a second implementation: the test asserts payload ready_set equals ready_set_view(roadmap) for the same project, which is what makes a competing derivation impossible rather than merely discouraged. Rows carry their reason and section granularity, a plan ready at plan level with a blocked section reports both ready_sections and blocked_sections rather than one verdict, and a project with no review resource degrades to review None without a hole. 38 related tests pass, ruff delta 31 to 31. Verified on the live service after merge: discovery serves 13 ready rows with order, sprint, progress and unlocks.</p></div>
+</div>
 <div class="r-comment" data-section="s0" data-id="c-run-r-20260826T141430870697-n-reuse-map" data-who="codex-a" data-when="2026-08-26T14:19:10Z">
     <div class="r-comment-body"><p>Reuse map delivered and audited directly: 6/6 plan sections, 52 candidate verdicts (22 reuse, 19 extend, 11 unfit-with-reason), 3 served endpoint families plus the /_ui asset boundary, and the explicit finding that reckon build copies JSX unchanged rather than precompiling it. Gate recorded not-run because the worker's report-contract validator kept no log path, so no gate evidence exists to attach; the artifact itself demonstrates the done-when and was read in full before promotion. Highest-value finding exceeded the brief: no served roadmap endpoint exposes ready_now, so the ready-lane section cannot be built until a composed read is exposed.</p></div>
 </div>
 <div class="r-comment" data-section="s0" data-id="c-20260901-three-sections-landed" data-who="reckon-ship" data-when="2026-09-01T06:10:00+00:00">
     <div class="r-comment-body"><p><strong>Three of seven executable sections landed; implementation 0.43.</strong> §6 client load at <code>f9080fd</code> and <code>7642080</code>, gate passed 9/9 browser-free. §5 live refresh at <code>85d10ce</code>, gate passed 3/3. §3 scroll owner at <code>034dc5d</code>, gate <em>not-run</em> because no clean browser-free log exists for it. Full record with every figure: <a href="/reckon/evidence/archive/sprint-horizon-surface-landed">execution evidence</a>.</p><p><strong>A host fault determines how three gate verdicts should be read.</strong> Headless Chrome on this host completes no HTTP or HTTPS navigation at all — <code>file://</code> and <code>data:</code> URLs load in 0.4 s, the DevTools channel works, and <code>curl</code> and a node fetch of the same URL both return 200 in milliseconds, but every http navigation hangs, loopback and external alike, including a 507-byte static file and a plain <code>python -m http.server</code>. Proxy, SELinux, <code>/dev/shm</code>, process limits, background-networking flags, the old headless mode, <code>--no-zygote</code> and an in-process network service are each eliminated with disproving evidence. So no rendered gate in this plan can currently produce evidence, and the lead directed that sections land on browser-free measures with the rendered half recorded as owed rather than stalling.</p><p><strong>Two defects were caught by non-browser checks that a rendered gate would have masked.</strong> The first implementation of §6 compiled each module but left its top-level declarations in one shared lexical scope, so two modules both declared <code>useState</code> and the SPA would not have rendered at all; a syntax check over the concatenated output found it. And after merge the live service returned 500 for every compiled module because the compiler shells out to a bare <code>node</code> while the service unit pins a PATH excluding it — an environment divergence invisible from any worktree.</p><p><strong>The reload attribution in §0 is corrected by measurement.</strong> The in-browser transform costs about 470 ms, not the dominant share the section implied. Transfer is the weight: 888 KB over 25 requests, discovery alone 455 KB and refetched every reload. §6 removed 3 remote origins and about 3.4 MB of CDN traffic but added 179 KB to the locally served path, so §5's revalidation seam is now the larger of the two remedies rather than the smaller.</p></div>
+</div>
+<div class="r-comment" data-section="s0" data-id="c-20260901-five-of-seven" data-who="reckon-ship" data-when="2026-09-01T06:35:00+00:00">
+    <div class="r-comment-body"><p><strong>Five of seven executable sections landed; implementation 0.71.</strong> Added since the last record: §2 the all-sprints state table (<code>5af7c7b</code>, 6/6), §8 browser-gate failure classification (<code>6979f98</code>, 7/7), the server half of §4 (<code>3d38ac1</code>, 38 related tests), the node-interpreter fix completing §6 (<code>fd9a499</code>, 14 tests) and the JSX helper-eval repair that unblocked verification of every surface section (<code>83d2b23</code>, 6/6 where 3 had failed).</p><p><strong>The readiness endpoint is a projection, and one assertion is what guarantees it.</strong> The test requires the served <code>ready_set</code> to <em>equal</em> <code>ready_set_view(roadmap)</code> for the same project, so a competing derivation is impossible rather than merely discouraged — which is the failure this plan was warned about after two independently written copies of one review derivation drifted into disagreeing about sprint order. Verified live: discovery now serves 13 ready rows carrying order, sprint, progress and what each unlocks.</p><p><strong>§4 is half done by design.</strong> Its server half landed because the reuse map found no HTTP route exposed readiness at all; the view half that replaces the board is the remaining work, and it consumes this payload rather than deriving anything.</p><p><strong>An honest cost this plan created.</strong> §6 added two browser tests that cannot pass on this host, and a peer measured the consequence across the whole suite: four <code>test_build.py</code> cases now spend 75 seconds each producing no assertion, about five minutes per full run, landing as four indistinguishable timeouts behind which a real regression would be invisible. Two of the four are this plan's. Failing closed is right where a browser works; here it converts a known-unavailable dependency into opaque red. The remedy is to skip on an unavailable browser using the classifier §8 just landed, and it is owed.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260826-strip-carries-events-not-spans" data-who="reckon-ship" data-when="2026-08-26T14:45:00+00:00">
     <div class="r-comment-body"><p><strong>A consumer project confirms the strip must carry events, not sprint spans, and adds a constraint the plan text did not have.</strong> Reported by the nova review session against its own live data.</p><p>Nova's sprint dates are day-granularity and were <em>mostly empty</em> until backfilled by hand yesterday. So a 48-hour strip of sprint spans would be blank for nova, or worse would lie — and <strong>a strip that drops undated sprints would have hidden three of nova's four active lanes.</strong> The plan already declines to draw calendar bars at this zoom, which is the right call for a stronger reason than the one it gives: whole-day dates cannot place a bar inside 48 hours <em>and</em> most sprints do not carry dates at all.</p><p><strong>What exists at hour scale is events.</strong> Completed crew runs and live runs, already named in the plan, plus two the plan missed: <code>plan-modified</code> stamps and docs commits. A strip of timestamped events under a now-line is truthful at this zoom. Sprint bars are the same mistake the section retires, drawn smaller.</p><p>The constraint that follows: <strong>an undated sprint must never be filtered out of any element of this surface.</strong> The strip omits sprint geometry entirely so it cannot drop one, but the table in §2 must not filter or sort rows in a way that hides a sprint with empty <code>starts</code>/<code>ends</code>. Assert it — for nova that is three of four active lanes.</p></div>
@@ -580,6 +618,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260826-priority-ranks-answer-the-ordering-complaint" data-who="reckon-ship" data-when="2026-08-26T14:47:00+00:00">
     <div class="r-comment-body"><p><strong>The ordering half of the lead's complaint is answered by the review resource's priority list, not by its findings — so the priority ranks come forward into this section and only the findings view is deferred.</strong> This corrects a boundary this plan drew slightly wrong.</p><p>The reasoning, from the nova review session: deferring “render the review resource” wholesale would have deferred the half that answers “no way to visualise ordering”. The composed roadmap block already joins each priority row with live <code>status</code>, <code>impl</code>, <code>sprint</code> and <code>landed</code>, so consuming the joined ranks is the same wiring this section already does for metrics. Consuming only the staleness and order-inversion signals would leave the lead's actual complaint unanswered while looking complete.</p><p><strong>This does not contradict the no-rank-column rule on §4.</strong> Two different surfaces: sprint row order here is the derived <code>sprint_order</code>, and review priority is a plan-level judgment with reasons. The rule §4 carries is that the <em>ready set</em> must not imply a sequence, because ready lanes are concurrent. A review rank is an authored judgment and may be shown as one.</p><p><strong>Three degradation requirements, all measured.</strong> Only two mounted projects carry a review resource at all, so the table must degrade to no-review <em>without leaving a hole</em>. This project's review currently holds 23 findings and <strong>zero priority rows</strong>, while nova holds a populated list — so the empty-priority path is this project's normal state and needs a real empty treatment, not a placeholder. And an open finding is not a defect to hide: nova deliberately keeps one open as a live code-defect tracker, so “1 open” is the system working rather than something to suppress.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260901T055511065363-n-sprint-state-table" data-who="codex-h" data-when="2026-09-01T06:05:43Z">
+    <div class="r-comment-body"><p>The all-sprints state table is now the primary object on the Sprints screen: every sprint renders as a row carrying status, an implementation figure, its derived order position and blocked/delayed/active flags, ordered by the server's sprint_order with natural-id fallback. 6 browser-free cases pass. Consumes the composed metrics and review fields with no second fetch and no client-side recomputation; a project whose stored active pointer disagrees with its active set renders a conflict badge rather than choosing one; a sprint with empty start and end dates is still present; closed sprints fold by default. The 48-hour strip is correctly left to its own section. Rendered capture owed on the host browser fault.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260826-digest-is-the-revalidation-seam" data-who="reckon-ship" data-when="2026-08-26T14:49:00+00:00">
     <div class="r-comment-body"><p><strong><code>provenance.content_digest</code> is the revalidation seam this section needs, and it is already in the payload.</strong> Raised by the nova review session, and it resolves the tension the section states between “must not become a busy poll” and “must notice a new plan”.</p><p>A digest comparison answers “has anything changed” without shipping or re-rendering the payload, so a cheap periodic check becomes affordable where a full refetch would not be. Paired with the server-side discovery cache measured at twenty milliseconds warm, the steady-state cost is a small conditional request rather than a 699 KB transfer. Nova's discovery payload is 580,703 characters, which is the number that makes the distinction matter: cheap to ship occasionally, expensive to ship on a timer.</p><p>Not a change to the section's contract — the done-when still requires no document navigation and a measured steady-state cost. This names the mechanism that makes the measured cost small, so a worker does not reach for either a busy poll or a change-blind explicit-only refresh.</p></div>
@@ -591,10 +632,13 @@
     <div class="r-comment-body"><p>Serves compiled local client assets: 9/9 scope-isolation gate, all 11 compiled artifacts carry an IIFE boundary, all 10 SPA modules concatenate in load order with zero duplicate top-level lexical declarations, 39 window exports preserved. Checked-in, served, synced and static-built shells all assert zero text/babel, standalone-compiler, unpkg and remote-font references. Verified on the live service after merge: 0 remote origins and 0 text/babel where there were 3 and 10, every referenced module returns 200. Ruff delta 0 (35 base, 35 after). Rendered origin count, edit/reload visibility and paired wall clock remain OWED: headless Chrome on this host completes no http navigation.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260901T055332096961-n-node-resolution" data-who="codex-e" data-when="2026-09-01T06:02:38Z">
-    <div class="r-comment-body"><p>The served JSX compiler no longer depends on an ambient PATH: resolution tries RECKON_NODE, then PATH, then stable user and system locations, validates executability and returns an absolute path that compile_jsx invokes directly. The generated unit now carries the resolved interpreter directory in its Environment PATH with duplicates removed. The negative-PATH test installs only a stable-home node, proves direct compilation, inspects the written unit, and requests all 10 shell JSX modules over HTTP for 10 status-200 and zero 500 responses. 14 service tests pass, ruff delta 27 to 27. Verified after merge by regenerating the unit with reckon service install, which removed the orchestrator&#x27;s temporary hand-edit and still served every module 200.</p></div>
+    <div class="r-comment-body"><p>The served JSX compiler no longer depends on an ambient PATH: resolution tries RECKON_NODE, then PATH, then stable user and system locations, validates executability and returns an absolute path that compile_jsx invokes directly. The generated unit now carries the resolved interpreter directory in its Environment PATH with duplicates removed. The negative-PATH test installs only a stable-home node, proves direct compilation, inspects the written unit, and requests all 10 shell JSX modules over HTTP for 10 status-200 and zero 500 responses. 14 service tests pass, ruff delta 27 to 27. Verified after merge by regenerating the unit with reckon service install, which removed the orchestrator's temporary hand-edit and still served every module 200.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260901T055339222781-n-browser-network" data-who="codex-f" data-when="2026-09-01T05:59:10Z">
     <div class="r-comment-body"><p>Met the eliminated-causes branch of its measure: seven cause classes disproved with quantitative evidence (SPA, reckon server, loopback routing, proxy, SELinux/shm/process ceiling, Chrome background services and process topology, and the earlier inotify exhaustion). Deliberately did NOT claim a root cause it could not demonstrate. Separate directly-demonstrated finding: the investigate-role sandbox denies AF_INET and AF_INET6 socket creation with EPERM (CapEff 0, NoNewPrivs 1, Seccomp 2), so Chrome aborts all three schemes in 0.135-0.142s on crashpad setsockopt before any navigation - a different phenotype from the original fault and the reason this role cannot reproduce it. Names the concrete unblock: run the rendered gate in an execution-capable network-enabled sandbox behind three preflights.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260901T060144277297-n-gate-failure-legibility" data-who="codex-i" data-when="2026-09-01T06:08:07Z">
+    <div class="r-comment-body"><p>A failed browser probe now says which of three start failures occurred instead of returning a bare timeout: ceiling-exhausted, sandbox-denied, or navigation-never-completed. 7/7 pass, each classification asserted from an injected condition rather than by exhausting the shared host ceiling, which would have inflicted the outage this work exists to prevent. A preflight refuses to start a probe when an AF_INET socket cannot be created and names the worker role as the likely cause; the message carries the browser stderr and the inotify count against the limit. Ruff delta 4 to 4.</p></div>
 </div>
 </section>
 </main>

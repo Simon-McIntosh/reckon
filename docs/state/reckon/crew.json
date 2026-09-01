@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T08:03:09",
+  "updated": "2026-09-01T08:54:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -27620,9 +27620,314 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T055511065363-n-sprint-state-table",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a72",
+        "node": "n-sprint-state-table",
+        "node_definition": {
+          "done_when": "Tests assert that every sprint in the project appears as a table row carrying status, an implementation figure, its derived order position and blocked/delayed/active flags; that row order matches the server sprint_order with natural-id fallback; that a project whose stored active pointer disagrees with its active set renders a conflict badge rather than choosing one; that a sprint with empty start and end dates is still present; that the composed metrics and review fields are consumed without a second fetch or client-side recomputation; and that closed sprints fold by default",
+          "estimated_hours": null,
+          "goal": "Render every sprint as a row of an all-sprints state table that is the primary object on the Sprints screen",
+          "id": "n-sprint-state-table",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055511065363-n-sprint-state-table/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_composition.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T05:55:20Z",
+        "completed_at": "2026-09-01T06:05:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 623,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 623,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "101f80184e7444e381519c5a7a6e7c16dde208ce",
+        "commits": [
+          "5af7c7be84b51883ae7b8109719666e0b672dee2"
+        ],
+        "changed_lines": {
+          "added": 233,
+          "removed": 56,
+          "files": 3
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_composition.py -k 'sprint_surface or sprint_state or sprint_order or browser_harness'",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055511065363-n-sprint-state-table/pytest-spa-composition.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055511065363-n-sprint-state-table/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c1-24dc-7c10-820e-64636e1efd3e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3286016,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3630097,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 17680,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2754
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T060144277297-n-gate-failure-legibility",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a78",
+        "node": "n-gate-failure-legibility",
+        "node_definition": {
+          "done_when": "Tests assert the classification of ceiling-exhausted, sandbox-denied and navigation-never-completed each from an injected condition rather than by exhausting the real host, a preflight refuses to start a probe when an AF_INET socket cannot be created and names the worker role as the likely cause, the reported message carries the browser stderr and the inotify count against the limit, and a completed probe run leaves no profile directory behind",
+          "estimated_hours": null,
+          "goal": "Make a failed browser probe report which of the three start failures occurred instead of a bare timeout",
+          "id": "n-gate-failure-legibility",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060144277297-n-gate-failure-legibility/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/spa_browser_harness.py",
+            "tests/test_spa_browser_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-i",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T06:01:53Z",
+        "completed_at": "2026-09-01T06:08:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 374,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 374,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "a70393a4c2c4a1d9a30dabc47bee0b78fc29de6d",
+        "commits": [
+          "6979f98ecd6ef9fdc8e4361efb80141c15f5ab24"
+        ],
+        "changed_lines": {
+          "added": 244,
+          "removed": 16,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_browser_harness.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060144277297-n-gate-failure-legibility/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060144277297-n-gate-failure-legibility/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0333a-d46a-7131-b032-c4ceea354f65",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3363328,
+            "cached_input_tokens_cumulative": 50347264,
+            "input_tokens": 3668047,
+            "input_tokens_cumulative": 53578384,
+            "output_tokens": 13685,
+            "output_tokens_cumulative": 167853,
+            "reasoning_output_tokens": 4610,
+            "reasoning_output_tokens_cumulative": 50646
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T060333961141-n-ready-set-endpoint",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a74",
+        "node": "n-ready-set-endpoint",
+        "node_definition": {
+          "done_when": "A test asserts the served payload carries ready work with each row's reason and its section granularity, that the values equal what build_roadmap returns for the same project so no second derivation exists, that a plan ready at plan level with a blocked section reports both rather than one, and that a project without a review resource degrades without a hole",
+          "estimated_hours": null,
+          "goal": "Expose the readiness the roadmap already derives over HTTP as a projection of build_roadmap rather than a second implementation",
+          "id": "n-ready-set-endpoint",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060333961141-n-ready-set-endpoint/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/serve.py",
+            "reckon/mcp_views.py",
+            "tests/test_ready_set_composition.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-j",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T06:03:43Z",
+        "completed_at": "2026-09-01T06:09:59Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 376,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 376,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "dd7f89fb01e7f06ce52496e835ebb4419590b8aa",
+        "commits": [
+          "3d38ac177306af431afcea19d35a252184dd65a3"
+        ],
+        "changed_lines": {
+          "added": 159,
+          "removed": 12,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_ready_set_composition.py tests/test_roadmap.py tests/test_review_composition.py tests/test_discovery_cache.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060333961141-n-ready-set-endpoint/stderr.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T060333961141-n-ready-set-endpoint/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a037d2-4e07-79e1-a7a1-7b2c63dca81d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 810496,
+            "cached_input_tokens_cumulative": 3539968,
+            "input_tokens": 967335,
+            "input_tokens_cumulative": 3871088,
+            "output_tokens": 7099,
+            "output_tokens_cumulative": 13153,
+            "reasoning_output_tokens": 1042,
+            "reasoning_output_tokens_cumulative": 2155
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 463
+    "_version": 466
   }
 }
