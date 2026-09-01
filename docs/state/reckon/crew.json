@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:24:14",
+  "updated": "2026-09-01T20:28:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29869,9 +29869,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T181928326464-n-file-url-capture-path",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a76",
+        "node": "n-file-url-capture-path",
+        "node_definition": {
+          "done_when": "tests/spa_browser_harness.py gains a delivery path that writes 1 self-contained document and opens it with a file: URL, taking the caller's viewport, ready selector and evaluation expression; a probe through it renders the graph route from inlined composed state and reports a node-card count greater than 0 together with the expected handle token, where the committed captures today show only the empty-state message; the same probe run twice consecutively returns identical counts; residual orphaned chrome processes and temporary profile directories are both 0 after the run; and tests/test_spa_browser_harness.py plus the modules importing the harness report 0 new failures against the node's own base revision, with a browser-absent run still exiting on the stated skip rather than an error",
+          "estimated_hours": null,
+          "goal": "A file-URL delivery path in the shared browser harness that inlines composed state and scripts into one document, so a populated view renders without any network",
+          "id": "n-file-url-capture-path",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T181928326464-n-file-url-capture-path/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "tests/spa_browser_harness.py",
+            "tests/test_spa_browser_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-browser",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T18:19:34Z",
+        "completed_at": "2026-09-01T18:28:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 529,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 529,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "6a077fc2605d9d231dcdd81400a26dac694b8920",
+        "commits": [
+          "dcfeea0ece80be5f66db1a6658698d0c8e55b7e5"
+        ],
+        "changed_lines": {
+          "added": 270,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_spa_browser_harness.py plus a populated-graph file-URL control run twice consecutively",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T181928326464-n-file-url-capture-path/logs/target-gate.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T181928326464-n-file-url-capture-path/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-fd56-7f52-9478-1d0cb472d051",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2570752,
+            "cached_input_tokens_cumulative": 5335296,
+            "input_tokens": 2875652,
+            "input_tokens_cumulative": 5723981,
+            "output_tokens": 3262,
+            "output_tokens_cumulative": 19327,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 6122
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 498
+    "_version": 499
   }
 }

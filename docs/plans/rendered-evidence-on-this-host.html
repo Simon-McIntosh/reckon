@@ -23,9 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-artifacts" content="docs/evidence/archive/rendered-evidence-on-this-host-landed.html,/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md,/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-commits" content="dcfeea0ece80be5f66db1a6658698d0c8e55b7e5">
 </head>
 <body>
   <main class="plan-doc">
@@ -229,6 +230,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260901-navigation-boundary" data-who="reckon-ship" data-when="2026-09-01T18:15:00+00:00">
     <div class="r-comment-body">n-browser-navigation-verdict landed — no commit, diagnostic verdict with no repository code implicated; gate section-3-discriminating-test PASSED; measure 0 Internet SOCK_STREAM sockets and 0 AF_INET/AF_INET6 connects across 54 processes over a 20.303700s process-tree strace of 17,289 records, against a server log delta of 0 bytes at +3s, +10s and after termination, with all three preflights green (AF_INET bind 0.000092s, fresh-profile data URL 0.439004s, inotify 60/128) and the HTTP navigation reproduced at 0 DOM bytes in 15.022482s; artifacts docs/evidence/archive/rendered-evidence-on-this-host-landed.html and the probe report, trace 2,457,438 bytes sha256 ec765601. The A/B is unavailable rather than failed: both comparator builds fail their own data-URL control at ~5.02s. Two consequences recorded rather than one — the required host change is stated to its owner in §3, and §6 is opened because the same trace bounds the fault to Internet socket creation, leaving file: and data: URLs working at ~0.4s and 4 of the 6 owed captures reachable without the host change.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260901T181928326464-n-file-url-capture-path" data-who="surface-browser" data-when="2026-09-01T18:28:23Z">
+    <div class="r-comment-body"><p>A file-URL delivery path renders the SPA from one self-contained document with 0 asset URLs; populated graph control returned 2 node cards and its handle token twice consecutively rather than the empty-state message, 2.690760s at 900x420, residuals 0 processes and 0 profile directories; harness suite 10 passed, 99 importer tests collect with 0 errors, ruff findings 4 at base and 4 after</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260901-file-url-path" data-who="reckon-ship" data-when="2026-09-01T18:29:00+00:00">
+    <div class="r-comment-body">n-file-url-capture-path landed — commit dcfeea0; gate populated-render-without-a-network PASSED; measure a populated graph control returned 2 node cards and its handle token twice consecutively where the empty-state message was previously the only capturable state, 2.690760s total at a 900x420 viewport, with residuals 0 Chrome processes, 0 browser profile directories and 0 document directories; harness suite 10 passed, 99 importer tests collect with 0 errors, ruff findings 4 at base and 4 after; artifacts tests/spa_browser_harness.py and tests/test_spa_browser_harness.py, control output in the run directory. The document embeds caller-supplied composed state, both pinned React runtimes, 12 stylesheet payloads and 11 ordered UI modules compiled through the production compiler, and carries 0 asset URLs — which is what makes it renderable on a host whose browser creates no Internet socket. The control used a synthetic two-member handle to prove the mechanism; capturing the real Nova and local authorities the surface redraw owes is the next node, and the two captures whose subject is a live fetch stay owed against the host change.</div>
 </div>
 </section>
 </main>
