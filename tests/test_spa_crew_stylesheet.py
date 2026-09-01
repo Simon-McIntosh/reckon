@@ -32,6 +32,25 @@ def test_crew_stylesheet_registers_with_every_spa_entry_point() -> None:
     assert registrations["synced-and-built"].count("_ui/crew.css") == 2
 
 
+def test_spa_entry_points_register_only_local_compiled_runtime_assets() -> None:
+    registrations = {
+        "checked-in": (ROOT / "docs" / "index.html").read_text(encoding="utf-8"),
+        "served": (ROOT / "reckon" / "serve.py").read_text(encoding="utf-8"),
+        "synced-and-built": (ROOT / "reckon" / "cli.py").read_text(
+            encoding="utf-8"
+        ),
+    }
+
+    assert registrations["checked-in"].count("/_runtime/react.js") == 1
+    assert registrations["checked-in"].count("/_runtime/react-dom.js") == 1
+    assert registrations["served"].count("/_runtime/react.js") == 1
+    assert registrations["served"].count("/_runtime/react-dom.js") == 1
+    assert registrations["synced-and-built"].count("_runtime/react.js") == 2
+    assert registrations["synced-and-built"].count("_runtime/react-dom.js") == 2
+    for source in registrations.values():
+        assert "text/babel" not in source
+
+
 def test_crew_stylesheet_defines_the_three_zone_card_layout() -> None:
     source = STYLESHEET.read_text(encoding="utf-8")
 
