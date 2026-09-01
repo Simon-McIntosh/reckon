@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="promotion-consequence-gate-landed">
+  <meta name="plan-title" content="Promotion consequence gate — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution record for the delta-measured promotion gate: reuse map, arming and evidence carriers, delta refusal with waiver, incident regressions.">
+  <meta name="plan-evidence-for" content="reckon:promotion-consequence-gate">
+  <meta name="plan-verifies" content="reckon:promotion-consequence-gate#s5">
+  <meta name="plan-recorded-at" content="2026-09-01">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; codex CLI workers in detached worktrees">
+  <title>Promotion consequence gate — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Promotion consequence gate — landed evidence</h1>
+    <p class="plan-summary">One cumulative record, updated as each node lands. Anchors are stable;
+    the plan's evergreen sections link to them as they collapse.</p>
+  </header>
+
+  <section id="reuse-map">
+    <h2>What already existed, and the three pieces that did not</h2>
+    <p>A read-only scout produced <code>/home/ITER/mcintos/.config/reckon/crew/reports/promotion-consequence-gate-reuse-map.md</code>:
+    58 in-reach candidates, 16 consume, 37 extend, 5 unfit, every one cited file:line. No existing
+    function computed a suite-failure delta, no flight-config field declared a project suite
+    command, and no promotion waiver took a reason. Everything else was reused: the fail-closed
+    check-evidence refusal in <code>crew complete</code> (<code>f05f85b</code>), the closed failed-gate
+    classification (<code>bc95a74</code>), the pointer-to-ledger flow of <code>base_sha</code>, the
+    dispatch waiver pipeline, and layered flight configuration.</p>
+  </section>
+
+  <section id="arming">
+    <h2>An opt-in suite command and typed suite observations</h2>
+    <p>Commit <code>648f287</code> (merged <code>49cb5b5</code>). <code>gates.suite_command</code> is
+    optional in <code>reckon/schema/flight.yaml</code> with no shipped default; its absence is the
+    unarmed state and its project-layer provenance is pinned by test. The worker manifest gains
+    <code>baseline_suite</code> and <code>after_suite</code>, each carrying revision, command, integer
+    exit status, log path or digest, completed, failure count and failure ids, while
+    <code>tests</code> stays the human summary. <code>audit_manifest(suite_armed=True)</code> names a
+    missing observation and treats <code>completed=false</code> as absent evidence; an unarmed project
+    keeps its existing contract.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>tests/test_flight.py tests/test_crew.py tests/test_skill_contracts.py at base 95a7fec</td><td>274 passed / 0 failed</td></tr>
+        <tr><td>Same at 648f287</td><td>281 passed / 0 failed (+7 regressions)</td></tr>
+        <tr><td>Generated schema artifacts</td><td>byte-identical to the LinkML source</td></tr>
+        <tr><td>Scope</td><td><code>docs/_shared/flight.schema.json</code> granted mid-flight (generator writes it beside the Python model); run excluded from calibration</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="delta-refusal">
+    <h2>A non-empty added-failure set refuses; a reasoned waiver is recorded</h2>
+    <p>Commit <code>62efee8</code> (merged <code>8c1d260</code>). Dispatch snapshots the suite command
+    onto the run pointer. An armed promotion requires both completed observations with the baseline
+    revision equal to the pointer's <code>base_sha</code>, refuses otherwise naming the missing field,
+    refuses a non-empty after-minus-baseline failure-id set listing the added ids in structured JSON
+    while leaving the pointer recoverable, and accepts <code>--waive-suite-delta</code> only with a
+    non-empty reason, storing reason, both observations and the added ids on the committed row. The
+    ledger summary counts clean, refused and waived deltas separately.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Five-file target at base e3d386d</td><td>302 passed / 0 failed</td></tr>
+        <tr><td>Same at 62efee8</td><td>310 passed / 0 failed (+8 regressions)</td></tr>
+        <tr><td>Scoped ruff findings</td><td>60 before / 60 after; all eight paths format-clean</td></tr>
+      </tbody>
+    </table>
+    <p>The worker stopped once at its two-failure fence: giving every synthetic pointer a
+    <code>base_sha</code> woke the older uncited-commit guard. Resolved with a reasoned
+    <code>--no-commit</code> on the report-only fixtures and one regression on a real temporary
+    repository whose HEAD equals <code>base_sha</code> plus one cited commit, proving the citation
+    guard and the delta gate coexist on the path real runs take.</p>
+  </section>
+</main>
+</body>
+</html>

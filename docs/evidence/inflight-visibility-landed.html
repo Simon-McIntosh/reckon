@@ -318,6 +318,45 @@
     instance.</p>
   </section>
 
+
+  <section id="watcher-load">
+    <h2>Watcher waits derive from one load bound instead of fixed deadlines</h2>
+    <p>Landed 2026-09-01 in commit <code>f9123a1</code> (merged <code>ab05197</code>). The six
+    deadline-based tests recorded on 2026-08-25 measured the host: a full suite under an unrelated
+    280% CPU job failed exactly the watcher startup and registration deadlines and nothing else. One
+    exported constant, <code>WATCHER_LOAD_BOUND_SECONDS = 30.0</code> in
+    <code>reckon/crew/dispatch.py</code>, now documents the six-times-unloaded scheduler allowance it
+    encodes, and producer startup, cleanup, orphan readiness, follower registration and follower
+    shutdown all poll their observed condition under it.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Four target modules at base</td><td>37 passed / 0 failed in 10.08 s</td></tr>
+        <tr><td>Same, under two synthetic CPU-bound peers (72–77% CPU sampled), three consecutive runs</td><td>37/37, 37/37, 37/37 in 10.64 s, 10.04 s, 7.98 s</td></tr>
+        <tr><td>Scoped ruff findings</td><td>baseline 10, staged 10, delta 0; format check clean</td></tr>
+      </tbody>
+    </table>
+    <p><code>tests/test_crew_watch_stream.py</code> needed no edit: its stream tests run the producer
+    synchronously and carry no deadline.</p>
+  </section>
+
+  <section id="live-instance">
+    <h2>Live-instance measures after the 2026-09-01 restart</h2>
+    <p>The server was restarted at 22:10:59 onto commit <code>58f9938</code> with the lead's
+    authorisation, and <code>reckon install-skills --repair</code> replaced the copied
+    <code>reckon-roadmap</code> directory with a symlink in both skill roots; a second pass reports no
+    drift. Two of the four live measures had already passed on 2026-08-25 (0.388 s pointer-to-working,
+    0.0098 s to done, a single listener).</p>
+    <p><strong>The two figures did not land.</strong> Node <code>n-live-watcher-figures</code> read
+    <code>GET /crew</code> returning 13 live runs with valid plan and sprint hrefs and one listener at
+    127.0.0.1:8765 owned by pid 2710453, then two 45-second headless-Chrome navigations to
+    <code>#crew</code> and <code>#plan/inflight-visibility</code> both exited 124 with zero PNGs and
+    zero leaked browser processes. This is the host fault
+    <a href="/reckon/plans/rendered-evidence-on-this-host">rendered-evidence-on-this-host</a> §2 bounds
+    by elimination: Chrome here emits no HTTP request at all, so the captures are owed against that
+    plan's host change and not against this plan. A file-URL rendering would measure a substitute
+    surface and is refused by the measure's own wording.</p>
+  </section>
 </main>
 </body>
 </html>
