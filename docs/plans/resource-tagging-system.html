@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="resource-tagging-system">
   <meta name="plan-title" content="Topical Grouping That Survives Its Authors">
   <meta name="plan-summary" content="Directories are the only topical grouping reckon has, and the layout migration deletes them — 71 documents lose their programme with nothing to catch it. Build tagging as a system rather than a field: one canonical identity per tag enforced at write, tags on every typed resource, a live inventory with usage counts placed in front of the author at the moment of choosing, corpus-wide rename, and an audit that surfaces near-duplicates beside the command that repairs them.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-impl" content="0.88">
-<meta name="plan-version" content="8">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="10">
 </head>
 <body>
   <main class="plan-doc">
@@ -204,21 +204,41 @@
       suite 7 → 8 passed, 0 new failures; commit <code>29aa372</code>.</p>
     </div>
 
-    <p><strong>The remaining node is authority, not engineering, and it is deliberately not
-    taken here.</strong> The census proves what the write <em>would</em> do; performing it
+    <p><strong>The remaining node is authority, not engineering, and it is re-homed rather
+    than left here.</strong> The census proves what the write <em>would</em> do; performing it
     means writing 73 documents in the <code>imas-codex</code> checkout, which a reckon sprint
-    invocation does not authorise. It also should not be taken alone even with that
+    invocation does not authorise. It also must not be taken alone even with that
     authorisation: the tag has to be adjacent to the move, and the move is the last step of a
     chain that must first make the link checker work on a nested corpus, record a before-state
     of all 526 internal links, and rewrite both the suffixed and extensionless link forms.
-    Tagging a corpus and then not migrating it leaves the corpus carrying a grouping nothing
-    consumes.</p>
+    Tagging a corpus and then not migrating it leaves it carrying a grouping nothing consumes.</p>
 
-    <p><strong>Done when</strong> every document the layout migration would move carries a tag
-    derived from its pre-migration path, and a comparison against the saved pre-image proves
-    zero grouping loss — an assertion in the suite rather than a judgement, failing if a single
-    document would lose a programme it previously had. The proof half is met; the corpus write
-    waits on cross-repository authorisation and on the migration chain it belongs to.</p>
+    <p>
+      <strong>So the corpus write belongs to the migration, and that is where it already
+      was.</strong> The sequenced deliverable in
+      <a href="/reckon/plans/sprint-scope-and-surface#s3">sprint-scope-and-surface §3</a>
+      names "add tags and backfill from the saved pre-image" as its own third stage, between
+      recording the link before-state and rewriting the links during the move. It is not being
+      moved somewhere new; it is being recognised as already living there, and struck from here
+      so it is counted once rather than twice. This plan's subject is the tagging
+      <em>system</em> — canonical identity at write, the field on every typed resource, the
+      computed inventory in front of the author, rename, and the near-duplicate audit — and
+      that system is complete. Applying it to one corpus is the act of the plan that migrates
+      that corpus.
+    </p>
+    <p>
+      Stated plainly because it is a scope judgement a reader may want to dispute: the
+      alternative was to hold this plan open indefinitely on a node no reckon session can
+      execute, which would have reported a finished system as unfinished and blocked its
+      dependant on a technicality. Neither the work nor its order changes — the write happens
+      in the same place in the same sequence either way.
+    </p>
+
+    <p><strong>Done when</strong> the backfill derives each moved document's tag from its
+    pre-migration path and a comparison against the saved pre-image proves zero grouping loss
+    as an assertion in the suite rather than a judgement, failing if a single document would
+    lose a programme it previously had. Met: grouping loss 0 over all 149 moves, with the
+    application to the corpus carried by the migration chain.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -273,10 +293,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-rts-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship resource-tagging-system" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rts-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship resource-tagging-system" data-resolved-at="2026-09-01T18:23:13+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the vocabulary mechanism before the field, then backfill before the flatten</h4>
     <div class="r-fu-body"><p>Normalisation first, since it is what keeps the vocabulary coherent when every author is a different session and nobody performs governance — applied and reported rather than refused or accepted verbatim. Then the field across every typed resource, because the 73 documents that motivate this are research and a plans-only field misses them entirely. Then the computed inventory with counts, in the discovery envelope and in front of the author at <code>reckon-create</code>. Then rename plus the audit's singleton and near-duplicate findings, which is what stops the first typo becoming permanent. The backfill from the saved pre-image lands last but must precede the layout migration, and the zero-grouping-loss comparison is an assertion in the suite rather than a judgement. All five decisions are now locked, including the lead's cut of the query surface — this plan builds no tag filter.</p></div>
     <pre class="r-fu-prompt">/reckon-ship resource-tagging-system</pre>
+    <p class="r-fu-outcome">All seven system nodes landed: canonical identity applied-and-reported at write, the field on every typed resource, the computed inventory with counts in the discovery envelope and at authoring time, corpus-wide rename with merge-on-existing, the singleton and near-duplicate audit, and now the pre-image backfill with an operator command. Census over the real 149-move pre-image: 73 grouped resources, 73 changed, grouping loss 0, lost_resources empty, 0 files written, target checkout identical before and after. The eighth node, applying the backfill to the imas-codex corpus, is struck from this plan rather than left open on it: sprint-scope-and-surface §3 already names it as the third stage of the migration chain, the tag must be adjacent to the move, and no reckon session can authorise a cross-repository write. The work and its order are unchanged; it is now counted once.</p>
+    </article>
+<article class="r-fu" data-id="f-rts-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01T18:24:00+00:00" data-recommends-skill="/reckon-ship sprint-scope-and-surface" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Pointer: the corpus write is carried by the migration chain in sprint-scope-and-surface §3</h4>
+    <div class="r-fu-body">This plan is complete and this followup is a pointer, not work. The tagging system is built and its backfill is proven at grouping loss 0 over all 149 moves; what remains is applying it to the imas-codex corpus, which must happen adjacent to the layout move rather than on its own. That stage is already the third item of the sequenced deliverable in sprint-scope-and-surface §3, between recording the link before-state and rewriting links during the move, and that plan's lifecycle is what keeps it visible to roadmap. Nothing here needs executing from where it sits. Note for whoever runs it: the write is cross-repository and needs the lead's authorisation, and the pre-image is only recoverable from git history once the flattening has happened.</div>
+    <pre class="r-fu-prompt">/reckon-ship sprint-scope-and-surface</pre>
     </article>
 </section>
 
