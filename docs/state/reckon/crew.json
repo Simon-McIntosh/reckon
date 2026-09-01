@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:01:49",
+  "updated": "2026-09-01T22:04:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -32324,9 +32324,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T193001798137-n-css-layering-contract",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a75",
+        "node": "n-css-layering-contract",
+        "node_definition": {
+          "done_when": "Each of docs/_shared/foundation.css, docs/_shared/dashboard.css, docs/ui/styles.css and docs/ui/styles-base.css carries a stated ownership declaration naming the layer it owns \u2014 tokens, primitives, layout or view-specific rules; tests/test_css_layering.py enforces that boundary mechanically rather than by convention, asserting at minimum that custom-property definitions appear in 0 files outside the token layer and that the count of selectors defined in BOTH docs/ui/styles.css and docs/ui/styles-base.css is 0, with the before and after counts of such duplicated selectors reported as numbers; the test is proven to fail when a selector is deliberately duplicated across the two files and when a token is defined outside the token layer, so 2 mutation controls are recorded; the rendered surface is unchanged, shown by an index-ordered file-URL render reporting the same node count with 0 console errors; and tests/test_spa_*.py plus the new module report 0 failures, held to that absolute because the tree is green",
+          "estimated_hours": null,
+          "goal": "The stylesheets state which layer owns what, and a test holds the boundary instead of a convention nobody can check",
+          "id": "n-css-layering-contract",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193001798137-n-css-layering-contract/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/_shared/foundation.css",
+            "docs/_shared/dashboard.css",
+            "docs/ui/styles.css",
+            "docs/ui/styles-base.css",
+            "tests/test_css_layering.py",
+            "skills/reckon-sync/assets/dashboard.css"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-harness",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:30:07Z",
+        "completed_at": "2026-09-01T20:04:01Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2034,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2034,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "12c97fb5aed4fa986e061d0fb932a7dd74fac3e4",
+        "commits": [
+          "62ab4d754633a4c32d674bfc18c3a85179428f6d"
+        ],
+        "changed_lines": {
+          "added": 126,
+          "removed": 26,
+          "files": 6
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_shared_asset_parity.py tests/test_css_layering.py tests/test_spa_*.py held to absolute zero, plus before/after file-URL renders and two mutation controls",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193001798137-n-css-layering-contract/evidence/pytest-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193001798137-n-css-layering-contract/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a05e73-4570-7da2-87b9-1030e0a8c07b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7241728,
+            "cached_input_tokens_cumulative": 7241728,
+            "input_tokens": 7425405,
+            "input_tokens_cumulative": 7425405,
+            "output_tokens": 11254,
+            "output_tokens_cumulative": 11254,
+            "reasoning_output_tokens": 3148,
+            "reasoning_output_tokens_cumulative": 3148
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 525
+    "_version": 526
   }
 }
