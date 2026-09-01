@@ -4,10 +4,32 @@ from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import installed_browser, served_spa
+from tests.spa_browser_harness import (
+    BrowserProbeError,
+    installed_browser,
+    run_browser_probe,
+    served_spa,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs" / "ui" / "shell.jsx"
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    try:
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+    return browser
 
 
 def _function_source(name: str) -> str:
@@ -216,10 +238,9 @@ def _blocker_scope_expression() -> str:
 
 def test_rendered_blockers_stay_below_one_view_and_change_with_plan_scope(
     tmp_path: Path,
+    rendered_browser: str,
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("rendered blocker check requires an installed browser")
+    browser = rendered_browser
 
     with served_spa(tmp_path, browser) as spa:
         measurement = spa.run_probe(

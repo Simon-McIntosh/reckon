@@ -5,14 +5,15 @@ from pathlib import Path
 import pytest
 
 from tests.spa_browser_harness import (
+    BrowserProbeError,
     installed_browser,
+    run_browser_probe,
     served_spa,
     temporary_browser_profile,
 )
 from tests.test_spa_rendered_semantics import (
     INDEX_STATE,
     NODE_PROBE,
-    _installed_browser,
     _served_fixture,
 )
 
@@ -21,6 +22,23 @@ SHELL = ROOT / "docs" / "ui" / "shell.jsx"
 SHARED = ROOT / "docs" / "ui" / "_shared.jsx"
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 TOPBAR = ROOT / "docs" / "ui" / "topbar.css"
+
+
+@pytest.fixture(scope="module")
+def rendered_browser(tmp_path_factory) -> str:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("no supported browser binary is installed")
+    try:
+        run_browser_probe(
+            tmp_path_factory.mktemp("browser-capability"),
+            browser,
+            "<!doctype html><html><body>ready</body></html>",
+            "document.body.textContent",
+        )
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+    return browser
 
 
 def _function_source(path: Path, name: str) -> str:
@@ -69,11 +87,10 @@ def test_topbar_is_one_row_with_four_within_project_tabs() -> None:
 @pytest.mark.parametrize("width", [1280, 1440, 1920])
 def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
     tmp_path: Path,
+    rendered_browser: str,
     width: int,
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("rendered topbar geometry requires an installed browser")
+    browser = rendered_browser
 
     expression = """(() => {
       const header = document.querySelector('.r-topbar');
@@ -137,7 +154,9 @@ def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_e
     assert "Configure visibility…" in source
 
 
-def test_first_visit_renders_live_runs_from_every_mounted_project(tmp_path: Path) -> None:
+def test_first_visit_renders_live_runs_from_every_mounted_project(
+    tmp_path: Path, rendered_browser: str
+) -> None:
     projects = [
         {
             "project": f"project-{index}",
@@ -201,7 +220,7 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(tmp_path: Path
                 probe_script,
                 json.dumps(
                     {
-                        "browser": _installed_browser(),
+                        "browser": rendered_browser,
                         "profile": str(profile),
                         "url": url,
                         "waitSelector": ".r-crew-card",
