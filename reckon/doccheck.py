@@ -614,22 +614,33 @@ def _collect_corpus(
     slug_to_file: dict[str, Path] = {}
     file_to_ids: dict[Path, set[str]] = {}
 
-    from reckon.resources import resource_map
+    from reckon.resources import INFRA_DIRS, NON_RESOURCE_FILES
 
-    resources = resource_map(docs_dir, project, include_archived=True)
-    for resource in sorted(
-        resources.values(), key=lambda item: str(item.relative_path)
-    ):
-        html_file = resource.path
+    del project
+    for html_file in sorted(docs_dir.rglob("*.html")):
+        relative = html_file.relative_to(docs_dir)
+        if html_file.name in NON_RESOURCE_FILES or any(
+            part in INFRA_DIRS for part in relative.parts[:-1]
+        ):
+            continue
         try:
             text = html_file.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         soup = BeautifulSoup(text, "html.parser")
 
+        slug_meta = soup.find("meta", attrs={"name": "plan-slug"})
+        slug = ((slug_meta.get("content") if slug_meta else "") or "").strip()
+        slug = slug or html_file.stem
+        type_meta = soup.find("meta", attrs={"name": "reckon-type"})
+        resource_type = (
+            ((type_meta.get("content") if type_meta else "") or "plan").strip().lower()
+        )
+        archived = "archive" in relative.parts[:-1]
+
         # Untyped compatibility links retain the historical plan preference.
-        if resource.type == "plan" and not resource.archived:
-            slug_to_file[resource.slug] = html_file
+        if (resource_type == "plan" and not archived) or slug not in slug_to_file:
+            slug_to_file[slug] = html_file
         # Also index by stem so relative <slug>.html links resolve.
         stem = html_file.stem
         if stem not in slug_to_file:
@@ -674,14 +685,18 @@ def _resolve_href(
         prefix = f"/{project}/"
         if file_part.startswith(prefix):
             project_route = file_part[len(prefix) :]
-            from reckon.resources import ResourceCollision, resolve_route
-
-            try:
-                resource, _ = resolve_route(docs_dir, project, project_route)
-            except (ResourceCollision, ValueError):
-                return False, anchor  # type: ignore[return-value]
-            if resource is not None:
-                return resource.path, anchor
+            route_path = docs_dir / project_route
+            candidates = [route_path]
+            if not route_path.suffix:
+                candidates.append(route_path.with_suffix(".html"))
+            for candidate in candidates:
+                resolved_candidate = candidate.resolve()
+                try:
+                    resolved_candidate.relative_to(docs_dir.resolve())
+                except ValueError:
+                    return False, anchor  # type: ignore[return-value]
+                if resolved_candidate.is_file():
+                    return resolved_candidate, anchor
             file_part = project_route
         elif file_part.startswith("/"):
             # /<other-project>/... — can't validate cross-project from here.
@@ -950,10 +965,10 @@ def run(
     # Build corpus for link check if requested.
     link_findings: dict[Path, list[Finding]] = {}
     if check_links:
-        # Infer docs_dir from the paths: use their common ancestor if they share one,
-        # otherwise fall back to each file's parent.
-        parents = {p.parent for p in path_objs}
-        docs_dir = parents.pop() if len(parents) == 1 else Path(".")
+        # Infer the corpus root from the common path so nested resources remain
+        # inside the same read-only audit rather than collapsing to the cwd.
+        common_path = Path(os.path.commonpath([str(path) for path in path_objs]))
+        docs_dir = common_path.parent if common_path.is_file() else common_path
         link_findings = audit_links(path_objs, docs_dir, project=project)
 
     any_error = False
