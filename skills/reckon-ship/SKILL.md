@@ -498,11 +498,15 @@ backends are actually available.
 Dispatch ensures one live `reckon crew watch --project P` producer before it
 creates a worktree, reusing a kernel-backed seat or starting one detached, so
 ending the dispatching process does not orphan it. **That producer is not your
-wake-up.** A seat is project-global and delivery is session-local, so arm the
-payload's `attach_line` as a background monitor or this session hears nothing.
-`--no-watch` is the explicit exception for a genuinely synchronous one-off; it
-records the arming command and observed watcher liveness on both the live run
-and its promoted ledger record.
+wake-up.** A seat is project-global and delivery is session-local, so a
+CLI-launching dispatch is refused until this session has a live follower of its
+own: arm the payload's `attach_line` — `reckon crew follow --project P
+--session S --attention` — through the per-line notification primitive named in
+`references/orchestrator-harness/<harness>.md`. Anything that reports only on
+exit delivers nothing, because the follower does not exit. `--no-watch` is the
+explicit exception for a genuinely synchronous one-off; it records the arming
+command, the observed watcher liveness and the unattached session on both the
+live run and its promoted ledger record.
 
 **One dispatch instruction covers every backend.** State what the node is;
 reckon resolves how it runs. Which harness, at what model, effort and sandbox
@@ -582,73 +586,81 @@ classified snapshots. Let `follow` wake the session, then read
 `crew(project, view="live")` at turn time; manifest polling remains weaker
 because a worker can die without writing one.
 
-### Keep one project-wide watch live while dispatching
+### One producer for the project, one follower for your session
 
 **Nothing tells you a worker stopped.** Run state is pull-only: a worker that
 finishes, blocks, or dies changes a file, and you find out when you next look.
-Process-launching dispatch therefore verifies the watcher before it creates a
-worktree. Every successful dispatch payload also reports the watcher it
-observed:
+Two separate things have to be true before you find out promptly, and conflating
+them is the measured cause of finished runs sitting unnoticed for hours:
+
+| | What it is | Who owns it |
+|---|---|---|
+| **Producer** | one `reckon crew watch --project P` per project, turning pointer changes into transitions | dispatch arms it detached; never arm a second |
+| **Follower** | `reckon crew follow --project P --session S --attention` per **session**, delivering that session's runs to *you* | you, once per session |
+
+**A live producer is not your wake-up.** The seat is project-global and delivery
+is session-local, so `watcher_live` and `seat_held` read true while this session
+hears nothing — including when the seat belongs to a peer session, or to a
+producer dispatch armed on your behalf. Read them as "a producer exists", never
+as "I am attached". The field that answers the second question is
+`session_attached`, and dispatch enforces it:
 
 ```json
 {
   "watch": {
     "arming_line": "reckon crew watch --project <project>",
-    "watcher_live": true
+    "attach_line": "reckon crew follow --project <project> --session <session> --attention",
+    "watcher_live": true,
+    "session_attached": true
   }
 }
 ```
 
-If dispatch reports `watcher-required`, launch exactly its `arming_line` with
-the host's background mechanism and retry. Do not launch another when
-`watcher_live` is true; a session that is not the seat holder attaches
-read-only with `reckon crew follow --project <project>`, which streams the same
-transitions without claiming the seat.
-The watcher is one per project, not one per run: one
-fleet event owes one wake-up however many nodes were dispatched. A caller that
-deliberately passes `--no-watch` owns synchronous observation and leaves a
-durable `watch_override` on the run.
+**Arm the `attach_line` before your first dispatch.** A CLI-launching dispatch
+whose session has no delivering follower is refused with `watcher-required`
+(exit 8) before a worktree exists, naming the command to arm. `--no-watch` is
+the explicit waiver for a genuinely synchronous one-off, and records on the run
+that nobody was listening.
+
+**How to arm it is a property of your host harness, and it is the step that
+goes wrong.** Read `references/orchestrator-harness/<harness>.md` — the one for
+the host you are running inside — *before* arming, not after. The rule that
+matters in every harness: the follower **produces lines, not an exit**, so a
+mechanism that reports only when a command exits delivers nothing at all, and
+its silence reads exactly like a quiet fleet. Reckon measures which one you
+used, from the descriptor its lines are written to, and a follower whose lines
+end in a file is not registered as delivery.
+
+**Arm the line as it is given.** It is one bare command, and it needs no
+pipeline: `--attention` selects the states a coordinator must act on
+(terminal, blocked, stalled, stopped, abandoned) and `--session` selects your
+own runs, both inside the follower. A shell filter around it has three ways to
+lose the ticker silently — an unbuffered stage withholds every line until exit,
+an unanchored pattern matches the fleet summary that trails each line, and a
+trailing `|| true` turns a refusal into a success with no output.
+
+`reckon crew follow` also takes `--run <id>` (repeatable) to babysit named runs,
+`--json` for transition objects, and no `--session` at all for the whole
+project's fleet, which labels every line with the session that owns it. Status
+and refusals go to stderr so stdout stays one notification per transition.
+
+**One arming covers the session, not one wave.** The producer's seat is released
+when a wave drains and dispatch arms a fresh one for the next; the follower
+waits for it, re-derives the fleet on re-attach, and reports only what changed —
+so it neither repeats itself nor goes deaf between waves. Attaching late loses
+nothing either: it opens with a baseline of every live run before streaming.
 
 ```bash
-reckon crew watch --project <project> [--stall-window 15m]
+reckon crew watch --project <project> [--stall-window 15m]     # producer
+reckon crew follow --project <project> --session <session> --attention   # you
 ```
 
-**The command follows by default, and that is the mode an orchestrator wants.**
-It stays armed on an empty project until the first pointer appears, prints a
-compact ticker line per fleet transition, and holds the seat through every
-landing until the fleet drains — so one arming covers a whole wave. Arm it once,
-in the background, and read its transitions; do not re-arm per dispatch.
-
-`--once` returns after a single event instead, exiting with JSON naming
-`run_id`, `classification` and `next_action`. **It releases the seat on
-return**, so a coordinator using it must re-arm before its next dispatch or meet
-`watcher-required`. Reach for it only when something genuinely wants one event.
-
-A second concurrent invocation exits immediately with `event: watcher-live` and
-the current watcher metadata. The single-watcher guarantee is an advisory lock
-held by the live command, so an unlocked stale record is reclaimed
-automatically. Releasing a seat on purpose is `reckon crew unwatch --project
-<project>` — to replace a watcher, never to quiet a running fleet. A recorded
-worker pid is never the watch's liveness signal, which also keeps in-harness
-runs observable.
-
-**The follower produces lines, not an exit.** It returns only when the seat
-dies — never on a terminal manifest — so arming it as a wake-on-exit background
-command yields silence that reads as a quiet fleet.
-
-**Arm it through the host harness's background mechanism, not a detached
-`nohup`.** A detached watcher writes its transitions to a file that nothing
-reads, which turns orchestration back into polling; a harness-backgrounded watch
-wakes the session with the event.
-
-**And do not pipe it.** The ticker flushes each line as it happens, so a buffering
-filter — `| tail`, `| head`, `| grep` without `--line-buffered` — holds every
-transition until the command exits and you see nothing at all while the fleet
-runs. Background the bare command and read its output file.
-
-Filter shape matters as much as buffering: every line ends with a fleet summary
-— `· N live · N blocked · N unpromoted` — so a terminal-word grep matches every
-line ever printed. Match node names first, terminal words second.
+A second concurrent producer exits immediately with `event: watcher-live` and
+the current watcher metadata. `--once` returns after a single event and
+**releases the seat**, so a coordinator using it must re-arm before its next
+dispatch; reach for it only when something genuinely wants one event. Releasing
+a seat on purpose is `reckon crew unwatch --project <project>` — to replace a
+producer, never to quiet a running fleet.
 
 The live classifier reads the manifest's recorded status — `complete` becomes
 `completed_unpromoted`, `blocked`/`failed` are retained, missing terminal

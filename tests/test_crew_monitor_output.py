@@ -143,6 +143,14 @@ def test_follower_flushes_each_line_to_a_pipe() -> None:
 
 
 def test_harness_arms_a_monitor_and_attaches_followers() -> None:
+    """The arming section must state the contrast, not just the right answer.
+
+    Naming only the correct primitive left the wrong one available by default:
+    a shell string is most naturally pasted into the shell tool, whose one
+    notification arrives when the command exits — and the follower does not
+    exit. So the section is checked for the discriminator itself, and the
+    wrong primitive has to be named in order to be excluded.
+    """
     reference = Path(
         "skills/reckon-ship/references/orchestrator-harness/claude-code.md"
     ).read_text()
@@ -151,13 +159,19 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     )[0]
     words = " ".join(section.split())
 
-    assert "harness `Monitor`" in words
-    assert "reckon crew follow --project <project>" in words
+    assert "`Monitor`" in words
+    assert "run_in_background" in words, "the wrong primitive is not excluded"
+    assert "per **stdout line**" in words
+    assert "when the command **exits**" in words
+    assert "belongs in a `Monitor`, and only there" in words
+    assert "persistent: true" in words
+    assert "--session <session> --attention" in words
+    assert "session_attached" in words
+    # The measured failure the contrast exists to prevent.
     assert "four runs" in words
     assert "eight hours earlier" in words
     assert "three terminal events" in words
     assert "more than two hours" in words
-    assert "run_in_background" not in words
 
 
 def _transition(

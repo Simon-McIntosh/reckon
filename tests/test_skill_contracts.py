@@ -729,6 +729,18 @@ def test_ship_dispatch_section_names_the_session_attach() -> None:
     assert "crew follow" in attach_line and "crew follow" in ship
     # A follower never exits on a landing, so wake-on-exit backgrounding is silence.
     assert "produces lines, not an exit" in ship
+    # The field that answers "will I be told", as opposed to "does a seat exist".
+    assert "session_attached" in ship
+    # How to arm a follower is harness-local, and the arming step is where this
+    # goes wrong, so the section that arms it has to send the reader there --
+    # a pointer in a cross-reference list at the end of the file is not a
+    # trigger at the moment of arming.
+    watch_section = ship.split("One producer for the project, one follower", 1)[1]
+    watch_section = watch_section.split("Concurrency", 1)[0]
+    assert "references/orchestrator-harness/" in watch_section
+    # And it must not send the reader back to polling a file instead.
+    for polling in ("read its output file", "read the output file"):
+        assert polling not in ship, f"the skill still recommends polling: {polling}"
 
 
 def test_every_registered_crew_verb_is_documented_or_exempt() -> None:

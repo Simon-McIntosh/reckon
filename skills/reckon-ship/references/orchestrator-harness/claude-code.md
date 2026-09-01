@@ -23,80 +23,78 @@ config.
 
 ## Arming the fleet watch after dispatch
 
-Every successful dispatch returns `watch.arming_line` and
-`watch.watcher_live`. When the latter is false, arm the returned line as a
-harness `Monitor`; when it is true the seat belongs to someone else — possibly
-to a producer dispatch armed detached on your behalf — and this session reaches
-the same stream with `reckon crew follow --project <project>`, also as a
-`Monitor`. Either way stdout is the signal: each line becomes a chat
-notification, so a blocked or terminal transition wakes the orchestrator.
-Sessions do not compete for the seat, so each keeps its own view and attaches or
-leaves independently.
+Two primitives on this host look interchangeable and are not. The difference
+decides whether a finished worker reaches the session at all:
 
-Both forms belong in a `Monitor`, and the follower especially, because it is a
-**line-producing** primitive rather than an **exit-producing** one. It returns
-only when `watcher_live` goes false — never on a terminal manifest, a stall
-window, or an empty fleet. Arming it with a wake-on-exit background command
-therefore yields silence until the seat dies, which reads as a quiet fleet and
-is the measured cause of three sessions falling back to hand-rolled manifest
-polling. The follower also refuses when no seat exists anywhere, naming the
-arming line: it follows a watch, it does not start one.
+| Primitive | What it delivers | Right for |
+|---|---|---|
+| `Monitor` | one chat notification per **stdout line** | anything that emits lines and keeps running — the fleet follower |
+| `Bash` with `run_in_background: true` | one notification when the command **exits** | a command with an end: a build, a test run, an until-loop |
 
-Attaching late loses nothing. The follower yields a baseline built from the
-current live pointers before seeking to the end of the stream, so it opens with
-the present state of every run; only the historical lines themselves are not
-replayed.
+**The follower belongs in a `Monitor`, and only there.** It is a
+line-producing primitive, not an exit-producing one: it returns when its
+session's watch is stopped — never on a terminal manifest, a stall window, or a
+drained fleet. Backgrounding it as a shell therefore yields silence for as long
+as the session lasts, and silence reads exactly like a quiet fleet.
 
-Do not launch the watcher as a detached shell background command. Its process
-can remain live and satisfy the dispatch guard while no session reads its
-stdout. This admitted four runs behind a seat armed eight hours earlier by a
-different session; three terminal events then went unnoticed for more than two
-hours. The monitor form prevents that measured failure by making every ticker
-line observable instead of waiting only for process exit.
+```
+Monitor({
+  command: 'reckon crew follow --project <project> --session <session> --attention',
+  description: '<project> fleet: my session\'s runs',
+  persistent: true,
+})
+```
+
+`persistent: true` because a wave outlives the default timeout, and the
+follower is meant to cover the whole session rather than one wave.
+
+**Measured on this host, which is why reckon can check it rather than ask.** A
+backgrounded shell's stdout is a regular file that the harness reads when the
+command exits; a monitor's is a socket a reader consumes line by line. Reckon
+classifies the descriptor its lines are written to and registers a
+file-terminated follower as *not* delivering, so the next dispatch is refused
+with `watcher-required` naming the command to arm. A filter in between does not
+disguise it: the pipe is followed to the process on its other end, so
+`follow | grep > file` is judged by where the lines stop.
+
+The failure this replaced: four runs behind a seat armed eight hours earlier by
+a different session; three terminal events then went unnoticed for more than
+two hours, and three sessions independently fell back to hand-rolled manifest
+polling loops. A shell-armed follower produced every one of those.
+
+### One producer, one follower per session
+
+Dispatch arms the project's producer detached, on your behalf. It is shared, it
+is not yours, and `watcher_live` says only that it exists. Your own follower is
+`--session <session>` — the same session id you pass to `reckon crew dispatch`
+— which both scopes the stream to your runs and registers the session as
+attached so dispatch can verify delivery. Sessions do not compete: each keeps
+its own view and attaches or leaves independently.
+
+Arm it **before** the first dispatch if you like; a follower with no producer
+waits for one rather than refusing, and re-attaches by itself when a later wave
+arms a fresh seat. Attaching late loses nothing either — it opens with a
+baseline of every live run, then streams.
+
+### Filtering
+
+Do not build a shell filter. `--attention` selects the states that need a
+coordinator (`complete`, `blocked`, `failed`, `stalled`, `stopped`,
+`abandoned`, `completed_unpromoted`, `unknown`) and omits the two that are
+progress (`dispatched`, `working`); `--run <id>` narrows to named runs. Both
+select on the transition's own state, which is why they cannot repeat the three
+shell-filter mistakes: withholding lines in a stage's buffer, matching the
+`· N blocked · N unpromoted` summary that trails every line, or hiding a
+refusal behind `|| true`.
+
+Leave `--session` off only to watch a project's whole fleet across sessions;
+every line then names its owning session, and the runs it reports are not
+yours to act on.
 
 Neither `watcher_live` nor `seat_held` answers whether *this* session will be
 woken: both are project-global, wake delivery is session-local, and dispatch
 arms a producer detached on the caller's behalf, so both read true while the
-caller hears nothing. Read them as "a seat exists", never as "I am attached".
-
-### Filtering the ticker
-
-The follower streams every transition, so the monitor needs a filter — and the
-filter is where this goes wrong. Three sessions have now armed a broken one.
-
-```
-{ reckon crew follow --project <project> \
-    | grep --line-buffered -E '→ +(complete|blocked|fail|stall|abandon|stop|unknown)' \
-    || true; }
-```
-
-- **Anchor the state word to `→ `.** Every line ends with a summary field
-  `· N blocked · N unpromoted`, so a bare `blocked` or `unpromoted` alternative
-  matches the whole stream. An unanchored filter is a firehose that reads as a
-  working channel until the monitor is stopped for volume.
-- **`--line-buffered` on every stage**, or the ticker is withheld until exit.
-- **`|| true`**, because a pipeline exits with its last stage's status and
-  "nothing matched yet" would otherwise surface as a failing monitor.
-
-Scope the filter to a node id as well when babysitting one long run; leave it
-project-wide for a coordinator across waves, which is the only form that
-reports work the session did not think to name.
-
-`_watch_snapshot` emits exactly these states, and a filter is complete only
-against this list:
-
-| State | Emitted when |
-|---|---|
-| `complete` / `blocked` / `failed` | the manifest reports that status |
-| `dispatched` | phase is `starting` |
-| `working` | phase is `working` or `running` |
-| `stalled` | `working` with the stream quiet past the stall window |
-| `stopped` | phase is `stopped` — reachable from `reckon crew stop` |
-| `unknown` | neither classification nor phase resolves |
-
-Anything else arrives through the classification fallback, `abandoned` among
-them. `dispatched` and `working` are the two a terminal filter omits on
-purpose.
+caller hears nothing. `session_attached` is the field that answers it.
 
 ## Resuming a held wave without a human
 
