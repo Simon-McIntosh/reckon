@@ -9,11 +9,17 @@ from reckon.cli import main
 
 ROOT = Path(__file__).parents[1]
 REAL_README = ROOT / "README.md"
+CANONICAL_BADGE = ROOT / "docs" / "_shared" / "badge.svg"
 
 
-def _repository(tmp_path: Path, *, declared: bool = True) -> Path:
+def _repository(
+    tmp_path: Path, *, declared: bool = True, badge_asset: bool = True
+) -> Path:
     root = tmp_path / "imas-codex"
-    (root / "docs" / "_shared").mkdir(parents=True)
+    shared = root / "docs" / "_shared"
+    shared.mkdir(parents=True)
+    if badge_asset:
+        (shared / "badge.svg").write_bytes(CANONICAL_BADGE.read_bytes())
     (root / "README.md").write_text("# IMAS Codex\n", encoding="utf-8")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     subprocess.run(
@@ -69,6 +75,7 @@ def test_badge_prints_declared_repository_site_and_write_is_idempotent(
 
     assert printed.exit_code == 0, printed.output
     assert printed.output == f"{expected}\n"
+    assert (root / "docs" / "_shared" / "badge.svg").is_file()
     assert readme.read_text(encoding="utf-8") == "# IMAS Codex\n"
 
     first_write = _invoke(root, "--write")
@@ -106,4 +113,22 @@ def test_badge_refuses_repository_without_publication_declaration(
     assert "RECKON_PAGES_REPOSITORY" in result.output
     assert "[![Plans]" not in result.output
     assert (root / "README.md").read_bytes() == readme_before
+    assert REAL_README.read_bytes() == real_readme_before
+
+
+def test_badge_refuses_missing_image_asset_without_writing_unusable_markdown(
+    tmp_path: Path,
+) -> None:
+    real_readme_before = REAL_README.read_bytes()
+    root = _repository(tmp_path, badge_asset=False)
+    readme = root / "README.md"
+    readme_before = readme.read_bytes()
+
+    result = _invoke(root, "--write")
+
+    assert result.exit_code == 1
+    assert "badge.svg" in result.output
+    assert "reckon sync" in result.output
+    assert "[![Plans]" not in result.output
+    assert readme.read_bytes() == readme_before
     assert REAL_README.read_bytes() == real_readme_before
