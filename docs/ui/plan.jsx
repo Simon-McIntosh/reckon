@@ -11,6 +11,8 @@
 // table. Followups and the resolved-log always come from state JSON (below the
 // HTML body).
 
+const { useEffect, useLayoutEffect, useRef, useState } = React;
+
 // Walk the rendered plan HTML for the first text node whose textContent
 // contains `comment.quote`, and wrap that range in a <mark class="r-cm-anchor">
 // + tiny <sup class="r-cm-badge">¶</sup>. No-op if the comment has no quote,

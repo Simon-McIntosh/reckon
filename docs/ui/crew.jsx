@@ -1,3 +1,5 @@
+const { useEffect, useState } = React;
+
 const CREW_POLL_INTERVAL_MS = 3000;
 
 const CREW_CARD_STYLES = String.raw`.r-crew-contract{-webkit-line-clamp:1}`;

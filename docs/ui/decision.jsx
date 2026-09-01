@@ -1,6 +1,8 @@
 // Decision row — select from options and/or give a free-form answer + rationale,
 // commit with the button. Backed by semantic <div class="r-dec"> HTML in the plan.
 
+const { useState } = React;
+
 function Decision({ d, onUpdate }) {
   const labels = d.option_labels || {};
   const hasOptions = Array.isArray(d.choices) && d.choices.length > 0;
