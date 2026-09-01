@@ -39,7 +39,7 @@ as the session lasts, and silence reads exactly like a quiet fleet.
 
 ```
 Monitor({
-  command: 'reckon crew follow --project <project> --session <session> --attention',
+  command: 'reckon crew follow --project <project> --session <session>',
   description: '<project> fleet: my session\'s runs',
   persistent: true,
 })
@@ -78,14 +78,28 @@ baseline of every live run, then streams.
 
 ### Filtering
 
-Do not build a shell filter. `--attention` selects the states that need a
-coordinator (`complete`, `blocked`, `failed`, `stalled`, `stopped`,
-`abandoned`, `completed_unpromoted`, `unknown`) and omits the two that are
-progress (`dispatched`, `working`); `--run <id>` narrows to named runs. Both
-select on the transition's own state, which is why they cannot repeat the three
-shell-filter mistakes: withholding lines in a stage's buffer, matching the
-`· N blocked · N unpromoted` summary that trails every line, or hiding a
-refusal behind `|| true`.
+Do not build a shell filter, and do not add a state filter by default. The
+follower reports every transition — starts, `working`, landings, promotions —
+because a filter that legitimately matches nothing gives this host a pane
+reading `No output available`, which is indistinguishable from a follower that
+died. Measured: a session with two healthy runs sat like that for minutes.
+
+`--attention` exists for a caller that deliberately wants only the actionable
+states (`complete`, `blocked`, `failed`, `stalled`, `stopped`, `abandoned`,
+`completed_unpromoted`, `unknown`) and none of the progress ones (`dispatched`,
+`working`); `--run <id>` narrows to named runs. Both select on the transition's
+own state, which is why neither can repeat the three shell-filter mistakes:
+withholding lines in a stage's buffer, matching the `· N blocked · N unpromoted`
+summary that trails every line, or hiding a refusal behind `|| true`.
+
+An attach announces itself in the ticker's own columns, so a monitor is never
+silent about being alive:
+
+```
+10:30:11  attached            → 2 live      1 dispatched · 1 working · s18 · delivery stream
+10:30:11  hdg-cache-replay    → dispatched  2 live · 0 blocked · 0 unpromoted
+10:30:12  hdg-measured-map    working → blocked   3 live · 1 blocked · 0 unpromoted · tried: …
+```
 
 Leave `--session` off only to watch a project's whole fleet across sessions;
 every line then names its owning session, and the runs it reports are not

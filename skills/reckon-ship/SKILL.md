@@ -501,7 +501,7 @@ ending the dispatching process does not orphan it. **That producer is not your
 wake-up.** A seat is project-global and delivery is session-local, so a
 CLI-launching dispatch is refused until this session has a live follower of its
 own: arm the payload's `attach_line` — `reckon crew follow --project P
---session S --attention` — through the per-line notification primitive named in
+--session S` — through the per-line notification primitive named in
 `references/orchestrator-harness/<harness>.md`. Anything that reports only on
 exit delivers nothing, because the follower does not exit. `--no-watch` is the
 explicit exception for a genuinely synchronous one-off; it records the arming
@@ -596,7 +596,7 @@ them is the measured cause of finished runs sitting unnoticed for hours:
 | | What it is | Who owns it |
 |---|---|---|
 | **Producer** | one `reckon crew watch --project P` per project, turning pointer changes into transitions | dispatch arms it detached; never arm a second |
-| **Follower** | `reckon crew follow --project P --session S --attention` per **session**, delivering that session's runs to *you* | you, once per session |
+| **Follower** | `reckon crew follow --project P --session S` per **session**, delivering that session's runs to *you* | you, once per session |
 
 **A live producer is not your wake-up.** The seat is project-global and delivery
 is session-local, so `watcher_live` and `seat_held` read true while this session
@@ -609,7 +609,7 @@ as "I am attached". The field that answers the second question is
 {
   "watch": {
     "arming_line": "reckon crew watch --project <project>",
-    "attach_line": "reckon crew follow --project <project> --session <session> --attention",
+    "attach_line": "reckon crew follow --project <project> --session <session>",
     "watcher_live": true,
     "session_attached": true
   }
@@ -631,18 +631,35 @@ its silence reads exactly like a quiet fleet. Reckon measures which one you
 used, from the descriptor its lines are written to, and a follower whose lines
 end in a file is not registered as delivery.
 
-**Arm the line as it is given.** It is one bare command, and it needs no
-pipeline: `--attention` selects the states a coordinator must act on
-(terminal, blocked, stalled, stopped, abandoned) and `--session` selects your
-own runs, both inside the follower. A shell filter around it has three ways to
-lose the ticker silently — an unbuffered stage withholds every line until exit,
-an unanchored pattern matches the fleet summary that trails each line, and a
-trailing `|| true` turns a refusal into a success with no output.
+**Arm the line as it is given.** It is one bare command and it needs no
+pipeline: `--session` selects your own runs inside the follower. A shell filter
+around it has three ways to lose the ticker silently — an unbuffered stage
+withholds every line until exit, an unanchored pattern matches the fleet summary
+that trails each line, and a trailing `|| true` turns a refusal into a success
+with no output.
 
-`reckon crew follow` also takes `--run <id>` (repeatable) to babysit named runs,
+**It carries no state filter, deliberately.** A filter that legitimately matches
+nothing produces an empty pane, and an empty pane reads exactly like a follower
+that never started — the failure this whole surface exists to remove. So the
+follower reports every transition, starts included, and opens with a one-line
+receipt naming the session, its live runs and their states, the delivery mode,
+and whether this follower holds the registration. Each line's
+`N live · N blocked · N unpromoted` is the fleet **after** that transition, so
+two landings in one cycle read as two, and a promotion reports the fleet it
+leaves behind.
+
+`reckon crew follow` also takes `--attention` when a caller deliberately wants
+only the actionable states (terminal, blocked, stalled, stopped, abandoned) and
+none of the progress ones, `--run <id>` (repeatable) to babysit named runs,
 `--json` for transition objects, and no `--session` at all for the whole
 project's fleet, which labels every line with the session that owns it. Status
 and refusals go to stderr so stdout stays one notification per transition.
+
+**Registration is what dispatch checks, and streaming is not registration.** A
+second follower for the same session streams read-only while the first holds the
+registration, and says so. It takes the registration over within a poll once the
+holder goes, so stopping an old follower after arming a new one self-corrects
+rather than leaving lines arriving at an unregistered reader.
 
 **One arming covers the session, not one wave.** The producer's seat is released
 when a wave drains and dispatch arms a fresh one for the next; the follower
@@ -652,7 +669,7 @@ nothing either: it opens with a baseline of every live run before streaming.
 
 ```bash
 reckon crew watch --project <project> [--stall-window 15m]     # producer
-reckon crew follow --project <project> --session <session> --attention   # you
+reckon crew follow --project <project> --session <session>        # you
 ```
 
 A second concurrent producer exits immediately with `event: watcher-live` and

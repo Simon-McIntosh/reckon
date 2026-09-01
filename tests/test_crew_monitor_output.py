@@ -166,7 +166,13 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     assert "when the command **exits**" in words
     assert "belongs in a `Monitor`, and only there" in words
     assert "persistent: true" in words
-    assert "--session <session> --attention" in words
+    assert "--session <session>'," in words, "the armed command must be the bare one"
+    # A default state filter is what produced an empty pane on this host, so the
+    # reference has to say the follower reports everything and keep `--attention`
+    # as the deliberate exception.
+    assert "do not add a state filter by default" in words
+    assert "No output available" in words
+    assert "`--attention` exists for a caller that deliberately wants" in words
     assert "session_attached" in words
     # The measured failure the contrast exists to prevent.
     assert "four runs" in words
