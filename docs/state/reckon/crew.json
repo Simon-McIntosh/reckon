@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T07:49:36",
+  "updated": "2026-09-01T08:00:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -310,77 +310,6 @@
         "role": "implement",
         "session_id": "01a00aa8-4a6c-78a0-9c90-c5ef82985fc1",
         "created": "2026-08-16"
-      },
-      {
-        "id": "session-0c54475d11ab5c3f2a9e",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-1cf84436686a006f353c",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": "e4d95ca5-35ba-468c-9a1c-6d8f8c9bef61",
-        "session_model": "deepseek-v4-flash",
-        "sessions": {
-          "deepseek-v4-flash": "e4d95ca5-35ba-468c-9a1c-6d8f8c9bef61"
-        },
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-1d959a71bd105b4256a2",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-3fdde603806a9f699726",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": "e5144cb1-1258-4243-bde5-813ccfbb87f5",
-        "session_model": "deepseek-v4-flash",
-        "sessions": {
-          "deepseek-v4-flash": "e5144cb1-1258-4243-bde5-813ccfbb87f5"
-        },
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-a75c47b7f404d8983772",
-        "harness": "clive",
-        "role": "investigate",
-        "session_id": "6622ec09-216e-4563-ae2a-a45e56284211",
-        "session_model": "deepseek-v4-flash",
-        "sessions": {
-          "deepseek-v4-flash": "6622ec09-216e-4563-ae2a-a45e56284211"
-        },
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-ac4a6ea4a92a52f00409",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": "6ecaa367-36b3-49e2-858a-0a14df826663",
-        "session_model": "deepseek-v4-flash",
-        "sessions": {
-          "deepseek-v4-flash": "6ecaa367-36b3-49e2-858a-0a14df826663"
-        },
-        "created": "2026-08-26"
-      },
-      {
-        "id": "session-b9f11ef5b8c711900e84",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-08-26"
       }
     ],
     "runs": [
@@ -27394,9 +27323,204 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T055339222781-n-browser-network",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a78",
+        "node": "n-browser-network",
+        "node_definition": {
+          "done_when": "The report names one identified cause with the command output demonstrating it, or enumerates eliminated causes each with disproving evidence, and states the concrete change that would let a rendered gate produce evidence on this host",
+          "estimated_hours": null,
+          "goal": "Determine why headless Chrome on this host completes no http or https navigation while file and data URLs load normally",
+          "id": "n-browser-network",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055339222781-n-browser-network/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a78",
+          "spec_level": "open",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "open",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-01T05:53:45Z",
+        "completed_at": "2026-09-01T05:59:10Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 325,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 325,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "101f80184e7444e381519c5a7a6e7c16dde208ce",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "socket-family probe + single Chrome scheme probe (AF_UNIX/AF_INET/AF_INET6; data/file/http)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055339222781-n-browser-network/sandbox-policy.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055339222781-n-browser-network/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f8-cc64-7c61-b67c-302b5278f763",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3629312,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3905360,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 11377,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3560
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260901T055409370298-n-jsx-helper-eval",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a73",
+        "node": "n-jsx-helper-eval",
+        "node_definition": {
+          "done_when": "The three currently failing node-helper cases in tests/test_spa_sprint_surface.py pass, a shared evaluation helper compiles a module before handing it to node, and a test asserts that helper rejects raw JSX so the failure cannot silently return",
+          "estimated_hours": null,
+          "goal": "Let node-evaluated helper tests run against a UI module that contains JSX, by compiling the module before evaluation instead of feeding node raw JSX",
+          "id": "n-jsx-helper-eval",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055409370298-n-jsx-helper-eval/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/spa_module_eval.py",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-g",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T05:54:21Z",
+        "completed_at": "2026-09-01T06:00:02Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 341,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 341,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "101f80184e7444e381519c5a7a6e7c16dde208ce",
+        "commits": [
+          "83d2b23dc5413bbfdea4fe056a878f07bc8a2608"
+        ],
+        "changed_lines": {
+          "added": 45,
+          "removed": 10,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_spa_sprint_surface.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055409370298-n-jsx-helper-eval/test_spa_sprint_surface_final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T055409370298-n-jsx-helper-eval/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038c0-f651-73a0-aee6-bbaed1da322d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3877120,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4289593,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 11935,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3562
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 459
+    "_version": 462
   }
 }

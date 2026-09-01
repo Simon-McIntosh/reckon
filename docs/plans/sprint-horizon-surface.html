@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="17">
 <meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080">
 <meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
 <meta name="plan-impl" content="0.43">
@@ -541,6 +541,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260826T142253087856-n-scroll-owner" data-who="codex-b" data-when="2026-08-26T15:17:32Z">
     <div class="r-comment-body"><p>Declares one scroll owner: .r-sprint-view .r-reader-with-attachments &gt; .r-body is the sole intentional Sprints vertical scroll selector and .r-sprint-surface now carries 0 overflow:auto declarations. docs/_shared/foundation.css verified byte-identical by sha256, so the shared stylesheet every project inherits is untouched. Gate recorded not-run rather than passed because no clean browser-free log exists: the captured run mixes the two rendered cases, which timed out on the host browser fault, with 3 pre-existing untranspiled-JSX node helper failures that predate this node. Rendered reachability capture at 900x420 remains OWED.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260901T055409370298-n-jsx-helper-eval" data-who="codex-g" data-when="2026-09-01T06:00:02Z">
+    <div class="r-comment-body"><p>Node-evaluated helper tests now compile a UI module before handing it to node, so a file containing JSX can be exercised: tests/test_spa_sprint_surface.py 6/6 passing where 3 cases previously failed with a node parse error. A shared tests/spa_module_eval.py owns the compile-then-evaluate step and asserts raw JSX is rejected, so the failure cannot silently return. Lint on the touched legacy test improved from 4 findings to 1. This unblocks verification of every remaining section that rewrites sprint.jsx.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-20260826-ready-set-is-section-granular" data-who="reckon-ship" data-when="2026-08-26T14:25:00+00:00">
     <div class="r-comment-body"><p><strong>The ready set this section renders became finer-grained twenty minutes before the section was scoped, so build against the new shape rather than the one the plan text assumes.</strong> Merged at <code>1790e61</code>: an unresolved staged prerequisite now yields <code>section_readiness</code> carrying <code>ready_sections</code> and <code>blocked_sections</code> <em>while the containing plan stays in <code>ready_now</code></em>. Target-section completion derives from gate verdicts with no new persisted field, and a dependency ref whose anchor does not exist emits <code>missing-dependency-section</code> rather than passing silently.</p><p>Two consequences for this section, and the first inverts a natural assumption. <strong>A plan appearing in <code>ready_now</code> no longer means all of it is runnable</strong> — it can be ready with some sections blocked, so a ready-set view keyed on plan-level readiness alone will offer work that is in fact fenced. Render section granularity where the payload supplies it. And <strong>a graph target now behaves the same way</strong>: section-only edges were being ignored by graph-target readiness and critical-path blocking while those targets stayed in closure membership, which is fixed in the same merge — so a reader of either path sees one consistent answer.</p><p>This does not change the section's own contract. The ready set is still concurrent lanes rather than a sequence, still carries a per-row reason, and still shows no rank column.</p></div>
 </div>
@@ -573,6 +576,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260826T142313605618-n-client-load" data-who="codex-d" data-when="2026-08-26T15:37:48Z">
     <div class="r-comment-body"><p>Serves compiled local client assets: 9/9 scope-isolation gate, all 11 compiled artifacts carry an IIFE boundary, all 10 SPA modules concatenate in load order with zero duplicate top-level lexical declarations, 39 window exports preserved. Checked-in, served, synced and static-built shells all assert zero text/babel, standalone-compiler, unpkg and remote-font references. Verified on the live service after merge: 0 remote origins and 0 text/babel where there were 3 and 10, every referenced module returns 200. Ruff delta 0 (35 base, 35 after). Rendered origin count, edit/reload visibility and paired wall clock remain OWED: headless Chrome on this host completes no http navigation.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260901T055339222781-n-browser-network" data-who="codex-f" data-when="2026-09-01T05:59:10Z">
+    <div class="r-comment-body"><p>Met the eliminated-causes branch of its measure: seven cause classes disproved with quantitative evidence (SPA, reckon server, loopback routing, proxy, SELinux/shm/process ceiling, Chrome background services and process topology, and the earlier inotify exhaustion). Deliberately did NOT claim a root cause it could not demonstrate. Separate directly-demonstrated finding: the investigate-role sandbox denies AF_INET and AF_INET6 socket creation with EPERM (CapEff 0, NoNewPrivs 1, Seccomp 2), so Chrome aborts all three schemes in 0.135-0.142s on crashpad setsockopt before any navigation - a different phenotype from the original fault and the reason this role cannot reproduce it. Names the concrete unblock: run the rendered gate in an execution-capable network-enabled sandbox behind three preflights.</p></div>
 </div>
 </section>
 </main>
