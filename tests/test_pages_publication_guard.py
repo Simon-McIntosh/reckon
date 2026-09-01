@@ -38,9 +38,18 @@ def test_publication_requires_the_repository_local_declaration() -> None:
             public_fork_metadata.get("publication_repository"),
         )
 
-    declared_repository = _load_workflow()["env"]["RECKON_PAGES_REPOSITORY"]
-    assert publication_is_declared("Simon-McIntosh/reckon", declared_repository)
-    require_publication_declaration("Simon-McIntosh/reckon", declared_repository)
+    declared_repository = "example/adopting-repository"
+    assert publication_is_declared(declared_repository, declared_repository)
+    require_publication_declaration(declared_repository, declared_repository)
+
+
+def test_reckon_does_not_declare_itself_for_publication() -> None:
+    workflow = _load_workflow()
+    declared_repository = workflow.get("env", {}).get("RECKON_PAGES_REPOSITORY")
+
+    assert declared_repository is None
+    with pytest.raises(PagesUndeterminedError, match="not declared"):
+        require_publication_declaration("Simon-McIntosh/reckon", declared_repository)
 
 
 def test_deploy_is_main_only_and_holds_its_own_write_permissions() -> None:
