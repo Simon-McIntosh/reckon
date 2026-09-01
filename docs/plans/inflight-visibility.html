@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29,9b483972468d977de2ff8a96f1d7be63802449f3,e2fb7886b10535ae66e93e15b01544d0e3288998,1d4543a511f277926028f948b54a8645cf156935,fb95f4f41b864663661608d263bc0c82842c538a,2f1bb2335b21171a78675f2d2c1ddd164c2b0e3f,3f7c6d3983e84bc6c3a77c24f5a4c9c78dd81abc,21288f82216afce3bb5ebaa1d47fbf16c0446337,e96cac111d56e57d0c592a9397a4bbb3138cc083,d59528092057da5cd1642d98bdced3938be807d1">
 <meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/inflight-visibility-landed.html">
 <meta name="plan-impl" content="1.0">
@@ -357,6 +357,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260901T221500-skill-repair-and-restart" data-who="reckon-ship" data-when="2026-09-01T22:15:00Z">
     <div class="r-comment-body">Two of f-ifv-002's coordinated actions taken with the lead's authorisation on 2026-09-01. reckon service restart at 22:10:59 brought the server onto commit 58f9938 (GET /crew 200 afterwards); the ship-s14 session's two live workers were running at the time and were told through this record rather than interrupted. reckon install-skills --repair replaced the copied reckon-roadmap directory with a symlink to the repository skill in both ~/.claude/skills and ~/.agents/skills, and a second install-skills pass reports no drift. The two remaining measures, the watcher-tab and in-flight-band figures, are in flight as node n-live-watcher-figures against the restarted server; f-ifv-watcher-load is in flight as n-watcher-deadlines-load-robust.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260901T201337387880-n-live-watcher-figures" data-who="codex-d" data-when="2026-09-01T20:18:25Z">
+    <div class="r-comment-body"><p>blocked by the host browser fault owned by rendered-evidence-on-this-host; two bounded attempts exited 124 with zero PNGs and zero leaked browser processes</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260901T222200-figures-blocked" data-who="reckon-ship" data-when="2026-09-01T22:22:00Z">
+    <div class="r-comment-body">Navigable and In-flight band measures attempted against the restarted server and NOT discharged. Node n-live-watcher-figures (run r-20260901T201337387880) recorded GET /crew returning 13 live runs with valid plan and sprint hrefs, one listener at 127.0.0.1:8765 owned by pid 2710453, then two 45-second headless-Chrome navigations to #crew and #plan/inflight-visibility both exited 124 with zero PNGs and zero leaked browser processes. Same host fault as the sibling plan: rendered-evidence-on-this-host §2 shows Chrome here emits no HTTP request at all, so the capture is owed against that plan's host change and not against this plan. f-ifv-002 now has two of four measures passed by live measurement, the skill repair done, the restart done, and two figures open under the foreign-owner exemption naming rendered-evidence-on-this-host.</div>
 </div>
 </section>
 </main>

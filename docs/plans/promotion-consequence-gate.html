@@ -23,7 +23,7 @@
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-01">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -235,6 +235,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-20260901T220000-linking" data-who="reckon-ship" data-when="2026-09-01T22:00:00Z">
     <div class="r-comment-body">Sprint pre-flight linking, recorded before any dispatch. Oriented at state-that-tells-the-truth because the deliverable is a gate verdict derived from a measured delta rather than an asserted pass. depends_on crew-run-ledger (shipped, impl 1.0) because the refusal and the waiver both land on the committed ledger row that plan created. Prior art the implementation nodes must cite: commit f05f85b already makes reckon crew complete refuse a passing gate promoted with no check evidence (command, exit status, log path or digest), and bc95a74 classifies failed gate outcomes; the delta measure, the added-failure ids and the reasoned waiver are the parts this plan adds on top. Cross-project: imas-codex hidden-suite-failures (draft, its S10) claims the cancel-in-progress concurrency half and references this plan by prose only; neither plan carries a DAG edge because neither is an executable prerequisite of the other. Three decisions remain open and are the plan's only blocker.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901T222000-reuse-map" data-who="reckon-ship" data-when="2026-09-01T22:20:00Z">
+    <div class="r-comment-body">n-gate-prior-art landed — no commit (read-only investigation); gate passed on its report-contract validator, exit 0, all ten required references present; measure: 58 in-reach candidates, 16 consume, 37 extend, 5 unfit; artifact /home/ITER/mcintos/.config/reckon/crew/reports/promotion-consequence-gate-reuse-map.md. The map fixes the implementation boundary: no existing function computes a suite-failure delta, no flight-config field declares a project suite command, and no promotion waiver takes a reason — those three are the new code. Everything around them is reused: the worker manifest contract and parser (reckon/crew/prompts.py, reports.py) gain typed baseline and after observations each carrying revision, command, exit status, log path or digest, completed flag, failure count and failure ids, with completed=false meaning absence never an empty set; GateConfig in reckon/schema/flight.yaml gains an optional suite command whose absence is the unarmed state, snapshotted onto the run pointer at dispatch; crew complete's fail-closed check-evidence path (f05f85b) widens to require both observations for an armed run, computes after minus baseline failure ids and refuses when non-empty; the waiver follows the dispatch waiver pipeline with the --no-commit reason syntax and lands on the same ledger row; the ledger summary counts clean, refused and waived deltas separately. Executed as three serial nodes over these shared files: arming config plus manifest contract, then delta refusal plus waiver, then the two behavioural regressions and summary counters.</div>
 </div>
 </section>
 </main>
