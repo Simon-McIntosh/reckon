@@ -79,6 +79,26 @@
     repository whose HEAD equals <code>base_sha</code> plus one cited commit, proving the citation
     guard and the delta gate coexist on the path real runs take.</p>
   </section>
+
+  <section id="incident-regressions">
+    <h2>The incident, pinned in both directions, and the suite gate</h2>
+    <p>Commit <code>b8b8b66</code> (merged <code>28618e9</code>). The known-bad fixture carries the
+    pre-existing documentation-layout collection failure plus the exact twenty Standard Names failure
+    ids the incident introduced, and the promotion is refused naming them. The repair fixture runs
+    fifteen sequential armed promotions with red baselines, red-or-equal after sets and empty added-id
+    sets, and every one is accepted. <code>tests/test_gate_evidence.py</code> 15 passed / 0 failed.</p>
+    <table>
+      <thead><tr><th>Full reckon suite</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Base 3e65685</td><td>4 failed / 2638 passed / 28 skipped in 720 s</td></tr>
+        <tr><td>Commit b8b8b66</td><td>3 failed / 2641 passed / 28 skipped in 762 s</td></tr>
+        <tr><td>Delta</td><td>0 added failure ids; 1 base-only id gone; the 3 persisting ids are in tests/test_service_unit.py and tests/test_spa_crew_stylesheet.py, owned by the concurrent ship-s14 node n-entry-point-shape-assertions</td></tr>
+      </tbody>
+    </table>
+    <p>The gate is shipped and unarmed: no project's flight config declares
+    <code>gates.suite_command</code> yet. Arming reckon itself is a cost decision recorded on the plan
+    as followup f-pcg-002.</p>
+  </section>
 </main>
 </body>
 </html>

@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="promotion-consequence-gate">
   <meta name="plan-title" content="Promotion Consequence Gate">
   <meta name="plan-summary" content="Make a promotion refuse when the node it promotes added a suite failure, judged by delta and waivable on the record">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,10 @@
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-01">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="5">
-<meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9,62efee878d7898bd23ee29551b3530a928f88c65">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="7">
+<meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9,62efee878d7898bd23ee29551b3530a928f88c65,b8b8b66c6d4fde9e998e67c0ecdaf00a6d869244">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/crew/prompts.py,reckon/crew/reports.py,reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/cli.py,reckon/ledger.py,skills/reckon-ship/references/worker-protocol.md,tests/test_gate_evidence.py,docs/evidence/promotion-consequence-gate-landed.html">
 </head>
 <body>
   <main class="plan-doc">
@@ -175,7 +176,19 @@
       absence-as-permission inside the mechanism built to prevent it.
     </p>
 
-    <h2 id="s5">&#167;5 &mdash; Deliverables</h2>
+    <section id="s5-landed" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-01</span>
+        <h2 id="s5">&#167;5 &mdash; Deliverables</h2></header>
+      <p class="landed-summary">Shipped in three nodes: an opt-in <code>gates.suite_command</code> with
+      typed baseline and after suite observations in the worker manifest (<code>648f287</code>, +7
+      tests); an armed promotion that refuses a non-empty added-failure set or absent evidence naming
+      what is missing, and accepts only a reasoned waiver stored on the ledger row with both
+      observations (<code>62efee8</code>, +8 tests); and the incident pinned both ways &mdash; twenty added
+      ids refused, fifteen red-but-clean repair promotions accepted (<code>b8b8b66</code>, +2 tests).
+      Full suite at the final commit: zero added failures against base. The gate is unarmed until a
+      project declares its command. Full record:
+      <a href="/reckon/evidence/promotion-consequence-gate-landed">landed evidence</a>.</p>
+    </section>
     <ul>
       <li>A promotion-time measure of whether the promoting node added a suite failure,
         computed against a stated baseline rather than against green.</li>
@@ -223,9 +236,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-pcg-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship promotion-consequence-gate" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-pcg-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship promotion-consequence-gate" data-resolved-at="2026-09-01T21:24:59+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the delta-measured promotion gate with its waiver</h4>
     <div class="r-fu-body"><p>Three decisions are open and each changes the implementation, so lock them before dispatching: what the delta baseline is, who executes the suite, and whether the gate defaults on. The measured incident in §1 and the counter-example in §2 are the inputs and do not need re-deriving. <strong>Sprint placement is a proposal, not a decision:</strong> this plan was authored from <code>imas-codex</code> by the session that measured the incident, and S9 was chosen because its theme produced the signal this plan gives consequence to. A reckon session should confirm or rebalance it.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship promotion-consequence-gate</pre>
+    <p class="r-fu-outcome">Shipped in three nodes (648f287, 62efee8, b8b8b66) after the three decisions were locked on 2026-09-01: opt-in gates.suite_command with typed baseline and after observations in the worker manifest; an armed promotion that refuses a non-empty added-failure set or absent evidence naming what is missing and accepts only a reasoned, ledger-recorded waiver; and the two incident regressions. Sprint placement in S9 confirmed. No project has yet declared a suite command, so the gate is built and unarmed everywhere; arming reckon's own project is the one open followup and needs the lead's choice of command and cost.</p>
+    </article>
+<article class="r-fu" data-id="f-pcg-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship promotion-consequence-gate" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Arm the gate for reckon itself by declaring gates.suite_command</h4>
+    <div class="r-fu-body"><p>The gate is shipped and unarmed everywhere: no project's flight config declares <code>gates.suite_command</code>. Arming reckon is one line in <code>docs/state/reckon/flight.yaml</code>, but the command choice is a cost decision the lead owns — the full suite measured 720–762 s here, and an armed node must produce a baseline and an after observation, so the whole-tree command costs each implementation node roughly 25 minutes of suite time against a typical 25–45 minute budget, while a scoped command (the node's fenced test files) is cheap and measures less. <strong>Exemption: authority-required</strong> — the choice of command and the accepted per-node cost are the lead's; recorded here as a pointer, not as hidden work.</p></div>
     <pre class="r-fu-prompt">/reckon-ship promotion-consequence-gate</pre>
     </article>
 </section>
@@ -246,6 +265,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901T225500-delta-landed" data-who="reckon-ship" data-when="2026-09-01T22:55:00Z">
     <div class="r-comment-body">n-delta-refusal-and-waiver landed — commit 62efee8 (merged 8c1d260); gate passed; measure: tests/test_gate_evidence.py tests/test_ledger.py tests/test_crew.py tests/test_skill_contracts.py tests/test_failure_classification.py 310 passed / 0 failed at the commit against 302 / 0 at base e3d386d, +8 regressions, scoped ruff delta 0, all eight paths format-clean. Delivered: dispatch snapshots gates.suite_command onto the run pointer so a later config edit cannot restate an in-flight run; an armed promotion requires both completed typed observations with the baseline revision equal to the pointer's base_sha and refuses otherwise naming the missing field; a non-empty after-minus-baseline failure-id set refuses with the added ids in the structured refusal JSON and leaves the pointer recoverable; --waive-suite-delta takes a non-empty reason and stores reason, both observations and the added ids on the committed row; an unarmed project's promotion is unchanged; the ledger summary counts clean, refused and waived deltas separately. The worker stopped once at its two-failure fence: adding base_sha to every synthetic fixture woke the older uncited-commit guard; resolved by a reasoned --no-commit on the report-only fixtures plus one regression on a real temporary repository whose HEAD equals base_sha plus one cited commit, proving the citation guard and the delta gate coexist on the path real runs take. impl 2/3.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901T232500-regressions-landed" data-who="reckon-ship" data-when="2026-09-01T23:25:00Z">
+    <div class="r-comment-body">n-incident-regressions-and-suite-gate landed — commit b8b8b66 (merged 28618e9); gate passed; measure: the two incident regressions 2 passed, tests/test_gate_evidence.py 15 passed / 0 failed, scoped ruff 0 findings; full reckon suite at base 3e65685 4 failed / 2638 passed / 28 skipped in 720 s and at the commit 3 failed / 2641 passed / 28 skipped in 762 s — zero added failure ids, one base-only failure gone, and the three persisting ids (tests/test_service_unit.py, tests/test_spa_crew_stylesheet.py) belong to the concurrent ship-s14 node n-entry-point-shape-assertions, not to this plan. The known-bad fixture carries the pre-existing documentation-layout collection failure plus the exact twenty Standard Names failure ids the incident introduced and is refused naming them; the repair fixture runs fifteen sequential armed promotions with red baselines, red-or-equal afters and empty added-id sets and every one is accepted. That is the plan's §2 constraint, pinned in both directions. impl 3/3.</div>
 </div>
 </section>
 </main>

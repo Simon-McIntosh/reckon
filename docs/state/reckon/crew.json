@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T23:08:35",
+  "updated": "2026-09-01T23:24:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -33822,9 +33822,206 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T205434182151-n-incident-regressions-and-suite-gate",
+        "plan": "promotion-consequence-gate",
+        "section": "\u00a75",
+        "node": "n-incident-regressions-and-suite-gate",
+        "node_definition": {
+          "done_when": "tests/test_gate_evidence.py gains two named regressions: one reconstructs the known-bad promotion (a run whose after observation carries the 20 added failure ids the incident introduced against a baseline that already carried the pre-existing collection failures) and asserts it is refused naming those ids; the other replays fifteen sequential armed promotions in the shape of the repair session, each with a red baseline, a red-or-equal after set and an empty added-id set, and asserts every one is accepted; both are documented in the test module docstring as the incident they pin without any plan or ticket label in code; then the full reckon suite runs once from the worktree with PYTHONPATH=/home/ITER/mcintos/Code/reckon .venv/bin/python -m pytest -p no:cacheprovider -q > log, the summary line and any FAILED lines are copied into the manifest, and the run shows no new failures against the base revision's full suite",
+          "estimated_hours": null,
+          "goal": "The two plan-named behavioural regressions reconstructed from the measured imas-codex incident, plus one full-suite integration gate over the merged gate code",
+          "id": "n-incident-regressions-and-suite-gate",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205434182151-n-incident-regressions-and-suite-gate/manifest.md",
+          "plan": "promotion-consequence-gate",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "tests/test_gate_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-f",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:54:39Z",
+        "completed_at": "2026-09-01T21:23:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1726,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1726,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "3e656852f4f0f42f4f1f168355eb4259ef5db4e1",
+        "commits": [
+          "b8b8b66c6d4fde9e998e67c0ecdaf00a6d869244"
+        ],
+        "changed_lines": {
+          "added": 167,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q (full suite at b8b8b66 vs base 3e65685: 0 added failure ids)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205434182151-n-incident-regressions-and-suite-gate/logs/after-full-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T205434182151-n-incident-regressions-and-suite-gate/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038f8-cc64-7c61-b67c-302b5278f763",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 694016,
+            "cached_input_tokens_cumulative": 7750400,
+            "input_tokens": 735983,
+            "input_tokens_cumulative": 7971132,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 13947,
+            "reasoning_output_tokens": 232,
+            "reasoning_output_tokens_cumulative": 3053
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260901T210854353789-n-closing-tip-verification",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-closing-tip-verification",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/closing-tip-suite.md records the exact tip sha, the pytest summary with passed, failed, skipped and error counts and the wall-clock, and every FAILED nodeid; the run executes where /usr/bin/google-chrome resolves rather than on a compute image, with the host class and resolved browser path recorded as facts; each of the 3 failures in /home/ITER/mcintos/.config/reckon/crew/reports/repaired-tip-suite.md is looked up by name and reported fixed or still failing; the skip count is reported with its distinct reason strings and how many name the Network Service diagnosis; the log is captured once and read from there; and the verdict is green only at 0 failures, with any remaining failure classified as pre-existing or introduced by naming its commit. State plainly if it is not green rather than reporting a near-miss as success",
+          "estimated_hours": null,
+          "goal": "The final full-suite measurement at the tip that closes the sprint, on a host with a browser",
+          "id": "n-closing-tip-verification",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T210854353789-n-closing-tip-verification/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/closing-tip-suite.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "surface-baseline",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T21:08:58Z",
+        "completed_at": "2026-09-01T21:24:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 938,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 938,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "87640514004820bb19c85db2907c6bbe800584aa",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "one full-suite invocation with -vv -rs on a browser-capable interactive host, timed",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/closing-tip-suite.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T210854353789-n-closing-tip-verification/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05ecd-c72a-77f1-9afa-72f4fa525316",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3710976,
+            "cached_input_tokens_cumulative": 3710976,
+            "input_tokens": 3842790,
+            "input_tokens_cumulative": 3842790,
+            "output_tokens": 10342,
+            "output_tokens_cumulative": 10342,
+            "reasoning_output_tokens": 3752,
+            "reasoning_output_tokens_cumulative": 3752
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "verification-only node; the measurement is the deliverable",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest summary",
+          "override": false,
+          "role": "test",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 540
+    "_version": 542
   }
 }
