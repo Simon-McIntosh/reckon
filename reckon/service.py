@@ -47,6 +47,31 @@ class ServiceError(RuntimeError):
     """A systemd operation could not be completed."""
 
 
+def node_executable() -> Path:
+    """Locate the Node.js interpreter used for server-side JSX compilation."""
+    configured = os.environ.get("RECKON_NODE")
+    candidates = [Path(configured).expanduser()] if configured else []
+    discovered = shutil.which("node")
+    if discovered:
+        candidates.append(Path(discovered))
+    candidates.extend(
+        [
+            Path.home() / ".local" / "bin" / "node",
+            Path.home() / ".hermes" / "node" / "bin" / "node",
+            Path("/usr/local/bin/node"),
+            Path("/usr/bin/node"),
+            Path("/bin/node"),
+        ]
+    )
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return candidate.resolve()
+    raise ServiceError(
+        "cannot locate the Node.js interpreter required for JSX compilation; "
+        "install node or set RECKON_NODE to its executable"
+    )
+
+
 def unit_path() -> Path:
     """Return the path the reckon user unit is written to."""
     return Path.home() / ".config" / "systemd" / "user" / UNIT_NAME
@@ -89,6 +114,7 @@ def render_unit(
     host: str | None = None,
     mounts_file: Path | None = None,
     executable: Path | None = None,
+    node: Path | None = None,
 ) -> str:
     """Render the systemd unit that runs ``reckon serve``."""
     command = executable or server_executable()
@@ -99,7 +125,10 @@ def render_unit(
         argv += ["--mounts", str(Path(mounts_file).expanduser().resolve())]
 
     bin_dir = str(Path(command).parent)
-    search_path = os.pathsep.join([bin_dir, "/usr/local/bin", "/usr/bin", "/bin"])
+    node_bin_dir = str((node or node_executable()).parent)
+    search_path = os.pathsep.join(
+        dict.fromkeys([bin_dir, node_bin_dir, "/usr/local/bin", "/usr/bin", "/bin"])
+    )
 
     # Forward an explicit config home so the unit resolves the same mounts.json
     # and state root as the shell that installed it.

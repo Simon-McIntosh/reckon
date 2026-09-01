@@ -68,6 +68,7 @@ from reckon.resources import (
     resolve_resource,
     resolve_route,
 )
+from reckon.service import ServiceError, node_executable
 
 HOME = Path.home()
 LOGGER = logging.getLogger(__name__)
@@ -199,15 +200,16 @@ process.stdin.on("end", () => {
 });
 """
     try:
+        node = node_executable()
         result = subprocess.run(
-            ["node", "-e", script, str(compiler), filename],
+            [str(node), "-e", script, str(compiler), filename],
             input=source,
             text=True,
             capture_output=True,
             timeout=30,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, ServiceError, subprocess.TimeoutExpired) as exc:
         raise ClientAssetError(f"could not compile {filename}: {exc}") from exc
     if result.returncode:
         detail = result.stderr.strip() or f"node exited {result.returncode}"
