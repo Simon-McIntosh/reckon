@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T21:40:37",
+  "updated": "2026-09-01T21:45:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -398,9 +398,11 @@
         "id": "surface-harness",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a05e73-4570-7da2-87b9-1030e0a8c07b",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a05e73-4570-7da2-87b9-1030e0a8c07b"
+        },
         "created": "2026-09-01"
       },
       {
@@ -32121,9 +32123,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T193916049095-n-north-star-write-route",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a74",
+        "node": "n-north-star-write-route",
+        "node_definition": {
+          "done_when": "edit_plan state mode accepts a set on north_star and writes the plan-north-star head meta, proven by a test that sets it on a synthesised plan under a temporary directory and reads the value back through a fresh parse; the same test asserts an invalid value is still refused so the path is validated rather than merely permitted; running roadmap over a fixture whose plan gains a north star reports 1 fewer unoriented-plan finding than before, both counts recorded as numbers; no other member of the set-path allowlist changes, verified by comparing the allowlist before and after with exactly 1 addition; and tests/test_mcp_store.py, tests/test_typed_resources.py and the new test report 0 failures held to that absolute",
+          "estimated_hours": null,
+          "goal": "A plan's north star can be set through the validated write path, so the roadmap finding that reports its absence can actually be cleared",
+          "id": "n-north-star-write-route",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193916049095-n-north-star-write-route/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/_store.py",
+            "tests/test_north_star_write.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-linkcheck",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:39:20Z",
+        "completed_at": "2026-09-01T19:45:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 344,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 344,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "dfa23e15ed020e881507aed496771a2c32884f55",
+        "commits": [
+          "a5bab9e95d24d1f6141b53807c8a9fe944912f1b"
+        ],
+        "changed_lines": {
+          "added": 143,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_mcp_store.py tests/test_typed_resources.py tests/test_north_star_write.py, plus a production roadmap run over the fixture before and after",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193916049095-n-north-star-write-route/logs/pytest-required-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T193916049095-n-north-star-write-route/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e53-bc89-7030-a92c-40b22dae1d05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3180544,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3369458,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 11463,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 2525
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 522
+    "_version": 524
   }
 }

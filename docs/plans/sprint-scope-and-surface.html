@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-graph-handle" content="sprint-federation">
 <meta name="plan-impl" content="0.85">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
@@ -690,6 +690,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260901-wiring-and-inventory" data-who="reckon-ship" data-when="2026-09-01T18:26:00+00:00">
     <div class="r-comment-body">Two sections recorded as met without dispatching a node, both verified rather than assumed. §4's three wiring findings are repaired: a project-wide roadmap scan over all 50 plans now reports 17 findings, every one severity info, so 0 error and 0 warn remain where the plan recorded 1 WARN membership gap and 2 ERROR sprint-order inversions. §5b is delivered by resource-tagging-system §3 — the discovery envelope emits tag_inventory at reckon/mcp.py:370, test_discovery_derives_tag_inventory_from_every_resource_type asserts derivation across every resource type rather than from a literal list, and reckon-create instructs the author to read the live inventory. Both plans described one deliverable and building it twice would have created the competing authority this plan exists to prevent. §4's residual design question stays open and gained its second independent instance this session: closing the tagging plan required deciding whether a prerequisite is satisfied when its remaining node is authority rather than engineering, and roadmap could only report blocked because it reads a status. That is the same defect as the inversions — a lifecycle signal reported as a scheduling error — and two instances is what makes it worth building.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260901T193916049095-n-north-star-write-route" data-who="surface-linkcheck" data-when="2026-09-01T19:45:04Z">
+    <div class="r-comment-body"><p>north_star joins the plan set-path allowlist, 30 to 31 with exactly 1 addition and 0 removals; a state-mode set writes plan-north-star and a fresh parse reads it back, an invalid value returns schema_validation leaving bytes unchanged, and the production roadmap reports the fixture&#x27;s unoriented-plan count 1 to 0; 70 passed absolute with _store.py ruff findings unchanged at 16</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260901T182742269540-n-shared-asset-parity" data-who="surface-scout" data-when="2026-09-01T18:34:42Z">
     <div class="r-comment-body"><p>Characterised before changing: the shipped asset was a strict byte prefix of canonical with 72 normalised selector groups only in canonical and 0 only in the asset, so drift not a subset. Both files now byte-identical at 1733 lines and 363 selector groups, sha256 e5f14911; a one-selector mutation fails the guard 1/1; required suites 21 passed either side with 0 new failures</p></div>
