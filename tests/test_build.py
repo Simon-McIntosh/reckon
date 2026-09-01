@@ -634,36 +634,39 @@ def test_plan_and_sprint_views_surface_only_matching_live_work():
     assert "Copy run command" in band
     assert "reckon crew observe --run ${run.run_id}" in band
 
-    assert "if (liveRuns.length) return `in flight · ${liveRuns.length}`;" in sprint
-
-    # Prove the sprint summary still contracts around a live run on a plan item.
-    plan_flag = _extract_component(
+    # Exercise the sprint's live-work projection rather than pinning its wording.
+    live_work_projection = _extract_component(
         sprint,
-        "function openGateCount",
+        "function completedRunTime",
         "function Sprint(",
     )
     script = (
-        "const sprintSource = "
-        + json.dumps(plan_flag)
-        + ";\n"
+        "const HORIZON_HOURS = 48;\n"
+        "const HOUR_MS = 60 * 60 * 1000;\n"
+        + live_work_projection
+        + "\n"
         + """
-const plan = {
-  slug: "focus",
-  effective_status: "active",
-  status: "active",
-  gates: [],
+const sprint = {
+  items: [{ slug: "focus" }, { slug: "also-focus" }],
 };
 const runs = [{
-  run_id: "run-1",
+  run_id: "matching-run",
   plan: "focus",
-  member: "runner",
-  section: "test-plan",
-  elapsed_seconds: 30,
-  budget_ceiling: 120,
-  phase: "working",
+  node: "matching-work",
+  dispatched_at: "2026-09-01T10:00:00Z",
+}, {
+  run_id: "unrelated-run",
+  plan: "elsewhere",
+  node: "unrelated-work",
+  dispatched_at: "2026-09-01T10:30:00Z",
 }];
-eval(sprintSource);
-console.log(planFlag(plan, runs));
+const strip = sprintActivityStrip(sprint, "2026-09-01T12:00:00Z", [], runs);
+console.log(JSON.stringify({
+  liveEvents: strip.events.map(event => ({
+    kind: event.kind,
+    runId: event.run.run_id,
+  })),
+}));
 """
     )
     rendered = subprocess.run(
@@ -672,7 +675,9 @@ console.log(planFlag(plan, runs));
         capture_output=True,
         check=True,
     )
-    assert rendered.stdout.strip() == "in flight · 1"
+    assert json.loads(rendered.stdout) == {
+        "liveEvents": [{"kind": "live", "runId": "matching-run"}],
+    }
 
 
 def test_build_bakes_discovery_and_preserves_authored_project_state(

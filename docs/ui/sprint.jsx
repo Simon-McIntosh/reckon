@@ -160,6 +160,11 @@ function sprintCompletedRuns(sprint, runsByPlan) {
     .sort((left, right) => (completedRunTime(right) || 0) - (completedRunTime(left) || 0));
 }
 
+function sprintLiveRuns(sprint, runs) {
+  const memberPlans = new Set((sprint?.items || []).map(item => typeof item === "string" ? item : item.slug));
+  return (runs || []).filter(run => memberPlans.has(run?.plan));
+}
+
 function horizonStrip(currentInstant, completedRuns = [], liveRuns = []) {
   const instant = new Date(currentInstant);
   const safeInstant = Number.isNaN(instant.getTime()) ? new Date() : instant;
@@ -207,6 +212,14 @@ function horizonStrip(currentInstant, completedRuns = [], liveRuns = []) {
     ticks,
     events,
   };
+}
+
+function sprintActivityStrip(sprint, currentInstant, completedRuns, liveRuns) {
+  return horizonStrip(
+    currentInstant,
+    completedRuns,
+    sprintLiveRuns(sprint, liveRuns),
+  );
 }
 
 function Sprint({ sprintId, onNav }) {
@@ -305,8 +318,8 @@ function Sprint({ sprintId, onNav }) {
   const foldedCount = stateRows.filter(row => row.closed).length;
   const finishedRuns = useMemo(() => sprintCompletedRuns(sprint, finishedRunsByPlan), [sprint, finishedRunsByPlan]);
   const strip = useMemo(
-    () => horizonStrip(currentInstant, finishedRuns, liveRuns),
-    [currentInstant, finishedRuns, liveRuns]
+    () => sprintActivityStrip(sprint, currentInstant, finishedRuns, liveRuns),
+    [sprint, currentInstant, finishedRuns, liveRuns]
   );
   const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
 
