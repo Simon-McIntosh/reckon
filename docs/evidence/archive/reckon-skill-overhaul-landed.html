@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="reckon-skill-overhaul-landed">
+  <meta name="plan-title" content="Reckon skill overhaul — cumulative execution record">
+  <meta name="plan-summary" content="Execution evidence showing how live skill use exposed misplaced, contradictory, and stale operational guidance, and how the repaired contracts were pinned at the point of action.">
+  <meta name="plan-evidence-for" content="reckon-skill-overhaul">
+  <meta name="plan-verifies" content="reckon-skill-overhaul#s2">
+  <title>Reckon skill overhaul — cumulative execution record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Reckon skill overhaul — cumulative execution record</h1>
+    <p>
+      The evergreen plan owns the design and decisions. This record preserves the observed
+      execution failures, the commits that repaired their contracts, and the measures that make
+      the result independently auditable.
+    </p>
+
+    <section id="live-use-contract-repairs">
+      <h2>Live use exposed guidance that review had missed</h2>
+
+      <p>
+        Five defect groups were found by sessions actively using the ship skill, not by a static
+        review. In <strong>four of the five</strong>, the correct rule already existed somewhere,
+        but the acting agent had no trigger to open it at the decision point. The repair principle
+        was therefore locality and executable intent: put the contract where the action happens,
+        make examples agree with emitted commands, and test the behavior the guidance must induce
+        instead of pinning incidental wording.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Observed contract gap</th>
+            <th>Repair and evidence</th>
+            <th>Commit</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              The correct follower-arming rule lived in a harness reference, while the section
+              read at arming time ended by recommending a backgrounded command and an output file.
+            </td>
+            <td>
+              The arming section now states the two-part producer/follower model, names
+              <code>session_attached</code> as the delivery discriminator, points to the harness
+              primitive at the moment it is needed, and replaces wording checks with intent checks.
+            </td>
+            <td><code>ff0e950</code></td>
+          </tr>
+          <tr>
+            <td>
+              The dispatch refusal said only to commit the plan, leaving room to invent a second
+              briefing store and ask whether a new flag should carry findings to the worker.
+            </td>
+            <td>
+              The plan is now explicit as the passing surface: record, commit, then dispatch.
+              Large inputs travel by reference, and a second store is rejected as a second stale
+              source of truth. Contract tests pin that intent.
+            </td>
+            <td><code>0df6d7a</code></td>
+          </tr>
+          <tr>
+            <td>
+              Advice to trust run classification assumed a live pointer that a hand-composed
+              delegation never creates.
+            </td>
+            <td>
+              The orchestration reference now names the complete observability loss: no live or
+              recovery classification, drain count, follower line, or ledger record. It also
+              records config-only mount registration as the route that preserves those guards
+              without writing UI scaffolding into a data-only repository.
+            </td>
+            <td><code>b0bb725</code></td>
+          </tr>
+          <tr>
+            <td>
+              Three documents showed an arming line the code no longer emitted, and a repeated
+              first-person status description looked like a stale liveness assertion.
+            </td>
+            <td>
+              Documentation now copies the actual bare attach command and reserves filtering for
+              an explicit choice. The notification examples describe changing transition state,
+              not an unchanging claim. <strong>Three live sessions</strong> copied the bad
+              description verbatim, demonstrating that skill examples are a distribution channel.
+            </td>
+            <td><code>aabb23f</code>, <code>e67c776</code></td>
+          </tr>
+          <tr>
+            <td>
+              A hand-composed worker received a workspace tier but not both required write roots;
+              its git index and durable manifest directory remained outside the writable surface.
+            </td>
+            <td>
+              The reference now requires the main-repository root and manifest root explicitly,
+              explains which grant covers the worktree git index, and treats an unwritable
+              contracted manifest as a blocker. The companion test cleanup makes the fixture's
+              deliberately unused repository halves explicit.
+            </td>
+            <td><code>1c6f609</code>, <code>48e1fe4</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        These repairs extend the earlier per-landing ledger contract in <code>f6e2518</code>:
+        operational guidance is useful only when the acting session can see it, follow it, and
+        leave pointer-backed evidence another session can reconcile. Across the repair set, the
+        contract tests moved from phrase-presence assertions toward intent checks that reject the
+        known wrong action even when the prose changes.
+      </p>
+
+      <p>
+        <strong>Evidence gate:</strong> the plan-comment commit census is
+        <strong>8 of 8 present</strong> in this anchor: <code>f6e2518</code>,
+        <code>ff0e950</code>, <code>0df6d7a</code>, <code>b0bb725</code>,
+        <code>aabb23f</code>, <code>e67c776</code>, <code>48e1fe4</code>, and
+        <code>1c6f609</code>. Publication validation uses
+        <code>python -m reckon.doccheck docs/evidence/archive/reckon-skill-overhaul-landed.html</code>
+        and requires exit&nbsp;0 with no <code>ERROR</code> lines.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
