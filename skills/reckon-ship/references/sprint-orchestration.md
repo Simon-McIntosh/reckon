@@ -351,6 +351,23 @@ configured backend needs none of it typed out. Compose it by hand only for a
 delegation reckon did not prepare; when both exist, they must say the same thing,
 and the composed prompt is the copy to change.
 
+**A hand-composed delegation is strictly weaker, and not merely more typing.**
+It has no live pointer, so nothing classifies it: `crew(view="live")` and `crew
+recover` cannot see it, it never enters a drain count, it produces no ledger
+record and no line on any follower's stream, and its worker's final message is
+the only account of it there is. Every safety property in this file that reads
+from a pointer is absent. So prefer registering the repository wherever Reckon's
+scaffolding is acceptable there — and note that registering *write authority* is
+a `mounts.json` entry in the config home, which touches nothing in the target
+repository at all; only the UI scaffolding `reckon sync` also copies does. When a
+repository must stay untouched, that entry alone admits the dispatch, and the
+docs directory it names need not exist.
+
+Hand-compose only when even that is inappropriate, and then read the worker's
+success claim with the scepticism it has earned: measured, one such worker
+completed a node, could not write the contracted manifest, wrote it elsewhere
+and reported success — and with no pointer, nothing contradicted it.
+
 **A hand-composed sandbox must make three things writable, and two of them are
 outside the worktree.** A detached worktree's git index is not in the worktree:
 it lives at `<main-repo>/.git/worktrees/<node>/index`, so a tier that permits

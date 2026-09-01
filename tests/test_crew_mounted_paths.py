@@ -211,3 +211,56 @@ def test_non_repository_delivery_roots_remain_valid_for_report_only_nodes(
     assert resolution.validation.ok is True
     assert resolution.node.write_paths == [str(delivery)]
     assert delivery.is_relative_to(home)
+
+
+def test_write_authority_needs_a_mount_entry_and_nothing_in_the_repository(
+    home: Path, repositories: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """Registering authority is a config-home fact, not a change to the repo.
+
+    `reckon sync` couples two things with very different blast radii: a
+    mounts.json entry in the config home, and reckon's UI scaffolding copied
+    into the repository. For a data-only catalog that is pull-requested to
+    another organisation the second is unacceptable while the first is
+    invisible to it — so a session facing that refusal hand-composed a
+    delegation instead, which is strictly weaker in observability. The entry
+    alone must be enough, and the docs directory it names must not have to
+    exist, or the "config only" route is not one.
+    """
+    work_repo, authority_repo = repositories
+    catalog = tmp_path / "data-only-catalog"
+    catalog.mkdir()
+    (catalog / "records.csv").write_text("id,value\n1,2\n", encoding="utf-8")
+    _commit_repository(catalog, "records.csv")
+    delivery = catalog / "records.csv"
+
+    # Before: the refusal, naming both remedies.
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.plan_dispatch(
+            node=_node(delivery),
+            project="authority-project",
+            repo=catalog,
+            config=CONFIG,
+        )
+    detail = str(refusal.value)
+    assert "outside the resolved mount authority set" in detail
+    assert "reckon sync" in detail
+    assert "hand-compose" in detail
+
+    # After: one config-home entry, and the docs directory it names is absent.
+    mounts = json.loads((home / "mounts.json").read_text())
+    mounts["catalog-project"] = str(catalog / "docs")
+    (home / "mounts.json").write_text(json.dumps(mounts), encoding="utf-8")
+    assert not (catalog / "docs").exists(), "nothing was written to the repository"
+
+    resolution = crew.plan_dispatch(
+        node=_node(delivery),
+        project="authority-project",
+        repo=catalog,
+        config=CONFIG,
+    )
+    assert resolution.validation.ok
+    assert resolution.authority["write"]["projects"] == ["catalog-project"]
+    assert [path.name for path in catalog.iterdir() if path.name != ".git"] == [
+        "records.csv"
+    ], "the repository is untouched"
