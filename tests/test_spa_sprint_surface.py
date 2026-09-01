@@ -10,8 +10,14 @@ ROOT = Path(__file__).parents[1]
 SOURCE = ROOT / "docs" / "ui" / "sprint.jsx"
 
 
-def _evaluate_helpers(expression: str):
-    return spa_module_eval.evaluate_jsx_module(SOURCE, expression)
+def _evaluate_helpers(expression: str, tmp_path: Path):
+    source = SOURCE.read_text()
+    helpers = source[
+        source.index("const HORIZON_HOURS") : source.index("function Sprint(")
+    ]
+    helper_module = tmp_path / "sprint_helpers.jsx"
+    helper_module.write_text(helpers)
+    return spa_module_eval.evaluate_jsx_module(helper_module, expression)
 
 
 def test_module_evaluator_rejects_raw_jsx(monkeypatch, tmp_path):
@@ -29,7 +35,7 @@ def test_module_evaluator_rejects_raw_jsx(monkeypatch, tmp_path):
     assert "Unexpected token '<'" in failure.value.stderr
 
 
-def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows():
+def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows(tmp_path):
     sprints = [
         {"id": "SA", "status": "active", "items": [{"slug": "alpha"}]},
         {"id": "SB", "status": "active", "items": [{"slug": "beta"}]},
@@ -40,14 +46,15 @@ def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows():
         "(() => {"
         f"const rows = sprintStateRows({json.dumps(sprints)}, '2026-09-01');"
         "return {visible: rows.filter(row => !row.closed), folded: rows.filter(row => row.closed)};"
-        "})()"
+        "})()",
+        tmp_path,
     )
 
     assert [row["sprint"]["id"] for row in result["visible"]] == ["SA", "SB", "SC"]
     assert [row["sprint"]["id"] for row in result["folded"]] == ["SD"]
 
 
-def test_status_transition_flag_names_effective_state_and_open_gates():
+def test_status_transition_flag_names_effective_state_and_open_gates(tmp_path):
     plan = {
         "status": "active",
         "workflow_status": "active",
@@ -55,7 +62,7 @@ def test_status_transition_flag_names_effective_state_and_open_gates():
         "gates": [{"verdict": "pending"}, {"verdict": "passed"}],
     }
     assert (
-        _evaluate_helpers(f"readyLaneState({json.dumps(plan)})")
+        _evaluate_helpers(f"readyLaneState({json.dumps(plan)})", tmp_path)
         == "active → blocked · 1 open gate"
     )
 
@@ -105,7 +112,9 @@ def test_sprint_styles_do_not_force_a_sideways_canvas():
     assert "overflow-y: auto" in owner_rule
 
 
-def test_selected_sprint_opens_completed_work_newest_first_with_fixed_event_strip():
+def test_selected_sprint_opens_completed_work_newest_first_with_fixed_event_strip(
+    tmp_path,
+):
     sprints = [
         {
             "id": "SA",
@@ -153,7 +162,8 @@ def test_selected_sprint_opens_completed_work_newest_first_with_fixed_event_stri
         "tickLabels: strip.ticks.map(tick => tick.label),"
         "active: sprintStateRows(sprints, '2026-08-25').filter(row => row.active).map(row => row.sprint.id)"
         "};"
-        "})()"
+        "})()",
+        tmp_path,
     )
     source = SOURCE.read_text()
 
