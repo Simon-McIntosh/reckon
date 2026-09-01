@@ -71,6 +71,7 @@ def test_surface_keeps_description_concise_and_contract_reachable():
 
 def test_sprint_styles_do_not_force_a_sideways_canvas():
     styles = (ROOT / "docs" / "ui" / "sprints.css").read_text()
+    base_styles = (ROOT / "docs" / "ui" / "styles-base.css").read_text()
 
     assert "grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr)" in styles
     assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in styles
@@ -78,6 +79,11 @@ def test_sprint_styles_do_not_force_a_sideways_canvas():
     surface_rule = styles.split(".r-sprint-surface {", 1)[1].split("}", 1)[0]
     assert "min-width: 0" in surface_rule
     assert "min-width: max-content" not in surface_rule
+    assert "overflow: auto" not in surface_rule
+    owner_rule = base_styles.split(
+        ".r-sprint-view .r-reader-with-attachments > .r-body {", 1
+    )[1].split("}", 1)[0]
+    assert "overflow-y: auto" in owner_rule
 
 
 def test_selected_sprint_opens_completed_work_newest_first_with_subday_horizons():

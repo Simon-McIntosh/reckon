@@ -7,6 +7,7 @@ from tests.spa_browser_harness import installed_browser, run_browser_probe
 
 ROOT = Path(__file__).parents[1]
 CSS = (ROOT / "docs/ui/sprints.css").read_text()
+BASE_CSS = (ROOT / "docs/ui/styles-base.css").read_text()
 JSX = (ROOT / "docs/ui/sprint.jsx").read_text()
 
 
@@ -22,13 +23,41 @@ def assert_declares(selector: str, *properties: str) -> None:
         assert prop in body, f"{selector} must declare {prop!r}; got {body!r}"
 
 
-def test_sprint_surface_and_header_use_canvas_geometry() -> None:
+def test_sprint_view_declares_one_vertical_scroll_owner() -> None:
+    view_styles = f"{BASE_CSS}\n{CSS}"
+    scroll_owners = []
+    for match in re.finditer(
+        r"(?m)^([^\n{]*(?:\.r-sprint-view|\.r-sprint-surface)[^\n{]*)\s*\{([^{}]+)\}",
+        view_styles,
+    ):
+        selector = re.sub(r"\s+", " ", match.group(1)).strip()
+        body = re.sub(r"\s+", " ", match.group(2)).strip()
+        if (
+            (".r-sprint-view" in selector or ".r-sprint-surface" in selector)
+            and ("overflow: auto" in body or "overflow-y: auto" in body)
+        ):
+            scroll_owners.append(selector)
+
+    assert scroll_owners == [".r-sprint-view .r-reader-with-attachments > .r-body"]
+    owner_rule = re.search(
+        r"\.r-sprint-view \.r-reader-with-attachments > \.r-body\s*\{([^}]+)\}",
+        BASE_CSS,
+    )
+    assert owner_rule
+    owner_declarations = re.sub(r"\s+", " ", owner_rule.group(1)).strip()
+    assert "min-height: 0" in owner_declarations
+    assert "overflow-y: auto" in owner_declarations
+
+
+def test_sprint_surface_and_header_use_content_geometry() -> None:
     assert_declares(
         ".r-sprint-surface",
-        "flex: 1",
-        "overflow: auto",
         "padding: 20px 26px 40px",
     )
+    surface_rule = declarations(".r-sprint-surface")
+    assert "flex:" not in surface_rule
+    assert "overflow: auto" not in surface_rule
+    assert "overflow-y: auto" not in surface_rule
     assert_declares(
         ".r-sprint-surface .r-sp-head",
         "display: flex",
@@ -119,6 +148,82 @@ def test_rendered_timeline_labels_fit_and_use_available_width(
     if viewport_width == 1920:
         assert metrics["surfaceWidth"] > 1216, metrics
         assert metrics["trackWidth"] > 1216, metrics
+
+
+@pytest.mark.parametrize(
+    ("surface_class", "last_class"),
+    [("r-sprint-overview", "overview-last"), ("r-sprint-board", "board-last")],
+)
+def test_constrained_viewport_reaches_last_element_of_each_sprint_surface(
+    tmp_path: Path, surface_class: str, last_class: str
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("an installed browser is required for rendered geometry")
+
+    stylesheets = [
+        ROOT / "docs/_shared/foundation.css",
+        ROOT / "docs/_shared/dashboard.css",
+        ROOT / "docs/ui/styles-base.css",
+        ROOT / "docs/ui/styles.css",
+        ROOT / "docs/ui/plans.css",
+        ROOT / "docs/ui/reader.css",
+        ROOT / "docs/ui/sprints.css",
+    ]
+    styles = "\n".join(path.read_text() for path in stylesheets)
+    rows = "".join(f'<div class="capture-row">row {index}</div>' for index in range(8))
+    document = f"""<!doctype html>
+<html><head><meta charset="utf-8"><style>{styles}
+.capture-row {{ height: 72px; border-bottom: 1px solid var(--line); }}
+.capture-last {{ height: 36px; }}
+</style></head><body><div class="r-app"><div class="r-topbar">Sprints</div>
+<div class="r-canvas-view r-sprint-view"><div class="r-content">
+<div class="r-reader-with-attachments"><div class="r-body">
+<div class="r-page wide r-sprint-surface"><section class="{surface_class}">
+{rows}<div class="capture-last {last_class}">last element</div>
+</section></div></div></div></div></div></div></body></html>"""
+    metrics = run_browser_probe(
+        tmp_path,
+        browser,
+        document,
+        f"""(() => {{
+          const owner = document.querySelector('.r-sprint-view .r-reader-with-attachments > .r-body');
+          const surface = document.querySelector('.r-sprint-surface');
+          const last = document.querySelector('.{last_class}');
+          owner.scrollTop = owner.scrollHeight;
+          const ownerRect = owner.getBoundingClientRect();
+          const lastRect = last.getBoundingClientRect();
+          const scrollable = [...document.querySelectorAll('*')].filter(element => {{
+            const overflow = getComputedStyle(element).overflowY;
+            return (overflow === 'auto' || overflow === 'scroll') && element.scrollHeight > element.clientHeight;
+          }});
+          return {{
+            ownerClientHeight: owner.clientHeight,
+            ownerScrollHeight: owner.scrollHeight,
+            ownerScrollTop: owner.scrollTop,
+            surfaceClientHeight: surface.clientHeight,
+            surfaceScrollHeight: surface.scrollHeight,
+            lastTop: lastRect.top,
+            lastBottom: lastRect.bottom,
+            ownerTop: ownerRect.top,
+            ownerBottom: ownerRect.bottom,
+            documentScrollTop: document.scrollingElement.scrollTop,
+            scrollableCount: scrollable.length,
+            scrollableClass: scrollable.map(element => element.className).join(' '),
+          }};
+        }})()""",
+        viewport=(900, 420),
+        ready_expression=f"Boolean(document.querySelector('.{last_class}'))",
+    )
+
+    assert metrics["ownerScrollHeight"] > metrics["ownerClientHeight"], metrics
+    assert metrics["ownerScrollTop"] > 0, metrics
+    assert metrics["lastTop"] >= metrics["ownerTop"] - 1, metrics
+    assert metrics["lastBottom"] <= metrics["ownerBottom"] + 1, metrics
+    assert metrics["surfaceScrollHeight"] == metrics["surfaceClientHeight"], metrics
+    assert metrics["documentScrollTop"] == 0, metrics
+    assert metrics["scrollableCount"] == 1, metrics
+    assert "r-body" in metrics["scrollableClass"], metrics
 
 
 def test_board_columns_and_cards_use_canvas_geometry() -> None:
