@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="promotion-consequence-gate">
+  <meta name="plan-title"     content="Promotion Consequence Gate">
+  <meta name="plan-summary"   content="Make a promotion refuse when the node it promotes added a suite failure, judged by delta and waivable on the record">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint"    content="S9">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <title>Promotion Consequence Gate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&#167;1 &mdash; A signal with no consequence is not a check</h2>
+    <p>
+      Measured in <code>imas-codex</code> on 2026-09-01, and the numbers are the whole
+      argument. Its <code>test.yml</code> workflow runs a bare whole-tree
+      <code>uv run pytest</code> on every push to <code>main</code> and on every pull
+      request. No path restriction, no <code>continue-on-error</code>, failure fatal to the
+      job. Over the last 120 runs:
+    </p>
+    <table>
+      <thead><tr><th>date</th><th>success</th><th>failure</th><th>cancelled</th></tr></thead>
+      <tbody>
+        <tr><td>2026-08-27</td><td><strong>0</strong></td><td>9</td><td>13</td></tr>
+        <tr><td>2026-09-01</td><td><strong>0</strong></td><td>45</td><td>52</td></tr>
+        <tr><td><strong>total</strong></td><td><strong>0</strong></td><td><strong>54</strong></td><td><strong>65</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Zero successes.</strong> A collection error had aborted the whole suite since
+      2026-08-25 &mdash; a week in which the default test command ran no tests at all &mdash;
+      and CI was red on every push throughout. The detection was never missing. What was
+      missing is that being red had <em>no consequence</em>: sessions kept dispatching,
+      promoting and merging, and a 20-test regression was introduced inside that window and
+      stayed invisible for two hours despite a red main.
+    </p>
+    <p>
+      This is reckon's problem rather than the consuming repository's, because the moment a
+      change becomes a claim is <code>crew complete</code>. That is where a gate can refuse,
+      and it is the one place every project's sessions pass through. Two sibling reckon
+      plans already established the halves either side of it: run records became committed
+      evidence, and a finished worker stopped being silent. This closes the gap between
+      knowing and mattering.
+    </p>
+
+    <h2 id="s2">&#167;2 &mdash; Judge by delta, never by absolute redness</h2>
+    <p>
+      <strong>This constraint is load-bearing and was learned by counter-example, not
+      derived.</strong> The first proposal was that <code>crew complete</code> refuse to
+      promote while the tree's suite is red. That version would have blocked
+      <strong>all fifteen nodes</strong> of the session that was repairing the outage
+      &mdash; including the node whose own work made the redness visible in the first place.
+    </p>
+    <p>
+      A gate that fails closed on the fix for the problem it detects is worse than no gate:
+      it converts a detected fault into a stalled repository, and the only way out is to
+      disable the gate, which then stays disabled. So the measure is not
+      <em>is the suite green</em> but <strong>did this node add a failure</strong>.
+    </p>
+    <p>
+      Reckon's consuming repositories already carry this pattern for lint, which is the
+      precedent to follow rather than invent: a contributor is told to judge their own commit
+      by delta because a file may carry pre-existing findings that are not theirs to fix in
+      passing, and what they owe is adding none. The same shape applies here. A node inherits
+      whatever the tree was already failing; it owes an empty delta.
+    </p>
+
+    <h2 id="s3">&#167;3 &mdash; The escape hatch is mandatory, and it is a record rather than a switch</h2>
+    <p>
+      A gate with no waiver becomes a gate that gets deleted the first time it is wrong, and
+      it will be wrong: an infrastructure failure, a flaky test, a deliberate red-to-green
+      migration landing in stages. <strong>So the waiver ships with the gate, not after
+      it.</strong>
+    </p>
+    <p>
+      It should follow the form reckon already uses for exactly this situation rather than a
+      new one. <code>crew dispatch</code> refuses on an unreconciled backlog and accepts an
+      explicit flag that records the waived backlog on the new run; a synchronous one-off may
+      dispatch unwatched and the waiver is written onto both the live run and its promoted
+      ledger record. The properties that make those acceptable are the ones needed here:
+      the waiver is <em>explicit</em> rather than a default, it demands a <em>reason</em>
+      rather than a boolean, and it is <em>recorded on the ledger row</em> so a waived
+      promotion is distinguishable forever from a clean one. A waiver nobody can count is
+      indistinguishable from no gate.
+    </p>
+
+    <h2 id="s4">&#167;4 &mdash; A separate finding with a different fix: cancelled runs have no conclusion</h2>
+    <p>
+      Of those 120 runs, <strong>65 were cancelled</strong> &mdash; more than the 54 that
+      failed. The workflow sets <code>concurrency.group</code> to
+      <code>${{ github.workflow }}-${{ github.ref }}</code> with
+      <code>cancel-in-progress: true</code>. That is right for a pull request, where a
+      superseded commit's result is genuinely uninteresting, and <strong>wrong for
+      <code>main</code>, where each commit's result IS the record.</strong>
+    </p>
+    <p>
+      With several agent sessions pushing in quick succession &mdash; roughly twenty pushes
+      in one evening from two sessions &mdash; main CI structurally cannot finish. So for the
+      majority of pushes there was nothing to read, not merely something unread. <strong>This
+      is tracked here to be handed on, not fixed here:</strong> it is a workflow policy in the
+      consuming repository, its fix is one conditional expression, and it is separate from the
+      gate because only one of the two problems is about attention. A promotion gate reading a
+      CI conclusion must nonetheless treat <em>cancelled</em> as absence of evidence rather
+      than as a pass, which is why the two findings touch.
+    </p>
+
+    <h2 id="s5">&#167;5 &mdash; Deliverables</h2>
+    <ul>
+      <li>A promotion-time measure of whether the promoting node added a suite failure,
+        computed against a stated baseline rather than against green.</li>
+      <li>A refusal on a non-empty delta, carrying the added failures' ids so the operator
+        sees what to fix rather than that something is wrong.</li>
+      <li>An explicit waiver requiring a reason, recorded on the promoted ledger record so
+        waived promotions remain countable and auditable.</li>
+      <li>Absence of evidence treated as absence rather than as a pass &mdash; a cancelled,
+        missing or never-run suite is not a clean delta.</li>
+      <li>A regression proving the gate would have refused a known-bad promotion, and a
+        second proving it would NOT have blocked the fifteen nodes of the session that
+        repaired the outage.</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="delta-baseline-source" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What is the baseline a promotion's failure delta is measured against?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="run-base-sha">The run's own recorded base revision, which the ledger already stores</button>
+          <button class="r-opt" data-value="last-promoted">The suite state at the previous promotion in the same project</button>
+          <button class="r-opt" data-value="worker-reported">The worker's own captured pre-change run, as its manifest already reports</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="who-runs-the-suite" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Who executes the suite whose delta the gate reads?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="worker-evidence">The worker, with the gate reading its captured counts and refusing when they are absent</button>
+          <button class="r-opt" data-value="gate-runs-it">The gate itself at promotion time, so the measurement cannot be self-reported</button>
+          <button class="r-opt" data-value="ci-conclusion">The project's CI, with the gate reading a conclusion and treating cancelled as absence</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="gate-scope" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the gate apply to every project by default, or opt in per project?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="default-on">On by default for every project, waivable per promotion</button>
+          <button class="r-opt" data-value="opt-in">Off until a project declares a suite command in its flight config</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-pcg-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-01" data-recommends-skill="/reckon-ship promotion-consequence-gate" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Build the delta-measured promotion gate with its waiver</h4>
+        <div class="r-fu-body"><p>Three decisions are open and each changes the implementation, so lock them before dispatching: what the delta baseline is, who executes the suite, and whether the gate defaults on. The measured incident in &#167;1 and the counter-example in &#167;2 are the inputs and do not need re-deriving. <strong>Sprint placement is a proposal, not a decision:</strong> this plan was authored from <code>imas-codex</code> by the session that measured the incident, and S9 was chosen because its theme produced the signal this plan gives consequence to. A reckon session should confirm or rebalance it.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship promotion-consequence-gate</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
