@@ -693,3 +693,53 @@ def test_a_registration_mid_write_is_not_read_as_unknown_delivery(home) -> None:
         assert observed["follower"].get("pid") == os.getpid()
     finally:
         thread.join(timeout=2)
+
+
+def test_a_row_that_is_not_live_says_which_condition_ended_it(home) -> None:
+    """A stale registration must not read as coverage.
+
+    Its `since` records when it attached, so a dead row's only timestamp makes
+    it look older and better established rather than stale — and a consumer
+    counting rows to ask "is this project covered" is then answered by a
+    registration that ended. Reported by a session that read `followers` as 2
+    while one of them was dead.
+    """
+    path = runs.follower_lock_path("proj", "departed")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": "proj",
+                "session": "departed",
+                "pid": 999_999_999,
+                "pid_start_time": "1",
+                "delivery": "stream",
+                "started_at": "2026-09-01T09:00:00Z",
+            }
+        )
+    )
+
+    with runs.follower_claim("proj", "attached", delivery="stream"):
+        payload = runs.project_watch_visibility("proj")
+
+    rows = {row["session"]: row for row in payload["followers"]}
+    assert set(rows) == {"departed", "attached"}, "the array stays lossless"
+    assert payload["followers_live"] == 1, "the count answers coverage, not the length"
+    assert payload["delivering_sessions"] == ["attached"]
+
+    assert rows["attached"]["live"] is True
+    assert "not_live_because" not in rows["attached"]
+
+    departed = rows["departed"]
+    assert departed["live"] is False
+    assert "is gone" in departed["not_live_because"]
+    assert departed["since"] == "2026-09-01T09:00:00Z", (
+        "its only timestamp is its attach time, which is why the reason matters"
+    )
+
+
+def test_a_follower_whose_consumer_exited_names_that(home) -> None:
+    """Streaming to a session that has gone is not delivery either."""
+    state = runs._follower_liveness(runs.follower_lock_path("proj", "absent"))
+    assert state["live"] is False
+    assert state["not_live_because"] == "no registration remains"

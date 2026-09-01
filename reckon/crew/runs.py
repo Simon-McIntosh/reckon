@@ -1207,7 +1207,13 @@ _REGISTRATION_SETTLE_SECONDS = 0.25
 def _follower_liveness(path: Path) -> dict[str, Any]:
     """Read one registration and decide whether it still delivers."""
     if not path.is_file():
-        return {"registered": False, "live": False, "delivery": None, "follower": {}}
+        return {
+            "registered": False,
+            "live": False,
+            "not_live_because": "no registration remains",
+            "delivery": None,
+            "follower": {},
+        }
     deadline = time.monotonic() + _REGISTRATION_SETTLE_SECONDS
     while True:
         with path.open("a+b") as handle:
@@ -1253,11 +1259,40 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         else None
     )
     delivery = observed or str(record.get("delivery") or "unknown")
+    live = bool(
+        registered and running and consumer_alive and delivery in DELIVERING_MODES
+    )
+    # A row that is not live says which condition ended it. Its `since` records
+    # when it attached, so a dead row's only timestamp makes it look older and
+    # better established rather than stale — and a reader counting rows to ask
+    # "is this project covered" is then answered by a registration that ended.
+    reason = ""
+    if not live:
+        if not registered and record:
+            reason = (
+                f"the registration was released; its process {record.get('pid')} "
+                "is gone"
+                if not running
+                else "the registration was released"
+            )
+        elif not registered:
+            reason = "no registration remains"
+        elif not running:
+            reason = f"the registered process {record.get('pid')} is gone"
+        elif not consumer_alive:
+            reason = (
+                f"the session consuming it (process {record.get('parent_pid')}) "
+                "has exited"
+            )
+        else:
+            reason = (
+                f"its lines end in a {delivery}, which nothing reads until the "
+                "command exits — and a follower does not exit"
+            )
     return {
         "registered": registered,
-        "live": bool(
-            registered and running and consumer_alive and delivery in DELIVERING_MODES
-        ),
+        "live": live,
+        "not_live_because": reason,
         "delivery": delivery,
         "delivery_recorded": str(record.get("delivery") or "unknown"),
         "delivery_observed": observed,
@@ -1408,9 +1443,16 @@ def project_watch_visibility(
                 "pid": row["follower"].get("pid"),
                 "consumer_pid": row["follower"].get("parent_pid"),
                 "since": row["follower"].get("started_at"),
+                **(
+                    {} if row["live"] else {"not_live_because": row["not_live_because"]}
+                ),
             }
             for row in followers
         ],
+        # The array is lossless because a stale registration is worth seeing,
+        # so the count that answers "is this project covered" is stated rather
+        # than left to be derived from the array's length.
+        "followers_live": sum(1 for row in followers if row["live"]),
         "delivering_sessions": sorted(
             row["session"] for row in followers if row["live"]
         ),
