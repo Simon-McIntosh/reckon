@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from tests import spa_module_eval
 from tests.spa_browser_harness import installed_browser, run_browser_probe
 
 ROOT = Path(__file__).parents[1]
@@ -32,9 +33,8 @@ def test_sprint_view_declares_one_vertical_scroll_owner() -> None:
     ):
         selector = re.sub(r"\s+", " ", match.group(1)).strip()
         body = re.sub(r"\s+", " ", match.group(2)).strip()
-        if (
-            (".r-sprint-view" in selector or ".r-sprint-surface" in selector)
-            and ("overflow: auto" in body or "overflow-y: auto" in body)
+        if (".r-sprint-view" in selector or ".r-sprint-surface" in selector) and (
+            "overflow: auto" in body or "overflow-y: auto" in body
         ):
             scroll_owners.append(selector)
 
@@ -73,28 +73,83 @@ def test_sprint_surface_and_header_use_content_geometry() -> None:
     )
 
 
-def test_gantt_uses_the_declared_shared_axis_and_row_dimensions() -> None:
-    assert_declares(
-        ".r-time-axis, .r-folded-band, .r-timeline-row",
-        "grid-template-columns: minmax(320px, 24%) minmax(0, 1fr)",
-        "gap: 0 16px",
+def test_fixed_horizon_retires_calendar_controls_and_sprint_geometry() -> None:
+    for retired in ('"4w"', '"8w"', '"6m"', "SPRINT_HORIZONS", "sprintAxis"):
+        assert retired not in JSX
+    assert "r-sprint-mark" not in JSX
+    assert "r-sprint-mark" not in CSS
+    assert (
+        "sprint.starts"
+        not in JSX[
+            JSX.index("function horizonStrip") : JSX.index("function openGateCount")
+        ]
     )
-    assert_declares(".r-time-axis > div", "grid-template-columns: repeat(6, 1fr)")
-    assert_declares(
-        ".r-folded-band", "padding: 8px 0", "border-bottom: 1px solid var(--line)"
+
+
+def test_horizon_strip_is_local_fixed_and_places_timestamped_events() -> None:
+    result = spa_module_eval.evaluate_jsx_module(
+        ROOT / "docs/ui/sprint.jsx",
+        "(() => {"
+        "const now = new Date(2026, 8, 1, 6, 0, 0).getTime();"
+        "const completed = [{run_id: 'done', completed_at: new Date(2026, 8, 1, 2, 0, 0).toISOString()}];"
+        "const live = [{run_id: 'live', dispatched_at: new Date(2026, 8, 1, 4, 0, 0).toISOString()}];"
+        "const first = horizonStrip(now, completed, live);"
+        "const later = horizonStrip(now + HOUR_MS, completed, live);"
+        "return {"
+        "startHour: new Date(first.start).getHours(),"
+        "durationHours: (Date.parse(first.end) - Date.parse(first.start)) / HOUR_MS,"
+        "tomorrowPosition: first.tomorrowPosition,"
+        "nowPosition: first.nowPosition, laterPosition: later.nowPosition,"
+        "tickCount: first.ticks.length,"
+        "events: first.events.map(event => ({kind: event.kind, id: event.run.run_id, left: event.left}))"
+        "};"
+        "})()",
     )
-    assert_declares(".r-folded-track", "height: 15px")
-    assert_declares(
-        ".r-timeline-row", "padding: 9px 0", "border-bottom: 1px solid var(--line)"
+
+    assert result["startHour"] == 0
+    assert result["durationHours"] == 48
+    assert result["tomorrowPosition"] == 50
+    assert result["tickCount"] == 9
+    assert result["laterPosition"] - result["nowPosition"] == pytest.approx(100 / 48)
+    assert result["events"] == [
+        {"kind": "completed", "id": "done", "left": pytest.approx(100 / 24)},
+        {"kind": "live", "id": "live", "left": pytest.approx(100 / 12)},
+    ]
+
+
+def test_now_line_uses_the_current_instant_and_advances_on_a_timer() -> None:
+    assert (
+        "const [currentInstant, setCurrentInstant] = useState(() => Date.now())" in JSX
     )
-    assert_declares(".r-timeline-track", "height: 21px")
-    assert_declares(".r-sprint-mark", "top: 4px", "height: 13px", "border-radius: 3px")
-    assert "const tickCount = 6;" in JSX
-    assert 'className="r-folded-track"' in JSX
+    assert "setInterval(() => setCurrentInstant(Date.now()), HORIZON_REFRESH_MS)" in JSX
+    assert "window.clearInterval(timer)" in JSX
+    assert "horizonStrip(currentInstant, finishedRuns, liveRuns)" in JSX
+    assert (
+        "M.today"
+        not in JSX[
+            JSX.index("function horizonStrip") : JSX.index("function openGateCount")
+        ]
+    )
+
+
+def test_horizon_strip_has_compact_two_day_geometry() -> None:
+    assert_declares(
+        ".r-horizon-strip",
+        "margin-bottom: 14px",
+        "padding: 10px 14px 8px",
+    )
+    assert_declares(
+        ".r-horizon-strip > header", "grid-template-columns: repeat(2, 1fr)"
+    )
+    assert_declares(".r-horizon-track", "position: relative", "height: 44px")
+    assert_declares(".r-now-line", "position: absolute", "width: 2px")
+    assert_declares(".r-horizon-event", "position: absolute", "border-radius: 50%")
+    assert 'className="r-tomorrow-line"' in JSX
+    assert 'className={`r-horizon-event ${event.kind} ${run.gate || ""}`}' in JSX
 
 
 @pytest.mark.parametrize("viewport_width", [1374, 1920])
-def test_rendered_timeline_labels_fit_and_use_available_width(
+def test_rendered_horizon_uses_available_width_and_equal_day_halves(
     tmp_path: Path, viewport_width: int
 ) -> None:
     browser = installed_browser()
@@ -114,40 +169,48 @@ def test_rendered_timeline_labels_fit_and_use_available_width(
 <body><div class="r-app"><div class="r-canvas-view r-sprint-view"><div class="r-content">
 <div class="r-reader-with-attachments"><div class="r-body">
 <div class="r-page wide r-sprint-surface"><section class="r-sprint-overview">
-<div class="r-time-axis"><span></span><div>{"".join("<span>Aug 25</span>" for _ in range(6))}</div></div>
-<div class="r-timeline-rows">
-<div class="r-timeline-row"><a href="#"><strong>S9</strong><span class="r-sprint-title">Observation and orientation across the complete planning surface</span><em>active</em></a>
-<div class="r-timeline-track"><a class="r-sprint-mark active" href="#" style="left: 20%; width: 1.5%"><span class="r-sprint-mark-label">S9</span></a></div></div>
-</div></section></div></div></div></div></div></div></body></html>"""
+<section class="r-horizon-strip"><header><span>Today</span><span>Tomorrow</span></header>
+<div class="r-horizon-track"><i class="r-tomorrow-line" style="left:50%"></i><i class="r-now-line" style="left:25%"></i><a class="r-horizon-event completed" style="left:12.5%"></a></div>
+<footer><span><i class="completed"></i> completed</span></footer></section>
+</section></div></div></div></div></div></div></body></html>"""
     metrics = run_browser_probe(
         tmp_path,
         browser,
         document,
         """(() => {
-          const title = document.querySelector('.r-sprint-title');
-          const mark = document.querySelector('.r-sprint-mark-label');
           const surface = document.querySelector('.r-sprint-surface');
           const overview = document.querySelector('.r-sprint-overview');
-          const track = document.querySelector('.r-timeline-track');
+          const track = document.querySelector('.r-horizon-track');
+          const division = document.querySelector('.r-tomorrow-line');
+          const now = document.querySelector('.r-now-line');
+          const trackRect = track.getBoundingClientRect();
           return {
-            titleClient: title.clientWidth, titleScroll: title.scrollWidth,
-            markClient: mark.clientWidth, markScroll: mark.scrollWidth,
             surfaceWidth: surface.clientWidth, overviewWidth: overview.clientWidth,
             trackWidth: track.clientWidth, viewportWidth: innerWidth,
+            divisionOffset: division.getBoundingClientRect().left - trackRect.left,
+            nowOffset: now.getBoundingClientRect().left - trackRect.left,
           };
         })()""",
         viewport=(viewport_width, 900),
-        ready_expression="Boolean(document.querySelector('.r-sprint-mark-label'))",
+        ready_expression="Boolean(document.querySelector('.r-now-line'))",
     )
 
-    assert metrics["titleScroll"] <= metrics["titleClient"], metrics
-    assert metrics["markScroll"] <= metrics["markClient"], metrics
-    # The overview fills the surface's content box; the 52px difference is the
-    # surface's declared 26px horizontal padding on each side.
     assert metrics["overviewWidth"] == metrics["surfaceWidth"] - 52, metrics
+    assert metrics["divisionOffset"] == pytest.approx(metrics["trackWidth"] / 2, abs=1)
+    assert metrics["nowOffset"] == pytest.approx(metrics["trackWidth"] / 4, abs=1)
     if viewport_width == 1920:
         assert metrics["surfaceWidth"] > 1216, metrics
         assert metrics["trackWidth"] > 1216, metrics
+
+
+def test_undated_sprint_is_never_filtered_from_the_surface() -> None:
+    result = spa_module_eval.evaluate_jsx_module(
+        ROOT / "docs/ui/sprint.jsx",
+        "sprintStateRows([{id: 'undated', status: 'active', starts: '', ends: '', metrics: {}}], '2026-09-01').map(row => row.sprint.id)",
+    )
+
+    assert result == ["undated"]
+    assert "stateRows.map(row =>" in JSX
 
 
 @pytest.mark.parametrize(
