@@ -39,7 +39,7 @@
         <tr><td>Cache is rebuildable</td><td>Delete and rebuild reproduced byte-equivalent figures; nothing is authored — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Lines are unrankable</td><td>An AST guard confines consumption to one descriptive helper and its single call site — <a href="#capabilities-cache">§ capabilities cache</a></td><td>pass</td></tr>
         <tr><td>Unit stated everywhere</td><td>Plan read, sprint capacity, plans list and authoring guidance all name worker-hours; unit grep found 0 bare figures — <a href="#unit-surfaced">§ unit surfaced</a></td><td>pass</td></tr>
-        <tr><td>Prediction beats the letters</td><td>Exact tie at MAE 2.625391 h over 64 usable records — a recorded negative result — <a href="#prediction">§ prediction</a></td><td>negative</td></tr>
+        <tr><td>Prediction beats the letters</td><td>Re-measurement after independent hours were authored: hours MAE 4.651012 h versus legacy MAE 1.124560 h over 363 usable records — a measured loss — <a href="#prediction-remeasure">§ prediction re-measurement</a></td><td>negative</td></tr>
         <tr><td>Suite green</td><td>Failed at 1,826/5, repaired, then <strong>1,837 passed / 0 failed</strong> — <a href="#suite-regression">§ suite regression</a></td><td>pass</td></tr>
       </tbody>
     </table>
@@ -375,6 +375,69 @@
     <p>Worth noting what the exclusions cost. Eleven of 75 records were unusable, and 5 of those simply
     lacked an agent configuration — a gap in older records rather than a defect in the current path. The
     exclusions are reported rather than quietly dropped, which is the whole point of counting them.</p>
+  </section>
+
+  <section id="prediction-remeasure">
+    <h2>Authored hours lose to the legacy letters in the triggered re-measurement</h2>
+
+    <p>The comparison was repeated at repository revision
+    <code>58f9938be9521720d30071938fbbb2c0f2947747</code> against ledger version 527,
+    updated <code>2026-09-01T22:05:52</code>. The trigger census contains
+    <strong>27 authored plan documents</strong>: 26 live resources under
+    <code>docs/plans/</code> and the canonical authored exemplar. The other 24 live plan
+    resources still resolve hours through their compatibility letter; no live plan is missing
+    an effort value.</p>
+
+    <p>The method is unchanged from the first comparison. For every ledger run, its
+    <code>base_sha</code> was used to load the historical plan from
+    <code>docs/plans/&lt;slug&gt;.html</code>, with the original
+    <code>docs/&lt;slug&gt;.html</code> fallback. The hours prediction is that snapshot's
+    <code>effort_hours × (1 − impl)</code>; the comparator is its historical S/M/L/XL letter
+    mapped to 1/2/4/8 worker-hours and multiplied by the same remaining fraction. Actual effort
+    is the run's <code>worker_seconds / 3600</code>. This preserves the original eligibility
+    rules and prevents today's plan state from leaking into an older prediction.</p>
+
+    <table>
+      <thead><tr><th>Sample accounting</th><th>Records</th></tr></thead>
+      <tbody>
+        <tr><td>Ledger records examined</td><td>405</td></tr>
+        <tr><td>Usable comparisons</td><td><strong>363</strong></td></tr>
+        <tr><td>Excluded — scope changed</td><td>29</td></tr>
+        <tr><td>Excluded — completion source was not a terminal event or stream mtime</td><td>1</td></tr>
+        <tr><td>Excluded — missing agent configuration</td><td>5</td></tr>
+        <tr><td>Excluded — non-positive or non-finite duration</td><td>7</td></tr>
+        <tr><td>Excluded — historical plan unavailable at <code>base_sha</code></td><td>0</td></tr>
+        <tr><td>Excluded — historical effort unavailable</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <p>The accounting closes exactly:
+    <strong>405 = 363 usable + 29 scope-changed + 1 untrustworthy-completion +
+    5 missing-configuration + 7 invalid-duration + 0 missing-plan + 0 missing-effort</strong>.</p>
+
+    <table>
+      <thead><tr><th>Prediction provenance and result</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Usable records from authored-hour snapshots</td><td>272</td></tr>
+        <tr><td>Usable records from letter-mapped snapshots</td><td>91</td></tr>
+        <tr><td>Distinct usable plans with authored-hour snapshots</td><td>24</td></tr>
+        <tr><td>Distinct usable plans with mapped-only snapshots</td><td>14</td></tr>
+        <tr><td>Hours-based MAE</td><td><strong>4.651012 worker-hours</strong></td></tr>
+        <tr><td>Legacy-letter MAE</td><td><strong>1.124560 worker-hours</strong></td></tr>
+        <tr><td>Hours minus legacy MAE</td><td><strong>+3.526452 worker-hours</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Verdict: the hours-based predictor loses.</strong> The compatibility weights remain
+    S=1, M=2, L=4 and XL=8; they were not adjusted after seeing the result. Under this exact
+    run-level comparison, an authored whole-plan remaining estimate is frequently much larger than
+    one worker node's observed duration, so its absolute error is inflated relative to the compact
+    letter estimate. This result establishes performance for the declared predictor and sample; it
+    does not make repeated runs from the same plan independent observations of whole-plan completion.</p>
+
+    <p>The reproducible analysis is
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201320923288-n-prediction-remeasure/prediction_remeasure.py</code>;
+    its complete numeric output is beside it in <code>prediction-remeasure-final.log</code>.</p>
   </section>
 
   <section id="suite-regression">
