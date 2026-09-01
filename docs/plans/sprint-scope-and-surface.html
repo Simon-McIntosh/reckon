@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-graph-handle" content="sprint-federation">
 <meta name="plan-impl" content="0.78">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
@@ -214,6 +214,60 @@
     <p>Until that chain is green the layout migration does not run. The project-state
     migration is already done and is independent — the typed resolver reads flat resources for
     compatibility — so nothing is blocked by waiting.</p>
+
+    <h3 id="s3-conditions">Conditions the target repository imposed, established by asking it</h3>
+
+    <p>
+      The lead authorised the cross-repository write on 2026-09-01. Authorisation settled the
+      permission question and not the clash question, so both live sessions in the target
+      repository were asked directly. Three conditions came back, and the second and third
+      change what the migration must measure rather than merely when it may run.
+    </p>
+
+    <p>
+      <strong>A window, not a green light.</strong> One session holds a live run plus a plan
+      closure still to write; it will hand the tree over rather than be polled. The other is
+      drained and clear. A third delivering session is unaccounted for. Note also that
+      <code>docs/state/&lt;project&gt;/crew.json</code> is rewritten by every promotion and is
+      therefore continuously dirty — reading tree cleanliness as a readiness signal would
+      mislead every time.
+    </p>
+
+    <p>
+      <strong>The before-state is void, not merely dated.</strong> Four new evidence files and
+      about a dozen inbound links landed after it was captured. A comparison against it would
+      classify that work as either damage the migration caused or as targets that never
+      existed — both wrong, both plausible in a diff. <strong>Recapture immediately before the
+      move</strong>; a before-state taken at any other moment is not one.
+    </p>
+
+    <p>
+      <strong>The invariant this migration moves toward has been unenforced for a week, and its
+      test breaks the whole suite.</strong> The target repository's typed-resource-path check
+      imports <code>reckon.resources</code>, <code>reckon</code> is not declared in its
+      dependencies, and its pytest configuration collects that directory by default — so the
+      <code>ModuleNotFoundError</code> interrupts collection for the entire tree. A bare
+      <code>uv run pytest</code> there has exited 2 having run <strong>zero tests since
+      2026-08-25</strong>. Every green figure quoted from that repository in the intervening
+      week came from a targeted invocation that happened to avoid the directory, including one
+      six-thousand-test result its own author has since withdrawn as a general health claim.
+    </p>
+    <p>
+      Two consequences. It partly explains the 45 already-missing link targets: they are what a
+      week of no typed-path validation looks like from the other side. And it creates a
+      measurement hazard for this migration, because the check is being restored in the same
+      window — <strong>its first real run can surface pre-existing violations that look exactly
+      like migration damage.</strong> So the after-state must record whether the check was
+      collecting at each measurement, letting a reader separate an old violation newly
+      <em>detected</em> from a link newly <em>broken</em>. Without that column the
+      newly-broken figure is not trustworthy, and it is the only figure that decides whether
+      the migration was correct.
+    </p>
+    <p>
+      The shape is one this plan already knows. Exit 2 is an error rather than a failure, so a
+      summary reporting no failures is true and useless — the same reason a zero-collecting
+      test scores as having no signal, indistinguishable from a test that does not exist.
+    </p>
 
     <h2 id="s4">§4 — Wiring findings the migration surfaced, and one that predates it</h2>
 
