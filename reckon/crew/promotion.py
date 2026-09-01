@@ -18,6 +18,7 @@ from reckon.crew.runs import (
     _manifest_freshness,
     _pointer_lock,
     _utc_now,
+    _write_json,
     pointer_path,
     process_alive,
     read_pointer,
@@ -680,6 +681,7 @@ def complete(
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
     no_commit: str = "",
+    suite_delta_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -716,6 +718,11 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
+        suite_delta = _evaluate_suite_delta(
+            run_id,
+            record,
+            waiver_reason=suite_delta_waiver,
+        )
         return _complete_locked(
             run_id,
             gate=gate,
@@ -730,7 +737,92 @@ def complete(
             root=root,
             gate_check=gate_check,
             require_gate_check=require_gate_check,
+            suite_delta=suite_delta,
         )
+
+
+def _evaluate_suite_delta(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    waiver_reason: str,
+) -> dict[str, Any] | None:
+    """Validate an armed run's paired suite evidence and calculate its delta."""
+    suite_command = str(record.get("suite_command") or "").strip()
+    if not suite_command:
+        return None
+    manifest_present, fresh = _manifest_freshness(record)
+    manifest: dict[str, Any] = {}
+    if manifest_present and fresh:
+        try:
+            manifest = parse_manifest(
+                Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+            )
+        except (OSError, KeyError, ValueError):
+            manifest = {}
+    baseline = manifest.get("baseline_suite")
+    after = manifest.get("after_suite")
+    missing: list[str] = []
+    if not manifest_present:
+        missing.append("manifest")
+    elif not fresh:
+        missing.append("fresh_manifest")
+    missing.extend(
+        ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
+    )
+    missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
+    base_sha = str(record.get("base_sha") or "").strip()
+    if (
+        isinstance(baseline, Mapping)
+        and str(baseline.get("revision") or "").strip()
+        and str(baseline["revision"]).strip() != base_sha
+    ):
+        missing.append("baseline_suite.revision_matches_base_sha")
+    if missing:
+        refusal = {
+            "status": "refused",
+            "suite_command": suite_command,
+            "missing_fields": missing,
+            "added_failure_ids": [],
+        }
+        updated = dict(record)
+        updated["suite_delta_refusal"] = refusal
+        _write_json(pointer_path(run_id), updated)
+        raise ledger.SuiteDeltaError(
+            "armed promotion requires complete baseline and after suite evidence; "
+            "missing " + ", ".join(missing),
+            missing_fields=missing,
+        )
+    normalized_baseline = ledger.normalized_suite_observation(baseline)
+    normalized_after = ledger.normalized_suite_observation(after)
+    added = sorted(
+        set(normalized_after["failure_ids"]) - set(normalized_baseline["failure_ids"])
+    )
+    waiver = str(waiver_reason).strip()
+    if added and not waiver:
+        refusal = {
+            "status": "refused",
+            "suite_command": suite_command,
+            "baseline_suite": normalized_baseline,
+            "after_suite": normalized_after,
+            "missing_fields": [],
+            "added_failure_ids": added,
+        }
+        updated = dict(record)
+        updated["suite_delta_refusal"] = refusal
+        _write_json(pointer_path(run_id), updated)
+        raise ledger.SuiteDeltaError(
+            "armed promotion added suite failures: " + ", ".join(added),
+            added_failure_ids=added,
+        )
+    return {
+        "status": "waived" if added else "clean",
+        "suite_command": suite_command,
+        "baseline_suite": normalized_baseline,
+        "after_suite": normalized_after,
+        "added_failure_ids": added,
+        "waiver_reason": waiver or None,
+    }
 
 
 def _complete_locked(
@@ -748,6 +840,7 @@ def _complete_locked(
     root: str | Path | None = None,
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
+    suite_delta: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -941,6 +1034,7 @@ def _complete_locked(
         unreconciled_override=record.get("unreconciled_override"),
         gate_check=gate_check,
         require_gate_check=require_gate_check,
+        suite_delta=suite_delta,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")

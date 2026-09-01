@@ -718,6 +718,17 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             assert flag in ship
 
 
+def test_complete_command_registers_reasoned_suite_delta_waiver() -> None:
+    command = _command_at(("crew", "complete"))
+    options = {
+        option
+        for parameter in command.params
+        for option in getattr(parameter, "opts", ())
+    }
+
+    assert "--waive-suite-delta" in options
+
+
 def test_every_leakage_exemption_still_earns_itself() -> None:
     """A carve-out that covers nothing is a hole, not an exemption.
 
