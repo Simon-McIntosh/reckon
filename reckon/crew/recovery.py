@@ -266,6 +266,11 @@ def classify_pointer(
     return {
         "run_id": run_id,
         "project": record.get("project"),
+        # Several coordinator sessions share one project, so every read of a
+        # run has to say whose it is. Without it a session reading the live
+        # view cannot tell its own fleet from a peer's, and acting on a peer's
+        # row is worse than not seeing it.
+        "session": record.get("session"),
         "plan": (record.get("node") or {}).get("plan"),
         "node": (record.get("node") or {}).get("id"),
         "classification": classification,
@@ -333,9 +338,9 @@ def _watch_registration(project: str, stall_window: str):
         yield acquired, watcher
 
 
-def watch_state(project: str) -> dict[str, Any]:
+def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Report a watcher as live only while its recorded observer is alive."""
-    state = _kernel_watch_state(project)
+    state = _kernel_watch_state(project, session=session)
     if not state["watcher_live"]:
         return state
 
@@ -492,6 +497,9 @@ def _watch_snapshot(
     return {
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or row.get("run_id") or "unknown"),
+        # The dispatching session, so a reader can tell its own fleet from a
+        # peer's on a stream that is necessarily project-wide.
+        "session": str(pointer.get("session") or ""),
         "state": state,
         "reason": _single_clause(detail),
     }
@@ -523,6 +531,7 @@ def _watch_transition(
         "observed_at": _utc_now(),
         "run_id": snapshot.get("run_id"),
         "node": snapshot.get("node"),
+        "session": snapshot.get("session") or "",
         "from_state": previous,
         "to_state": current,
         "live": counts["live"],
@@ -535,11 +544,24 @@ def _watch_transition(
     return event
 
 
-def format_watch_transition(event: Mapping[str, Any]) -> str:
-    """Render one transition as the compact human-facing watch line."""
+def format_watch_transition(
+    event: Mapping[str, Any], *, with_session: bool = False
+) -> str:
+    """Render one transition as the compact human-facing watch line.
+
+    ``with_session`` names the owning session, which an unscoped reader needs
+    and a session-scoped one does not: every line a scoped follower receives is
+    its own by construction, so spending the column there would only crowd out
+    the node name.
+    """
+    if event.get("legacy"):
+        return str(event.get("rendered") or "")
     observed = str(event.get("observed_at") or "")
     clock = observed[11:19] if len(observed) >= 19 else observed or "--:--:--"
     node = str(event.get("node") or event.get("run_id") or "unknown")
+    owner = str(event.get("session") or "")
+    if with_session and owner:
+        node = f"{node} [{owner}]"
     previous = str(event.get("from_state") or "")
     current = str(event.get("to_state") or "unknown")
     movement = f"{previous} → {current}" if previous else f"→ {current}"

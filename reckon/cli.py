@@ -1,8 +1,10 @@
 import json
 import shutil
 import time
+from collections.abc import Iterable, Mapping
 from datetime import datetime, UTC
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -1012,46 +1014,134 @@ def crew_observe(run_id, project, pretty):
     _emit({"ok": True, **record}, pretty)
 
 
+def _follow_selects(
+    event: Mapping[str, Any],
+    *,
+    session: str | None,
+    run_ids: tuple[str, ...],
+    attention: bool,
+) -> bool:
+    """Decide whether one transition belongs to this follower's fleet.
+
+    An event whose owner cannot be established — a line a pre-upgrade producer
+    rendered, or a pointer carrying no session — reaches every follower. A
+    reader that drops what it cannot attribute converts an unknown into a
+    silence, which is the failure this whole surface exists to prevent.
+    """
+    from reckon.crew.runs import WATCH_ATTENTION_STATES
+
+    if event.get("legacy"):
+        return True
+    owner = str(event.get("session") or "")
+    if session is not None and owner and owner != session:
+        return False
+    if run_ids and str(event.get("run_id") or "") not in run_ids:
+        return False
+    if attention and str(event.get("to_state") or "") not in WATCH_ATTENTION_STATES:
+        return False
+    return True
+
+
 def _follow_watch_lines(
     project: str,
     *,
+    session: str | None = None,
+    run_ids: Iterable[str] = (),
+    attention: bool = False,
     poll_interval: float = 0.1,
     sleeper=time.sleep,
+    stop=None,
+    notify=None,
 ):
-    """Yield the current fleet and future lines from its durable watch stream."""
+    """Yield this follower's transitions for as long as its session lives.
+
+    Two properties matter more than anything else here, and both were learned
+    from measured silence:
+
+    A follower outlives the producer it reads. The seat is released when a wave
+    drains, so a follower that ended there covered exactly one wave — the next
+    wave armed a fresh producer while the session's monitor had already exited.
+    Waiting for the next producer instead makes one arming cover the session.
+
+    A follower reports state, not lines. On re-attaching it re-derives the
+    fleet and emits only what changed since it last spoke, so a reconnect is
+    quiet when nothing moved and cannot swallow a transition that happened
+    while no producer was up.
+    """
     from reckon.crew import runs
 
-    visibility = runs.project_watch_visibility(project)
-    if not visibility["watcher_live"]:
-        raise runs.CrewError(
-            f"project {project!r} has no live watcher; "
-            f"arm it with {visibility['arming_line']}, "
-            f"then attach with {visibility['attach_line']}"
-        )
+    selected_runs = tuple(run_ids)
+    reported: dict[str, str] = {}
+    waiting_announced = False
 
-    cursor = runs.watch_stream_cursor(project)
-    yield from cursor["baseline"]
-    stream_path = Path(cursor["stream_path"])
+    def _stopped() -> bool:
+        return stop is not None and stop.is_set()
 
-    while not stream_path.exists():
-        if not runs.project_watch_visibility(project)["watcher_live"]:
-            return
-        sleeper(poll_interval)
+    def _announce(message: str) -> None:
+        if notify is not None:
+            notify(message)
 
-    with stream_path.open(encoding="utf-8") as stream:
-        stream.seek(cursor["offset"])
-        while True:
-            line = stream.readline()
-            if line:
-                yield line.rstrip("\n")
-                continue
-            if not runs.project_watch_visibility(project)["watcher_live"]:
-                final_line = stream.readline()
-                if final_line:
-                    yield final_line.rstrip("\n")
-                    continue
+    def _emit(event: Mapping[str, Any]):
+        """Return the event when it is both this follower's and news."""
+        if not _follow_selects(
+            event, session=session, run_ids=selected_runs, attention=attention
+        ):
+            return None
+        run_id = str(event.get("run_id") or "")
+        state = str(event.get("to_state") or "")
+        if run_id and not event.get("legacy"):
+            if reported.get(run_id) == state:
+                return None
+            reported[run_id] = state
+        return event
+
+    while not _stopped():
+        if not runs.producer_live(project):
+            if not waiting_announced:
+                waiting_announced = True
+                _announce(
+                    f"waiting for a producer on project {project!r}; "
+                    f"dispatch arms one, or arm it with "
+                    f"{runs._watch_arming_line(project)}"
+                )
+            sleeper(poll_interval)
+            continue
+
+        waiting_announced = False
+        cursor = runs.watch_stream_cursor(project)
+        for event in cursor["baseline"]:
+            selected = _emit(event)
+            if selected is not None:
+                yield selected
+        stream_path = Path(cursor["stream_path"])
+
+        while not stream_path.exists():
+            if not runs.producer_live(project):
+                break
+            if _stopped():
                 return
             sleeper(poll_interval)
+        if not stream_path.exists():
+            continue
+
+        with stream_path.open(encoding="utf-8") as stream:
+            stream.seek(cursor["offset"])
+            while True:
+                line = stream.readline()
+                if line:
+                    event = runs.parse_stream_line(line)
+                    selected = None if event is None else _emit(event)
+                    if selected is not None:
+                        yield selected
+                    continue
+                # Stopping and losing what is already written would be the same
+                # defect at the other end of the pipe, so both endings drain
+                # the stream first.
+                if _stopped():
+                    return
+                if not runs.producer_live(project):
+                    break
+                sleeper(poll_interval)
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:
@@ -1061,16 +1151,99 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output.flush()
 
 
+def _follow_notice(message: str) -> None:
+    """Report follower status on stderr, keeping stdout the event channel.
+
+    Every stdout line of a follower is one notification in the session that
+    armed it, so status, waiting and refusal text belongs on the other stream —
+    otherwise arming a follower wakes a coordinator to say nothing happened.
+    """
+    click.echo(f"reckon crew follow: {message}", err=True)
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
-def crew_follow(project):
-    """Follow a project's ticker without acquiring its watcher seat."""
-    from reckon.crew.runs import CrewError
+@click.option(
+    "--session",
+    default=None,
+    help=(
+        "Deliver only the runs this session dispatched, and register the "
+        "session as attached so dispatch can verify delivery."
+    ),
+)
+@click.option(
+    "--run",
+    "run_ids",
+    multiple=True,
+    help="Deliver only these run ids. Repeat for several.",
+)
+@click.option(
+    "--attention",
+    is_flag=True,
+    help=(
+        "Deliver only states a coordinator must act on — terminal, blocked, "
+        "stalled, stopped, abandoned — rather than every progress transition."
+    ),
+)
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    help="Emit machine-readable transition objects rather than ticker lines.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_follow(project, session, run_ids, attention, json_output, pretty):
+    """Follow one session's runs without acquiring the project's watcher seat.
+
+    The seat is project-global and this delivery is session-local, so a
+    follower is what a coordinator arms to be woken about its own fleet. Arm it
+    through the host harness's per-line notification primitive: this command
+    produces lines and does not exit, so a mechanism that reports only on exit
+    delivers nothing at all.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew.recovery import format_watch_transition
+
+    delivery = runs_module.delivery_mode()
+    if delivery not in runs_module.DELIVERING_MODES:
+        _follow_notice(
+            f"stdout is a {delivery}, so these transitions reach nobody until "
+            "this command exits -- and it does not exit. Arm it with the "
+            "harness primitive that reports each line as it is written."
+        )
+
+    def stream_events(registered: bool):
+        if session is not None and not registered:
+            _follow_notice(
+                f"session {session!r} already has a registered follower; "
+                "streaming read-only without taking over its registration"
+            )
+        for event in _follow_watch_lines(
+            project,
+            session=session,
+            run_ids=run_ids,
+            attention=attention,
+            notify=_follow_notice,
+        ):
+            if json_output:
+                _emit({"ok": True, **event}, pretty)
+            else:
+                _echo_follow_line(
+                    format_watch_transition(event, with_session=session is None)
+                )
 
     try:
-        for line in _follow_watch_lines(project):
-            _echo_follow_line(line)
-    except CrewError as exc:
+        if session is None:
+            stream_events(True)
+            return
+        with runs_module.follower_claim(
+            project,
+            session,
+            delivery=delivery,
+            scope={"runs": list(run_ids), "attention": bool(attention)},
+        ) as (registered, _record):
+            stream_events(registered)
+    except runs_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
 
 

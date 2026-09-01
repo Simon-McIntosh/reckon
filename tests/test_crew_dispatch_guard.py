@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
+from reckon.crew import runs
 
 
 CONFIG = {
@@ -82,16 +83,25 @@ def isolated_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
         "watcher": {},
     }
 
-    def watch_state(_project: str) -> dict:
+    def watch_state(_project: str, *, session: str | None = None) -> dict:
+        # The seat is faked; delivery is read from the real registry, because a
+        # guard that both halves fake proves nothing about either.
+        delivery = (
+            runs.follower_state(_project, session) if session is not None else None
+        )
         return {
             **watcher,
             "watcher": dict(watcher["watcher"]),
+            "attach_line": runs._watch_attach_line(_project, session=session),
+            "session": session,
+            "session_attached": None if delivery is None else bool(delivery["live"]),
+            "follower": {} if delivery is None else delivery["follower"],
         }
 
-    def ensure_watch(_project: str) -> dict:
+    def ensure_watch(_project: str, *, session: str | None = None) -> dict:
         watcher["watcher_live"] = True
         watcher["watcher"] = {"pid": 7319}
-        return watch_state(_project)
+        return watch_state(_project, session=session)
 
     monkeypatch.setattr(dispatch_module, "watch_state", watch_state)
     monkeypatch.setattr(dispatch_module, "_ensure_watch_producer", ensure_watch)
@@ -118,16 +128,24 @@ def _dispatch(
     *,
     watch_override: bool = False,
 ) -> dict:
-    return crew.dispatch(
-        node=_node(config_home, name),
-        project="sample",
-        repo=repo,
-        config=CONFIG,
-        session=f"session-{name}",
-        launcher=lambda *args, **kwargs: 4242,
-        watch_required=True,
-        watch_override=watch_override,
-    )
+    """Dispatch with this session's delivery registered, as a coordinator does.
+
+    A producer alone does not admit a dispatch: the guard asks whether the
+    dispatching session will hear the run finish, which is the only form of the
+    question that a peer's seat cannot answer for you.
+    """
+    session = f"session-{name}"
+    with runs.follower_claim("sample", session, delivery="stream"):
+        return crew.dispatch(
+            node=_node(config_home, name),
+            project="sample",
+            repo=repo,
+            config=CONFIG,
+            session=session,
+            launcher=lambda *args, **kwargs: 4242,
+            watch_required=True,
+            watch_override=watch_override,
+        )
 
 
 def test_first_dispatch_arms_a_watcher_without_a_waiver(
@@ -175,7 +193,12 @@ def test_no_watch_override_is_recorded_for_an_occupied_project(
     assert waived["watch_override"] == {
         "requested": True,
         "arming_line": "reckon crew watch --project sample",
+        "attach_line": (
+            "reckon crew follow --project sample "
+            "--session session-waived --attention"
+        ),
         "watcher_live": True,
+        "session_attached": True,
     }
     assert crew.read_pointer(waived["run_id"])["watch_override"] == waived[
         "watch_override"

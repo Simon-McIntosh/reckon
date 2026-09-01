@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery
+from reckon.crew import recovery, runs
 
 
 CONFIG = {
@@ -105,16 +105,25 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
     )
 
 
-def _dispatch(config_home: Path, repo: Path, name: str) -> dict:
+def _dispatch(config_home: Path, repo: Path, name: str, **kwargs) -> dict:
+    session = kwargs.pop("session", f"session-{name}")
     return crew.dispatch(
         node=_node(config_home, name),
         project="sample",
         repo=repo,
         config=CONFIG,
-        session=f"session-{name}",
+        session=session,
         launcher=lambda *args, **kwargs: os.getpid(),
         watch_required=True,
+        **kwargs,
     )
+
+
+def _attached(config_home: Path, repo: Path, name: str, **kwargs) -> dict:
+    """Dispatch with this session's delivery registered, as a coordinator does."""
+    session = kwargs.pop("session", f"session-{name}")
+    with runs.follower_claim("sample", session, delivery="stream"):
+        return _dispatch(config_home, repo, name, session=session, **kwargs)
 
 
 def _wait_for_stopped_producer() -> None:
@@ -133,8 +142,8 @@ def test_concurrent_dispatches_arm_exactly_one_detached_producer(
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [
-                pool.submit(_dispatch, config_home, repo, "left"),
-                pool.submit(_dispatch, config_home, repo, "right"),
+                pool.submit(_attached, config_home, repo, "left"),
+                pool.submit(_attached, config_home, repo, "right"),
             ]
             refusals = [future.exception(timeout=10) for future in futures]
             records = [future.result(timeout=10) for future in futures]
@@ -156,12 +165,12 @@ def test_dispatch_restarts_a_producer_after_its_predecessor_dies(
 ) -> None:
     config_home, repo = isolated_project
     try:
-        first = _dispatch(config_home, repo, "first")
+        first = _attached(config_home, repo, "first")
         first_pid = first["watch"]["watcher"]["pid"]
         recovery.unwatch("sample")
         _wait_for_stopped_producer()
 
-        second = _dispatch(config_home, repo, "second")
+        second = _attached(config_home, repo, "second")
 
         assert second["watch"]["watcher_live"] is True
         assert second["watch"]["watcher"]["pid"] != first_pid
@@ -169,3 +178,73 @@ def test_dispatch_restarts_a_producer_after_its_predecessor_dies(
         if crew.watch_state("sample")["watcher_live"]:
             recovery.unwatch("sample")
             _wait_for_stopped_producer()
+
+
+def test_dispatch_refuses_a_session_whose_runs_would_finish_unheard(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """A live seat is project-global; the wake-up it feeds is session-local.
+
+    A guard satisfied by any producer — including one another session armed
+    hours earlier — cannot fire for the case that actually goes silent: a
+    coordinator dispatching with nothing consuming the ticker.
+    """
+    config_home, repo = isolated_project
+    try:
+        with pytest.raises(crew.WatcherRequired) as refusal:
+            _dispatch(config_home, repo, "unheard", session="unattached")
+
+        message = str(refusal.value)
+        assert "unattached" in message
+        assert runs._watch_attach_line("sample", session="unattached") in message
+        assert not list(crew.list_live(project="sample")), "nothing may be created"
+    finally:
+        if crew.watch_state("sample")["watcher_live"]:
+            recovery.unwatch("sample")
+            _wait_for_stopped_producer()
+
+
+def test_a_peer_sessions_follower_does_not_admit_this_dispatch(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    config_home, repo = isolated_project
+    try:
+        with runs.follower_claim("sample", "peer-session", delivery="stream"):
+            with pytest.raises(crew.WatcherRequired):
+                _dispatch(config_home, repo, "borrowed", session="mine")
+    finally:
+        if crew.watch_state("sample")["watcher_live"]:
+            recovery.unwatch("sample")
+            _wait_for_stopped_producer()
+
+
+def test_a_waived_dispatch_records_what_it_waived(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    config_home, repo = isolated_project
+    try:
+        record = _dispatch(
+            config_home, repo, "synchronous", session="sync", watch_override=True
+        )
+        assert record["watch_override"]["requested"] is True
+        assert record["watch_override"]["session_attached"] is False
+    finally:
+        if crew.watch_state("sample")["watcher_live"]:
+            recovery.unwatch("sample")
+            _wait_for_stopped_producer()
+
+
+def test_an_admitted_dispatch_records_its_session_attachment(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    config_home, repo = isolated_project
+    try:
+        record = _attached(config_home, repo, "attached")
+        assert record["watch"]["session_attached"] is True
+        assert record["watch"]["watcher_live"] is True
+        assert record["watch"]["attach_line"] == runs._watch_attach_line(
+            "sample", session="session-attached"
+        )
+    finally:
+        recovery.unwatch("sample")
+        _wait_for_stopped_producer()

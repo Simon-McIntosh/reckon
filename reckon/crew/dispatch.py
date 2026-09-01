@@ -125,20 +125,22 @@ def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
     )
 
 
-def _ensure_watch_producer(project: str) -> dict[str, Any]:
+def _ensure_watch_producer(
+    project: str, *, session: str | None = None
+) -> dict[str, Any]:
     """Return the live producer, starting at most one across concurrent calls."""
     arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
     arming_lock.parent.mkdir(parents=True, exist_ok=True)
     with arming_lock.open("a+b") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        state = watch_state(project)
+        state = watch_state(project, session=session)
         if state["watcher_live"]:
             return state
 
         supervisor = _start_watch_producer(project)
         deadline = time.monotonic() + _WATCH_START_TIMEOUT_SECONDS
         while time.monotonic() < deadline:
-            state = watch_state(project)
+            state = watch_state(project, session=session)
             if state["watcher_live"]:
                 return state
             if supervisor.poll() is not None:
@@ -1564,14 +1566,21 @@ def dispatch(
             "previous_run_id": str(previous.get("run_id") or ""),
         }
 
-    dispatch_watch = watch_state(project)
+    dispatch_watch = watch_state(project, session=session)
     if watch_required and not watch_override:
-        dispatch_watch = _ensure_watch_producer(project)
+        dispatch_watch = _ensure_watch_producer(project, session=session)
+        # A producer exists now. Whether this session hears what it writes is a
+        # separate fact, and the only one that decides if the finished run gets
+        # noticed, so it is checked before a worktree exists.
+        if launch_kind == "cli" and not dispatch_watch["session_attached"]:
+            raise WatcherRequired(project, dispatch_watch, session=session)
     watcher_waiver = (
         {
             "requested": True,
             "arming_line": dispatch_watch["arming_line"],
+            "attach_line": dispatch_watch["attach_line"],
             "watcher_live": bool(dispatch_watch["watcher_live"]),
+            "session_attached": bool(dispatch_watch["session_attached"]),
         }
         if watch_override
         else None
@@ -1676,8 +1685,10 @@ def dispatch(
             "watch_override": watcher_waiver,
             "watch": {
                 "arming_line": _watch_arming_line(project),
-                "attach_line": _watch_attach_line(project),
+                "attach_line": _watch_attach_line(project, session=session),
                 "watcher_live": False,
+                "session": session,
+                "session_attached": False,
                 "watcher": {},
             },
         }
@@ -1732,7 +1743,7 @@ def dispatch(
         _write_json(pointer_path(run_id), record)
         record["peer_channel"] = _wire_peer_channels(record, adjacent_peers)
         wired_peer_run_ids = list(record["peer_channel"]["peers"])
-        record["watch"] = watch_state(project)
+        record["watch"] = watch_state(project, session=session)
         _write_json(pointer_path(run_id), record)
         if roster_member is None:
             _register_session_member(

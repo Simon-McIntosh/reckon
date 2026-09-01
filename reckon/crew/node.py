@@ -222,18 +222,51 @@ class UnreconciledRuns(CrewError):
 
 
 class WatcherRequired(CrewError):
-    """A dispatch needs a live project watcher before work may start."""
+    """A dispatch needs a producer, and a reader for the dispatching session.
 
-    def __init__(self, project: str, watch: Mapping[str, Any]) -> None:
+    Two distinct failures answer to the same fix, so they share one type. A
+    project with no producer writes no transitions at all; a project whose
+    producer is read by nobody in *this* session writes them where this
+    coordinator will never look. The second is the one that kept happening,
+    because every liveness field a caller could read — ``watcher_live``,
+    ``seat_held`` — is project-global and reads true while the caller is deaf.
+    """
+
+    def __init__(
+        self,
+        project: str,
+        watch: Mapping[str, Any],
+        *,
+        session: str | None = None,
+    ) -> None:
         self.project = project
         self.watch = dict(watch)
+        self.session = session
+        attach = watch.get("attach_line") or "reckon crew follow"
+        if session is None:
+            super().__init__(
+                f"project {project!r} has no live crew watcher; arm one with "
+                f"`{watch['arming_line']}`, then attach this session to it with "
+                f"`{attach}` as a per-line monitor -- a live seat is "
+                "project-global and does not by itself deliver anything to the "
+                "session that dispatched. Or pass --no-watch to record an "
+                "explicit waiver for a synchronous dispatch"
+            )
+            return
+        delivery = str(watch.get("follower", {}).get("delivery") or "none")
+        cause = (
+            f"its follower writes to a {delivery}, which nothing reads until "
+            "the command exits -- and a follower does not exit"
+            if delivery == "file"
+            else "it has no registered follower"
+        )
         super().__init__(
-            f"project {project!r} has no live crew watcher; arm one with "
-            f"`{watch['arming_line']}`, then attach this session to it with "
-            f"`{watch.get('attach_line') or 'reckon crew follow'}` as a "
-            "background monitor -- a live seat is project-global and does not by "
-            "itself deliver anything to the session that dispatched. Or pass "
-            "--no-watch to record an explicit waiver for a synchronous dispatch"
+            f"session {session!r} would not hear this run finish: {cause}. "
+            f"Arm `{attach}` with the harness primitive that reports each line "
+            "as it is written, then dispatch again. A live seat is "
+            "project-global and wake delivery is session-local, so "
+            "`watcher_live` being true says nothing about this session. Or "
+            "pass --no-watch to waive delivery for a synchronous dispatch"
         )
 
 

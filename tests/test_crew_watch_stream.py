@@ -1,4 +1,10 @@
-"""Hermetic contracts for the shared project watch event stream."""
+"""Hermetic contracts for the shared project watch event stream.
+
+The stream stores transition objects rather than rendered lines, because a
+rendered line cannot say which session owns the run and a reader that cannot
+answer that cannot filter to its own fleet. These checks therefore read the
+data and render it the way a follower does.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import runs
+from reckon.crew import recovery, runs
 
 
 @pytest.fixture()
@@ -57,7 +63,12 @@ def _deliver(home: Path, run_id: str, status: str, *, reason: str = "") -> None:
 
 
 def _read_new(handle) -> list[str]:
-    return handle.read().splitlines()
+    """Render whatever the stream has produced since this handle last read."""
+    return [
+        recovery.format_watch_transition(runs.parse_stream_line(line))
+        for line in handle.read().splitlines()
+        if line.strip()
+    ]
 
 
 def test_successive_arms_share_one_producer_and_stream(home) -> None:
@@ -115,13 +126,15 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
             crew.list_live(project="proj")
             assert restarted.read() == ""
 
-        lines = stream_path.read_text().splitlines()
+        events = list(runs.read_stream_events(stream_path))
 
+    lines = [recovery.format_watch_transition(event) for event in events]
     assert len(lines) == 2
     assert sum("working → blocked" in line for line in lines) == 1
     assert lines[-1].endswith("· dependency unavailable")
     assert re.match(r"^\d{2}:\d{2}:\d{2}  only-node", lines[-1])
     assert "1 live · 1 blocked · 0 unpromoted" in lines[-1]
+    assert events[-1]["run_id"] == "r-only"
 
 
 def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
@@ -136,7 +149,7 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
 
         cursor = runs.watch_stream_cursor("proj")
         assert len(cursor["baseline"]) == 1
-        assert "→ blocked" in cursor["baseline"][0]
+        assert cursor["baseline"][0]["to_state"] == "blocked"
 
         _deliver(home, "r-only", "complete")
         crew.list_live(project="proj")

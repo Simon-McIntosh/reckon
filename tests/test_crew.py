@@ -23,6 +23,7 @@ from click.testing import CliRunner
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
 from reckon.crew.dispatch import shadow as dispatch_shadow
+from reckon.crew import runs
 
 
 CONFIG = {
@@ -825,16 +826,18 @@ with _project_watch_claim('proj', '1h') as (acquired, _record):
         write_paths=["reckon/cli.py"],
     )
     try:
-        record = crew.dispatch(
-            node=_node(),
-            project="proj",
-            repo=repo,
-            config=CONFIG,
-            session="sess",
-            launcher=lambda *args, **kwargs: 4242,
-            watch_required=True,
-        )
+        with runs.follower_claim("proj", "sess", delivery="stream"):
+            record = crew.dispatch(
+                node=_node(),
+                project="proj",
+                repo=repo,
+                config=CONFIG,
+                session="sess",
+                launcher=lambda *args, **kwargs: 4242,
+                watch_required=True,
+            )
         assert record["watch"]["watcher_live"] is True
+        assert record["watch"]["session_attached"] is True
         assert record["watch"]["watcher"]["pid"] != watcher.pid
     finally:
         from reckon.crew.recovery import unwatch
@@ -1419,31 +1422,35 @@ def test_dispatch_with_a_committed_named_section_proceeds(home, repo) -> None:
 
 def test_dispatch_into_an_occupied_project_reuses_the_armed_watcher(home, repo) -> None:
     try:
-        owner = crew.dispatch(
-            node=_node(
-                id="owner-node",
-                manifest_path=str(home / "owner-manifest.md"),
-            ),
-            project="proj",
-            repo=repo,
-            config=CONFIG,
-            session="owner-session",
-            launcher=lambda *args, **kwargs: 4242,
-            watch_required=True,
-        )
-        accepted = crew.dispatch(
-            node=_node(
-                id="accepted-node",
-                manifest_path=str(home / "accepted-manifest.md"),
-                write_paths=["reckon/cli.py"],
-            ),
-            project="proj",
-            repo=repo,
-            config=CONFIG,
-            session="accepted-session",
-            launcher=lambda *args, **kwargs: 4243,
-            watch_required=True,
-        )
+        # Two sessions, one producer, and a registration each: the seat is
+        # shared while delivery is not.
+        with runs.follower_claim("proj", "owner-session", delivery="stream"):
+            owner = crew.dispatch(
+                node=_node(
+                    id="owner-node",
+                    manifest_path=str(home / "owner-manifest.md"),
+                ),
+                project="proj",
+                repo=repo,
+                config=CONFIG,
+                session="owner-session",
+                launcher=lambda *args, **kwargs: 4242,
+                watch_required=True,
+            )
+        with runs.follower_claim("proj", "accepted-session", delivery="stream"):
+            accepted = crew.dispatch(
+                node=_node(
+                    id="accepted-node",
+                    manifest_path=str(home / "accepted-manifest.md"),
+                    write_paths=["reckon/cli.py"],
+                ),
+                project="proj",
+                repo=repo,
+                config=CONFIG,
+                session="accepted-session",
+                launcher=lambda *args, **kwargs: 4243,
+                watch_required=True,
+            )
 
         assert accepted["watch"]["watcher_live"] is True
         assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
@@ -1481,15 +1488,16 @@ def test_first_dispatch_proceeds_with_a_freshly_armed_project_watch(home, repo) 
         )
         assert sleeping.wait(timeout=5)
 
-        record = crew.dispatch(
-            node=_node(id="next-node"),
-            project="proj",
-            repo=repo,
-            config=CONFIG,
-            session="sess",
-            launcher=lambda *args, **kwargs: 4242,
-            watch_required=True,
-        )
+        with runs.follower_claim("proj", "sess", delivery="stream"):
+            record = crew.dispatch(
+                node=_node(id="next-node"),
+                project="proj",
+                repo=repo,
+                config=CONFIG,
+                session="sess",
+                launcher=lambda *args, **kwargs: 4242,
+                watch_required=True,
+            )
         assert record["watch"]["arming_line"] == "reckon crew watch --project proj"
         assert record["watch"]["watcher_live"] is True
         assert record["watch"]["watcher"]["pid"] == os.getpid()
@@ -1540,7 +1548,13 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     assert waiver == {
         "requested": True,
         "arming_line": "reckon crew watch --project proj",
+        "attach_line": (
+            "reckon crew follow --project proj --session sess --attention"
+        ),
         "watcher_live": False,
+        # What a waiver waives is now on the record: nobody was listening, and
+        # the caller said so deliberately.
+        "session_attached": False,
     }
     assert crew.read_pointer(record["run_id"])["watch_override"] == waiver
     assert (
@@ -1559,35 +1573,37 @@ def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
         write_paths=["reckon/_backends.py"],
     )
 
-    result = CliRunner().invoke(
-        cli_module.main,
-        [
-            "crew",
-            "dispatch",
-            "--project",
-            "proj",
-            "--plan",
-            "plan-a",
-            "--section",
-            "s3",
-            "--node",
-            "node-a",
-            "--goal",
-            "record the launch matrix for one backend",
-            "--done-when",
-            "uv run pytest tests/test_crew.py reports 0 failures",
-            "--write-path",
-            "reckon/crew.py",
-            "--session",
-            "sess",
-            "--repo",
-            str(repo),
-        ],
-    )
+    with runs.follower_claim("proj", "sess", delivery="stream"):
+        result = CliRunner().invoke(
+            cli_module.main,
+            [
+                "crew",
+                "dispatch",
+                "--project",
+                "proj",
+                "--plan",
+                "plan-a",
+                "--section",
+                "s3",
+                "--node",
+                "node-a",
+                "--goal",
+                "record the launch matrix for one backend",
+                "--done-when",
+                "uv run pytest tests/test_crew.py reports 0 failures",
+                "--write-path",
+                "reckon/crew.py",
+                "--session",
+                "sess",
+                "--repo",
+                str(repo),
+            ],
+        )
 
     payload = json.loads(result.output)
     assert result.exit_code == 0
     assert payload["watch"]["watcher_live"] is True
+    assert payload["watch"]["session_attached"] is True
     assert payload["watch"]["arming_line"] == "reckon crew watch --project proj"
     from reckon.crew.recovery import unwatch
 

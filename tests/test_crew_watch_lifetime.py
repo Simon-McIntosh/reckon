@@ -15,6 +15,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew.recovery import watch_ticker
+from reckon.crew import runs
 from reckon.crew.runs import project_watch_visibility
 
 
@@ -213,17 +214,21 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
         waiting = pool.submit(next, ticker)
         _assert_seat_held_after_poll(poll, waiting)
 
-        accepted = crew.dispatch(
-            node=_next_node(home),
-            project="sample",
-            repo=repo,
-            config=CONFIG,
-            session="consumer",
-            launcher=lambda *args, **kwargs: 4242,
-            watch_required=True,
-        )
+        # This session's delivery is registered because dispatch verifies it,
+        # not only that a producer exists somewhere in the project.
+        with runs.follower_claim("sample", "consumer", delivery="stream"):
+            accepted = crew.dispatch(
+                node=_next_node(home),
+                project="sample",
+                repo=repo,
+                config=CONFIG,
+                session="consumer",
+                launcher=lambda *args, **kwargs: 4242,
+                watch_required=True,
+            )
 
         assert accepted["watch"]["watcher_live"] is True
+        assert accepted["watch"]["session_attached"] is True
         assert accepted["watch_override"] is None
         crew.pointer_path(record["run_id"]).unlink()
         crew.pointer_path(accepted["run_id"]).unlink()
