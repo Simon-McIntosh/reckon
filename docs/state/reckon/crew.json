@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:05:52",
+  "updated": "2026-09-01T22:15:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -32532,9 +32532,104 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T200616780422-n-merged-tip-verification",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a715",
+        "node": "n-merged-tip-verification",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/merged-tip-suite.md records the exact tip commit sha, the pytest summary line with passed, failed, skipped and error counts and the wall-clock in seconds, and the full list of FAILED nodeids if any; each of the 24 nodeids enumerated in /home/ITER/mcintos/.config/reckon/crew/reports/suite-baseline.md is looked up by name in this run and reported individually as passing, failing or no-longer-collected, so the baseline is discharged item by item rather than by a headline count; the browser-dependent skip count is reported with its distinct reason strings, and the report states whether any skip reason names the Network Service diagnosis; the log is captured once to a file and read from there rather than re-run for formatting; and the verdict is stated as green or not green against 0 failures, with any failure classified as pre-existing or introduced by naming the commit that introduced it",
+          "estimated_hours": null,
+          "goal": "One measurement of the whole suite at the tip that now carries every node this session landed, so the sprint closes on evidence rather than on an accumulation of per-node deltas",
+          "id": "n-merged-tip-verification",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T200616780422-n-merged-tip-verification/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/merged-tip-suite.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "surface-baseline",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:06:25Z",
+        "completed_at": "2026-09-01T20:15:14Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 529,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 529,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "3318a5fb2054954b4d396abc71553b21713bfc74",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "full suite at the merged tip with junitxml, plus per-nodeid lookup of all 24 baseline entries",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/merged-tip-suite.md",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T200616780422-n-merged-tip-verification/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e94-8344-7771-ae96-0c08a2b6a6d6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2821120,
+            "cached_input_tokens_cumulative": 2821120,
+            "input_tokens": 2978251,
+            "input_tokens_cumulative": 2978251,
+            "output_tokens": 19614,
+            "output_tokens_cumulative": 19614,
+            "reasoning_output_tokens": 8994,
+            "reasoning_output_tokens_cumulative": 8994
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "verification-only node; its deliverable is the measurement report and no repository change was in scope",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest summary",
+          "override": false,
+          "role": "test",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 527
+    "_version": 528
   }
 }
