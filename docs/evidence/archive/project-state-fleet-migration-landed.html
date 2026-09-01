@@ -568,6 +568,66 @@
       the lead's to decide, and holding on it is the check working correctly rather
       than over-firing.</p>
 
+    <h2 id="legacy-aggregate-supersession">Legacy aggregates now identify themselves as superseded</h2>
+
+    <p>A distributed project retained
+      <code>docs/state/&lt;project&gt;/index.json</code> as a migration record, but that
+      file still looked authoritative when read in isolation: it kept the live
+      resource's <code>project</code>, <code>doc</code>, <code>updated</code> and
+      <code>data</code> keys, while the marker establishing distributed authority
+      lived in a sibling directory. This caused a concrete false report: the
+      aggregate for <code>imas-codex</code> ended at S11 while the typed resources
+      extended through S13, and a reader interpreted the two later sprints as
+      missing rather than recognising the aggregate as frozen history.</p>
+
+    <p>Commit <code>ec3b9fb</code> made activation stamp an explicit
+      <code>superseded</code> block into that file and added
+      <code>reckon stamp-superseded-state --project P</code> for repositories
+      migrated earlier. The block records the distributed marker path, the
+      canonical sprint, milestone, blocker and timeline roots, and the migration
+      timestamp. Stamping is idempotent and does not alter <code>data</code>; the
+      immutable receipt remains the digest-named frozen snapshot referenced by the
+      marker.</p>
+
+    <table>
+      <thead><tr><th>Project</th><th>Aggregate disposition</th><th>Commit</th></tr></thead>
+      <tbody>
+        <tr><td><code>imas-codex</code></td><td>stamped by its owning session</td><td><code>100ecb27</code></td></tr>
+        <tr><td><code>reckon</code></td><td>stamped; typed-resource provenance also corrected</td><td><code>4cba64f</code></td></tr>
+        <tr><td><code>hanney</code></td><td>stamped and pushed</td><td><code>3bcdb59</code></td></tr>
+        <tr><td><code>helix</code></td><td>stamped and pushed</td><td><code>40361c6</code></td></tr>
+        <tr><td><code>imas-ambix</code></td><td>stamped and pushed</td><td><code>26e36e6</code></td></tr>
+        <tr><td><code>imas-efit</code></td><td>stamped and pushed</td><td><code>3e8602d9</code></td></tr>
+        <tr><td><code>imas-standard-names</code></td><td>stamped and pushed</td><td><code>f7a78c3</code></td></tr>
+        <tr><td><code>norma</code></td><td>stamped and pushed</td><td><code>40c32c5</code></td></tr>
+        <tr><td><code>nova</code></td><td>stamped and pushed</td><td><code>e1702817</code></td></tr>
+        <tr><td><code>tessera</code></td><td>stamped and pushed</td><td><code>8729a2a</code></td></tr>
+        <tr><td><code>vv</code></td><td>stamped and pushed</td><td><code>c48b4c3</code></td></tr>
+        <tr><td><code>L2G</code></td><td>no legacy aggregate existed; no stamp needed</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Fleet measure:</strong> all <strong>12 of 12</strong> mounted projects
+      remain in distributed mode. Ten projects entered the sweep with an unstamped
+      aggregate, and every one had its marker-referenced snapshot receipt present
+      before the live-looking file was marked superseded. Together with the aggregate
+      already stamped in <code>imas-codex</code>, every one of the fleet's
+      <strong>11 extant legacy aggregates is now explicit about its historical
+      status</strong>; <code>L2G</code> had no aggregate to stamp.</p>
+
+    <p><strong>The stamp improves interpretation; it does not establish runtime
+      authority.</strong> <code>compose_project_state</code> loads
+      <code>index.json</code> only when project state is not distributed. In
+      distributed mode it reads the typed resource inventory and returns
+      <code>source_format: distributed</code>. The HTTP discovery path follows the
+      same boundary: it composes typed resources in distributed mode, and its legacy
+      branch is reachable only when the marker is absent or staging. Commit
+      <code>4cba64f</code> closes the remaining provenance leak by preventing a
+      missing typed-resource path from falling back to the superseded aggregate.
+      The aggregate is therefore neither a state source nor provenance for live
+      typed state; its new stamp makes that already-enforced rule visible to human
+      and agent readers who open the file directly.</p>
+
   </main>
 </body>
 </html>
