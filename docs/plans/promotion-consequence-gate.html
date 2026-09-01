@@ -140,6 +140,39 @@
       absence.
     </p>
 
+    <h2 id="s4a">&#167;4a &mdash; Three absences a gate would read as permission</h2>
+    <p>
+      The cancellation seam above is not the only one, and they share a shape worth naming
+      once so an implementation can check itself against all three. Each is a state that is
+      <em>not a failure</em> and is also <em>not a pass</em>, which a naive reading admits:
+    </p>
+    <table>
+      <thead><tr><th>absence</th><th>reads as</th><th>actually means</th></tr></thead>
+      <tbody>
+        <tr><td><code>exit 2</code> collection error</td><td>a configuration nuisance</td><td>no test in the tree ran</td></tr>
+        <tr><td><code>cancelled</code> CI run</td><td>not <code>failure</code>, therefore fine</td><td>the measurement never completed</td></tr>
+        <tr><td><code>skipped</code> module</td><td>the suite collected, so it ran</td><td>the check never executed</td></tr>
+      </tbody>
+    </table>
+    <p>
+      All three were measured in one repository on one day. The third is the subtlest and
+      arrived while this plan was being written: a conditional import intended to keep a
+      check alive &ldquo;wherever the dependency is available&rdquo; skipped the module
+      whole, because in the repository the check guards that dependency is <em>never</em>
+      available. <strong>A conditional guard is only a guard if its condition is sometimes
+      true where it runs</strong> &mdash; and the argument for making it conditional was
+      correct-sounding with an unmeasured premise, which is a different and harder failure
+      than aiming an instrument wrongly.
+    </p>
+    <p>
+      <strong>The consequence for this gate is a hard requirement rather than a caution:
+      whatever the gate reads must distinguish ran-and-passed from was-skipped and from
+      never-measured.</strong> A gate satisfied by &ldquo;the suite collected&rdquo; would
+      pass today in a repository whose own layout check collects zero tests. Any measure that
+      cannot tell those apart inherits at least one of the three absences, which would place
+      absence-as-permission inside the mechanism built to prevent it.
+    </p>
+
     <h2 id="s5">&#167;5 &mdash; Deliverables</h2>
     <ul>
       <li>A promotion-time measure of whether the promoting node added a suite failure,
@@ -148,8 +181,9 @@
         sees what to fix rather than that something is wrong.</li>
       <li>An explicit waiver requiring a reason, recorded on the promoted ledger record so
         waived promotions remain countable and auditable.</li>
-      <li>Absence of evidence treated as absence rather than as a pass &mdash; a cancelled,
-        missing or never-run suite is not a clean delta.</li>
+      <li>Absence of evidence treated as absence rather than as a pass, covering all three
+        forms in &#167;4a &mdash; a collection error, a cancelled run and a skipped module are
+        each distinguishable from ran-and-passed, and none is a clean delta.</li>
       <li>A regression proving the gate would have refused a known-bad promotion, and a
         second proving it would NOT have blocked the fifteen nodes of the session that
         repaired the outage.</li>
