@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="sprint-scope-and-surface">
   <meta name="plan-title" content="A Sprint Should Span Repositories, and Be Legible">
   <meta name="plan-summary" content="Four findings from a live migration: sprint items carry a bare slug while dependency refs are already project-qualified, so a sprint cannot span repositories; the layout migration destroys the only topical grouping and no tag field replaces it; two sprint-order inversions and a membership gap sit unrepaired; and the SPA&#x27;s design tokens are sound while its shell and cascade are not. Plus a public static build so the surface can be designed against a real URL.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="24.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="18">
 <meta name="plan-graph-handle" content="sprint-federation">
+<meta name="plan-impl" content="0.22">
 </head>
 <body>
   <main class="plan-doc">
@@ -239,6 +240,35 @@
     lifecycle-hygiene signal and reporting it as a sprint-order error sends the reader to the
     wrong repair.</p>
 
+    <div class="section-landed">
+      <p><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      <strong>The three findings are repaired.</strong> A project-wide
+      <code>roadmap</code> scan over all 50 plans now reports 17 findings, <strong>all
+      severity info</strong> — 0 error and 0 warn. The membership gap and both sprint-order
+      inversions are gone, the latter closed by putting the prerequisite in the sprint that
+      precedes its dependant rather than by editing the finding away.</p>
+    </div>
+
+    <p>
+      <strong>The design question the inversions raised is still open, and this session
+      supplied a second instance of it.</strong> Closing the tagging plan required deciding
+      whether a prerequisite may be treated as satisfied when its remaining node is not
+      engineering but authority — a cross-repository write no session in this repository can
+      make. <code>roadmap</code> could only say <em>blocked</em>, because it reads a status,
+      and a status cannot distinguish "the work is not done" from "the work is done and the
+      last step belongs to someone else". A reader sent to the dependant sees a blocker where
+      the honest answer is a hand-off.
+    </p>
+    <p>
+      That is the same defect the two inversions had — a lifecycle signal reported as a
+      scheduling error, sending the reader to the wrong repair — and it now has two
+      independent instances rather than one, which is what makes it worth building rather
+      than noting. <strong>Done when</strong> a prerequisite whose own state reports every
+      followup resolved, no blockers and no open decisions is reported under a distinct
+      finding code from one that is genuinely incomplete, and a test fixture carrying one of
+      each proves the two produce different codes rather than the same one.
+    </p>
+
     <h2 id="s5">§5 — The SPA: the tokens are good, the shell and the cascade are not</h2>
 
     <p>Read before recommending. <strong>The design foundation is genuinely considered and
@@ -323,6 +353,19 @@
     research and evidence with its count; a test asserts the inventory is derived from the
     corpus rather than from any literal list, so a new tag appears without a code change; and
     <code>reckon-create</code> shows the inventory at authoring time.</p>
+
+    <div class="section-landed">
+      <p><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      <strong>Delivered by the tagging plan, and verified here rather than assumed.</strong>
+      All three clauses hold: the discovery envelope emits <code>tag_inventory</code>
+      (<code>reckon/mcp.py:370</code>), <code>test_discovery_derives_tag_inventory_from_every_resource_type</code>
+      asserts derivation across every resource type rather than from a literal list, and
+      <code>reckon-create</code> instructs the author to read the live inventory before
+      choosing tags. This section is recorded as met by
+      <a href="/reckon/plans/resource-tagging-system#s3">resource-tagging-system §3</a>
+      rather than re-executed — the two plans described one deliverable, and building it
+      twice would have produced the competing authority this plan exists to prevent.</p>
+    </div>
 
     <h2 id="s6">§6 — Make the surface designable against a real URL</h2>
 
@@ -500,6 +543,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260824-federation-verified" data-who="reckon-create" data-when="2026-08-24T08:50:00+00:00">
     <div class="r-comment-body"><p><strong>Per-repository publication is verified workable, by building an unregistered project rather than by reasoning about it.</strong> A throwaway project with one plan, no <code>mounts.json</code> entry, no state directory and no running server built cleanly: copied <code>_shared/</code>, wrote <code>index.html</code> with <em>relative</em> asset paths, created <code>.nojekyll</code>, and wrote <code>state/&lt;project&gt;/index.json</code> reporting 1 plan. So <code>reckon build</code> is genuinely self-contained and needs neither registration nor the server — which is the property the federated shape depends on.</p><p><strong>Four measurements from that build.</strong> Payload is <strong>496K</strong>, trivial for Pages. <code>index.json</code> already carries an <code>updated</code> timestamp and the project key, so the per-member staleness display the federated view needs is supported rather than new work — though it carries no git revision, so revision provenance would be an addition. Asset paths are relative, confirming Pages compatibility by observation. And the git HEAD lookup failed harmlessly outside a repository and the build continued, so it degrades rather than aborting; in CI that lookup succeeds.</p><p><strong>One dependency worth naming:</strong> <code>index.html</code> links Google Fonts at <code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code>, so a published site is not fully self-contained and its typography degrades on a locked-down network. Acceptable for public Pages, and a self-hosted font would remove it.</p><p><strong>And one cost of reckon not being on PyPI:</strong> <code>reckon-plans</code> resolves to no distribution, so every consuming repository's CI pins a git ref. Unpinned, a reckon change can break a consumer's build with no signal; pinned, there are N repositories to bump. That is the real recurring maintenance cost of the federated shape and it should be chosen with open eyes rather than discovered at the first breakage.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260901-wiring-and-inventory" data-who="reckon-ship" data-when="2026-09-01T18:26:00+00:00">
+    <div class="r-comment-body">Two sections recorded as met without dispatching a node, both verified rather than assumed. §4's three wiring findings are repaired: a project-wide roadmap scan over all 50 plans now reports 17 findings, every one severity info, so 0 error and 0 warn remain where the plan recorded 1 WARN membership gap and 2 ERROR sprint-order inversions. §5b is delivered by resource-tagging-system §3 — the discovery envelope emits tag_inventory at reckon/mcp.py:370, test_discovery_derives_tag_inventory_from_every_resource_type asserts derivation across every resource type rather than from a literal list, and reckon-create instructs the author to read the live inventory. Both plans described one deliverable and building it twice would have created the competing authority this plan exists to prevent. §4's residual design question stays open and gained its second independent instance this session: closing the tagging plan required deciding whether a prerequisite is satisfied when its remaining node is authority rather than engineering, and roadmap could only report blocked because it reads a status. That is the same defect as the inversions — a lifecycle signal reported as a scheduling error — and two instances is what makes it worth building.</div>
 </div>
 </section>
 </main>
