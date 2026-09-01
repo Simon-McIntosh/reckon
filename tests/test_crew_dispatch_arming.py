@@ -67,9 +67,7 @@ def isolated_project(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
         ["add", "seed.txt", "skills", "docs/plans/fixture.html"],
         ["commit", "-q", "-m", "chore: seed"],
     ):
-        subprocess.run(
-            ["git", *arguments], cwd=repo, check=True, capture_output=True
-        )
+        subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
     (config_home / "mounts.json").write_text(
         '{"sample": "' + str(repo / "docs") + '"}', encoding="utf-8"
     )
@@ -151,10 +149,10 @@ def test_concurrent_dispatches_arm_exactly_one_detached_producer(
         watcher_pids = {record["watch"]["watcher"]["pid"] for record in records}
         assert refusals == [None, None]
         assert len(watcher_pids) == 1
-        state = recovery.watch_state("sample")
+        state = crew.project_watch_visibility("sample")
         assert state["watcher_live"] is True
-        assert state["watcher"]["parent_pid"] != os.getpid()
-        assert state["watcher"]["parent_pid"] > 1
+        assert state["observer_alive"] is True
+        assert state["watcher_required"] is True
     finally:
         recovery.unwatch("sample")
         _wait_for_stopped_producer()

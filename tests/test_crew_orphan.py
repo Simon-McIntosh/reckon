@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery
+from reckon.crew import recovery, runs
 
 crew_dispatch = import_module("reckon.crew.dispatch")
 
@@ -180,55 +180,55 @@ def test_registration_records_a_living_parent_and_remains_live(home) -> None:
         assert watcher["parent_start_time"] == crew._process_start_time(parent_pid)
         assert json.loads(crew.watch_lock_path("proj").read_text()) == watcher
 
-        state = recovery.watch_state("proj")
+        state = crew.project_watch_visibility("proj")
         assert state["watcher_live"] is True
-        assert state["watcher"] == watcher
-        assert "reason" not in state
+        assert state["observer_alive"] is True
+        assert state["pid"] == watcher["pid"]
 
 
-def test_orphaned_watcher_refuses_dispatch_and_can_be_cleared(
-    home, repo, tmp_path, orphan_processes, monkeypatch
+def test_an_orphaned_watcher_is_replaced_rather_than_refused(
+    home, repo, tmp_path, orphan_processes
 ) -> None:
+    """A producer nobody supervises is swapped out, not argued with.
+
+    It keeps appending real transitions, so refusing a dispatch over it would
+    block work on account of a producer that is streaming perfectly. But nothing
+    will ever replace it and it holds the seat lock, so accepting it silently
+    lets a stale seat outlive every session that cared — measured at four days in
+    one project. Arming therefore replaces it.
+
+    This test used to substitute the orphan-aware `watch_state` into the dispatch
+    module and then assert the refusal it produced, so it asserted a property of
+    a function dispatch never calls: it passed green while production admitted.
+    Nothing is patched here.
+    """
     pid, watcher = _spawn_orphan_watcher("proj", tmp_path, orphan_processes)
     assert watcher["pid"] == pid
 
-    state = recovery.watch_state("proj")
-    assert state["watcher_live"] is False
-    assert state["reason"] == "orphaned"
-    assert "orphaned" in state["detail"]
-    assert state["watcher"]["pid"] == pid
+    visibility = crew.project_watch_visibility("proj")
+    assert visibility["seat_held"] is True
+    assert visibility["observer_alive"] is False, "its supervisor is gone"
 
-    crew._write_json(
-        crew.pointer_path("existing-run"),
-        {
-            "run_id": "existing-run",
-            "project": "proj",
-            "repo": str(repo),
-            "phase": "working",
-            "node": {
-                "id": "existing-node",
-                "plan": "delivery",
-                "write_paths": ["reckon/occupied.py"],
-            },
-        },
-    )
-    monkeypatch.setattr(crew_dispatch, "watch_state", recovery.watch_state)
-    with pytest.raises(crew.WatcherRequired) as excinfo:
-        crew_dispatch.dispatch(
+    # A real coordinator has its own delivering follower; `watch_override` would
+    # skip the arming path this test exists to exercise.
+    with runs.follower_claim("proj", "session", delivery="stream"):
+        record = crew_dispatch.dispatch(
             node=_node(home),
             project="proj",
             repo=repo,
             config=CONFIG,
             session="session",
-            launcher=lambda *_args, **_kwargs: pytest.fail(
-                "orphaned watcher must refuse dispatch"
-            ),
+            launcher=lambda *_args, **_kwargs: 4242,
             watch_required=True,
         )
-    assert excinfo.value.watch["reason"] == "orphaned"
+
+    replacement = crew.project_watch_visibility("proj")
+    assert replacement["seat_held"] is True
+    assert replacement["pid"] != pid, "the orphan was replaced, not reused"
+    assert replacement["observer_alive"] is True
+    assert record["watch"]["watcher_live"] is True
 
     stopped = recovery.unwatch("proj")
     assert stopped["stopped"] is True
     assert stopped["registration_released"] is True
     assert json.loads(crew.watch_lock_path("proj").read_text()) == {}
-    assert recovery.watch_state("proj")["watcher_live"] is False

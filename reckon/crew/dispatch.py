@@ -77,6 +77,7 @@ from reckon.crew.runs import (
     read_pointer,
     reports_dir,
     run_dir,
+    project_watch_visibility,
     runs_dir,
     watch_state,
     watch_stream_path,
@@ -135,7 +136,21 @@ def _ensure_watch_producer(
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         state = watch_state(project, session=session)
         if state["watcher_live"]:
-            return state
+            # A producer whose supervisor died keeps appending real transitions,
+            # so it stays readable — but nothing will ever replace it, and it
+            # holds the seat lock, so every later arming returns here and the
+            # stale seat outlives every session that cared. Measured: one held
+            # for four days, and another had to be cleared by hand. Replace it
+            # rather than refusing a dispatch over it: refusing would block work
+            # on account of a producer that is streaming perfectly, while
+            # accepting it silently keeps the seat unreplaceable. Admission is
+            # still decided by `session_attached` below.
+            from reckon.crew.recovery import unwatch
+
+            if project_watch_visibility(project)["observer_alive"] is False:
+                unwatch(project)
+            else:
+                return state
 
         supervisor = _start_watch_producer(project)
         deadline = time.monotonic() + _WATCH_START_TIMEOUT_SECONDS
