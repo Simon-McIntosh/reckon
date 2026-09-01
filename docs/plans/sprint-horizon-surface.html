@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080">
 <meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
 <meta name="plan-impl" content="0.43">
@@ -589,6 +589,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260826T142313605618-n-client-load" data-who="codex-d" data-when="2026-08-26T15:37:48Z">
     <div class="r-comment-body"><p>Serves compiled local client assets: 9/9 scope-isolation gate, all 11 compiled artifacts carry an IIFE boundary, all 10 SPA modules concatenate in load order with zero duplicate top-level lexical declarations, 39 window exports preserved. Checked-in, served, synced and static-built shells all assert zero text/babel, standalone-compiler, unpkg and remote-font references. Verified on the live service after merge: 0 remote origins and 0 text/babel where there were 3 and 10, every referenced module returns 200. Ruff delta 0 (35 base, 35 after). Rendered origin count, edit/reload visibility and paired wall clock remain OWED: headless Chrome on this host completes no http navigation.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260901T055332096961-n-node-resolution" data-who="codex-e" data-when="2026-09-01T06:02:38Z">
+    <div class="r-comment-body"><p>The served JSX compiler no longer depends on an ambient PATH: resolution tries RECKON_NODE, then PATH, then stable user and system locations, validates executability and returns an absolute path that compile_jsx invokes directly. The generated unit now carries the resolved interpreter directory in its Environment PATH with duplicates removed. The negative-PATH test installs only a stable-home node, proves direct compilation, inspects the written unit, and requests all 10 shell JSX modules over HTTP for 10 status-200 and zero 500 responses. 14 service tests pass, ruff delta 27 to 27. Verified after merge by regenerating the unit with reckon service install, which removed the orchestrator&#x27;s temporary hand-edit and still served every module 200.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260901T055339222781-n-browser-network" data-who="codex-f" data-when="2026-09-01T05:59:10Z">
     <div class="r-comment-body"><p>Met the eliminated-causes branch of its measure: seven cause classes disproved with quantitative evidence (SPA, reckon server, loopback routing, proxy, SELinux/shm/process ceiling, Chrome background services and process topology, and the earlier inotify exhaustion). Deliberately did NOT claim a root cause it could not demonstrate. Separate directly-demonstrated finding: the investigate-role sandbox denies AF_INET and AF_INET6 socket creation with EPERM (CapEff 0, NoNewPrivs 1, Seccomp 2), so Chrome aborts all three schemes in 0.135-0.142s on crashpad setsockopt before any navigation - a different phenotype from the original fault and the reason this role cannot reproduce it. Names the concrete unblock: run the rendered gate in an execution-capable network-enabled sandbox behind three preflights.</p></div>
