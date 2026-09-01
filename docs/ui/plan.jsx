@@ -194,11 +194,15 @@ function metadataValueIsPresent(value) {
   return text !== "" && text !== "-" && text !== "—";
 }
 
-function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
-  const rows = [
+function readerAttachmentRows(groups) {
+  return [
     ["research", "Resources", groups?.research || []],
     ["evidence", "Evidence", groups?.evidence || []],
   ].filter(([, , items]) => items.length > 0);
+}
+
+function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
+  const rows = readerAttachmentRows(groups);
   if (rows.length === 0) return null;
   return (
     <div className="r-reader-attachment-bars" aria-label="Plan attachments">
@@ -233,12 +237,11 @@ function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
   );
 }
 
-function readerProvenanceSignals(focusMode, htmlFailure, stateFailure, groups) {
+function readerProvenanceSignals(focusMode, htmlFailure, stateFailure) {
   return {
     focusMode: Boolean(focusMode),
     htmlFailure: Boolean(htmlFailure),
     stateFailure: Boolean(stateFailure),
-    attachments: Boolean((groups?.research || []).length || (groups?.evidence || []).length),
   };
 }
 
@@ -307,7 +310,6 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     focusMode,
     htmlFailure,
     stateFailure,
-    attachmentGroups,
   );
   const [htmlRetry, setHtmlRetry] = useState(0);
   const htmlRef = useRef(null);
@@ -594,13 +596,11 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
               onRetry={() => setStateRetry(value => value + 1)}
             />
           )}
-          {provenanceSignals.attachments && (
-            <ReaderAttachmentBars
-              groups={attachmentGroups}
-              selectedKey={slug}
-              onNav={onNav}
-            />
-          )}
+          <ReaderAttachmentBars
+            groups={attachmentGroups}
+            selectedKey={slug}
+            onNav={onNav}
+          />
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
