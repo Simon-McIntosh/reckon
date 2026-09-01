@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:22:32",
+  "updated": "2026-09-01T22:32:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -33309,9 +33309,115 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T201634676086-n-shell-move-contract-repair",
+        "plan": "spa-surface-redesign",
+        "section": "\u00a72",
+        "node": "n-shell-move-contract-repair",
+        "node_definition": {
+          "done_when": "tests/test_build.py::test_spa_entry_points_load_exactly_the_canonical_modules, tests/test_project_state.py::test_spa_discovery_failure_panel_replaces_pending_status and tests/test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction all pass; each resolves its target through the authored module list in docs/index.html rather than naming docs/ui/shell.jsx, verified by 0 grep matches for a hardcoded shell.jsx path in the three repaired assertions; the entry-point lists the first test compares are made to agree and the number of lists compared is reported; each repaired assertion is proven to fail when its behaviour is removed rather than when a file is renamed, with 3 mutation controls recorded; and those 3 modules report 0 failures with collection counts unchanged before and after",
+          "estimated_hours": null,
+          "goal": "The three source-contract tests broken by moving code out of the shell read the authored module set instead of one named file",
+          "id": "n-shell-move-contract-repair",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201634676086-n-shell-move-contract-repair/manifest.md",
+          "plan": "spa-surface-redesign",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "tests/test_build.py",
+            "tests/test_project_state.py",
+            "tests/test_provenance.py",
+            "docs/index.html",
+            "reckon/serve.py",
+            "reckon/cli.py",
+            "pyproject.toml"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-linkcheck",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T20:16:38Z",
+        "completed_at": "2026-09-01T20:32:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 974,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 974,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "18e4efd0bb92bb4e6c28bf3845035060d4dc8824",
+        "commits": [
+          "737340f8dc98cc6a1420d8b2d092f95bd791bb74"
+        ],
+        "changed_lines": {
+          "added": 173,
+          "removed": 165,
+          "files": 6
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "collect-only either side, the three named contracts, the full three modules, a wheel/packaging gate, and three behavioural mutation controls",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201634676086-n-shell-move-contract-repair/logs/focused-after.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T201634676086-n-shell-move-contract-repair/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a05e53-bc89-7030-a92c-40b22dae1d05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3249920,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3304009,
+            "output_tokens": 6079,
+            "output_tokens_cumulative": 18678,
+            "reasoning_output_tokens": 1984,
+            "reasoning_output_tokens_cumulative": 5483
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 535
+    "_version": 536
   }
 }
