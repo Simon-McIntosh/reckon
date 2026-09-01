@@ -2,15 +2,14 @@ import json
 import shutil
 import time
 from collections.abc import Iterable, Mapping
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import click
 
-from reckon import __version__
+from reckon import __version__, pages
 from reckon._store import _config_home
-from reckon import pages
 
 
 def _asset_root() -> Path:
@@ -284,6 +283,29 @@ def mcp():
     from reckon.mcp import main as mcp_main
 
     mcp_main()
+
+
+@main.command(name="badge")
+@click.option("--project", required=True, help="Mounted project whose badge to render.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Repo root to read instead of the mounted checkout.",
+)
+@click.option("--write", "write_badge", is_flag=True, help="Update README.md in place.")
+def badge_command(project, checkout_path, write_badge):
+    """Print the badge for a repository that explicitly publishes its plans."""
+    from reckon.badge import declared_badge, install_declared_badge
+
+    docs_dir = _project_docs_root(project, checkout_path)
+    try:
+        markdown, strategy = declared_badge(docs_dir)
+        if write_badge:
+            install_declared_badge(docs_dir, strategy)
+    except pages.PagesError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(markdown)
 
 
 @main.command()
