@@ -277,7 +277,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     };
   }, [project, slug, isResearch, isEvidence]);
 
-  const stored = planLoad(slug) || {};
+  const stored = window.reckon.planLoad(slug) || {};
   // The inventory is lightweight; full per-doc state (decisions, followups) is
   // fetched from /plan/<project>/<slug> when the doc opens.
   const [decs, setDecs] = useState([]);
@@ -371,7 +371,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
             return merged;
           });
         }
-        const overlay = (planLoad(slug) || {}).decisions || {};
+        const overlay = (window.reckon.planLoad(slug) || {}).decisions || {};
         setDecs((rec.decisions || []).map(d => {
           const o = overlay[d.key];
           return o && o.choice
@@ -424,7 +424,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", choice: choice || "", rationale, when: now, by: author } : x));
     // Dotted sub-keys so the server merges into the decision WITHOUT dropping
     // its authored title/context/choices.
-    planSave(slug, {
+    window.reckon.planSave(slug, {
       [`decisions.${key}.choice`]:    choice || "",
       [`decisions.${key}.rationale`]: rationale,
       [`decisions.${key}.when`]:      now,
@@ -446,7 +446,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
       );
       const next = { ...comments, [sectionId]: replaced };
       setComments(next);
-      planSave(slug, { [`comments.${sectionId}`]: replaced });
+      window.reckon.planSave(slug, { [`comments.${sectionId}`]: replaced });
       if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} updated`);
       return;
     }
@@ -457,7 +457,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     }
     const next = { ...comments, [sectionId]: [...(comments[sectionId] || []), c] };
     setComments(next);
-    planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
+    window.reckon.planSave(slug, { [`comments.${sectionId}`]: next[sectionId] });
     if (window.flashSaved) window.flashSaved(`${slug}.comments.${sectionId} +1`);
   };
 
@@ -468,7 +468,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
       const filtered = (arr || []).filter(c => c.id !== id);
       next[sid] = filtered;
       if ((arr || []).length !== filtered.length) {
-        planSave(slug, { [`comments.${sid}`]: filtered });
+        window.reckon.planSave(slug, { [`comments.${sid}`]: filtered });
       }
     }
     if (htmlRef.current) {
@@ -634,7 +634,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
                 <section className="r-reader-decisions" aria-labelledby="decisions">
                   <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
                   {decs.map(d => (
-                    <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
+                    <window.Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
                   ))}
                   <ActionableCommentList sectionId="decisions" arr={comments["decisions"] || []} onEdit={editComment} onDelete={deleteComment} />
                 </section>
@@ -696,7 +696,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
       )}
 
       {composingAt && (
-        <CommentPopover
+        <window.reckon.CommentPopover
           anchor={composingAt}
           onClose={() => setComposingAt(null)}
           onPost={(body) => { addComment(composingAt.sectionId, body, composingAt.quote, composingAt.range); setComposingAt(null); }}
@@ -783,7 +783,7 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
         <React.Fragment key={s.id}>
           <h2 id={s.id}><span className="sec">{s.sec}</span>{s.h}</h2>
           <p>{s.body}</p>
-          <SectionComments comments={comments[s.id]} />
+          <window.reckon.SectionComments comments={comments[s.id]} />
         </React.Fragment>
       ))}
 
@@ -791,9 +791,9 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
         <>
           <h2 id="decisions"><span className="sec">§</span>Decisions</h2>
           {decs.map(d => (
-            <Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
+            <window.Decision key={d.key} d={d} onUpdate={(choice, rat) => onUpdateDec(d.key, choice, rat)} />
           ))}
-          <SectionComments comments={comments["decisions"]} />
+          <window.reckon.SectionComments comments={comments["decisions"]} />
         </>
       )}
 

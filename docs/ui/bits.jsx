@@ -265,7 +265,7 @@ function CommentReviewPopover({ reviewing, onClose, onDelete, onEdit }) {
   return (
     <div ref={ref} className="r-comment-review" style={{ top, left }}>
       <div className="r-cr-header">
-        <Who name={comment.who} />
+        <window.Who name={comment.who} />
         <span className="r-cr-when">{comment.when}</span>
         <button className="r-cc-close" onClick={onClose} title="Close · Esc">×</button>
       </div>

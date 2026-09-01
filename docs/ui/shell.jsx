@@ -1304,7 +1304,7 @@ function App() {
             <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>
               <div className="r-body">
                 {!readingMode && <PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />}
-                <Plan
+                <window.Plan
                 slug={route.slug}
                 onNav={nav}
                 attachmentGroups={attachmentGroups(M, route.slug)}
@@ -1327,9 +1327,9 @@ function App() {
             <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`}>
               <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
                 {canvasView === "cockpit" && <CockpitBody onNav={nav} projects={shownProjects} fleetRuns={fleetRuns} mountedProjectCount={projects.length} />}
-                {canvasView === "sprint" && <><FleetPrompt sprintId={route.sprint} /><Sprint sprintId={route.sprint} onNav={nav} /></>}
-                {canvasView === "graph" && <GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-                {canvasView === "crew" && <CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} />}
+                {canvasView === "sprint" && <><FleetPrompt sprintId={route.sprint} /><window.Sprint sprintId={route.sprint} onNav={nav} /></>}
+                {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
+                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} />}
               </div>
             </div>
           </div>
