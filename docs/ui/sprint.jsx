@@ -86,6 +86,45 @@ function sprintStateRows(sprints, todayValue) {
   });
 }
 
+function readyLaneRows(readySet, sprints, inventory) {
+  const whyNowBySlug = new Map();
+  (sprints || []).forEach(sprint => (sprint.items || []).forEach(item => {
+    if (item && typeof item === "object" && item.slug) whyNowBySlug.set(item.slug, item.why_now || "Not supplied");
+  }));
+  const plansBySlug = new Map((inventory || []).map(plan => [plan.slug, plan]));
+  return (readySet?.ready || []).flatMap(row => {
+    const plan = plansBySlug.get(row.slug) || {};
+    const effectiveStatus = plan.effective_status || plan.status || "pending";
+    const landed = Boolean(row.landed) || CLOSED_ITEM_STATUSES.has(effectiveStatus) || Number(row.progress_pct || 0) >= 100;
+    const sections = Array.isArray(row.section_readiness) && row.section_readiness.length
+      ? row.section_readiness
+      : [{ section: null, ready: true, blockers: [] }];
+    return sections.map(sectionRow => {
+      const blockers = Array.isArray(sectionRow.blockers) ? sectionRow.blockers : [];
+      const causeClasses = [...new Set(blockers.map(blocker => {
+        if (blocker.kind === "explicit") return "explicit";
+        if (blocker.kind === "gate" || blocker.gate || blocker.verdict) return "gate";
+        if (blocker.kind === "decision" || blocker.decision || blocker.choice !== undefined) return "decision";
+        return "dependency";
+      }))];
+      const section = sectionRow.section || null;
+      const invocationSection = section ? String(section).replace(/^s(?=\d)/, "§") : "";
+      return {
+        ...row,
+        title: plan.title || row.title || row.slug,
+        whyNow: row.why_now || whyNowBySlug.get(row.slug) || row.reason || "Not supplied",
+        section,
+        ready: sectionRow.ready !== false,
+        blockers,
+        causeClasses,
+        effectiveStatus,
+        landed,
+        invocation: `/reckon-ship ${row.slug}${invocationSection ? ` ${invocationSection}` : ""}`,
+      };
+    });
+  }).sort((left, right) => Number(left.landed) - Number(right.landed));
+}
+
 function activeSprintConflict(activeSprints, activePointer) {
   const ids = (activeSprints || []).map(row => typeof row === "string" ? row : row.id).filter(Boolean);
   return ids.length !== 1 || ids[0] !== activePointer;
@@ -154,19 +193,6 @@ function horizonStrip(currentInstant, completedRuns = [], liveRuns = []) {
     ticks,
     events,
   };
-}
-
-function openGateCount(plan) {
-  return (plan.gates || []).filter(gate => !(gate.passed || gate.verdict === "passed")).length;
-}
-
-function planFlag(plan, liveRuns) {
-  const authored = plan.workflow_status || plan.status || "pending";
-  const effective = plan.effective_status || authored;
-  const gates = openGateCount(plan);
-  if (authored !== effective) return `${authored} → ${effective} · ${gates} open ${gates === 1 ? "gate" : "gates"}`;
-  if (liveRuns.length) return `in flight · ${liveRuns.length}`;
-  return effective;
 }
 
 function Sprint({ sprintId, onNav }) {
@@ -252,17 +278,10 @@ function Sprint({ sprintId, onNav }) {
     return () => { alive = false; };
   }, [showSprintPrompt, sprint.id]);
 
-  const groupedRuns = useMemo(() => {
-    const groups = {};
-    liveRuns.forEach(run => { if (run.plan) (groups[run.plan] ||= []).push(run); });
-    return groups;
-  }, [liveRuns]);
-  const columns = useMemo(() => {
-    const groups = { todo: [], doing: [], done: [] };
-    const columnFor = { pending: "todo", draft: "todo", planned: "todo", active: "doing", blocked: "doing", in_progress: "doing", shipped: "done", done: "done" };
-    items.forEach(plan => groups[columnFor[plan.effective_status || plan.status] || "doing"].push(plan));
-    return groups;
-  }, [items]);
+  const readyLanes = useMemo(
+    () => readyLaneRows(M.ready_set, M.sprints, M.inventory),
+    [M.ready_set, M.sprints, M.inventory]
+  );
   const decisions = items.flatMap(plan => {
     const rows = Array.isArray(plan.decisions) ? plan.decisions.filter(decision => !decision.choice) : [];
     if (rows.length) return rows.map(decision => ({ plan, label: decision.question || decision.key || "Open decision" }));
@@ -283,33 +302,13 @@ function Sprint({ sprintId, onNav }) {
     onNav({ view: "sprint", sprint: id });
   };
 
-  const renderCard = plan => {
-    const runs = groupedRuns[plan.slug] || [];
-    const flag = planFlag(plan, runs);
-    const percent = Math.round((plan.impl || 0) * 100);
-    return (
-      <article key={plan.slug} className={`r-kcard ${(plan.effective_status || plan.status) === "blocked" ? "blocked" : ""}`}>
-        <div className="r-card-heading"><a className="r-card-title" href={`#plan/${plan.slug}`}>{plan.title}</a><FindingBadges findings={subjectFindings(reviewFindings, "plan", plan.slug)} /></div>
-        <p className="r-card-description" title={plan.summary || plan.description || "No description supplied"}>{plan.summary || plan.description || "No description supplied"}</p>
-        <a className="r-card-progress" href={`#plan/${plan.slug}`} aria-label={`${plan.title}: ${percent}% complete`} title={`Open ${plan.title}, ${percent}% complete`}>
-          <span className="bar"><i style={{ width: `${percent}%` }}></i></span><span>{percent}%</span>
-        </a>
-        <a className="r-card-flag" href={`#plan/${plan.slug}`} aria-label={`${plan.title}: ${flag}`} title={`Open ${plan.title}: ${flag}`}>{flag}</a>
-        <details className="r-card-contract">
-          <summary>Contract</summary>
-          <dl><dt>Why now</dt><dd>{plan.whyNow || "Not supplied"}</dd><dt>Done when</dt><dd>{plan.doneWhen || "Not supplied"}</dd></dl>
-        </details>
-      </article>
-    );
-  };
-
   return (
     <div className="r-page wide r-sprint-surface">
       <header className="r-sp-head">
         <div><div className="r-eyebrow">Sprints</div><h1>All sprints</h1></div>
         <div className="r-sprint-tabs" role="tablist" aria-label="Sprint views">
           <button role="tab" aria-selected={surface === "overview"} onClick={() => setSurface("overview")}>Overview</button>
-          <button role="tab" aria-selected={surface === "board"} onClick={() => setSurface("board")}>Board</button>
+          <button role="tab" aria-selected={surface === "ready"} onClick={() => setSurface("ready")}>Ready lanes</button>
         </div>
       </header>
 
@@ -395,7 +394,7 @@ function Sprint({ sprintId, onNav }) {
           </section>
         </section>
       ) : (
-        <section className="r-sprint-board" aria-label={`${sprint.id} board`}>
+        <section className="r-ready-lanes" aria-labelledby="ready-lanes-heading">
           <div className="r-sp-switcher">
             <button className="nav-btn" aria-label="Previous sprint" disabled={idx <= 0} onClick={() => onNav({ view: "sprint", sprint: allSprints[idx - 1].id })}>←</button>
             <div className="current"><span className="id">{sprint.id}</span><span className={`st ${sprint.status}`}>{sprint.status}</span></div>
@@ -405,9 +404,18 @@ function Sprint({ sprintId, onNav }) {
           </div>
           <div className="r-sp-goal"><div className="lbl">Goal</div><div className="theme">{sprint.theme}</div>{sprint.summary && <div className="summary">{sprint.summary}</div>}</div>
           {decisions.length > 0 && <aside className="r-needs-you"><h2>Needs you <span>{decisions.length}</span></h2><ul>{decisions.map((decision, index) => <li key={`${decision.plan.slug}-${index}`}><a href={`#plan/${decision.plan.slug}`} title={`Open ${decision.plan.title}`}>{decision.label}</a><span>{decision.plan.title}</span></li>)}</ul></aside>}
-          <div className="r-kanban">{[
-            ["todo", "To do"], ["doing", "Doing"], ["done", "Done"],
-          ].map(([id, title]) => <div className="r-col" key={id}><div className="col-h"><span>{title}</span><span className="n">{columns[id].length}</span></div>{columns[id].map(renderCard)}{columns[id].length === 0 && <div className="r-empty-column">No items</div>}</div>)}</div>
+          <header className="r-ready-lanes-head"><div><span className="r-eyebrow">What can run now</span><h2 id="ready-lanes-heading">Concurrent ready lanes</h2></div><span>{readyLanes.filter(row => row.ready && !row.landed).length} open</span></header>
+          {readyLanes.length ? <div className="r-ready-lane-list">{readyLanes.map((lane, index) => {
+            const laneState = lane.landed ? "landed" : lane.ready ? "in-progress" : "blocked";
+            const causeNames = lane.causeClasses.length ? lane.causeClasses : ["dependency"];
+            return <article key={`${lane.slug}-${lane.section || "plan"}-${index}`} className={`r-ready-lane ${laneState} ${causeNames.map(cause => `cause-${cause}`).join(" ")}`}>
+              <div className="r-ready-lane-title"><a href={`#plan/${lane.slug}`}>{lane.title}</a>{lane.section && <code>{lane.section}</code>}<span className={`r-ready-lane-state ${laneState}`}>{laneState}</span></div>
+              <p className="r-ready-lane-why"><strong>Why now</strong>{lane.whyNow}</p>
+              <p className="r-ready-lane-reason">{lane.ready ? lane.reason : `Blocked · ${causeNames.join(" + ")}`}</p>
+              <div className="r-ready-lane-meta"><span>{lane.sprint || "No sprint"}</span><span>{lane.progress_pct || 0}% implemented</span></div>
+              <code className="r-ready-lane-invocation">{lane.invocation}</code>
+            </article>;
+          })}</div> : <p className="r-ready-lanes-empty">No work is currently in the served ready set.</p>}
         </section>
       )}
 

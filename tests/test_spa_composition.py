@@ -42,6 +42,7 @@ def _evaluate_sprint_helpers(expression: str):
             "compareNaturalSprintIds",
             "orderedSprints",
             "sprintStateRows",
+            "readyLaneRows",
             "activeSprintConflict",
         )
     )
@@ -170,6 +171,92 @@ def test_sprint_state_table_is_primary_and_uses_composed_rows_without_refetch() 
     assert "metrics.current_work || []" in source
     assert "sprintInventoryItems" not in row_derivation
     assert "fetch(`/review" not in source
+
+
+def test_ready_lanes_replace_the_status_board_and_consume_served_readiness() -> None:
+    root = Path(__file__).parents[1]
+    source = (root / "docs/ui/sprint.jsx").read_text()
+    styles = (root / "docs/ui/sprints.css").read_text()
+    row_derivation = _javascript_function(source, "readyLaneRows")
+
+    for retired in ("r-sprint-board", "r-kanban", "r-kcard", "renderCard"):
+        assert retired not in source
+        assert retired not in styles
+    assert "M.ready_set" in source
+    assert "readySet?.ready || []" in row_derivation
+    assert "sectionRow.ready !== false" in row_derivation
+    assert "depends_on" not in row_derivation
+    assert "decision_blockers" not in row_derivation
+    assert "explicit_blockers" not in row_derivation
+    assert "rank" not in row_derivation
+    assert "r-ready-lane-list" in source
+    assert "r-ready-lane-invocation" in source
+    assert "r-ready-lane.blocked" in styles
+    assert "r-ready-lane-state.in-progress" in styles
+
+
+def test_ready_lane_rows_keep_section_handles_causes_and_landed_tail() -> None:
+    ready_set = {
+        "ready": [
+            {
+                "slug": "partly-open",
+                "sprint": "S2",
+                "progress_pct": 40,
+                "reason": "critical path",
+                "unlocks": ["consumer"],
+                "section_readiness": [
+                    {"section": "s1", "ready": True, "blockers": []},
+                    {
+                        "section": "s3",
+                        "ready": False,
+                        "blockers": [{"ref": "foundation#s3"}],
+                    },
+                ],
+            },
+            {
+                "slug": "finished-measure",
+                "sprint": "S1",
+                "progress_pct": 100,
+                "landed": True,
+                "reason": "ready with all hard prerequisites satisfied",
+            },
+        ]
+    }
+    sprints = [
+        {
+            "id": "S2",
+            "items": [{"slug": "partly-open", "why_now": "It unlocks the consumer."}],
+        },
+        {
+            "id": "S1",
+            "items": [{"slug": "finished-measure", "why_now": "Keep closure visible."}],
+        },
+    ]
+    inventory = [
+        {"slug": "partly-open", "title": "Partly open", "status": "active"},
+        {
+            "slug": "finished-measure",
+            "title": "Finished measure",
+            "status": "active",
+        },
+    ]
+
+    rows = _evaluate_sprint_helpers(
+        f"readyLaneRows({json.dumps(ready_set)}, {json.dumps(sprints)}, "
+        f"{json.dumps(inventory)})"
+    )
+
+    assert len(rows) == 3
+    assert [row["section"] for row in rows[:2]] == ["s1", "s3"]
+    assert rows[0]["whyNow"] == "It unlocks the consumer."
+    assert rows[0]["invocation"] == "/reckon-ship partly-open §1"
+    assert rows[0]["ready"] is True
+    assert rows[1]["invocation"] == "/reckon-ship partly-open §3"
+    assert rows[1]["ready"] is False
+    assert rows[1]["causeClasses"] == ["dependency"]
+    assert rows[2]["landed"] is True
+    assert rows[2]["whyNow"] == "Keep closure visible."
+    assert rows[2]["invocation"] == "/reckon-ship finished-measure"
 
 
 def test_browser_harness_reports_an_absent_binary_as_a_clean_skip(
