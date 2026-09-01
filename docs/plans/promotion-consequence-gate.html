@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="promotion-consequence-gate">
   <meta name="plan-title" content="Promotion Consequence Gate">
   <meta name="plan-summary" content="Make a promotion refuse when the node it promotes added a suite failure, judged by delta and waivable on the record">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,7 @@
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-01">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -157,31 +157,31 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="delta-baseline-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="delta-baseline-source" data-choice="run-base-sha" data-by="Simon McIntosh" data-when="2026-09-01T20:10:57+00:00">
     <p class="r-dec-q">What is the baseline a promotion&#x27;s failure delta is measured against?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="run-base-sha">The run&#x27;s own recorded base revision, which the ledger already stores</button>
+      <button class="r-opt chosen" data-value="run-base-sha">The run&#x27;s own recorded base revision, which the ledger already stores</button>
       <button class="r-opt" data-value="last-promoted">The suite state at the previous promotion in the same project</button>
       <button class="r-opt" data-value="worker-reported">The worker&#x27;s own captured pre-change run, as its manifest already reports</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The ledger already records base_sha for every run, so the baseline is reproducible from committed state and needs no new store. The previous-promotion option inherits the cancellation problem stated in §4, and a worker-captured pre-change run makes the baseline self-reported by the party being judged.</p>
     </div>
-<div class="r-dec" data-key="who-runs-the-suite" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="who-runs-the-suite" data-choice="worker-evidence" data-by="Simon McIntosh" data-when="2026-09-01T20:10:57+00:00">
     <p class="r-dec-q">Who executes the suite whose delta the gate reads?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="worker-evidence">The worker, with the gate reading its captured counts and refusing when they are absent</button>
+      <button class="r-opt chosen" data-value="worker-evidence">The worker, with the gate reading its captured counts and refusing when they are absent</button>
       <button class="r-opt" data-value="gate-runs-it">The gate itself at promotion time, so the measurement cannot be self-reported</button>
       <button class="r-opt" data-value="ci-conclusion">The project&#x27;s CI, with the gate reading a conclusion and treating cancelled as absence</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Extends the existing refusal of a passing gate promoted without check evidence rather than adding a second measurement path, and costs no promotion-time wait; the gate running the suite itself was measured at about 487 s per promotion, roughly two hours of serial waiting over one fifteen-node session, and reading CI inherits a 65-of-120 cancellation rate. The worker&#x27;s before and after counts must be recorded with command, exit status and log path so the evidence is auditable, and their absence is a refusal.</p>
     </div>
-<div class="r-dec" data-key="gate-scope" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="gate-scope" data-choice="opt-in" data-by="Simon McIntosh" data-when="2026-09-01T20:10:57+00:00">
     <p class="r-dec-q">Does the gate apply to every project by default, or opt in per project?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="default-on">On by default for every project, waivable per promotion</button>
-      <button class="r-opt" data-value="opt-in">Off until a project declares a suite command in its flight config</button>
+      <button class="r-opt chosen" data-value="opt-in">Off until a project declares a suite command in its flight config</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A project with no declared suite command has nothing to measure. Default-on with absence treated as refusal would block every promotion in such a project, and default-on with absence treated as a pass contradicts §4. The gate arms when a project declares its suite command in flight config.</p>
     </div>
 </section>
 
