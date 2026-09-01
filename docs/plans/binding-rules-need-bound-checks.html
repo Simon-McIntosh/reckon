@@ -22,9 +22,9 @@
   <title>Binding Rules Need Bound Checks | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
+<meta name="plan-modified" content="2026-09-01">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="9ad9b7d">
 <meta name="plan-artifacts" content="tests/test_declared_tooling.py,pyproject.toml,uv.lock">
 </head>
@@ -200,6 +200,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260825T140144134804-n-delivery-test-stops-using-the-live-directory" data-who="codex-p" data-when="2026-08-25T14:05:22Z">
     <div class="r-comment-body"><p>Redirects the config home to a temp path before dispatch; a colliding manifest is pre-placed in a simulated live directory and proven byte-identical afterwards, so isolation is asserted on the write rather than inferred from a passing read. 1/1 isolation gate, 5/5 file gate</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-unprovisionable-prerequisite-20260901T0620" data-who="reckon-edit" data-when="2026-09-01T06:20:00Z">
+    <div class="r-comment-body"><p><strong>A further instance, and it inverts the thesis in a way worth recording: here a bound check existed, and it was what held the false statement in place.</strong> Dispatch required <code>skills/reckon-ship/scripts/worktree_fleet.py</code> inside every repository it dispatched into, and no command installed it. Not <code>reckon sync</code>, which the refusal named as the remedy; not <code>reckon install-skills</code>, which writes to the home skill directories. The repositories that worked carried a hand-made untracked symlink, pointing at two different targets on two different days. So the rule was binding, unprovisionable, and its stated repair did nothing.</p><p><strong>The check that should have caught it asserted the prose instead of the mechanism.</strong> <code>test_ship_documents_dispatch_prerequisites_and_refusal_remedies</code> asserted <code>"reckon sync docs/" in ship</code> &mdash; pinning the skill's text to a remedy that had never worked, and so guaranteeing the false sentence survived every edit. Every earlier instance in this plan is a rule with no check; this one is a check bound to the wrong side of the rule, which is worse, because it reads as enforcement.</p><p><strong>It also shows how long an unprovisionable rule can sit unmeasured.</strong> The condition was recorded as an open finding on 2026-08-16 in <code>crew-fleet-rox-review</code> &mdash; "dispatch prerequisite drift &hellip; undocumented, and the failure will present as a broken dispatch" &mdash; and closed only when a session in another repository hit it and worked around it rather than reporting it, because the refusal wrote to stderr and exited 1 with stdout empty while the documented contract is a JSON answer on stdout. Two of the three defects were therefore invisibility, not the missing file.</p><p>Fixed in <code>62f8ae4</code>: the script resolves from the running reckon, every refusal answers on stdout, and the precondition moved into the resolver both the dry run and the real dispatch share. The contract test now pins the arrangement rather than the sentence.</p></div>
 </div>
 </section>
 </main>
