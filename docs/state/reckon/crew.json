@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T16:35:55",
+  "updated": "2026-09-01T16:36:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29052,9 +29052,141 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T143053365155-n-evidence-dispatch-contract",
+        "plan": "uniform-worker-dispatch",
+        "section": "\u00a77",
+        "node": "n-evidence-dispatch-contract",
+        "node_definition": {
+          "done_when": "python -m reckon.doccheck docs/evidence/archive/uniform-worker-dispatch-landed.html exits 0 with no ERROR lines, the appended section carries a stable id, and every commit sha named in the plan comment appears in it",
+          "estimated_hours": null,
+          "goal": "append one anchored section to the cumulative evidence record for uniform-worker-dispatch",
+          "id": "n-evidence-dispatch-contract",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143053365155-n-evidence-dispatch-contract/manifest.md",
+          "plan": "uniform-worker-dispatch",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a77",
+          "spec_level": "",
+          "time_budget": "20m",
+          "write_paths": [
+            "docs/evidence/archive/uniform-worker-dispatch-landed.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "",
+        "member": "ev-dispatch",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T14:31:04Z",
+        "completed_at": "2026-09-01T14:36:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 311,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 311,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "0cdd52e1ffeea4d712c1407fbf02051a3edbafc2",
+        "commits": [
+          "025cda3087cc650a59a49b83e1beb7c00b957927"
+        ],
+        "changed_lines": {
+          "added": 59,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m reckon.doccheck docs/evidence/archive/uniform-worker-dispatch-landed.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143053365155-n-evidence-dispatch-contract/doccheck.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T143053365155-n-evidence-dispatch-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05d61-7d87-7a60-a0dc-1efc91f531db",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2803456,
+            "cached_input_tokens_cumulative": 2803456,
+            "input_tokens": 2943097,
+            "input_tokens_cumulative": 2943097,
+            "output_tokens": 11217,
+            "output_tokens_cumulative": 11217,
+            "reasoning_output_tokens": 4518,
+            "reasoning_output_tokens_cumulative": 4518
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 838,
+              "budget_seconds": 1500,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: the same focused pytest command failed twice after different fixes; triggering the mandatory stop fence; the remaining observable failure is TypeError reading window.location.pathname in the test harness; not a ReferenceError or product-source failure",
+              "elapsed_seconds": 2338,
+              "log_age_seconds": 1790,
+              "log_fresh": false,
+              "manifest_commits": [],
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T135157985051-n-resolve-cross-module-refs/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T135157985051-n-resolve-cross-module-refs/manifest.md; resolve the blocker before resuming the run",
+              "node": "n-resolve-cross-module-refs",
+              "phase": "starting",
+              "plan": "sprint-horizon-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260901T135157985051-n-resolve-cross-module-refs",
+              "session": "d8-repair",
+              "terminal_age_seconds": 1812,
+              "terminal_at": "2026-09-01T14:00:51Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d8-repair/n-resolve-cross-module-refs"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 481
+    "_version": 482
   }
 }
