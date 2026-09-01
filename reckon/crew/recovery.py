@@ -59,9 +59,7 @@ def _budget_timing(
             budget_seconds = parse_duration(str(node.get("time_budget") or ""))
         started = datetime.fromisoformat(
             str(
-                record.get("attempt_started_at")
-                or record.get("created_at")
-                or ""
+                record.get("attempt_started_at") or record.get("created_at") or ""
             ).replace("Z", "+00:00")
         )
     except (CrewError, TypeError, ValueError):
@@ -515,6 +513,56 @@ def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
     }
 
 
+def fleet_transitions(
+    known: Mapping[str, Mapping[str, Any]],
+    current: Mapping[str, Mapping[str, Any]],
+) -> tuple[
+    list[tuple[dict[str, Any], str | None, str, dict[str, int]]],
+    dict[str, dict[str, Any]],
+]:
+    """Fold one fleet observation into ordered transitions and the next state.
+
+    The counts travel per transition, recomputed after each one is applied,
+    because a line's numbers are read as the fleet *at that line*. Stamping one
+    batch-wide count on every line of a multi-transition poll describes the end
+    of the batch instead: a promotion would report the fleet it had already
+    left, and three simultaneous landings would all claim the third one's
+    totals.
+
+    Departures first, then arrivals, then state changes — a promotion frees its
+    slot before the next dispatch is counted into it, which is the order a
+    reader infers from the numbers.
+    """
+    running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
+    changes: list[tuple[Mapping[str, Any], str | None, str]] = []
+
+    for run_id in (item for item in known if item not in current):
+        changes.append((known[run_id], str(known[run_id]["state"]), "promoted"))
+    for run_id in (item for item in current if item not in known):
+        changes.append(
+            (
+                {**current[run_id], "state": "dispatched", "reason": ""},
+                None,
+                "dispatched",
+            )
+        )
+    for run_id in (item for item in current if item in known):
+        previous = str(known[run_id]["state"])
+        state = str(current[run_id]["state"])
+        if state != previous:
+            changes.append((current[run_id], previous, state))
+
+    events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
+    for snapshot, previous, state in changes:
+        run_id = str(snapshot.get("run_id") or "")
+        if state == "promoted":
+            running.pop(run_id, None)
+        else:
+            running[run_id] = dict(snapshot)
+        events.append((dict(snapshot), previous, state, _fleet_counts(running)))
+    return events, running
+
+
 def _watch_transition(
     project: str,
     *,
@@ -629,54 +677,18 @@ def watch_ticker(
                     )
                 continue
 
-            events: list[dict[str, Any]] = []
-            next_known = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
-            for run_id in (item for item in known if item not in current):
-                snapshot = known[run_id]
-                next_known.pop(run_id, None)
-                events.append(
-                    _watch_transition(
-                        project,
-                        kind="transition",
-                        snapshot=snapshot,
-                        previous=str(snapshot["state"]),
-                        current="promoted",
-                        counts=counts,
-                    )
+            folded, next_known = fleet_transitions(known, current)
+            events = [
+                _watch_transition(
+                    project,
+                    kind="transition",
+                    snapshot=snapshot,
+                    previous=previous,
+                    current=state,
+                    counts=event_counts,
                 )
-
-            for run_id in (item for item in current if item not in known):
-                snapshot = current[run_id]
-                dispatched = {**snapshot, "state": "dispatched", "reason": ""}
-                next_known[run_id] = dispatched
-                events.append(
-                    _watch_transition(
-                        project,
-                        kind="transition",
-                        snapshot=dispatched,
-                        previous=None,
-                        current="dispatched",
-                        counts=counts,
-                    )
-                )
-
-            for run_id in (item for item in current if item in known):
-                snapshot = current[run_id]
-                previous = str(known[run_id]["state"])
-                current_state = str(snapshot["state"])
-                if current_state != previous:
-                    next_known[run_id] = dict(snapshot)
-                    events.append(
-                        _watch_transition(
-                            project,
-                            kind="transition",
-                            snapshot=snapshot,
-                            previous=previous,
-                            current=current_state,
-                            counts=counts,
-                        )
-                    )
-
+                for snapshot, previous, state, event_counts in folded
+            ]
             known = next_known
             if events:
                 yield from events

@@ -1052,6 +1052,7 @@ def _follow_watch_lines(
     sleeper=time.sleep,
     stop=None,
     notify=None,
+    on_poll=None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1073,6 +1074,7 @@ def _follow_watch_lines(
     selected_runs = tuple(run_ids)
     reported: dict[str, str] = {}
     waiting_announced = False
+    attached = False
 
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
@@ -1080,6 +1082,11 @@ def _follow_watch_lines(
     def _announce(message: str) -> None:
         if notify is not None:
             notify(message)
+
+    def _tick() -> None:
+        """Run the caller's per-wait work — reclaiming a registration, say."""
+        if on_poll is not None:
+            on_poll()
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
@@ -1104,11 +1111,38 @@ def _follow_watch_lines(
                     f"dispatch arms one, or arm it with "
                     f"{runs._watch_arming_line(project)}"
                 )
+            _tick()
             sleeper(poll_interval)
             continue
 
         waiting_announced = False
         cursor = runs.watch_stream_cursor(project)
+        # A receipt, not a transition, so `--attention` never suppresses it: a
+        # follower whose runs are all mid-flight would otherwise print nothing
+        # at all, and "attached and quiet" has to read differently from "never
+        # started". It carries this follower's own runs and their states, which
+        # is what the reader wanted to know when they armed it.
+        mine = [
+            event
+            for event in cursor["baseline"]
+            if _follow_selects(
+                event, session=session, run_ids=selected_runs, attention=False
+            )
+        ]
+        states: dict[str, int] = {}
+        for event in mine:
+            state = str(event.get("to_state") or "unknown")
+            states[state] = states.get(state, 0) + 1
+        yield {
+            "event": "reattached" if attached else "attached",
+            "project": project,
+            "session": session,
+            "observed_at": runs._utc_now(),
+            "runs": len(mine),
+            "states": states,
+            "nodes": [str(event.get("node") or "") for event in mine],
+        }
+        attached = True
         for event in cursor["baseline"]:
             selected = _emit(event)
             if selected is not None:
@@ -1120,6 +1154,7 @@ def _follow_watch_lines(
                 break
             if _stopped():
                 return
+            _tick()
             sleeper(poll_interval)
         if not stream_path.exists():
             continue
@@ -1141,6 +1176,7 @@ def _follow_watch_lines(
                     return
                 if not runs.producer_live(project):
                     break
+                _tick()
                 sleeper(poll_interval)
 
 
@@ -1149,6 +1185,33 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output = stream or click.get_text_stream("stdout")
     click.echo(line, file=output)
     output.flush()
+
+
+def _format_attach_receipt(
+    event: Mapping[str, Any], *, delivery: str, registered: bool
+) -> str:
+    """Render the one line that says what this follower is attached to.
+
+    Stated positively and with the current fleet, because the reader armed it to
+    learn something and a filter that legitimately matches nothing would
+    otherwise leave them with an empty pane and no way to tell it apart from a
+    follower that never started.
+    """
+    observed = str(event.get("observed_at") or "")
+    clock = observed[11:19] if len(observed) >= 19 else "--:--:--"
+    verb = "re-attached" if event.get("event") == "reattached" else "attached"
+    scope = str(event.get("session") or "whole project")
+    total = int(event.get("runs") or 0)
+    states = event.get("states") or {}
+    # Rendered in the ticker's own columns so it reads as the first row of the
+    # same table rather than a foreign line above it.
+    movement = f"→ {total} live"
+    counts = " · ".join(f"{count} {state}" for state, count in sorted(states.items()))
+    line = f"{clock}  {verb:<28}  {movement:<24}  {counts or 'nothing live yet'}"
+    tail = f"{scope} · delivery {delivery}"
+    if not registered:
+        tail += " · READ-ONLY: not registered, dispatch will refuse"
+    return f"{line} · {tail}"
 
 
 def _follow_notice(message: str) -> None:
@@ -1212,21 +1275,52 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
             "harness primitive that reports each line as it is written."
         )
 
-    def stream_events(registered: bool):
-        if session is not None and not registered:
+    def stream_events(registration):
+        if registration is not None and not registration.held:
+            holder = registration.blocked_by.get("pid")
             _follow_notice(
-                f"session {session!r} already has a registered follower; "
-                "streaming read-only without taking over its registration"
+                f"session {session!r} already has a registered follower"
+                f"{f' (pid {holder})' if holder else ''}, so this one streams "
+                "read-only. Only the registration satisfies dispatch: stop the "
+                "other follower and this one takes it over within a poll, or "
+                "stop this one and keep the other."
             )
+
+        def poll() -> None:
+            """Take over a registration whose holder has gone, while streaming."""
+            if registration is None or registration.held:
+                return
+            if registration.acquire():
+                _follow_notice(
+                    f"registration for session {session!r} acquired: the "
+                    "previous follower is gone and this one now satisfies "
+                    "dispatch"
+                )
+
         for event in _follow_watch_lines(
             project,
             session=session,
             run_ids=run_ids,
             attention=attention,
             notify=_follow_notice,
+            on_poll=poll,
         ):
             if json_output:
-                _emit({"ok": True, **event}, pretty)
+                payload = {"ok": True, **event}
+                if event.get("event") in {"attached", "reattached"}:
+                    payload["delivery"] = delivery
+                    payload["registered"] = bool(
+                        registration is None or registration.held
+                    )
+                _emit(payload, pretty)
+            elif event.get("event") in {"attached", "reattached"}:
+                _echo_follow_line(
+                    _format_attach_receipt(
+                        event,
+                        delivery=delivery,
+                        registered=registration is None or registration.held,
+                    )
+                )
             else:
                 _echo_follow_line(
                     format_watch_transition(event, with_session=session is None)
@@ -1234,15 +1328,15 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
 
     try:
         if session is None:
-            stream_events(True)
+            stream_events(None)
             return
-        with runs_module.follower_claim(
+        with runs_module.follower_registration(
             project,
             session,
             delivery=delivery,
             scope={"runs": list(run_ids), "attention": bool(attention)},
-        ) as (registered, _record):
-            stream_events(registered)
+        ) as registration:
+            stream_events(registration)
     except runs_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
 

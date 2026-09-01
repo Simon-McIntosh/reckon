@@ -1548,9 +1548,7 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     assert waiver == {
         "requested": True,
         "arming_line": "reckon crew watch --project proj",
-        "attach_line": (
-            "reckon crew follow --project proj --session sess --attention"
-        ),
+        "attach_line": "reckon crew follow --project proj --session sess",
         "watcher_live": False,
         # What a waiver waives is now on the record: nobody was listening, and
         # the caller said so deliberately.

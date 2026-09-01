@@ -194,8 +194,7 @@ def test_no_watch_override_is_recorded_for_an_occupied_project(
         "requested": True,
         "arming_line": "reckon crew watch --project sample",
         "attach_line": (
-            "reckon crew follow --project sample "
-            "--session session-waived --attention"
+            "reckon crew follow --project sample --session session-waived"
         ),
         "watcher_live": True,
         "session_attached": True,

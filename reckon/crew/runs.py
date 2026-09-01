@@ -214,11 +214,7 @@ DELIVERING_MODES = ("stream", "terminal")
 
 
 def _utc_now() -> str:
-    return (
-        datetime.now(tz=UTC)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def new_run_id(node_id: str, *, now: datetime | None = None) -> str:
@@ -275,9 +271,7 @@ def _mutate_pointer(
         record = mutation(previous)
         current_attempt = int(record.get("attempt") or 1)
         if current_attempt > previous_attempt:
-            record["attempt_budget_seconds"] = _attempt_budget_seconds(
-                run_id, record
-            )
+            record["attempt_budget_seconds"] = _attempt_budget_seconds(run_id, record)
         _write_json(pointer_path(run_id), record)
         return record
 
@@ -519,8 +513,7 @@ def scope_claims(
     """Read this repository's live claim registry without changing pointers."""
     repo_root = Path(repo).expanduser().resolve()
     return [
-        claim.as_dict()
-        for claim in _live_scope_claims(project, repo_root, derivations)
+        claim.as_dict() for claim in _live_scope_claims(project, repo_root, derivations)
     ]
 
 
@@ -640,9 +633,7 @@ def plan_scope_lanes(
                 continue
             component.add(current)
             pending.extend(
-                neighbor
-                for neighbor in adjacency[current]
-                if neighbor not in component
+                neighbor for neighbor in adjacency[current] if neighbor not in component
             )
         ordered = [item["id"] for item in nodes if item["id"] in component]
         assigned.update(component)
@@ -736,9 +727,7 @@ def record_run_disposition(
     reason = str(disposition).strip()
     if reason not in RUN_DRAIN_DISPOSITIONS:
         allowed = ", ".join(RUN_DRAIN_DISPOSITIONS)
-        raise CrewError(
-            f"run disposition {disposition!r} is not one of {allowed}"
-        )
+        raise CrewError(f"run disposition {disposition!r} is not one of {allowed}")
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer_project = str(pointer.get("project") or "")
@@ -771,9 +760,7 @@ def drain(project: str) -> dict[str, Any]:
         row = classify_pointer(pointer)
         recorded = pointer.get("closure_disposition")
         disposition = (
-            str(recorded.get("kind") or "")
-            if isinstance(recorded, Mapping)
-            else ""
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
         )
         valid = disposition == "handed-off" or (
             disposition == "still-working" and row["classification"] == "running"
@@ -873,9 +860,7 @@ def parse_stream_line(line: str) -> dict[str, Any] | None:
     return event
 
 
-def read_stream_events(
-    path: Path, *, offset: int = 0
-) -> Iterable[dict[str, Any]]:
+def read_stream_events(path: Path, *, offset: int = 0) -> Iterable[dict[str, Any]]:
     """Yield every event a stream holds from one byte offset onward."""
     if not Path(path).is_file():
         return
@@ -928,18 +913,18 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
     if producer is None:
         return
 
-    from reckon.crew.recovery import _fleet_counts
+    from reckon.crew.recovery import _fleet_counts, fleet_transitions
 
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
         return
 
-    counts = _fleet_counts(current)
     if not producer.fleet_seen:
         producer.fleet_seen = True
         producer.known = {
             run_id: dict(snapshot) for run_id, snapshot in current.items()
         }
+        counts = _fleet_counts(current)
         _append_watch_lines(
             producer.path,
             (
@@ -955,54 +940,24 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         )
         return
 
-    events: list[dict[str, Any]] = []
-    next_known = {run_id: dict(snapshot) for run_id, snapshot in producer.known.items()}
-    for run_id in (item for item in producer.known if item not in current):
-        snapshot = producer.known[run_id]
-        next_known.pop(run_id, None)
-        events.append(
-            _stream_transition(
-                project,
-                snapshot=snapshot,
-                previous=str(snapshot["state"]),
-                current="promoted",
-                counts=counts,
-            )
-        )
-
-    for run_id in (item for item in current if item not in producer.known):
-        snapshot = current[run_id]
-        dispatched = {**snapshot, "state": "dispatched", "reason": ""}
-        next_known[run_id] = dispatched
-        events.append(
-            _stream_transition(
-                project,
-                snapshot=dispatched,
-                previous=None,
-                current="dispatched",
-                counts=counts,
-            )
-        )
-
-    for run_id in (item for item in current if item in producer.known):
-        snapshot = current[run_id]
-        previous = str(producer.known[run_id]["state"])
-        current_state = str(snapshot["state"])
-        if current_state == previous:
-            continue
-        next_known[run_id] = dict(snapshot)
-        events.append(
+    # The same fold the seat's own ticker uses, so a follower reading the stream
+    # and a reader watching the seat's stdout cannot disagree about either the
+    # transitions or their counts.
+    folded, next_known = fleet_transitions(producer.known, current)
+    producer.known = next_known
+    _append_watch_lines(
+        producer.path,
+        (
             _stream_transition(
                 project,
                 snapshot=snapshot,
                 previous=previous,
-                current=current_state,
-                counts=counts,
+                current=state,
+                counts=event_counts,
             )
-        )
-
-    producer.known = next_known
-    _append_watch_lines(producer.path, events)
+            for snapshot, previous, state, event_counts in folded
+        ),
+    )
 
 
 def watch_stream_cursor(
@@ -1112,15 +1067,96 @@ def _project_watch_claim(project: str, stall_window: str):
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+class _FollowerRegistration:
+    """One session's delivery registration, claimable now or later.
+
+    Registration and streaming are separable, and only registration satisfies
+    the dispatch guard. A second follower for the same session therefore streams
+    read-only while the first holds the lock — and if that first process then
+    dies, the registration is released while the streamer keeps delivering
+    lines, so every visible signal says attached and dispatch correctly refuses.
+    Retrying the claim while streaming closes that gap: whoever is still
+    delivering ends up holding the registration.
+    """
+
+    def __init__(
+        self,
+        project: str,
+        session: str,
+        *,
+        delivery: str,
+        scope: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.project = project
+        self.session = session
+        self.delivery = delivery
+        self.scope = dict(scope or {})
+        self.held = False
+        self.record: dict[str, Any] = {}
+        self.blocked_by: dict[str, Any] = {}
+        self._handle = None
+
+    def _open(self):
+        if self._handle is None:
+            path = follower_lock_path(self.project, self.session)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self._handle = path.open("a+b")
+        return self._handle
+
+    def acquire(self) -> bool:
+        """Take the registration if it is free, and report whether it is held."""
+        if self.held:
+            return True
+        handle = self._open()
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            self.blocked_by = _read_watch_record(handle)
+            return False
+        parent = os.getppid()
+        self.record = {
+            "project": self.project,
+            "session": self.session,
+            "pid": os.getpid(),
+            "pid_start_time": _process_start_time(os.getpid()),
+            "parent_pid": parent,
+            "parent_start_time": _process_start_time(parent),
+            "delivery": self.delivery,
+            "scope": self.scope,
+            "started_at": _utc_now(),
+        }
+        _write_watch_record(handle, self.record)
+        self.held = True
+        self.blocked_by = {}
+        return True
+
+    def release(self) -> None:
+        """Drop the claim, leaving the file as a record rather than removing it.
+
+        Deleting it would orphan a second follower that is holding the same
+        inode read-only and about to take over: its claim would succeed on an
+        unlinked file, so it would believe it was registered while every reader
+        looked up a path that no longer exists. Liveness is the lock plus the
+        pid, so a leftover record cannot lie about either.
+        """
+        if self._handle is None:
+            return
+        if self.held:
+            fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
+            self.held = False
+        self._handle.close()
+        self._handle = None
+
+
 @contextmanager
-def follower_claim(
+def follower_registration(
     project: str,
     session: str,
     *,
     delivery: str | None = None,
     scope: Mapping[str, Any] | None = None,
 ):
-    """Register that one session is consuming this project's ticker.
+    """Hold one session's delivery registration for the life of a follower.
 
     The seat proves a producer exists. This proves a *reader* exists, for a
     named session, which is the only fact a dispatch guard can act on: a seat
@@ -1130,35 +1166,35 @@ def follower_claim(
 
     The registration is an advisory lock held by the live follower, so it is
     released by the process ending however it ends — the same property that
-    keeps the seat honest.
+    keeps the seat honest. Call :meth:`_FollowerRegistration.acquire` again while
+    streaming to take over a registration whose holder has since gone.
     """
-    resolved = delivery or delivery_mode()
-    path = follower_lock_path(project, session)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            yield False, _read_watch_record(handle)
-            return
-        parent = os.getppid()
-        record = {
-            "project": project,
-            "session": session,
-            "pid": os.getpid(),
-            "pid_start_time": _process_start_time(os.getpid()),
-            "parent_pid": parent,
-            "parent_start_time": _process_start_time(parent),
-            "delivery": resolved,
-            "scope": dict(scope or {}),
-            "started_at": _utc_now(),
-        }
-        _write_watch_record(handle, record)
-        try:
-            yield True, record
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-            path.unlink(missing_ok=True)
+    registration = _FollowerRegistration(
+        project, session, delivery=delivery or delivery_mode(), scope=scope
+    )
+    registration.acquire()
+    try:
+        yield registration
+    finally:
+        registration.release()
+
+
+@contextmanager
+def follower_claim(
+    project: str,
+    session: str,
+    *,
+    delivery: str | None = None,
+    scope: Mapping[str, Any] | None = None,
+):
+    """Register one session's delivery, reporting whether the claim succeeded."""
+    with follower_registration(
+        project, session, delivery=delivery, scope=scope
+    ) as registration:
+        yield (
+            registration.held,
+            (registration.record if registration.held else registration.blocked_by),
+        )
 
 
 def _follower_liveness(path: Path) -> dict[str, Any]:
@@ -1250,9 +1286,7 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
     # Delivery is reported beside the seat because reading one without the
     # other is how "a watcher is live" came to mean "I will be told".
-    delivery = (
-        follower_state(project, session) if session is not None else None
-    )
+    delivery = follower_state(project, session) if session is not None else None
     attached = None if delivery is None else bool(delivery["live"])
     with path.open("a+b") as handle:
         try:
@@ -1316,16 +1350,13 @@ def project_watch_visibility(
             parent_pid_value = 0
         observer_alive = bool(
             process_alive(parent_pid) is True
-            and _process_start_time(parent_pid)
-            == registration.get("parent_start_time")
+            and _process_start_time(parent_pid) == registration.get("parent_start_time")
             and parent_pid_value > 1
         )
 
     pointer_count = len(list_live(project=project))
     watcher_live = bool(
-        seat_held
-        and registering_process_alive is True
-        and observer_alive is not False
+        seat_held and registering_process_alive is True and observer_alive is not False
     )
     followers = list_followers(project)
     delivery = follower_state(project, session) if session is not None else None
@@ -1407,17 +1438,20 @@ def _watch_attach_line(project: str, *, session: str | None = None) -> str:
     matches the summary field that trails each line, so it matches everything.
     And a trailing ``|| true`` turns the follower's own refusal into a silent
     success indistinguishable from a quiet fleet.
+
+    It carries no state filter either. A filter that legitimately matches
+    nothing produces an empty pane, which reads the same as a follower that
+    never started -- and a reader watching a wave wants the starts and the
+    working transitions, not only the landings. ``--attention`` remains
+    available for a caller that deliberately wants the actionable states alone.
     """
     parts = ["reckon", "crew", "follow", "--project", shlex.quote(project)]
     if session:
         parts += ["--session", shlex.quote(session)]
-    parts.append("--attention")
     return " ".join(parts)
 
 
-def _stream_quiet_seconds(
-    record: Mapping[str, Any], *, now_seconds: float
-) -> int:
+def _stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> int:
     """Measure quiet time from a stream, with pointer activity as the fallback."""
     stream = Path(str(record.get("log_path") or ""))
     if stream.is_file():
@@ -1455,8 +1489,7 @@ def _watch_event(project: str, *, stall_seconds: int) -> dict[str, Any] | None:
 
     moment = _utc_seconds()
     classified = [
-        (pointer, classify_pointer(pointer, now_seconds=moment))
-        for pointer in pointers
+        (pointer, classify_pointer(pointer, now_seconds=moment)) for pointer in pointers
     ]
     for _pointer, row in classified:
         if row.get("manifest_status") in {"complete", "blocked", "failed"}:

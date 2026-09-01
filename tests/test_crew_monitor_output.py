@@ -74,6 +74,7 @@ def test_three_followers_receive_each_subsequent_transition_once(
                 for event in cli._follow_watch_lines(
                     "proj", poll_interval=0.001, stop=stop
                 )
+                if event.get("event") not in {"attached", "reattached"}
             ]
         except BaseException as exc:  # pragma: no cover - surfaced below
             failures.append(exc)

@@ -144,7 +144,29 @@ def _follow(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
         for event in cli._follow_watch_lines(
             project, poll_interval=0.001, stop=stop, **kwargs
         ):
+            if event.get("event") in {"attached", "reattached"}:
+                continue
             received.append(event)  # noqa: PERF402 — incremental by design; extend would block forever
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    time.sleep(settle)
+    stop.set()
+    thread.join(timeout=2)
+    assert not thread.is_alive(), "a stopped follower must return"
+    return received
+
+
+def _follow_all(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
+    """Collect everything a follower delivers, receipts included."""
+    received: list[dict] = []
+    stop = threading.Event()
+
+    def reader() -> None:
+        for event in cli._follow_watch_lines(
+            project, poll_interval=0.001, stop=stop, **kwargs
+        ):
+            received.append(event)  # noqa: PERF402 — incremental by design
 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
@@ -197,6 +219,8 @@ def test_the_attention_filter_is_inside_the_follower(home) -> None:
         for event in cli._follow_watch_lines(
             "proj", session="mine", poll_interval=0.001, stop=stop, **kwargs
         ):
+            if event.get("event") in {"attached", "reattached"}:
+                continue
             sink.append(event)  # noqa: PERF402 — incremental by design; extend would block forever
 
     threads = [
@@ -229,7 +253,10 @@ def test_the_attach_line_is_one_bare_command_a_monitor_can_arm() -> None:
     assert "true" not in line, "`|| true` turns a refusal into a silent success"
     assert line.startswith("reckon crew follow ")
     assert "--session s18-hexgrid" in line
-    assert "--attention" in line
+    # No state filter: a filter matching nothing yet is an empty pane, which
+    # reads the same as a follower that never started, and a reader watching a
+    # wave wants the starts and the working transitions too.
+    assert "--attention" not in line
 
 
 # ── Lifetime ────────────────────────────────────────────────────────────────
@@ -251,6 +278,8 @@ def test_a_follower_outlives_a_drained_fleet_and_reports_the_next_wave(home) -> 
             for event in cli._follow_watch_lines(
                 "proj", session="mine", poll_interval=0.001, stop=stop
             ):
+                if event.get("event") in {"attached", "reattached"}:
+                    continue
                 received.append(event)  # noqa: PERF402 — incremental by design; extend would block forever
         except BaseException as exc:  # noqa: BLE001 — re-raised in the main thread
             failures.append(exc)  # pragma: no cover - surfaced below
@@ -289,6 +318,8 @@ def test_a_follower_waits_for_a_producer_instead_of_refusing(home) -> None:
         for event in cli._follow_watch_lines(
             "proj", session="mine", poll_interval=0.001, stop=stop
         ):
+            if event.get("event") in {"attached", "reattached"}:
+                continue
             received.append(event)  # noqa: PERF402 — incremental by design; extend would block forever
 
     thread = threading.Thread(target=reader, daemon=True)
@@ -316,6 +347,8 @@ def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> No
         for event in cli._follow_watch_lines(
             "proj", session="mine", poll_interval=0.001, stop=stop
         ):
+            if event.get("event") in {"attached", "reattached"}:
+                continue
             received.append(event)  # noqa: PERF402 — incremental by design; extend would block forever
 
     thread = threading.Thread(target=reader, daemon=True)
@@ -520,3 +553,86 @@ def test_the_refusal_names_where_the_arming_primitive_is_documented() -> None:
     assert "reports each line as it is written" in message
     assert "writes to a file" in message
     assert "--no-watch" in message
+
+
+def test_a_dead_registration_is_taken_over_rather_than_hand_deleted(home) -> None:
+    """A killed follower leaves its lock file; the next one must not be blocked.
+
+    The advisory lock is released by the kernel when its holder dies, so the
+    file that remains is a record and not a claim. Asserted rather than reasoned
+    about, because a peer session read the leftover file as a block and worked
+    around it with a dispatch waiver.
+    """
+    path = runs.follower_lock_path("proj", "mine")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": "proj",
+                "session": "mine",
+                "pid": 999_999_999,
+                "pid_start_time": "1",
+                "delivery": "unknown",
+                "started_at": runs._utc_now(),
+            }
+        )
+    )
+    assert runs.follower_state("proj", "mine")["live"] is False
+
+    with runs.follower_claim("proj", "mine", delivery="stream") as (held, _record):
+        assert held is True, "a dead holder's lock is free to take"
+        assert runs.follower_state("proj", "mine")["live"] is True
+
+
+def test_a_second_follower_takes_over_when_the_first_registration_goes(home) -> None:
+    """Streaming and registering are separable, so the streamer must catch up.
+
+    A second follower attaches read-only while the first holds the registration.
+    If the first then dies, lines keep arriving at the second while dispatch
+    refuses — every visible signal says attached. Retrying the claim while
+    streaming is what closes that, so the follower still delivering ends up
+    holding the registration.
+    """
+    first = runs._FollowerRegistration("proj", "mine", delivery="stream")
+    assert first.acquire() is True
+
+    second = runs._FollowerRegistration("proj", "mine", delivery="stream")
+    assert second.acquire() is False, "the first holds it"
+    assert second.blocked_by.get("pid") == os.getpid()
+
+    first.release()
+    assert second.acquire() is True, "a released registration is taken over"
+    assert runs.follower_state("proj", "mine")["live"] is True
+    second.release()
+
+
+def test_an_attached_follower_says_so_even_when_no_state_needs_attention(
+    home,
+) -> None:
+    """A quiet filter must not look like a follower that never started.
+
+    Measured: a session armed the prescribed line, both of its runs sat in a
+    progress state, and the pane read `No output available` for minutes — which
+    is indistinguishable from the silence this whole surface exists to remove.
+    """
+    _write_pointer(home, "r-one", "one-node", session="mine", phase="starting")
+    _write_pointer(home, "r-two", "two-node", session="mine", phase="working")
+
+    with runs._project_watch_claim("proj", "1h"):
+        crew.list_live(project="proj")
+        events = _follow_all("proj", session="mine", attention=True)
+
+    receipts = [e for e in events if e.get("event") in {"attached", "reattached"}]
+    assert receipts, "an attach must announce itself whatever the filter drops"
+    receipt = receipts[0]
+    assert receipt["runs"] == 2
+    assert receipt["states"] == {"dispatched": 1, "working": 1}
+
+    rendered = cli._format_attach_receipt(receipt, delivery="stream", registered=True)
+    assert "attached" in rendered
+    assert "2 live" in rendered
+    assert "1 dispatched" in rendered and "1 working" in rendered
+    assert "mine" in rendered and "delivery stream" in rendered
+
+    read_only = cli._format_attach_receipt(receipt, delivery="file", registered=False)
+    assert "READ-ONLY" in read_only and "dispatch will refuse" in read_only
