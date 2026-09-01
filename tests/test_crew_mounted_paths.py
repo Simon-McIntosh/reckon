@@ -227,7 +227,7 @@ def test_write_authority_needs_a_mount_entry_and_nothing_in_the_repository(
     alone must be enough, and the docs directory it names must not have to
     exist, or the "config only" route is not one.
     """
-    work_repo, authority_repo = repositories
+    _work_repo, _authority_repo = repositories  # the fixture registers the mounts
     catalog = tmp_path / "data-only-catalog"
     catalog.mkdir()
     (catalog / "records.csv").write_text("id,value\n1,2\n", encoding="utf-8")
