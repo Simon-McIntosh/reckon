@@ -13,6 +13,8 @@ import pytest
 
 from reckon import serve, service
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def _node_without_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     node = tmp_path / ".local" / "bin" / "node"
@@ -35,6 +37,22 @@ def _compiler_module(tmp_path: Path) -> Path:
         "module.exports = { transform(source) { return { code: source }; } };\n"
     )
     return compiler
+
+
+def _jsx_module_paths(html: str) -> list[str]:
+    paths = re.findall(r'<script src="(/_ui/[^\"]+\.js)">', html)
+    return [
+        path
+        for path in paths
+        if (serve._ui_root() / Path(path).name).with_suffix(".jsx").is_file()
+    ]
+
+
+def _assert_served_jsx_contract(
+    served_paths: list[str], authored_paths: list[str], statuses: list[int]
+) -> None:
+    assert served_paths == authored_paths
+    assert statuses == [200] * len(authored_paths)
 
 
 def test_compiler_resolves_node_when_the_bare_name_is_absent_from_path(
@@ -78,26 +96,23 @@ def test_all_served_jsx_modules_compile_without_node_on_path(
     monkeypatch.setenv("RECKON_CLIENT_CACHE", str(tmp_path / "cache"))
     monkeypatch.setattr(serve, "_client_asset", lambda name: compiler)
 
-    module_paths = re.findall(
-        r'<script src="(/_ui/[^\"]+\.js)">', serve._render_spa_html("sample")
+    authored_paths = _jsx_module_paths(
+        (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
     )
-    module_paths = [
-        path
-        for path in module_paths
-        if (serve._ui_root() / Path(path).name).with_suffix(".jsx").is_file()
-    ]
+    served_paths = _jsx_module_paths(serve._render_spa_html("sample"))
     server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
         statuses = [
             urlopen(f"http://127.0.0.1:{server.server_port}{path}", timeout=10).status
-            for path in module_paths
+            for path in served_paths
         ]
     finally:
         server.shutdown()
         thread.join(timeout=5)
         server.server_close()
 
-    assert len(module_paths) == 10
-    assert statuses == [200] * len(module_paths)
+    _assert_served_jsx_contract(served_paths, authored_paths, statuses)
+    with pytest.raises(AssertionError):
+        _assert_served_jsx_contract(served_paths[:-1], authored_paths, statuses[:-1])
