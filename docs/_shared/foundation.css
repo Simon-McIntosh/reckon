@@ -1,5 +1,8 @@
 /* foundation.css — design tokens, chrome, typography, primitives.
  *
+ * Ownership: token layer. All shared custom properties are defined here;
+ * later layers consume them without creating a second token authority.
+ *
  * The bottom layer of the three-layer CSS architecture:
  *   foundation.css  ← this file (universal — body, type, shell, buttons, tables, prose)
  *   dashboard.css   ← plan-domain widgets (status, kanban, milestone stepper, next card)
@@ -35,6 +38,10 @@
   --ok:        oklch(0.62 0.13 155);
   --warn:      oklch(0.72 0.15 75);
   --bad:       oklch(0.58 0.20 25);
+  --warn-2:    oklch(0.95 0.05 85);
+  --good:      var(--ok, oklch(0.55 0.14 145));
+  --good-2:    oklch(0.95 0.04 155);
+  --bad-2:     oklch(0.96 0.03 25);
 
   --sans: "Geist", "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI Variable", system-ui, sans-serif;
   --mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -45,6 +52,8 @@
 
   --hairline: 1px solid var(--line);
   --hairline-2: 1px solid var(--line-2);
+  --hair: var(--line, #e7e5dd);
+  --topbar-h: 52px;
 }
 
 [data-theme="dark"] {
@@ -61,6 +70,13 @@
   --accent-2:  oklch(0.62 0.13 264);
   --accent-3:  oklch(0.30 0.06 264);
   --shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* SPA compatibility values are scoped to the application root; standalone
+ * documents inherit the universal theme tokens above. */
+.r-app {
+  --bg-3: #e8e6e0;
+  --warn: oklch(0.66 0.13 85);
 }
 
 /* ===== Reset + body ============================================== */

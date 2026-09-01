@@ -1,16 +1,6 @@
 /* Shared SPA shell and component refinements.
-   Layered on top of foundation/dashboard/project/r-styles. */
-
-:root {
-  --topbar-h: 52px;
-  --warn-2: oklch(0.95 0.05 85);
-  /* Compatibility aliases for components that use the shared palette. */
-  --good:   var(--ok, oklch(0.55 0.14 145));
-  --good-2: oklch(0.95 0.04 155);
-  --bad-2:  oklch(0.96 0.03 25);
-  --bg-3:   #e8e6e0;
-  --hair:   var(--line, #e7e5dd);
-}
+   Ownership: layout layer. Shell geometry and cross-view composition live
+   here; tokens, reusable primitives, and view-specific rules do not. */
 
 html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 
@@ -1239,9 +1229,6 @@ html, body { margin: 0; padding: 0; background: var(--bg, #fafaf8); }
 
 /* Sprint cleanup */
 .r-body .r-sp-switcher { display: none; }
-
-/* Section anchor scroll offset under sticky title bar */
-.r-reading h2 { scroll-margin-top: 96px; }
 
 /* ── Injected HTML plan body ─────────────────────────────────────────── */
 /* Normalise styles from standalone plan HTML pages when rendered inside SPA */

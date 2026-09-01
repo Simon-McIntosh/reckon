@@ -1,15 +1,6 @@
 /* Shared sprint, plan, and embedded-view refinements.
-   Layered on top of foundation.css + dashboard.css + project.css. */
-
-:root {
-  --warn:   oklch(0.66 0.13 85);
-  --warn-2: oklch(0.95 0.05 85);
-}
-
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--bg, #fafaf8);
-}
+   Ownership: view-specific layer. Rules tied to a rendered view live here;
+   shared tokens, primitives, and application layout belong upstream. */
 
 /* ── Unmounted sidebar primitives ────────────────────────────────────── */
 
@@ -608,6 +599,7 @@ body {
   text-transform: none;
   display: flex;
   align-items: baseline;
+  scroll-margin-top: 96px;
   gap: 10px;
 }
 .r-reading h2 .sec {
