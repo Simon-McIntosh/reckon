@@ -13,6 +13,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 
 CONFIG = {
@@ -125,7 +126,7 @@ def _attached(config_home: Path, repo: Path, name: str, **kwargs) -> dict:
 
 
 def _wait_for_stopped_producer() -> None:
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
         if not crew.watch_state("sample")["watcher_live"]:
             return
@@ -143,8 +144,13 @@ def test_concurrent_dispatches_arm_exactly_one_detached_producer(
                 pool.submit(_attached, config_home, repo, "left"),
                 pool.submit(_attached, config_home, repo, "right"),
             ]
-            refusals = [future.exception(timeout=10) for future in futures]
-            records = [future.result(timeout=10) for future in futures]
+            refusals = [
+                future.exception(timeout=WATCHER_LOAD_BOUND_SECONDS)
+                for future in futures
+            ]
+            records = [
+                future.result(timeout=WATCHER_LOAD_BOUND_SECONDS) for future in futures
+            ]
 
         watcher_pids = {record["watch"]["watcher"]["pid"] for record in records}
         assert refusals == [None, None]

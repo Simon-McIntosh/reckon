@@ -21,6 +21,7 @@ import pytest
 
 from reckon import cli, crew
 from reckon.crew import recovery, runs
+from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 
 @pytest.fixture()
@@ -371,7 +372,7 @@ def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> No
     assert [event["to_state"] for event in received] == ["working", "complete"]
 
 
-def _wait_for(predicate, *, timeout: float = 3.0) -> None:
+def _wait_for(predicate, *, timeout: float = WATCHER_LOAD_BOUND_SECONDS) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if predicate():
@@ -535,7 +536,7 @@ def test_a_registration_is_judged_by_where_its_lines_land_now(home, tmp_path) ->
         # Wait for the settled registration, not merely for the lock: a claim
         # takes the lock and then writes its record, and reading the instant
         # between the two is what this fixture used to race.
-        deadline = time.monotonic() + 10
+        deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
         while time.monotonic() < deadline:
             state = runs.follower_state("proj", "declared")
             if state["registered"] and state["follower"].get("pid"):
@@ -548,7 +549,7 @@ def test_a_registration_is_judged_by_where_its_lines_land_now(home, tmp_path) ->
         assert state["live"] is False, "so it is not delivery"
     finally:
         process.terminate()
-        process.wait(timeout=10)
+        process.wait(timeout=WATCHER_LOAD_BOUND_SECONDS)
 
     assert runs.follower_state("proj", "declared")["live"] is False
 

@@ -15,6 +15,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 crew_dispatch = import_module("reckon.crew.dispatch")
 
@@ -97,7 +98,7 @@ def orphan_processes():
 
 
 def _wait_for_file(path: Path) -> None:
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while not path.is_file():
         if time.monotonic() >= deadline:
             pytest.fail(f"watcher did not register at {path}")

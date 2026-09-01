@@ -85,7 +85,11 @@ from reckon.crew.runs import (
 
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
-_WATCH_START_TIMEOUT_SECONDS = 5.0
+# Process startup and registration may receive only one scheduler slice in six
+# while two CPU-bound jobs share a loaded host. Keep every watcher condition
+# wait on this one six-times-unloaded bound so a red test reports a producer
+# defect rather than which process won the scheduler.
+WATCHER_LOAD_BOUND_SECONDS = 30.0
 
 
 def _watch_executable() -> str:
@@ -153,7 +157,7 @@ def _ensure_watch_producer(
                 return state
 
         supervisor = _start_watch_producer(project)
-        deadline = time.monotonic() + _WATCH_START_TIMEOUT_SECONDS
+        deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
         while time.monotonic() < deadline:
             # Poll producer liveness only. Resolving this session's delivery
             # costs a descriptor trace, and a trace on a loop that runs twenty
