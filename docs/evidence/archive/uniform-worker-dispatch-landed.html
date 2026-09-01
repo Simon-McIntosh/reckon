@@ -569,6 +569,65 @@ $ uv run pytest -q  (in a detached worktree, via the in-harness node)
     <p>103 new tests, no failures, no skips. The two suite counts differ by the two tests added after
     the in-harness node ran.</p>
   </section>
+
+  <section id="refusal-remedies">
+    <h2>A refusal must name a route the blocked caller can actually take</h2>
+
+    <p>Commit <code>1c6f609</code> corrected a refusal that was technically right and operationally
+    incomplete. Dispatch rejected an unregistered repository and offered only <code>reckon
+    sync</code>. That command was not an acceptable remedy for the measured case: the target was a
+    data-only catalog proposed to another organisation, and syncing it would copy Reckon's UI
+    scaffolding into a repository that should remain data-only. With the sole advertised route
+    closed, the caller abandoned the dispatch contract and used a bare subagent. The result lost
+    <strong>four controls</strong> — detached worktree, write fence, durable manifest and ledger
+    record — and left an uncommitted edit in a shared checkout with no ownership record.</p>
+
+    <p>There are three legitimate routes, with materially different blast radii:</p>
+
+    <table>
+      <thead><tr><th>Route</th><th>What it writes or grants</th><th>Controls retained</th><th>Use when</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>reckon sync</code></td>
+          <td>Adds the config-home mount and copies Reckon's planning UI scaffolding into the target
+          repository.</td>
+          <td>Normal crew dispatch: worktree, scope fence, durable manifest, live pointer and ledger
+          promotion.</td>
+          <td>The repository owns Reckon plans and may carry the scaffolding.</td>
+        </tr>
+        <tr>
+          <td>Config-only <code>mounts.json</code> entry</td>
+          <td>Adds one write-authority entry under the Reckon config home; writes nothing to the
+          target repository, and the named docs directory need not exist.</td>
+          <td>The same normal crew-dispatch controls, without repository scaffolding.</td>
+          <td>The repository must stay untouched but may be registered as an authorised write
+          target.</td>
+        </tr>
+        <tr>
+          <td>Hand-compose from the orchestration reference</td>
+          <td>Creates the detached worktree and explicitly grants the worktree, the main repository
+          root that owns its git index, and the durable manifest directory.</td>
+          <td>Worktree, fence and manifest can be retained, but pointer-backed observation,
+          recovery, drain accounting and ledger promotion are absent.</td>
+          <td>Even a config-home authority entry is inappropriate; accept the weaker observability
+          explicitly rather than falling back to an unfenced worker.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The config-only route is pinned by an executable test rather than an assertion in prose. It
+    first reproduces the refusal and checks that both advertised remedies are named, then adds
+    <strong>one</strong> config-home entry. Dispatch is admitted while the target's docs directory
+    remains absent and its non-git inventory remains exactly <strong>one file</strong>,
+    <code>records.csv</code>. That proves registration of write authority and installation of UI
+    scaffolding are separate actions with separate blast radii.</p>
+
+    <p><strong>General rule.</strong> A refusal is a surface a blocked caller is provably reading,
+    so the recovery instruction belongs in that refusal. Naming one remedy is safe only when that
+    remedy applies to every refused case. Otherwise the refusal must enumerate the bounded routes
+    and their costs; a correct guard with an inapplicable instruction predictably pushes a degraded
+    caller outside the guarded workflow.</p>
+  </section>
 </main>
 </body>
 </html>
