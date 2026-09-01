@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T20:07:41",
+  "updated": "2026-09-01T20:14:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -29554,9 +29554,104 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T175759238055-n-browser-navigation-verdict",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a73",
+        "node": "n-browser-navigation-verdict",
+        "node_definition": {
+          "done_when": "/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md records all 3 preflights with their raw output \u2014 a Python AF_INET socket bind that succeeds rather than returning EPERM, Chrome loading a data: URL from a fresh profile in under 5s, and the current inotify instance count against the 128 ceiling \u2014 and then either reports a non-empty DOM from http://127.0.0.1:8765/ with its wall-clock in seconds, or attaches 1 Chrome NetLog or strace capture plus an A/B of 2 Chrome builds stating which side the hang follows; the report ends with the residual count of orphaned chrome processes and temporary profile directories, which must be 0",
+          "estimated_hours": null,
+          "goal": "A verdict on whether headless Chrome on this host completes an HTTP navigation to the local reckon server, carrying the trace that demonstrates the cause when it does not",
+          "id": "n-browser-navigation-verdict",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T175759238055-n-browser-navigation-verdict/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "open",
+          "time_budget": "45m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "surface-browser",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T17:58:04Z",
+        "completed_at": "2026-09-01T18:13:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 953,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 953,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "a97cf3d6acb363521f58f4cb4dc9d9ff1a386190",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "three preflights, a reproduced HTTP navigation, a process-tree strace over 54 processes, and a server-side log-delta observation",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T175759238055-n-browser-navigation-verdict/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a05e1e-fd56-7f52-9478-1d0cb472d051",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2764544,
+            "cached_input_tokens_cumulative": 2764544,
+            "input_tokens": 2848329,
+            "input_tokens_cumulative": 2848329,
+            "output_tokens": 16065,
+            "output_tokens_cumulative": 16065,
+            "reasoning_output_tokens": 6733,
+            "reasoning_output_tokens_cumulative": 6733
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "no_commit": "the deliverable is a diagnostic verdict on a host condition; no repository code was implicated and none was changed",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 493
+    "_version": 494
   }
 }

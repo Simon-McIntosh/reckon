@@ -23,7 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="5">
+<meta name="plan-artifacts" content="docs/evidence/archive/rendered-evidence-on-this-host-landed.html,/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md,/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -75,20 +77,80 @@
     server and returns a DOM, or the cause is identified with the trace that demonstrates it
     and the required host change is stated to whoever can make it.</p>
 
-    <h2 id="s3">§3 — The next discriminating test, already specified</h2>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+      <h2>§3 — The next discriminating test, already specified</h2></header>
+      <p class="landed-summary">The boundary is named. All three preflights passed — an
+      <code>AF_INET</code> bind in 0.000092 s, a fresh-profile <code>data:</code> URL in
+      0.439 s, inotify at 60 of 128 — and Chrome 150 still returned a zero-byte DOM after
+      15.022 s. A process-tree strace over 20.304 s captured 17,289 records from 54
+      processes: <strong>0 Internet <code>SOCK_STREAM</code> sockets and 0
+      <code>AF_INET</code>/<code>AF_INET6</code> connects</strong>, only three AF_UNIX D-Bus
+      connects, with the server log growing 0 bytes throughout. The chain stops inside
+      Chrome's Network Service <em>above</em> TCP socket creation, so no request is ever
+      emitted; <code>https://example.com</code> hangs identically, so it is not
+      loopback-specific. The A/B is unavailable rather than failed — Chrome for Testing 152
+      and 149 each fail their own <code>data:</code> control at about 5.02 s — and no third
+      comparator should be pursued. Trace 2,457,438 bytes, sha256 <code>ec765601</code>;
+      residuals 0 processes and 0 profile directories. Full record:
+      <a href="/reckon/evidence/archive/rendered-evidence-on-this-host-landed#s3">§3
+      landed</a>.</p>
+      <p class="landed-summary"><strong>Required host change, stated here because this plan
+      cannot make it:</strong> the host or browser runtime owner must repair or replace
+      Chrome's Network Service with a runtime that advances an HTTP or HTTPS navigation as far
+      as Internet socket creation, and that passes both a fresh-profile <code>data:</code>
+      control and an HTTP control.</p>
+    </section>
 
-    <p>The investigation named the shortest path and deliberately stopped rather than
-    overclaim. Run the probe in an execution-capable, network-enabled sandbox behind three
-    preflights: a Python <code>AF_INET</code> socket succeeds rather than returning
-    <code>EPERM</code>; Chrome starts with a fresh profile and loads a <code>data:</code> URL;
-    and inotify use is below the 128-instance per-user ceiling so the earlier startup leak is
-    not mistaken for this fault. If HTTP still hangs after those pass, capture one Chrome
-    NetLog or syscall trace from that single run and A/B the installed Chrome 150.0.7871.128
-    against a known-good build. That is the shortest test separating a browser regression from
-    a host interaction.</p>
+    <h2 id="s6">§6 — A bounded rendered capability exists, and four of the six captures do not need the host fixed</h2>
 
-    <p><strong>Done when:</strong> either the trace names the cause, or the A/B shows the fault
-    follows the browser build rather than the host, with the command output either way.</p>
+    <p>
+      §4 was authored on the premise that the captures are worthless before a browser works.
+      The trace above narrows that premise rather than confirming it. What is broken is
+      exactly one thing — the Network Service never creates an Internet socket — and
+      <code>file:</code> and <code>data:</code> URLs load in about 0.4 s on the same binary.
+      That split has already been used productively here: inlining every served script into
+      one self-contained HTML file and loading it over <code>file:</code> reproduced the SPA
+      blank page and surfaced <code>Uncaught ReferenceError: useState is not defined</code> in
+      seconds, after that same defect had survived a compiled-AST ownership check, a
+      duplicate-declaration check, an export inventory and three node evaluation harnesses.
+    </p>
+    <p>
+      The shared harness cannot use it as it stands, because it serves the SPA over
+      <code>http://127.0.0.1</code> on an ephemeral port — the one thing the browser cannot
+      reach. The bounded capability is therefore a second delivery path in the harness rather
+      than a second harness: inline the composed project state and every script into one
+      document and open it over <code>file:</code>. State that arrives inlined is state the
+      page never fetches, which is what makes a populated render possible without a network.
+    </p>
+    <p>
+      <strong>What this reaches, and what it honestly does not.</strong> A capture needing only
+      composed state and layout is takeable now; a capture whose subject <em>is</em> a live
+      fetch is not, and remains owed against the host change.
+    </p>
+    <table>
+      <thead><tr><th>Owed capture</th><th>Reachable over <code>file:</code></th></tr></thead>
+      <tbody>
+        <tr><td>Now-line advancing without navigation, at 48-hour scale</td><td>yes — the clock is client-side</td></tr>
+        <tr><td>Table rows, order, and the active-pointer conflict badge</td><td>yes — inlined composed state</td></tr>
+        <tr><td>Reachability at a constrained 900×420 viewport</td><td>yes — pure layout</td></tr>
+        <tr><td>Ready lanes with their handles</td><td>yes — inlined composed state</td></tr>
+        <tr><td>New plan visible with document identity unchanged</td><td><strong>no</strong> — the subject is the revalidation fetch</td></tr>
+        <tr><td>Zero third-party origins, paired first-load/reload wall clock</td><td><strong>no</strong> — the subject is a real network load</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The populated-graph capture owed by the surface redraw sits in the first group: its
+      authorities are a Nova handle and a local one, both of which resolve from composed state.
+    </p>
+    <p>
+      <strong>Done when</strong> the shared harness exposes a <code>file:</code> delivery path
+      that inlines composed state and scripts into one document; a capture taken through it
+      renders a populated view with a nonzero node count rather than an empty-state message;
+      the four reachable rows above are captured with their computed geometry; and the two
+      unreachable rows are recorded as owed against the stated host change rather than quietly
+      dropped.
+    </p>
 
     <h2 id="s4">§4 — The captures owed once a browser works</h2>
 
@@ -161,6 +223,14 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260901T175759238055-n-browser-navigation-verdict" data-who="surface-browser" data-when="2026-09-01T18:13:57Z">
+    <div class="r-comment-body"><p>Boundary named: Chrome 150 accepts the navigation and enumerates interfaces but creates 0 Internet SOCK_STREAM sockets and issues 0 AF_INET/AF_INET6 connects across a 54-process tree; server log delta 0 bytes, so no request is emitted. The chain stops inside the Network Service above TCP socket creation, and https://example.com hangs identically, so it is not loopback-specific. Host change stated; A/B unavailable because both comparator builds fail their own data controls.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260901-navigation-boundary" data-who="reckon-ship" data-when="2026-09-01T18:15:00+00:00">
+    <div class="r-comment-body">n-browser-navigation-verdict landed — no commit, diagnostic verdict with no repository code implicated; gate section-3-discriminating-test PASSED; measure 0 Internet SOCK_STREAM sockets and 0 AF_INET/AF_INET6 connects across 54 processes over a 20.303700s process-tree strace of 17,289 records, against a server log delta of 0 bytes at +3s, +10s and after termination, with all three preflights green (AF_INET bind 0.000092s, fresh-profile data URL 0.439004s, inotify 60/128) and the HTTP navigation reproduced at 0 DOM bytes in 15.022482s; artifacts docs/evidence/archive/rendered-evidence-on-this-host-landed.html and the probe report, trace 2,457,438 bytes sha256 ec765601. The A/B is unavailable rather than failed: both comparator builds fail their own data-URL control at ~5.02s. Two consequences recorded rather than one — the required host change is stated to its owner in §3, and §6 is opened because the same trace bounds the fault to Internet socket creation, leaving file: and data: URLs working at ~0.4s and 4 of the 6 owed captures reachable without the host change.</div>
+</div>
+</section>
+</main>
 </body>
 </html>

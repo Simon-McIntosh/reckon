@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="rendered-evidence-on-this-host-landed">
+  <meta name="plan-title" content="A Browser That Can Reach the Server It Is Testing — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the host browser fault: where the navigation chain stops, and what rendered evidence remains reachable without it.">
+  <meta name="plan-evidence-for" content="rendered-evidence-on-this-host">
+  <meta name="plan-verifies" content="rendered-evidence-on-this-host#s2,rendered-evidence-on-this-host#s3">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>A Browser That Can Reach the Server It Is Testing — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="overview">Overview</h2>
+
+    <p>Execution record for the host condition that makes every rendered gate in this
+    repository unprovable. The headline is a negative result reached positively: the fault is
+    now bounded to one named component with a syscall trace behind it, and the same trace is
+    what shows a bounded rendered capability still exists.</p>
+
+    <table>
+      <thead><tr><th>Section</th><th>Gate</th><th>Commit</th><th>Measure</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>§3 — the discriminating test</td>
+          <td>passed</td>
+          <td>none — diagnostic verdict, no repository code implicated</td>
+          <td>0 Internet sockets and 0 <code>AF_INET</code> connects across 54 processes;
+              server log delta 0 bytes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Where the navigation chain stops</h2>
+
+    <p>The three preflights exist so that a negative result means something, and all three
+    passed, which is what makes the fourth line evidence rather than noise.</p>
+
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Python <code>AF_INET</code> bind — rules out the sandbox socket denial</td><td>PASS in 0.000092 s</td></tr>
+        <tr><td>Chrome 150 fresh-profile <code>data:</code> URL — rules out startup</td><td>PASS, non-empty DOM in 0.439004 s</td></tr>
+        <tr><td>inotify instance count against the 128 per-user ceiling — rules out the earlier leak</td><td>PASS at 60 of 128, 68 headroom</td></tr>
+        <tr><td>Chrome 150 navigation to the local server</td><td><strong>FAIL</strong> — zero-byte DOM after 15.022482 s</td></tr>
+      </tbody>
+    </table>
+
+    <p>The trace is the part that names the cause. A process-tree <code>strace</code> over
+    20.303700 s captured 17,289 records from 54 processes: 20 socket calls, 3 AF_UNIX D-Bus
+    connects, <strong>0 Internet <code>SOCK_STREAM</code> sockets, and 0
+    <code>AF_INET</code>/<code>AF_INET6</code> connects</strong>. Observed from the other side
+    at the same time, the server log grew 0 bytes at +3 s, at +10 s, and after termination. So
+    Chrome accepts the navigation and enumerates interfaces, and then no request is emitted at
+    all — the chain stops inside the Network Service <em>above</em> TCP socket creation, and
+    nothing ever reaches the server to be answered slowly.</p>
+
+    <p><code>https://example.com</code> hangs identically, so this is not loopback-specific and
+    not a property of the reckon server. Trace artifact: 2,457,438 bytes, 17,289 lines, sha256
+    <code>ec7656016656a60bfab4e5d7ac44044466189b57531e8f725d37d48811a280e3</code>. Cleanup
+    census 0 probe-owned Chrome processes and 0 temporary profile directories, which matters on
+    this host because leaked browsers have twice been mistaken for this fault.</p>
+
+    <h3 id="s3-ab">Why the A/B is unavailable rather than failed</h3>
+
+    <p>Chrome for Testing 152.0.7977.64 and 149.0.7827.155 were both fetched as comparators and
+    both fail their own fresh-profile <code>data:</code> control at 5.021590 s and 5.022877 s —
+    before an HTTP result could be interpreted. Two builds broken in a way unrelated to the
+    fault under test cannot discriminate between a browser regression and a host interaction,
+    so the A/B is recorded as unavailable and no third comparator was pursued. Chasing a
+    comparator would have been an investigation into those binaries, not into this fault.</p>
+
+    <h3 id="s3-netlog">A NetLog was attempted first, and the reason it failed is instructive</h3>
+
+    <p>The first attempt captured a 4,650,426-byte Chrome NetLog that was truncated at EOF. A
+    NetLog is flushed on graceful shutdown, and a hanging navigation is only ever ended by
+    killing the process, so that instrument truncates every time under exactly these
+    conditions. A syscall trace records as it goes, so a killed process still leaves a complete
+    record up to the kill — which is why the plan named a NetLog <em>or</em> a syscall trace,
+    and why the second was the right half of that choice here.</p>
+
+    <h3 id="s3-host-change">The required host change</h3>
+
+    <p>Stated here because this plan cannot make it: the host or browser runtime owner must
+    repair or replace Chrome's Network Service with a runtime that advances an HTTP or HTTPS
+    navigation as far as Internet socket creation, and that passes both a fresh-profile
+    <code>data:</code> control and an HTTP control. Until then every gate whose subject is a
+    real network load stays owed.</p>
+
+    <h3 id="s3-bounded">What survives the fault</h3>
+
+    <p>The same trace bounds the damage. Only Internet socket creation is affected;
+    <code>file:</code> and <code>data:</code> URLs load in about 0.4 s on the same binary. A
+    capture that needs composed state and layout can therefore still be taken by inlining that
+    state into one document and opening it over <code>file:</code>, and a capture whose subject
+    <em>is</em> a live fetch cannot. That split is what §6 of the plan acts on.</p>
+
+    <p>Report: <code>~/.config/reckon/crew/reports/browser-navigation-probe.md</code>.</p>
+
+  </main>
+</body>
+</html>
