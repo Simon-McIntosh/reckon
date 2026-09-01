@@ -993,6 +993,7 @@ _PLAN_SET_TOP = frozenset(
         "milestone",
         "sprint",
         "graph_handle",
+        "north_star",
         "capability",
         "owner",
         "summary",
