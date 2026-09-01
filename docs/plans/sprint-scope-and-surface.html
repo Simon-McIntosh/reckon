@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="sprint-scope-and-surface">
   <meta name="plan-title" content="A Sprint Should Span Repositories, and Be Legible">
   <meta name="plan-summary" content="Four findings from a live migration: sprint items carry a bare slug while dependency refs are already project-qualified, so a sprint cannot span repositories; the layout migration destroys the only topical grouping and no tag field replaces it; two sprint-order inversions and a membership gap sit unrepaired; and the SPA&#x27;s design tokens are sound while its shell and cascade are not. Plus a public static build so the surface can be designed against a real URL.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="24.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-graph-handle" content="sprint-federation">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
@@ -626,9 +626,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-sss-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship sprint-scope-and-surface" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sss-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship sprint-scope-and-surface" data-resolved-at="2026-09-01T21:25:58+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Qualify sprint items, give grouping a destination, then design the surface</h4>
     <div class="r-fu-body"><p>Order matters and each step removes risk from the next. The three wiring findings first, since two are ERROR-level and one traces to a plan that is finished and unclosed. Then the tag field and its mechanical backfill from the saved move pre-image, so the layout migration can run with provable zero grouping loss rather than discarding 71 documents' programme. Then sprint items accepting the same <code>project:</code> qualifier every other ref already takes, resolved through the existing external-ref machinery. Then the GitHub Pages deploy job, which turns an already-validated static build into a URL a browser design tool can reach. The <code>shell.jsx</code> decomposition and the CSS layering contract precede the visual redesign, or the design lands as a diff to a 1,544-line file nobody can review.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship sprint-scope-and-surface</pre>
+    <p class="r-fu-outcome">All six sections landed and the tip measuring them is green at 2640 passed / 0 failed. Sprint items and plan-sprint both take the project qualifier through the one shared grammar with 0 new regexes, and the same sprint resolves to the same members from either repository - the bidirectional half a qualified ref alone does not give. The layout migration ran with newly-broken links 0 against a before-state captured at the revision it moved from, 115 resources moved and 73 tagged at grouping loss 0, reconciling the 149-row pre-image exactly. The three wiring findings are repaired and a project-wide scan reports 0 error and 0 warn. The shell is 350 lines plus eight modules, the cascade has a stated owner with a test holding it, and the duplicated stylesheet can no longer drift. Publication became per-repository consent plus a badge after the lead reversed the disclosure choice before anything published. Two things the plan did not predict: the section-3 chain found that a third of the migration was already done by a commit that also added its own never-running guard, and the shell decomposition turned out to have broken the served, synced and built entry points - caught by the merged-tip measurement rather than by any per-node gate.</p>
+    </article>
+<article class="r-fu" data-id="f-sss-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01T21:26:00+00:00" data-recommends-skill="/reckon-ship sprint-scope-and-surface" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Pointer: the layout invariant is enforced by a check that still cannot run in the repository it guards</h4>
+    <div class="r-fu-body">FOREIGN-OWNER, and a pointer rather than work. The migration this plan performed is verified by its own before-and-after link census, so nothing here is unproven. But the typed-layout check that would independently enforce the invariant going forward opens with an importorskip on reckon, which the target repository neither declares nor installs, so it reports exit 5 with zero tests collected there. Before the conditional import a missing dependency aborted that whole suite at exit 2; after it the suite collects, which is a real improvement, and the check still never executes with nothing saying so. A loud failure became a silent no-op. The remedy is a decision rather than a repair - declare the dependency so the check runs, or remove a check that cannot - and it belongs to the hidden-suite-failures plan in that repository, whose owner has it and has been told. Recorded here so the dependency is visible from this side rather than assumed discharged by the migration landing.</div>
     <pre class="r-fu-prompt">/reckon-ship sprint-scope-and-surface</pre>
     </article>
 </section>
