@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import errno
 import functools
+import html
 import http.server
 import json
 import os
@@ -13,10 +14,11 @@ import sys
 import tempfile
 import threading
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from unittest import SkipTest
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -24,6 +26,33 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPOSITION_PROBE = ROOT / "tests" / "spa_render_capture.mjs"
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
 _PROBE_STAGE_PREFIX = "[reckon-browser-stage] "
+_SPA_STYLESHEETS = (
+    "_shared/foundation.css",
+    "_shared/dashboard.css",
+    "ui/project.css",
+    "ui/styles-base.css",
+    "ui/styles.css",
+    "ui/topbar.css",
+    "ui/plans.css",
+    "ui/reader.css",
+    "ui/overview.css",
+    "ui/sprints.css",
+    "ui/crew.css",
+    "ui/graph.css",
+)
+_SPA_MODULES = (
+    "glyphs.jsx",
+    "_shared.jsx",
+    "prompts.js",
+    "ui.jsx",
+    "bits.jsx",
+    "decision.jsx",
+    "plan.jsx",
+    "sprint.jsx",
+    "graph.jsx",
+    "crew.jsx",
+    "shell.jsx",
+)
 
 
 class BrowserProbeError(RuntimeError):
@@ -340,6 +369,107 @@ def installed_browser() -> str | None:
         (path for name in BROWSER_NAMES if (path := shutil.which(name))),
         None,
     )
+
+
+def installed_browser_or_skip() -> str:
+    """Return a supported browser or report the harness capability as skipped."""
+
+    browser = installed_browser()
+    if browser is None:
+        raise SkipTest(
+            "no supported browser binary is installed; tried "
+            + ", ".join(BROWSER_NAMES)
+        )
+    return browser
+
+
+def _script_body(source: str) -> str:
+    """Keep an inlined script from terminating its own HTML element."""
+
+    return source.replace("</script", "<\\/script")
+
+
+def write_file_spa_document(
+    destination: Path,
+    composed_state: Mapping[str, object],
+    *,
+    project: str = "reckon",
+) -> Path:
+    """Write one browser-ready SPA document with no external dependencies."""
+
+    from reckon.serve import client_runtime_assets, compile_jsx
+
+    runtime = client_runtime_assets()
+    styles = [
+        (ROOT / "docs" / relative_path).read_text(encoding="utf-8")
+        for relative_path in _SPA_STYLESHEETS
+    ]
+
+    scripts = [
+        runtime["react.js"].decode("utf-8"),
+        runtime["react-dom.js"].decode("utf-8"),
+        (
+            f"window.STATE = {json.dumps(composed_state, separators=(',', ':'))};\n"
+            "window.STATE_ERROR = null;\n"
+            "window.STATE_READY = Promise.resolve(window.STATE);\n"
+            "window.revalidateProjectState = async () => window.STATE;"
+        ),
+    ]
+    ui_root = ROOT / "docs" / "ui"
+    for filename in _SPA_MODULES:
+        source = (ui_root / filename).read_text(encoding="utf-8")
+        if filename.endswith(".jsx"):
+            source = compile_jsx(source, filename=filename).decode("utf-8")
+        scripts.append(source)
+
+    document = "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="en">',
+            "<head>",
+            '  <meta charset="utf-8">',
+            f'  <meta name="docs-project" content="{html.escape(project, quote=True)}">',
+            '  <meta name="viewport" content="width=device-width,initial-scale=1">',
+            f"  <title>reckon · {html.escape(project)}</title>",
+            f"  <style>{'</style><style>'.join(styles)}</style>",
+            "</head>",
+            "<body>",
+            '  <div id="root"></div>',
+            *(f"  <script>{_script_body(script)}</script>" for script in scripts),
+            "</body>",
+            "</html>",
+        ]
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(document, encoding="utf-8")
+    return destination
+
+
+@contextmanager
+def file_spa(
+    tmp_path: Path,
+    browser: str,
+    composed_state: Mapping[str, object],
+    *,
+    project: str = "reckon",
+    route: str = "#cockpit",
+) -> Iterator[ServedSpa]:
+    """Open a composed SPA from one temporary file instead of an HTTP server."""
+
+    generated_root = Path(tempfile.mkdtemp(prefix="file-spa-", dir=tmp_path))
+    page = write_file_spa_document(
+        generated_root / "index.html",
+        composed_state,
+        project=project,
+    )
+    try:
+        yield ServedSpa(
+            browser=browser,
+            url=f"{page.resolve().as_uri()}{route}",
+            tmp_path=tmp_path,
+        )
+    finally:
+        shutil.rmtree(generated_root)
 
 
 def _unused_port() -> int:

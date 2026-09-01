@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from unittest import SkipTest
 
 import pytest
 
@@ -20,7 +21,10 @@ from spa_browser_harness import (
     _classify_probe_failure,
     _preflight_browser_socket,
     _terminate_process_group,
+    file_spa,
+    installed_browser_or_skip,
     temporary_browser_profile,
+    write_file_spa_document,
 )
 
 
@@ -173,3 +177,138 @@ def test_completed_probe_run_leaves_no_profile_directory(
 
     assert result == {"loaded": True}
     assert list(tmp_path.glob("browser-profile-*")) == []
+
+
+def _composed_graph_state() -> dict[str, object]:
+    foundation = {
+        "slug": "offline-foundation",
+        "title": "Offline foundation",
+        "type": "plan",
+        "status": "shipped",
+        "effective_status": "shipped",
+        "depends_on": [],
+        "decisions": [],
+        "project": "nova",
+        "impl": 1.0,
+    }
+    endpoint = {
+        "slug": "offline-endpoint",
+        "title": "Offline endpoint",
+        "type": "plan",
+        "status": "active",
+        "effective_status": "active",
+        "depends_on": ["nova:offline-foundation"],
+        "decisions": [],
+        "project": "reckon",
+        "graph_handle": "graph:offline-capture",
+        "impl": 0.5,
+    }
+    inventory = [foundation, endpoint]
+    return {
+        "today": "2026-09-01",
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": 2}],
+        "milestones": [],
+        "north_stars": [],
+        "inventory": inventory,
+        "source_format": "distributed",
+        "resource_versions": {},
+        "loaded_at": "2026-09-01T00:00:00Z",
+        "active_sprint_id": None,
+        "active_sprints": [],
+        "active_sprint_conflict": False,
+        "sprints": [],
+        "sprint": None,
+        "blockers": [],
+        "timeline": [],
+        "attachment_relations": [],
+        "plans": {item["slug"]: item for item in inventory},
+    }
+
+
+def test_file_spa_document_inlines_state_styles_and_scripts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import reckon.serve
+
+    monkeypatch.setattr(
+        reckon.serve,
+        "client_runtime_assets",
+        lambda: {
+            "react.js": b"window.React = {};",
+            "react-dom.js": b"window.ReactDOM = {};",
+        },
+    )
+    monkeypatch.setattr(
+        reckon.serve,
+        "compile_jsx",
+        lambda source, *, filename: f"/* {filename} */\n{source}".encode(),
+    )
+
+    page = write_file_spa_document(
+        tmp_path / "offline.html",
+        _composed_graph_state(),
+        project="reckon",
+    )
+    source = page.read_text(encoding="utf-8")
+
+    assert page.parent == tmp_path
+    assert source.count("<!doctype html>") == 1
+    assert 'href="/_shared/' not in source
+    assert 'href="/_ui/' not in source
+    assert '<script src="/_' not in source
+    assert '"graph_handle":"graph:offline-capture"' in source
+    assert "window.STATE_READY = Promise.resolve(window.STATE)" in source
+    assert "window.revalidateProjectState = async () => window.STATE" in source
+
+
+def test_file_spa_graph_probe_is_populated_and_repeatable(tmp_path: Path) -> None:
+    browser = installed_browser_or_skip()
+
+    expression = """(() => ({
+      count: document.querySelectorAll('.r-graph-node-card').length,
+      handle: document.querySelector('.r-graph-handle-token')?.textContent || '',
+      empty: document.querySelector('.r-graph-empty')?.textContent || ''
+    }))()"""
+    ready_expression = (
+        "document.querySelectorAll('.r-graph-node-card').length > 0 && "
+        "Boolean(document.querySelector('.r-graph-handle-token'))"
+    )
+    with file_spa(
+        tmp_path,
+        browser,
+        _composed_graph_state(),
+        route="#graph",
+    ) as context:
+        assert context.url.startswith("file:")
+        first = context.run_probe(
+            expression,
+            viewport=(900, 420),
+            ready_expression=ready_expression,
+        )
+        second = context.run_probe(
+            expression,
+            viewport=(900, 420),
+            ready_expression=ready_expression,
+        )
+
+    assert first == second
+    assert first == {
+        "count": 2,
+        "handle": "graph:offline-capture",
+        "empty": "",
+    }
+    assert list(tmp_path.glob("browser-profile-*")) == []
+    assert list(tmp_path.glob("file-spa-*")) == []
+
+
+def test_file_spa_browser_absence_uses_the_stated_skip(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(harness, "installed_browser", lambda: None)
+
+    with pytest.raises(
+        SkipTest,
+        match="no supported browser binary is installed; tried google-chrome, chromium, chromium-browser",
+    ):
+        installed_browser_or_skip()
