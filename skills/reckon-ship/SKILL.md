@@ -457,6 +457,18 @@ Three node-contract refusals are easy to mistake for infrastructure failures:
 
 - A dirty plan HTML file cannot supply base-revision authority. Commit the plan
   before dispatching; `plan-unavailable` names the missing or changed section.
+  **This beat is the design, not an obstacle in front of it.** The plan is the
+  passing surface: the worker reads its section from its own worktree at the base
+  revision, so anything a worker must know has to be committed there rather than
+  copied into the handoff. Findings, constraints and evidence inputs discovered
+  mid-session therefore go *into the plan first* — record, commit, dispatch, in
+  that order. That is what makes them readable by the worker, by a reviewer, by
+  `roadmap`, and by the next session, instead of dying with one prompt. There is
+  deliberately no flag for passing prose to a worker: a second store is a second
+  stale source of truth, and the dispatch flags carry only what genuinely cannot
+  live in a plan — worktree, scope, manifest path, budgets, session, and routing
+  overrides. Large inputs travel by reference: put the artifact at a path and
+  name the path in the node's evidence inputs.
 - A goal containing `;` is not one deliverable. Rewrite it as one outcome; use
   the DAG for sequential work. Action-bearing `and`, `&`, or `plus` clauses are
   refused for the same reason.

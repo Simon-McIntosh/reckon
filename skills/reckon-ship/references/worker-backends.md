@@ -56,6 +56,28 @@ the filesystem-sandbox dialect, read-only work translates to workspace-write
 with the manifest directory as the working directory. That leaves the delivery
 surface writable without making the assigned repository writable.
 
+**A restrained tier needs the roots that sit outside the workspace, named
+explicitly.** The filesystem-sandbox dialect takes `--add-dir <DIR>` for
+"additional directories that should be writable alongside the primary
+workspace", and a worktree node needs two of them, because two things it must
+write are not inside the worktree:
+
+```
+<harness> exec -s workspace-write -C <worktree> \
+  --add-dir <main-repo-root> \
+  --add-dir <config-home>/crew/runs/<run-id> ...
+```
+
+The main repository root because a detached worktree's git index lives at
+`<main-repo>/.git/worktrees/<node>/index`, so without it `git commit` fails on
+`index.lock` after the node's work is already done; and the manifest's directory
+because the delivery path is outside the worktree too. `sandbox_write_roots`
+computes exactly this set — repository root, run directory, reports directory,
+temporary directory, manifest parent — which is why a dispatch at a restrained
+tier commits and a hand-composed line at the same tier does not. Reproduce the
+roots, not the tier name; escalating to the full-access tier instead grants more
+privilege than dispatch would, and that is a decision rather than a shortcut.
+
 Two argument details are load-bearing and were both learned by a failed probe:
 
 - **The prompt travels on stdin, for every dialect.** A prompt passed as a

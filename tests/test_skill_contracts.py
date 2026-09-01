@@ -143,9 +143,7 @@ def test_create_and_edit_skills_share_the_canonical_authoring_exemplar() -> None
 
 
 def test_create_skill_reads_live_tag_inventory_before_choosing_tags() -> None:
-    create = normalized(
-        (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text()
-    )
+    create = normalized((ROOT / "skills" / "reckon-create" / "SKILL.md").read_text())
 
     assert "tag_inventory" in create
     assert "before choosing `plan-tags`" in create
@@ -212,7 +210,9 @@ def test_ship_skill_authors_the_gate_fence_rule_alone() -> None:
     skill_root = ROOT / "skills"
     ship = normalized((skill_root / "reckon-ship" / "SKILL.md").read_text())
     assert "Authored here and nowhere else" in ship
-    assert "refuse to dispatch work behind the gate until its measure has produced" in ship
+    assert (
+        "refuse to dispatch work behind the gate until its measure has produced" in ship
+    )
     others = [
         path
         for path in skill_root.rglob("SKILL.md")
@@ -356,7 +356,10 @@ def test_ship_writes_plan_state_in_the_same_beat_as_run_promotion() -> None:
     assert "Immediately after EACH `reckon crew complete`" in ship
     assert "Immediately after each `reckon crew complete`" in reference
     assert "Do not promote another run" in reference
-    assert "dispatching an unrelated ready node is outside this freeze" in reference.lower()
+    assert (
+        "dispatching an unrelated ready node is outside this freeze"
+        in reference.lower()
+    )
     assert "dispatching an unrelated ready node is outside this freeze" in ship.lower()
 
 
@@ -589,7 +592,9 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
 }
 
 
-def _registered_leaf_paths(command, path: tuple[str, ...] = ()) -> list[tuple[str, ...]]:
+def _registered_leaf_paths(
+    command, path: tuple[str, ...] = ()
+) -> list[tuple[str, ...]]:
     commands = getattr(command, "commands", None)
     if not commands:
         return [path]
@@ -701,7 +706,9 @@ def test_every_leakage_exemption_still_earns_itself() -> None:
     """
     for relative in sorted(LEAKAGE_EXEMPT):
         path = ROOT / relative
-        assert path.is_file(), f"{relative} is exempt from the leak scan and does not exist"
+        assert path.is_file(), (
+            f"{relative} is exempt from the leak scan and does not exist"
+        )
         earned = any(
             ROUTING_IDENTIFIERS.search(line)
             for line in path.read_text(encoding="utf-8").splitlines()
@@ -792,9 +799,9 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
     for error, code in documented.items():
         if error in {"success", "request-error"}:
             continue
-        assert re.search(
-            rf'"error": "{error}"[\s\S]{{0,350}}Exit\({code}\)', source
-        ), error
+        assert re.search(rf'"error": "{error}"[\s\S]{{0,350}}Exit\({code}\)', source), (
+            error
+        )
 
 
 def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
@@ -839,8 +846,9 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
 def test_ship_run_lifecycle_guidance_matches_launch_ownership() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     protocol = normalized(
-        (ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md")
-        .read_text()
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+        ).read_text()
     )
     assert "non-terminal live pointer" in ship
     assert "in-flight run" in ship
@@ -848,3 +856,24 @@ def test_ship_run_lifecycle_guidance_matches_launch_ownership() -> None:
     assert "through the attached harness task/session" in protocol
     assert "Until the classifier reads manifests" not in ship
     assert "The live classifier reads the manifest's recorded status" in ship
+
+
+def test_the_plan_is_named_as_the_only_passing_surface() -> None:
+    """A coordinator meeting exit 4 must read it as the design, not an obstacle.
+
+    A session with audit findings to hand a worker asked whether a `--brief` flag
+    should exist. The answer is already the architecture's — the worker reads the
+    plan's section from its own worktree at the base revision, so a handoff copy
+    is a second store nothing can verify — but the exit-4 row said only "commit
+    the plan" without saying why that is right, which reads as friction.
+    """
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+
+    assert "The plan is the passing surface" in ship
+    assert "record, commit, dispatch, in that order" in ship
+    # And the refusal of a second store has to be explicit, or someone will
+    # reasonably propose one again.
+    assert "no flag for passing prose to a worker" in ship
+    assert "a second store is a second stale source of truth" in ship
+    # Large inputs already have an answer that is not a copy.
+    assert "travel by reference" in ship

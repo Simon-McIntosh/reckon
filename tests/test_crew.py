@@ -4068,3 +4068,29 @@ def test_handing_the_decision_to_the_worker_is_still_unspecified() -> None:
     ):
         verdict = crew.validate_node(_node(done_when=spoiled), budget_ceiling="25m")
         assert "fully-specified" in verdict.failed_properties, spoiled
+
+
+def test_an_unwritable_manifest_path_is_a_blocker_not_a_fallback() -> None:
+    """A delivery contract that degrades quietly is worse than one that refuses.
+
+    Measured: a worker whose sandbox could not reach the contracted manifest
+    path completed the node, wrote the manifest somewhere else, and reported
+    success — so the orchestrator saw a finished node whose delivery was not
+    where the contract named it. The prompt now forbids the fallback, and does
+    so inside the prompt's own line budget.
+    """
+    prompt = crew.compose_prompt(
+        node=_node(),
+        project="proj",
+        worktree="/tmp/worktree",
+        working_directory="/tmp/worktree",
+        manifest_path="/tmp/manifests/node-a.md",
+        time_budget="20m",
+        needs_help_after_failures=2,
+    )
+
+    assert "STOP and report a blocker" in prompt
+    assert "anywhere else" in prompt
+    assert "delivery cannot be found" in prompt
+    # The budget is the reason this had to be paid for rather than appended.
+    assert len(prompt.splitlines()) < 70

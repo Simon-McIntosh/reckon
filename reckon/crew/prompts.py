@@ -101,11 +101,11 @@ FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}
 
 FENCE — DELIVERY
-  Write your manifest to {manifest_path} BEFORE finishing, then reply with
-  that path and a short summary. Your final message is the return value, but
-  the file is the delivery: a report that exists only in a message can be
-  lost, and the node then looks failed when it is not. Long output belongs in
-  the file. Redirect every long-running command to a named on-disk log.
+  Write your manifest to {manifest_path} BEFORE finishing, then reply with that
+  path and a summary. The file is the delivery, not the message, which can be
+  lost — the node then looks failed when it is not. If that exact path is not
+  writable, STOP and report a blocker; a manifest written anywhere else reads
+  as a node whose delivery cannot be found. Long output and logs go on disk.
 
 MANIFEST (write exactly these keys)
   node: {node.id}

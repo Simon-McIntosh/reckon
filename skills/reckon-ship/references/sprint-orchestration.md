@@ -354,24 +354,33 @@ and the composed prompt is the copy to change.
 **A hand-composed sandbox must make three things writable, and two of them are
 outside the worktree.** A detached worktree's git index is not in the worktree:
 it lives at `<main-repo>/.git/worktrees/<node>/index`, so a tier that permits
-only the workspace cannot create `index.lock` and the worker dies at `git
-commit` having already done the work. The manifest path is outside it too. So
-grant, explicitly:
+only the workspace cannot create `index.lock`, and the worker dies at `git
+commit` having already done the work. The manifest path is outside it too. Grant
+all three explicitly:
 
 1. the assigned worktree;
-2. the **main repository root** — this is what covers the worktree's git
-   directory, and it is what `reckon crew dispatch` itself passes as the
-   sandbox's repository root rather than the worktree;
+2. the **main repository root**, which is what covers the worktree's git
+   directory;
 3. the directory holding the manifest path.
 
-Measured: a hand-composed dispatch at the `workspace-write` tier completed a
-node, self-verified it, then failed with `fatal: Unable to create
-'…/index.lock': Read-only file system` and delivered no commit — and because the
-mandated manifest path was unreachable for the same reason, it wrote a fallback
-to `/tmp` instead of failing loudly. A delivery contract that degrades quietly
-is worse than one that refuses, so check the grants before dispatching rather
-than reading a tier's name as a description of the job. Per-backend flag
-translation is `worker-backends.md`'s subject, not this file's.
+**Grant those roots rather than escalating the tier.** A workspace-only tier is
+sufficient *once the two outside roots are added* — that addition is exactly
+what `reckon crew dispatch` does when it resolves a restricted sandbox, and it
+is why dispatch commits fine at that tier. So "dispatch manages at this tier" is
+true and, on its own, misleading: reproduce the added roots, not just the tier
+name. Reaching instead for a full-access tier buys the commit by giving the
+worker more privilege than dispatch would, which is a different decision and
+should be a deliberate one. The concrete per-backend flag is
+`worker-backends.md`'s subject, not this file's.
+
+Measured: a hand-composed dispatch at a workspace-only tier completed a node,
+self-verified it, then failed with `fatal: Unable to create '…/index.lock':
+Read-only file system` and delivered no commit — and because the mandated
+manifest path was unreachable for the same reason, the worker wrote a fallback
+elsewhere and reported success, so the orchestrator saw a completed node whose
+delivery was not where the contract named. Rule 8 above now makes that a
+blocker, because a delivery contract that degrades quietly is worse than one
+that refuses.
 
 Embed this contract in every delegated prompt:
 
@@ -395,7 +404,8 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
    delivery: do not end your turn with the manifest only in a message. If the
    deliverable is long, it belongs in the file and the reply is just the path.
    Redirect every long-running command to a named on-disk log so progress is
-   recoverable even if your report is not.
+   recoverable even if your report is not. If that exact path is not writable,
+   STOP and report it as a blocker — never write the manifest somewhere else.
 9. Do not add AI attribution or plan/sprint identifiers to commit messages.
 10. Stop and report unexpected dirty files, missing authority, or unsafe scope.
 
