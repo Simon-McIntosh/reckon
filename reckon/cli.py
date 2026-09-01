@@ -703,7 +703,11 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     "overrides",
     multiple=True,
     metavar="KEY=VALUE",
-    help="Flight override for this task; always wins over config layers.",
+    help=(
+        "Override one flight key after file layers. For routed effort, "
+        "roles.<role>.by_spec_level.<level>.effort overlays "
+        "backends.<name>.effort."
+    ),
 )
 @click.option(
     "--allow-execution-mismatch",

@@ -860,6 +860,9 @@ class DispatchPlan:
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
+            "agent": _agent_configuration(
+                self.backend, self.launch, self.backend_settings
+            ),
             "backend": self.backend,
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
