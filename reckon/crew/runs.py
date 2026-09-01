@@ -1383,11 +1383,19 @@ def project_watch_visibility(
         # A seat with no reader is the state that reads as healthy and is not:
         # the producer runs, the guard passes, and every transition it writes
         # is read by nobody.
+        # The pids are here because "whose follower is this" was otherwise only
+        # answerable with `ps`: a peer reported one as an orphan to be reaped
+        # after confirming it was not theirs, and it belonged to a live session
+        # reading it. A follower's owner is whatever consumes its stdout, and
+        # `consumer_pid` names that process.
         "followers": [
             {
                 "session": row["session"],
                 "live": row["live"],
                 "delivery": row["delivery"],
+                "pid": row["follower"].get("pid"),
+                "consumer_pid": row["follower"].get("parent_pid"),
+                "since": row["follower"].get("started_at"),
             }
             for row in followers
         ],

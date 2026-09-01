@@ -634,3 +634,24 @@ def test_a_dead_registration_is_taken_over_rather_than_hand_deleted(home) -> Non
     with runs.follower_claim("proj", "mine", delivery="stream") as (held, _record):
         assert held is True, "a dead holder's lock is free to take"
         assert runs.follower_state("proj", "mine")["live"] is True
+
+
+def test_a_followers_owner_is_readable_without_reaching_for_ps(home) -> None:
+    """Whose follower is this, answered from the documented read surface.
+
+    A peer reported a live follower as an orphan to be reaped, having correctly
+    established only that it was not its own; the process consuming its stdout
+    belonged to another session that was mid-flight. A follower's owner is that
+    consumer, so the read that lists followers names it.
+    """
+    _write_pointer(home, "r-one", "one-node", session="mine", phase="working")
+
+    with runs.follower_claim("proj", "mine", delivery="stream"):
+        rows = runs.project_watch_visibility("proj", session="mine")["followers"]
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["session"] == "mine"
+    assert row["pid"] == os.getpid()
+    assert row["consumer_pid"] == os.getppid(), "the process reading its stdout"
+    assert row["since"], "and when it attached"
