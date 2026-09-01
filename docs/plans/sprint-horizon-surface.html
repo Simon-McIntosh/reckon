@@ -22,8 +22,11 @@
   <title>Plan the Next Two Days, Not the Next Two Months | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-01">
+<meta name="plan-version" content="15">
+<meta name="plan-commits" content="034dc5d,85d10ce,f9080fd,7642080">
+<meta name="plan-artifacts" content="docs/evidence/archive/sprint-horizon-surface-landed.html">
+<meta name="plan-impl" content="0.43">
 </head>
 <body>
   <main class="plan-doc">
@@ -226,25 +229,20 @@
     badge. Evidence is a rendered capture against live state plus assertions on order and
     conflict rendering.</p>
 
-    <h2 id="s3">§3 — Make the page scroll</h2>
-
-    <p>The surface cannot be scrolled to its foot. <code>.r-sprint-surface</code> combines
-    <code>flex: 1</code> with <code>overflow: auto</code>, which makes the scroll container
-    a flex child sized by its parent rather than by its content, so content below the
-    available height is unreachable rather than merely below the fold. The repair belongs
-    with the layout work because the two new elements in §1 and §2 change the page's
-    height profile, and a taller page makes the defect worse rather than incidental.</p>
-
-    <p>The fix is to establish one intentional scroll container for the view and to state
-    which element owns scrolling, rather than to add a second <code>overflow</code> and hope
-    the cascade resolves it. That statement is the deliverable as much as the behaviour is:
-    the plan <code>sprint-scope-and-surface</code> has a locked decision recording that this
-    cascade has no stated ownership boundary, and this section must not make that worse.</p>
-
-    <p><strong>Done when:</strong> the full content of both surfaces is reachable by
-    scrolling at a viewport height that previously truncated it, demonstrated by a rendered
-    capture at a constrained viewport that reaches the last element; and the view declares
-    exactly one scroll owner.</p>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+        <h2>§3 — Make the page scroll</h2></header>
+      <p class="landed-summary">Declared one scroll owner:
+        <code>.r-sprint-view .r-reader-with-attachments &gt; .r-body</code> is now the sole
+        intentional vertical scroll selector, and <code>.r-sprint-surface</code> carries
+        <strong>0</strong> <code>overflow: auto</code> declarations where it previously
+        combined that with <code>flex: 1</code>. <code>docs/_shared/foundation.css</code>
+        verified byte-identical by SHA-256, so the stylesheet every project inherits is
+        untouched. Gate <strong>not-run</strong>, not passed: no clean browser-free log
+        exists, and the 900×420 reachability capture is owed against the host browser fault.
+        Record: <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s3">§3 landed</a>
+        (commit <code>034dc5d</code>).</p>
+    </section>
 
     <h2 id="s4">§4 — Retire the kanban for what-runs-next</h2>
 
@@ -269,7 +267,23 @@
     the retired component remains. Evidence is a rendered capture plus a source assertion
     that the retired component and its selectors are absent.</p>
 
-    <h2 id="s5">§5 — See a new plan without reloading the site</h2>
+    <section id="s5" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+        <h2>§5 — See a new plan without reloading the site</h2></header>
+      <p class="landed-summary">Exposed <code>window.revalidateProjectState</code> as the one
+        assembly used for both initial load and on-demand refresh, so no second path can
+        drift from the first; the Refresh control awaits it and bumps the inventory revision
+        instead of calling <code>window.location.reload()</code>. Gate <strong>passed 3/3</strong>
+        browser-free: two successive discovery reads publish inventories of 1 then 2 plans. No
+        polling added, so designed steady-state cost is <strong>0</strong> added requests.
+        Rendered document-identity and navigation-entry proof owed against the host browser
+        fault. Record:
+        <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s5">§5 landed</a>
+        (commit <code>85d10ce</code>).</p>
+    </section>
+
+    <details class="section-landed-detail">
+      <summary>Original §5 framing, retained</summary>
 
     <p>A new plan currently appears only after a full page reload, and the reason is
     explicit in the source rather than emergent: <code>docs/ui/shell.jsx:217</code> wires the
@@ -290,7 +304,29 @@
     rather than observed; and the added steady-state request cost is stated as a measured
     figure rather than assumed negligible.</p>
 
-    <h2 id="s6">§6 — Stop charging ten seconds for a reload</h2>
+    </details>
+
+    <section id="s6" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-01</span>
+        <h2>§6 — Stop charging ten seconds for a reload</h2></header>
+      <p class="landed-summary">The served and static shells now carry <strong>0</strong>
+        remote origins (was 3), <strong>0</strong> <code>text/babel</code> scripts (was 10)
+        and <strong>0</strong> bytes transformed in-browser (was 242,601), with React served
+        locally as production builds and JSX compiled server-side and cached — so an edited
+        component is still visible on reload with no build command, honouring the locked
+        constraint. Gate <strong>passed 9/9</strong> browser-free: IIFE boundary on all 11
+        artifacts, 10 modules concatenating with zero duplicate top-level declarations, 39
+        window exports preserved. Two defects caught without a browser: a lexical collision
+        that would have stopped the SPA rendering, and a served 500 from a bare
+        <code>node</code> the service unit's PATH excludes. <strong>Locally served bytes rose
+        454,221 → 632,984</strong> as React stopped coming from a CDN, so end-to-end reload
+        time is unmeasured and §5's seam is now the larger remedy. Record:
+        <a href="/reckon/evidence/archive/sprint-horizon-surface-landed#s6">§6 landed</a>
+        (commits <code>f9080fd</code>, <code>7642080</code>).</p>
+    </section>
+
+    <details class="section-landed-detail">
+      <summary>Original §6 framing, retained</summary>
 
     <p>This section owns the client-side half of the reload cost measured in §0, which no
     other plan covers. <code>surface-latency-and-legibility</code> §2 owns the cold-scan
@@ -326,6 +362,8 @@
     reported before and after against the same project on the same host; and editing a
     component followed by a reload still shows the change with no build command run. The
     last clause is the one that keeps the fix from costing more than it saves.</p>
+
+    </details>
 
     <h2 id="s7">§7 — What this plan deliberately does not touch</h2>
 
@@ -500,6 +538,9 @@
 <div class="r-comment" data-section="s3" data-id="c-20260826-scroll-owner-blast-radius" data-who="reckon-ship" data-when="2026-08-26T14:20:00+00:00">
     <div class="r-comment-body"><p><strong>The scroll trap has two halves, and the upper half sits in a file shared by every project.</strong> Measured while scoping this section, so the node inherits the constraint rather than discovering it after a commit.</p><p><code>docs/_shared/foundation.css:69</code> declares <code>html, body { height: 100% }</code>. That is what stops the document itself from growing past the viewport, which is what forces an inner element to be the only scroller — and <code>.r-sprint-surface</code> then takes that job with <code>flex: 1</code> plus <code>overflow: auto</code>, sized by its container rather than by its content. Either half alone is survivable. Together they make content below the available height unreachable rather than merely below the fold.</p><p><strong>Fix it in the application layer, not in <code>foundation.css</code>.</strong> That file is the canonical shared stylesheet <code>reckon-sync</code> copies into every consuming repository, so a height rule changed there silently changes the scroll behaviour of every plan page in every project — a fleet-wide change made while fixing one screen, and one whose regressions would surface in other people's repositories. The scroll owner should be declared in <code>docs/ui/styles-base.css</code> (which already owns <code>.r-main</code>) or in <code>docs/ui/sprints.css</code>, and <code>foundation.css</code> left alone.</p><p>If the section concludes that the shared file genuinely must change, that is a finding to raise before committing, not a judgement call to make inside the node — the blast radius is other repositories, which is exactly the kind of scope this plan does not hold authority over.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260826T142253087856-n-scroll-owner" data-who="codex-b" data-when="2026-08-26T15:17:32Z">
+    <div class="r-comment-body"><p>Declares one scroll owner: .r-sprint-view .r-reader-with-attachments &gt; .r-body is the sole intentional Sprints vertical scroll selector and .r-sprint-surface now carries 0 overflow:auto declarations. docs/_shared/foundation.css verified byte-identical by sha256, so the shared stylesheet every project inherits is untouched. Gate recorded not-run rather than passed because no clean browser-free log exists: the captured run mixes the two rendered cases, which timed out on the host browser fault, with 3 pre-existing untranspiled-JSX node helper failures that predate this node. Rendered reachability capture at 900x420 remains OWED.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-20260826-ready-set-is-section-granular" data-who="reckon-ship" data-when="2026-08-26T14:25:00+00:00">
     <div class="r-comment-body"><p><strong>The ready set this section renders became finer-grained twenty minutes before the section was scoped, so build against the new shape rather than the one the plan text assumes.</strong> Merged at <code>1790e61</code>: an unresolved staged prerequisite now yields <code>section_readiness</code> carrying <code>ready_sections</code> and <code>blocked_sections</code> <em>while the containing plan stays in <code>ready_now</code></em>. Target-section completion derives from gate verdicts with no new persisted field, and a dependency ref whose anchor does not exist emits <code>missing-dependency-section</code> rather than passing silently.</p><p>Two consequences for this section, and the first inverts a natural assumption. <strong>A plan appearing in <code>ready_now</code> no longer means all of it is runnable</strong> — it can be ready with some sections blocked, so a ready-set view keyed on plan-level readiness alone will offer work that is in fact fenced. Render section granularity where the payload supplies it. And <strong>a graph target now behaves the same way</strong>: section-only edges were being ignored by graph-target readiness and critical-path blocking while those targets stayed in closure membership, which is fixed in the same merge — so a reader of either path sees one consistent answer.</p><p>This does not change the section's own contract. The ready set is still concurrent lanes rather than a sequence, still carries a per-row reason, and still shows no rank column.</p></div>
 </div>
@@ -512,6 +553,9 @@
 <div class="r-comment" data-section="s0" data-id="c-run-r-20260826T141430870697-n-reuse-map" data-who="codex-a" data-when="2026-08-26T14:19:10Z">
     <div class="r-comment-body"><p>Reuse map delivered and audited directly: 6/6 plan sections, 52 candidate verdicts (22 reuse, 19 extend, 11 unfit-with-reason), 3 served endpoint families plus the /_ui asset boundary, and the explicit finding that reckon build copies JSX unchanged rather than precompiling it. Gate recorded not-run because the worker's report-contract validator kept no log path, so no gate evidence exists to attach; the artifact itself demonstrates the done-when and was read in full before promotion. Highest-value finding exceeded the brief: no served roadmap endpoint exposes ready_now, so the ready-lane section cannot be built until a composed read is exposed.</p></div>
 </div>
+<div class="r-comment" data-section="s0" data-id="c-20260901-three-sections-landed" data-who="reckon-ship" data-when="2026-09-01T06:10:00+00:00">
+    <div class="r-comment-body"><p><strong>Three of seven executable sections landed; implementation 0.43.</strong> §6 client load at <code>f9080fd</code> and <code>7642080</code>, gate passed 9/9 browser-free. §5 live refresh at <code>85d10ce</code>, gate passed 3/3. §3 scroll owner at <code>034dc5d</code>, gate <em>not-run</em> because no clean browser-free log exists for it. Full record with every figure: <a href="/reckon/evidence/archive/sprint-horizon-surface-landed">execution evidence</a>.</p><p><strong>A host fault determines how three gate verdicts should be read.</strong> Headless Chrome on this host completes no HTTP or HTTPS navigation at all — <code>file://</code> and <code>data:</code> URLs load in 0.4 s, the DevTools channel works, and <code>curl</code> and a node fetch of the same URL both return 200 in milliseconds, but every http navigation hangs, loopback and external alike, including a 507-byte static file and a plain <code>python -m http.server</code>. Proxy, SELinux, <code>/dev/shm</code>, process limits, background-networking flags, the old headless mode, <code>--no-zygote</code> and an in-process network service are each eliminated with disproving evidence. So no rendered gate in this plan can currently produce evidence, and the lead directed that sections land on browser-free measures with the rendered half recorded as owed rather than stalling.</p><p><strong>Two defects were caught by non-browser checks that a rendered gate would have masked.</strong> The first implementation of §6 compiled each module but left its top-level declarations in one shared lexical scope, so two modules both declared <code>useState</code> and the SPA would not have rendered at all; a syntax check over the concatenated output found it. And after merge the live service returned 500 for every compiled module because the compiler shells out to a bare <code>node</code> while the service unit pins a PATH excluding it — an environment divergence invisible from any worktree.</p><p><strong>The reload attribution in §0 is corrected by measurement.</strong> The in-browser transform costs about 470 ms, not the dominant share the section implied. Transfer is the weight: 888 KB over 25 requests, discovery alone 455 KB and refetched every reload. §6 removed 3 remote origins and about 3.4 MB of CDN traffic but added 179 KB to the locally served path, so §5's revalidation seam is now the larger of the two remedies rather than the smaller.</p></div>
+</div>
 <div class="r-comment" data-section="s1" data-id="c-20260826-strip-carries-events-not-spans" data-who="reckon-ship" data-when="2026-08-26T14:45:00+00:00">
     <div class="r-comment-body"><p><strong>A consumer project confirms the strip must carry events, not sprint spans, and adds a constraint the plan text did not have.</strong> Reported by the nova review session against its own live data.</p><p>Nova's sprint dates are day-granularity and were <em>mostly empty</em> until backfilled by hand yesterday. So a 48-hour strip of sprint spans would be blank for nova, or worse would lie — and <strong>a strip that drops undated sprints would have hidden three of nova's four active lanes.</strong> The plan already declines to draw calendar bars at this zoom, which is the right call for a stronger reason than the one it gives: whole-day dates cannot place a bar inside 48 hours <em>and</em> most sprints do not carry dates at all.</p><p><strong>What exists at hour scale is events.</strong> Completed crew runs and live runs, already named in the plan, plus two the plan missed: <code>plan-modified</code> stamps and docs commits. A strip of timestamped events under a now-line is truthful at this zoom. Sprint bars are the same mistake the section retires, drawn smaller.</p><p>The constraint that follows: <strong>an undated sprint must never be filtered out of any element of this surface.</strong> The strip omits sprint geometry entirely so it cannot drop one, but the table in §2 must not filter or sort rows in a way that hides a sprint with empty <code>starts</code>/<code>ends</code>. Assert it — for nova that is three of four active lanes.</p></div>
 </div>
@@ -523,6 +567,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260826-digest-is-the-revalidation-seam" data-who="reckon-ship" data-when="2026-08-26T14:49:00+00:00">
     <div class="r-comment-body"><p><strong><code>provenance.content_digest</code> is the revalidation seam this section needs, and it is already in the payload.</strong> Raised by the nova review session, and it resolves the tension the section states between “must not become a busy poll” and “must notice a new plan”.</p><p>A digest comparison answers “has anything changed” without shipping or re-rendering the payload, so a cheap periodic check becomes affordable where a full refetch would not be. Paired with the server-side discovery cache measured at twenty milliseconds warm, the steady-state cost is a small conditional request rather than a 699 KB transfer. Nova's discovery payload is 580,703 characters, which is the number that makes the distinction matter: cheap to ship occasionally, expensive to ship on a timer.</p><p>Not a change to the section's contract — the done-when still requires no document navigation and a measured steady-state cost. This names the mechanism that makes the measured cost small, so a worker does not reach for either a busy poll or a change-blind explicit-only refresh.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260826T142302069688-n-live-refresh" data-who="codex-c" data-when="2026-08-26T15:18:00Z">
+    <div class="r-comment-body"><p>Exposes window.revalidateProjectState as the shared initial and on-demand assembly; the existing Refresh control awaits it and bumps the inventory revision instead of navigating. Boundary gate 3/3 proves two successive discovery requests publish inventories of 1 then 2 plans. No polling added, so designed steady-state discovery cost is 0 added requests. Rendered DOM, navigation-entry and measured steady-state figures remain OWED: headless Chrome on this host completes no http navigation.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260826T142313605618-n-client-load" data-who="codex-d" data-when="2026-08-26T15:37:48Z">
+    <div class="r-comment-body"><p>Serves compiled local client assets: 9/9 scope-isolation gate, all 11 compiled artifacts carry an IIFE boundary, all 10 SPA modules concatenate in load order with zero duplicate top-level lexical declarations, 39 window exports preserved. Checked-in, served, synced and static-built shells all assert zero text/babel, standalone-compiler, unpkg and remote-font references. Verified on the live service after merge: 0 remote origins and 0 text/babel where there were 3 and 10, every referenced module returns 200. Ruff delta 0 (35 base, 35 after). Rendered origin count, edit/reload visibility and paired wall clock remain OWED: headless Chrome on this host completes no http navigation.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="sprint-horizon-surface-landed">
+  <meta name="plan-title" content="Sprint Horizon Surface — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the sprint-surface rebuild, including the host fault that made every rendered gate unproducible.">
+  <meta name="plan-evidence-for" content="sprint-horizon-surface">
+  <meta name="plan-verifies" content="sprint-horizon-surface#s3,sprint-horizon-surface#s5,sprint-horizon-surface#s6">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Sprint Horizon Surface — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="overview">Overview</h2>
+
+    <p>Execution record for the sprint-surface rebuild. Three of seven executable
+    sections have landed. The record leads with a host fault rather than with the code,
+    because that fault determined what every section here could and could not prove, and
+    a reader who does not know it will misread three gate verdicts.</p>
+
+    <table>
+      <thead><tr><th>Section</th><th>Gate</th><th>Commit</th><th>Measure</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#s6">§6 client load</a></td><td>passed</td><td><code>f9080fd</code>, <code>7642080</code></td><td>9/9 scope isolation; 0 remote origins, 0 in-browser transforms on the live service</td></tr>
+        <tr><td><a href="#s5">§5 live refresh</a></td><td>passed</td><td><code>85d10ce</code></td><td>3/3 boundary; two discovery reads publish inventories of 1 then 2 plans</td></tr>
+        <tr><td><a href="#s3">§3 scroll owner</a></td><td>not-run</td><td><code>034dc5d</code></td><td>one declared scroll owner; shared stylesheet byte-identical; rendered capture owed</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="host-fault">The host fault that shaped every gate</h2>
+
+    <p><strong>Headless Chrome on this host completes no HTTP or HTTPS navigation.</strong>
+    Established by elimination, and it is the reason three sections carry owed evidence
+    rather than failures:</p>
+
+    <table>
+      <thead><tr><th>Probe</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>about:blank</code>, <code>data:</code> URL</td><td>loads in 0.4 s</td></tr>
+        <tr><td><code>file://</code> a local HTML file</td><td>loads in 0.4 s — navigation and load-event machinery are intact</td></tr>
+        <tr><td>Any <code>http://127.0.0.1:8765/…</code></td><td>hangs; no DOM at 18 s, 25 s, 45 s</td></tr>
+        <tr><td>A 507-byte static SVG from that server</td><td>hangs — so not the SPA and not payload size</td></tr>
+        <tr><td>A plain <code>python -m http.server</code> on another port</td><td>hangs — so not the reckon server</td></tr>
+        <tr><td><code>https://example.com/</code></td><td>hangs — so not loopback either</td></tr>
+        <tr><td>DevTools control channel; <code>node</code> fetch; <code>curl</code></td><td>all succeed, 200 in milliseconds</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Eliminated, each with its disproving evidence:</strong> no proxy is
+    configured (<code>gsettings</code> reports <code>none</code>, no environment variables,
+    and <code>--no-proxy-server</code> changes nothing); SELinux is permissive with no
+    denials; <code>/dev/shm</code> is 1% used of 252 GB; process limits are 3,514 of 50,000;
+    the background-networking, component-update, extension and variations flags change
+    nothing; <code>--headless=old</code>, <code>--no-zygote</code> and an in-process network
+    service all behave identically. Chrome's own verbose log shows the local request
+    <em>issued</em> at 0.2 s and never completing.</p>
+
+    <h2 id="chrome-leak">The leak that preceded it, and its reap</h2>
+
+    <p>Separately and earlier, every browser gate on this host failed for a different and
+    now-fixed reason. <code>fs.inotify.max_user_instances</code> is 128 per user; a browser
+    needs at least one; leaked browsers hold theirs permanently because no parent survives
+    to reap them.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Before</th><th>After reap</th></tr></thead>
+      <tbody>
+        <tr><td>inotify instances held</td><td>128 of 128</td><td>46 of 128</td></tr>
+        <tr><td>Chrome processes</td><td>410</td><td>0</td></tr>
+        <tr><td>pytest processes</td><td>331</td><td>3 (they exited once their browsers died)</td></tr>
+        <tr><td>Stale probe profiles on the runtime filesystem</td><td>1.3 GB</td><td>488 KB</td></tr>
+        <tr><td>New Chrome start</td><td><code>inotify_init: Too many open files</code></td><td>starts; DevTools listens</td></tr>
+      </tbody>
+    </table>
+
+    <p>All 328 reaped processes were 3.9 to 4.6 hours old with none younger than 15 minutes,
+    spawned in one 20-minute window in batches of about ten — one full-suite run leaking
+    every browser it opened. <strong>The reaping defect had already been fixed in code hours
+    before the outage ended</strong>; what kept the wall up was that nothing cleaned up what
+    the pre-fix code had produced.</p>
+
+    <p><strong>One method note worth keeping, because the obvious discriminator is wrong.</strong>
+    Selecting orphans by <code>ppid == 1</code> matches 123 processes, 82 of which carry a
+    real <code>~/.config/google-chrome</code> profile path in their command line and look
+    exactly like an interactive browser. Chrome helper processes are reparented to init and
+    inherit that path, so the rule both over-matches and appears to threaten a user's own
+    session. The safe discriminator is the pytest temp-profile path combined with an age
+    exceeding every probe deadline.</p>
+
+    <h2 id="s6">§6 — Client load</h2>
+
+    <p><strong>Landed <code>f9080fd</code> and <code>7642080</code>; gate passed, 9/9,
+    browser-free.</strong> The served and static shells now carry zero <code>text/babel</code>
+    scripts, zero standalone-compiler URLs, zero <code>unpkg</code> references and zero remote
+    font origins. React and ReactDOM are served locally as production builds; the eleven JSX
+    modules are compiled server-side and cached, so an edited component is still visible on
+    reload with no build command — the constraint the locked
+    <code>no-build-step-constraint</code> decision imposed.</p>
+
+    <p><strong>A real defect was caught statically, not in a browser.</strong> The first
+    implementation compiled each module but left its top-level <code>const</code> declarations
+    intact, and plain <code>&lt;script&gt;</code> loading merges every module into one global
+    lexical scope: <code>Identifier useState has already been declared</code> between two
+    modules, which would have prevented the SPA from rendering at all. A syntax check over the
+    concatenated output found it. The repair wraps each compiled artifact in its own scope; the
+    gate now asserts an IIFE boundary on all 11 artifacts, parses all 10 SPA modules in declared
+    load order with zero duplicate top-level lexical declarations, and confirms 39 window exports
+    survive. That assertion is permanent, not a one-off command.</p>
+
+    <p><strong>An integration defect the worktree could not have shown.</strong> After merge the
+    live service returned HTTP 500 for every compiled module: <code>No such file or
+    directory: 'node'</code>. The compiler shells out to a bare <code>node</code>, and the
+    systemd unit pins a PATH that excludes the directory where node is installed, while a
+    worker's shell has it. Restored by adding that directory to the unit's PATH, after which
+    every referenced asset returns 200. <strong>That restoration is a hand-edit to a generated
+    unit and the next <code>reckon service install</code> will overwrite it</strong>, so the
+    durable fix is a separate node.</p>
+
+    <table>
+      <thead><tr><th>Per page load</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Remote origins</td><td>3 (unpkg, two Google font hosts)</td><td><strong>0</strong></td></tr>
+        <tr><td><code>text/babel</code> scripts</td><td>10</td><td><strong>0</strong></td></tr>
+        <tr><td>In-browser JSX transformed</td><td>242,601 bytes</td><td><strong>0</strong></td></tr>
+        <tr><td>Compiler downloaded</td><td>3,137,752 bytes</td><td><strong>0</strong></td></tr>
+        <tr><td>Assets served locally</td><td>24 requests, 454,221 B</td><td>26 requests, 632,984 B</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Locally served bytes went up, and that is the honest headline.</strong> React and
+    ReactDOM now travel over the same link as everything else instead of arriving from a CDN, so
+    a viewer reaching this server through a forwarded port trades roughly 3.4 MB of internet
+    fetches for 179 KB more tunnelled traffic. That is a clear win on a constrained or offline
+    network and a smaller one otherwise. <strong>The end-to-end reload time this section exists
+    to reduce has not been measured</strong>, because measuring it needs a browser.</p>
+
+    <h3 id="s6-attribution">A corrected attribution</h3>
+
+    <p>The reload cost was first attributed, in this plan and by two sessions independently, to
+    the in-browser transform of roughly 240 KB of JSX. <strong>Measured, that transform costs
+    about 470 ms</strong> including the compiler's own parse and initialisation — not the
+    seconds the framing implied. Server-side timings are equally small: the document is 13 ms
+    and warm discovery is 0.02 s. The CDN is fast from this host as well, fetching the 3.1 MB
+    compiler in 0.17 s with no proxy in the path.</p>
+
+    <p>What remains is transfer: <strong>888 KB across 25 requests</strong> before this change,
+    of which discovery alone is 455 KB and is refetched on every reload. So the client-side
+    framing survived and the named mechanism did not, which moves §5's revalidation seam from a
+    refinement to the larger of the two remedies.</p>
+
+    <h2 id="s5">§5 — Live refresh</h2>
+
+    <p><strong>Landed <code>85d10ce</code>; gate passed, 3/3, browser-free.</strong>
+    <code>window.revalidateProjectState</code> is exposed as the one assembly used for both the
+    initial load and an on-demand refresh, so there is no second code path that could drift from
+    the first. The existing Refresh control awaits it and bumps the inventory revision instead of
+    calling <code>window.location.reload()</code>, which is what previously made a full document
+    navigation the only way to see a new plan.</p>
+
+    <p>The boundary gate proves two successive discovery reads publish inventories of one and
+    then two plans, so a plan created while the page is open becomes visible without navigating.
+    No polling was added, so the designed steady-state cost is zero added requests.</p>
+
+    <p><strong>Owed:</strong> the rendered proof that document identity is unchanged and that
+    zero navigation entries are recorded, and the measured steady-state figure. Both need a
+    browser.</p>
+
+    <h2 id="s3">§3 — Scroll owner</h2>
+
+    <p><strong>Landed <code>034dc5d</code>; gate not-run.</strong>
+    <code>.r-sprint-view .r-reader-with-attachments &gt; .r-body</code> is now the sole
+    intentional vertical scroll selector for the Sprints view, and
+    <code>.r-sprint-surface</code> carries zero <code>overflow: auto</code> declarations — it
+    previously combined that with <code>flex: 1</code>, making the scroll container a flex child
+    sized by its parent rather than its content, so material below the available height was
+    unreachable rather than merely below the fold.</p>
+
+    <p><code>docs/_shared/foundation.css</code> was verified byte-identical by SHA-256. That file
+    is copied into every consuming repository, so a height rule changed there would have altered
+    scrolling on every plan page in every project while fixing one screen.</p>
+
+    <p><strong>Why the gate reads not-run rather than passed.</strong> No clean browser-free log
+    exists for this node. Its captured run mixes the two rendered cases, which met the host fault
+    above, with three pre-existing failures in node-evaluated helper tests that predate this node
+    and are caused by untranspiled JSX. Recording it as passed would have required treating a
+    mixed log as clean evidence. The constrained-viewport reachability capture at 900×420 remains
+    owed.</p>
+
+    <h3 id="s3-preexisting">A pre-existing failure this section surfaced</h3>
+
+    <p>Three tests evaluate helper functions from <code>docs/ui/sprint.jsx</code> by passing the
+    module text to <code>node -e</code>. That worked while the file held only plain JavaScript
+    helpers; it fails now that the same file also contains JSX, because node cannot parse JSX.
+    The failure predates this section and is not caused by it, but it bears directly on the
+    remaining work: the sections that rebuild the horizon strip, the state table and the ready
+    set all modify that file heavily, and they cannot be verified while its helper tests cannot
+    run.</p>
+
+  </main>
+</body>
+</html>

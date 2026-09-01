@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-27T00:46:56",
+  "updated": "2026-09-01T07:49:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -27088,9 +27088,315 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260826T142313605618-n-client-load",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a76",
+        "node": "n-client-load",
+        "node_definition": {
+          "done_when": "A rendered probe records zero request origins outside the local server on both the served page and the static build, no text/babel script or standalone-compiler URL remains in either shell template, paired first-load and reload wall clock is reported before and after for the same project on a quiet host, and editing a component then reloading still shows the change",
+          "estimated_hours": null,
+          "goal": "Serve a page load that fetches no third-party origin and performs no in-browser JSX transformation, keeping an edited component visible on reload with no build command run",
+          "id": "n-client-load",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142313605618-n-client-load/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "open",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/index.html",
+            "reckon/cli.py",
+            "reckon/serve.py",
+            "tests/test_build.py",
+            "tests/test_spa_crew_stylesheet.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "codex-d",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T14:23:23Z",
+        "completed_at": "2026-08-26T15:37:48Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 4465,
+        "stalled": true,
+        "time_budget": "35m",
+        "base_sha": "58c8e390a876e189ac72d0fb7e87c9cdfb778798",
+        "commits": [
+          "f9080fd38ca1d9096e9f5602a5afead10d2417f0",
+          "76420809846115a78035158d9bc48c32fc5550f2"
+        ],
+        "changed_lines": {
+          "added": 559,
+          "removed": 88,
+          "files": 5
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_build.py tests/test_spa_crew_stylesheet.py (browser-free scope-isolation gate)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142313605618-n-client-load/scope-isolation-gate.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142313605618-n-client-load/manifest.md",
+        "scope_changed": false,
+        "session_id": "019ff70f-e564-7391-a681-b1c4d92d8ece",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 16259328,
+            "cached_input_tokens_cumulative": 123669248,
+            "input_tokens": 16739788,
+            "input_tokens_cumulative": 129335563,
+            "output_tokens": 60969,
+            "output_tokens_cumulative": 393783,
+            "reasoning_output_tokens": 21598,
+            "reasoning_output_tokens_cumulative": 118882
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 4,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T142302069688-n-live-refresh",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a75",
+        "node": "n-live-refresh",
+        "node_definition": {
+          "done_when": "A rendered test serves two successive discovery payloads and proves the new plan appears in the DOM with the document identity unchanged, state-loader exposes its assembly as a callable revalidation path pinned by a state-boundary test, and the added steady-state request cost is reported as a measured figure",
+          "estimated_hours": null,
+          "goal": "Make a plan created while the page is open appear without a document navigation",
+          "id": "n-live-refresh",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell.jsx",
+            "docs/ui/state-loader.js",
+            "tests/test_spa_state_boundary.py",
+            "tests/test_spa_rendered_semantics.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T14:23:11Z",
+        "completed_at": "2026-08-26T15:18:00Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 3289,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 3289,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "58c8e390a876e189ac72d0fb7e87c9cdfb778798",
+        "commits": [
+          "85d10ce86e03313e1f0e90ae058cab2f62e7ec53"
+        ],
+        "changed_lines": {
+          "added": 153,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_spa_state_boundary.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/state-boundary.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142302069688-n-live-refresh/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038ea-cf6c-7593-a14e-22bef4824038",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 1509120,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1640948,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 5632,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 993
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260826T142253087856-n-scroll-owner",
+        "plan": "sprint-horizon-surface",
+        "section": "\u00a73",
+        "node": "n-scroll-owner",
+        "node_definition": {
+          "done_when": "A rendered capture at a constrained viewport reaches the last element of both Sprints surfaces, a test asserts exactly one scroll-owning selector for the view, the test that currently requires overflow auto on r-sprint-surface is replaced by that invariant, and docs/_shared/foundation.css is byte-identical",
+          "estimated_hours": null,
+          "goal": "Declare one intentional scroll owner for the Sprints view so its full content is reachable at a viewport height that currently truncates it",
+          "id": "n-scroll-owner",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md",
+          "plan": "sprint-horizon-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/ui/styles-base.css",
+            "docs/ui/sprints.css",
+            "tests/test_spa_sprints_geometry.py",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-b",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-08-26T14:23:00Z",
+        "completed_at": "2026-08-26T15:17:32Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 3272,
+        "stalled": true,
+        "time_budget": "25m",
+        "base_sha": "58c8e390a876e189ac72d0fb7e87c9cdfb778798",
+        "commits": [
+          "034dc5d55141738c3c54f9336af5dbdb6e2342eb"
+        ],
+        "changed_lines": {
+          "added": 131,
+          "removed": 5,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "not-run",
+        "gate_check": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260826T142253087856-n-scroll-owner/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a038e7-fa6e-7333-af51-50f8a42a3220",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 1563904,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1684020,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 5972,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 1427
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 456
+    "_version": 459
   }
 }
