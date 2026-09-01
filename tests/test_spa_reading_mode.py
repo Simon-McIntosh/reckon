@@ -12,7 +12,7 @@ PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 def _function_source(name: str, path: Path | AuthoredSource = SHELL) -> str:
     source = path.read_text()
     start = source.index(f"function {name}(")
-    brace = source.index("{", start)
+    brace = source.index(") {", start) + 2
     depth = 0
     for index in range(brace, len(source)):
         if source[index] == "{":
@@ -143,10 +143,7 @@ def test_palette_projects_typed_results_across_repositories() -> None:
 
 
 def test_focus_mode_reuses_reader_with_provenance_banners() -> None:
-    expression = (
-        "readerProvenanceSignals(FOCUS, { status: 404 }, { status: 503 }, "
-        "{ research: [{ slug: 'study' }], evidence: [] })"
-    )
+    expression = "readerProvenanceSignals(FOCUS, { status: 404 }, { status: 503 })"
     reading = _evaluate(
         ["readerProvenanceSignals"],
         expression.replace("FOCUS", "false"),
@@ -162,12 +159,35 @@ def test_focus_mode_reuses_reader_with_provenance_banners() -> None:
         "focusMode": False,
         "htmlFailure": True,
         "stateFailure": True,
-        "attachments": True,
     }
     assert focused == {**reading, "focusMode": True}
     assert {key: value for key, value in focused.items() if key != "focusMode"} == {
         key: value for key, value in reading.items() if key != "focusMode"
     }
+
+    empty = _evaluate(
+        ["readerAttachmentRows"],
+        "readerAttachmentRows({ research: [], evidence: [] })",
+        PLAN,
+    )
+    populated = _evaluate(
+        ["readerAttachmentRows"],
+        "readerAttachmentRows({ "
+        "research: [{ slug: 'resource-a' }, { slug: 'resource-b' }], "
+        "evidence: [{ slug: 'outcome' }] })",
+        PLAN,
+    )
+    component = _function_source("ReaderAttachmentBars", PLAN)
+    reader = _function_source("Plan", PLAN)
+
+    assert empty == []
+    assert [(label, len(items)) for _, label, items in populated] == [
+        ("Resources", 2),
+        ("Evidence", 1),
+    ]
+    assert component.count("if (rows.length === 0) return null;") == 1
+    assert reader.count("<ReaderAttachmentBars") == 1
+    assert "provenanceSignals.attachments" not in reader
 
 
 def test_escape_path_exits_focus_without_routing_or_clearing_selection() -> None:
