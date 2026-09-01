@@ -25,6 +25,7 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
@@ -88,6 +89,10 @@ _SCRIPT_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _FINDING_CODE_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+_PLAN_STATE_CACHE: dict[
+    Path, tuple[tuple[int, int, int, int, int], dict[str, Any]]
+] = {}
+_PLAN_STATE_CACHE_LOCK = threading.Lock()
 _REVIEW_CATEGORIES = frozenset(
     {
         "sprint",
@@ -1108,11 +1113,42 @@ def _identity_manifest(project: str, legacy: dict[str, Any]) -> dict[str, Any]:
     return {**retained, "project": project, "version": 0}
 
 
-def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any]]:
+def _plan_file_signature(path: Path) -> tuple[int, int, int, int, int]:
+    stat = path.stat()
+    return (
+        stat.st_dev,
+        stat.st_ino,
+        stat.st_size,
+        stat.st_mtime_ns,
+        stat.st_ctime_ns,
+    )
+
+
+def _cached_plan_state(path: Path) -> dict[str, Any]:
     from reckon import _plan_html
+
+    signature = _plan_file_signature(path)
+    with _PLAN_STATE_CACHE_LOCK:
+        cached = _PLAN_STATE_CACHE.get(path)
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+
+    state = _plan_html.read_state(path.read_text(encoding="utf-8", errors="replace"))
+    with _PLAN_STATE_CACHE_LOCK:
+        cached = _PLAN_STATE_CACHE.get(path)
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+        _PLAN_STATE_CACHE[path] = (signature, state)
+    return state
+
+
+def _plan_state_by_slug(
+    docs_dir: Path, project: str, slugs: set[str] | None = None
+) -> dict[str, dict[str, Any]]:
     from reckon.resources import resource_map
 
     result: dict[str, dict[str, Any]] = {}
+    all_plan_paths: set[Path] = set()
     for resource in resource_map(
         docs_dir,
         project,
@@ -1121,9 +1157,21 @@ def _plan_state_by_slug(docs_dir: Path, project: str) -> dict[str, dict[str, Any
     ).values():
         if resource.type != "plan":
             continue
-        result[resource.slug] = _plan_html.read_state(
-            resource.path.read_text(encoding="utf-8", errors="replace")
-        )
+        path = resource.path.resolve()
+        all_plan_paths.add(path)
+        if slugs is not None and resource.slug not in slugs:
+            continue
+        result[resource.slug] = _cached_plan_state(path)
+
+    docs_root = docs_dir.resolve()
+    with _PLAN_STATE_CACHE_LOCK:
+        stale_paths = [
+            path
+            for path in _PLAN_STATE_CACHE
+            if path.is_relative_to(docs_root) and path not in all_plan_paths
+        ]
+        for path in stale_paths:
+            del _PLAN_STATE_CACHE[path]
     return result
 
 
@@ -1165,7 +1213,13 @@ def _derive_blocker_counts(
 def _hydrate_items(
     docs_dir: Path, project: str, sprints: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    plans = _plan_state_by_slug(docs_dir, project)
+    referenced_slugs = {
+        str(item if isinstance(item, str) else item.get("slug", ""))
+        for sprint in sprints
+        for item in sprint.get("items", [])
+        if isinstance(item, (str, dict))
+    }
+    plans = _plan_state_by_slug(docs_dir, project, referenced_slugs)
     hydrated = deepcopy(sprints)
     for sprint in hydrated:
         items: list[Any] = []
