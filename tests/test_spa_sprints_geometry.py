@@ -1,15 +1,79 @@
+import json
 import re
+import subprocess
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 
-from tests import spa_module_eval
-from tests.spa_browser_harness import installed_browser, run_browser_probe
+from tests.spa_browser_harness import BrowserProbeError, ServedSpa, installed_browser
 
 ROOT = Path(__file__).parents[1]
 CSS = (ROOT / "docs/ui/sprints.css").read_text()
 BASE_CSS = (ROOT / "docs/ui/styles-base.css").read_text()
 JSX = (ROOT / "docs/ui/sprint.jsx").read_text()
+
+
+@contextmanager
+def _skip_when_browser_is_unavailable():
+    try:
+        yield
+    except BrowserProbeError as error:
+        pytest.skip(f"browser unavailable ({error.classification}): {error}")
+
+
+def _run_file_document_probe(
+    tmp_path: Path,
+    browser: str,
+    document: str,
+    expression: str,
+    *,
+    viewport: tuple[int, int],
+    ready_expression: str,
+) -> object:
+    page = tmp_path / "rendered-geometry.html"
+    page.write_text(document, encoding="utf-8")
+    context = ServedSpa(browser=browser, url=page.resolve().as_uri(), tmp_path=tmp_path)
+    with _skip_when_browser_is_unavailable():
+        return context.run_probe(
+            expression,
+            viewport=viewport,
+            ready_expression=ready_expression,
+        )
+
+
+def _javascript_function(source: str, name: str) -> str:
+    start = source.index(f"function {name}(")
+    brace = source.index("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start : index + 1]
+    raise AssertionError(f"unterminated JavaScript function: {name}")
+
+
+def _evaluate_sprint_helpers(expression: str, *names: str):
+    constants = "\n".join(
+        line
+        for line in JSX.splitlines()
+        if line.startswith(("const CLOSED_", "const HORIZON_", "const HOUR_MS"))
+    )
+    helpers = "\n".join(_javascript_function(JSX, name) for name in names)
+    result = subprocess.run(
+        [
+            "node",
+            "-e",
+            f"{constants}\n{helpers}\nconsole.log(JSON.stringify({expression}));",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
 
 
 def declarations(selector: str) -> str:
@@ -80,15 +144,12 @@ def test_fixed_horizon_retires_calendar_controls_and_sprint_geometry() -> None:
     assert "r-sprint-mark" not in CSS
     assert (
         "sprint.starts"
-        not in JSX[
-            JSX.index("function horizonStrip") : JSX.index("function openGateCount")
-        ]
+        not in JSX[JSX.index("function horizonStrip") : JSX.index("function Sprint")]
     )
 
 
 def test_horizon_strip_is_local_fixed_and_places_timestamped_events() -> None:
-    result = spa_module_eval.evaluate_jsx_module(
-        ROOT / "docs/ui/sprint.jsx",
+    result = _evaluate_sprint_helpers(
         "(() => {"
         "const now = new Date(2026, 8, 1, 6, 0, 0).getTime();"
         "const completed = [{run_id: 'done', completed_at: new Date(2026, 8, 1, 2, 0, 0).toISOString()}];"
@@ -104,6 +165,8 @@ def test_horizon_strip_is_local_fixed_and_places_timestamped_events() -> None:
         "events: first.events.map(event => ({kind: event.kind, id: event.run.run_id, left: event.left}))"
         "};"
         "})()",
+        "completedRunTime",
+        "horizonStrip",
     )
 
     assert result["startHour"] == 0
@@ -123,12 +186,12 @@ def test_now_line_uses_the_current_instant_and_advances_on_a_timer() -> None:
     )
     assert "setInterval(() => setCurrentInstant(Date.now()), HORIZON_REFRESH_MS)" in JSX
     assert "window.clearInterval(timer)" in JSX
-    assert "horizonStrip(currentInstant, finishedRuns, liveRuns)" in JSX
+    assert "sprintActivityStrip(sprint, currentInstant, finishedRuns, liveRuns)" in JSX
+    activity_projection = _javascript_function(JSX, "sprintActivityStrip")
+    assert "sprintLiveRuns(sprint, liveRuns)" in activity_projection
     assert (
         "M.today"
-        not in JSX[
-            JSX.index("function horizonStrip") : JSX.index("function openGateCount")
-        ]
+        not in JSX[JSX.index("function horizonStrip") : JSX.index("function Sprint")]
     )
 
 
@@ -173,7 +236,7 @@ def test_rendered_horizon_uses_available_width_and_equal_day_halves(
 <div class="r-horizon-track"><i class="r-tomorrow-line" style="left:50%"></i><i class="r-now-line" style="left:25%"></i><a class="r-horizon-event completed" style="left:12.5%"></a></div>
 <footer><span><i class="completed"></i> completed</span></footer></section>
 </section></div></div></div></div></div></div></body></html>"""
-    metrics = run_browser_probe(
+    metrics = _run_file_document_probe(
         tmp_path,
         browser,
         document,
@@ -204,9 +267,9 @@ def test_rendered_horizon_uses_available_width_and_equal_day_halves(
 
 
 def test_undated_sprint_is_never_filtered_from_the_surface() -> None:
-    result = spa_module_eval.evaluate_jsx_module(
-        ROOT / "docs/ui/sprint.jsx",
+    result = _evaluate_sprint_helpers(
         "sprintStateRows([{id: 'undated', status: 'active', starts: '', ends: '', metrics: {}}], '2026-09-01').map(row => row.sprint.id)",
+        "sprintStateRows",
     )
 
     assert result == ["undated"]
@@ -245,7 +308,7 @@ def test_constrained_viewport_reaches_last_element_of_each_sprint_surface(
 <div class="r-page wide r-sprint-surface"><section class="{surface_class}">
 {rows}<div class="capture-last {last_class}">last element</div>
 </section></div></div></div></div></div></div></body></html>"""
-    metrics = run_browser_probe(
+    metrics = _run_file_document_probe(
         tmp_path,
         browser,
         document,
@@ -289,28 +352,29 @@ def test_constrained_viewport_reaches_last_element_of_each_sprint_surface(
     assert "r-body" in metrics["scrollableClass"], metrics
 
 
-def test_board_columns_and_cards_use_canvas_geometry() -> None:
+def test_ready_lane_cards_use_canvas_geometry() -> None:
     assert_declares(
-        ".r-sprint-surface .r-kanban",
-        "grid-template-columns: repeat(3, 1fr)",
-        "gap: 14px",
+        ".r-ready-lane-list",
+        "grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
+        "gap: 10px",
     )
     assert_declares(
-        ".r-sprint-surface .r-col",
+        ".r-ready-lane",
+        "display: grid",
+        "min-width: 0",
+        "overflow-wrap: anywhere",
         "border-radius: 8px",
-        "padding: 11px",
+        "padding: 11px 12px",
     )
     assert_declares(
-        ".r-sprint-surface .r-kcard",
-        "margin-bottom: 8px",
-        "border-radius: 8px",
-        "padding: 10px 11px",
-    )
-    assert_declares(
-        ".r-card-title",
-        "font-size: 13.5px",
+        ".r-ready-lane-title a",
+        "font-size: 13px",
         "font-weight: 600",
-        "line-height: 1.3",
+        "text-decoration: none",
     )
-    assert_declares(".r-card-description", "font-size: 12.5px", "line-height: 1.45")
-    assert_declares(".r-card-progress .bar", "height: 3px", "border-radius: 2px")
+    assert_declares(
+        ".r-ready-lane-description",
+        "overflow: hidden",
+        "text-overflow: ellipsis",
+        "white-space: nowrap",
+    )
