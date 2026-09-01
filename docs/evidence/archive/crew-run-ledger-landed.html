@@ -249,6 +249,54 @@ gate          passed        scope_changed  false        time_budget  20m</pre>
     isolation and failed in the suite. The module now reaches the store through the module object,
     which is why the whole-suite run is the one that counts.</p>
   </section>
+
+  <section id="gate-and-integration">
+    <h2>A passing gate and integrated work are separate claims</h2>
+
+    <p>A ledger row must state two independent truths. The gate verdict says whether the node's
+    evidence supports its declared measure; the commit record says whether the node's repository
+    work was captured for integration. A defensible gate does not imply that the implementation is
+    cited, reachable from the primary branch, or even recoverable after the worktree is removed.</p>
+
+    <table>
+      <thead><tr><th>Measured population</th><th>Records</th><th>What it establishes</th></tr></thead>
+      <tbody>
+        <tr><td>imas-codex crew ledger</td><td>561</td><td>Complete census examined</td></tr>
+        <tr><td><code>gate: passed</code> with no cited commit</td><td>98</td><td>A passing
+        verdict did not establish integration completeness</td></tr>
+        <tr><td>Those rows from write-capable roles</td><td>52</td><td>The missing citation could
+        conceal repository work rather than a deliberate report-only outcome</td></tr>
+        <tr><td>Confirmed stranded implementation</td><td>1</td><td>Run
+        <code>r-20260901T073409043244-n-west-demo-rc2</code> left commit
+        <code>d52bbc56</code> unreachable from the primary branch while its row still reported a
+        successful node; the workspace collector's <code>unintegrated</code> classification retained
+        the recovery signal</td></tr>
+      </tbody>
+    </table>
+
+    <p>Promotion now reads the worker manifest before discarding it and resolves the declared
+    commits against the run's worktree. If the manifest does not provide a usable commit, promotion
+    compares the worktree head with its recorded base and refuses while naming the exact uncited
+    revisions. A truly commitless run must instead supply <code>--no-commit '&lt;reason&gt;'</code>;
+    the reason becomes part of the durable ledger row.</p>
+
+    <ul>
+      <li><code>f3e3fad</code> made commit citation an independent promotion requirement and added
+      the explicit commitless declaration.</li>
+      <li><code>6c8c433</code> made the manifest's <code>commits:</code> field free text with
+      repository resolution, so prose such as <code>none (report-only node; repository worktree
+      remained clean)</code> is evidence rather than a token that a literal matcher rejects.</li>
+      <li><code>b4bd284</code> distinguishes a commit that resolves in another registered repository,
+      names that repository, and gives <code>--repo</code> as the corrective action instead of
+      misreporting a worker scope violation.</li>
+    </ul>
+
+    <p><strong>Negative finding:</strong> inferring commitlessness from a role or sandbox tier is
+    not sound. That policy refused every honest commitless case exercised by 22 existing tests and
+    three legitimate report-only promotions observed in one peer session. The explicit reason is
+    therefore the authority: it preserves honest report-only work without allowing a passing gate
+    to hide an uncited implementation.</p>
+  </section>
 </main>
 </body>
 </html>
