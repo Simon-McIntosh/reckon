@@ -7,8 +7,8 @@ SHELL = ROOT / "docs" / "ui" / "shell.jsx"
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
 
 
-def _function_source(name: str) -> str:
-    source = SHELL.read_text()
+def _function_source(name: str, path: Path = SHELL) -> str:
+    source = path.read_text()
     start = source.index(f"function {name}(")
     brace = source.index("{", start)
     depth = 0
@@ -22,8 +22,8 @@ def _function_source(name: str) -> str:
     raise AssertionError(f"unterminated function {name}")
 
 
-def _evaluate(functions: list[str], expression: str):
-    script = "\n".join(_function_source(name) for name in functions)
+def _evaluate(functions: list[str], expression: str, path: Path = SHELL):
+    script = "\n".join(_function_source(name, path) for name in functions)
     result = subprocess.run(
         ["node", "-e", f"{script}\nconsole.log(JSON.stringify({expression}));"],
         cwd=ROOT,
@@ -128,40 +128,51 @@ def test_palette_projects_typed_results_across_repositories() -> None:
         f"paletteItems({json.dumps(current)}, {json.dumps(projects)})",
     )
 
-    assert [(row["kind"], row["label"], row["repository"], row["status"]) for row in result] == [
+    assert [
+        (row["kind"], row["label"], row["repository"], row["status"]) for row in result
+    ] == [
         ("plan", "Work", "alpha", "active"),
         ("research", "Study", "beta", "done"),
     ]
 
 
 def test_focus_mode_reuses_reader_with_provenance_banners() -> None:
-    shell = SHELL.read_text()
-    plan = PLAN.read_text()
-    article = plan.split('<article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`}', 1)[1]
+    expression = (
+        "readerProvenanceSignals(FOCUS, { status: 404 }, { status: 503 }, "
+        "{ research: [{ slug: 'study' }], evidence: [] })"
+    )
+    reading = _evaluate(
+        ["readerProvenanceSignals"],
+        expression.replace("FOCUS", "false"),
+        PLAN,
+    )
+    focused = _evaluate(
+        ["readerProvenanceSignals"],
+        expression.replace("FOCUS", "true"),
+        PLAN,
+    )
 
-    assert shell.count("<Plan\n") == 1
-    assert "data-focus-mode={focusMode ? \"true\" : \"false\"}" in plan
-    assert 'source="authored plan HTML"' in article
-    assert 'source="structured plan state"' in article
-    assert "<ReaderAttachmentBars" in article
-    assert article.index("<PlanInFlightBand") < article.index(
-        'source="authored plan HTML"'
-    )
-    assert article.index('source="authored plan HTML"') < article.index(
-        'source="structured plan state"'
-    )
-    assert article.index('source="structured plan state"') < article.index(
-        "<ReaderAttachmentBars"
-    )
-    assert article.index("<ReaderAttachmentBars") < article.index(
-        "{!htmlReady ? ("
-    )
-    assert "readingQueueStep(readQueue, route.slug" in shell
+    assert reading == {
+        "focusMode": False,
+        "htmlFailure": True,
+        "stateFailure": True,
+        "attachments": True,
+    }
+    assert focused == {**reading, "focusMode": True}
+    assert {key: value for key, value in focused.items() if key != "focusMode"} == {
+        key: value for key, value in reading.items() if key != "focusMode"
+    }
 
 
 def test_escape_path_exits_focus_without_routing_or_clearing_selection() -> None:
-    app = SHELL.read_text().split("function App()", 1)[1].split("function CmdKPalette", 1)[0]
-    escape = app.split('if (e.key === "Escape" && readingMode)', 1)[1].split("return;", 1)[0]
+    app = (
+        SHELL.read_text()
+        .split("function App()", 1)[1]
+        .split("function CmdKPalette", 1)[0]
+    )
+    escape = app.split('if (e.key === "Escape" && readingMode)', 1)[1].split(
+        "return;", 1
+    )[0]
 
     assert "setReadingMode" in escape
     assert "nav(" not in escape

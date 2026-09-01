@@ -1493,6 +1493,15 @@ function blockersForPlanScope(rows, scope) {
     .map(blocker => ({ ...blocker, project }));
 }
 
+function overviewOptionalSections(state) {
+  const project = state?.projects?.[0]
+    || { project: state?.project || "", milestones: state?.milestones || [] };
+  return {
+    northStars: state?.north_stars || [],
+    milestones: project.milestones || [],
+  };
+}
+
 function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
   const rows = overviewProjectRows(projects, window.STATE, fleetRuns, false);
   const blockerScopes = overviewBlockerScopes(rows);
@@ -1591,9 +1600,7 @@ function OverviewFleet({ projects, fleetRuns, mountedProjectCount }) {
 function CockpitBody({ onNav, projects, fleetRuns, mountedProjectCount }) {
   const M = window.STATE;
   if (!M) return null;
-  const project = M.projects?.[0] || { project: M.project || "", milestones: M.milestones || [] };
-  const milestones = project.milestones || [];
-  const northStars = M.north_stars || [];
+  const { milestones, northStars } = overviewOptionalSections(M);
 
   const decisionPlans = M.inventory
     .filter(i => (i.dec_open || 0) > 0)

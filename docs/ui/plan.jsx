@@ -233,6 +233,15 @@ function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
   );
 }
 
+function readerProvenanceSignals(focusMode, htmlFailure, stateFailure, groups) {
+  return {
+    focusMode: Boolean(focusMode),
+    htmlFailure: Boolean(htmlFailure),
+    stateFailure: Boolean(stateFailure),
+    attachments: Boolean((groups?.research || []).length || (groups?.evidence || []).length),
+  };
+}
+
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
@@ -294,6 +303,12 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
   const [planHtml, setPlanHtml] = useState(null);
   const [htmlReady, setHtmlReady] = useState(false);
   const [htmlFailure, setHtmlFailure] = useState(null);
+  const provenanceSignals = readerProvenanceSignals(
+    focusMode,
+    htmlFailure,
+    stateFailure,
+    attachmentGroups,
+  );
   const [htmlRetry, setHtmlRetry] = useState(0);
   const htmlRef = useRef(null);
 
@@ -532,7 +547,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
 
   return (
     <div className="r-page">
-      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={focusMode ? "true" : "false"}>
+      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={provenanceSignals.focusMode ? "true" : "false"}>
           <nav className="r-reading-controls" aria-label="Reading controls">
             {focusMode ? (
               <>
@@ -563,7 +578,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
             </header>
           )}
           <PlanInFlightBand runs={liveRuns} effortHours={P.effort_hours} />
-          {htmlFailure && (
+          {provenanceSignals.htmlFailure && (
             <ReaderSourceFailure
               source="authored plan HTML"
               status={htmlFailure.status}
@@ -571,7 +586,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
               onRetry={() => setHtmlRetry(value => value + 1)}
             />
           )}
-          {stateFailure && (
+          {provenanceSignals.stateFailure && (
             <ReaderSourceFailure
               source="structured plan state"
               status={stateFailure.status}
@@ -579,11 +594,13 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
               onRetry={() => setStateRetry(value => value + 1)}
             />
           )}
-          <ReaderAttachmentBars
-            groups={attachmentGroups}
-            selectedKey={slug}
-            onNav={onNav}
-          />
+          {provenanceSignals.attachments && (
+            <ReaderAttachmentBars
+              groups={attachmentGroups}
+              selectedKey={slug}
+              onNav={onNav}
+            />
+          )}
           {isResearch && (
             <div className="r-research-banner">
               <span className="r-type-tag research">research</span>
