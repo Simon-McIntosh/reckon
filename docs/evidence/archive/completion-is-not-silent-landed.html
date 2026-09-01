@@ -237,6 +237,45 @@
       files: 57 findings at base, 45 after, and the new test file clean.
     </p>
     <p>
+      <strong>Then made readable, by using it.</strong> Commits <code>6e0cf2c</code>,
+      <code>aabb23f</code> and <code>a2b9bd3</code>, all within the hour, all found on live
+      sessions rather than in tests. The mechanism was right and each of these made a
+      <em>working</em> follower unreadable &mdash; the original failure one layer out.
+    </p>
+    <ul>
+      <li><strong>A filter that matches nothing is an empty pane.</strong> The attach line carried
+        <code>--attention</code>, which drops progress states including in the baseline, so a
+        session with two healthy mid-flight runs read <code>No output available</code> for minutes.
+        The attach line now carries no state filter and the follower reports every transition,
+        starts included; <code>--attention</code> is the opt-in exception.</li>
+      <li><strong>Counts described the batch, not the line.</strong> Stamped once per poll onto
+        every transition in it, so two landings in one cycle both claimed the second one's totals
+        and a promotion reported the fleet it had already left. Recomputed per transition now, in
+        departure&rarr;arrival&rarr;change order, folded through one function the seat's ticker and
+        the durable stream share.</li>
+      <li><strong>An attach announces itself</strong> in the same columns, naming the session, its
+        live runs and their states, the delivery mode and whether this follower holds the
+        registration &mdash; never suppressed by a filter, because being visible when nothing else
+        is is its whole job.</li>
+      <li><strong>One channel.</strong> Status had gone to stderr to stay out of the notification
+        stream; the host prefixes stderr into the same pane, so it was noise, and it split one
+        takeover sequence across two interleaved channels that read as a contradiction while
+        describing something that worked. Lifecycle lines are now ticker lines.</li>
+      <li><strong>The reader's clock.</strong> The pane printed UTC beside a harness stamping local
+        time &mdash; two clocks two hours apart. The record stays UTC; the rendering is local.</li>
+      <li><strong>Two registration traps.</strong> A read-only follower takes the registration over
+        within a poll once its holder goes, so arm-new-then-stop-old self-corrects; and releasing no
+        longer unlinks the file, which used to orphan a second follower holding the same inode.</li>
+    </ul>
+    <p>
+      Gate: <strong>passed</strong>. Browserless suite <strong>2481 passed, 2 skipped</strong>; the
+      two failures and four hanging SPA browser gates remain base-identical at <code>2992ef1</code>.
+      One peer-reported crash in <code>crew follow</code> was this session's own uncommitted tree,
+      which is its own finding: <code>uv run --project ~/Code/reckon</code> resolves the working
+      tree, so a dirty crew edit is an outward-facing change to every orchestrator on the host.
+    </p>
+
+    <p>
       <strong>Residual, and deliberately not changed here.</strong> The unreconciled-run refusal, the
       drain count and the scope-conflict registry stay project-wide, so one session can still be
       refused because a peer left a terminal manifest unpromoted, and a closure fence still counts
