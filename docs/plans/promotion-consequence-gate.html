@@ -23,7 +23,9 @@
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-01">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -238,6 +240,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901T222000-reuse-map" data-who="reckon-ship" data-when="2026-09-01T22:20:00Z">
     <div class="r-comment-body">n-gate-prior-art landed — no commit (read-only investigation); gate passed on its report-contract validator, exit 0, all ten required references present; measure: 58 in-reach candidates, 16 consume, 37 extend, 5 unfit; artifact /home/ITER/mcintos/.config/reckon/crew/reports/promotion-consequence-gate-reuse-map.md. The map fixes the implementation boundary: no existing function computes a suite-failure delta, no flight-config field declares a project suite command, and no promotion waiver takes a reason — those three are the new code. Everything around them is reused: the worker manifest contract and parser (reckon/crew/prompts.py, reports.py) gain typed baseline and after observations each carrying revision, command, exit status, log path or digest, completed flag, failure count and failure ids, with completed=false meaning absence never an empty set; GateConfig in reckon/schema/flight.yaml gains an optional suite command whose absence is the unarmed state, snapshotted onto the run pointer at dispatch; crew complete's fail-closed check-evidence path (f05f85b) widens to require both observations for an armed run, computes after minus baseline failure ids and refuses when non-empty; the waiver follows the dispatch waiver pipeline with the --no-commit reason syntax and lands on the same ledger row; the ledger summary counts clean, refused and waived deltas separately. Executed as three serial nodes over these shared files: arming config plus manifest contract, then delta refusal plus waiver, then the two behavioural regressions and summary counters.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260901T223800-arming-landed" data-who="reckon-ship" data-when="2026-09-01T22:38:00Z">
+    <div class="r-comment-body">n-suite-arming-and-manifest-contract landed — commit 648f287 (merged 49cb5b5); gate passed; measure: tests/test_flight.py tests/test_crew.py tests/test_skill_contracts.py 281 passed / 0 failed at the commit against 274 / 0 at base 95a7fec, +7 regressions, scoped ruff delta 0; both generated schema artifacts byte-identical to the LinkML source. Delivered: optional gates.suite_command in reckon/schema/flight.yaml with no shipped default, project-layer provenance pinned by test; baseline_suite and after_suite as typed manifest observations each carrying revision, command, integer exit_status, log_path or log_digest, completed, failure_count and failure_ids, with tests kept as the human summary; audit_manifest(suite_armed=True) names a missing observation and treats completed=false as absent evidence while an unarmed project keeps its existing contract; worker-protocol.md documents the pair. Recorded scope-changed: docs/_shared/flight.schema.json was granted mid-flight because the schema generator writes it alongside the assigned Python model and the byte-identity test requires both, so this run is excluded from calibration. impl 1/3.</div>
 </div>
 </section>
 </main>
