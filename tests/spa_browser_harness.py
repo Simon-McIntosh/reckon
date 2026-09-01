@@ -13,8 +13,8 @@ import sys
 import tempfile
 import threading
 import time
-from collections.abc import Iterator
-from contextlib import contextmanager, suppress
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import URLError
@@ -23,6 +23,132 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSITION_PROBE = ROOT / "tests" / "spa_render_capture.mjs"
 BROWSER_NAMES = ("google-chrome", "chromium", "chromium-browser")
+_PROBE_STAGE_PREFIX = "[reckon-browser-stage] "
+
+
+class BrowserProbeError(RuntimeError):
+    """A browser gate that could not reach its rendered assertion."""
+
+    def __init__(
+        self,
+        classification: str,
+        *,
+        browser_stderr: str,
+        inotify_count: int,
+        inotify_limit: int,
+        detail: str,
+    ) -> None:
+        self.classification = classification
+        self.browser_stderr = browser_stderr
+        self.inotify_count = inotify_count
+        self.inotify_limit = inotify_limit
+        super().__init__(
+            f"browser probe {classification}: {detail}; "
+            f"inotify instances {inotify_count}/{inotify_limit}; "
+            f"browser stderr: {browser_stderr.strip() or '<empty>'}"
+        )
+
+
+def _inotify_usage(
+    *,
+    proc_root: Path = Path("/proc"),
+    limit_path: Path = Path("/proc/sys/fs/inotify/max_user_instances"),
+    uid: int | None = None,
+) -> tuple[int, int]:
+    """Count this user's live inotify instances against the kernel ceiling."""
+
+    owner = os.getuid() if uid is None else uid
+    try:
+        limit = int(limit_path.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        limit = 0
+    count = 0
+    try:
+        processes = tuple(proc_root.iterdir())
+    except OSError:
+        processes = ()
+    for process in processes:
+        if not process.name.isdigit():
+            continue
+        try:
+            if process.stat().st_uid != owner:
+                continue
+            descriptors = tuple((process / "fd").iterdir())
+        except OSError:
+            continue
+        for descriptor in descriptors:
+            try:
+                if os.readlink(descriptor) == "anon_inode:inotify":
+                    count += 1
+            except OSError:
+                continue
+    return count, limit
+
+
+def _probe_stage(stderr: str) -> str:
+    stages = [
+        line.removeprefix(_PROBE_STAGE_PREFIX).strip()
+        for line in stderr.splitlines()
+        if line.startswith(_PROBE_STAGE_PREFIX)
+    ]
+    return stages[-1] if stages else "browser-not-observed"
+
+
+def _classify_probe_failure(
+    *,
+    stage: str,
+    browser_stderr: str,
+    inotify_count: int,
+    inotify_limit: int,
+) -> BrowserProbeError:
+    """Turn observable launch state into one actionable failure class."""
+
+    if inotify_limit > 0 and inotify_count >= inotify_limit:
+        classification = "ceiling-exhausted"
+        detail = "the per-user inotify ceiling is full; wait for leaked browsers to be reaped"
+    elif stage == "sandbox-preflight-denied":
+        classification = "sandbox-denied"
+        detail = "the worker sandbox denied AF_INET socket creation"
+    else:
+        classification = "navigation-never-completed"
+        detail = (
+            f"the browser reached stage {stage!r} but the page did not become ready"
+        )
+    return BrowserProbeError(
+        classification,
+        browser_stderr=browser_stderr,
+        inotify_count=inotify_count,
+        inotify_limit=inotify_limit,
+        detail=detail,
+    )
+
+
+def _preflight_browser_socket(
+    *,
+    socket_factory: Callable[[int, int], socket.socket] = socket.socket,
+    worker_role: str | None = None,
+    inotify_probe: Callable[[], tuple[int, int]] = _inotify_usage,
+) -> None:
+    """Refuse a browser launch when the current sandbox cannot open AF_INET."""
+
+    role = worker_role or os.environ.get("RECKON_WORKER_ROLE") or "unknown"
+    try:
+        candidate = socket_factory(socket.AF_INET, socket.SOCK_STREAM)
+        candidate.close()
+    except OSError as error:
+        if error.errno not in (errno.EPERM, errno.EACCES):
+            raise
+        count, limit = inotify_probe()
+        raise BrowserProbeError(
+            "sandbox-denied",
+            browser_stderr="browser not started: AF_INET preflight was denied",
+            inotify_count=count,
+            inotify_limit=limit,
+            detail=(
+                f"worker role {role!r} is the likely cause; use an execution-capable "
+                "network-enabled role"
+            ),
+        ) from error
 
 
 _PROBE_DRIVER = r"""
@@ -36,6 +162,7 @@ const height = Number(heightText);
 const expression = process.env.RECKON_BROWSER_EXPRESSION;
 const readyExpression = process.env.RECKON_BROWSER_READY_EXPRESSION;
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const stage = value => console.error(`[reckon-browser-stage] ${value}`);
 
 async function waitForFile(file, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
@@ -104,13 +231,13 @@ const browser = spawn(browserPath, [
   `--user-data-dir=${profile}`,
   `--window-size=${width},${height}`,
   "about:blank",
-], { stdio: ["ignore", "ignore", "pipe"] });
-const browserErrors = [];
-browser.stderr.on("data", chunk => browserErrors.push(chunk));
+], { stdio: ["ignore", "ignore", "inherit"] });
+stage("browser-spawned");
 
 let devtools;
 try {
   const activePort = await waitForFile(path.join(profile, "DevToolsActivePort"), 15000);
+  stage("browser-started");
   const [port] = activePort.trim().split(/\s+/);
   const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   const target = targets.find(candidate => candidate.type === "page");
@@ -127,6 +254,7 @@ try {
     mobile: false,
   });
   await devtools.call("Page.navigate", { url: pageUrl });
+  stage("navigation-started");
 
   const deadline = Date.now() + 45000;
   let ready = false;
@@ -150,14 +278,11 @@ try {
     if (browser.exitCode !== null) resolve();
     else browser.once("exit", resolve);
   });
-  if (browser.exitCode && browser.exitCode !== 0 && browserErrors.length) {
-    console.error(Buffer.concat(browserErrors).toString());
-  }
 }
 """
 
 
-def _terminate_process_group(process: subprocess.Popen[str]) -> None:
+def _terminate_process_group(process: subprocess.Popen[str]) -> tuple[str, str]:
     """Reap a timed-out probe and every process it started.
 
     The group is signalled rather than the leader, because the browser is a
@@ -169,9 +294,10 @@ def _terminate_process_group(process: subprocess.Popen[str]) -> None:
         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
     except (ProcessLookupError, PermissionError):
         process.kill()
-    finally:
-        with suppress(subprocess.TimeoutExpired):
-            process.communicate(timeout=15)
+    try:
+        return process.communicate(timeout=15)
+    except subprocess.TimeoutExpired:
+        return "", ""
 
 
 @contextmanager
@@ -380,6 +506,7 @@ def _evaluate_browser_url(
     viewport: tuple[int, int],
     ready_expression: str,
 ) -> object:
+    _preflight_browser_socket()
     with temporary_browser_profile(tmp_path) as profile:
         environment = dict(os.environ)
         environment["RECKON_BROWSER_EXPRESSION"] = expression
@@ -415,13 +542,25 @@ def _evaluate_browser_url(
         try:
             stdout, stderr = probe.communicate(timeout=75)
         except subprocess.TimeoutExpired:
-            _terminate_process_group(probe)
-            raise
+            stdout, stderr = _terminate_process_group(probe)
+            count, limit = _inotify_usage()
+            raise _classify_probe_failure(
+                stage=_probe_stage(stderr),
+                browser_stderr=stderr,
+                inotify_count=count,
+                inotify_limit=limit,
+            ) from None
         result = subprocess.CompletedProcess(
             probe.args, probe.returncode, stdout=stdout, stderr=stderr
         )
     if result.returncode != 0:
-        raise AssertionError(result.stderr or result.stdout)
+        count, limit = _inotify_usage()
+        raise _classify_probe_failure(
+            stage=_probe_stage(result.stderr),
+            browser_stderr=result.stderr or result.stdout,
+            inotify_count=count,
+            inotify_limit=limit,
+        )
     return json.loads(result.stdout)
 
 
