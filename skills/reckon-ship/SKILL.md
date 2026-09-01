@@ -426,10 +426,10 @@ reckon crew dispatch --project P --plan L --section §N --role implement \
   --write-path <path> --session <session> --dry-run
 ```
 
-The repository must contain
-`skills/reckon-ship/scripts/worktree_fleet.py` before dispatch can create an
-isolated worktree. If it is absent, run `reckon sync docs/` from the repository
-root and retry; the command refuses before creating a run.
+Worktree creation needs nothing installed in the dispatched repository: the
+fleet script is resolved from the running reckon. This matters most when the
+write repository is named separately from the plan's with `--repo`, which is
+otherwise the first place a per-repository prerequisite would bite.
 
 Dispatch uses these process exit codes. Treat a refusal as an instruction to
 repair the request, not as a worker failure:
@@ -445,6 +445,13 @@ repair the request, not as a worker failure:
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
 | `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
 | `watcher-required` | 8 | Automatic producer arming could not acquire a valid watcher seat; inspect the reported watcher state, or use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |
+| `member-in-flight` | 9 | Wait for the named run to reach a terminal phase, or dispatch to a different roster member. |
+
+Every refusal answers with a JSON document on stdout carrying `error` and
+`detail`, including the ones with no code of their own, which exit 1 as
+`dispatch-refused`. Read that document rather than inferring a refusal from an
+empty stream — several dispatches chained in one shell command leave only the
+last exit status behind.
 
 Three node-contract refusals are easy to mistake for infrastructure failures:
 

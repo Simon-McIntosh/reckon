@@ -723,7 +723,17 @@ def crew_dispatch(
             )
             raise click.exceptions.Exit(5) from exc
         except crew_module.CrewError as exc:
-            raise click.ClickException(str(exc)) from exc
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "dispatch-refused",
+                    "detail": str(exc),
+                },
+                pretty,
+            )
+            click.echo(f"Error: {exc}", err=True)
+            raise click.exceptions.Exit(1) from exc
         if resolution.competence and not resolution.competence["allowed"]:
             _emit(
                 {
@@ -819,13 +829,32 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(8) from exc
+    except crew_module.MemberInFlight as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "member-in-flight",
+                "detail": str(exc),
+                "member": exc.member,
+                "run_id": exc.run_id,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(9) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(
                 {"ok": False, "error": "not-dispatchable", "detail": str(exc)}, pretty
             )
             raise click.exceptions.Exit(2) from exc
-        raise click.ClickException(str(exc)) from exc
+        # The caller reads stdout, so a refusal that writes only to stderr is
+        # indistinguishable from a dispatch that produced nothing — and one
+        # chained behind another in the same shell has the successor's status
+        # to hide behind. Every refusal answers on the documented channel;
+        # stderr keeps the sentence for whoever is reading a terminal.
+        _emit({"ok": False, "error": "dispatch-refused", "detail": str(exc)}, pretty)
+        click.echo(f"Error: {exc}", err=True)
+        raise click.exceptions.Exit(1) from exc
     _emit({"ok": True, **record}, pretty)
 
 

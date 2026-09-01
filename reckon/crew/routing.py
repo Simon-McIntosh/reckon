@@ -419,16 +419,37 @@ def garbage_collect(
     }
 
 
+def fleet_script() -> Path:
+    """Resolve the worktree fleet script from the running reckon installation.
+
+    The script is repository-agnostic: it derives every path it touches from
+    the ``--repo`` it is handed and from reckon's config home, and reads
+    nothing relative to its own location. Requiring a copy inside each
+    dispatched repository therefore bought no isolation and made dispatch
+    depend on a per-repository file that nothing installs — so a repository
+    that had never been hand-provisioned could not be dispatched into at all,
+    which is the whole failure mode for a write repository named separately
+    from the plan's. One resolved copy also keeps the script and the reckon
+    that invokes it at the same version.
+    """
+    package_dir = Path(__file__).resolve().parent.parent
+    candidates = (package_dir.parent / "skills", package_dir / "_skills")
+    for candidate in candidates:
+        script = candidate / "reckon-ship" / "scripts" / "worktree_fleet.py"
+        if script.is_file():
+            return script
+    searched = ", ".join(str(path) for path in candidates)
+    raise CrewError(
+        "the reckon installation is missing its worktree fleet script; "
+        f"searched: {searched}; reinstall reckon"
+    )
+
+
 def _create_worktree(
     repo: Path, session: str, worker: str, base: str
 ) -> dict[str, Any]:
     """Create a detached worktree through the fleet script, or raise."""
-    script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
-    if not script.is_file():
-        raise CrewError(
-            f"worktree fleet script is missing: {script}; run `reckon sync` "
-            "for this repository to install it"
-        )
+    script = fleet_script()
     result = subprocess.run(
         [
             sys.executable,

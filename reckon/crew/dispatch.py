@@ -42,6 +42,7 @@ from reckon.crew.routing import (
     _competence_verdict,
     _create_worktree,
     _register_session_member,
+    fleet_script,
     _remove_worktree,
     _session_member_id,
     _signal_process_group,
@@ -986,6 +987,10 @@ def plan_dispatch(
             f"spec level {node.spec_level!r} is not one of exact, guided, open, "
             "or empty (undeclared)"
         )
+    # Proven here rather than at worktree creation so that a dry run, whose
+    # documented job is to validate the call, cannot report a dispatchable
+    # node that the real dispatch then refuses on a missing precondition.
+    fleet_script()
     backend_name, backend = resolve_role(config, node.role, node.spec_level)
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
@@ -1404,12 +1409,6 @@ def dispatch(
             )
         )
 
-    script = repo_root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
-    if not script.is_file():
-        raise CrewError(
-            f"worktree fleet script is missing: {script}; run `reckon sync` "
-            "for this repository to install it"
-        )
     _workspace_roots(repo_root)
     live_claims = [] if shadow_lineage else _repository_scope_claims()
     if shadow_lineage:

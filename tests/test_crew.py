@@ -2030,13 +2030,42 @@ def test_dispatch_refuses_a_malformed_node_and_creates_nothing(home, repo) -> No
     assert "node-a" not in listed.stdout
 
 
-def test_dispatch_names_sync_when_the_vendored_worktree_script_is_missing(
+def test_dispatch_into_a_repository_carrying_no_vendored_script_succeeds(
     home, repo
 ) -> None:
+    """The fleet script is reckon's, so a target repository need not hold one.
+
+    Nothing installs a per-repository copy, so requiring one meant a write
+    repository named separately from the plan's could never be dispatched
+    into until somebody hand-provisioned it.
+    """
     script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
     script.unlink()
 
-    with pytest.raises(crew.CrewError, match=r"worktree fleet script.*reckon sync"):
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="sess",
+        launcher=lambda *args, **kwargs: 1,
+    )
+
+    assert Path(record["worktree"]).is_dir()
+    assert [pointer["run_id"] for pointer in crew.list_live()] == [record["run_id"]]
+
+
+def test_dispatch_refuses_when_reckon_itself_cannot_supply_the_fleet_script(
+    home, repo, monkeypatch
+) -> None:
+    def missing() -> Path:
+        raise crew.CrewError(
+            "the reckon installation is missing its worktree fleet script"
+        )
+
+    monkeypatch.setattr(crew, "fleet_script", missing)
+
+    with pytest.raises(crew.CrewError, match=r"reckon installation is missing"):
         crew.dispatch(
             node=_node(),
             project="proj",

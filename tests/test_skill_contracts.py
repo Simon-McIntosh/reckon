@@ -668,7 +668,6 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "watch"): {"--project", "--stall-window"},
         ("flight",): {"--project"},
         ("audit-doc",): set(),
-        ("sync",): set(),
     }
     named = {
         tuple(match.split())
@@ -774,6 +773,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
         "unreconciled-runs": 6,
         "scope-conflict": 7,
         "watcher-required": 8,
+        "member-in-flight": 9,
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source
@@ -801,7 +801,16 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     )
 
     assert "worktree_fleet.py" in ship
-    assert "reckon sync docs/" in ship
+    # The prerequisite this used to pin never existed: no command installed a
+    # per-repository copy of the script, so the documented remedy could not
+    # work and the refusal it named was unreachable by any repair. Pin the
+    # arrangement that replaced it instead.
+    assert "needs nothing installed in the dispatched repository" in ship
+    assert "def fleet_script" in crew_source
+    assert "reckon sync" not in ship
+    # A refusal the caller cannot read is indistinguishable from silence.
+    assert "answers with a json document on stdout" in ship
+    assert '"error": "dispatch-refused"' in (ROOT / "reckon" / "cli.py").read_text()
     assert "commit the plan before dispatching" in ship
     assert "before creating a worktree" in ship
     assert "`--no-watch`" in ship
