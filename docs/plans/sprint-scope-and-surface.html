@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-graph-handle" content="sprint-federation">
 <meta name="plan-impl" content="0.85">
 <meta name="plan-commits" content="49e14226da82f269870012129dc718018a15f093,cfe96ab51451c07ff99a036056ac4173f520b00d,39778a0,9e408dbb719cfa0260441b528e440c9f8c7d7371">
@@ -214,6 +214,36 @@
     <p>Until that chain is green the layout migration does not run. The project-state
     migration is already done and is independent — the typed resolver reads flat resources for
     compatibility — so nothing is blocked by waiting.</p>
+
+    <h3 id="s3-partial">The migration is already a third done, and the commit that started it blinded its own check</h3>
+
+    <p>
+      The pre-image's 149 rows are not 149 outstanding moves. At the current base, 115 sources
+      still exist and <strong>34 destinations are already in place</strong>, moved by a
+      canonicalization commit on 2026-08-25 whose message reads: flatten typed research
+      documents into their canonical root, update every legacy reference to a resolvable
+      destination, <em>and add a guard driven by Reckon's authoritative typed-root map</em>.
+    </p>
+    <p>
+      That guard is the layout check whose import breaks collection. <strong>So the same commit
+      performed a third of this migration and added the test that would have verified it, and
+      that test has never run</strong> — <code>reckon</code> is not a declared dependency, the
+      import raises, and the repository's default test command has exited 2 ever since. The
+      canonicalization was left half-finished and its own check was born dead, which is why
+      nobody noticed either. It also explains the shape of the remaining defects better than
+      any other single fact: the 46 already-missing link targets are what a half-applied move
+      looks like when the guard that would have caught the other half never executed.
+    </p>
+    <p>
+      <strong>The acceptance contract is amended accordingly.</strong> Requiring one commit
+      showing 149 moves was authored against a corpus that no longer exists and cannot be
+      satisfied honestly at this revision — a worker could only reach it by moving 34 files
+      backward and forward, which is theatre, or by replaying history, which is worse. The gate
+      is now <strong>115 moves landing in one commit, with the 34 already-at-destination rows
+      accounted for explicitly</strong>, while the grouping census stays at the full 149-row
+      pre-image so no document loses its programme. The measure that decides correctness is
+      unchanged: newly-broken links must be 0.
+    </p>
 
     <h3 id="s3-conditions">Conditions the target repository imposed, established by asking it</h3>
 
