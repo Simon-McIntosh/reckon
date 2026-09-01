@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-01T22:04:23",
+  "updated": "2026-09-01T22:05:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -32429,9 +32429,112 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260901T195645353210-n-dry-run-shows-resolved-routing",
+        "plan": "sprint-scope-and-surface",
+        "section": "\u00a74",
+        "node": "n-dry-run-shows-resolved-routing",
+        "node_definition": {
+          "done_when": "The dry-run payload carries the same resolved agent block a successful dispatch returns \u2014 backend, model, effort, launch and sandbox \u2014 verified by a test comparing the agent block from a dry run against the one from a real dispatch of the same node definition and asserting they are equal field for field; a second test pins the precedence that surprised a caller, asserting that with backends.codex.effort=high supplied via --set and roles.implement.by_spec_level.guided.effort=medium in config the resolved effort is medium, so the behaviour is documented by an assertion rather than by prose that disagrees with it; the dispatch --help text for --set no longer claims it always wins over config layers without qualification, since a level overlay outranks a backend key; and tests covering crew routing report 0 failures held to that absolute",
+          "estimated_hours": null,
+          "goal": "A dry run reports the model and effort the node would actually launch with, so a misrouted override is visible before the work starts rather than after",
+          "id": "n-dry-run-shows-resolved-routing",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T195645353210-n-dry-run-shows-resolved-routing/manifest.md",
+          "plan": "sprint-scope-and-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/routing.py",
+            "tests/test_crew_routing_visibility.py",
+            "reckon/cli.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "surface-linkcheck",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-01T19:56:50Z",
+        "completed_at": "2026-09-01T20:05:37Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 527,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 527,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "6c2e6ea2afe33b22a427eb0bf1bc094b7f20da14",
+        "commits": [
+          "5ee5a2073fe6379a3779025d91df371271e464c1"
+        ],
+        "changed_lines": {
+          "added": 193,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest across 15 crew and flight modules including the new routing-visibility tests",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T195645353210-n-dry-run-shows-resolved-routing/logs/pytest-routing-final.log",
+          "log_digest": null
+        },
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260901T195645353210-n-dry-run-shows-resolved-routing/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a05e53-bc89-7030-a92c-40b22dae1d05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2205952,
+            "cached_input_tokens_cumulative": 5386496,
+            "input_tokens": 2063774,
+            "input_tokens_cumulative": 5433232,
+            "output_tokens": 1136,
+            "output_tokens_cumulative": 12599,
+            "reasoning_output_tokens": 974,
+            "reasoning_output_tokens_cumulative": 3499
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 526
+    "_version": 527
   }
 }
