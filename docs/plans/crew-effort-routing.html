@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="crew-effort-routing">
   <meta name="plan-title" content="Crew Effort Routing">
   <meta name="plan-summary" content="Route each dispatch&#x27;s model and effort from how completely its node is specified, gate a small-model lane, and calibrate the sweet spot from the ledger.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,10 +20,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="55">
-<meta name="plan-impl" content="0.917">
-<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498">
-<meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
+<meta name="plan-version" content="58">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498,8476b70">
+<meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/crew/reports/second-checkpoint-slices.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-sprint" content="S15">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -840,7 +840,21 @@
 
 
 
-    <h2 id="s12">§12 — Second checkpoint: re-read the slices and render every verdict</h2>
+    <section id="s12" class="section-landed">
+    <header><span class="badge badge-shipped">✓ landed 2026-08-25</span>
+    <h2>§12 — Second checkpoint: re-read the slices and render every verdict</h2></header>
+    <p class="landed-summary">Read 438 spec-level implement records across three ledgers
+      (413 usable live, 93.7% passed) into 16 slice rows with shadow lineage labelled and
+      excluded. All four verdicts rendered, three of them negative: medium wins every
+      populated exact and guided size slice (guided/medium 93/101 at 8.7 min against
+      high's 15.0); neither Luna (1 controlled pair) nor Terra (0) graduates; host
+      guided→medium keeps on 127/136 pooled with every project above 80%; the spark pilot
+      stays capped at 9 of 20 audits with headroom unproven. No decision changed. Landed
+      2026-08-25 in run <code>r-20260825T143538008344</code>, figure commit
+      <code>8476b70</code>; recorded here 2026-09-02. Full record:
+      <a href="/reckon/evidence/crew-effort-routing-landed#checkpoint-2">§12 landed</a>.</p>
+    </section>
+    <details class="s12-detail"><summary>Original section text</summary>
     <p>
       <strong>Trigger: met.</strong> The §6 loop re-runs at roughly each 100 further
       varied-configuration runs. The ledgers now hold <strong>433</strong> spec-level-era
@@ -882,6 +896,7 @@
       <code>docs/figures/crew-effort-routing/spec-level-slices.png</code> is updated in
       place from the current data; and every decision the read changes is locked or
       reverted on this plan with its rationale.</p>
+    </details>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -946,10 +961,16 @@
     <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §6</pre>
     <p class="r-fu-outcome">Checkpoint read 2026-08-25 over 317 spec-level-era implement runs (reckon 103, nova 92, imas-codex 122). Verdicts by the §6 rule (cheapest configuration with pass ≥0.8 over ≥10 usable runs, charged for redispatches): guided→sol/medium QUALIFIES (50/58 = 86%, median 5.4 min vs ~13 min at high, ~2.3× cheaper output tokens; all 8 failures were one migration wave whose re-cut nodes passed at the same configuration — specification defects, not effort). open→sol/high KEPT (11/11 pass; no cheaper arm tested). exact: spark pilot 7/8 at 8/20 audits — below the 10-run bar, pilot continues; the sol/medium-exact slice is empty and is populated next via the host-layer prior. Host flight layer gains by_spec_level defaults for every project and spark gains budget_check (§9); shadow measurement lands as §8. O3 derived scoring stays deferred — no declaration-inflation signal. All four open decisions locked. Slices, figure and token economics: /reckon/evidence/crew-effort-routing-landed#checkpoint-1.</p>
     </article>
-<article class="r-fu" data-id="f-cer-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship §6 checkpoint session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cer-003" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship §6 checkpoint session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="2026-09-02T13:21:05+00:00" data-resolved-by="">
     <h4 class="r-fu-title">§6 re-checkpoint: read shadow and widened slices, graduate or close lanes</h4>
     <div class="r-fu-body">Trigger: roughly 100 further varied-configuration runs OR the first 10 usable shadow pairs for any candidate tier (spark beyond exact; gpt-5.6-luna / gpt-5.6-terra if the §9 probe admits them; sol/medium on exact). Re-apply the §6 decision rule per (configuration × level × size bucket) including shadow-labelled slices; graduate qualified tiers to gated pilots; lock or revert the host-layer guided→medium default per its cross-project pass rate; and close the spark pilot audit (20 runs) with a widen/keep/close verdict.</div>
     <pre class="r-fu-prompt">/reckon-ship crew-effort-routing §6</pre>
+    <p class="r-fu-outcome">Resolved by §12, landed 2026-08-25 and recorded 2026-09-02. The re-checkpoint was same-plan work and became a section, which is why this followup should never have carried it. All four components rendered explicit verdicts over 438 records: no candidate tier graduates (Luna one controlled pair, Terra zero), the host guided-to-medium default is kept on 127/136 pooled cross-project evidence, the spark pilot audit stays capped at 9 of 20 with headroom unproven, and medium wins every populated exact and guided size slice. No decision on this plan changed. The standing calibration continues under clive-local-workers §4, which re-read the ledger on 2026-09-02 and locked the routing priors from it.</p>
+    </article>
+<article class="r-fu" data-id="f-cer-004" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The standing calibration read now lives on clive-local-workers §4</h4>
+    <div class="r-fu-body">Pointer, not work. This plan's twelve sections are landed and the §6 loop's next read is owned by clive-local-workers §4, which re-read the ledger on 2026-09-02 over 2,201 promoted sol runs, locked default-effort-by-spec-level from it, and carries the re-measure obligation in its own done-when. Nothing here is executable; it exists so a reader of this closed plan finds the live owner of the loop.</div>
+    <pre class="r-fu-prompt">/reckon-ship clive-local-workers §4</pre>
     </article>
 </section>
 
@@ -1016,6 +1037,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260825T143538008344-second-checkpoint-slice-read" data-who="codex-k" data-when="2026-08-25T14:50:55Z">
     <div class="r-comment-body"><p>Second-checkpoint slice read over 438 records across three ledgers: 16 live slice rows, four explicit verdicts, figure regenerated</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-20260902-s12-recorded" data-who="reckon-ship" data-when="2026-09-02T13:30:00Z">
+    <div class="r-comment-body">§12 landed — run r-20260825T143538008344-second-checkpoint-slice-read, member codex-k at gpt-5.6-sol/medium, 911 worker-seconds, first attempt, gate passed; figure commit 8476b70. Measure: 438 spec-level implement records across three ledgers (reckon 165, imas-codex 151, nova 122), 436 live and 2 shadow, live usable 413 at 93.7% passed, sliced into 16 configuration x level x size rows with shadow lineage excluded from every live figure. Four verdicts, three negative: medium wins every populated exact and guided size slice (guided/medium 93/101 at 8.7 min median against high 15.0; exact/medium 11/11 at 11.0 against 15.1); neither gpt-5.6-luna (one controlled pair) nor gpt-5.6-terra (zero) graduates against the ten-pair floor; the host guided-to-medium default keeps on 127/136 pooled with reckon 98/106, imas-codex 13/14 and nova 16/16 each above 80%; the spark pilot stays capped at 9 of 20 audits, 8/9 passed, headroom unknown so weekly capacity unproven. No decision on this plan changed, which satisfies the done-when's final clause by locking nothing. Artifacts: ~/.config/reckon/crew/reports/second-checkpoint-slices.md (13,045 bytes with ledger digests and embedded generator) and docs/figures/crew-effort-routing/spec-level-slices.png (2000x1479, 413 usable live observations). Recorded 2026-09-02, eight days after the gate passed: the read was durable the whole time but the landing beat that writes the plan was skipped, so roadmap reported the section pending. impl 12 of 12. Evidence: /reckon/evidence/crew-effort-routing-landed#checkpoint-2</div>
 </div>
 </section>
 </main>

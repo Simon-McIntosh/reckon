@@ -736,6 +736,97 @@
       estimated tokens after; skill-contract tests 38/38; full suite 1961
       passed.</p>
 
+    <h2 id="checkpoint-2">§12 / §6 checkpoint 2 — the read, and the delay in recording it</h2>
+    <p>
+      Run <code>r-20260825T143538008344-second-checkpoint-slice-read</code>
+      (member <code>codex-k</code>, <code>gpt-5.6-sol/medium</code>, 911 worker-seconds,
+      first attempt, gate <strong>passed</strong>, figure commit <code>8476b70</code>).
+      The read itself completed on 2026-08-25; <strong>this anchor was written on
+      2026-09-02</strong>. The gap is the finding worth keeping: a node whose gate passed
+      and whose artifacts were durable sat for eight days looking like open work, because
+      the landing beat that writes the plan was skipped. Nothing was lost — the report,
+      the figure and the ledger record were all on disk — but <code>roadmap</code>
+      reported the section as pending the whole time.
+    </p>
+    <p>
+      Population: every committed record whose role is <code>implement</code> and whose
+      declared spec level is <code>exact</code>, <code>guided</code> or <code>open</code>
+      across the three mounted ledgers — <strong>438 records</strong> (reckon 165,
+      imas-codex 151, nova 122), snapshot digests recorded in the report. 436 live and
+      2 shadow-lineage; the live usable population is 413 (387 passed, 26 failed, 93.7%),
+      sliced into <strong>16 live rows</strong> by configuration × level × declared size.
+      Shadow rows are labelled and excluded from every live figure, threshold count,
+      pass rate, median and charged total.
+    </p>
+    <table>
+      <thead><tr><th>Component</th><th>Verdict</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1 — re-apply the decision rule per slice</td>
+          <td><strong>Medium wins where the slice is populated</strong></td>
+          <td>exact/medium clears at <code>&gt;0.5–1h</code> (11/13, 84.6%) and
+            <code>&gt;1h</code> (11/11, 100%, median 11.0 min against high's 15.1);
+            guided/medium clears at <code>&gt;0.5–1h</code> (27/27) and <code>&gt;1h</code>
+            (93/101, 92.1%, median 8.7 against 15.0). Exact spark reaches ten usable runs
+            only by pooling two effort × size slices, so no single slice qualifies.
+            Open/high <code>&gt;1h</code> is 12/12 with no populated cheaper arm.</td>
+        </tr>
+        <tr>
+          <td>2 — graduate candidate tiers</td>
+          <td><strong>Negative: neither Luna nor Terra graduates</strong></td>
+          <td>Luna holds one controlled usable pair against a floor of ten; its second row
+            is the confounded 8m-against-40m budget pair, retained as a negative
+            observation and excluded from qualification. Terra has zero committed shadow
+            rows.</td>
+        </tr>
+        <tr>
+          <td>3 — lock or revert the host guided→medium default</td>
+          <td><strong>Keep medium</strong></td>
+          <td>Pooled 127/136 (93.4%) at a 7.8-minute median against high's 142/149 (95.3%)
+            at 13.4. Not carried by one repository: reckon 98/106, imas-codex 13/14, nova
+            16/16, each independently above 80%. High buys 1.9 points for 72% more median
+            worker time.</td>
+        </tr>
+        <tr>
+          <td>4 — spark pilot audit</td>
+          <td><strong>Keep capped, continue, do not widen</strong></td>
+          <td>9 of 20 audits, 8/9 passed, the one failure isolated rather than consecutive,
+            so the circuit breaker has not tripped. The nine records consumed 43,154,027
+            input and 219,561 output tokens in 33.2 worker minutes. The committed budget
+            signal reports headroom <code>unknown</code>, so the weekly-capacity condition
+            is unproven — a negative capacity finding, not evidence of exhaustion.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>No decision on this plan changed.</strong> All four verdicts either confirm a
+      locked choice or are negative, which is why the §12 done-when's final clause — lock
+      or revert every decision the read changes — is satisfied by locking nothing.
+    </p>
+    <p>
+      <strong>Superseded on one point, seven days later.</strong> Verdict 4 kept the spark
+      lane open under its existing cap. Nothing routed there after 2026-08-25, and on
+      2026-09-02 the lead locked <code>spark-lane → retire-to-defined</code> on
+      <a href="/reckon/plans/clive-local-workers#decisions">clive-local-workers</a>: the
+      live exact overlay is removed from the reckon project layer, the backend stays
+      defined, and the lane earns routing back through the same ladder as any candidate —
+      ten usable shadow pairs, a gated pilot, then a slice-lock. That decision is
+      <em>later evidence on the same question</em>, not a dissent from this one: this
+      checkpoint measured a lane that was still being used, and the newer read measured
+      one that had gone idle.
+    </p>
+    <p>
+      Artifacts: <code>~/.config/reckon/crew/reports/second-checkpoint-slices.md</code>
+      (13,045 bytes, ledger digests, embedded one-shot generator) and
+      <code>docs/figures/crew-effort-routing/spec-level-slices.png</code>
+      (2000 × 1479, 413 usable live observations on a log worker-minute scale, eight
+      untimed records shown on their own rail rather than dropped). The figure is
+      regenerated <em>in place</em> at every checkpoint, so it always renders the most
+      recent read — including where it is embedded above under
+      <a href="#checkpoint-1">checkpoint 1</a>, whose table is the older 317-run
+      population.
+    </p>
+
   </main>
 </body>
 </html>
