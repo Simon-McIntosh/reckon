@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="49">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.73">
+<meta name="plan-impl" content="0.69">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc">
 </head>
 <body>
@@ -250,8 +250,20 @@
         <tr><td>Stray write refused</td><td>A synthetic worker that edits the main checkout is refused at promotion naming the path, and its pointer stays recoverable; a worker that stays inside its worktree and scope promotes unchanged. Asserted by test.</td></tr>
         <tr><td>Peers protected</td><td>A write into a concurrent worker's worktree is refused the same way. Asserted by test.</td></tr>
         <tr><td>Requalified</td><td>Six controlled shadow pairs on implementation nodes with the check active, then the implement role opened to the local backend through the &#167;3 flag, recorded with the first twenty runs audited.</td></tr>
+        <tr><td>The refusal has an override</td><td>A boundary refusal can be waived explicitly, the way <code>--allow-unreconciled-runs</code> and <code>--waive-suite-delta</code> already are, recording the waived paths and the stated reason on the promoted record. Asserted by test: a refused promotion succeeds under the flag and its ledger row carries what was waived and why.</td></tr>
       </tbody>
     </table>
+    <p><strong>Why this row exists, added after the section first shipped.</strong> The check
+    was wrong for an hour and blocked six runs across three sessions, and what turned a wrong
+    verdict into a hard stop was that it had no override at all. Every other refusal in this
+    surface carries one, because the author of a guard cannot enumerate the situations a
+    guard will meet: <code>--allow-unreconciled-runs</code> and
+    <code>--waive-suite-delta</code> exist for exactly that reason. A guard with no waiver
+    asserts that its author foresaw everything, and this one demonstrated within the hour
+    that it had not. The waiver is not a way around the boundary &mdash; it is the difference
+    between a bad verdict costing a stated reason on a ledger row and costing the fleet its
+    ability to promote. Raised independently by session <code>reckon-2c</code> from the far
+    side of the same incident, having taken the analogous waiver to get past it.</p>
     </details>
 
     <h2 id="s7">&#167;7 &mdash; Strengthen the harness around local workers, so the model comparison is a model comparison</h2>
@@ -435,6 +447,9 @@
 <div class="r-comment" data-section="s7" data-id="c-20260902-shadow-effort-detail" data-who="reckon-ship" data-when="2026-09-02T18:10:00Z">
     <div class="r-comment-body">§7's sixth item landed — run r-20260902T162038518034, member local-alias at gpt-5.6-sol/medium, first attempt, no scope change; commit 8b80bdc merged, 139 insertions across exactly the two authorised paths, 4 tests added. Gate by delta, which is the only honest reading here: baseline and after both carry the same three tests/test_crew_ticker_layout.py failures from a peer's in-flight work, pass count moved 2,704 to 2,708 — exactly the four added tests — so added failures are 0. An absolute green would have been unobtainable and claiming one would have been false. Both accepted override spellings are now honoured and the invalid nested one stays schema-refused; the worker chose to honour rather than refuse the direct-role spelling because the CLI already normalises it and rejecting it inside dispatch would have needed an out-of-scope change, which is the right call and is recorded rather than silent. Verified on the real committed primary rather than a fixture: the same shadow that resolved effort medium while recording via override with both sides equal now resolves xhigh and records effort primary medium, shadow xhigh, via override; without an override it still resolves medium and records it under inherited, so the single-variable backend-and-model pair is unchanged. This unblocks the qualification programme — a candidate whose whole premise is that it needs a different effort from the incumbent can now be shadowed at one. impl 11 of 15.</div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-silent-blank" data-who="reckon-ship" data-when="2026-09-02T18:22:00Z">
+    <div class="r-comment-body">One pathology under four of this session's §7 findings, named by reckon-2c comparing their plan to this one: the failing component reports success, and the absence surfaces only somewhere downstream that cannot explain it. Their plan exists because a shell rendered an empty document and threw nothing; a denied Write returning into a turn that then completes is the same thing one layer down. The instances: a run ending end_turn with correct work and no manifest, surfacing in recovery as an abandoned row with a lost diff; a denied Write returning cleanly, surfacing as a report path with no file hours later; a shadow lineage recording via override with both sides equal; and a run record naming the effort it was launched with while its session carried another configuration's context. The last two are the dangerous end, because they have no downstream at all — nothing would ever have surfaced the absence and the wrong number would simply have been believed. That is the case for a calibration programme auditing its own instrument and not only its results: every one of these was found by USING the machinery on live work, none by reading it. The counter-pattern is already visible in the same session and is worth stating as the rule — make the failure loud at the layer that knows about it. Recovery's derived manifest, the boundary refusal naming path and owning tree, the orientation check's field-by-field mismatch, the availability probe's offered-lines census, and the capability cache keeping an all-excluded configuration visible with a null horizon are all the same move: the component that can tell says so, instead of letting a silence travel. Recorded in the evidence at #silent-blank.</div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
 </div>
@@ -491,6 +506,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260902-peer-blast-radius" data-who="reckon-ship" data-when="2026-09-02T18:12:00Z">
     <div class="r-comment-body">Fleet-impact measurement for the boundary regression, supplied by session reckon-2c which hit the pre-fix guard from an unrelated session and is a better measure than mine. I counted nine live pointers CARRYING the snapshot, which is exposure; they counted what was actually blocked: six completed-unpromoted runs across three sessions between roughly 17:15 and 18:15 local — four in imas-codex under ship-s10-20260901 with the oldest waiting 55 minutes, one in reckon under this session, and one of their own. Since 5dc92ce the fleet-wide completed-unpromoted count is zero and every one of those drained; their own run promoted clean at ledger v588. Their reproduction is the clearest statement of the defect: promoting a run whose commit was one file, exactly its declared write path, the guard refused citing AGENTS.md, four reckon source files, a plan document and files inside THIS session's worktree — none of which their worker touched. They also name the three independent causes precisely: it compared HEAD so committed branch movement counted, it took the symmetric difference of status entries so a peer committing counted too, and it flagged changed paths without intersecting them against the run's declared scope. The corrected rule addresses all three, and their framing of the third is the one worth keeping — the declared-scope intersection is what makes it a stray-write signal rather than a concurrency detector. Recorded with attribution because a peer measuring the harm your change caused, from outside it, is stronger evidence than the author's own estimate.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260902-waiver-row-added" data-who="reckon-ship" data-when="2026-09-02T18:20:00Z">
+    <div class="r-comment-body">§6 gains a measure it should have shipped with: the boundary refusal needs an explicit override. Raised independently by session reckon-2c from the far side of the incident, having taken the analogous --allow-unreconciled-runs waiver to get past a fence of my making, and they deliberately did not fork it into their own plan because it is a change to crew complete and belongs here. The argument is the incident itself. The check was wrong for an hour and blocked six runs across three sessions, and what converted a wrong verdict into a hard stop was the absence of any override; a revert was attempted and denied by permission policy, so the only route left was a forward fix and the window was however long that took. Every other refusal in this surface carries a waiver for the same reason a guard needs one at all: its author cannot enumerate the situations it will meet, and this one demonstrated within the hour that it had not. A guard with no waiver asserts foresight it does not have. The waiver is not a route around the boundary, it is the difference between a bad verdict costing a stated reason on a ledger row and costing the fleet its ability to promote. Denominator grows to 16 executable nodes, so impl is 11 of 16.</div>
 </div>
 </section>
 </main>
