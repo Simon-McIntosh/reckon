@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="24">
-<meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="27">
+<meta name="plan-impl" content="0.96">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
 <body>
@@ -438,10 +438,11 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
     <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#suite">Evidence</a>
 </div>
-<div class="r-gate" data-id="prose-retirement-op" data-section="s6" data-gated-sections="s7" data-status="open" data-verdict="">
+<div class="r-gate" data-id="prose-retirement-op" data-section="s6" data-gated-sections="s7" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Prose retirement is a state write</h4>
     <p class="r-gate-required-evidence">A real plan document migrates from an authored prose gate table to <code>r-gate</code> elements through <code>edit_plan</code> ops alone, with zero raw-HTML bypasses announced, the retired table absent from the file afterwards and <code>audit-doc</code> reporting no errors.</p>
-    </div>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#prose-retirement">Evidence</a>
+</div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-gate-fence-computed" data-who="reckon-ship" data-when="2026-08-12T17:34:47Z">
@@ -467,6 +468,12 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260902T123246142844-scout-retire-prose-reuse" data-who="ev-migration" data-when="2026-09-02T12:42:38Z">
     <div class="r-comment-body"><p>Reuse map delivered: 8 runtime modules, 8 op verbs, 4 parser layers and 28 tests mapped; the companion must be a ninth state op applied at the _edit_plan transaction layer, because apply_ops is pure and cannot see authored prose</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260902T124517079863-retire-prose-op" data-who="ev-lifecycle" data-when="2026-09-02T13:26:58Z">
+    <div class="r-comment-body"><p>retire_prose lands as a ninth state op at the edit transaction layer; suite 2652 passed 0 failed, 0 lint added</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-retire-prose-op" data-who="reckon-ship" data-when="2026-09-02T13:28:00Z">
+    <div class="r-comment-body">retire-prose-op landed — commit ab29c17, merged as 06b7680; measure retire_prose is a ninth state op applied at the edit transaction layer, so one edit_plan call carrying gate plus retire_prose advances version by exactly 1 and removes the exact authored table, while a 0-match preimage, a 2-match preimage and a preimage overlapping any data-reckon section are each refused as op_error with the file byte-identical, including a preceding uncommitted gate declaration. A retirement-only write advances the version rather than being suppressed by the semantic no-op guard, with every structured-section byte unchanged, and op_vocab now names retire_prose beside the three already-live verbs gate, pass and fail. Suite 2652 passed and 0 failed after the change, 0 new failures against base, 5 tests added, lint 50 findings before and after so 0 added; 290 lines across 5 files in 41 minutes. The 5 non-passes in the archive baseline are hatch-vcs wheel builds failing because git archive carries no .git metadata, not code. Artifacts reckon/_store.py, reckon/_plan_html.py, reckon/mcp.py, tests/test_edit_plan.py, PLAN-FORMAT.md</div>
 </div>
 </section>
 </main>

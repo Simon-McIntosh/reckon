@@ -395,6 +395,50 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     status stays <code>active</code> and no status was written anywhere.</p>
   </section>
 
+  <section id="prose-retirement">
+    <h2>Retiring superseded prose is a state write — 2026-09-02</h2>
+
+    <p>Commit <code>ab29c17</code>, merged as <code>06b7680</code>. Every migration recorded above
+    went through raw HTML inside a worktree because declaring a gate appends and nothing removed the
+    authored table it replaced. <code>retire_prose</code> closes that hole as a ninth state op,
+    applied at the edit transaction layer rather than inside the op dispatch — the reconnaissance
+    that preceded the work established why the latter is impossible: that layer sees a parsed state
+    dict, and authored prose is deliberately absent from it.</p>
+
+    <table>
+      <thead><tr><th>Property asserted</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>One call carrying <code>gate</code> plus <code>retire_prose</code></td>
+        <td>version advances by exactly 1, and the exact authored table is gone</td></tr>
+        <tr><td>Preimage matching 0 times, and matching 2 times</td>
+        <td>both refused as <code>op_error</code>, file byte-identical — including a gate
+        declaration earlier in the same uncommitted batch</td></tr>
+        <tr><td>Preimage overlapping any <code>section[data-reckon]</code></td>
+        <td>refused, file byte-identical: the op removes authored prose, never structured state</td></tr>
+        <tr><td>Retirement-only edit against the semantic no-op guard</td>
+        <td>advances the version rather than being suppressed, every structured-section byte
+        unchanged</td></tr>
+        <tr><td><code>op_vocab</code> discoverability</td>
+        <td>names <code>retire_prose</code> and the three already-live verbs
+        <code>gate</code>, <code>pass</code> and <code>fail</code>, which it had omitted</td></tr>
+      </tbody>
+    </table>
+
+    <p>Suite 2652 passed and 0 failed after the change, adding 0 failures against base, with 5 tests
+    added and lint steady at 50 findings either side. 290 lines across 5 files in 41 minutes of
+    worker time. The 5 non-passes in the archive baseline are hatch-vcs wheel builds failing because
+    <code>git archive</code> carries no <code>.git</code> metadata — an artefact of how the baseline
+    was taken, not a code failure.</p>
+
+    <p><strong>The gap has a second face this session found and did not close.</strong> The gate
+    vocabulary still only appends and records verdicts: nothing amends a declared gate's measure or
+    required evidence, and <code>set</code> refuses
+    <code>gates.&lt;id&gt;.required_evidence</code> outright. That is why the two gate restatements
+    recorded above went through raw HTML, and why <code>sweep-complete</code> still carries figures
+    measured on 2026-08-12 that have since moved. A gate that cannot be re-measured decays the way
+    persisted <code>blocked</code> did, which is the defect class this plan exists to remove.</p>
+  </section>
+
   <section id="open">
     <h2>What is still open</h2>
 

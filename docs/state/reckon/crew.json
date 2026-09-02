@@ -1,9 +1,18 @@
 {
-  "updated": "2026-09-02T14:58:37",
+  "updated": "2026-09-02T15:27:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
     "members": [
+      {
+        "id": "boundary-check",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
       {
         "id": "claude-a",
         "harness": "claude",
@@ -343,6 +352,33 @@
         "created": "2026-09-01"
       },
       {
+        "id": "harness-classify",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
+        "id": "harness-manifest",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
+        "id": "harness-orient",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
         "id": "impl-liverace",
         "harness": "codex",
         "role": "implement",
@@ -352,6 +388,35 @@
           "gpt-5.6-sol": "01a03ee1-bd62-79e2-899e-88e2f135d502"
         },
         "created": "2026-08-26"
+      },
+      {
+        "id": "local-alias",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
+        "id": "local-scout",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06244-52f7-7290-a188-8f356fff7a85",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a06244-52f7-7290-a188-8f356fff7a85"
+        },
+        "created": "2026-09-02"
+      },
+      {
+        "id": "routing-priors",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
       },
       {
         "id": "sandbox-fix",
@@ -34114,9 +34179,211 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T124517079863-retire-prose-op",
+        "plan": "derived-gate-state",
+        "section": "\u00a76",
+        "node": "retire-prose-op",
+        "node_definition": {
+          "done_when": "One edit_plan call declaring a gate plus retiring an exact authored preimage bumps plan-version by exactly 1, and new tests in tests/test_edit_plan.py prove all of: a 0-match preimage refused with no write, a 2-match preimage refused with no write, a preimage overlapping any section[data-reckon] refused, structured state byte-identical across a retirement, a retirement-only edit surviving the semantic no-op guard rather than being suppressed, and read_plan with_schema op_vocab naming the new verb plus the 3 live verbs gate, pass and fail. Report the full-suite pass and fail counts at the worktree base revision and after the change, and add 0 new failures",
+          "estimated_hours": null,
+          "goal": "Add the edit_plan state op that retires the authored prose a gates section supersedes, atomically with gate declaration",
+          "id": "retire-prose-op",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T124517079863-retire-prose-op/manifest.md",
+          "plan": "derived-gate-state",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "open",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/_store.py",
+            "reckon/mcp.py",
+            "reckon/_plan_html.py",
+            "tests/test_edit_plan.py",
+            "tests/test_mcp_views.py",
+            "PLAN-FORMAT.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "ev-lifecycle",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T12:45:24Z",
+        "completed_at": "2026-09-02T13:26:58Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2494,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2494,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "036bf458c0b7111ee5f775a98cf65060dbb86907",
+        "commits": [
+          "ab29c172bf999bfb725dbe7011b987581d3695a9"
+        ],
+        "changed_lines": {
+          "added": 290,
+          "removed": 22,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T124517079863-retire-prose-op/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T124517079863-retire-prose-op/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06227-1c12-7511-b104-4c54ab702caf",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 19153280,
+            "cached_input_tokens_cumulative": 19153280,
+            "input_tokens": 19373588,
+            "input_tokens_cumulative": 19373588,
+            "output_tokens": 37200,
+            "output_tokens_cumulative": 37200,
+            "reasoning_output_tokens": 17328,
+            "reasoning_output_tokens_cumulative": 17328
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T131713796175-local-lane-reuse-map",
+        "plan": "clive-local-workers",
+        "section": "\u00a71",
+        "node": "local-lane-reuse-map",
+        "node_definition": {
+          "done_when": "The report at the write path covers exactly these eight capability areas: (1) naming one declared backend from a flight-config key and validating it through the layered schema with provenance; (2) plumbing a dispatch CLI flag through to a resolved backend and onto the live pointer and promoted record; (3) capturing a repository tree state at dispatch and comparing a worktree footprint against it at promotion; (4) enumerating the peer worktrees live at a given moment for a repository; (5) deriving a manifest from a finished run's stream plus its worktree diff, and marking a record as not-delivered; (6) classifying a run failure as infrastructure rather than capability, and excluding it from a configuration pass rate; (7) composing the worker prompt and running the first observation of a run; (8) probing backend availability and refusing a dispatch with the capability refusal. For each area the report names the concrete modules, symbols, tests and fixtures already in this repository that solve it in whole or part, each with a one-line fitness verdict of runtime-sufficient, bounded-extension, or absent; a closing table maps each capability area to the reuse candidates a caller would build on; and every symbol the report claims resolves in the tree at the base revision, verified by grep",
+          "estimated_hours": null,
+          "goal": "Produce a capability-shaped reuse map for the machinery the clive-local-workers sections would otherwise rebuild",
+          "id": "local-lane-reuse-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T131713796175-local-lane-reuse-map/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "12m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/local-lane-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "local-scout",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-02T13:17:19Z",
+        "completed_at": "2026-09-02T13:26:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 546,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 546,
+        "stalled": false,
+        "time_budget": "12m",
+        "base_sha": "33a131532e0c0a8d8e1ef1c73741c536ce5d49b6",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "base-revision grep verification of every claimed symbol and test name, plus a structural grep for eight capability sections and eight closing-table rows",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T131713796175-local-lane-reuse-map/logs/reuse-map-gate.txt",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T131713796175-local-lane-reuse-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06244-52f7-7290-a188-8f356fff7a85",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3785472,
+            "cached_input_tokens_cumulative": 3785472,
+            "input_tokens": 3959395,
+            "input_tokens_cumulative": 3959395,
+            "output_tokens": 16324,
+            "output_tokens_cumulative": 16324,
+            "reasoning_output_tokens": 3378,
+            "reasoning_output_tokens_cumulative": 3378
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "read-only investigate node; its deliverable is the reuse map artifact in the durable run reports directory, not a repository change",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 545
+    "_version": 555
   }
 }
