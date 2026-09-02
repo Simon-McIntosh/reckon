@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="32">
-<meta name="plan-impl" content="0.96">
+<meta name="plan-version" content="35">
+<meta name="plan-impl" content="0.98">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
 <body>
@@ -240,88 +240,37 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     forbids the sweep from doing. They are residue to report to their owning project, not work to
     guess at.</p>
 
-    <h2 id="s6">§6 — Migrating an authored table has no op</h2>
+    <section id="s6" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-02</span>
+      <h2>§6 — Migrating an authored table has no op</h2></header>
+      <p class="landed-summary">Built <code>retire_prose</code>, a ninth <code>edit_plan</code>
+      state op applied at the edit transaction layer because the pure op-dispatch layer cannot see
+      authored prose. One call carrying <code>gate</code> plus <code>retire_prose</code> advances
+      the version once and removes the exact table; 0-match, 2-match and structured-region-overlapping
+      preimages are each refused with the file byte-identical, and a retirement-only edit survives
+      the semantic no-op guard. Suite 2652 passed / 0 failed, 0 new against base, 5 tests added.
+      Full record: <a href="/reckon/evidence/derived-gate-state-landed#prose-retirement">prose
+      retirement</a> (commit <code>ab29c17</code>).</p>
+      <p class="landed-summary">Still open, and recorded there: no op amends a gate's
+      <code>measure</code> or <code>required_evidence</code> text, so a gate measured wrong is still
+      correctable only by hand. Re-issuing <code>pass</code> does amend an evidence <em>link</em>,
+      which repaired this plan's own ten dangling ones.</p>
+    </section>
 
-    <p>Both the worker migrating the routing plans and this session's own edit of this document hit
-    the same wall: <code>edit_plan</code> can declare a gate and record its verdict, but nothing
-    removes the prose table those gates replace. Text mode refuses to touch
-    <code>data-reckon</code> regions and the gate ops only append, so the migration step that the
-    plan calls its dogfood is the one step with no sanctioned path — every migration so far has gone
-    through raw HTML editing inside a worktree, announced as a bypass.</p>
-
-    <p>This is the plan's own mechanism, so it belongs here rather than in a followup. The gate ops
-    need a companion that retires the authored prose a gate section supersedes, so migrating a
-    document is a state write like every other.</p>
-
-    <p><strong>The same gap has a second face, found while restating §5's gate.</strong> The gate
-    ops are append-and-verdict only: <code>gate</code> declares one and refuses a duplicate, while
-    <code>pass</code> and <code>fail</code> record a verdict. Re-issuing <code>pass</code> does
-    amend the evidence <em>link</em> of an already-passed gate, which is how this plan's own ten
-    dangling links were repaired — they pointed into
-    <code>evidence/archive/</code> while an active plan's record sits at the live
-    <code>evidence/</code> root. What no op reaches is the gate's <code>measure</code> and its
-    <code>required_evidence</code> text: <code>set</code> refuses
-    <code>gates.&lt;id&gt;.required_evidence</code> as an unsupported path. So a gate whose measure
-    is worded wrong can only be corrected by raw HTML, which is how both earlier restatements on
-    this plan were done. A gate that cannot be re-measured decays exactly the way persisted
-    <code>blocked</code> did, which is the defect class this whole plan exists to remove. Amendment
-    belongs beside retirement: both are representation edits to a gate section that the op
-    vocabulary cannot currently express.</p>
-
-    <h2 id="s7">§7 — The three held plans</h2>
-
-    <p>Three plans of the sprint set still author their gates as prose:
-    <code>effort-calibration</code>, <code>inflight-visibility</code> and
-    <code>north-star-orientation</code>, carrying no <code>r-gate</code> element between them.
-    They were held rather than skipped — concurrent orchestrator sessions were mid-landing on all
-    three, writing followups into the same HTML, and racing them would have conflicted on the
-    system's own state store.</p>
-
-    <p>This section exists because the migration is now gated on a mechanism rather than on a
-    quiet window. Until §6's retirement op can remove the table a gates section supersedes, a
-    migration here can only repeat the announced raw-HTML bypass that §6 was written to end — so
-    the work waits on evidence, not on effort. That is the gate doing its job, and the wave stays
-    shut until the op is demonstrated on a real document.</p>
-
-    <p><strong>Sized on 2026-09-02:</strong> 26 authored rows in total — 10 in
-    <code>effort-calibration</code>, 9 in <code>inflight-visibility</code>, 7 in
-    <code>north-star-orientation</code> — each carrying a measure and its required evidence. All
-    three plans read <code>shipped</code>.</p>
-
-    <p><strong>What verdict a migrated row gets.</strong> Every prior migration set each row to
-    <code>passed</code> against an anchor in the plan's landed-evidence record, and all three of
-    these plans have one — but they do not all sit in the same place, which is worth knowing before
-    looking for them. Evidence for an active plan lives at the live root
-    <code>docs/evidence/</code> and is moved to <code>docs/evidence/archive/</code> once frozen, so
-    <code>inflight-visibility</code> (12 anchors) and <code>north-star-orientation</code> (6) are at
-    the live root while <code>effort-calibration</code> (16) has already been archived. Their served
-    URLs differ accordingly.</p>
-
-    <p>So the rule for this migration is: carry each measure and its required evidence across
-    verbatim, and record <code>passed</code> against the anchor in that plan's own record which
-    actually covers the measure. Where a row's measure has no matching anchor, declare the gate with
-    no verdict and list it — never point a row at an anchor that does not cover it, and never mint
-    one, because a gate that can pass without evidence is not a gate, which is this plan's own
-    premise. Verify each URL resolves rather than assuming the pattern:
-    <code>north-star-orientation</code> is <code>shipped</code> at <code>impl</code> 0.92, so some
-    of its rows may genuinely have no evidence to cite.</p>
-
-    <p><strong>How the op is reachable, which is not obvious.</strong> Reckon's server and every
-    connected <code>reckon mcp</code> stdio process hold the code they started with, so both were
-    running a pre-merge build when <code>retire_prose</code> landed and neither offers the verb.
-    There is no CLI edit command either. Until those are restarted, the op is reached by driving
-    the same engine from a fresh interpreter — <code>reckon._store.apply_ops</code> over the read
-    state, then <code>reckon._store.write_plan</code> — which is the identical code path
-    <code>edit_plan</code> takes, not a way around it. What remains forbidden is editing the HTML
-    as text: the whole point of the op is that a migration is a state write, so a run that
-    hand-edits a table has not migrated anything, it has repeated the bypass.</p>
-
-    <p>Leaving those rows unpassed is safe and is the point.
-    <code>effective_status</code> keeps terminal states terminal, so a
-    <code>shipped</code> plan carrying an unpassed gate stays shipped rather than flipping to
-    blocked; the row simply becomes visible as evidence that was never captured. The migration is
-    a representation change and must not edit any of the three plans' persisted status or
-    implementation fraction.</p>
+    <section id="s7" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-02</span>
+      <h2>§7 — The three held plans</h2></header>
+      <p class="landed-summary">Migrated all 26 authored rows — 10, 9 and 7 across
+      <code>effort-calibration</code>, <code>inflight-visibility</code> and
+      <code>north-star-orientation</code> — through <code>retire_prose</code> state
+      transactions with <strong>0 raw-HTML edits</strong>, the first migration in this plan needing
+      no announced bypass. 23 rows passed against anchors returning HTTP 200; 3 declared with no
+      verdict and their reasons named. 0 rows dropped, 0 prose tables left in the sprint set,
+      <code>audit-doc</code> 0 errors across all ten S7–S9 plans, and every plan keeps its
+      persisted status and implementation fraction. Full record:
+      <a href="/reckon/evidence/derived-gate-state-landed#own-gates-migration">own gates
+      migration</a> (commit <code>1ec433e</code>).</p>
+    </section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -422,10 +371,11 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <p class="r-gate-required-evidence">Gates survive the existing state round-trip invariant with byte-identity of the regenerated reckon-owned section, matching decisions and followups.</p>
     <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#round-trip">Evidence</a>
 </div>
-<div class="r-gate" data-id="wave-fence-honoured" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
+<div class="r-gate" data-id="wave-fence-honoured" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Wave fence honoured</h4>
     <p class="r-gate-required-evidence">A recorded orchestrator transcript showing a wave refused while a gate is closed, and opened once it passes.</p>
-    </div>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#wave-fence">Evidence</a>
+</div>
 <div class="r-gate" data-id="concurrent-sprints-expressible" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Concurrent sprints expressible</h4>
     <p class="r-gate-required-evidence">Two sprints hold incomplete items simultaneously with no error raised, the derived default focus resolves to the earliest of them, and a test proves the derivation cannot go stale because nothing persists it.</p>
@@ -450,10 +400,11 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <h4 class="r-gate-measure">Sweep complete</h4>
     <p class="r-gate-required-evidence">A portfolio re-scan showing zero <code>orphaned-blocked-status</code> findings, zero of the twelve live plans still persisting <code>blocked</code> and zero of the forty-six persisted sprint-item statuses across all mounted projects, and the seventeen error-level wiring findings reduced to a listed residue each carrying a stated reason it was not auto-repairable.</p>
     </div>
-<div class="r-gate" data-id="own-gates-migrated" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
+<div class="r-gate" data-id="own-gates-migrated" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Own gates migrated</h4>
     <p class="r-gate-required-evidence">All eight plans of sprints S7 to S9 carry <code>data-reckon="gates"</code> elements in place of their prose tables and pass <code>reckon audit-doc</code> with no errors.</p>
-    </div>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#own-gates-migration">Evidence</a>
+</div>
 <div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Suite green</h4>
     <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
@@ -495,6 +446,12 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-retire-prose-op" data-who="reckon-ship" data-when="2026-09-02T13:28:00Z">
     <div class="r-comment-body">retire-prose-op landed — commit ab29c17, merged as 06b7680; measure retire_prose is a ninth state op applied at the edit transaction layer, so one edit_plan call carrying gate plus retire_prose advances version by exactly 1 and removes the exact authored table, while a 0-match preimage, a 2-match preimage and a preimage overlapping any data-reckon section are each refused as op_error with the file byte-identical, including a preceding uncommitted gate declaration. A retirement-only write advances the version rather than being suppressed by the semantic no-op guard, with every structured-section byte unchanged, and op_vocab now names retire_prose beside the three already-live verbs gate, pass and fail. Suite 2652 passed and 0 failed after the change, 0 new failures against base, 5 tests added, lint 50 findings before and after so 0 added; 290 lines across 5 files in 41 minutes. The 5 non-passes in the archive baseline are hatch-vcs wheel builds failing because git archive carries no .git metadata, not code. Artifacts reckon/_store.py, reckon/_plan_html.py, reckon/mcp.py, tests/test_edit_plan.py, PLAN-FORMAT.md</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260902T133344845000-migrate-held-plan-gates" data-who="ev-skill" data-when="2026-09-02T13:42:22Z">
+    <div class="r-comment-body"><p>26 of 26 rows migrated through retire_prose state ops with 0 raw-HTML edits; 23 passed against anchors returning HTTP 200, 3 declared without verdict; audit-doc 0 errors; manifest recorded a wrong full commit sha, corrected here</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-migrate-held-plan-gates" data-who="reckon-ship" data-when="2026-09-02T13:44:00Z">
+    <div class="r-comment-body">migrate-held-plan-gates landed — commit 1ec433e, merged as a no-ff merge; gates own-gates-migrated and wave-fence-honoured both passed; measure 26 of 26 authored rows became r-gate elements across the three held plans, 10 plus 9 plus 7, every measure and required-evidence body carried across verbatim with 0 rows dropped and 0 prose gate tables left in the set. 23 rows recorded passed only where the served evidence URL returned HTTP 200 and its fragment existed; 3 declared with no verdict and their reasons named, two needing screenshot figures blocked by the recorded host Chrome navigation fault and one whose record holds focused suites but no full-suite anchor. Migration ran through retire_prose state transactions with checkout_path bound to the worker's worktree, so 0 raw-HTML edits, and all three plans keep their persisted status and impl. audit-doc reports 0 errors across all ten S7-S9 plans. Two corrections belong with this: the gate said eight plans where those sprints now hold ten, and the two carrying no gates never authored a prose table so nothing was dropped, though by the runnability rule they are not dispatchable; and the worker's manifest recorded a full commit sha whose tail was wrong, which the merge caught as bad object. Artifacts docs/plans/effort-calibration.html, docs/plans/inflight-visibility.html, docs/plans/north-star-orientation.html</div>
 </div>
 </section>
 </main>

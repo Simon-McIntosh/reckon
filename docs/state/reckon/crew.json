@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T15:32:08",
+  "updated": "2026-09-02T15:43:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -355,9 +355,11 @@
         "id": "ev-skill",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06253-73fa-7741-989e-746595d0a714",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a06253-73fa-7741-989e-746595d0a714"
+        },
         "created": "2026-09-01"
       },
       {
@@ -34390,9 +34392,112 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T133344845000-migrate-held-plan-gates",
+        "plan": "derived-gate-state",
+        "section": "\u00a77",
+        "node": "migrate-held-plan-gates",
+        "node_definition": {
+          "done_when": "All 26 authored rows become r-gate elements, 10 in effort-calibration, 9 in inflight-visibility and 7 in north-star-orientation, with each measure and required-evidence text carried across verbatim and 0 rows dropped. 0 prose gate tables remain in the 3 files, 0 raw-HTML text edits are used, reckon audit-doc reports 0 errors on all 3, and each plan's plan-status and plan-impl are unchanged. Report how many rows were recorded passed against an anchor that resolves versus declared with no verdict, and list the second group with the reason each has no covering anchor",
+          "estimated_hours": null,
+          "goal": "Migrate the three held plans' authored prose gate tables into gate elements through the state ops",
+          "id": "migrate-held-plan-gates",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133344845000-migrate-held-plan-gates/manifest.md",
+          "plan": "derived-gate-state",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/plans/effort-calibration.html",
+            "docs/plans/inflight-visibility.html",
+            "docs/plans/north-star-orientation.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ev-skill",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T13:33:50Z",
+        "completed_at": "2026-09-02T13:42:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 512,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 512,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "c49b7b40da10c85f09551cd93e6a5e0ff6d5a963",
+        "commits": [
+          "1ec433ea4196e6d223c0a639c4ac379f8fe2afce"
+        ],
+        "changed_lines": {
+          "added": 173,
+          "removed": 159,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc --check-links on the three migrated plans, plus a semantic migration verification against the git HEAD baseline",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133344845000-migrate-held-plan-gates/verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133344845000-migrate-held-plan-gates/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06253-73fa-7741-989e-746595d0a714",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3798272,
+            "cached_input_tokens_cumulative": 3798272,
+            "input_tokens": 3964249,
+            "input_tokens_cumulative": 3964249,
+            "output_tokens": 15696,
+            "output_tokens_cumulative": 15696,
+            "reasoning_output_tokens": 5526,
+            "reasoning_output_tokens_cumulative": 5526
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 556
+    "_version": 558
   }
 }

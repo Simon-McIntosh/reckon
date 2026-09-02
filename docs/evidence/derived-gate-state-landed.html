@@ -439,6 +439,89 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     persisted <code>blocked</code> did, which is the defect class this plan exists to remove.</p>
   </section>
 
+  <section id="own-gates-migration">
+    <h2>The last three prose tables become state — 2026-09-02</h2>
+
+    <p>Commit <code>1ec433e</code>. The three plans held back in the previous session migrated
+    through <code>retire_prose</code> state transactions with <code>checkout_path</code> bound to
+    the worker's own worktree — <strong>zero <code>mode=text</code> calls and zero HTML text
+    edits</strong>, which is the first migration in this record not to need an announced bypass.</p>
+
+    <table>
+      <thead><tr><th>Plan</th><th>Rows</th><th>Passed</th><th>Declared open</th><th>Lifecycle</th></tr></thead>
+      <tbody>
+        <tr><td><code>effort-calibration</code></td><td>10</td><td>10</td><td>0</td>
+        <td><code>shipped</code>, impl 1.0 — unchanged</td></tr>
+        <tr><td><code>inflight-visibility</code></td><td>9</td><td>7</td><td>2</td>
+        <td><code>shipped</code>, impl 1.0 — unchanged</td></tr>
+        <tr><td><code>north-star-orientation</code></td><td>7</td><td>6</td><td>1</td>
+        <td><code>shipped</code>, impl 0.92 — unchanged</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>26</strong></td><td><strong>23</strong></td>
+        <td><strong>3</strong></td><td>0 rows dropped, 0 prose tables left</td></tr>
+      </tbody>
+    </table>
+
+    <p>Every measure and required-evidence body was carried across verbatim, and a verdict was
+    recorded only where the served evidence URL returned HTTP 200 <em>and</em> its fragment existed.
+    The three rows left open name their reason rather than being quietly passed: two require
+    screenshot figures that could not be produced because of the recorded host Chrome navigation
+    fault, and <code>inflight-visibility</code>'s suite-green row has focused suites in its record
+    but no anchor covering the full-suite count its measure demands. That is the intended behaviour
+    — a gate that can pass without evidence is not a gate.</p>
+
+    <p><strong>The gate's own count was wrong, and the migration is still complete.</strong>
+    <code>own-gates-migrated</code> says "all eight plans of sprints S7 to S9". Those sprints now
+    hold <strong>ten</strong> plans; the figure was measured when there were eight and is one more
+    instance of the frozen-count decay recorded above. Eight plans carry gate elements and
+    <strong>zero prose gate tables remain anywhere in the set</strong>; the two without gates —
+    <code>promotion-consequence-gate</code> and <code>self-hosted-worker-backends</code> — never
+    authored a prose table, so nothing was dropped. All ten pass <code>audit-doc</code> with 0
+    errors. A side effect worth naming: by this plan's own <code>runnability-derived</code> rule a
+    plan is dispatchable only if it declares at least one gate, so those two are not.</p>
+
+    <p>One verification note. The worker's manifest recorded a full commit sha whose first seven
+    characters were right and whose remainder was not, so the merge failed with
+    <code>bad object</code> until the real sha was read from the worktree. Auditing the commit
+    rather than trusting the manifest is what caught it.</p>
+  </section>
+
+  <section id="wave-fence">
+    <h2>A gate closed a wave, and passing it opened the wave — 2026-09-02</h2>
+
+    <p>The previous session left this gate open deliberately, noting that the two waves which did
+    not open then were held by a dispatch gap and by concurrency, and that neither is a gate. This
+    is the transcript of a refusal that was caused by evidence not yet existing.</p>
+
+    <table>
+      <thead><tr><th>Time</th><th>Event</th><th>Where it is recorded</th></tr></thead>
+      <tbody>
+        <tr><td>14:35</td><td><code>prose-retirement-op</code> declared, status open,
+        <code>gated_sections</code> naming the migration section</td>
+        <td>commit <code>c865c30</code></td></tr>
+        <tr><td>14:35–15:29</td><td>54 minutes closed. Two nodes dispatched in that window, both
+        against the section describing the missing op; <strong>zero against the gated
+        section</strong></td><td>ledger runs <code>scout-retire-prose-reuse</code> and
+        <code>retire-prose-op</code>, both §6</td></tr>
+        <tr><td>15:29</td><td>Gate passed once the op's acceptance evidence existed</td>
+        <td>commit <code>e7982c2</code>, plan version 27</td></tr>
+        <tr><td>15:31</td><td>The 26-row migration wave dispatched</td>
+        <td>ledger run <code>migrate-held-plan-gates</code>, §7</td></tr>
+      </tbody>
+    </table>
+
+    <p>The refusal was orchestrator-side, which is where <code>gates.enforce</code> puts it: the
+    gate was machine-visible as a <code>gate_blocker</code> with the migration section named, and
+    the coordinator did not dispatch into it. Both halves are checkable after the fact from the run
+    ledger and git history rather than from prose, which is the property that distinguishes this
+    from a manufactured transcript.</p>
+
+    <p>One honest qualification. The first migration dispatch at 15:31 was stopped and discarded a
+    minute later, but not by the gate — the coordinator had written a wrong rule into the migration
+    section, claiming two of the three plans had no evidence record when all three had one. That
+    was a coordinator error caught before the worker acted on it, and it is recorded here so the
+    transcript is not read as cleaner than it was.</p>
+  </section>
+
   <section id="open">
     <h2>What is still open</h2>
 
