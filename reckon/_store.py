@@ -426,6 +426,7 @@ def _write_state(
     expected_version: int,
     root: str | Path | None = None,
     artifact_type: str | None = None,
+    retire_preimages: list[str] | None = None,
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
 
@@ -529,7 +530,19 @@ def _write_state(
     new_data["version"] = cur_version + 1
 
     text = html_file.read_text(encoding="utf-8", errors="replace")
-    new_text = _plan_html.write_state(text, new_data)
+    source_text = text
+    try:
+        for preimage in retire_preimages or []:
+            source_text = _replace_authored_html(
+                source_text,
+                preimage,
+                "",
+                selector_name="retire_prose preimage",
+            )
+    except ValueError as exc:
+        raise OpError(str(exc)) from exc
+    authored_text_changed = source_text != text
+    new_text = _plan_html.write_state(source_text, new_data)
 
     # Idempotency guard: if the patch carries no real content change (e.g. a
     # no-op edit or a round-trip through BeautifulSoup entity-normalisation),
@@ -546,9 +559,12 @@ def _write_state(
             re.IGNORECASE,
         )
     )
-    if not legacy_alias and {
-        k: v for k, v in new_parsed.items() if k not in _STAMP
-    } == {k: v for k, v in cur_parsed.items() if k not in _STAMP}:
+    if (
+        not legacy_alias
+        and not authored_text_changed
+        and {k: v for k, v in new_parsed.items() if k not in _STAMP}
+        == {k: v for k, v in cur_parsed.items() if k not in _STAMP}
+    ):
         return cur_version
 
     tmp = html_file.with_suffix(".html.tmp")
@@ -607,6 +623,7 @@ def write_plan(
     expected_version: int,
     root: str | Path | None = None,
     artifact_type: str | None = None,
+    retire_preimages: list[str] | None = None,
 ) -> int:
     """Write a full data blob back with version check.
 
@@ -651,7 +668,57 @@ def write_plan(
         return _write_json_envelope(
             state_path(project, slug, root), project, slug, data, expected_version
         )
-    return _write_state(project, slug, data, expected_version, root, artifact_type)
+    return _write_state(
+        project,
+        slug,
+        data,
+        expected_version,
+        root,
+        artifact_type,
+        retire_preimages,
+    )
+
+
+def _replace_authored_html(
+    html_text: str,
+    preimage: str,
+    replacement: str,
+    *,
+    selector_name: str,
+) -> str:
+    """Replace one exact authored fragment without touching structured state."""
+
+    from reckon import _plan_html
+
+    occurrences = html_text.count(preimage)
+    if occurrences != 1:
+        raise ValueError(
+            f"{selector_name} must match exactly once; found {occurrences} occurrences"
+        )
+    start = html_text.index(preimage)
+    end = start + len(preimage)
+    if any(
+        start < protected_end and end > protected_start
+        for protected_start, protected_end in _plan_html.structured_section_spans(
+            html_text
+        )
+    ):
+        raise ValueError(
+            f"{selector_name} overlaps a section[data-reckon] structured-state region"
+        )
+
+    replaced = html_text[:start] + replacement + html_text[end:]
+    stamps = frozenset({"version", "modified"})
+    before_state = _plan_html.read_state(html_text)
+    after_state = _plan_html.read_state(replaced)
+    before = {key: value for key, value in before_state.items() if key not in stamps}
+    after = {key: value for key, value in after_state.items() if key not in stamps}
+    if before != after:
+        raise ValueError(
+            "authored HTML replacement changes structured plan state; use "
+            "edit_plan structured ops for metadata or data-reckon sections"
+        )
+    return replaced
 
 
 def replace_plan_text(
@@ -710,22 +777,12 @@ def replace_plan_text(
     if expected_version != current_version:
         raise VersionConflict(expected_version, current_version, current_state)
 
-    occurrences = text.count(old_html)
-    if occurrences != 1:
-        raise ValueError(
-            "old_html must match exactly once; "
-            f"found {occurrences} occurrences in {html_file}"
-        )
-    replaced = text.replace(old_html, new_html, 1)
-    replaced_state = _plan_html.read_state(replaced)
-    stamps = frozenset({"version", "modified"})
-    before = {key: value for key, value in current_state.items() if key not in stamps}
-    after = {key: value for key, value in replaced_state.items() if key not in stamps}
-    if before != after:
-        raise ValueError(
-            "text replacement changes structured plan state; use edit_plan for "
-            "metadata, decisions, followups, questions, research, or comments"
-        )
+    replaced = _replace_authored_html(
+        text,
+        old_html,
+        new_html,
+        selector_name="old_html",
+    )
 
     stamped_state = dict(current_state)
     stamped_state["modified"] = date.today().isoformat()
@@ -1531,6 +1588,18 @@ def _apply_gate_verdict(
     }
 
 
+def _apply_retire_prose(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Validate an ephemeral exact-preimage retirement directive."""
+
+    if is_index or str(working.get("type", "plan") or "plan") != "plan":
+        raise OpError("retire_prose op is plan-only")
+    preimage = op.get("preimage")
+    if not isinstance(preimage, str) or not preimage:
+        raise OpError("retire_prose op requires a non-empty string 'preimage'")
+
+
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     if not is_index:
         raise OpError("move op is index-only")
@@ -1576,6 +1645,7 @@ _OP_DISPATCH = {
     "gate": _apply_gate,
     "pass": _apply_gate_verdict,
     "fail": _apply_gate_verdict,
+    "retire_prose": _apply_retire_prose,
     "move": _apply_move,
 }
 
