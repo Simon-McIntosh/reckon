@@ -665,6 +665,104 @@ def test_auth_check_exit_status_is_reported():
     assert probe_availability(bad, probe_auth=True)["alpha"]["authenticated"] is False
 
 
+def test_declared_catalog_matches_the_configured_model(tmp_path, monkeypatch):
+    wrapper = tmp_path / "model-catalog"
+    wrapper.write_text(
+        "#!/bin/sh\nprintf '%s\\n' 'served-one gpu-a' 'served-two gpu-b'\n"
+    )
+    wrapper.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    config = {
+        "backends": {
+            "alpha": {
+                "launch": "cli",
+                "command": "model-catalog",
+                "model": "served-two",
+                "catalog": {
+                    "list_command": ["model-catalog", "--list"],
+                    "model_pattern": r"^{model}\b",
+                },
+            }
+        }
+    }
+
+    entry = probe_availability(config)["alpha"]
+
+    assert entry["model_served"] is True
+    assert (
+        entry["detail"] == "model 'served-two' matched catalog line: served-two gpu-b"
+    )
+
+
+def test_declared_catalog_reports_what_it_offered_for_an_unserved_model(
+    tmp_path, monkeypatch
+):
+    wrapper = tmp_path / "model-catalog"
+    wrapper.write_text("#!/bin/sh\nprintf '%s\\n' 'served-one gpu-a'\n")
+    wrapper.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    config = {
+        "backends": {
+            "alpha": {
+                "launch": "cli",
+                "command": "model-catalog",
+                "model": "missing-model",
+                "catalog": {
+                    "list_command": ["model-catalog", "--list"],
+                    "model_pattern": r"^{model}\b",
+                },
+            }
+        }
+    }
+
+    entry = probe_availability(config)["alpha"]
+
+    assert entry["model_served"] is False
+    assert entry["detail"] == (
+        "model 'missing-model' is not served; catalog offered: served-one gpu-a"
+    )
+
+
+def test_catalog_declaration_validates_with_leaf_provenance(layers):
+    write(
+        layers["host"],
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: model-catalog\n"
+        "    model: served-one\n"
+        "    catalog:\n"
+        "      list_command: [model-catalog, --list]\n"
+        "      model_pattern: '^{model}\\b'\n",
+    )
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["backends"]["alpha"]["catalog"] == {
+        "list_command": ["model-catalog", "--list"],
+        "model_pattern": r"^{model}\b",
+    }
+    assert resolved.origin("backends.alpha.catalog.list_command") == "host"
+    assert resolved.origin("backends.alpha.catalog.model_pattern") == "host"
+
+
+def test_catalog_pattern_must_name_the_configured_model(layers):
+    write(
+        layers["host"],
+        "backends:\n"
+        "  alpha:\n"
+        "    catalog:\n"
+        "      list_command: [model-catalog, --list]\n"
+        "      model_pattern: '^fixed-name$'\n",
+    )
+
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+
+    assert excinfo.value.key_path == "backends.alpha.catalog.model_pattern"
+    assert "{model}" in excinfo.value.constraint
+
+
 def test_backend_declaring_cli_without_a_command_is_flagged():
     entry = probe_availability({"backends": {"alpha": {"launch": "cli"}}})["alpha"]
     assert entry["command_found"] is False

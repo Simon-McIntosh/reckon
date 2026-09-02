@@ -194,6 +194,7 @@ class BackendConfig(ConfiguredBaseModel):
     launch: Optional[LaunchMode] = Field(default=None, description="""How this backend's workers are started.""")
     command: Optional[str] = Field(default=None, description="""Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.""")
     auth_check: Optional[list[str]] = Field(default=None, description="""Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.""")
+    catalog: Optional[CatalogConfig] = Field(default=None, description="""Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral.""")
     environment: Optional[dict[str, Union[str, EnvironmentVariable]]] = Field(default=None, description="""Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.""")
     model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
@@ -214,6 +215,14 @@ class BackendConfig(ConfiguredBaseModel):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class CatalogConfig(ConfiguredBaseModel):
+    """
+    Provider-neutral model catalog probe owned by a backend.
+    """
+    list_command: Optional[list[str]] = Field(default=None, description="""Argument vector that prints the models served by this backend. The vector is user data and includes the executable.""")
+    model_pattern: Optional[str] = Field(default=None, description="""Regular expression used against each catalog output line. The required `{model}` placeholder is replaced by the escaped configured model.""")
 
 
 class EnvironmentVariable(ConfiguredBaseModel):
@@ -360,6 +369,7 @@ class SummaryConfig(ConfiguredBaseModel):
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
+CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
 RoleConfig.model_rebuild()
 SpecificationRouting.model_rebuild()

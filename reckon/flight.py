@@ -45,6 +45,7 @@ LAYER_ORDER = ("shipped", "host", "project", "override")
 _KEYED_MAPS = ("backends", "roles")
 
 _AUTH_PROBE_TIMEOUT_SECONDS = 10
+_CATALOG_PROBE_TIMEOUT_SECONDS = 10
 _ENVIRONMENT_REFERENCE = re.compile(r"\$\{([^{}]+)\}")
 
 
@@ -303,23 +304,42 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
         ) from exc
 
     for backend_name, backend in (data.get("backends") or {}).items():
-        if not isinstance(backend, Mapping) or "environment" not in backend:
+        if not isinstance(backend, Mapping):
             continue
-        environment = backend["environment"]
-        key_path = f"backends.{backend_name}.environment"
-        if not isinstance(environment, Mapping):
-            raise FlightConfigError(source, key_path, "must be a mapping")
-        for variable, value in environment.items():
-            if not isinstance(variable, str) or not variable:
-                raise FlightConfigError(
-                    source, key_path, "variable names must be non-empty strings"
-                )
-            if not isinstance(value, str):
+        if "environment" in backend:
+            environment = backend["environment"]
+            key_path = f"backends.{backend_name}.environment"
+            if not isinstance(environment, Mapping):
+                raise FlightConfigError(source, key_path, "must be a mapping")
+            for variable, value in environment.items():
+                if not isinstance(variable, str) or not variable:
+                    raise FlightConfigError(
+                        source, key_path, "variable names must be non-empty strings"
+                    )
+                if not isinstance(value, str):
+                    raise FlightConfigError(
+                        source,
+                        f"{key_path}.{variable}",
+                        "must be a string",
+                    )
+        catalog = backend.get("catalog")
+        if isinstance(catalog, Mapping):
+            pattern = catalog.get("model_pattern")
+            if isinstance(pattern, str) and "{model}" not in pattern:
                 raise FlightConfigError(
                     source,
-                    f"{key_path}.{variable}",
-                    "must be a string",
+                    f"backends.{backend_name}.catalog.model_pattern",
+                    "must contain the {model} placeholder",
                 )
+            if isinstance(pattern, str):
+                try:
+                    re.compile(pattern.replace("{model}", "model"))
+                except re.error as exc:
+                    raise FlightConfigError(
+                        source,
+                        f"backends.{backend_name}.catalog.model_pattern",
+                        f"must be a valid regular expression — {exc}",
+                    ) from exc
 
 
 def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
@@ -343,6 +363,19 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
             f"names backend '{local_backend}', which no layer defines "
             f"(defined backends: {known})",
         )
+    for backend_name, backend in backends.items():
+        if not isinstance(backend, Mapping):
+            continue
+        catalog = backend.get("catalog")
+        if not isinstance(catalog, Mapping):
+            continue
+        for catalog_field in ("list_command", "model_pattern"):
+            if not catalog.get(catalog_field):
+                raise FlightConfigError(
+                    sources,
+                    f"backends.{backend_name}.catalog.{catalog_field}",
+                    "is required when catalog is declared",
+                )
     for role_name, role in (config.get("roles") or {}).items():
         if not isinstance(role, Mapping):
             continue
@@ -646,8 +679,64 @@ def probe_availability(
             entry["detail"] = f"'{command}' is not on PATH"
         else:
             entry.update(_probe_auth(backend, probe_auth=probe_auth))
+            entry.update(_probe_catalog(backend))
         report[name] = entry
     return report
+
+
+def _probe_catalog(backend: Mapping[str, Any]) -> dict[str, Any]:
+    """Report whether the configured model appears in a declared catalog."""
+    catalog = backend.get("catalog")
+    if not isinstance(catalog, Mapping):
+        return {}
+    model = str(backend.get("model") or "")
+    command = catalog.get("list_command")
+    pattern = catalog.get("model_pattern")
+    if not model:
+        return {
+            "model_served": False,
+            "detail": "catalog declared but backend has no configured model",
+        }
+    if not command or not pattern:
+        return {
+            "model_served": False,
+            "detail": "catalog declaration requires list_command and model_pattern",
+        }
+    try:
+        result = subprocess.run(
+            [str(part) for part in command],
+            capture_output=True,
+            text=True,
+            timeout=_CATALOG_PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "model_served": False,
+            "detail": f"catalog failed to run for model {model!r} — {exc}",
+        }
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if result.returncode != 0:
+        offered = " | ".join(lines) or "<no catalog output>"
+        return {
+            "model_served": False,
+            "detail": (
+                f"catalog exited {result.returncode} for model {model!r}; "
+                f"catalog offered: {offered}"
+            ),
+        }
+    matcher = re.compile(str(pattern).replace("{model}", re.escape(model)))
+    matched = next((line for line in lines if matcher.search(line)), None)
+    if matched is not None:
+        return {
+            "model_served": True,
+            "detail": f"model {model!r} matched catalog line: {matched}",
+        }
+    offered = " | ".join(lines) or "<no catalog output>"
+    return {
+        "model_served": False,
+        "detail": f"model {model!r} is not served; catalog offered: {offered}",
+    }
 
 
 def _probe_auth(
