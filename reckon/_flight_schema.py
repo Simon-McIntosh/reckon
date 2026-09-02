@@ -176,6 +176,7 @@ class FlightConfig(ConfiguredBaseModel):
     """
     version: Optional[int] = Field(default=None, description="""Schema version of this configuration document.""", ge=1)
     default_backend: Optional[str] = Field(default=None, description="""Name of the backend used when a role does not select one. Must name a key of `backends` once every layer has been merged; a name with no backend behind it is a configuration error rather than an implicit fallback.""")
+    local_backend: Optional[str] = Field(default=None, description="""Name of the locally served backend selected by `reckon crew dispatch --local`. Must name a key of `backends` once every layer has been merged. Absent means this host has no declared local worker route.""")
     backends: Optional[dict[str, BackendConfig]] = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     roles: Optional[dict[str, RoleConfig]] = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     gates: Optional[GateConfig] = Field(default=None)

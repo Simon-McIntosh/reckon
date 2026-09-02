@@ -90,6 +90,7 @@ RECORD_FIELDS = (
     "spec_level",
     "member",
     "backend",
+    "local",
     "agent",
     "dispatched_at",
     "completed_at",
@@ -620,6 +621,7 @@ def build_record(
                 + ", ".join(missing)
             )
     stored_lineage = None if lineage is None else dict(lineage)
+    stored_agent = dict(agent or {})
     # Completion consults the same accessor capability derivation will read
     # later, but the verdict lands as its own field rather than mutating the
     # lineage a caller (e.g. shadow dispatch) already holds a copy of.
@@ -642,7 +644,8 @@ def build_record(
         # Keeping it at the record level preserves attribution when a recovered
         # pointer carries no agent block.
         "backend": str(backend),
-        "agent": dict(agent or {}),
+        "local": bool(stored_agent.get("local")),
+        "agent": stored_agent,
         "dispatched_at": str(dispatched_at),
         "completed_at": str(completed_at) or _utc_now(),
         "completed_at_source": str(completed_at_source) or "promotion_time",

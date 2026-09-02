@@ -856,6 +856,7 @@ class DispatchPlan:
     budget_ceiling: str
     validation: NodeValidation
     execution_fit: capability.ExecutionFit
+    local: bool = False
     warnings: list[str] = field(default_factory=list)
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
@@ -863,13 +864,15 @@ class DispatchPlan:
     sandbox_write_roots: tuple[Path, ...] | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        agent = _agent_configuration(self.backend, self.launch, self.backend_settings)
+        if self.local:
+            agent["local"] = True
         payload = {
-            "agent": _agent_configuration(
-                self.backend, self.launch, self.backend_settings
-            ),
+            "agent": agent,
             "backend": self.backend,
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
+            "local": self.local,
             "node": self.node.as_dict(),
             "run_id": self.run_id,
             "sandbox": {
@@ -1000,6 +1003,7 @@ def plan_dispatch(
     execution_override: bool = False,
     authority: Mapping[str, Any] | None = None,
     report_live_conflicts: bool = False,
+    local: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -1100,6 +1104,7 @@ def plan_dispatch(
         budget_ceiling=budget_ceiling,
         validation=verdict,
         execution_fit=execution_fit,
+        local=local,
         warnings=warnings,
         authority=resolved_authority,
     )
@@ -1370,6 +1375,7 @@ def dispatch(
     watch_required: bool = False,
     watch_override: bool = False,
     lineage_override: Mapping[str, Any] | None = None,
+    local: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1426,6 +1432,7 @@ def dispatch(
         base=base,
         execution_override=execution_override,
         authority=authority,
+        local=local,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -1654,6 +1661,9 @@ def dispatch(
         stderr_path = directory / "stderr.log"
         final_path = directory / "final.txt"
 
+        agent = _agent_configuration(backend_name, launch_kind, backend)
+        if local:
+            agent["local"] = True
         record: dict[str, Any] = {
             "run_id": run_id,
             "project": project,
@@ -1663,6 +1673,7 @@ def dispatch(
             "node": node.as_dict(),
             "role": node.role,
             "backend": backend_name,
+            "local": local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
@@ -1676,7 +1687,7 @@ def dispatch(
             # The configuration that actually ran the node, recorded now because
             # a later config layer change makes it unreconstructable — and
             # without it a measured duration cannot be attributed to anything.
-            "agent": _agent_configuration(backend_name, launch_kind, backend),
+            "agent": agent,
             "competence": competence,
             "worktree": worktree["path"],
             "base": worktree["base"],

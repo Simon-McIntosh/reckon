@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _store, calibration, capabilities, crew, ledger
+from reckon import _store, calibration, capabilities, crew, flight, ledger
 from reckon.cli import main as cli_main
 
 
@@ -1155,6 +1155,24 @@ def test_a_promoted_record_names_the_member_and_its_session(home, repo) -> None:
 
     assert promoted["record"]["member"] == "worker-a"
     assert promoted["record"]["session_id"] == SESSION_ID
+
+
+def test_local_selection_survives_pointer_promotion(home, repo) -> None:
+    config = flight.select_local_backend({**CONFIG, "local_backend": "alpha"})
+    record = crew.dispatch(
+        node=_node(),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="sess-local",
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+        local=True,
+    )
+
+    assert crew.read_pointer(record["run_id"])["local"] is True
+    promoted = crew.complete(record["run_id"], gate="passed")["record"]
+    assert promoted["local"] is True
+    assert promoted["agent"]["local"] is True
 
 
 # ── Calibration inputs ──────────────────────────────────────────────────────

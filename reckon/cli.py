@@ -734,6 +734,11 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     ),
 )
 @click.option(
+    "--local",
+    is_flag=True,
+    help="Route through the backend named by the resolved local_backend key.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -764,6 +769,7 @@ def crew_dispatch(
     allow_execution_mismatch,
     allow_unreconciled_runs,
     no_watch,
+    local,
     dry_run,
     pretty,
 ):
@@ -776,6 +782,15 @@ def crew_dispatch(
     """
     crew_module, flight_module = _crew_modules()
     config = _resolved_flight(flight_module, project, checkout_path, overrides)
+    if local:
+        try:
+            config = flight_module.select_local_backend(config)
+        except flight_module.FlightConfigError as exc:
+            _emit(
+                {"ok": False, "error": "request-error", "detail": str(exc)},
+                pretty,
+            )
+            raise click.exceptions.Exit(1) from exc
 
     node = crew_module.TaskNode(
         id=node_id,
@@ -805,6 +820,7 @@ def crew_dispatch(
                 base=base,
                 execution_override=allow_execution_mismatch,
                 report_live_conflicts=True,
+                local=local,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -862,6 +878,7 @@ def crew_dispatch(
             unreconciled_override=allow_unreconciled_runs,
             watch_required=True,
             watch_override=no_watch,
+            local=local,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(

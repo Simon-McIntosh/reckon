@@ -334,6 +334,15 @@ def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
             f"names backend '{default_backend}', which no layer defines "
             f"(defined backends: {known})",
         )
+    local_backend = config.get("local_backend")
+    if local_backend and local_backend not in backends:
+        known = ", ".join(sorted(backends)) or "none"
+        raise FlightConfigError(
+            sources,
+            "local_backend",
+            f"names backend '{local_backend}', which no layer defines "
+            f"(defined backends: {known})",
+        )
     for role_name, role in (config.get("roles") or {}).items():
         if not isinstance(role, Mapping):
             continue
@@ -553,6 +562,30 @@ def resolve(
         provenance=dict(sorted(provenance.items())),
         layers=layers,
         warnings=warnings,
+    )
+
+
+def select_local_backend(config: Mapping[str, Any]) -> ResolvedConfig:
+    """Return one dispatch overlay selecting the declared local backend."""
+    local_backend = str(config.get("local_backend") or "").strip()
+    if not local_backend:
+        raise FlightConfigError(
+            "<resolved flight>",
+            "local_backend",
+            "must be set before `reckon crew dispatch --local` can route work",
+        )
+    backends = config.get("backends") or {}
+    if local_backend not in backends:
+        known = ", ".join(sorted(backends)) or "none"
+        raise FlightConfigError(
+            "<resolved flight>",
+            "local_backend",
+            f"names backend '{local_backend}', which no layer defines "
+            f"(defined backends: {known})",
+        )
+    return ResolvedConfig(
+        deep_merge(config, {"default_backend": local_backend}),
+        warnings=getattr(config, "warnings", ()),
     )
 
 

@@ -10,8 +10,8 @@ description: >-
   isolated worktrees by default, audit and integrate worker commits, record
   outcomes continuously, and clean up worktrees. Trigger verbs: "implement /
   execute / ship / land / deliver the sprint / run the sprint / /reckon-ship".
-  Requests to use local workers, local agents, or local dispatch route every
-  dispatch through the configured locally served backend alias.
+  Requests to use local workers, local agents, or local dispatch add `--local`
+  to every dispatch, selecting the backend named by `local_backend`.
   For editing plan text use reckon-edit; for defining or rebalancing sprint
   state use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
@@ -172,9 +172,9 @@ Full detail below.
 - `/reckon-ship graph:<handle>` — the unambiguous long form for that closure
 - Reading a §05 followup whose `recommends_skill` is `/reckon-ship`
 - "use local workers / use local agents / dispatch locally" — these are routing
-  instructions that deploy workers through the configured locally served
-  backend alias. The coordinator applies that alias as the default backend (or
-  the equivalent role-level override) to every dispatched node. The task itself
+  instructions that add `--local` to every `reckon crew dispatch`. The flag
+  selects the backend named by `local_backend` and refuses when it is unset.
+  The task itself
   may be any implementable plan, investigation, test, or documentation node —
   "use local workers" selects the *backend*, not the task scope.
 
@@ -483,9 +483,9 @@ not prepare.
 ### 3c. Locally served worker routing
 
 When the invoking phrase includes "use local workers", "use local agents", or
-"dispatch locally", the coordinator routes every dispatched node through the
-configured locally served backend alias. Apply that alias as the default-backend
-override on every `reckon crew dispatch` call.
+"dispatch locally", the coordinator adds `--local` to every
+`reckon crew dispatch` call. The flag resolves `local_backend` as that
+dispatch's default and refuses when it is unset; role overlays still apply.
 
 The wrapper supplies the base URL, model tiers, and credential for the locally
 served endpoint. Its backend alias reuses the existing pass-through dialect

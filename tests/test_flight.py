@@ -157,6 +157,26 @@ def test_shipped_defaults_validate_against_the_schema():
     assert resolved.config["default_backend"] in resolved.config["backends"]
 
 
+def test_local_backend_resolves_beside_default_with_leaf_provenance(layers):
+    write(
+        layers["host"],
+        "default_backend: alpha\n"
+        "local_backend: local\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: in-harness\n"
+        "  local:\n"
+        "    launch: in-harness\n",
+    )
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["default_backend"] == "alpha"
+    assert resolved.config["local_backend"] == "local"
+    assert resolved.origin("default_backend") == "host"
+    assert resolved.origin("local_backend") == "host"
+
+
 def test_shipped_roles_resolve_every_worker_kind_named_by_the_contract():
     resolved = resolve(host_path=Path("/nonexistent/flight.yaml"))
     expected = {
@@ -530,6 +550,14 @@ def test_default_backend_without_a_backend_is_an_error(layers):
     with pytest.raises(FlightConfigError) as excinfo:
         resolve_files(layers)
     assert excinfo.value.key_path == "default_backend"
+    assert "absent" in excinfo.value.constraint
+
+
+def test_local_backend_without_a_backend_is_an_error(layers):
+    write(layers["host"], "local_backend: absent\n")
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    assert excinfo.value.key_path == "local_backend"
     assert "absent" in excinfo.value.constraint
 
 
