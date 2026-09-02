@@ -563,17 +563,26 @@ class _ClaudeDialect(Dialect):
             argv += ["--effort", str(effort)]
         argv += self._sandbox_flags(backend.get("sandbox"))
         # --add-dir is variadic, so it goes last and the prompt goes on stdin;
-        # a prompt argument after it is read as another directory.
-        argv += ["--add-dir", worktree, *writable_directories]
+        # a prompt argument after it is read as another directory. For the
+        # read-only tier the worktree is the boundary: the grant admits only
+        # the computed write roots, never the repository, so the worker can
+        # deliver its declared files without touching the checkout under test.
+        add_dirs = list(writable_directories)
+        if backend.get("sandbox") != READ_ONLY:
+            add_dirs.insert(0, worktree)
+        argv += ["--add-dir", *add_dirs]
         return argv
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
         if tier == WORKTREE_FULL:
             return ["--dangerously-skip-permissions"]
-        if tier in (READ_ONLY, WORKSPACE_WRITE):
-            # This harness expresses restraint as a permission mode rather than
-            # a filesystem sandbox; `plan` is the mode that withholds writes.
-            return ["--permission-mode", "plan"]
+        if tier == READ_ONLY:
+            # A permission mode is the wrong boundary for this tier: `plan`
+            # withheld every write, so a node could not deliver its declared
+            # files yet still reported a completed turn. Skip approvals
+            # outright and let the argv's --add-dir grant admit only the
+            # computed write roots, never the repository.
+            return ["--dangerously-skip-permissions"]
         return ["--permission-mode", "plan"]
 
     def observe(self, events: Iterable[Mapping[str, Any]]) -> Observation:
