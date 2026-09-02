@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="23">
 <meta name="plan-impl" content="0.95">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -174,7 +174,7 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     finding disappear. It migrates state representation and repairs mis-wired relationships. A
     finding whose repair requires a material judgement is reported for the owning project.</p>
 
-    <h2 id="s5">§5 — The sweep, sized and stalled on a dispatch gap</h2>
+    <h2 id="s5">§5 — The sweep, sized and held on an authority boundary</h2>
 
     <p>The sweep was scoped against a live scan rather than the plan's original figures, and the
     inventory below is what remains. It is recorded here so the next session inherits the survey
@@ -200,13 +200,38 @@ effective_status('active',  [])        -&gt; 'active'</pre>
       </tbody>
     </table>
 
-    <p>The obstacle is not the work. <code>reckon crew dispatch --repo &lt;other&gt;</code> resolves
-    the node's plan inside the repository it is dispatched into and refuses with
-    <code>plan-unavailable</code>, so a node serving a plan in one repository cannot edit another —
-    which is every part of this sweep but the first row. The fallback of aiming write paths at a
-    foreign checkout is worse than the gap, because it puts a worker outside the worktree that
-    bounds its blast radius. The capability belongs to the orchestration plan and is recorded there;
-    the <code>sweep-complete</code> gate stays closed until it lands.</p>
+    <p><strong>The dispatch gap recorded above is closed.</strong> It was repaired in commit
+    <code>bc30c9a</code> on 2026-08-24: a semantic plan now resolves through its registered project
+    mount while every write stays rooted in the dispatched worktree repository, with missing mounts
+    and escaping write paths refused before the worktree is created. Verified live on 2026-09-02 —
+    a dry-run naming <code>--project reckon --plan derived-gate-state</code> against
+    <code>--repo ~/Code/hanney</code> returns <code>ok=true</code> with all seven node properties
+    passing, and its authority block separates <code>plan</code> (repository <code>reckon</code>,
+    source <code>mount</code>) from <code>write</code> (projects <code>[hanney]</code>, repository
+    <code>hanney</code>). The fallback this section rejected is no longer needed, because the
+    worker still gets a worktree in the repository it edits.</p>
+
+    <p><strong>What holds the sweep now is a host permission boundary, not a missing capability.</strong>
+    A dispatch whose writes land outside the orchestrator's own repository is refused by this
+    host's command classifier before <code>reckon</code> is reached, so the sweep needs the
+    operator to authorise cross-repository dispatch. That is an authority condition rather than an
+    engineering one, and it is the only thing between the inventory above and a four-node parallel
+    fleet: the four repositories share no file, and each target path was measured clean of both
+    live run pointers and uncommitted peer edits on 2026-09-02.</p>
+
+    <p><strong>The inventory is re-measured, and deliberately not frozen.</strong> The figures in
+    the table were true on 2026-08-12 and have already moved — <code>imas-ambix</code> now carries
+    41 persisted item statuses rather than 36, <code>nova</code> 4 rather than 2, and
+    <code>nova</code>'s persisted <code>blocked</code> document has since cleared. A sweep sized
+    against a written-down count inherits that decay, so <code>sweep-complete</code> must ask for a
+    re-scan reporting zero remaining rather than for a fixed number retired.</p>
+
+    <p>Restating it is blocked by the same gap as §6, one level up: <code>gate</code> declares and
+    refuses a duplicate, <code>pass</code> and <code>fail</code> record a verdict, and no op amends
+    a declared gate's measure or required evidence — <code>set</code> refuses the path outright.
+    That is why both earlier restatements on this plan went through raw HTML. The gate keeps its
+    frozen 2026-08-12 numbers until §6's work gives it a sanctioned path, and a correct sweep would
+    currently miss them.</p>
 
     <p>Of the sixteen error-level findings in <code>imas-efit</code>, only the eight
     <code>non-executable-hard-dependency</code> edges are in this plan's remit. The remaining eight —
@@ -227,6 +252,17 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <p>This is the plan's own mechanism, so it belongs here rather than in a followup. The gate ops
     need a companion that retires the authored prose a gate section supersedes, so migrating a
     document is a state write like every other.</p>
+
+    <p><strong>The same gap has a second face, found while restating §5's gate.</strong> The gate
+    ops are append-and-verdict only: <code>gate</code> declares one and refuses a duplicate,
+    <code>pass</code> and <code>fail</code> record a verdict, and nothing amends a declared gate's
+    measure or required evidence — <code>set</code> refuses
+    <code>gates.&lt;id&gt;.required_evidence</code> as an unsupported path. So a gate whose wording
+    is measured wrong can only be corrected by raw HTML, which is how both earlier restatements on
+    this plan were done. A gate that cannot be re-measured decays exactly the way persisted
+    <code>blocked</code> did, which is the defect class this whole plan exists to remove. Amendment
+    belongs beside retirement: both are representation edits to a gate section that the op
+    vocabulary cannot currently express.</p>
 
     <h2 id="s7">§7 — The three held plans</h2>
 

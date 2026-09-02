@@ -17,8 +17,8 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-27">
-<meta name="plan-version" content="20">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="21">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -114,10 +114,11 @@ Done-when
   3. Evidence links the implementation commit, validation, errors and remaining work</pre>
     <p class="r-fu-outcome">Landed in commit 36d5bdd; both skill validators passed, 6 focused tests passed, and the full 1,181-test suite passed. Evidence: archive/execution-orchestration-hardening-sprint-delivery-landed.html</p>
     </article>
-<article class="r-fu" data-id="f-eoh-cross-repo-node" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-cross-repo-node" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-12" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="2026-09-02T12:45:54+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A node cannot be dispatched into a repository other than the one holding its plan</h4>
     <div class="r-fu-body"><p><code>reckon crew dispatch --repo &lt;other&gt;</code> resolves the node's plan inside the dispatched repository and refuses with <code>plan-unavailable</code> when it is not there. That makes every cross-repository node undispatchable, even though the semantics are already coherent everywhere else: the plan is the semantic authority, and <code>read_plan</code>/<code>edit_plan</code> already accept <code>checkout_path</code> to separate the plan's checkout from the working one.</p><p>Measured while sweeping twelve mounted projects for a reckon-owned plan: four repositories hold work that plan authorises and none of it could be delegated, because the plan lives in reckon while the edits land in imas-efit, imas-ambix, nova and hanney. The obvious workaround is worse than the gap: pointing write paths at another checkout puts a worker outside the worktree that bounds its blast radius.</p><p>The repair is to let the plan resolve through its registered mount while the worktree still comes from <code>--repo</code>, so a cross-repository node keeps both its semantic authority and its isolation.</p></div>
     <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
+    <p class="r-fu-outcome">Landed in commit bc30c9a on 2026-08-24 — semantic plans resolve through their registered project mount while every write stays rooted in the dispatched worktree repository, with missing mounts and escaping write paths refused before worktree creation. Verified live on 2026-09-02: a dry-run dispatch naming --project reckon --plan derived-gate-state against --repo ~/Code/hanney returns ok=true with all seven node properties passing, and its authority block separates plan (repository ~/Code/reckon, source mount) from write (projects [hanney], repository ~/Code/hanney), which is the separation this followup asked for. The gap it recorded is closed, so the derived-gate-state sweep is no longer held on dispatch.</p>
     </article>
 <article class="r-fu" data-id="f-eoh-02" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Re-run the gate at merge time, not only at the worker&#x27;s base revision</h4>
