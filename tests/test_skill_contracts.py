@@ -190,6 +190,14 @@ def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
     assert "Branch once, on the returned `launch` kind" in ship
 
 
+def test_ship_skill_routes_local_requests_through_the_declared_flag() -> None:
+    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+
+    assert ship.count("`--local`") == 3
+    assert "local_backend" in ship
+    assert "refuses when it is unset" in normalized(ship)
+
+
 def test_ship_skill_owns_the_pre_dispatch_checklist() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     for prop in (

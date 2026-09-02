@@ -115,6 +115,12 @@ slots:
       of `backends` once every layer has been merged; a name with no backend
       behind it is a configuration error rather than an implicit fallback.
 
+  local_backend:
+    description: >-
+      Name of the locally served backend selected by `reckon crew dispatch
+      --local`. Must name a key of `backends` once every layer has been merged.
+      Absent means this host has no declared local worker route.
+
   backends:
     description: >-
       Available worker backends, keyed by a name chosen by whoever writes the
@@ -341,6 +347,7 @@ classes:
     slots:
       - version
       - default_backend
+      - local_backend
       - backends
       - roles
       - gates

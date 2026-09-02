@@ -588,6 +588,139 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
     _assert_no_dispatch_artifacts(repo)
 
 
+def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {
+            "local_backend": "native",
+            "roles": {"implement": {"backend": None}},
+        },
+    )
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    node = _node()
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--local",
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["backend"] == "native"
+    assert payload["local"] is True
+    assert payload["agent"]["local"] is True
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_local_dry_run_refuses_an_unset_key(home, repo, monkeypatch) -> None:
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    node = _node()
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--local",
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 1
+    assert payload["error"] == "request-error"
+    assert "local_backend" in payload["detail"]
+    _assert_no_dispatch_artifacts(repo)
+
+
+def test_local_dispatch_marks_the_live_pointer(home, repo, monkeypatch) -> None:
+    config = flight.deep_merge(
+        CONFIG,
+        {
+            "local_backend": "native",
+            "roles": {"implement": {"backend": None}},
+        },
+    )
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    node = _node()
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "sess",
+            "--repo",
+            str(repo),
+            "--local",
+            "--no-watch",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    pointer = crew.read_pointer(payload["run_id"])
+    assert result.exit_code == 0
+    assert payload["backend"] == "native"
+    assert payload["local"] is True
+    assert pointer["local"] is True
+
+
 def test_an_unsafe_node_id_is_refused_before_anything_is_created(home) -> None:
     with pytest.raises(crew.CrewError):
         crew.plan_dispatch(node=_node(id="../escape"), config=CONFIG)
