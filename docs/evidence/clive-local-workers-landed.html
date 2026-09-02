@@ -352,6 +352,40 @@
       from <code>xhigh</code> (26 against 28 tokens); a real node can, and that comparison
       belongs in the ledger. Probe artifact:
       <code>~/.config/reckon/crew/reports/local-effort-probe.md</code>.</p>
+    <div class="callout">
+    <p><strong>RETRACTED, 2026-09-02, one hour later.</strong> The capability reading above
+      does not survive its own follow-up. Re-running the same node at <code>xhigh</code>
+      reproduced the failure exactly, which sent the investigation back to the streams, and
+      the streams point at the harness rather than the model:</p>
+    <ul>
+      <li>The <code>xhigh</code> run issued <code>Write</code> to <em>exactly</em> its
+        declared report path, and that file does not exist.</li>
+      <li>It also produced <code>~/.claude/plans/&lt;generated-name&gt;.md</code>, the
+        artifact a Claude-dialect harness emits in plan mode.</li>
+      <li><code>reckon/_backends.py</code> maps the <code>read-only</code> tier for this
+        dialect to <code>--permission-mode plan</code>, and the comment beside it says that
+        plan is the mode which withholds writes.</li>
+      <li><code>thinking_tokens</code> reads <strong>0 at xhigh too</strong> in the agentic
+        path, though the single-turn probe shows the ladder live — so the effort flag is not
+        reaching the agentic loop either.</li>
+    </ul>
+    <p>Two facts stop this being a conclusion in the other direction. The census ran at the
+      same tier on the same dialect and <em>did</em> write — 50 Bash calls for its report and
+      one <code>Write</code> for its manifest, both landing — so plan mode is not withholding
+      every write, and the discriminator is not yet known.</p>
+    <p><strong>What the mistake cost, stated plainly.</strong> Both runs were promoted
+      <code>work-rejected</code>, so the capability cache now charges two failures to
+      <code>clive/deepseek-v4-flash/read-only</code> that were probably not the model's. That
+      is the exact pollution §7's eligibility change exists to prevent, arriving by a route it
+      does not cover: a <em>wrongly classified</em> run rather than an excluded one. And
+      <code>reckon crew repair-completion</code> re-derives measurements, not
+      classifications, so no command currently corrects it — which is a finding in its own
+      right. The general lesson is the one this plan keeps relearning: a negative result
+      needs its mechanism pinned before it is written down as a verdict, because a confident
+      wrong attribution is more expensive than an open question.</p>
+    <p><strong>Read the table above as three attempts and no valid capability evidence.</strong>
+      The 1-of-3 is not a pass rate.</p>
+    </div>
     <p><strong>These three runs are a closed slice and must not be pooled with what follows.</strong>
       1 of 3 at a configuration nobody will run again. The count of live local-lane runs
       toward §5's ten therefore stands at three attempted, one useful, and the qualification
