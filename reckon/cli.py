@@ -1292,6 +1292,62 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output.flush()
 
 
+# The themes the ticker paints. Named here rather than imported because
+# `reckon.crew` costs the better part of a second to import — it pulls the plan
+# schema and BeautifulSoup — and paying that on `reckon --help` is why every
+# other crew import in this file is deferred into a command body. A test binds
+# this tuple to the palette it mirrors, so the two cannot drift apart silently.
+TICKER_THEMES = ("dark", "light")
+
+
+def _ticker_grid(width, theme, no_color):
+    """Build the reader's grid, deferring the import that owns its defaults."""
+    from reckon.crew import ticker as ticker_module
+
+    return ticker_module.Ticker(
+        width=ticker_module.DEFAULT_WIDTH if width is None else width,
+        theme=ticker_module.DEFAULT_THEME if theme is None else theme,
+        color=not no_color,
+    )
+
+
+def _ticker_options(command):
+    """Attach the reader's grid choices to a command that prints ticker lines.
+
+    Width cannot be detected. The pane the stream is read in is a pipe, so
+    `isatty` is false and `COLUMNS` is unset there, and the conventional
+    terminal probe would switch formatting off in exactly the place it is
+    wanted. Both the width and the colour are therefore stated, not inferred.
+    """
+    for option in reversed(
+        (
+            click.option(
+                "--width",
+                type=int,
+                default=None,
+                help=(
+                    "Column the right-aligned fleet counts end on. Raised to "
+                    "whatever the fixed columns need, so no line ever wraps."
+                ),
+            ),
+            click.option(
+                "--theme",
+                type=click.Choice(TICKER_THEMES),
+                default=None,
+                help="Colour set to read against a dark or light pane.",
+            ),
+            click.option(
+                "--no-color",
+                "no_color",
+                is_flag=True,
+                help="Print plain lines. NO_COLOR in the environment does the same.",
+            ),
+        )
+    ):
+        command = option(command)
+    return command
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
@@ -1323,7 +1379,10 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     help="Emit machine-readable transition objects rather than ticker lines.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_follow(project, session, run_ids, attention, json_output, pretty):
+@_ticker_options
+def crew_follow(
+    project, session, run_ids, attention, json_output, pretty, width, theme, no_color
+):
     """Follow one session's runs without acquiring the project's watcher seat.
 
     The seat is project-global and this delivery is session-local, so a
@@ -1336,6 +1395,7 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
     from reckon.crew.recovery import format_watch_transition
 
     delivery = runs_module.delivery_mode()
+    grid = _ticker_grid(width, theme, no_color)
 
     def stream_events(registration):
         def poll() -> None:
@@ -1361,7 +1421,9 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
                 _emit({"ok": True, **event}, pretty)
             else:
                 _echo_follow_line(
-                    format_watch_transition(event, with_session=session is None)
+                    format_watch_transition(
+                        event, with_session=session is None, ticker=grid
+                    )
                 )
 
     try:
@@ -1419,7 +1481,19 @@ def crew_follow(project, session, run_ids, attention, json_output, pretty):
     help="Emit machine-readable transition objects rather than ticker lines.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_watch(project, stall_window, exit_on_empty, once, follow, json_output, pretty):
+@_ticker_options
+def crew_watch(
+    project,
+    stall_window,
+    exit_on_empty,
+    once,
+    follow,
+    json_output,
+    pretty,
+    width,
+    theme,
+    no_color,
+):
     """Follow a fleet through reconciliation, or return after one event.
 
     Following is the default because the watcher seat is what
@@ -1436,13 +1510,14 @@ def crew_watch(project, stall_window, exit_on_empty, once, follow, json_output, 
         if follow or not single_event:
             from reckon.crew.recovery import format_watch_transition, watch_follow
 
+            grid = _ticker_grid(width, theme, no_color)
             for result in watch_follow(
                 project, stall_window=stall_window, transitions=True
             ):
                 if json_output or result.get("event") not in {"baseline", "transition"}:
                     _emit({"ok": True, **result}, pretty)
                 else:
-                    click.echo(format_watch_transition(result))
+                    click.echo(format_watch_transition(result, ticker=grid))
             return
         result = crew_module.watch(
             project,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import fcntl
 import os
-import re
 import shlex
 import subprocess
 import time
@@ -20,6 +19,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
+from reckon.crew.ticker import Ticker, single_clause
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -33,6 +33,11 @@ from reckon.crew.runs import (
     process_alive,
     watch_lock_path,
 )
+
+# Shaping free text into one bounded clause belongs with the field that has to
+# fit it, so it lives beside the grid. The private name is kept for the callers
+# in this module that already read it.
+_single_clause = single_clause
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
 
@@ -516,20 +521,6 @@ def unwatch(project: str) -> dict[str, Any]:
         }
 
 
-def _single_clause(value: Any, *, limit: int = 96) -> str:
-    """Collapse free text to one bounded clause suitable for a ticker."""
-    compact = " ".join(str(value or "").split())
-    clause = re.split(
-        r";|(?<=[.!?])\s+|\s+[\N{EM DASH}\N{EN DASH}]\s+", compact, maxsplit=1
-    )[0].strip()
-    if len(clause) <= limit:
-        return clause
-    boundary = clause.rfind(" ", 0, limit)
-    if boundary < limit // 2:
-        boundary = limit - 1
-    return clause[:boundary].rstrip(" ,:") + "…"
-
-
 def agent_label(pointer: Mapping[str, Any]) -> str:
     """Compact `model/effort` for the ticker, from the run's own record.
 
@@ -546,6 +537,13 @@ def agent_label(pointer: Mapping[str, Any]) -> str:
     if model and effort:
         return f"{model}/{effort}"
     return model or effort
+
+
+# The states whose detail says why a reader must act. Every other state is
+# reported without one.
+EXPLAINED_STATES = frozenset(
+    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown"}
+)
 
 
 def _watch_snapshot(
@@ -584,7 +582,11 @@ def _watch_snapshot(
             detail = f"stream quiet for {quiet}s"
         else:
             detail = ""
-    elif state in {"dispatched", "complete"}:
+    elif state not in EXPLAINED_STATES:
+        # Named as the states that MAY explain themselves rather than the ones
+        # that may not. An allow-list of states to clear leaves every state
+        # added later carrying whatever the classifier attached, which makes
+        # routine progress read as a warning.
         detail = ""
 
     return {
@@ -659,7 +661,11 @@ def fleet_transitions(
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
     for run_id in (item for item in known if item not in current):
-        changes.append((known[run_id], str(known[run_id]["state"]), "promoted"))
+        # A departure is its own fact and inherits no clause from the state it
+        # left. Carrying one forward reports a block on the line announcing that
+        # the block is over.
+        departed = {**known[run_id], "reason": ""}
+        changes.append((departed, str(known[run_id]["state"]), "promoted"))
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
@@ -715,54 +721,28 @@ def _watch_transition(
     return event
 
 
-def local_clock(observed: Any) -> str:
-    """Render a stored UTC stamp as a wall clock in the reader's own zone.
-
-    The record stays UTC because it is compared and sorted; the ticker is read
-    by a person beside a harness that timestamps in local time, and two clocks
-    two hours apart in one pane is a reading error waiting to happen.
-    """
-    text = str(observed or "")
-    if len(text) < 19:
-        return "--:--:--"
-    try:
-        moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
-        return text[11:19]
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=timezone.utc)
-    return moment.astimezone().strftime("%H:%M:%S")
+# Rendering a transition is a layout concern with its own contract, so it lives
+# beside the grid it fills. The plain default keeps this module's callers, and
+# every test that reads a line as a string, free of escape sequences.
+_PLAIN = Ticker()
 
 
 def format_watch_transition(
-    event: Mapping[str, Any], *, with_session: bool = False
+    event: Mapping[str, Any],
+    *,
+    with_session: bool = False,
+    ticker: Ticker | None = None,
 ) -> str:
     """Render one transition as the compact human-facing watch line.
 
-    ``with_session`` names the owning session, which an unscoped reader needs
-    and a session-scoped one does not: every line a scoped follower receives is
-    its own by construction, so spending the column there would only crowd out
-    the node name.
+    ``ticker`` supplies a caller's own grid — the CLI passes one carrying the
+    reader's width, theme and colour choice. Omitted, the shared plain grid
+    renders, because there is no terminal to detect: the pane is a pipe, so
+    colour is a decision a caller makes rather than one this module can infer.
     """
     if event.get("legacy"):
         return str(event.get("rendered") or "")
-    clock = local_clock(event.get("observed_at"))
-    node = str(event.get("node") or event.get("run_id") or "unknown")
-    owner = str(event.get("session") or "")
-    if with_session and owner:
-        node = f"{node} [{owner}]"
-    previous = str(event.get("from_state") or "")
-    current = str(event.get("to_state") or "unknown")
-    movement = f"{previous} → {current}" if previous else f"→ {current}"
-    agent = str(event.get("agent") or "")
-    line = (
-        f"{clock}  {agent:<18}  {node:<28}  {movement:<24}  "
-        f"{int(event.get('working') or 0)} working · "
-        f"{int(event.get('blocked') or 0)} blocked · "
-        f"{int(event.get('unpromoted') or 0)} unpromoted"
-    )
-    reason = _single_clause(event.get("reason"))
-    return f"{line} · {reason}" if reason else line.rstrip()
+    return (ticker or _PLAIN).render(event, with_session=with_session)
 
 
 def watch_ticker(

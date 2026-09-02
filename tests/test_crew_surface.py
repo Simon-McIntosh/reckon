@@ -18,6 +18,7 @@ MODULES = (
     "recovery",
     "reports",
     "summary",
+    "ticker",
 )
 
 

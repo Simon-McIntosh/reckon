@@ -193,6 +193,12 @@ _MODULE_EXPORTS = {
         "followup_ops_from_manifest",
     ),
     "summary": ("validate_summary",),
+    # No facade-level exports: the grid is reached through the module that
+    # renders with it, as its formatter and clock already are. Listing it here
+    # anyway is what pops its name from this module's globals — a submodule
+    # imported by a peer binds itself onto the parent package, so a concern
+    # module left off this map appears on the public surface by accident.
+    "ticker": (),
 }
 _CONCERN_MODULES = tuple(
     _import_module(f"{__name__}.{module_name}") for module_name in _MODULE_EXPORTS

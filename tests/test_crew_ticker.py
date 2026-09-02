@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -11,6 +11,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+from reckon.crew import ticker as ticker_module
 from reckon.crew import recovery
 
 
@@ -34,7 +35,7 @@ def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
             "project": "proj",
             "node": {"id": node, "plan": "plan-a", "time_budget": "20m"},
             "phase": phase,
-            "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            "created_at": datetime.now(tz=UTC).isoformat(),
             "manifest_path": str(home / "manifests" / f"{run_id}.md"),
             "log_path": str(stream),
             "process_alive": None,
@@ -165,13 +166,18 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
 
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
-    # clock, then what ran it, then which node — the agent column sits between,
-    # because a reader scanning a wave compares agents down a column.
-    assert line.startswith(recovery.local_clock(_event()["observed_at"]))
-    assert line.index("ticker-node") < line.index("working → blocked")
-    assert "working → blocked" in line
-    assert "3 working · 1 blocked · 0 unpromoted" in line
-    assert line.endswith("· first clause")
+    assert line.startswith(ticker_module.local_clock(_event()["observed_at"]))
+    # Which node, then what it did, then what ran it: the varying fields come
+    # first, and the near-constant agent label sits after the state rather than
+    # in the position the eye reaches straight after the clock.
+    assert line.index("ticker-node") < line.index("working") < line.index("blocked")
+    assert "working" in line and "→" in line
+    # The counts are a fixed grid whose digits share a column, so the label is
+    # preceded by a right-aligned number rather than a single space.
+    assert " 3 working ·  1 blocked ·  0 unpromoted" in line
+    # Free text is bounded to one clause and stays on the line; a second row
+    # would cost a quarter of a pane that shows about eight.
+    assert "first clause" in line
     assert "second clause" not in line
     assert "\n" not in line
 
@@ -318,11 +324,12 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
         _event(agent=snapshot["agent"], to_state="working", from_state="dispatched")
     )
     assert "gpt-5.6-sol/high" in line
-    # Between the clock and the node: what ran it belongs with when, because a
-    # reader scanning a wave compares agents down a column.
-    assert line.index("gpt-5.6-sol/high") < line.index("ticker-node")
+    # After the state, not before the node. On a uniform wave this column
+    # repeats the same value on every row, so it must not occupy the position
+    # the eye reaches first; the node and its state vary and go there instead.
+    assert line.index("ticker-node") < line.index("gpt-5.6-sol/high")
     assert line.index("gpt-5.6-sol/high") > line.index(
-        recovery.local_clock(_event()["observed_at"])
+        ticker_module.local_clock(_event()["observed_at"])
     )
 
     # Half a label beats none; no label at all renders without a stray column.
@@ -330,3 +337,56 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     assert recovery.agent_label({"agent": {"effort": "high"}}) == "high"
     assert recovery.agent_label({}) == ""
     assert "  ·" not in recovery.format_watch_transition(_event(agent=""))
+
+
+def test_a_departure_carries_no_explanation_from_the_state_it_left() -> None:
+    """A run promoted out of a block must not still report the block.
+
+    The promotion is synthesised from the run's last known snapshot, so the
+    clause explaining why it stopped travels with it unless it is cleared. The
+    result described a problem that was already over, on the very line saying it
+    was resolved.
+    """
+    known = {
+        "r-1": {
+            "run_id": "r-1",
+            "node": "n-blocked-then-cleared",
+            "session": "s",
+            "agent": "gpt-5.6-sol/medium",
+            "state": "blocked",
+            "reason": "the installed writer does not satisfy the interface",
+        }
+    }
+
+    events, remaining = recovery.fleet_transitions(known, {})
+
+    assert remaining == {}
+    (snapshot, previous, state, _counts) = events[0]
+    assert (previous, state) == ("blocked", "promoted")
+    assert snapshot["reason"] == ""
+
+
+def test_only_a_state_needing_action_keeps_the_clause_explaining_it(
+    home,
+) -> None:
+    """Routine progress renders without a reason.
+
+    The clearing rule was an allow-list of states, so any state added later kept
+    whatever the classifier happened to attach and read as a warning. Naming the
+    states that may explain themselves inverts that: a new one is silent until
+    it is deliberately listed.
+    """
+    assert "complete" not in recovery.EXPLAINED_STATES
+    assert "dispatched" not in recovery.EXPLAINED_STATES
+    assert "working" not in recovery.EXPLAINED_STATES
+    assert {"blocked", "failed", "stalled"} <= recovery.EXPLAINED_STATES
+
+    _write_pointer(home, "r-done", "n-done", phase="working")
+    _deliver(home, "r-done", "complete")
+    snapshot = recovery._watch_snapshot(
+        crew.read_pointer("r-done"),
+        moment=recovery._utc_seconds(),
+        stall_seconds=900,
+    )
+    assert snapshot["state"] == "complete"
+    assert snapshot["reason"] == ""

@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from reckon import cli, crew
+from reckon.crew import ticker as ticker_module
 from reckon.crew import recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
@@ -396,7 +397,7 @@ def test_the_stream_stores_lossless_events_so_ownership_survives(home) -> None:
     assert record["session"] == "mine"
     assert record["node"] == "one-node"
     assert recovery.format_watch_transition(record).startswith(
-        recovery.local_clock(record["observed_at"])
+        ticker_module.local_clock(record["observed_at"])
     )
 
 
@@ -459,7 +460,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
     rendered = [recovery.format_watch_transition(event) for event in events]
-    assert all("2 working · 0 blocked · 0 unpromoted" in line for line in rendered)
+    assert all(" 2 working ·  0 blocked ·  0 unpromoted" in line for line in rendered)
     for line in rendered:
         assert "[stderr]" not in line
 
