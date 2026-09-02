@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="clive-local-workers-landed">
+  <meta name="plan-title" content="Clive local workers — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution record for the local worker lane: what the reconnaissance found already built, what each section changed, and what the ledger measured.">
+  <meta name="plan-evidence-for" content="reckon:clive-local-workers">
+  <meta name="plan-recorded-at" content="2026-09-02">
+  <meta name="plan-verdict" content="in-progress">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; codex and clive CLI backends against the site model catalog on the GPU cluster">
+  <title>Clive local workers — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="currency">Currency audit before the first node (2026-09-02)</h2>
+    <p>Two of the plan's asserted properties were checked against the tree before any
+      node was cut, because a node authored from stale text executes its defects
+      faithfully. One held and one did not.</p>
+    <table>
+      <thead><tr><th>Asserted</th><th>Measured</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>§2 — &ldquo;until the release is live the entry is authored and marked
+            unavailable by the availability probe&rdquo;</td>
+          <td><strong>False.</strong> <code>clive --list</code> publishes one route,
+            <code>deepseek-v4-flash</code> on 2&times;H200 with a 492,288-token usable
+            input budget; GLM 5.3 has no release id. And
+            <code>reckon.flight.probe_availability</code> resolves availability from
+            <code>command_found</code> plus an optional <code>auth_check</code> vector
+            &mdash; both properties of the wrapper, neither of the model.</td>
+          <td>A <code>clive-glm</code> entry would have reported <em>available</em> and
+            failed inside the worker instead of at the refusal. §2's executable node
+            became the catalog-aware probe; the entry itself waits on the release.</td>
+        </tr>
+        <tr>
+          <td>§6 — the <code>worktree-full</code> tier gives no enforced boundary</td>
+          <td><strong>True.</strong> <code>sandbox_write_roots</code> returns
+            <code>None</code> for that tier and the codex dialect emits
+            <code>--dangerously-bypass-approvals-and-sandbox</code>, with the reason
+            already in the file: a sandbox is inherited by child processes and would
+            break the test runners a gate depends on.</td>
+          <td>§6 proceeds as written, and it gates write access for every backend
+            rather than only the local one.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>A third constraint was measured rather than assumed:
+      <code>skills/reckon-ship/SKILL.md</code> estimates 15,504 tokens against the
+      16,000-token read-set budget its own contract test enforces, and the routing text
+      the §3 flag must reach appears in three places, not one. Both were written into §3
+      before dispatch, because a worker discovers them only by reddening the suite.</p>
+
+    <h2 id="reuse-map">§1 — Prior-art reconnaissance: seven of eight areas already have their abstraction</h2>
+    <p>Run <code>r-20260902T131713796175-local-lane-reuse-map</code>, member
+      <code>local-scout</code> at <code>gpt-5.6-sol/high</code> in the read-only tier,
+      546 worker-seconds, first attempt, gate <strong>passed</strong> on 82 of 82 claimed
+      symbol and test-name resolutions at base <code>33a1315</code> plus a structural
+      check of eight capability sections. Commitless by design; the deliverable is
+      <code>~/.config/reckon/crew/reports/local-lane-reuse-map.md</code>.</p>
+    <p><strong>Verdict: 1 runtime-sufficient, 7 bounded-extension, 0 absent.</strong>
+      Nothing this plan needs is missing wholesale; every section extends a controlling
+      abstraction that already exists. That is the finding that shapes the fleet, because
+      an extension has an owner and a competing implementation does not.</p>
+    <table>
+      <thead><tr><th>Capability</th><th>Fitness</th><th>What it changes about the node</th></tr></thead>
+      <tbody>
+        <tr><td>Declare one backend by flight key, validated with provenance</td>
+          <td>bounded-extension</td>
+          <td><code>local_backend</code> sits beside <code>default_backend</code> in the
+            LinkML source; <code>_validate_resolved</code> gains the one merged-map check
+            and both derived schema artifacts regenerate. No parallel validator.</td></tr>
+        <tr><td>Plumb a dispatch flag to backend, pointer and ledger</td>
+          <td>bounded-extension</td>
+          <td><code>plan_dispatch</code> is the single routing authority and must stay so:
+            <code>--local</code> translates the key into the existing default selection
+            rather than resolving a backend of its own.</td></tr>
+        <tr><td>Snapshot tree state at dispatch, compare footprint at promotion</td>
+          <td>bounded-extension</td>
+          <td>The run base, its own worktree diff and declared-scope refusal all exist;
+            what is absent is any record of the <em>other</em> trees at dispatch. One
+            deterministic snapshot in the pointer, compared under the promotion lock.</td></tr>
+        <tr><td>Enumerate live peer worktrees</td>
+          <td><strong>runtime-sufficient</strong></td>
+          <td>Take one snapshot into a local value before comparing; the fleet changes
+            between calls, so a per-path enumerator would race itself.</td></tr>
+        <tr><td>Derive a manifest from a finished stream and diff</td>
+          <td>bounded-extension</td>
+          <td>Recovery already fails closed: a terminal stream with no fresh manifest is
+            <code>abandoned</code> and nothing is promotable. Missing is the repair
+            artifact and a field that keeps <code>derived</code> from reading as
+            delivered.</td></tr>
+        <tr><td>Classify infrastructure failure out of a pass rate</td>
+          <td>bounded-extension</td>
+          <td>The taxonomy and the ledger's exclusion already exist;
+            <code>derive_capabilities</code> alone still sets success from
+            <code>gate == "passed"</code>. One eligibility policy, applied where the
+            observation is inserted.</td></tr>
+        <tr><td>Compose the prompt and run the first observation</td>
+          <td>bounded-extension</td>
+          <td>The expected side is already on the pointer &mdash; worktree, base SHA,
+            declared scope. Only the worker's reported side and the comparison are
+            missing, and both belong in the one composer and the one observer.</td></tr>
+        <tr><td>Probe availability and refuse with the capability exit</td>
+          <td>bounded-extension</td>
+          <td>The exit-5 refusal envelope is ready to reuse; the model-catalog probe and
+            the availability-to-dispatch gate are the genuinely new parts.</td></tr>
+      </tbody>
+    </table>
+    <p>The map also settled the fleet's shape rather than only its content:
+      <code>observe</code> lives in <code>reckon/crew/dispatch.py</code> and
+      <code>_cumulative_diff</code> in <code>reckon/crew/promotion.py</code>, so the
+      crew-core sections contend for the same two files and <strong>serialise instead of
+      fanning out</strong>. Only §4, which is configuration and reference prose, and the
+      capability-cache work are independent of that spine.</p>
+
+  </main>
+</body>
+</html>
