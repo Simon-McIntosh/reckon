@@ -1947,6 +1947,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                 record["phase"] = manifest_status
 
         _apply_budget_watchdog(record, config)
+        _apply_orientation_check(record, manifest if manifest_fresh else None)
 
         capture = _capture_member_session(record)
         if capture is not None:
@@ -1954,6 +1955,73 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         return record
 
     return _mutate_pointer(run_id, fold)
+
+
+def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> None:
+    """Block a run whose first reported orientation differs from its pointer."""
+    from reckon.crew.reports import parse_manifest
+
+    prior = record.get("orientation_check")
+    if isinstance(prior, Mapping):
+        if prior.get("matched") is False:
+            record["phase"] = "blocked"
+            record["detail"] = str(prior.get("detail") or "orientation mismatch")
+        return
+    if manifest is None:
+        return
+
+    reported = parse_manifest(manifest.read_text())
+    names = ("orientation_worktree", "orientation_base_sha", "orientation_write_paths")
+    if any(not reported.get(name) for name in names):
+        return
+
+    raw_paths = reported["orientation_write_paths"]
+    try:
+        decoded_paths = json.loads(str(raw_paths))
+    except json.JSONDecodeError:
+        decoded_paths = raw_paths
+    if isinstance(decoded_paths, list) and all(
+        isinstance(path, str) for path in decoded_paths
+    ):
+        reported_paths: Any = sorted(decoded_paths)
+    else:
+        reported_paths = raw_paths
+
+    expected = {
+        "worktree": str(record.get("worktree") or ""),
+        "base_sha": str(record.get("base_sha") or ""),
+        "write_paths": sorted(
+            str(path) for path in (record.get("node") or {}).get("write_paths") or ()
+        ),
+    }
+    actual = {
+        "worktree": str(reported["orientation_worktree"]),
+        "base_sha": str(reported["orientation_base_sha"]),
+        "write_paths": reported_paths,
+    }
+    mismatches = [name for name in expected if actual[name] != expected[name]]
+    if not mismatches:
+        record["orientation_check"] = {
+            "checked_at": _utc_now(),
+            "matched": True,
+        }
+        return
+
+    detail = "orientation mismatch: " + "; ".join(
+        f"{name} expected={json.dumps(expected[name], sort_keys=True)} "
+        f"reported={json.dumps(actual[name], sort_keys=True)}"
+        for name in mismatches
+    )
+    record["orientation_check"] = {
+        "checked_at": _utc_now(),
+        "matched": False,
+        "mismatches": mismatches,
+        "expected": expected,
+        "reported": actual,
+        "detail": detail,
+    }
+    record["phase"] = "blocked"
+    record["detail"] = detail
 
 
 def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:

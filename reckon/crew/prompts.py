@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -72,6 +73,7 @@ RUNTIME FILESYSTEM
   The working directory is the delivery directory {working_directory}.
   The repository at the assigned worktree path {worktree} is read-only.
 """
+    orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     return f"""You are a worker on one node. Read the live plan first; it is the
 semantic authority for context, decisions, evidence inputs and constraints.
 
@@ -103,8 +105,10 @@ FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
 FENCE — DELIVERY
   Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
   If that exact path is not writable, STOP and report a blocker; a manifest written anywhere else means delivery cannot be found. Long output and logs go on disk.
-
-MANIFEST (write exactly these keys)
+MANIFEST (write exactly these keys; after reading the plan, observe path and revision in the assigned tree and make these first three lines your first write)
+  orientation_worktree: <output of pwd>
+  orientation_base_sha: <output of git rev-parse HEAD>
+  orientation_write_paths: {orientation_scope}
   node: {node.id}
   status: complete | blocked | failed
   commits: <sha list>
@@ -117,7 +121,6 @@ MANIFEST (write exactly these keys)
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
   blockers: <none, or the exact unmet condition>
-
 WORKTREE AND PARALLEL-SAFETY RULES (binding)
   1. Work only in {worktree}. Do not create, checkout or switch branches.
   2. Never use git stash, rebase, clean, reset --hard, or path restoration.
