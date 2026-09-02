@@ -32,16 +32,16 @@ an exact spec only amortises when several dispatches share it.
 Declare the level on the dispatch (`--spec-level exact|guided|open`) so the
 ledger can test this table against outcomes.
 
-## The mapping (initial priors — the ledger calibrates them)
+## The mapping (measured priors)
 
 These rows are what goes into `roles.<role>.by_spec_level` in a flight layer;
 the coordinator no longer applies them by hand on each call:
 
-| Declared level | First-choice mapping | Why |
+| Declared level | Measured prior | Evidence |
 |---|---|---|
-| `exact` | the small-model backend via its gate below, else the default backend at reduced effort | The reasoning is already in the spec. |
-| `guided` | reduced effort for small nodes, full effort above ~1 worker-hour | Implementation reasoning remains; design reasoning does not. |
-| `open` | full effort; the top tier for cross-cutting single-owner nodes | The worker carries design and implementation. |
+| `exact` | default backend at medium effort | 158 medium runs passed at 0.86, against 197 high runs at 0.83. |
+| `guided` | default backend at medium effort | 416 medium runs passed at 0.91, against 279 high runs at 0.89. |
+| `open` | default backend at high effort | 61 high runs passed at 0.84; no medium sample exists, so high remains the prior until at least ten usable medium runs measure the alternative. |
 
 A node the mapping routes somewhere its gate forbids (an `open` node toward a
 small model, say) is a config bug — the mapping encodes this table, and the
@@ -53,12 +53,14 @@ ledger records pass rate, worker minutes, tokens and redispatch lineage per
 configuration whose pass rate stays at or above the capabilities success
 threshold over at least ten usable runs, charged for its redispatches.
 
-## The small-model lane — eligibility gate
+## The small-model lane — defined, unrouted eligibility gate
 
-Routing a node to a small-model backend — whether the `by_spec_level` mapping
-resolves it there or a `--set` override sends it — is permitted only when
-**all** hold. The lane buys speed and budget on work whose correctness is
-already pinned — never a way to write uncertain code quickly.
+The small-model backend remains defined for shadow qualification, but no live
+mapping selects it. A candidate lane earns routing through at least ten usable
+shadow pairs showing a gain on the same nodes, then a gated pilot, then a slice
+lock. During that pilot, routing a node to the lane is permitted only when
+**all** conditions below hold. The lane buys speed and budget on work whose
+correctness is already pinned — never a way to write uncertain code quickly.
 
 1. Declared level is `exact`, and the plan section actually prescribes the
    change with a named check. A declaration the section does not support is a
@@ -135,7 +137,7 @@ source ever names one. The ladder, cheapest step first, each gating the next:
    usable shadow pairs meeting the capabilities success threshold.
 4. **Gated pilot**: live routing under the small-model lane gate above (or a
    role overlay for a full-size tier), first twenty runs full-diff audited.
-5. **Slice-lock**: the §6 checkpoint locks the winner into
+5. **Slice-lock**: the calibration checkpoint locks the winner into
    `roles.<role>.by_spec_level` per the decision rule — cheapest
    configuration with pass ≥ 0.8 over ≥ 10 usable runs, charged for
    redispatches.
