@@ -449,6 +449,10 @@ first to get `version`; pass it as `expected_version`; on 412 re-read and retry.
 | `append` | `{"op":"append","target":"<section>","item":{…}}` | adding to a list section |
 | `resolve` | `{"op":"resolve","target":"followups\|questions","id":"…","by":"…","outcome"\|"resolution":"…"}` | resolving a followup or question |
 | `lock` | `{"op":"lock","key":"<dec-key>","choice":"…","rationale":"…","by":"…"}` | locking a decision |
+| `gate` | `{"op":"gate","id":"…","section":"…","gated_sections":["…"],"measure":"…","required_evidence":"…"}` | declaring an evidence gate |
+| `pass` | `{"op":"pass","id":"…","evidence":"…"}` | closing a gate with passing evidence |
+| `fail` | `{"op":"fail","id":"…","evidence":"…"}` | closing a gate with negative evidence |
+| `retire_prose` | `{"op":"retire_prose","preimage":"<exact authored HTML>"}` | removing exactly one superseded authored fragment outside all `section[data-reckon]` regions, in the same atomic write as its replacement state |
 | `move` | `{"op":"move","target":"sprint_item","slug":"…","to":"S2","to_version":4}` | moving an item from the selected sprint with both versions checked |
 
 **`set` path values** (plan):

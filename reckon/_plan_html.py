@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import html as _htmlmod
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -33,6 +34,56 @@ from reckon.capability import (
 )
 from reckon._schema import LEGACY_EFFORT_HOURS
 from reckon.tags import normalise_tag
+
+
+class _StructuredSectionSpanParser(HTMLParser):
+    """Locate exact source spans owned by ``section[data-reckon]``."""
+
+    def __init__(self, source: str) -> None:
+        super().__init__(convert_charrefs=False)
+        self.source = source
+        self.line_offsets = [0]
+        self.line_offsets.extend(match.end() for match in re.finditer(r"\n", source))
+        self.section_stack: list[tuple[bool, int]] = []
+        self.spans: list[tuple[int, int]] = []
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self.line_offsets[line - 1] + column
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "section":
+            protected = any(name == "data-reckon" for name, _value in attrs)
+            self.section_stack.append((protected, self._offset()))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "section" or not any(name == "data-reckon" for name, _value in attrs):
+            return
+        start = self._offset()
+        self.spans.append((start, start + len(self.get_starttag_text())))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag != "section" or not self.section_stack:
+            return
+        protected, start = self.section_stack.pop()
+        if not protected:
+            return
+        close_start = self._offset()
+        close_end = self.source.find(">", close_start)
+        self.spans.append((start, len(self.source) if close_end < 0 else close_end + 1))
+
+
+def structured_section_spans(html_text: str) -> tuple[tuple[int, int], ...]:
+    """Return source ranges that authored-text operations must not overlap."""
+
+    parser = _StructuredSectionSpanParser(html_text)
+    parser.feed(html_text)
+    parser.close()
+    for protected, start in parser.section_stack:
+        if protected:
+            parser.spans.append((start, len(html_text)))
+    return tuple(sorted(parser.spans))
+
 
 # ── Scalar fields carried in <meta name="plan-*"> ──────────────────────────
 _SCALARS = (

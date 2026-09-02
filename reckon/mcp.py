@@ -876,6 +876,10 @@ _OP_VOCAB = {
     "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. followup prompt is one /reckon-ship invocation line.",
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status is derived from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
+    "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
+    "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
+    "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
+    "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one exact authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
 }
@@ -2153,7 +2157,8 @@ def _edit_plan(
     ``doc_type`` (version = state.version). Untyped edits retain compatibility
     only when the leaf slug identifies one live artifact unambiguously.
 
-    Verbs (the "op" key): set | append | resolve | lock | move. See read_plan(
+    Verbs (the "op" key): set | append | resolve | lock | gate | pass | fail |
+    retire_prose | move. See read_plan(
     ..., with_schema=True)["op_vocab"] for the full op grammar.
 
     Create: edit_plan(..., expected_version=0, create=True) on a NON-existent
@@ -2407,6 +2412,10 @@ def _edit_plan(
             created_file.unlink(missing_ok=True)
         return {"ok": False, "error": "op_error", "detail": str(e)}
 
+    retire_preimages = [
+        str(op["preimage"]) for op in ops if op.get("op") == "retire_prose"
+    ]
+
     # ── schema-validate the working dict (reject on failure, write nothing) ──
     errors = _validate_working(slug, working)
     if not errors and selected_type is not None and not is_index:
@@ -2430,6 +2439,7 @@ def _edit_plan(
             cur_version,
             root,
             artifact_type=selected_type,
+            retire_preimages=retire_preimages,
         )
     except VersionConflict as e:
         return _conflict_response(
@@ -2449,6 +2459,10 @@ def _edit_plan(
                 "named resource with doc_type."
             ),
         }
+    except OpError as e:
+        if created_file is not None:
+            created_file.unlink(missing_ok=True)
+        return {"ok": False, "error": "op_error", "detail": str(e)}
     except (ValueError, FileNotFoundError) as e:
         return {"ok": False, "error": "resource_selection", "detail": str(e)}
 

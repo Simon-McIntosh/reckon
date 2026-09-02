@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon._plan_html as _plan_html_module
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
 from reckon.lifecycle import effective_status
@@ -1008,6 +1009,133 @@ def test_gate_op_declares_gate_readable_through_read_plan(setup):
     ]
 
 
+def test_gate_declaration_and_prose_retirement_share_one_version_bump(setup):
+    docs_dir, _, project = setup
+    path = _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    prose = (
+        '<table id="authored-gates"><tbody><tr><td>Round-trip parity</td>'
+        "<td>Focused log</td></tr></tbody></table>"
+    )
+    original = path.read_text(encoding="utf-8")
+    path.write_text(original.replace("</main>", f"{prose}\n</main>"), encoding="utf-8")
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [_gate_op(), {"op": "retire_prose", "preimage": prose}],
+        0,
+    )
+
+    assert result["ok"] is True
+    assert result["new_version"] == 1
+    text = path.read_text(encoding="utf-8")
+    assert prose not in text
+    readback = mcp_module._read_plan(project, "plan-a")
+    assert readback["version"] == 1
+    assert readback["data"]["gates"][0]["id"] == "round-trip-parity"
+
+
+@pytest.mark.parametrize(
+    ("body", "occurrences"),
+    [
+        ("<p>Unrelated prose.</p>", 0),
+        ("<p>Superseded.</p><p>Superseded.</p>", 2),
+    ],
+)
+def test_retire_prose_requires_one_exact_preimage_without_writing(
+    setup, body, occurrences
+):
+    docs_dir, _, project = setup
+    path = _make_plan_html(docs_dir, "plan-a", {"version": 0})
+    original = path.read_text(encoding="utf-8")
+    path.write_text(original.replace("</main>", f"{body}\n</main>"), encoding="utf-8")
+    before = path.read_bytes()
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            _gate_op(),
+            {"op": "retire_prose", "preimage": "<p>Superseded.</p>"},
+        ],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert f"found {occurrences} occurrences" in result["detail"]
+    assert path.read_bytes() == before
+    assert mcp_module._read_plan(project, "plan-a")["version"] == 0
+
+
+def test_retire_prose_refuses_structured_section_overlap_without_writing(setup):
+    docs_dir, _, project = setup
+    path = _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "decisions": {
+                "transport": {
+                    "title": "Which transport?",
+                    "choices": ["stdio", "http"],
+                    "choice": "",
+                }
+            },
+        },
+    )
+    preimage = '<p class="r-dec-q">Which transport?</p>'
+    before = path.read_bytes()
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [_gate_op(), {"op": "retire_prose", "preimage": preimage}],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert "overlaps a section[data-reckon]" in result["detail"]
+    assert path.read_bytes() == before
+    assert mcp_module._read_plan(project, "plan-a")["version"] == 0
+
+
+def test_retirement_only_preserves_structured_sections_and_is_not_a_noop(setup):
+    docs_dir, _, project = setup
+    path = _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {"version": 0, "decisions": {}, "followups": [], "gates": []},
+    )
+    prose = '<table id="superseded"><tr><td>Old gate prose</td></tr></table>'
+    original = path.read_text(encoding="utf-8")
+    original = original.replace("</main>", f"{prose}\n</main>")
+    path.write_text(original, encoding="utf-8")
+    structured_before = [
+        original[start:end].encode()
+        for start, end in _plan_html_module.structured_section_spans(original)
+    ]
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "retire_prose", "preimage": prose}],
+        0,
+    )
+
+    assert result["ok"] is True
+    assert result["new_version"] == 1
+    revised = path.read_text(encoding="utf-8")
+    structured_after = [
+        revised[start:end].encode()
+        for start, end in _plan_html_module.structured_section_spans(revised)
+    ]
+    assert prose not in revised
+    assert structured_after == structured_before
+    assert mcp_module._read_plan(project, "plan-a")["version"] == 1
+
+
 def test_pass_op_records_verdict_and_evidence(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0})
@@ -1450,6 +1578,7 @@ def test_read_plan_with_schema(setup):
     assert "schema" in r
     assert r["schema"]["title"] == "reckon PlanState"
     assert "op_vocab" in r and "set" in r["op_vocab"]
+    assert {"retire_prose", "gate", "pass", "fail"} <= set(r["op_vocab"])
     assert "dos_donts" in r
 
 
