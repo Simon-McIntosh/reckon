@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html">
 <meta name="plan-impl" content="0.33">
@@ -214,6 +214,33 @@
     <p>The check runs against payload shapes that reproduce the reported failure,
     so that reverting the §3 repair turns it red. A guard that passes both before
     and after the fix is not a guard.</p>
+
+    <h3 id="s4-asymmetry">The half that gets left out</h3>
+
+    <p>A guard's own tests can all pass while the guard is wrong, and the failure
+    is systematic rather than careless. Measured next door on 2026-09-02: the
+    promotion boundary guard shipped with five tests, each synthesising a stray
+    write into an otherwise still tree and asserting a refusal. All five were
+    correct and all five still pass. The guard was nonetheless fleet-blocking
+    within an hour, because no test asserted the other half — that a run
+    <strong>promotes</strong> while the world around it moves. Every case proved
+    the guard fires when it should; none proved it stays quiet when it should.</p>
+
+    <p>This check has exactly the same shape and therefore the same exposure, so
+    it owes both halves:</p>
+
+    <ul>
+      <li><strong>Fires when it should.</strong> A payload reproducing the module
+      skew turns it red, and reverting the §3 repair turns it red.</li>
+      <li><strong>Stays quiet when it should.</strong> A healthy surface passes
+      while unrelated state around it changes — a different project's payload
+      moving, an unrelated module list being edited, concurrent activity in the
+      tree. This is the half whose absence is invisible until it costs an
+      afternoon.</li>
+    </ul>
+
+    <p>Credit for the diagnosis and the correction of the guard it describes
+    belongs to the session shipping <code>clive-local-workers</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
