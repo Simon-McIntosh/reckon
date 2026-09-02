@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="51">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-impl" content="0.69">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc">
@@ -53,6 +53,48 @@
     <code>gpt-5.6-sol</code> runs at medium and high effort, against the 58 runs the current
     effort priors were set from. The two questions this plan settles, local lane and default
     routing, are the same question asked of the same ledger.</p>
+
+    <h2 id="s8">&#167;8 &mdash; Effort is not a dial on these models, and the harness pretends it is</h2>
+    <p><strong>Measured against the endpoint directly, 2026-09-02.</strong> The routing
+    origin serves both releases and accepts the Anthropic Messages API. Asking each model the
+    same question at four thinking budgets &mdash; none, 1024, 4096 and 16000 tokens:</p>
+    <table>
+      <thead><tr><th>Model</th><th>no thinking param</th><th>1024</th><th>4096</th><th>16000</th></tr></thead>
+      <tbody>
+        <tr><td><code>deepseek-v4-flash</code></td><td>thinking block, 38 chars</td><td>43</td><td>37</td><td>38</td></tr>
+        <tr><td><code>glm-5.3</code></td><td>thinking block, 43 chars</td><td>43</td><td>43</td><td>73</td></tr>
+      </tbody>
+    </table>
+    <p>Every call returned a <code>thinking</code> block, <strong>including the ones that
+    requested no thinking at all</strong>, and the budget moved the depth by nothing on flash
+    and by noise on GLM. So thinking is intrinsic to these checkpoints rather than gated by
+    the API, and <code>budget_tokens</code> is accepted and ignored. The wrapper agrees:
+    it declares <code>SUPPORTED_CAPABILITIES="thinking"</code> unconditionally for whichever
+    release it selects.</p>
+    <p><strong>The consequence for routing is that the local lane has no effort dimension at
+    all</strong> &mdash; not the two levels one might expect, but zero. A pinned
+    <code>effort</code> on the <code>clive</code> backend is a client-side fiction: it changes
+    what the harness asks for and nothing the server does. Three things follow. The earlier
+    reading that the lane had been "running with its reasoning switched off" at medium is
+    retired for a second time and by a stronger instrument than the one that retired it
+    first. The <code>thinking_tokens</code> counter the harness reports is not merely
+    unreliable, it is measuring a request rather than a response &mdash; a smoke test that
+    wrote its file correctly reported <code>thinking_tokens: 0</code> while the endpoint
+    emits thinking on every call. And a shadow pair that substitutes effort on a local model
+    is not a controlled comparison of anything; only backend, model and prompt are real
+    variables here.</p>
+    <p>So pin the local backends' effort to one declared value and stop treating it as a
+    calibration axis, record in the flight comment that the server ignores it with this
+    measurement as the reason, and keep the ledger's effort field as a record of what was
+    requested rather than of what ran.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
+        <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
+        <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
 
     <h2 id="s2">&#167;2 &mdash; GLM 5.3 beside DSv4 flash</h2>
     <p>A second local model is a second backend entry, not a code change. When the catalog
@@ -392,13 +434,13 @@
       </p>
     <p class="r-dec-rat">One declared local_backend key in the host layer names the local backend and dispatch --local resolves it, refusing when the key is unset or names an undeclared backend, so a request to use local workers fails loudly on a host with no local lane instead of silently running the incumbent. The skill text names the flag and a contract test pins it; the previous --set convention was a rule with no bound check.</p>
     </div>
-<div class="r-dec" data-key="local-write-access-order" data-choice="after-boundary-enforced" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
+<div class="r-dec" data-key="local-write-access-order" data-choice="now-with-audit" data-by="Simon McIntosh (lead), reopened 2026-09-02" data-when="2026-09-02T20:21:34+00:00">
     <p class="r-dec-q">When does the local lane get repository write access?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="after-boundary-enforced">After the worktree-boundary check of §6 lands and six pairs requalify</button>
-      <button class="r-opt" data-value="now-with-audit">Now, with the first twenty runs full-diff audited</button>
+      <button class="r-opt" data-value="after-boundary-enforced">After the worktree-boundary check of §6 lands and six pairs requalify</button>
+      <button class="r-opt chosen" data-value="now-with-audit">Now, with the first twenty runs full-diff audited</button>
       </p>
-    <p class="r-dec-rat">Read-only roles go live on the local lane now; implementation nodes shadow only until a promotion refuses a stray write by test and six controlled pairs requalify. A local-model worker has already written into the shared checkout once under the current advisory sandbox, and the fix benefits every backend.</p>
+    <p class="r-dec-rat">Reopened and re-locked by the lead on evidence that retires the original rationale. Three things changed since the first lock this morning. First, its own gate is half-satisfied: the §6 boundary check landed and a stray write into the main checkout or a peer worktree is now refused at promotion by test, so the incident the lock was built around — a local worker editing the shared checkout under an advisory sandbox — is caught by machinery rather than by withholding write access. Second, the failures attributed to the local lane were harness failures, not write failures: every ordinary-path Write in three read-only runs was denied because the Claude dialect maps that tier to --permission-mode plan, and a direct smoke test at worktree-full writes correctly on the first attempt. The lock was gating the wrong risk. Third, the incumbent codex account is quota-exhausted until 2026-09-08 and the claude subscription cannot absorb the fleet, so the local lane is not a candidate being evaluated at leisure — it is the only implementation lane available, and a lock that forbids using it forbids progress. The audit obligation is kept and strengthened rather than dropped: implementation nodes run on the local backend now, every one full-diff audited, with the §6 refusal as the enforced backstop and any stray write a refused promotion with evidence. The six controlled pairs remain owed as calibration, not as a gate.</p>
     </div>
 </section>
 
@@ -509,6 +551,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260902-waiver-row-added" data-who="reckon-ship" data-when="2026-09-02T18:20:00Z">
     <div class="r-comment-body">§6 gains a measure it should have shipped with: the boundary refusal needs an explicit override. Raised independently by session reckon-2c from the far side of the incident, having taken the analogous --allow-unreconciled-runs waiver to get past a fence of my making, and they deliberately did not fork it into their own plan because it is a change to crew complete and belongs here. The argument is the incident itself. The check was wrong for an hour and blocked six runs across three sessions, and what converted a wrong verdict into a hard stop was the absence of any override; a revert was attempted and denied by permission policy, so the only route left was a forward fix and the window was however long that took. Every other refusal in this surface carries a waiver for the same reason a guard needs one at all: its author cannot enumerate the situations it will meet, and this one demonstrated within the hour that it had not. A guard with no waiver asserts foresight it does not have. The waiver is not a route around the boundary, it is the difference between a bad verdict costing a stated reason on a ledger row and costing the fleet its ability to promote. Denominator grows to 16 executable nodes, so impl is 11 of 16.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260902-write-access-reopened" data-who="reckon-ship" data-when="2026-09-02T18:45:00Z">
+    <div class="r-comment-body">local-write-access-order reopened and re-locked from after-boundary-enforced to now-with-audit, on the lead's direction and on evidence that retires the original rationale. What the lock was protecting against was a local worker writing into the shared checkout, measured once on 2026-08-26. That risk is now held by machinery: §6 landed today and refuses at promotion any run whose footprint reached another tree at a declared path, by test, for every backend. What the lock was actually costing was measured today too, and it was gating the wrong thing entirely — the local lane's three failures were all harness failures. Every ordinary-path Write in the three read-only runs was denied because the Claude dialect maps read-only to --permission-mode plan; a direct smoke test of the same model at worktree-full wrote its file on the first attempt with one Write call and end_turn. The model was never the problem. And the situation changed underneath the decision: the codex account hit its usage limit with a reset of 2026-09-08, six days out, and the claude subscription cannot absorb the background fleet, so the local lane stopped being a candidate under evaluation and became the only implementation lane there is. A gate that forbids the only available lane forbids progress, which is not what the original decision was trading off. The audit half is kept and strengthened rather than waived: every local implementation node is full-diff audited, the §6 refusal is the enforced backstop, and the six controlled pairs stay owed as calibration rather than as a precondition.</div>
 </div>
 </section>
 </main>
