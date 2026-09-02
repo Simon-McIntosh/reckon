@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T17:29:37",
+  "updated": "2026-09-02T18:18:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -61,9 +61,11 @@
         "id": "clive-d",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "dab7de2e-be06-4673-ad0c-c3850898bdaf",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "dab7de2e-be06-4673-ad0c-c3850898bdaf"
+        },
         "created": "2026-09-02"
       },
       {
@@ -487,6 +489,17 @@
         "role": "implement",
         "session_id": "01a00aa8-4a6c-78a0-9c90-c5ef82985fc1",
         "created": "2026-08-16"
+      },
+      {
+        "id": "spa-render-fault",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a062c3-2354-7912-8b91-e27f1185c3c8",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a062c3-2354-7912-8b91-e27f1185c3c8"
+        },
+        "created": "2026-09-02"
       },
       {
         "id": "surface-baseline",
@@ -35548,9 +35561,216 @@
           "role": "review",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T151528945034-orientation-checked-at-first-observation",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "orientation-checked-at-first-observation",
+        "node_definition": {
+          "done_when": "The composed prompt asks the worker to open its manifest with three orientation facts \u2014 the worktree path it is working in, the base revision it sees there, and its declared write scope \u2014 stated as the first thing it writes rather than at the end; the first observation of a run parses those facts and compares them with the live pointer's own worktree, base_sha and write_paths, and classifies the run blocked with a detail naming which of the three mismatched and both values, while a report that matches leaves the phase untouched and an absent report is not treated as a mismatch because an early observation legitimately precedes the manifest; tests assert the mismatching case blocks and names the field, the matching case does not, and the absent case does not, each in tests/test_crew_orientation.py so no existing test file is contended; the section-6 promotion check remains the backstop and is not weakened or duplicated; and the full suite adds no failure against base 33e6addde32cf609a0106e980258804a611f6693",
+          "estimated_hours": null,
+          "goal": "Catch a worker that is working in the wrong tree within a minute rather than at promotion",
+          "id": "orientation-checked-at-first-observation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T151528945034-orientation-checked-at-first-observation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_orientation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "harness-orient",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T15:15:36Z",
+        "completed_at": "2026-09-02T15:45:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1771,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1771,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "33e6addde32cf609a0106e980258804a611f6693",
+        "commits": [
+          "e099fc54f71fb82bafccaa6547a7afefa86116bb"
+        ],
+        "changed_lines": {
+          "added": 201,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T151528945034-orientation-checked-at-first-observation/logs/full-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T151528945034-orientation-checked-at-first-observation/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a062b0-9fd5-7ac3-b127-710167682027",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8062208,
+            "cached_input_tokens_cumulative": 8062208,
+            "input_tokens": 8232765,
+            "input_tokens_cumulative": 8232765,
+            "output_tokens": 18551,
+            "output_tokens_cumulative": 18551,
+            "reasoning_output_tokens": 5408,
+            "reasoning_output_tokens_cumulative": 5408
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T154754077965-boundary-attributes-the-change-to-this-run",
+        "plan": "clive-local-workers",
+        "section": "\u00a76",
+        "node": "boundary-attributes-the-change-to-this-run",
+        "node_definition": {
+          "done_when": "The promotion boundary check refuses only an UNCOMMITTED working-tree change, in the main checkout or a peer worktree, at a path inside this run's own declared write scope \u2014 because that is what a worker doing its work in the wrong tree produces, and it is the only signature that distinguishes straying from ordinary fleet activity. Committed movement is no longer a violation at all: HEAD advancing in the main checkout is the orchestrator integrating and peers committing, and the current head-delta comparison must be removed rather than filtered. An uncommitted change at a path OUTSIDE this run's declared scope is likewise not a violation, because that is a peer session's work in progress. The refusal message keeps naming the path and its owning tree. Tests in tests/test_crew_promotion_scope.py must include the cases the first implementation lacked, each asserting promotion SUCCEEDS: the main checkout's HEAD advanced by several commits during the run including a merge of the run's own work; a peer holding uncommitted edits at paths this run never declared; and both together. The existing refusals must still hold: an uncommitted stray edit in the main checkout at a declared path is refused, the same in a peer worktree is refused, each paired with its clean negative, and a worktree registered after dispatch is still not charged. Verify beyond the suite by promoting nothing but showing the check's verdict for run r-20260902T151528945034-orientation-checked-at-first-observation, whose live pointer exists and which the current code refuses, and record that verdict in the manifest. The full suite adds no failure against base 1a7b8c08f6b5c740b01be498d338119bfdde68e9",
+          "estimated_hours": null,
+          "goal": "Make the worktree-boundary refusal fire on a straying worker and not on a working fleet",
+          "id": "boundary-attributes-the-change-to-this-run",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T154754077965-boundary-attributes-the-change-to-this-run/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "boundary-check",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T15:48:02Z",
+        "completed_at": "2026-09-02T16:16:11Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1689,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1689,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "1a7b8c08f6b5c740b01be498d338119bfdde68e9",
+        "commits": [
+          "5dc92ce6c55fe40c84c9043f6144ab0c8fd5a791"
+        ],
+        "changed_lines": {
+          "added": 86,
+          "removed": 67,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T154754077965-boundary-attributes-the-change-to-this-run/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T154754077965-boundary-attributes-the-change-to-this-run/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a062ce-4ecb-7f32-ab64-21013c667cf0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8956160,
+            "cached_input_tokens_cumulative": 8956160,
+            "input_tokens": 9144411,
+            "input_tokens_cumulative": 9144411,
+            "output_tokens": 19366,
+            "output_tokens_cumulative": 19366,
+            "reasoning_output_tokens": 5506,
+            "reasoning_output_tokens_cumulative": 5506
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 581
+    "_version": 586
   }
 }
