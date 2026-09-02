@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="spa-project-render-fault">
+  <meta name="plan-title" content="SPA project render fault">
+  <meta name="plan-summary" content="The unrestarted service combines an obsolete 12-script entry point with current shell modules and selects an empty fallback">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="blank-project-surface">
+  <meta name="plan-source" content="running Reckon service, repository source, mounted project payloads, and browser capture">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-02">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="reckon-tooling,documentation">
+  <title>SPA project render fault | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input &middot; live service and source comparison</p>
+      <h1>SPA project render fault</h1>
+      <p class="lead">
+        Nova's empty project surface is a mixed-generation frontend: the
+        unrestarted server process emits its obsolete 12-script entry point,
+        then serves the current decomposed <code>shell.js</code>, which detects
+        the eight absent shell modules and deliberately renders an empty main.
+      </p>
+    </header>
+
+    <section id="finding">
+      <h2>Root cause</h2>
+      <p>
+        The failing server module is <code>reckon/serve.py</code>. The live
+        process started at <code>2026-09-01 22:10:59 +0200</code> with the former
+        hard-coded <code>_render_spa_html()</code>, whose emitted value contains
+        12 application scripts. Commit <code>737340f</code> subsequently changed
+        that function to read the canonical authored index, but server and parse
+        code are not hot-reloaded. The current authored and installed indexes
+        each contain 20 application scripts; the still-running process continues
+        to return the earlier 12-script value for every mounted project.
+      </p>
+      <p>
+        The visible failure is in <code>/_ui/shell.js</code>. The expression
+        <code>window.ReckonShell?.ready?.ReadyGate</code> evaluates to the
+        offending value <code>undefined</code>, because the live entry point omits
+        <code>shell-ready.js</code> along with seven sibling shell modules. The
+        ternary at the shell composition boundary therefore chooses
+        <code>React.createElement("main", { "data-shell-modules": "unavailable" })</code>;
+        the captured value is a <code>main</code> with zero children.
+      </p>
+      <aside>
+        <p>
+          There is no observed throwing expression. If <code>App</code> were
+          forced to execute, its first missing dependency would be
+          <code>window.ReckonShell.route.useHashRoute()</code> with
+          <code>window.ReckonShell.route === undefined</code>. The readiness
+          fallback prevents that call. Treating an exception as the fault would
+          discard the actual evidence: the blank render is an intentional,
+          silent fallback selected by an incomplete module manifest.
+        </p>
+      </aside>
+    </section>
+
+    <section id="fault-chain">
+      <h2>Fault chain</h2>
+      <figure>
+        <svg viewBox="0 0 920 190" role="img" aria-labelledby="fault-title fault-desc"
+             style="width:100%;height:auto;background:transparent;font:13px system-ui,sans-serif">
+          <title id="fault-title">Mixed-generation SPA render sequence</title>
+          <desc id="fault-desc">An obsolete server entry point omits shell modules, leaving the readiness gate undefined and producing an empty main element.</desc>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#687086"></path>
+            </marker>
+          </defs>
+          <g fill="#fbfaf7" stroke="#cfccc2" stroke-width="1.5">
+            <rect x="18" y="38" width="190" height="90" rx="7"></rect>
+            <rect x="252" y="38" width="190" height="90" rx="7"></rect>
+            <rect x="486" y="38" width="190" height="90" rx="7"></rect>
+            <rect x="720" y="38" width="182" height="90" rx="7"></rect>
+          </g>
+          <g stroke="#687086" stroke-width="2" marker-end="url(#arrow)">
+            <line x1="208" y1="83" x2="244" y2="83"></line>
+            <line x1="442" y1="83" x2="478" y2="83"></line>
+            <line x1="676" y1="83" x2="712" y2="83"></line>
+          </g>
+          <g fill="#1d2230" text-anchor="middle">
+            <text x="113" y="67"><tspan x="113" font-weight="600">Live server process</tspan><tspan x="113" dy="22">12-script HTML</tspan><tspan x="113" dy="18">cached code generation</tspan></text>
+            <text x="347" y="67"><tspan x="347" font-weight="600">Current shell.js</tspan><tspan x="347" dy="22">expects eight shell</tspan><tspan x="347" dy="18">dependency modules</tspan></text>
+            <text x="581" y="67"><tspan x="581" font-weight="600">Readiness lookup</tspan><tspan x="581" dy="22">ReadyGate</tspan><tspan x="581" dy="18">is undefined</tspan></text>
+            <text x="811" y="67"><tspan x="811" font-weight="600">Rendered root</tspan><tspan x="811" dy="22">unavailable marker</tspan><tspan x="811" dy="18">zero children</tspan></text>
+          </g>
+        </svg>
+        <figcaption>
+          The entry point and the modules it loads come from different code
+          generations. Nova's state is fetched only after this composition
+          boundary, so payload size cannot cause this empty root.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="reproduction">
+      <h2>Recorded reproductions and control</h2>
+      <h3>Empty render from the live Nova shell</h3>
+      <p>
+        This recorded command evaluates the exact <code>shell.js</code> returned
+        by the running service with the namespace produced by its incomplete
+        entry point:
+      </p>
+      <pre><code>curl -fsS http://127.0.0.1:8765/_ui/shell.js | node -e '
+const fs = require("fs"); let captured = null; const noop = () =&gt; {};
+global.window = {ReckonShell:{}}; global.document = {getElementById:() =&gt; ({})};
+global.React = {createElement:(type,props,...children) =&gt; ({type:typeof type === "string" ? type : (type?.name || "function"),props:props || {},children}),useCallback:noop,useEffect:noop,useMemo:fn =&gt; fn(),useRef:value =&gt; ({current:value}),useState:value =&gt; [typeof value === "function" ? value() : value,noop]};
+global.ReactDOM = {createRoot:() =&gt; ({render:value =&gt; {captured=value}})};
+eval(fs.readFileSync(0,"utf8"));
+console.log(JSON.stringify({tag:captured.type,dataShellModules:captured.props["data-shell-modules"],childCount:captured.children.length}));'
+</code></pre>
+      <p>
+        Exit status <code>0</code>; result:
+        <code>{"tag":"main","dataShellModules":"unavailable","childCount":0}</code>.
+      </p>
+
+      <h3>Non-empty Reckon control on the same current modules</h3>
+      <p>
+        The matching browser capture uses the current authored module order and
+        the recorded state of another mounted project, Reckon:
+      </p>
+      <pre><code>node tests/spa_render_capture.mjs \
+  --browser /usr/bin/google-chrome \
+  --profile /home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/logs/reckon-control-profile \
+  --url file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/logs/file-render/reckon/index.html#plans \
+  --expected-width 1374</code></pre>
+      <p>
+        Exit status <code>0</code>; result: one visible view, application size
+        <code>1374 &times; 900</code>, view size <code>1374 &times; 853</code>, and
+        zero elements exceeding the viewport. A separate root probe measured
+        <code>1</code> application root, <code>1</code> root child, and
+        <code>1,981</code> characters of root text for Reckon; the same canonical
+        harness rendered recorded Nova state with <code>2,946</code> characters.
+      </p>
+      <aside>
+        <p>
+          This is a canonical-source control, not a non-empty live-served
+          project control. No such live control exists in the captured service:
+          Nova, Reckon, imas-codex, and imas-ambix all receive the same obsolete
+          12-script entry point. That negative result localises the failure to
+          service generation, but it means a requirement for one empty and one
+          non-empty mounted project through the same live server is not
+          satisfiable from the recorded state.
+        </p>
+      </aside>
+    </section>
+
+    <section id="comparison">
+      <h2>Cross-project comparison</h2>
+      <p>The recorded inventory command was:</p>
+      <pre><code>for project in nova reckon imas-codex imas-ambix; do
+  count=$(curl -fsS "http://127.0.0.1:8765/${project}/" | rg -c '/_ui/.+\.js')
+  printf '%s %s\n' "$project" "$count"
+done</code></pre>
+      <table>
+        <thead>
+          <tr><th>Surface</th><th>Application scripts</th><th>Observed render evidence</th><th>Fitness verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Live Nova</td><td>12</td><td>Readiness fallback has 0 children</td><td>Fault reproduced</td></tr>
+          <tr><td>Live Reckon</td><td>12</td><td>Same incomplete manifest</td><td>Not an independent passing control</td></tr>
+          <tr><td>Live imas-codex</td><td>12</td><td>Same incomplete manifest</td><td>Not an independent passing control</td></tr>
+          <tr><td>Live imas-ambix</td><td>12</td><td>Same incomplete manifest</td><td>Not an independent passing control</td></tr>
+          <tr><td>Authored and installed index</td><td>20</td><td>Includes all 8 shell dependencies</td><td>Expected composition contract</td></tr>
+          <tr><td>Canonical Reckon file render</td><td>20</td><td>1 child; 1,981 text characters</td><td>Passing same-code control</td></tr>
+          <tr><td>Canonical Nova file render</td><td>20</td><td>1 child; 2,946 text characters</td><td>Disproves payload-size causation</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="reuse-map">
+      <h2>Reusable regression-harness inventory</h2>
+      <table>
+        <thead>
+          <tr><th>Existing module or suite</th><th>Reusable capability</th><th>One-line fitness verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>tests/spa_browser_harness.py</code></td>
+            <td>Discovers authored module order, writes a file SPA, launches Chrome, and classifies browser failures.</td>
+            <td><strong>Best execution owner:</strong> reuse it after supplying the installed service's actual entry-point scripts.</td>
+          </tr>
+          <tr>
+            <td><code>tests/spa_render_capture.mjs</code></td>
+            <td>Captures rendered DOM geometry through the Chrome DevTools protocol.</td>
+            <td><strong>Fit:</strong> assert a visible application child and reject <code>data-shell-modules="unavailable"</code>.</td>
+          </tr>
+          <tr>
+            <td><code>tests/spa_module_eval.py</code></td>
+            <td>Compiles JSX and evaluates isolated JavaScript expressions in Node.</td>
+            <td><strong>Partial fit:</strong> precise for the fallback value, but not sufficient for React hooks or full composition.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_spa_module_scope.py</code></td>
+            <td>Renders the authored inlined bundle from a file URL and detects reference errors.</td>
+            <td><strong>Closest render guard:</strong> extend its manifest input beyond canonical source so distribution skew is observable.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_build.py</code></td>
+            <td>Checks source, synchronized, built, and wheel frontend assets.</td>
+            <td><strong>Closest distribution guard:</strong> add an installed-service entry-point/module parity assertion.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_service_unit.py</code></td>
+            <td>Compiles the modules named by source-generated service HTML.</td>
+            <td><strong>Insufficient alone:</strong> it exercises newly imported source, not a long-lived service process.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_spa_composition.py</code></td>
+            <td>Exercises composed-state rendering and geometry.</td>
+            <td><strong>Fit after boundary injection:</strong> reuse its assertions once the tested HTML comes from the installed service.</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_spa_browser_harness.py</code></td>
+            <td>Verifies browser capability checks, cleanup, and failure classification.</td>
+            <td><strong>Support fit:</strong> protects the harness itself, but does not currently assert shell-manifest completeness.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="guard-shape">
+      <h2>Regression-guard shape</h2>
+      <p>
+        The smallest durable guard should install the wheel into an isolated
+        test environment, obtain the entry point from that installed service
+        boundary, and compare its ordered application-script list with the
+        packaged module manifest. It should then render that exact list through
+        the existing file-URL browser harness and assert all three properties:
+        the root has a child, no <code>data-shell-modules="unavailable"</code>
+        marker exists, and the state of both Nova and a smaller mounted project
+        reaches a visible view. A source-only parse cannot detect a stale
+        long-lived process, so the operational gate must also verify a service
+        restart after server or render code changes.
+      </p>
+    </section>
+
+    <section id="limitations">
+      <h2>Qualifications retained</h2>
+      <ul>
+        <li>The live HTTP browser probe did not complete navigation on this host; deterministic module evaluation and file-URL Chrome capture provide the render evidence instead.</li>
+        <li>All four tested mounted project routes share the fault. The comparison does not support a claim that Nova alone is blank.</li>
+        <li>The current source and installed asset are already internally complete. The observed skew belongs to the unrestarted process, not to the current index on disk.</li>
+        <li>No exception is thrown in the observed path. The silent unavailable-module branch is the failure mechanism.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
