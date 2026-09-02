@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md">
 <meta name="plan-impl" content="0.09">
 </head>
@@ -87,7 +87,7 @@
       <tbody>
         <tr><td>Probe</td><td>One trivial read-only exec per release id, bare and with explicit effort, with the exact accept or reject response saved as a run artifact (ladder step 1). Deferred for GLM 5.3 until the catalog publishes it.</td></tr>
         <tr><td>Defined, not defaulted</td><td><code>reckon flight --project reckon</code> lists both local backends with pinned effort and shows no role or spec-level overlay selecting either without the alias of &#167;3.</td></tr>
-        <tr><td>Down reads as down</td><td>With GLM unavailable the availability probe marks its backend unavailable and a dispatch naming it exits 5 with the capability refusal, asserted against the live catalog.</td></tr>
+        <tr><td>Down reads as down</td><td>With its declared model unserved the availability probe marks the backend unavailable and a dispatch naming it exits 5 with the capability refusal. <strong>Asserted against a synthetic wrapper on PATH, not the live catalog</strong> &mdash; a test that reads the cluster is a monitor rather than a test and breaks whenever the catalog legitimately moves, which is the repository's own rule against a test reading state outside itself. The live catalog is checked once as a recorded command output in the evidence record, where a changed catalog updates a measurement instead of reddening a suite.</td></tr>
       </tbody>
     </table>
 
