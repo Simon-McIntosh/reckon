@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T20:31:47",
+  "updated": "2026-09-02T22:23:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -398,6 +398,24 @@
           "gpt-5.6-sol": "01a06253-73fa-7741-989e-746595d0a714"
         },
         "created": "2026-09-01"
+      },
+      {
+        "id": "flash-a",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
+        "id": "glm-a",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
       },
       {
         "id": "harness-classify",
@@ -36348,9 +36366,212 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T181030151896-read-only-node-can-deliver-its-report",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "read-only-node-can-deliver-its-report",
+        "node_definition": {
+          "done_when": "Measured today across three runs on this dialect at the read-only tier \u2014 r-20260902T133214247667-shadowable-node-census, r-20260902T140952258990-local-flag-merge-review and r-20260902T152952677794-local-flag-merge-review \u2014 every stream init event reports permissionMode plan and every ordinary-path Write was denied, including the census's write to its own manifest; the census delivered only because it retried the same content through Bash, and the other two finished end_turn with no file. The Claude dialect's _sandbox_flags maps both read-only and workspace-write to --permission-mode plan, whose adjacent comment states that plan withholds writes. Replace that for the read-only tier with a configuration that satisfies both halves of the tier's contract: the worker cannot modify the repository under test, and it CAN write the write roots sandbox_write_roots already computes for it, which are the run directory, the reports directory, the temp directory and an absolute manifest path. The codex dialect is unaffected and must not change, since its read-only nodes already deliver. Tests in tests/test_backend_sandbox_delivery.py assert against the argv the dialect builds, not against a live model: the read-only tier for the Claude dialect no longer emits a mode that withholds writes; the computed write roots appear as writable directories in the argv; the worktree is not among them; and the codex dialect's read-only argv is byte-identical to what it builds today. State in the manifest which mode or flag combination was chosen and why it satisfies both halves, and name any residual case where a write could still be silently denied. The full suite adds no failure against base 20957cb721787b6c2adeb7396ed1a02a6f07672b, judged by delta \u2014 three tests/test_crew_ticker_layout.py failures are a peer's in-flight work and are not yours",
+          "estimated_hours": null,
+          "goal": "Let a read-only node on the Claude dialect write the paths it declared while still unable to touch the repository",
+          "id": "read-only-node-can-deliver-its-report",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T181030151896-read-only-node-can-deliver-its-report/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_backend_sandbox_delivery.py",
+            "tests/test_backends.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "harness-manifest",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T18:11:00Z",
+        "completed_at": "2026-09-02T18:14:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 232,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 232,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "20957cb721787b6c2adeb7396ed1a02a6f07672b",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T181030151896-read-only-node-can-deliver-its-report/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06351-35a0-76a3-97ec-a93984ce76f6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "detail": ""
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "no_commit": "the resume died on an account usage limit before it could finish; its worker committed work survives in its worktree",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T162114915926-session-reuse-keyed-on-configuration",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "session-reuse-keyed-on-configuration",
+        "node_definition": {
+          "done_when": "Measured today: dispatching node local-flag-merge-review to roster member clive-b at effort xhigh, after that member's previous run of the same node had run at effort medium, emitted argv containing --resume 066f04b2-75c1-43f0-aa27-0d72a67b340f alongside --effort xhigh, because the roster stores sessions as a mapping keyed by model alone, visible in docs/state/reckon/crew.json as each member's sessions object. Key the stored session on the resolved agent configuration rather than the model alone, so that a dispatch whose resolved effort differs from the stored session's starts a fresh session while one whose configuration matches still reuses. The existing model fence is preserved by construction rather than removed, since model is part of the configuration. Migration is required and must not discard history: existing model-keyed entries remain readable and are treated as matching only a dispatch whose configuration agrees with the run that captured them, and a member record that cannot be resolved that way starts fresh rather than guessing. Tests in tests/test_crew_session_keying.py assert: two dispatches at the same configuration reuse one session; a second dispatch at a different effort does not resume and captures its own session; a different model still does not resume; both sessions remain stored and independently reusable afterwards; and a legacy model-keyed entry behaves as specified above. Verify beyond the suite by showing, in the manifest, a dry-run or resolved argv for a member holding a session at one effort dispatched at another, with no --resume present. The full suite adds no failure against base 96c06b96188978b923c21e951e7d7623538441d7",
+          "estimated_hours": null,
+          "goal": "Stop a reused session carrying one configuration's context into a run that claims another",
+          "id": "session-reuse-keyed-on-configuration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162114915926-session-reuse-keyed-on-configuration/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/routing.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_session_keying.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "harness-classify",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T16:21:26Z",
+        "completed_at": "2026-09-02T18:14:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 6805,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "96c06b96188978b923c21e951e7d7623538441d7",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162114915926-session-reuse-keyed-on-configuration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06250-dac0-7401-8843-bad928919aa3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "detail": ""
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 941,
+              "log_age_seconds": 880,
+              "log_fresh": true,
+              "manifest_commits": [
+                "edd448891e6ab661fecc7cd9a3a7c42bd4c64837"
+              ],
+              "manifest_derived": false,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260902T153539322822-spa-project-render-fault --gate <verdict> --commit edd448891e6ab661fecc7cd9a3a7c42bd4c64837",
+              "node": "spa-project-render-fault",
+              "phase": "complete",
+              "plan": "blank-project-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260902T153539322822-spa-project-render-fault",
+              "session": "spa-blank-01",
+              "terminal_age_seconds": 893,
+              "terminal_at": "2026-09-02T16:06:29Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/spa-blank-01/spa-project-render-fault"
+            }
+          ]
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "no_commit": "the resume died on an account usage limit before it could finish; its worker committed work survives in its worktree",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 592
+    "_version": 596
   }
 }
