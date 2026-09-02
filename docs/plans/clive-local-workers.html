@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="clive-local-workers">
+  <meta name="plan-title"     content="Clive Local Workers">
+  <meta name="plan-summary"   content="Make the clive wrapper a first-class worker backend: GLM 5.3 beside DSv4 flash, a declared local alias, and routing decided from the ledger">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S15">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="portable-across-harnesses">
+  <title>Clive Local Workers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; Where the local lane stands</h2>
+    <p><code>clive</code> is a site wrapper that execs an agent CLI against the local model
+    catalog on the GPU cluster, resolving endpoint and credential itself so no secret passes
+    through reckon. It is already a backend: <code>reckon/_backends.py</code> registers the
+    command as an alias of the Claude dialect, and the host flight layer defines a
+    <code>clive</code> backend pinned to <code>deepseek-v4-flash</code> at effort medium,
+    defined but defaulted by nothing. The catalog currently publishes one live route,
+    DSv4 flash on two H200s with a 512k context; GLM 5.3 is not yet served.</p>
+    <p>The lane has been measured once. Six controlled shadow pairs on 2026-08-26 put DSv4
+    flash against the incumbent on the same node, base and check: four passed, and on two the
+    local model produced the better diff, keeping a test the incumbent dropped and writing
+    twelve lines where the incumbent wrote twenty-nine. It ran about 2.3 times slower where
+    both timings exist. Both failures were fence failures rather than capability failures:
+    one worker never entered its worktree and wrote into the shared checkout, one did correct
+    work and never wrote its manifest. The recorded verdict was read-only roles now, no
+    repository write access until the declared worktree boundary is enforced. That verdict
+    is the shape of this plan: the model is not the constraint, the harness around it is.</p>
+    <p>Meanwhile the incumbent has accumulated the evidence base the routing rules were
+    waiting for. The ledgers across four mounted projects hold 2,201 promoted
+    <code>gpt-5.6-sol</code> runs at medium and high effort, against the 58 runs the current
+    effort priors were set from. The two questions this plan settles, local lane and default
+    routing, are the same question asked of the same ledger.</p>
+
+    <h2 id="s2">&#167;2 &mdash; GLM 5.3 beside DSv4 flash</h2>
+    <p>A second local model is a second backend entry, not a code change. When the catalog
+    publishes the GLM 5.3 release, the host flight layer gains <code>clive-glm</code> with
+    <code>command: clive</code>, the release id as its model (the wrapper accepts
+    <code>--model RELEASE</code> and the dialect already passes the model through), a pinned
+    effort, <code>budget_check</code> off because the local endpoint publishes no headroom, and
+    <code>session_reuse</code> on. Until the release is live the entry is authored and marked
+    unavailable by the availability probe; <code>reckon flight</code> already reports which
+    backends resolve, so a down model reads as down rather than as absent.</p>
+    <p>Two properties are non-negotiable and both come from the effort-routing reference.
+    <strong>Effort is pinned on every backend</strong>: the first clive run recorded
+    <code>effort: null</code>, which is exactly the <code>unpinned-backend-effort</code> review
+    finding, and an unpinned row cannot enter a calibration slice. <strong>Sessions never cross
+    models</strong>: a roster member captures one session for one configuration, so DSv4 and
+    GLM get distinct members.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Probe</td><td>One trivial read-only exec per release id, bare and with explicit effort, with the exact accept or reject response saved as a run artifact (ladder step 1).</td></tr>
+        <tr><td>Defined, not defaulted</td><td><code>reckon flight --project reckon</code> lists both local backends with pinned effort and shows no role or spec-level overlay selecting either without the alias of &#167;3.</td></tr>
+        <tr><td>Down reads as down</td><td>With GLM unavailable the availability probe marks its backend unavailable and a dispatch naming it exits 5 with the capability refusal, asserted against the live catalog.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">&#167;3 &mdash; "Use local workers" resolves through config, not convention</h2>
+    <p>The ship skill says a request to use local workers routes every dispatch through
+    <em>the configured locally served backend alias</em>. No such configuration exists: flight
+    config has no key naming which backend is the local one, so the phrase is honoured by a
+    coordinator remembering to pass <code>--set default_backend=clive</code> on every call. A
+    rule with no bound check decays, which is the thesis of the sprint next door.</p>
+    <p>Deliver the key. <code>reckon/schema/flight.yaml</code> gains an optional
+    <code>local_backend</code> naming one declared backend; the host layer sets it to the DSv4
+    entry now and can repoint it to GLM later without touching any skill. <code>reckon crew
+    dispatch --local</code> resolves it as the default backend for that dispatch and refuses
+    with a request error when the key is unset or names an undeclared backend, so "use local
+    workers" on a host with no local lane fails loudly instead of silently running the
+    incumbent. The ship skill's routing paragraph is rewritten to name the flag, pinned by the
+    existing skill-contract test. Role overlays still apply on top, so a local dispatch of a
+    review node keeps its read-only sandbox.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Key is data</td><td><code>local_backend</code> validates through the layered schema with provenance, regenerated into both schema artifacts byte-identically, asserted in tests/test_flight.py.</td></tr>
+        <tr><td>Flag routes</td><td>A <code>--local --dry-run</code> dispatch resolves the named backend and records <code>local: true</code> on the pointer; the same call with the key unset exits 1 naming the key.</td></tr>
+        <tr><td>Skill and CLI agree</td><td>The routing text in skills/reckon-ship/SKILL.md names the flag and the contract test in tests/test_skill_contracts.py pins it.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">&#167;4 &mdash; Default routing, decided from the ledger</h2>
+    <p>The host layer's effort priors date from a 58-run checkpoint: guided at medium, open
+    at high, exact at medium on the incumbent, with the reckon project layer routing exact
+    nodes to the spark small-model lane. The ledgers now say more. Over 2,201 promoted sol runs
+    with a passed or failed gate and no scope change:</p>
+    <table>
+      <thead><tr><th>Spec level</th><th>Effort</th><th>Runs</th><th>Gate pass</th><th>Median worker time</th></tr></thead>
+      <tbody>
+        <tr><td>guided</td><td>medium</td><td>416</td><td>0.91</td><td>9 min</td></tr>
+        <tr><td>guided</td><td>high</td><td>279</td><td>0.89</td><td>13 min</td></tr>
+        <tr><td>exact</td><td>medium</td><td>158</td><td>0.86</td><td>9 min</td></tr>
+        <tr><td>exact</td><td>high</td><td>197</td><td>0.83</td><td>8 min</td></tr>
+        <tr><td>open</td><td>high</td><td>61</td><td>0.84</td><td>11 min</td></tr>
+        <tr><td>unlabelled</td><td>high</td><td>839</td><td>0.92</td><td>12 min</td></tr>
+      </tbody>
+    </table>
+    <p>Medium is not worse than high at any labelled level and is a third faster on guided
+    work; the open level has no medium sample at all, so its high default is untested rather
+    than confirmed. The spark lane has nine promoted runs in total, eight passed, the last on
+    2026-08-25; nothing has routed there in the eight days since, and its weekly meter sits at
+    45%. It is configured and idle. The test role is the outlier at 0.78 pass on high, which
+    is a fence problem (suite runs in restricted tiers) rather than an effort problem, and is
+    owned by the derivable-dispatch-contract plan.</p>
+    <p>The decisions below are locked from this table and re-measured by the same query at
+    the next checkpoint. The rule that governs them is unchanged from the effort-routing
+    reference: the cheapest configuration with pass at or above 0.8 over at least ten usable
+    runs, charged for redispatches, wins its slice; and the host layer carries measured
+    cross-project defaults while a project layer carries only its deviations.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Priors match the ledger</td><td>Each locked default reproduces the winning slice by the decision rule over the live ledgers, recorded with the query and its counts in the evidence record.</td></tr>
+        <tr><td>Open level measured</td><td>At least ten open-level medium runs exist, or a shadow batch supplies them, before open leaves high; recorded either way.</td></tr>
+        <tr><td>Spark disposition recorded</td><td>The project layer's exact overlay is either removed or kept with the reason, and <code>reckon flight</code> shows the result.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">&#167;5 &mdash; Qualify the local models the way the ladder says</h2>
+    <p>The qualification ladder is already written and clive has climbed its first two rungs
+    for DSv4. What remains is the shadow rung at scale, and dogfooding is how it gets its
+    sample: reckon's own committed nodes are the corpus. <code>reckon crew shadow --run
+    &lt;id&gt; --backend clive</code> re-runs a promoted node at its recorded base against the
+    same named check and never merges, so each pair is a controlled comparison and costs one
+    worktree. Ten usable pairs per model per role is the threshold for a gated pilot.</p>
+    <p>Two lanes run from day one because they are safe under the current sandbox.
+    Investigate and review nodes on reckon route to the local backend live, through the
+    &#167;3 flag, because read-only roles cannot damage a shared checkout and every run lands in
+    the ledger with its model and effort. Implementation nodes shadow only, until &#167;6 lands.
+    The capabilities cache then reports what routing needs: success rate by estimated size,
+    the competence horizon, and the speed factor per configuration, with DSv4's measured 2.3
+    times slower either confirmed or revised on a real sample.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Shadow sample</td><td>At least ten usable shadow pairs per local model against implementation nodes, listed with pass, diff quality note and speed ratio; fence failures classified separately from capability failures.</td></tr>
+        <tr><td>Live read-only lane</td><td>At least ten investigate or review nodes on reckon promoted from the local backend, with pass rate and median time beside the incumbent's for the same roles.</td></tr>
+        <tr><td>Horizon reported</td><td><code>reckon capabilities</code> shows a configuration row for each local model with its competence horizon and speed factor, or reports the sample as insufficient with the count.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">&#167;6 &mdash; Write access is gated on an enforced worktree boundary</h2>
+    <p>The <code>worktree-full</code> tier resolves to the harness's no-sandbox mode because an
+    OS sandbox is inherited by child processes and breaks the test runners a gate depends on.
+    The consequence, verified in source and demonstrated by a local-model worker, is that the
+    worktree boundary is the worker's obedience to its prompt: one edited the shared checkout
+    with sixty-one tool inputs naming it and none naming its worktree. That is the
+    <code>declared-sandbox-is-advisory-isolation</code> review error, and it gates write access
+    for every backend, not only this one. It lives here because the local lane is what it
+    blocks first.</p>
+    <p>Enforce without sandboxing children: at promotion, diff the main checkout and every
+    peer worktree against their state at dispatch and refuse a run whose footprint touched a
+    path outside its own worktree and declared scope, naming the path; at dispatch, record
+    the main checkout's tree hash so the comparison is exact. A worker that strays is then a
+    refused promotion with evidence rather than an unaudited write, and the tier name stops
+    claiming what the OS does not provide. Once the check has caught its own synthetic stray,
+    the six-pair local qualification is re-run against implementation nodes and, on passing,
+    the implement role opens to the local backend under the small-model lane gate.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Stray write refused</td><td>A synthetic worker that edits the main checkout is refused at promotion naming the path, and its pointer stays recoverable; a worker that stays inside its worktree and scope promotes unchanged. Asserted by test.</td></tr>
+        <tr><td>Peers protected</td><td>A write into a concurrent worker's worktree is refused the same way. Asserted by test.</td></tr>
+        <tr><td>Requalified</td><td>Six controlled shadow pairs on implementation nodes with the check active, then the implement role opened to the local backend through the &#167;3 flag, recorded with the first twenty runs audited.</td></tr>
+      </tbody>
+    </table>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&#167;</span> Decisions</h2>
+      <div class="r-dec" data-key="default-effort-by-spec-level" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What effort does the incumbent run at by default, per specification level?</p>
+        <p class="r-dec-ctx">Ledger over 2,201 promoted sol runs: guided medium 0.91 pass at 9 min against high 0.89 at 13 min; exact medium 0.86 against high 0.83; open has 61 high runs at 0.84 and no medium sample.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="medium-guided-exact-high-open">Medium for guided and exact, high for open until open has ten medium runs</button>
+          <button class="r-opt" data-value="medium-everywhere">Medium at every level now</button>
+          <button class="r-opt" data-value="keep-current">Keep the 58-run priors unchanged</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the spark small-model lane stay configured for exact nodes?</p>
+        <p class="r-dec-ctx">Nine promoted spark runs in total, eight passed, none since 2026-08-25; the reckon project layer still routes exact nodes there; its weekly meter is at 45%.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="retire-to-defined">Remove the exact overlay; keep the backend defined for shadows only</button>
+          <button class="r-opt" data-value="keep-gated">Keep the overlay and the eligibility gate as they are</button>
+          <button class="r-opt" data-value="replace-with-local">Route exact nodes to the local lane once it qualifies</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="local-alias-mechanism" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How does "use local workers" reach dispatch?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="flight-key-and-flag">A local_backend flight key plus a dispatch --local flag that refuses when unset</button>
+          <button class="r-opt" data-value="set-override-convention">Keep the --set default_backend convention and document it</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="local-write-access-order" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">When does the local lane get repository write access?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="after-boundary-enforced">After the worktree-boundary check of &#167;6 lands and six pairs requalify</button>
+          <button class="r-opt" data-value="now-with-audit">Now, with the first twenty runs full-diff audited</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&#167;</span> Followups</h2>
+      <article class="r-fu" data-id="f-clw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Lock the four routing decisions, then land the alias, the GLM entry and the boundary check</h4>
+        <div class="r-fu-body"><p>Four decisions are open and each changes what ships; the &#167;4 table is the input and does not need re-deriving. The live read-only lane and the shadow sampling of &#167;5 can start as soon as the &#167;3 flag exists, because they need no write access. The GLM entry waits on the catalog publishing the release.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship clive-local-workers</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
