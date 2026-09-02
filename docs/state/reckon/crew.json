@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T22:25:52",
+  "updated": "2026-09-02T22:48:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -410,6 +410,15 @@
       },
       {
         "id": "flash-b",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-02"
+      },
+      {
+        "id": "flash-c",
         "harness": "claude",
         "role": "implement",
         "session_id": null,
@@ -36587,9 +36596,333 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T202456915131-session-keying-test-expectation",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "session-keying-test-expectation",
+        "node_definition": {
+          "done_when": "Your worktree is based on commit 5eda3ab, which already implements configuration-keyed session reuse and passes 6 of 6 real-dispatch integration cases; do not reimplement it. Exactly one test still asserts the retired shape: tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first expects an exact model-keyed sessions dictionary. Update that assertion to the configuration-keyed entries the code now writes, and keep intact what the test was protecting \u2014 a cross-model dispatch must still capture a fresh session WITHOUT losing the first, which is now a consequence of the wider key rather than a special case. Write the assertion so it would still fail if the model fence were removed. Change nothing else in that file and no other file. Gate: PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew.py tests/test_crew_session_keying.py passes with zero failures, and the manifest records the counts. Judge the full suite as a delta against your base: three tests/test_crew_ticker_layout.py failures are a peer's in-flight work, present either side, and are not yours",
+          "estimated_hours": null,
+          "goal": "Update the one stale assertion that pins session storage to the retired model-only key",
+          "id": "session-keying-test-expectation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202456915131-session-keying-test-expectation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "glm-a",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T20:25:01Z",
+        "completed_at": "2026-09-02T20:40:38.455Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 919,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 937,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "5eda3ab3354f2c387b1bdea6e2f85df9f827a375",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202456915131-session-keying-test-expectation/manifest.md",
+        "scope_changed": false,
+        "session_id": "28615167-b5a6-4d59-a9e2-7c4c7318f873",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 813367,
+            "input_tokens_cumulative": 813367,
+            "output_tokens": 3569,
+            "output_tokens_cumulative": 3569,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 6.602694999999999,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 6.602694999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "context-window exhaustion before any diff; nothing was produced to commit",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260902T202623136611-orientation-checked-at-first-observation",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "orientation-checked-at-first-observation",
+        "node_definition": {
+          "done_when": "The composed prompt asks the worker to open its manifest with three orientation facts \u2014 the worktree path it is working in, the base revision it sees there, and its declared write scope \u2014 stated as the first thing it writes rather than at the end; the first observation of a run parses those facts and compares them with the live pointer's own worktree, base_sha and write_paths, and classifies the run blocked with a detail naming which of the three mismatched and both values, while a report that matches leaves the phase untouched and an absent report is not treated as a mismatch because an early observation legitimately precedes the manifest; tests assert the mismatching case blocks and names the field, the matching case does not, and the absent case does not, each in tests/test_crew_orientation.py so no existing test file is contended; the section-6 promotion check remains the backstop and is not weakened or duplicated; and the full suite adds no failure against base 33e6addde32cf609a0106e980258804a611f6693",
+          "estimated_hours": null,
+          "goal": "Catch a worker that is working in the wrong tree within a minute rather than at promotion",
+          "id": "orientation-checked-at-first-observation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202623136611-orientation-checked-at-first-observation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_orientation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-b",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T20:26:24Z",
+        "completed_at": "2026-09-02T20:29:11.741Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 13,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 167,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "33e6addde32cf609a0106e980258804a611f6693",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "GLM 5.3 context ceiling, second instance, same cause and a blunter symptom: 'Prompt is too long' after 165s and 4 turns. The shadowed node's scope includes reckon/crew/dispatch.py at ~23,500 tokens against a 73,728-token budget. Shadowing a node onto GLM requires the node to fit GLM's window, which is a sixth of flash's \u2014 a scheduling constraint on the qualification programme, not a verdict on the model.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202623136611-orientation-checked-at-first-observation/manifest.md",
+        "scope_changed": false,
+        "session_id": "b734bc9b-19a6-4b61-93b4-56acde822adb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 57067,
+            "input_tokens_cumulative": 57067,
+            "output_tokens": 8142,
+            "output_tokens_cumulative": 8142,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.488885,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 0.488885
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260902T151528945034-orientation-checked-at-first-observation"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202623136611-orientation-checked-at-first-observation/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "no_commit": "context-window exhaustion before any diff; shadow evidence not produced",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T202403036749-read-only-tier-can-write-its-declared-paths",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "read-only-tier-can-write-its-declared-paths",
+        "node_definition": {
+          "done_when": "In reckon/_backends.py the Claude dialect's _sandbox_flags currently returns --permission-mode plan for the read-only tier, and the comment beside it says plan withholds writes; three recorded runs confirm it, every ordinary-path Write denied. Replace that for the read-only tier so both halves of the tier's contract hold: the worker still cannot modify the repository under test, and it CAN write the roots sandbox_write_roots already computes, namely the run directory, the reports directory, the temp directory and an absolute manifest path. Use --dangerously-skip-permissions together with --add-dir limited to exactly those computed write roots and NOT the worktree, which is the combination a direct smoke test confirmed writes correctly today. The codex dialect must not change: its read-only argv stays byte-identical. Tests in tests/test_backend_sandbox_delivery.py assert against the argv the dialect builds and never call a live model: the Claude read-only argv contains no permission mode that withholds writes; every computed write root appears as a writable directory; the worktree does not; and the codex read-only argv is unchanged. Keep at least one assertion that fails if the Claude read-only tier ever again resolves to a write-withholding mode. The full suite adds no failure against base 5bb73bb000bfa25dd1e3e6e0b94aba689be6fd42, judged as a delta",
+          "estimated_hours": null,
+          "goal": "Let a read-only node on the Claude dialect write the paths it declared while still unable to touch the repository",
+          "id": "read-only-tier-can-write-its-declared-paths",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202403036749-read-only-tier-can-write-its-declared-paths/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_backend_sandbox_delivery.py",
+            "tests/test_backends.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T20:24:10Z",
+        "completed_at": "2026-09-02T20:47:26.331Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1388,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1396,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5bb73bb000bfa25dd1e3e6e0b94aba689be6fd42",
+        "commits": [
+          "8abc064882f5d1493812f38c9e78b2a0ccbb064c"
+        ],
+        "changed_lines": {
+          "added": 194,
+          "removed": 8,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202403036749-read-only-tier-can-write-its-declared-paths/after_suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202403036749-read-only-tier-can-write-its-declared-paths/manifest.md",
+        "scope_changed": false,
+        "session_id": "aa96969d-c51d-4b04-af9d-0856da4f7b1b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4581977,
+            "input_tokens_cumulative": 4581977,
+            "output_tokens": 24607,
+            "output_tokens_cumulative": 24607,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 23.525059999999993,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 23.525059999999993
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 598
+    "_version": 602
   }
 }

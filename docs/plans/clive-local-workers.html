@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="59">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.65">
-<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc">
+<meta name="plan-impl" content="0.63">
+<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,6 +93,68 @@
         <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
         <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
         <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s9">&#167;9 &mdash; A worker's context is spent before it opens a file</h2>
+    <p><strong>Measured 2026-09-02, after two GLM nodes died of context exhaustion.</strong>
+    The dispatch prompt is not the problem &mdash; a real run's <code>prompt.txt</code> is
+    <strong>~1,769 tokens</strong>, which is lean and stays lean because the plan is passed
+    by reference rather than copied. What costs is everything the harness loads around it.</p>
+    <table>
+      <thead><tr><th>Loaded before any work</th><th>~tokens</th><th>share of GLM's 73,728</th></tr></thead>
+      <tbody>
+        <tr><td>dispatch prompt</td><td>1,769</td><td>2%</td></tr>
+        <tr><td><code>AGENTS.md</code> (repo)</td><td>15,029</td><td>20%</td></tr>
+        <tr><td><code>~/.agents/AGENTS.md</code> (user)</td><td>14,470</td><td>20%</td></tr>
+        <tr><td><strong>standing total</strong></td><td><strong>31,268</strong></td><td><strong>42%</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Then the work itself. <code>tests/test_crew.py</code> is <strong>40,256</strong> tokens
+    and <code>reckon/crew/dispatch.py</code> is <strong>23,506</strong>. Standing instruction
+    plus that one test file is 71,524 against a 73,728 budget: <strong>GLM is out of window
+    before it opens the module it was asked to change.</strong> Flash absorbs the same load
+    at 6% and never notices, which is exactly why this went unmeasured until a small-window
+    model arrived. The instruction burden was always there; only flash's 512k window was
+    hiding it.</p>
+    <p><strong>All three files violate a rule the repository already states.</strong> The
+    root <code>AGENTS.md</code> says it plainly: place guidance at the narrowest scope that
+    owns it, keep the root a thin index, let depth live next to the code it governs. It then
+    carries a 2,831-token crew command surface, a 2,131-token MCP tool reference, and a
+    779-token plan schema &mdash; reference material every worker pays for and almost none
+    reads. The same holds one level up: a reckon crew worker loads SDCC partition recipes and
+    IMAS data-access idioms from the user-global file. And the two source files have the same
+    shape of defect against the same kind of rule &mdash; the repository already splits crew
+    code into <code>reckon/crew/</code> and crew tests into fifteen
+    <code>test_crew_*.py</code> files, so both large files are residue that the existing
+    convention simply never finished absorbing.</p>
+    <table>
+      <thead><tr><th>File</th><th>What it actually contains</th><th>Seam that already exists</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_crew.py</code><br>40,256 tokens, 177 tests, 3 fixtures</td>
+          <td>Every crew concern in one file: dispatch refusals (9), prompt (5), watch (5),
+            shadow (8), manifest (4), scopes, roles, CLI parity</td>
+          <td>Fifteen <code>test_crew_*.py</code> siblings already exist; low fixture
+            coupling means the split is mechanical</td></tr>
+        <tr><td><code>reckon/crew/dispatch.py</code><br>23,506 tokens, 53 functions</td>
+          <td>Four concerns in one module: watch-producer lifecycle, scope-conflict
+            derivation, Python module adjacency analysis, peer-channel wiring &mdash; plus
+            dispatch and shadow proper</td>
+          <td>The <code>reckon/crew/</code> package already holds routing, promotion,
+            recovery, runs, node, prompts, reports, summary</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The order matters, cheapest first.</strong> Moving reference material out of
+    the two <code>AGENTS.md</code> files is a documentation edit with no behavioural risk and
+    recovers ~40% of GLM's window on its own; splitting the two source files is a real
+    refactor that should be sequenced when no peer holds work in them. Do the first now and
+    the second deliberately.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Standing load halved</td><td>The two <code>AGENTS.md</code> files together are under 15,000 tokens with reference material relocated to the narrowest owning scope, each move leaving a one-line pointer; measured before and after with the same counter.</td></tr>
+        <tr><td>Nothing lost</td><td>Every relocated block is reachable from the root by a named pointer, and a worker in the owning sub-tree still loads it automatically.</td></tr>
+        <tr><td>A GLM-sized node fits</td><td>A node touching one crew module and its focused test file is dispatched to GLM and completes without an autocompact or a prompt-length failure.</td></tr>
       </tbody>
     </table>
 
@@ -511,7 +573,16 @@
     <div class="r-comment-body"><p>Killed by the codex account usage limit (turn.failed, reset 2026-09-08), not by any defect in the node or the worker. session-reuse had already committed 5eda3ab with 6/6 real-dispatch integration cases passing and needed only one stale assertion in tests/test_crew.py; read-only-delivery had committed nothing. Both re-cut onto the local lane.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260902-shadow-path-collision" data-who="reckon-ship" data-when="2026-09-02T18:56:00Z">
-    <div class="r-comment-body">§7 gains an eighth item, found within a minute of trying to run the qualification the plan exists for. Shadowing one committed primary onto flash and onto GLM at the same time is refused on the second call with worktree path already exists, because the shadow path is shadow-<primary-run-id>/<node> and carries nothing identifying the candidate. Putting two candidates against the same node at the same base is the central act of the qualification ladder, so the measurement the programme most needs is precisely the one the path scheme forbids. The remedy is to include the candidate backend in the path while keeping the lineage-based reclamation that already reads a committed shadow record, so nothing about cleanup changes. Sequential shadows of one primary do work and are today's workaround, at the cost of doubling the wall clock of every pair and coupling two measurements that should be independent. Worth noting the family: this is the fourth defect in one session found by USING the calibration machinery rather than reading it, after the unapplied effort override, the over-inherited session and the read-only tier's withheld writes.</div>
+    <div class="r-comment-body">§7 gains an eighth item, found within a minute of trying to run the qualification the plan exists for. Shadowing one committed primary onto flash and onto GLM at the same time is refused on the second call with worktree path already exists, because the shadow path is shadow-<primary-run-id>/<node> and carries nothing identifying the candidate. Putting two candidates against the same node at the same base is the central act of the qualification ladder, so the measurement the programme most needs is precisely the one the path scheme forbids. The remedy is to include the candidate backend in the path while keeping the lineage-based reclamation that already reads a committed shadow record, so nothing about cleanup changes. Sequential shadows of one primary do work and are today's workaround, at the cost of doubling the wall clock of every pair and coupling two measurements that should be independent. Worth noting the family: this is the fourth defect in one session found by USING the calibration machinery rather than reading it, after the unapplied effort override, the over-inherited session and the read-only tier's withheld writes.</node></primary-run-id></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260902T202456915131-session-keying-test-expectation" data-who="glm-a" data-when="2026-09-02T20:40:38.455Z">
+    <div class="r-comment-body"><p>GLM 5.3 context ceiling, not capability. Ended 'Autocompact is thrashing: the context refilled to the limit within 3 turns of the previous compact, 3 times in a row' after 935s. GLM's usable input budget is 73,728 tokens (96k context less a 24,576 output reservation); the node's own scope file tests/test_crew.py is ~40,000 tokens and reckon/crew/dispatch.py ~23,500, so ~64k of the budget is consumed by two files before system prompt, plan section, tool schemas or any tool output. The node was mis-sized for this model by me, not failed by it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260902T202403036749-read-only-tier-can-write-its-declared-paths" data-who="flash-a" data-when="2026-09-02T20:47:26.331Z">
+    <div class="r-comment-body"><p>Claude read-only tier now grants exactly the computed write roots and never the worktree; codex argv byte-identical; strongest guard asserts --permission-mode is never emitted for Claude read-only. Full suite 2717 passed 0 failed, delta +4/+0. First substantive implementation node delivered by deepseek-v4-flash on the local lane.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-readonly-delivers" data-who="reckon-ship" data-when="2026-09-02T19:00:00Z">
+    <div class="r-comment-body">The read-only tier delivers again — run r-20260902T202403036749, member flash-a on deepseek-v4-flash, first attempt, no scope change; commit 8abc064 merged, 194 insertions and 8 deletions across exactly the three authorised paths, 4 tests added. Gate: full suite 2,717 passed 0 failed against a 2,713 baseline, delta +4 and +0. The Claude read-only tier now resolves to --dangerously-skip-permissions with an --add-dir grant of exactly the roots sandbox_write_roots already computes — run directory, reports directory, temp, and an absolute manifest parent — and never the worktree, so both halves of the tier's contract hold at once: the worker still cannot modify the repository under test and can write what it declared. The codex read-only argv is byte-identical and asserted so, and the strongest guard asserts --permission-mode is never emitted for Claude read-only, which is the regression that would silently return. Two things worth recording beyond the gate. This is the FIRST substantive implementation node delivered by a local model, and it was first-attempt, in-scope, and correctly gated — the qualification question the plan exists to answer got a positive data point from the fix to the defect that was blocking it. And the worker's follow_ons carried an honest boundary note rather than none: the read-only working directory still defaults to the worktree through the base Dialect, which the node's evidence did not specify, so it flagged the open question instead of silently widening scope to answer it. That is exactly the behaviour the escape hatch is for.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
@@ -578,6 +649,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260902-write-access-reopened" data-who="reckon-ship" data-when="2026-09-02T18:45:00Z">
     <div class="r-comment-body">local-write-access-order reopened and re-locked from after-boundary-enforced to now-with-audit, on the lead's direction and on evidence that retires the original rationale. What the lock was protecting against was a local worker writing into the shared checkout, measured once on 2026-08-26. That risk is now held by machinery: §6 landed today and refuses at promotion any run whose footprint reached another tree at a declared path, by test, for every backend. What the lock was actually costing was measured today too, and it was gating the wrong thing entirely — the local lane's three failures were all harness failures. Every ordinary-path Write in the three read-only runs was denied because the Claude dialect maps read-only to --permission-mode plan; a direct smoke test of the same model at worktree-full wrote its file on the first attempt with one Write call and end_turn. The model was never the problem. And the situation changed underneath the decision: the codex account hit its usage limit with a reset of 2026-09-08, six days out, and the claude subscription cannot absorb the background fleet, so the local lane stopped being a candidate under evaluation and became the only implementation lane there is. A gate that forbids the only available lane forbids progress, which is not what the original decision was trading off. The audit half is kept and strengthened rather than waived: every local implementation node is full-diff audited, the §6 refusal is the enforced backstop, and the six controlled pairs stay owed as calibration rather than as a precondition.</div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260902-gate-policy-relaxed" data-who="reckon-ship" data-when="2026-09-02T19:02:00Z">
+    <div class="r-comment-body">Standing gate policy for in-flight nodes, changed on the lead's instruction and on a measurement. Every done-when I wrote today demanded a full-suite delta, which on this machine is 700 to 900 seconds per run and, because 25 SPA test files drive headless Chrome, spawns dozens of browser processes per invocation. Measured against the alternative: tests/test_crew.py alone runs 189 tests in 27.4 seconds. A focused gate is thirty times cheaper and tests the same change. Two costs were being paid for nothing — wall clock on every node, and contention, since concurrent full suites are what made an earlier node blow its fence and what makes any duration comparison between models unreadable. New policy: an in-flight node's gate is its focused and affected test files only, browser-driven files excluded unless the node touches the surface they cover; one integration verification at the merged head covers a whole wave, which is where a full-suite delta actually means something because it measures the merge rather than the worktree. This is not a relaxation of evidence, it is moving the expensive measurement to the point where it is informative. Separately, reaped 35 leaked headless Chrome processes holding pytest browser-profile directories, all 9,153 seconds old and orphaned from long-finished runs; reaped by profile path and age over 900 seconds, never by parent pid. inotify instances fell from 21 to 17 against a 128 ceiling — not yet critical, which is why it had gone unnoticed.</div>
 </div>
 </section>
 </main>
