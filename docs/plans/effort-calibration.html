@@ -21,8 +21,8 @@
   <title>Effort Calibration | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="25">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="69a3a21e35efa1d56bdda99bf409f64b31f209f3,23252405a4013090a2b25a1f8259c93455ba2124,0a83bde067dd35851208b7a2421329400c060c48,e57b28bbd3902d928d522f1fced17186e90b6ed1,07fb21b4ef3a62637a4b9cf527d9870d2aff10b5,b93cfcd15110edd6c65ab1b3f0c7c50469a10079,55e9148262fb7819b04b462dbf17550c4d59c71e,98b3a03e3b32c23059b1b16780cd1f0440b6ad52,73f43f49654537a4b9dc3358151116b561b5fed2,590102e4bd470287ea76dabe31608ff2266b1f33,540ccde3f3c25e7cb436629544cdd9870a6b977b,b8a9934a178a4606ef89b798c7166dbf4ec27961,5ef88765c8ecb1be01fad7a2bfff257625974759,ef1eb81d2a60a5b870a3b782c8ad4ceefe7e81f3">
 <meta name="plan-artifacts" content="reckon/crew.py,reckon/ledger.py,reckon/roadmap.py,reckon/calibration.py,reckon/_plan_html.py,reckon/_schema.py,reckon/_store.py,docs/_shared/plan.schema.json,tests/test_ledger.py,tests/test_crew.py,tests/test_roadmap.py,tests/test_calibration.py,tests/test_schema.py,tests/test_capability.py,docs/evidence/archive/effort-calibration-landed.html">
 <meta name="plan-impl" content="1.0">
@@ -125,67 +125,7 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
     Skills state the unit in their effort guidance so an authoring agent produces hours rather than
     a letter.</p>
 
-    <h2 id="gates">§6 — Evidence gates</h2>
 
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Migration is lossless</td>
-          <td>Every existing plan across mounted projects resolves an hours value, letters mapping
-          to 1/2/4/8, with uncalibrated plans listed. No plan loses its effort value; recorded
-          before-and-after counts.</td>
-        </tr>
-        <tr>
-          <td>Loops are separable</td>
-          <td>A test in which a slow agent completes a correctly-estimated plan: the agent's speed
-          factor moves and the plan's estimate does not. Its mirror, where an underestimated plan
-          run by a baseline agent moves the estimate and not the factor.</td>
-        </tr>
-        <tr>
-          <td>Scope change excluded</td>
-          <td>A run marked as scope-changed is withheld from both loops, asserted by test on the
-          resulting figures.</td>
-        </tr>
-        <tr>
-          <td>Cold start terminates</td>
-          <td>From a fresh capabilities cache, both figures converge over a recorded synthetic run
-          sequence rather than oscillating, and confidence is reported beside each.</td>
-        </tr>
-        <tr>
-          <td>Horizon drives splitting</td>
-          <td>A node whose estimate divided by speed exceeds the horizon is refused for that agent
-          with a split recommendation naming the target size; one below it dispatches. Both paths
-          recorded from a real dispatch.</td>
-        </tr>
-        <tr>
-          <td>Cache is rebuildable</td>
-          <td>Deleting the capabilities cache and rebuilding from ledgers reproduces identical
-          figures. A test proves nothing is authored into it.</td>
-        </tr>
-        <tr>
-          <td>Lines are unrankable</td>
-          <td>Changed-line counts appear on run records and in no ranking, ordering, or selection
-          path. Asserted by test, not by convention.</td>
-        </tr>
-        <tr>
-          <td>Unit stated everywhere</td>
-          <td>Every surface reporting effort names the unit — plan read, roadmap, SPA, sprint
-          capacity, skill guidance. A grep finds no bare effort number without its unit.</td>
-        </tr>
-        <tr>
-          <td>Prediction beats the letters</td>
-          <td>Against the runs accumulated by this point, hours-based remaining-effort predicts
-          actual remaining time better than the legacy letter weights. State the comparison and the
-          sample size. A negative result is a legitimate outcome and must be recorded, not
-          buried.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
 
     <h2 id="s7">§7 — Constraints</h2>
 
@@ -392,6 +332,73 @@ node 1.5h  ÷  speed 0.9  =  1.7h   vs  horizon 2.5h   →  dispatch</pre>
 <div class="r-q" data-id="q-comparison-granularity" data-section="s9" data-status="open" data-opened-by="reckon-ship" data-opened-at="2026-09-01" data-resolved-at="" data-resolved-by="">
     <p class="r-q-body">The re-measurement scored whole-plan remaining effort against individual worker-node durations and the letters won by a factor of four. Should a future predictive calibration aggregate worker runs to plan completion before comparing, or estimate node duration directly? The answer decides whether the measured loss is a fact about authored hours or about the comparator, and it must be settled before anyone treats this result as a reason to change the unit.</p>
     </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="migration-is-lossless" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Migration is lossless</h4>
+    <p class="r-gate-required-evidence">Every existing plan across mounted projects resolves an hours value, letters mapping
+          to 1/2/4/8, with uncalibrated plans listed. No plan loses its effort value; recorded
+          before-and-after counts.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#hours-unit">Evidence</a>
+</div>
+<div class="r-gate" data-id="loops-are-separable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Loops are separable</h4>
+    <p class="r-gate-required-evidence">A test in which a slow agent completes a correctly-estimated plan: the agent's speed
+          factor moves and the plan's estimate does not. Its mirror, where an underestimated plan
+          run by a baseline agent moves the estimate and not the factor.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#calibration-loops">Evidence</a>
+</div>
+<div class="r-gate" data-id="scope-change-excluded" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Scope change excluded</h4>
+    <p class="r-gate-required-evidence">A run marked as scope-changed is withheld from both loops, asserted by test on the
+          resulting figures.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#calibration-loops">Evidence</a>
+</div>
+<div class="r-gate" data-id="cold-start-terminates" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Cold start terminates</h4>
+    <p class="r-gate-required-evidence">From a fresh capabilities cache, both figures converge over a recorded synthetic run
+          sequence rather than oscillating, and confidence is reported beside each.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#calibration-loops">Evidence</a>
+</div>
+<div class="r-gate" data-id="horizon-drives-splitting" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Horizon drives splitting</h4>
+    <p class="r-gate-required-evidence">A node whose estimate divided by speed exceeds the horizon is refused for that agent
+          with a split recommendation naming the target size; one below it dispatches. Both paths
+          recorded from a real dispatch.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#competence-horizon">Evidence</a>
+</div>
+<div class="r-gate" data-id="cache-is-rebuildable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Cache is rebuildable</h4>
+    <p class="r-gate-required-evidence">Deleting the capabilities cache and rebuilding from ledgers reproduces identical
+          figures. A test proves nothing is authored into it.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#capabilities-cache">Evidence</a>
+</div>
+<div class="r-gate" data-id="lines-are-unrankable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Lines are unrankable</h4>
+    <p class="r-gate-required-evidence">Changed-line counts appear on run records and in no ranking, ordering, or selection
+          path. Asserted by test, not by convention.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#capabilities-cache">Evidence</a>
+</div>
+<div class="r-gate" data-id="unit-stated-everywhere" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Unit stated everywhere</h4>
+    <p class="r-gate-required-evidence">Every surface reporting effort names the unit — plan read, roadmap, SPA, sprint
+          capacity, skill guidance. A grep finds no bare effort number without its unit.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#unit-surfaced">Evidence</a>
+</div>
+<div class="r-gate" data-id="prediction-beats-the-letters" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Prediction beats the letters</h4>
+    <p class="r-gate-required-evidence">Against the runs accumulated by this point, hours-based remaining-effort predicts
+          actual remaining time better than the legacy letter weights. State the comparison and the
+          sample size. A negative result is a legitimate outcome and must be recorded, not
+          buried.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#prediction-remeasure">Evidence</a>
+</div>
+<div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/archive/effort-calibration-landed#suite-regression">Evidence</a>
+</div>
 </section>
 </main>
 </body>
