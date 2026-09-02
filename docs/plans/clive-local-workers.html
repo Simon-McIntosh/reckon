@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.36">
+<meta name="plan-impl" content="0.33">
 <meta name="plan-commits" content="a91abe9,a56eae9">
 </head>
 <body>
@@ -256,6 +256,17 @@
       reports them as sibling configurations with fence failures counted beside capability
       failures, and a divergence in obedience shows up as a harness row before it is read as a
       model verdict.</li>
+      <li><strong>A duration is legible against the load it was measured under.</strong>
+      Found by running the programme rather than reviewing it. A §4 node blocked at its
+      25-minute fence with the work already committed, because the full suite it was told
+      to run could not finish while four peer suites contended for the same machine; the
+      untouched baseline alone took 814&nbsp;s. Nothing in the run record distinguishes a
+      slow model from a busy workstation, and every comparison this plan makes is a
+      comparison of recorded durations. So record the load: at dispatch and again at
+      completion, store the count of non-terminal runs in the same repository, and mark a
+      fence overrun that coincided with a raised count as contended. The fence itself does
+      not move &mdash; a bound that stretches under load stops being a bound, and the point
+      is to make the confound visible rather than to excuse it.</li>
     </ul>
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
@@ -327,6 +338,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260902-silent-delivery-detail" data-who="reckon-ship" data-when="2026-09-02T13:56:00Z">
     <div class="r-comment-body">Silent delivery is now a repairable row — run r-20260902T133132431763, member harness-manifest at gpt-5.6-sol/medium, 1,346 worker-seconds, first attempt, no scope change; commit a91abe9 merged as 403361e, 246 insertions and 3 deletions across exactly the two authorised paths, 3 tests added. Gate: focused tests/test_crew_recovery.py 8/8, full suite 2,656 passed with 0 failed in 710s, ruff finding delta 0 against a baseline of 12. The delta is clean by construction — a peer run measured 2,653 at the same base and this run added 3 tests. Mechanism: reckon crew recover, on a terminal pointer with no manifest, writes a provisional manifest beside the run from the final message and the worktree diff and marks it derived, so the row stays classified abandoned, keeps manifest_present false, is never advised for promotion, and carries a delivery_gap with the final-message presence and a changed-path census. next_action names reckon crew resume rather than reckon crew complete, which is the point: the correct diff is recoverable without a promotion path that would read it as delivered. Three refusals hold at the edges — a genuinely empty terminal run derives nothing, a worker-written manifest is never overwritten because creation is exclusive, and the derivation imports no promotion implementation and takes only the per-run pointer lock recovery already held. This closes one of the two harness failures the plan's six-pair local qualification recorded: a worker that did correct work and never wrote its manifest. impl 2 of 11.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-contention-added" data-who="reckon-ship" data-when="2026-09-02T14:05:00Z">
+    <div class="r-comment-body">§7 gains a fifth strengthening, found by running the programme rather than reviewing it. The §4 node blocked at its 25-minute fence with its work already committed, because a full suite could not finish while four peers ran one against the same machine; the untouched baseline alone took 814s. The specification defect was mine and is fixed, but the measurement defect underneath it is not: a run record stores 1,530 worker-seconds and cannot say how much of that was contention, so a slow model and a busy workstation are indistinguishable in exactly the quantity every comparison in this plan is made from. It is the same family as the inherited-budget confound the effort-routing plan had to repair — an uncontrolled dimension hiding inside a recorded number. The added item records the concurrent non-terminal run count at dispatch and at completion and marks a contended overrun; the fence itself does not move, because a bound that stretches under load is not a bound. Denominator re-based to 12 executable nodes, so impl is 4 of 12 rather than 4 of 11 — the fraction moves down because execution discovered work, not because anything regressed.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
