@@ -1,15 +1,11 @@
 # Flight control — reckon project layer.
 #
 # Merges over the host layer; only the keys named here change. This layer
-# adds the small-model lane backend. It is defined, not defaulted:
-# default_backend is untouched and no role selects it, so nothing routes
-# here except an explicit per-dispatch override, e.g.
-#
-#     reckon crew dispatch ... --set roles.implement.backend=codex-spark
-#
-# Eligibility for that override is gated — the lane takes only exactly
-# specified nodes with a runnable named check. The gate and the routing
-# policy live in the crew-effort-routing plan and in
+# keeps the small-model backend defined so shadow qualification remains
+# possible, but no default, role or specification-level mapping routes work to
+# it. The lane earns routing back only after at least ten usable shadow pairs
+# show a gain on the same nodes, followed by a gated pilot and a slice lock.
+# The qualification policy lives in
 # skills/reckon-ship/references/effort-routing.md.
 #
 # yaml-language-server: $schema=http://127.0.0.1:8765/_shared/flight.schema.json
@@ -24,29 +20,3 @@ backends:
     sandbox: worktree-full
     session_reuse: true
     time_budget: 15m
-
-# One dial per dispatch: the declared --spec-level resolves routing here.
-# The level overlay wins over the role overlay, so exact nodes get the spark
-# backend's longer budget rather than the implement role's short one. A --set
-# override still rewrites any of this per dispatch. Eligibility for the exact
-# lane stays gated (size, runnable check, pilot audit) — see
-# skills/reckon-ship/references/effort-routing.md.
-roles:
-  implement:
-    by_spec_level:
-      # effort is pinned here because layers deep-merge per key: the host
-      # layer's exact overlay carries effort=medium for projects routing exact
-      # to the default backend, and without this pin that value would merge in
-      # and change the pilot lane's configuration mid-audit. xhigh is what the
-      # audited pilot runs actually executed at — with no flag the codex CLI
-      # inherits the user's interactive model_reasoning_effort (xhigh on this
-      # host, proven from the rollout turn_context), so the pin converts an
-      # accidental inheritance into declared config without forking the slice.
-      exact:
-        backend: codex-spark
-        time_budget: 15m
-        effort: xhigh
-      guided:
-        effort: medium
-      open:
-        effort: high
