@@ -18,8 +18,8 @@
   <title>North-star Orientation | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="17">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="18">
 <meta name="plan-commits" content="cb230a2f7402a39405af252f27d4b53f963f979c,d7dfd50ae2f9a217fce0f545d10847c16fc51d63,d4d15023f06f11be7abb6f9dd07ad3252a5fd2b5,9ded8c0b03a625677e0681102a86d88656ade53b,e8efbc740199bebff99a022f1849819a6199118b,51cac607cab717001d42340b6f64dd43f9adc936">
 <meta name="plan-artifacts" content="reckon/_schema.py,reckon/project_state.py,reckon/_plan_html.py,reckon/_store.py,reckon/roadmap.py,reckon/serve.py,docs/ui/shell.jsx,docs/ui/state-loader.js,docs/_shared/plan.schema.json,docs/evidence/north-star-orientation-landed.html">
 <meta name="plan-impl" content="0.92">
@@ -72,47 +72,7 @@
     plans of sprints S7 to S9 against them. Partner projects adopt when they choose; the label is
     optional everywhere and its absence never blocks execution.</p>
 
-    <h2 id="gates">§3 — Evidence gates</h2>
 
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Declared and rendered</td>
-          <td>Reckon's own north-stars are declared in project state and render in the cockpit
-          band with their statements and live-work counts. Screenshot banked as a figure.</td>
-        </tr>
-        <tr>
-          <td>Plans point at them</td>
-          <td>All seven S7–S9 plans carry <code>plan-north-star</code>, each resolving to a declared
-          id, shown as a badge on the plan page and filterable in the list.</td>
-        </tr>
-        <tr>
-          <td>Dangling reference caught</td>
-          <td>A test proving a plan naming an undeclared north-star produces a wiring finding
-          rather than passing silently.</td>
-        </tr>
-        <tr>
-          <td>Orientation rollup</td>
-          <td><code>roadmap</code> reports plans, completion and remaining effort per north-star,
-          and lists unoriented live plans at info severity. Recorded output for reckon.</td>
-        </tr>
-        <tr>
-          <td>Count discipline</td>
-          <td>A test proving a project exceeding the advisory cap is reported, and that the report
-          does not block a write.</td>
-        </tr>
-        <tr>
-          <td>Optional everywhere</td>
-          <td>A project with no north-stars declared, and a plan with no label, both continue to
-          read, scan and execute unchanged — asserted by test against an unmigrated project.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
 
     <h2 id="s4">§4 — The collection needs a write path, not only a read path</h2>
 
@@ -281,6 +241,49 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901T233100-drain-ledger" data-who="reckon-ship" data-when="2026-09-01T23:31:00Z">
     <div class="r-comment-body">DRAIN LEDGER — north-star-orientation @ 2026-09-01T23:31Z. f-nso-001: resolved, all six nodes landed. f-nso-002 measures Declared, Every plan oriented, Rollup non-trivial: passed 2026-08-25 (four directions, ten labelled plans, counts 4/2/2/2). f-nso-002 measure Rendered: foreign-owner → rendered-evidence-on-this-host (host headless-Chrome network fault); attempted here as n-rendered-band-figure against the restarted server, zero PNGs. rows: 2, foldable-remaining: 0, unreconciled-runs: 0. Every executable node is landed; impl stays 0.92 on purpose because one declared measure is unmet, and the plan ships with f-nso-002 open as a pointer under the recorded exemption.</div>
+</div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="declared-and-rendered" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Declared and rendered</h4>
+    <p class="r-gate-required-evidence">Reckon's own north-stars are declared in project state and render in the cockpit
+          band with their statements and live-work counts. Screenshot banked as a figure.</p>
+    </div>
+<div class="r-gate" data-id="plans-point-at-them" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Plans point at them</h4>
+    <p class="r-gate-required-evidence">All seven S7–S9 plans carry <code>plan-north-star</code>, each resolving to a declared
+          id, shown as a badge on the plan page and filterable in the list.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#adoption">Evidence</a>
+</div>
+<div class="r-gate" data-id="dangling-reference-caught" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Dangling reference caught</h4>
+    <p class="r-gate-required-evidence">A test proving a plan naming an undeclared north-star produces a wiring finding
+          rather than passing silently.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#plan-label">Evidence</a>
+</div>
+<div class="r-gate" data-id="orientation-rollup" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Orientation rollup</h4>
+    <p class="r-gate-required-evidence"><code>roadmap</code> reports plans, completion and remaining effort per north-star,
+          and lists unoriented live plans at info severity. Recorded output for reckon.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#orientation-rollup">Evidence</a>
+</div>
+<div class="r-gate" data-id="count-discipline" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Count discipline</h4>
+    <p class="r-gate-required-evidence">A test proving a project exceeding the advisory cap is reported, and that the report
+          does not block a write.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#project-state">Evidence</a>
+</div>
+<div class="r-gate" data-id="optional-everywhere" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Optional everywhere</h4>
+    <p class="r-gate-required-evidence">A project with no north-stars declared, and a plan with no label, both continue to
+          read, scan and execute unchanged — asserted by test against an unmigrated project.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#project-state">Evidence</a>
+</div>
+<div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/north-star-orientation-landed#plan-label">Evidence</a>
 </div>
 </section>
 </main>

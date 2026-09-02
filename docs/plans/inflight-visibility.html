@@ -20,8 +20,8 @@
   <title>In-flight Visibility | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-01">
-<meta name="plan-version" content="24">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="25">
 <meta name="plan-commits" content="7c1c3de534ff22301a3630ffa0bc91a1272104c1,1cfe5cad344681688e3fe6e10958a0582b4dce29,9b483972468d977de2ff8a96f1d7be63802449f3,e2fb7886b10535ae66e93e15b01544d0e3288998,1d4543a511f277926028f948b54a8645cf156935,fb95f4f41b864663661608d263bc0c82842c538a,2f1bb2335b21171a78675f2d2c1ddd164c2b0e3f,3f7c6d3983e84bc6c3a77c24f5a4c9c78dd81abc,21288f82216afce3bb5ebaa1d47fbf16c0446337,e96cac111d56e57d0c592a9397a4bbb3138cc083,d59528092057da5cd1642d98bdced3938be807d1">
 <meta name="plan-artifacts" content="reckon/serve.py,reckon/cli.py,docs/index.html,docs/ui/crew.jsx,docs/ui/shell.jsx,docs/ui/glyphs.jsx,tests/test_crew_routes.py,tests/test_build.py,docs/evidence/inflight-visibility-landed.html">
 <meta name="plan-impl" content="1.0">
@@ -105,60 +105,7 @@
       </tbody>
     </table>
 
-    <h2 id="gates">§3 — Evidence gates</h2>
 
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr>
-          <td>Live run visible</td>
-          <td><code>GET /crew</code> reports <code>phase=working</code> within 3 s of a real
-          dispatch, and <code>done</code> after the worker's terminal event. Both latencies
-          recorded.</td>
-        </tr>
-        <tr>
-          <td>Visible to agents too</td>
-          <td>While that run is live, <code>read_plan</code> on its plan and the matching
-          <code>roadmap</code> row both carry <code>in_flight</code> with the run id. Recorded
-          payload excerpts.</td>
-        </tr>
-        <tr>
-          <td>Navigable</td>
-          <td>The watcher tab renders the run with working links to its plan and sprint, and the
-          plan page shows its in-flight band. Screenshot banked as a figure.</td>
-        </tr>
-        <tr>
-          <td>No second daemon</td>
-          <td>Only one listener on <code>:8765</code> and no new port; confirmed by
-          <code>ss -ltnp</code> output with the watcher in use.</td>
-        </tr>
-        <tr>
-          <td>Bounded reads</td>
-          <td>A test proving log tailing reads a bounded tail rather than the whole file, on a
-          log grown past that bound.</td>
-        </tr>
-        <tr>
-          <td>Portfolio scan usable</td>
-          <td><code>roadmap(project="*")</code> default view returns a response that fits well
-          inside the MCP ceiling while still reporting per-project completion, ready and blocked
-          counts and finding totals. Byte size recorded against the 176 KB baseline.</td>
-        </tr>
-        <tr>
-          <td>Drift detectable</td>
-          <td><code>reckon install-skills</code> reports the copied-where-linked case on a
-          seeded fixture, and the live instance is repaired.</td>
-        </tr>
-        <tr>
-          <td>Placeholder rejected</td>
-          <td>A test proving an em-dash milestone is refused on write; the live plan is
-          cleared.</td>
-        </tr>
-        <tr>
-          <td>Suite green</td>
-          <td>Full reckon suite passes; new-test count recorded.</td>
-        </tr>
-      </tbody>
-    </table>
 
     <h2 id="s4">§4 — Constraints</h2>
 
@@ -371,6 +318,63 @@
 <div class="r-comment" data-section="s3" data-id="c-20260901T233000-drain-ledger" data-who="reckon-ship" data-when="2026-09-01T23:30:00Z">
     <div class="r-comment-body">DRAIN LEDGER — inflight-visibility @ 2026-09-01T23:30Z. f-ifv-watcher-load: folded → n-watcher-deadlines-load-robust (landed f9123a1). f-ifv-002 measures Live run visible and No second daemon: passed by live measurement 2026-08-25. f-ifv-002 restart and skill repair: done 2026-09-01. f-ifv-002 measures Navigable and In-flight band: foreign-owner → rendered-evidence-on-this-host (host headless-Chrome network fault, bounded there §2, owed to its §3 host change); attempted here as n-live-watcher-figures, zero PNGs. rows: 4, foldable-remaining: 0, unreconciled-runs: 0. All ten executable nodes plus the watcher-load repair are landed and impl reads 1.0, so the plan ships with f-ifv-002 left open as a pointer under the recorded exemption.</div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="live-run-visible" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Live run visible</h4>
+    <p class="r-gate-required-evidence"><code>GET /crew</code> reports <code>phase=working</code> within 3 s of a real
+          dispatch, and <code>done</code> after the worker's terminal event. Both latencies
+          recorded.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#live-instance">Evidence</a>
+</div>
+<div class="r-gate" data-id="visible-to-agents-too" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Visible to agents too</h4>
+    <p class="r-gate-required-evidence">While that run is live, <code>read_plan</code> on its plan and the matching
+          <code>roadmap</code> row both carry <code>in_flight</code> with the run id. Recorded
+          payload excerpts.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#inflight-read-tools">Evidence</a>
+</div>
+<div class="r-gate" data-id="navigable" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Navigable</h4>
+    <p class="r-gate-required-evidence">The watcher tab renders the run with working links to its plan and sprint, and the
+          plan page shows its in-flight band. Screenshot banked as a figure.</p>
+    </div>
+<div class="r-gate" data-id="no-second-daemon" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">No second daemon</h4>
+    <p class="r-gate-required-evidence">Only one listener on <code>:8765</code> and no new port; confirmed by
+          <code>ss -ltnp</code> output with the watcher in use.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#live-instance">Evidence</a>
+</div>
+<div class="r-gate" data-id="bounded-reads" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Bounded reads</h4>
+    <p class="r-gate-required-evidence">A test proving log tailing reads a bounded tail rather than the whole file, on a
+          log grown past that bound.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#crew-routes">Evidence</a>
+</div>
+<div class="r-gate" data-id="portfolio-scan-usable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Portfolio scan usable</h4>
+    <p class="r-gate-required-evidence"><code>roadmap(project="*")</code> default view returns a response that fits well
+          inside the MCP ceiling while still reporting per-project completion, ready and blocked
+          counts and finding totals. Byte size recorded against the 176 KB baseline.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#portfolio-view">Evidence</a>
+</div>
+<div class="r-gate" data-id="drift-detectable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Drift detectable</h4>
+    <p class="r-gate-required-evidence"><code>reckon install-skills</code> reports the copied-where-linked case on a
+          seeded fixture, and the live instance is repaired.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#live-instance">Evidence</a>
+</div>
+<div class="r-gate" data-id="placeholder-rejected" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Placeholder rejected</h4>
+    <p class="r-gate-required-evidence">A test proving an em-dash milestone is refused on write; the live plan is
+          cleared.</p>
+    <a class="r-gate-evidence" href="/reckon/evidence/inflight-visibility-landed#milestone-shape">Evidence</a>
+</div>
+<div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Suite green</h4>
+    <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
+    </div>
 </section>
 </main>
 </body>
