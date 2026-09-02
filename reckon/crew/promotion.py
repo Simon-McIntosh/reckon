@@ -393,31 +393,8 @@ def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
     }
 
 
-def _head_delta_paths(path: Path, before: str, after: str) -> tuple[str, ...]:
-    if not before or not after or before == after:
-        return ()
-    result = subprocess.run(
-        ["git", "diff", "--name-only", "--no-renames", "-z", before, after, "--"],
-        cwd=path,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode:
-        return ()
-    return tuple(os.fsdecode(raw) for raw in result.stdout.split(b"\0") if raw)
-
-
-def _plan_authority_paths(record: Mapping[str, Any]) -> set[str]:
-    """Return plan paths that promotion's coordinator is allowed to maintain."""
-    node = record.get("node") or {}
-    slug = str(node.get("plan") or "").strip()
-    if not slug:
-        return set()
-    return {f"docs/{slug}.html", f"docs/plans/{slug}.html"}
-
-
 def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) -> None:
-    """Refuse promotion when a dispatch-visible tree changed unexpectedly."""
+    """Refuse a stray uncommitted edit in another dispatch-visible tree."""
     snapshot = record.get("repository_tree_snapshot")
     if not isinstance(snapshot, Mapping):
         return
@@ -438,6 +415,9 @@ def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) ->
     }
     own_tree = Path(str(record.get("worktree") or "")).resolve()
     declared = (record.get("node") or {}).get("write_paths") or ()
+    declared_roots = _repository_scope_paths(
+        declared, worktree=own_tree, repository=repository
+    )
     violations: list[str] = []
     for before in before_trees:
         if not isinstance(before, Mapping):
@@ -446,59 +426,33 @@ def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) ->
         if not raw_path:
             continue
         path = Path(raw_path).resolve()
+        if path == own_tree:
+            continue
         after = after_by_path.get(str(path))
         if after is None or not after.get("available", False):
-            detail = str((after or {}).get("detail") or "tree is no longer available")
-            violations.append(f"{path} ({detail})")
             continue
-        head_changed = str(before.get("head") or "") != str(after.get("head") or "")
         status_changed = str(before.get("status_digest") or "") != str(
             after.get("status_digest") or ""
         )
-        if not head_changed and not status_changed:
+        if not status_changed:
             continue
-        changed_paths = set(
-            _head_delta_paths(
-                path,
-                str(before.get("head") or ""),
-                str(after.get("head") or ""),
+        changed_paths = {
+            changed
+            for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
+            if any(
+                Path(changed) == root or Path(changed).is_relative_to(root)
+                for root in declared_roots
             )
-        )
-        changed_paths.update(
-            item[1] for item in _snapshot_entries(before) ^ _snapshot_entries(after)
-        )
-        if path == repository:
-            changed_paths.difference_update(_plan_authority_paths(record))
-            if not changed_paths:
-                continue
-        if path == own_tree:
-            changed_paths = set(
-                _outside_declared_scope(
-                    changed_paths,
-                    declared,
-                    record=record,
-                    tree=own_tree,
-                )
-            )
-            if not changed_paths:
-                continue
-        label = (
-            "run worktree"
-            if path == own_tree
-            else "main checkout"
-            if path == repository
-            else "peer worktree"
-        )
+        }
+        label = "main checkout" if path == repository else "peer worktree"
         if changed_paths:
             violations.extend(
                 f"{changed} in {label} {path}" for changed in sorted(changed_paths)
             )
-        else:
-            violations.append(f"tree state in {label} {path}")
     if violations:
         raise CrewError(
-            f"run {run_id!r} changed repository trees outside its own worktree "
-            f"and declared scope: {', '.join(violations)}"
+            f"run {run_id!r} has uncommitted changes at its declared paths "
+            f"outside its own worktree: {', '.join(violations)}"
         )
 
 

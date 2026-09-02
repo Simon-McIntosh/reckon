@@ -92,6 +92,14 @@ def _commit_allowed(run_tree: Path) -> str:
     return _git(run_tree, "rev-parse", "HEAD")
 
 
+def _advance_main_and_merge_run(repository: Path, commit: str) -> None:
+    for name in ("first.txt", "second.txt"):
+        (repository / name).write_text(f"{name}\n", encoding="utf-8")
+        _git(repository, "add", name)
+        _git(repository, "commit", "-q", "-m", f"test: add {name}")
+    _git(repository, "merge", "-q", "--no-ff", commit, "-m", "Merge worker commit")
+
+
 def test_main_checkout_write_is_refused_and_pointer_is_retained(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -100,13 +108,13 @@ def test_main_checkout_write_is_refused_and_pointer_is_retained(
     run_id = "r-main-tree-write"
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
-    (repository / "stray.txt").write_text("outside\n", encoding="utf-8")
+    (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     message = str(refusal.value)
-    assert "stray.txt" in message
+    assert "allowed.txt" in message
     assert f"main checkout {repository}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
@@ -138,13 +146,13 @@ def test_peer_worktree_write_is_refused_and_pointer_is_retained(
     run_id = "r-peer-tree-write"
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
-    (peer_tree / "stray.txt").write_text("outside\n", encoding="utf-8")
+    (peer_tree / "allowed.txt").write_text("stray\n", encoding="utf-8")
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     message = str(refusal.value)
-    assert "stray.txt" in message
+    assert "allowed.txt" in message
     assert f"peer worktree {peer_tree}" in message
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
@@ -178,6 +186,63 @@ def test_worktree_registered_after_dispatch_is_not_charged_to_the_run(
     commit = _commit_allowed(run_tree)
     late_tree = _detached_tree(repository, tmp_path / "late-tree")
     (late_tree / "stray.txt").write_text("outside\n", encoding="utf-8")
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_main_checkout_commit_movement_including_run_merge_allows_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-main-advanced"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    _advance_main_and_merge_run(repository, commit)
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_peer_uncommitted_edit_outside_declared_scope_allows_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    peer_tree = _detached_tree(repository, tmp_path / "peer-tree")
+    run_id = "r-peer-unrelated-edit"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    (peer_tree / "unrelated.txt").write_text("peer work\n", encoding="utf-8")
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_main_commit_movement_and_unrelated_peer_edit_allow_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    peer_tree = _detached_tree(repository, tmp_path / "peer-tree")
+    run_id = "r-working-fleet"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    _advance_main_and_merge_run(repository, commit)
+    (peer_tree / "unrelated.txt").write_text("peer work\n", encoding="utf-8")
 
     stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
         "record"
