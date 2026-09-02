@@ -330,6 +330,75 @@
       and advancing the horizon is the lead's call through <code>/reckon-sprint</code>.
     </p>
 
+    <h2 id="ticker-legibility">The delivered line is now readable at a glance</h2>
+    <p>
+      Commit <code>f217e53</code> (2026-09-02, coordinator inline). New module
+      <code>reckon/crew/ticker.py</code>; 18 tests in
+      <code>tests/test_crew_ticker_layout.py</code>. Full suite 2701 passed, 30 skipped, 0 failed.
+      Ruff delta over the staged paths 58 baseline &rarr; 47, so the commit adds no findings.
+    </p>
+    <p>
+      <strong>What delivery could not reach.</strong> The sections above made the signal arrive.
+      None of them governed what the arriving line <em>said</em>. Measured against a live pane on
+      2026-09-02: the agent label occupied the position the eye reaches straight after the clock
+      while being byte-identical on nine of ten rows; the state pair was formatted as one
+      left-aligned string, so the arrow landed in a different column on every row; the counts ran
+      thirty-eight characters of mostly zeros with nothing anchoring them; and a long reason clause
+      overran the margin. The pane shows about eight lines, so a wrapped row costs a quarter of the
+      visible history.
+    </p>
+    <ul>
+      <li><strong>A fixed grid, one width per line.</strong> Clock, node, <code>from &rarr; to</code>,
+        model and effort, reason, counts right-aligned on the margin. Digits are right-aligned
+        within the count cells, so <code>12 working</code> stacks under <code>1 working</code>
+        instead of shunting its label.</li>
+      <li><strong>Two colour axes that never cross.</strong> The node's hue answers <em>which
+        worker</em>, the state's answers <em>does this need me</em>. Both halves of the transition
+        are painted, because colouring only the destination made <code>blocked &rarr; promoted</code>
+        and <code>complete &rarr; promoted</code> render identically &mdash; the difference between
+        a recovery someone intervened in and a routine gate pass. A test asserts the identity and
+        alarm palettes are disjoint in both themes.</li>
+      <li><strong>Hues by first appearance, not by hash.</strong> Hashing the node name was tried
+        first and collided two live workers onto one colour, which defeats the only question the
+        colour answers.</li>
+      <li><strong>Width and colour are stated, never detected.</strong> The pane is a pipe:
+        <code>isatty</code> is false and <code>COLUMNS</code> unset, so the conventional terminal
+        probe would disable both in exactly the place they are wanted. <code>--width</code>,
+        <code>--theme</code> and <code>--no-color</code> on <code>follow</code> and
+        <code>watch</code>, defaulting to a wide light pane so the arming line stays bare. Colour is
+        off in the library call and on in the CLI, so a programmatic caller never strips escapes.</li>
+      <li><strong>Columns sized from the ledger, not guessed.</strong> Node names across 2,279
+        recorded runs reach 56 characters with a 95th percentile of 34; 36 covers 97.5% and elides
+        the rest. <code>completed_unpromoted</code> is twenty characters against a ten-wide field and
+        renders as <code>unpromoted</code>, the word the fleet counter already uses for that bucket.</li>
+    </ul>
+    <p>
+      <strong>Two defects found and fixed, both a state explaining itself when it should not.</strong>
+      A departure inherited the clause from the state it left, so a run promoted out of a block still
+      reported the block on the line announcing it was resolved. And the rule clearing that clause was
+      an allow-list of states to clear, leaving every state added later carrying whatever the
+      classifier attached; it is now a named set of states that <em>may</em> explain themselves, so a
+      new one is silent until deliberately listed.
+    </p>
+    <p>
+      <strong>Negative findings.</strong> Three, each of which changed the design.
+      <em>OSC-8 hyperlinks do not render in the pane</em>, so a clickable reason linking to the
+      worker manifest is not available and the clause is truncated to the margin instead.
+      <em>The pane is a tail window of roughly eight lines</em>, which is why the reason never takes
+      a row of its own. And <em>importing the grid module from the CLI is unaffordable</em>: the
+      <code>reckon.crew</code> facade costs over two seconds to import against a leaf cost of
+      1.4&nbsp;ms, so the option defaults resolve lazily inside the command body and the theme names
+      are restated in the CLI with a test binding them to the palettes they select.
+    </p>
+    <p>
+      <strong>A leak the suite caught that neither reviewer predicted.</strong> Adding the module put
+      <code>ticker</code> on <code>reckon.crew</code>'s public surface: a submodule imported by a peer
+      binds itself onto the parent package, and <code>crew.py</code> only pops the names it lists in
+      its export map. It is now registered there with an empty export tuple, matching how the
+      formatter and clock are already reached through <code>reckon.crew.recovery</code> rather than
+      the facade.
+    </p>
+
   </main>
 </body>
 </html>
