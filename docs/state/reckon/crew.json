@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T22:59:21",
+  "updated": "2026-09-02T23:15:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -37029,9 +37029,121 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T205922510859-reckon-agents-md-sub-scoped",
+        "plan": "clive-local-workers",
+        "section": "\u00a79",
+        "node": "reckon-agents-md-sub-scoped",
+        "node_definition": {
+          "done_when": "The reckon root AGENTS.md is about 15,029 estimated tokens (characters divided by 3.5) and every worker in this repository loads it at startup, so it is a standing tax on every node. It carries reference material its own narrowest-scope rule assigns lower down: a 2,831-token crew command surface, a 2,131-token reckon MCP tools section, a 779-token plan semantic data model, a 424-token plan vocabulary table and a 1,239-token where-docs-live section. Create reckon/crew/AGENTS.md holding the crew command surface plus the parallel-agent and fleet-sizing rules, and docs/AGENTS.md holding the plan semantic data model, the plan vocabulary, the typed-archive and repo-layout tables, and the where-docs-live and server-operations detail. Leave in the root only repo-wide invariants a worker editing any file needs: primary branch, ruff policy, the HTML-first rule, the skills routing table and plan-state integrity, plus a one-line pointer to each new file naming what it covers. Measures: the root drops below 6,000 estimated tokens; nothing is lost, verified by asserting every level-2 and level-3 heading present before appears in exactly one of the three files after; each new file opens with a sentence naming the sub-tree it governs; and no file changes other than AGENTS.md and the two new ones. Add tests/test_agents_scoping.py asserting the root stays under a stated token bound with that bound's reason in a comment beside it, and that every pointer in the root names a file that exists. Your gate is that new test file plus tests/test_declared_tooling.py: run those two only. Do NOT run the full suite and do NOT run any browser-driven test",
+          "estimated_hours": null,
+          "goal": "Cut the reckon root AGENTS.md to a thin index by moving reference material to the scope that owns it",
+          "id": "reckon-agents-md-sub-scoped",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T205922510859-reckon-agents-md-sub-scoped/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "AGENTS.md",
+            "reckon/crew/AGENTS.md",
+            "docs/AGENTS.md",
+            "tests/test_agents_scoping.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T20:59:28Z",
+        "completed_at": "2026-09-02T21:14:08.566Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 872,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 880,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "47c2a93dd9a57eb8bad3cef0d7a5f764a3ba1e46",
+        "commits": [
+          "6f99ac2106b2ee5d5a45378c9765a4b67f08c98b"
+        ],
+        "changed_lines": {
+          "added": 681,
+          "removed": 532,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_agents_scoping.py tests/test_declared_tooling.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T205922510859-reckon-agents-md-sub-scoped/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T205922510859-reckon-agents-md-sub-scoped/manifest.md",
+        "scope_changed": false,
+        "session_id": "17b060e3-0444-4d3e-8143-28985b694212",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3565004,
+            "input_tokens_cumulative": 3565004,
+            "output_tokens": 38340,
+            "output_tokens_cumulative": 38340,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 18.78352,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 18.78352
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 603
+    "_version": 604
   }
 }

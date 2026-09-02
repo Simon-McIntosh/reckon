@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="62">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.63">
-<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635">
 </head>
 <body>
   <main class="plan-doc">
@@ -658,6 +658,12 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260902-test-policy-durable" data-who="reckon-ship" data-when="2026-09-02T19:22:00Z">
     <div class="r-comment-body">The relaxed gate is now durable rather than a habit of one session. The Test Execution Protocol in ~/.agents/AGENTS.md is rewritten around the lead's principle — there is no point running tests that cover nothing that changed — and that file is loaded by every worker in every repository AND by every orchestrator through CLAUDE.md, so one edit binds both sides. Four rules replace the old closing line, which had said to re-run the full suite once after a fix and was the sentence driving 700-to-900-second suites onto every node. Select the gate from the node's declared write paths: the test files covering them plus anything importing what changed, and nothing else. No full suite per node; one integration verification per wave at the merged head, which is the only place a suite-wide result says something a worktree run could not, because it measures the merge. Slow surfaces — browser, GPU, network — are opt-in and only when the change reaches them, with the Chrome reaping rule recorded beside them. Judge by delta against a stated base with its failure ids, never absolute green, because a shared checkout carries peer work and an absolute count measures the fleet. The measurement that justifies it is in the text so it cannot decay into taste: 189 tests in 27 seconds against 700 to 900 for the suite, thirty times cheaper for the same change. What remains repo-local is the mapping from source path to covering test file, which belongs in each repository's own AGENTS.md and is owed by the two trims now in flight.</div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260902T205922510859-reckon-agents-md-sub-scoped" data-who="flash-a" data-when="2026-09-02T21:14:08.566Z">
+    <div class="r-comment-body"><p>Root AGENTS.md 15,030 to 4,313 estimated tokens; crew surface to reckon/crew/AGENTS.md, plan format and server ops to docs/AGENTS.md. All 29 headings in exactly one file, 0 missing 0 duplicated, verified independently of the worker's census. Gate 5 passed, focused only, no full suite and no browser test under the new policy. Standing load per worker falls from 29,499 to 16,173 tokens with the trimmed user-global file.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20260902-trims-landed" data-who="reckon-ship" data-when="2026-09-02T19:35:00Z">
+    <div class="r-comment-body">§9 lands, both trims delivered by deepseek-v4-flash on the local lane. reckon: run r-20260902T205922510859, commit 6f99ac2 merged, root 15,030 to 4,313 estimated tokens with the crew command surface moving to reckon/crew/AGENTS.md and the plan data model, vocabulary, layout tables and server operations to docs/AGENTS.md, plus tests/test_agents_scoping.py pinning the root under a stated bound, checking every pointer resolves and checking no canonical heading is dropped or duplicated. imas-codex: run r-20260902T210020995337, commit 7f41635 merged as e7e1085e, root 22,063 to 4,920 across ten new sub-scoped files, taking that repository from one sibling to eleven. Both censuses were re-run by the coordinator independently of the worker's own: 29 headings in reckon and 64 in imas-codex, zero missing and zero duplicated in each. Fleet standing load per worker, root plus user-global, before and after: reckon 29,499 to 16,173, imas-codex 36,533 to 16,780, nova 18,670 to 16,060, imas-ambix 16,242 to 13,632. The spread collapsed from 16,242-36,533 to 13,632-16,780, so the outliers are gone and every repository now costs about the same to enter. For GLM the figure that matters is working room: 44,229 tokens before, 57,555 now, a 30% gain on the constraint that killed two nodes this evening. Both nodes ran the new focused-gate policy and neither ran a full suite or a browser test.</div>
 </div>
 </section>
 </main>
