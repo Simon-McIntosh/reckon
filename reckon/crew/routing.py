@@ -203,6 +203,78 @@ def _registered_worktrees(repo: Path) -> list[Path]:
     ]
 
 
+def _tree_state(path: Path) -> dict[str, Any]:
+    """Return the commit and working-tree state needed for a boundary check."""
+    if not path.is_dir():
+        return {
+            "path": str(path),
+            "available": False,
+            "detail": "tree is no longer available",
+        }
+    head = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=path,
+        capture_output=True,
+        check=False,
+    )
+    status = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--no-renames",
+        ],
+        cwd=path,
+        capture_output=True,
+        check=False,
+    )
+    if head.returncode or status.returncode:
+        detail = (
+            os.fsdecode(head.stderr or b"").strip()
+            or os.fsdecode(status.stderr or b"").strip()
+            or "tree is unavailable"
+        )
+        return {
+            "path": str(path),
+            "available": False,
+            "detail": detail,
+        }
+    entries = []
+    for raw in (item for item in status.stdout.split(b"\0") if item):
+        if len(raw) < 4 or raw[2:3] != b" ":
+            continue
+        entries.append({"code": os.fsdecode(raw[:2]), "path": os.fsdecode(raw[3:])})
+    return {
+        "path": str(path),
+        "available": True,
+        "head": os.fsdecode(head.stdout).strip(),
+        "status_digest": "sha256:" + hashlib.sha256(status.stdout).hexdigest(),
+        "status_entries": entries,
+    }
+
+
+def _repository_tree_snapshot(
+    repo: Path, *, roots: Iterable[str | Path] | None = None
+) -> dict[str, Any]:
+    """Capture one deterministic snapshot of the repository's selected trees.
+
+    With no explicit roots, the worktree registry is enumerated exactly once.
+    Promotion supplies the persisted root set, so worktrees registered after
+    dispatch cannot be charged to an earlier run.
+    """
+    selected = (
+        _registered_worktrees(repo) if roots is None else [Path(p) for p in roots]
+    )
+    resolved = sorted({path.resolve() for path in selected}, key=str)
+    return {
+        "version": 1,
+        "status_digest": "sha256",
+        "trees": [_tree_state(path) for path in resolved],
+    }
+
+
 def _inspect_workspace(
     repo: Path,
     path: Path,

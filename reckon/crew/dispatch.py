@@ -44,6 +44,7 @@ from reckon.crew.routing import (
     _register_session_member,
     _fleet_script,
     _remove_worktree,
+    _repository_tree_snapshot,
     _session_member_id,
     _signal_process_group,
     _workspace_roots,
@@ -1792,6 +1793,10 @@ def dispatch(
                 role=node.role,
                 root=ledger_root,
             )
+        # Registration can update the repository's committed crew ledger. Take
+        # the boundary baseline only after dispatch's own writes are complete.
+        record["repository_tree_snapshot"] = _repository_tree_snapshot(repo_root)
+        _write_json(pointer_path(run_id), record)
     except Exception:
         _unwire_peer_channels(run_id, wired_peer_run_ids)
         if spawned_pid is not None:

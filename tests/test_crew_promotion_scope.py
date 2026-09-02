@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
+from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "sample"
@@ -69,6 +70,121 @@ def _pointer(repository: Path, run_id: str, base: str) -> None:
             },
         },
     )
+
+
+def _guarded_pointer(repository: Path, run_tree: Path, run_id: str, base: str) -> None:
+    _pointer(repository, run_id, base)
+    pointer = json.loads(pointer_path(run_id).read_text(encoding="utf-8"))
+    pointer["worktree"] = str(run_tree)
+    pointer["repository_tree_snapshot"] = routing._repository_tree_snapshot(repository)
+    _write_json(pointer_path(run_id), pointer)
+
+
+def _detached_tree(repository: Path, path: Path) -> Path:
+    _git(repository, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    return path
+
+
+def _commit_allowed(run_tree: Path) -> str:
+    (run_tree / "allowed.txt").write_text("seed\nallowed\n", encoding="utf-8")
+    _git(run_tree, "add", "allowed.txt")
+    _git(run_tree, "commit", "-q", "-m", "test: update declared path")
+    return _git(run_tree, "rev-parse", "HEAD")
+
+
+def test_main_checkout_write_is_refused_and_pointer_is_retained(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-main-tree-write"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    (repository / "stray.txt").write_text("outside\n", encoding="utf-8")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    message = str(refusal.value)
+    assert "stray.txt" in message
+    assert f"main checkout {repository}" in message
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_unchanged_main_checkout_allows_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-main-tree-clean"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_peer_worktree_write_is_refused_and_pointer_is_retained(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    peer_tree = _detached_tree(repository, tmp_path / "peer-tree")
+    run_id = "r-peer-tree-write"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    (peer_tree / "stray.txt").write_text("outside\n", encoding="utf-8")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    message = str(refusal.value)
+    assert "stray.txt" in message
+    assert f"peer worktree {peer_tree}" in message
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_unchanged_peer_worktree_allows_promotion(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    _detached_tree(repository, tmp_path / "peer-tree")
+    run_id = "r-peer-tree-clean"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_worktree_registered_after_dispatch_is_not_charged_to_the_run(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-late-tree"
+    _guarded_pointer(repository, run_tree, run_id, base)
+    commit = _commit_allowed(run_tree)
+    late_tree = _detached_tree(repository, tmp_path / "late-tree")
+    (late_tree / "stray.txt").write_text("outside\n", encoding="utf-8")
+
+    stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
 
 
 def test_two_commit_scope_escape_is_refused_before_ledger_write(

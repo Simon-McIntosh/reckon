@@ -14,6 +14,7 @@ from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
 from reckon.crew.reports import parse_manifest
+from reckon.crew.routing import _repository_tree_snapshot
 from reckon.crew.runs import (
     _manifest_freshness,
     _pointer_lock,
@@ -381,6 +382,124 @@ def _outside_declared_scope(
         if not any(path == root or path.is_relative_to(root) for root in roots):
             outside.append(changed)
     return tuple(outside)
+
+
+def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
+    entries = tree.get("status_entries") or ()
+    return {
+        (str(entry.get("code") or ""), str(entry.get("path") or ""))
+        for entry in entries
+        if isinstance(entry, Mapping) and str(entry.get("path") or "")
+    }
+
+
+def _head_delta_paths(path: Path, before: str, after: str) -> tuple[str, ...]:
+    if not before or not after or before == after:
+        return ()
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "--no-renames", "-z", before, after, "--"],
+        cwd=path,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        return ()
+    return tuple(os.fsdecode(raw) for raw in result.stdout.split(b"\0") if raw)
+
+
+def _plan_authority_paths(record: Mapping[str, Any]) -> set[str]:
+    """Return plan paths that promotion's coordinator is allowed to maintain."""
+    node = record.get("node") or {}
+    slug = str(node.get("plan") or "").strip()
+    if not slug:
+        return set()
+    return {f"docs/{slug}.html", f"docs/plans/{slug}.html"}
+
+
+def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse promotion when a dispatch-visible tree changed unexpectedly."""
+    snapshot = record.get("repository_tree_snapshot")
+    if not isinstance(snapshot, Mapping):
+        return
+    before_trees = snapshot.get("trees")
+    if not isinstance(before_trees, list):
+        return
+    roots = [
+        str(tree.get("path") or "")
+        for tree in before_trees
+        if isinstance(tree, Mapping) and str(tree.get("path") or "")
+    ]
+    repository = Path(str(record.get("repo") or ".")).resolve()
+    current = _repository_tree_snapshot(repository, roots=roots)
+    after_by_path = {
+        str(tree.get("path") or ""): tree
+        for tree in current["trees"]
+        if isinstance(tree, Mapping)
+    }
+    own_tree = Path(str(record.get("worktree") or "")).resolve()
+    declared = (record.get("node") or {}).get("write_paths") or ()
+    violations: list[str] = []
+    for before in before_trees:
+        if not isinstance(before, Mapping):
+            continue
+        raw_path = str(before.get("path") or "")
+        if not raw_path:
+            continue
+        path = Path(raw_path).resolve()
+        after = after_by_path.get(str(path))
+        if after is None or not after.get("available", False):
+            detail = str((after or {}).get("detail") or "tree is no longer available")
+            violations.append(f"{path} ({detail})")
+            continue
+        head_changed = str(before.get("head") or "") != str(after.get("head") or "")
+        status_changed = str(before.get("status_digest") or "") != str(
+            after.get("status_digest") or ""
+        )
+        if not head_changed and not status_changed:
+            continue
+        changed_paths = set(
+            _head_delta_paths(
+                path,
+                str(before.get("head") or ""),
+                str(after.get("head") or ""),
+            )
+        )
+        changed_paths.update(
+            item[1] for item in _snapshot_entries(before) ^ _snapshot_entries(after)
+        )
+        if path == repository:
+            changed_paths.difference_update(_plan_authority_paths(record))
+            if not changed_paths:
+                continue
+        if path == own_tree:
+            changed_paths = set(
+                _outside_declared_scope(
+                    changed_paths,
+                    declared,
+                    record=record,
+                    tree=own_tree,
+                )
+            )
+            if not changed_paths:
+                continue
+        label = (
+            "run worktree"
+            if path == own_tree
+            else "main checkout"
+            if path == repository
+            else "peer worktree"
+        )
+        if changed_paths:
+            violations.extend(
+                f"{changed} in {label} {path}" for changed in sorted(changed_paths)
+            )
+        else:
+            violations.append(f"tree state in {label} {path}")
+    if violations:
+        raise CrewError(
+            f"run {run_id!r} changed repository trees outside its own worktree "
+            f"and declared scope: {', '.join(violations)}"
+        )
 
 
 def _is_shadow(record: Mapping[str, Any]) -> bool:
@@ -959,6 +1078,7 @@ def _complete_locked(
         changed_lines = cumulative.changed_lines
     else:
         changed_lines = None
+    _require_repository_tree_boundary(run_id, record)
 
     session_id = record.get("session_id") or stream.session_id
     previous = next(
