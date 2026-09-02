@@ -50,6 +50,7 @@ def _run(
     completed_at_source: str = "stream_mtime",
     spec_level: str | None = None,
     lineage: dict | None = None,
+    failure_classification: str = "",
 ) -> None:
     build_record_kwargs: dict[str, Any] = {}
     if spec_level is not None:
@@ -65,6 +66,7 @@ def _run(
             completed_at_source=completed_at_source,
             changed_lines=changed_lines,
             lineage=lineage,
+            failure_classification=failure_classification,
             **build_record_kwargs,
         ),
         root=root,
@@ -131,7 +133,14 @@ def test_success_rate_is_conditioned_on_estimated_hours(tmp_path) -> None:
     _plan(root, "small", 1.0)
     _plan(root, "large", 4.0)
     _run(root, "small-pass", "small", 1.0)
-    _run(root, "large-fail", "large", 4.0, gate="failed")
+    _run(
+        root,
+        "large-fail",
+        "large",
+        4.0,
+        gate="failed",
+        failure_classification="work-rejected",
+    )
 
     curve = _derive(root)["configurations"][0]["success_by_estimated_hours"]
 
@@ -164,12 +173,82 @@ def test_competence_horizon_is_largest_size_meeting_threshold(tmp_path) -> None:
         ("large", 4.0, "failed"),
     ):
         _plan(root, slug, hours)
-        _run(root, slug, slug, hours, gate=gate)
+        _run(
+            root,
+            slug,
+            slug,
+            hours,
+            gate=gate,
+            failure_classification="work-rejected" if gate == "failed" else "",
+        )
 
     configuration = _derive(root, success_threshold=0.8)["configurations"][0]
 
     assert configuration["success_threshold"] == 0.8
     assert configuration["competence_horizon_hours"] == 2.0
+
+
+def test_non_work_failure_does_not_reduce_configuration_capability(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "small", 1.0)
+    _plan(root, "large", 4.0)
+    _run(root, "small-pass", "small", 1.0)
+    _run(root, "large-pass", "large", 4.0)
+    baseline = _derive(root)["configurations"][0]
+
+    _run(
+        root,
+        "wrapper-failure",
+        "large",
+        4.0,
+        gate="failed",
+        failure_classification="infrastructure-failure",
+    )
+    excluded = _derive(root)["configurations"][0]
+
+    assert (
+        excluded["success_by_estimated_hours"] == baseline["success_by_estimated_hours"]
+    )
+    assert excluded["competence_horizon_hours"] == baseline["competence_horizon_hours"]
+    assert excluded["excluded"] == {"infrastructure-failure": 1}
+
+    _run(
+        root,
+        "work-rejected",
+        "large",
+        4.0,
+        gate="failed",
+        failure_classification="work-rejected",
+    )
+    charged = _derive(root)["configurations"][0]
+
+    assert charged["success_by_estimated_hours"][-1]["success_rate"] == pytest.approx(
+        2 / 3
+    )
+    assert charged["competence_horizon_hours"] == 1.0
+
+
+def test_excluded_only_configuration_remains_legible(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(
+        root,
+        "wrapper-failure",
+        "work",
+        1.0,
+        gate="failed",
+        failure_classification="infrastructure-failure",
+    )
+
+    derived = _derive(root)
+    configuration = derived["configurations"][0]
+
+    assert configuration["runs"] == 0
+    assert configuration["success_by_estimated_hours"] == []
+    assert configuration["competence_horizon_hours"] is None
+    assert configuration["speed"] is None
+    assert configuration["excluded"] == {"infrastructure-failure": 1}
+    assert derived["excluded"]["infrastructure-failure"] == 1
 
 
 def test_changed_lines_are_descriptive_and_never_enter_selection(tmp_path) -> None:

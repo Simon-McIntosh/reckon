@@ -47,10 +47,11 @@ import queue
 import subprocess
 import tempfile
 import threading
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any
 
 # Sandbox tiers named by the flight schema. The mapping to concrete flags is
 # per-dialect; the tier names are shared vocabulary.
@@ -310,6 +311,18 @@ class Dialect:
         """Fold a probe's answer into the shared budget block."""
         return unknown_budget("dialect declares no budget probe to interpret")
 
+    def classify_stream_failure(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        *,
+        process_exited: bool,
+        diff_present: bool,
+        manifest_present: bool,
+    ) -> str | None:
+        """Classify a recognised harness failure, or decline to guess."""
+
+        return None
+
 
 class _CodexDialect(Dialect):
     """codex-cli: `exec --json`, thread ids, token usage without headroom."""
@@ -411,6 +424,29 @@ class _CodexDialect(Dialect):
         obs.final_message = message
         obs.phase = _phase(obs)
         return obs
+
+    def classify_stream_failure(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        *,
+        process_exited: bool,
+        diff_present: bool,
+        manifest_present: bool,
+    ) -> str | None:
+        """Recognise a wrapper stream that ended before producing any work."""
+
+        kinds = [str(event.get("type") or "") for event in events]
+        turn_started = "turn.started" in kinds
+        turn_finished = any(kind in {"turn.completed", "turn.failed"} for kind in kinds)
+        if (
+            process_exited
+            and turn_started
+            and not turn_finished
+            and not diff_present
+            and not manifest_present
+        ):
+            return "infrastructure-failure"
+        return None
 
     def _budget(self, usage: Any) -> dict[str, Any]:
         """Record spent tokens, and state plainly that headroom is not reported.
@@ -892,6 +928,26 @@ def observe_stream(
     obs.backend = backend_name
     obs.malformed_lines = malformed
     return obs
+
+
+def classify_stream_failure(
+    *,
+    backend: Mapping[str, Any],
+    lines: Iterable[str],
+    process_exited: bool,
+    diff_present: bool,
+    manifest_present: bool,
+) -> str | None:
+    """Classify only a dialect-recognised stream failure with no work product."""
+
+    dialect = dialect_for(backend)
+    events, _malformed = parse_events(lines)
+    return dialect.classify_stream_failure(
+        events,
+        process_exited=process_exited,
+        diff_present=diff_present,
+        manifest_present=manifest_present,
+    )
 
 
 def observe_log(
