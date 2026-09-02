@@ -23,9 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="9">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md">
-<meta name="plan-impl" content="0.09">
+<meta name="plan-version" content="11">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py">
+<meta name="plan-impl" content="0.18">
+<meta name="plan-commits" content="a91abe9">
 </head>
 <body>
   <main class="plan-doc">
@@ -306,6 +307,12 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260902-reuse-map-detail" data-who="reckon-ship" data-when="2026-09-02T13:30:00Z">
     <div class="r-comment-body">Reconnaissance landed — run r-20260902T131713796175-local-lane-reuse-map, member local-scout at gpt-5.6-sol/high read-only, 546 worker-seconds, first attempt, gate passed on 82/82 symbol and test-name resolutions at base 33a1315 plus a structural check of eight capability sections. Commitless by design; artifact ~/.config/reckon/crew/reports/local-lane-reuse-map.md. Verdict across the eight areas this plan would otherwise rebuild: one runtime-sufficient, seven bounded-extension, none absent — every section extends a controlling abstraction that already exists rather than adding a competing one. The four that decide the wave's shape: peer worktree enumeration is runtime-sufficient (_registered_worktrees plus _live_worktree_claims), so §6 needs a dispatch-time tree snapshot and a promotion-time comparison and no new enumerator; the failure taxonomy already carries infrastructure-failure and ledger.summary already excludes it from worker_gate.pass_rate, but derive_capabilities sets success from gate == passed alone, so §7's classification work is one eligibility policy applied in the capability cache; compose_prompt and dispatch.observe are the right hooks for §7 orientation, with the expected side (worktree, base_sha, write_paths) already on the pointer and only the reported side missing; and §2's model availability is genuinely absent — probe_availability never passes the configured model to the wrapper and crew_dispatch never consults availability, though the exit-5 refusal envelope is ready to reuse. The map also names the scope boundaries: observe lives in dispatch.py and _cumulative_diff in promotion.py, which is why the crew-core sections serialise rather than fan out. Denominator set at 11 executable nodes across §1–§7. impl 1 of 11.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260902T133132431763-silent-delivery-becomes-a-repairable-row" data-who="harness-manifest" data-when="2026-09-02T13:54:04Z">
+    <div class="r-comment-body"><p>Recovery derives a non-delivered manifest from a terminal run's final message and worktree diff; abandoned classification and the refusal to advise promotion preserved. Focused 8/8, full suite 2656 passed 0 failed in 710s, ruff finding delta 0.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-silent-delivery-detail" data-who="reckon-ship" data-when="2026-09-02T13:56:00Z">
+    <div class="r-comment-body">Silent delivery is now a repairable row — run r-20260902T133132431763, member harness-manifest at gpt-5.6-sol/medium, 1,346 worker-seconds, first attempt, no scope change; commit a91abe9 merged as 403361e, 246 insertions and 3 deletions across exactly the two authorised paths, 3 tests added. Gate: focused tests/test_crew_recovery.py 8/8, full suite 2,656 passed with 0 failed in 710s, ruff finding delta 0 against a baseline of 12. The delta is clean by construction — a peer run measured 2,653 at the same base and this run added 3 tests. Mechanism: reckon crew recover, on a terminal pointer with no manifest, writes a provisional manifest beside the run from the final message and the worktree diff and marks it derived, so the row stays classified abandoned, keeps manifest_present false, is never advised for promotion, and carries a delivery_gap with the final-message presence and a changed-path census. next_action names reckon crew resume rather than reckon crew complete, which is the point: the correct diff is recoverable without a promotion path that would read it as delivered. Three refusals hold at the edges — a genuinely empty terminal run derives nothing, a worker-written manifest is never overwritten because creation is exclusive, and the derivation imports no promotion implementation and takes only the per-run pointer lock recovery already held. This closes one of the two harness failures the plan's six-pair local qualification recorded: a worker that did correct work and never wrote its manifest. impl 2 of 11.</div>
 </div>
 </section>
 </main>
