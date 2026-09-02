@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="55">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.69">
+<meta name="plan-impl" content="0.65">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc">
 </head>
 <body>
@@ -393,6 +393,18 @@
       so invisibly because the run record shows only the effort it was launched with. Key the
       stored session on the resolved configuration rather than the model, so a changed effort
       starts clean and an unchanged one still reuses.</li>
+      <li><strong>A shadow worktree path names its primary but not its candidate, so two
+      models cannot be compared on one node at the same time.</strong> Found immediately on
+      trying to do exactly that: the second shadow of a primary is refused with
+      <code>worktree path already exists</code>, because the path is
+      <code>shadow-&lt;primary-run&gt;/&lt;node&gt;</code> with nothing in it identifying which
+      candidate is running. The qualification ladder's central act is putting two candidates
+      against the same node at the same base, so the one measurement the programme most needs
+      is the one the path scheme forbids. Include the candidate backend in the shadow
+      worktree path, keeping the lineage-based reclamation that already reads a committed
+      shadow record so the cleanup rule is unaffected. Sequential shadows of one primary do
+      work and are the workaround, but they double the wall clock of every paired comparison
+      and couple two measurements that should be independent.</li>
     </ul>
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
@@ -498,6 +510,9 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260902T162114915926-session-reuse-keyed-on-configuration" data-who="harness-classify" data-when="2026-09-02T18:14:51Z">
     <div class="r-comment-body"><p>Killed by the codex account usage limit (turn.failed, reset 2026-09-08), not by any defect in the node or the worker. session-reuse had already committed 5eda3ab with 6/6 real-dispatch integration cases passing and needed only one stale assertion in tests/test_crew.py; read-only-delivery had committed nothing. Both re-cut onto the local lane.</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-shadow-path-collision" data-who="reckon-ship" data-when="2026-09-02T18:56:00Z">
+    <div class="r-comment-body">§7 gains an eighth item, found within a minute of trying to run the qualification the plan exists for. Shadowing one committed primary onto flash and onto GLM at the same time is refused on the second call with worktree path already exists, because the shadow path is shadow-<primary-run-id>/<node> and carries nothing identifying the candidate. Putting two candidates against the same node at the same base is the central act of the qualification ladder, so the measurement the programme most needs is precisely the one the path scheme forbids. The remedy is to include the candidate backend in the path while keeping the lineage-based reclamation that already reads a committed shadow record, so nothing about cleanup changes. Sequential shadows of one primary do work and are today's workaround, at the cost of doubling the wall clock of every pair and coupling two measurements that should be independent. Worth noting the family: this is the fourth defect in one session found by USING the calibration machinery rather than reading it, after the unapplied effort override, the over-inherited session and the read-only tier's withheld writes.</div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
 </div>
@@ -542,6 +557,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260902-availability-detail" data-who="reckon-ship" data-when="2026-09-02T14:50:00Z">
     <div class="r-comment-body">§2's executable half landed — run r-20260902T140912669453, member local-avail at gpt-5.6-sol/medium, first attempt, no scope change; commit ca6288d merged, 407 insertions and 13 deletions across the seven paths it used of the seven authorised, 6 tests added. Gate: full suite 2,673 passed 0 failed in 686s, focused 58 passed, scoped ruff findings 10 before and 10 after, both derived schema artifacts regenerated byte-identically. Mechanism: a backend may declare an optional catalog of two leaf-provenanced fields — list_command, the argument vector that asks the command what it serves, and model_pattern, how a served model is matched in that output. The probe runs the vector, substitutes the escaped configured model into the pattern, and reports model_served carrying either the matched line or a census of every non-empty offered line, and it never acts on the result, which keeps availability a report rather than a router. Dispatch refuses an unserved model through the existing competence-refusal envelope at exit 5 with backend, model, refusal=model-unavailable and the catalog detail, and it does so before a run pointer is created, on the dry-run and real paths alike. Crucially the probe runs against the effective backend after role and spec-level overlays, not the bare default, so an overlay cannot route past the check. A backend declaring no catalog is byte-for-byte unaffected, which is why every existing backend needed no edit. Test isolation held to the constraint recorded before dispatch: every catalog and dispatch assertion uses an executable synthetic wrapper created under a pytest temp directory and placed on PATH, so nothing reads the live cluster, a sibling checkout, or user state — the live catalog is a recorded measurement in the evidence, not a suite dependency. What remains of §2 is not code: the clive-glm entry itself waits on the GPU catalog publishing a GLM 5.3 release id, and with this landed that entry becomes one safe config block rather than a backend that would claim to be available. impl 7 of 12.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260902-glm-live" data-who="reckon-ship" data-when="2026-09-02T18:55:00Z">
+    <div class="r-comment-body">GLM 5.3 is live and its backend is authored, closing the half of §2 that was waiting on the catalog. clive --list now serves two releases: deepseek-v4-flash on 2xH200 at fp4+fp8 with a 512k window, and glm-5.3 on 4xH200 at w4a8 with 96k. Both are no-auth, both resolve through the routing origin at 98dci4-gpu-0003:18802, and reckon flight reports both backends available. The clive-glm entry follows the two properties §2 called non-negotiable: effort is pinned rather than inherited, and it is a distinct backend with a distinct roster member so a session can never cross models. One consequence to size nodes by: GLM's window is a sixth of flash's, so a node that fits one may not fit the other, and a paired comparison has to respect the smaller. The catalog-aware availability probe landed earlier today is what makes this entry safe rather than optimistic — had GLM not been serving, the backend would now report unavailable and a dispatch naming it would exit 5 rather than failing inside the worker.</div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260902T140832755711-worktree-boundary-refused-at-promotion" data-who="boundary-check" data-when="2026-09-02T14:47:23Z">
     <div class="r-comment-body"><p>Dispatch snapshots every registered tree for the repository; promotion re-inspects exactly those roots under its existing lock and refuses a run that changed the main checkout or a peer worktree, naming path and owning tree, before ledger append and with the pointer recoverable. A worktree registered after dispatch is not charged. Full suite 2672 passed 0 failed; five boundary cases including both clean controls.</p></div>
