@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html">
 <meta name="plan-impl" content="0.33">
@@ -272,6 +272,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260902T153539322822-spa-project-render-fault" data-who="spa-render-fault" data-when="2026-09-02T16:06:42Z">
     <div class="r-comment-body"><p>Root cause: the managed service predated commit 737340f, so every mount served 12 of 20 /_ui modules and the shell fell back silently to zero children. Independently verified; restart repaired all mounts. Payload scale and distributed state format excluded.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260902T180750863915-shell-fallback-is-legible" data-who="spa-render-fault" data-when="2026-09-02T18:14:34Z">
+    <div class="r-comment-body"><p>Backend budget exhaustion, not a work defect: stream.jsonl records turn.failed &#x27;You&#x27;ve hit your usage limit&#x27;, reset 2026-09-08 07:38. Died during baseline suite capture, no commits, clean tree.</p></div>
 </div>
 </section>
 </main>
