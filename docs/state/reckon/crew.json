@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T15:56:05",
+  "updated": "2026-09-02T15:57:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -34701,9 +34701,111 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T133031497200-routing-priors-from-the-ledger",
+        "plan": "clive-local-workers",
+        "section": "\u00a74",
+        "node": "routing-priors-from-the-ledger",
+        "node_definition": {
+          "done_when": "The reckon project layer no longer routes exact nodes to the spark backend and no longer restates the host layer's guided and open efforts, leaving the locked medium-guided, medium-exact, high-open priors resolving from the host layer alone; reckon flight --project reckon shows roles.implement.by_spec_level.exact.backend absent, every by_spec_level effort attributed to the host layer in provenance, and codex-spark still present under backends; the comment block in docs/state/reckon/flight.yaml states why the backend stays defined while nothing routes to it and names the evidence ladder a lane climbs to earn routing back; skills/reckon-ship/references/effort-routing.md's small-model lane section says the lane is defined and unrouted rather than describing a live mapping, and its initial-priors table is replaced by the measured priors with their run counts and pass rates; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Make the reckon project flight layer carry only its deviations, so the locked per-level effort priors are the ones that resolve",
+          "id": "routing-priors-from-the-ledger",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133031497200-routing-priors-from-the-ledger/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/state/reckon/flight.yaml",
+            "skills/reckon-ship/references/effort-routing.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "routing-priors",
+        "backend": "codex",
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T13:30:37Z",
+        "completed_at": "2026-09-02T13:56:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1530,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1530,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+        "commits": [
+          "a56eae9458b09f4d7f732b8017e41bba541f1a96"
+        ],
+        "changed_lines": {
+          "added": 18,
+          "removed": 46,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "amended acceptance: grep -rnE 'state/reckon/flight.yaml|effort-routing.md' over tests/ and reckon/ returning empty, then pytest over tests/test_flight.py, tests/test_skill_contracts.py and tests/test_crew_routing_visibility.py, then four resolved-config assertions against flight-after.json",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133031497200-routing-priors-from-the-ledger/amended-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133031497200-routing-priors-from-the-ledger/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06250-7e83-7000-a230-1928479a0e49",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1175040,
+            "cached_input_tokens_cumulative": 1175040,
+            "input_tokens": 1304392,
+            "input_tokens_cumulative": 1304392,
+            "output_tokens": 7407,
+            "output_tokens_cumulative": 7407,
+            "reasoning_output_tokens": 1528,
+            "reasoning_output_tokens_cumulative": 1528
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 563
+    "_version": 564
   }
 }

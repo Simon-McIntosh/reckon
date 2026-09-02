@@ -120,6 +120,67 @@
       fanning out</strong>. Only §4, which is configuration and reference prose, and the
       capability-cache work are independent of that spine.</p>
 
+    <h2 id="s4">§4 — Routing priors resolve from one place, and the spark overlay is retired</h2>
+    <p>Run <code>r-20260902T133031497200</code>, member <code>routing-priors</code> at
+      <code>gpt-5.6-sol/medium</code>, 1,530 worker-seconds over two attempts, commit
+      <code>a56eae9</code>, 18 insertions and 46 deletions across exactly the two
+      authorised paths.</p>
+    <p><strong>Verified after the merge, not from the diff.</strong>
+      <code>reckon flight --project reckon</code> resolves:</p>
+    <table>
+      <thead><tr><th>Key</th><th>Before</th><th>After</th><th>Provenance after</th></tr></thead>
+      <tbody>
+        <tr><td><code>by_spec_level.exact.backend</code></td><td><code>codex-spark</code></td><td>absent</td><td>&mdash;</td></tr>
+        <tr><td><code>by_spec_level.exact.effort</code></td><td><code>xhigh</code></td><td><code>medium</code></td><td>host</td></tr>
+        <tr><td><code>by_spec_level.guided.effort</code></td><td><code>medium</code></td><td><code>medium</code></td><td>host</td></tr>
+        <tr><td><code>by_spec_level.open.effort</code></td><td><code>high</code></td><td><code>high</code></td><td>host</td></tr>
+        <tr><td><code>backends.codex-spark</code></td><td>defined</td><td>defined</td><td>project (deviation)</td></tr>
+      </tbody>
+    </table>
+    <p>The guided and open rows did not change value &mdash; they changed <em>owner</em>.
+      They were restated in the project layer at the same values the host already carried,
+      which is the failure mode a layered config exists to avoid: two places to edit and no
+      signal which one is authoritative. The measured priors now resolve from the host layer
+      alone, and provenance says so.</p>
+    <p>The reference's advisory mapping is replaced by the measured one:</p>
+    <table>
+      <thead><tr><th>Level</th><th>Prior</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td><code>exact</code></td><td>default backend, medium</td><td>158 medium runs at 0.86 against 197 high at 0.83</td></tr>
+        <tr><td><code>guided</code></td><td>default backend, medium</td><td>416 medium runs at 0.91 against 279 high at 0.89</td></tr>
+        <tr><td><code>open</code></td><td>default backend, high</td><td>61 high runs at 0.84 and <strong>no medium sample</strong>, so high is untested rather than confirmed and stays until ten usable medium runs exist</td></tr>
+      </tbody>
+    </table>
+    <p>All three §4 measures are satisfied, the negative one included: the open level has no
+      cheaper arm to compare against, and recording that is what stops the question being
+      re-asked from scratch. The node also scrubbed a plan-label reference to
+      &ldquo;the §6 checkpoint&rdquo; from the reference file, which outlives the plan that
+      numbered it.</p>
+
+    <h2 id="fence-contention">A per-node fence charges a worker for the fleet's load</h2>
+    <p>This node blocked once, correctly, and the specification behind the block was the
+      coordinator's. Its contract required a full-suite delta inside a 25-minute fence. The
+      untouched baseline took <strong>814.58s</strong> unloaded; a second full suite could
+      not finish while <strong>four peer full suites</strong> contended for the same
+      machine. The worker did the work, committed it, measured what it could, and reported
+      a blocker rather than claiming a receipt it did not have &mdash; which is the escape
+      hatch behaving exactly as designed.</p>
+    <p>The amended acceptance is stricter where it matters rather than merely cheaper:
+      <code>grep -rnE 'state/reckon/flight.yaml|effort-routing.md'</code> over
+      <code>tests/</code> and <code>reckon/</code> returns <strong>empty</strong>, so no
+      Python behaviour can depend on either changed path and a full-suite delta could never
+      have measured this change. That argument bounds the blast radius by construction,
+      where a green suite would only have bounded it by coincidence. The gate became 99/99
+      tests across three files plus four resolved-config assertions, with the full-suite
+      receipt moved to one integration verification at the merged head.</p>
+    <p><strong>The generalisable finding is a measurement one.</strong> A node's recorded
+      duration, and whether it hits its fence at all, currently depend on how many peers are
+      running a suite at the same time. For a plan whose purpose is comparing configurations
+      from ledger time, that is a confound of the same family as the inherited-budget
+      confound the effort-routing plan had to fix: the run record says
+      <code>1,530 worker-seconds</code> and cannot say how much of it was contention. Nothing
+      in the record distinguishes a slow model from a busy machine.</p>
+
   </main>
 </body>
 </html>

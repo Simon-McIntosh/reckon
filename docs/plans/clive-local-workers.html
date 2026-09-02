@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="13">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py">
-<meta name="plan-impl" content="0.27">
-<meta name="plan-commits" content="a91abe9">
+<meta name="plan-version" content="17">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
+<meta name="plan-impl" content="0.36">
+<meta name="plan-commits" content="a91abe9,a56eae9">
 </head>
 <body>
   <main class="plan-doc">
@@ -116,7 +116,20 @@
       </tbody>
     </table>
 
-    <h2 id="s4">&#167;4 &mdash; Default routing, decided from the ledger</h2>
+    <section id="s4" class="section-landed">
+    <header><span class="badge badge-shipped">&#10003; landed 2026-09-02</span>
+    <h2>&#167;4 &mdash; Default routing, decided from the ledger</h2></header>
+    <p class="landed-summary">The reckon project layer stopped routing exact nodes to the
+      spark backend and stopped restating the host layer's guided and open efforts, so all
+      three measured priors now resolve from the host alone with host provenance &mdash;
+      exact medium (158 runs at 0.86 against high's 197 at 0.83), guided medium (416 at 0.91
+      against 279 at 0.89), open high (61 at 0.84, no medium sample, so untested rather than
+      confirmed). <code>codex-spark</code> stays defined for shadow qualification with the
+      re-entry ladder written beside it. Verified live from the merged config, not the diff.
+      Commit <code>a56eae9</code>. Full record:
+      <a href="/reckon/evidence/clive-local-workers-landed#s4">&#167;4 landed</a>.</p>
+    </section>
+    <details><summary>Original section text</summary>
     <p>The host layer's effort priors date from a 58-run checkpoint: guided at medium, open
     at high, exact at medium on the incumbent, with the reckon project layer routing exact
     nodes to the spark small-model lane. The ledgers now say more. Over 2,201 promoted sol runs
@@ -152,6 +165,7 @@
         <tr><td>Spark disposition recorded</td><td>The project layer's exact overlay is either removed or kept with the reason, and <code>reckon flight</code> shows the result.</td></tr>
       </tbody>
     </table>
+    </details>
 
     <h2 id="s5">&#167;5 &mdash; Qualify the local models the way the ladder says</h2>
     <p>The qualification ladder is already written and clive has climbed its first two rungs
@@ -319,6 +333,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260902-census-detail" data-who="reckon-ship" data-when="2026-09-02T13:58:00Z">
     <div class="r-comment-body">Shadow corpus measured, and the local lane measured itself doing it — run r-20260902T133214247667, member clive-a on the LOCAL backend at deepseek-v4-flash/medium in the read-only tier, 1,324 worker-seconds against a 20-minute fence (a 10% overrun, recorded rather than enforced since the budget watchdog is off), first attempt, gate passed, commitless. This is live local-lane run 1 of the ten §5 asks for. Measure: 126 of 423 committed reckon runs are shadowable today, where shadowable means the record carries a resolved agent configuration, a recorded time budget, a base still reachable from main, an implement role, a stored node definition, and a plan section that resolves at that base. The exclusion partition sums to exactly 297, which is the property that makes the census checkable rather than merely plausible: role not implement 70, no stored node definition 215, no resolved agent config 6, is itself a shadow 5, base unreachable 1, section unresolvable 0, no recorded budget 0. All 126 ids verified present by grep -F, 0 missing. Reachability of the ten-pair threshold, which is what §5 actually needed to know: guided 118 and the medium (43) and unlabelled (75) size buckets clear it; open at 5, exact at 3 and the high bucket at 8 do not, so a candidate tier cannot be qualified on those slices from the existing corpus and needs a section-open sample. Recorded models on the shadowable set: sol 123, sonnet 2, spark 1. Median worker time 491s across the 122 with a value. The dominant limiter is not the fleet's age but a dispatch defect that has since been fixed — 215 implement runs carry no stored node_definition because early promotions did not persist one, so more than half the implement corpus is unreconstructable. Quality note on the lane itself: this is a local-model run whose exclusion counts partition exactly and whose every claim was verified by a named command — evidence for the read-only lane, not just from it. impl 3 of 11.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260902T133031497200-routing-priors-from-the-ledger" data-who="routing-priors" data-when="2026-09-02T13:56:07Z">
+    <div class="r-comment-body"><p>Project layer stops routing exact nodes to spark and stops restating host efforts; all three by_spec_level efforts now resolve with host provenance and the backend stays defined. 99/99 focused tests, empty path-reader grep bounding the blast radius, 4/4 resolved-config assertions. Blocked once at its fence on fleet suite contention and resumed under an amended acceptance; the full-suite receipt moves to one integration verification at the merged head.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260902-priors-detail" data-who="reckon-ship" data-when="2026-09-02T14:00:00Z">
+    <div class="r-comment-body">§4 landed — run r-20260902T133031497200, member routing-priors at gpt-5.6-sol/medium, 1,530 worker-seconds over two attempts (blocked once, resumed), no scope change; commit a56eae9 merged, 18 insertions and 46 deletions across exactly the two authorised paths. Verified live after the merge rather than from the diff: reckon flight --project reckon now resolves by_spec_level as exact medium, guided medium, open high with all three attributed to the host layer in provenance, roles.implement.by_spec_level.exact.backend absent, and codex-spark still present under backends. That is the locked default-effort-by-spec-level and spark-lane pair, made resolvable from one place. The reference's advisory table is replaced by the measured one with its counts, and its small-model section now describes a lane that is defined and unrouted with the ladder it must climb to earn routing back. All three §4 measures are satisfied, including the negative one: no open-level medium sample exists, so open stays at high and that is recorded rather than left implicit. The node also scrubbed a plan-label reference to ‘the §6 checkpoint’ in the reference, which was a naming violation in a file that outlives the plan. Gate under an amended acceptance: grep -rnE over tests/ and reckon/ for either changed path returns empty — nothing in the tree reads them, so no Python behaviour can depend on the change and a full-suite delta could not have measured it — then 99/99 tests across test_flight, test_skill_contracts and test_crew_routing_visibility, plus four resolved-config assertions. The amendment is recorded because the original contract was defective, not because the evidence was inconvenient: it demanded two full suites inside a 25-minute fence while four peer suites contended, and the untouched baseline alone took 814s. The full-suite receipt moves to one integration verification at the merged head, which covers the wave. impl 4 of 11.</div>
 </div>
 </section>
 </main>
