@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -55,6 +57,130 @@ def _finish(home: Path, run_id: str) -> None:
     manifest.write_text(f"node: {run_id}\nstatus: complete\ncommits: {run_id}-commit\n")
     pointer["phase"] = "complete"
     crew._write_json(crew.pointer_path(run_id), pointer)
+
+
+def _terminal_pointer(home: Path, tmp_path: Path, run_id: str) -> dict:
+    worktree = tmp_path / run_id
+    worktree.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=worktree, check=True)
+    (worktree / "result.txt").write_text("base\n")
+    subprocess.run(["git", "add", "result.txt"], cwd=worktree, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test User",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "-qm",
+            "test: establish fixture",
+        ],
+        cwd=worktree,
+        check=True,
+    )
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    pointer = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "phase": "complete",
+        "created_at": crew._utc_now(),
+        "manifest_path": str(home / "runs" / run_id / "manifest.md"),
+        "log_path": str(home / "runs" / run_id / "stream.jsonl"),
+        "stderr_path": str(home / "runs" / run_id / "stderr.log"),
+        "worktree": str(worktree),
+        "base_sha": base,
+        "final_message": None,
+        "process_alive": False,
+    }
+    crew._write_json(crew.pointer_path(run_id), pointer)
+    return pointer
+
+
+def test_recover_derives_repair_evidence_without_promotion_advice(
+    home, tmp_path, monkeypatch
+) -> None:
+    pointer = _terminal_pointer(home, tmp_path, "r-repairable")
+    (Path(pointer["worktree"]) / "result.txt").write_text("correct work\n")
+    pointer["final_message"] = "Implemented the requested behavior and tests passed."
+    crew._write_json(crew.pointer_path(pointer["run_id"]), pointer)
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "observe",
+        lambda _run_id, config=None: pointer,
+    )
+
+    result = recovery.recover(
+        project="proj", config={"fences": {"manifest_required": True}}
+    )
+
+    row = result["runs"][0]
+    manifest = Path(pointer["manifest_path"])
+    text = manifest.read_text()
+    assert "derived: true" in text
+    assert "changed_paths: result.txt" in text
+    assert "Implemented the requested behavior" in text
+    assert row["classification"] == "abandoned"
+    assert row["manifest_derived"] is True
+    assert row["manifest_present"] is False
+    assert "reckon crew complete" not in row["next_action"]
+    assert row["next_action"].startswith("reckon crew resume --run r-repairable")
+    gap = crew.read_pointer(pointer["run_id"])["delivery_gap"]
+    assert gap["kind"] == "missing-worker-manifest"
+    assert gap["derived_manifest_path"] == str(manifest)
+    assert gap["final_message_present"] is True
+    assert gap["changed_paths"] == ["result.txt"]
+
+
+def test_recover_leaves_an_empty_terminal_run_abandoned(
+    home, tmp_path, monkeypatch
+) -> None:
+    pointer = _terminal_pointer(home, tmp_path, "r-empty")
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "observe",
+        lambda _run_id, config=None: pointer,
+    )
+
+    result = recovery.recover(project="proj")
+
+    row = result["runs"][0]
+    assert row["classification"] == "abandoned"
+    assert row["manifest_derived"] is False
+    assert not Path(pointer["manifest_path"]).exists()
+    assert "delivery_gap" not in crew.read_pointer(pointer["run_id"])
+
+
+def test_recover_never_overwrites_a_worker_manifest(
+    home, tmp_path, monkeypatch
+) -> None:
+    pointer = _terminal_pointer(home, tmp_path, "r-delivered")
+    manifest = Path(pointer["manifest_path"])
+    manifest.parent.mkdir(parents=True)
+    delivered = "node: r-delivered\nstatus: complete\ncommits: abc123\n"
+    manifest.write_text(delivered)
+    pointer["manifest_baseline_mtime_ns"] = 0
+    pointer["final_message"] = "A final message that must not replace delivery."
+    crew._write_json(crew.pointer_path(pointer["run_id"]), pointer)
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "observe",
+        lambda _run_id, config=None: pointer,
+    )
+
+    result = recovery.recover(project="proj")
+
+    assert manifest.read_text() == delivered
+    assert result["runs"][0]["classification"] == "completed_unpromoted"
+    assert result["runs"][0]["manifest_derived"] is False
+    assert "delivery_gap" not in crew.read_pointer(pointer["run_id"])
 
 
 def test_follow_watch_emits_three_terminal_runs_once_then_ends(home) -> None:
