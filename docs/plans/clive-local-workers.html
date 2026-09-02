@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="clive-local-workers">
-  <meta name="plan-title"     content="Clive Local Workers">
-  <meta name="plan-summary"   content="Make the clive wrapper a first-class worker backend: GLM 5.3 beside DSv4 flash, a declared local alias, and routing decided from the ledger">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
-  <meta name="plan-effort-hours" content="12.0">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="clive-local-workers">
+  <meta name="plan-title" content="Clive Local Workers">
+  <meta name="plan-summary" content="Make the clive wrapper a first-class worker backend: GLM 5.3 beside DSv4 flash, a declared local alias, and routing decided from the ledger">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S15">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="portable-across-harnesses">
   <title>Clive Local Workers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -183,54 +185,97 @@
       </tbody>
     </table>
 
+    <h2 id="s7">&#167;7 &mdash; Strengthen the harness around local workers, so the model comparison is a model comparison</h2>
+    <p>Both local failures to date were harness failures: a worker that never entered its
+    worktree, and a worker that did correct work and never wrote its manifest. A weaker model
+    exposes harness gaps that a stronger one papers over by following the prompt more
+    reliably, which means the harness is the first thing to fix and the last thing to blame on
+    the model. It also means GLM 5.3 and DSv4 flash must be compared under the same harness,
+    or a difference in obedience will be read as a difference in capability. GLM may well
+    outperform DSv4 here; the harness has to be good enough for the ledger to show it.</p>
+    <p>Four strengthenings, each a check bound to a moment that always happens:</p>
+    <ul>
+      <li><strong>Orientation is verified before work starts.</strong> The composed prompt asks
+      the worker to open its manifest with the worktree path, the base revision it sees, and
+      its declared scope, and the first observation of the run compares them with the pointer.
+      A mismatch is a blocked run within a minute rather than a stray write discovered at
+      promotion; the &#167;6 promotion check remains the backstop.</li>
+      <li><strong>Delivery cannot be silent.</strong> <code>fences.manifest_required</code>
+      already exists; when a run reaches a terminal event with no manifest, recovery derives a
+      provisional one from the final message and the worktree diff, marks it
+      <code>derived</code> so it never counts as delivered, and reports the gap on the run
+      record. A correct diff with no manifest then becomes a repairable row instead of a lost
+      node.</li>
+      <li><strong>Infrastructure failures are classified, not charged.</strong> A malformed tool
+      call, a truncated stream, or a wrapper error mid-turn is recorded as an infrastructure
+      failure with a redispatch, and never enters the model's pass rate or trips the
+      circuit breaker, exactly as the effort-routing reference already states for the spark
+      lane. The dialect learns the wrapper's own error shapes from recorded streams.</li>
+      <li><strong>The comparison is paired.</strong> Every GLM shadow is dispatched against a
+      node DSv4 has also shadowed, at the same base, with the same check, under the same
+      prompt and fences, so the two models' rows differ in one variable. The capabilities cache
+      reports them as sibling configurations with fence failures counted beside capability
+      failures, and a divergence in obedience shows up as a harness row before it is read as a
+      model verdict.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Orientation caught early</td><td>A synthetic worker reporting a worktree or base revision that differs from its pointer is classified blocked on its first observation, naming the mismatch; a matching report passes. Asserted by test.</td></tr>
+        <tr><td>Silent delivery repaired</td><td>A run ending with a diff and no manifest yields a derived manifest marked as such, is never advised for promotion, and appears in recovery with its repair command. Asserted by test.</td></tr>
+        <tr><td>Infrastructure separated</td><td>A recorded wrapper error stream classifies as an infrastructure failure and is excluded from the configuration's pass rate in the capabilities cache. Asserted against a fixture stream.</td></tr>
+        <tr><td>Paired comparison</td><td>At least ten nodes shadowed by both local models under identical fences, reported side by side with pass, fence failures, diff quality and speed ratio.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&#167;</span> Decisions</h2>
-      <div class="r-dec" data-key="default-effort-by-spec-level" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What effort does the incumbent run at by default, per specification level?</p>
-        <p class="r-dec-ctx">Ledger over 2,201 promoted sol runs: guided medium 0.91 pass at 9 min against high 0.89 at 13 min; exact medium 0.86 against high 0.83; open has 61 high runs at 0.84 and no medium sample.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="medium-guided-exact-high-open">Medium for guided and exact, high for open until open has ten medium runs</button>
-          <button class="r-opt" data-value="medium-everywhere">Medium at every level now</button>
-          <button class="r-opt" data-value="keep-current">Keep the 58-run priors unchanged</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="spark-lane" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the spark small-model lane stay configured for exact nodes?</p>
-        <p class="r-dec-ctx">Nine promoted spark runs in total, eight passed, none since 2026-08-25; the reckon project layer still routes exact nodes there; its weekly meter is at 45%.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="retire-to-defined">Remove the exact overlay; keep the backend defined for shadows only</button>
-          <button class="r-opt" data-value="keep-gated">Keep the overlay and the eligibility gate as they are</button>
-          <button class="r-opt" data-value="replace-with-local">Route exact nodes to the local lane once it qualifies</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="local-alias-mechanism" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How does "use local workers" reach dispatch?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="flight-key-and-flag">A local_backend flight key plus a dispatch --local flag that refuses when unset</button>
-          <button class="r-opt" data-value="set-override-convention">Keep the --set default_backend convention and document it</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="local-write-access-order" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">When does the local lane get repository write access?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="after-boundary-enforced">After the worktree-boundary check of &#167;6 lands and six pairs requalify</button>
-          <button class="r-opt" data-value="now-with-audit">Now, with the first twenty runs full-diff audited</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="default-effort-by-spec-level" data-choice="medium-guided-exact-high-open" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
+    <p class="r-dec-q">What effort does the incumbent run at by default, per specification level?</p>
+    <p class="r-dec-ctx">Ledger over 2,201 promoted sol runs: guided medium 0.91 pass at 9 min against high 0.89 at 13 min; exact medium 0.86 against high 0.83; open has 61 high runs at 0.84 and no medium sample.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="medium-guided-exact-high-open">Medium for guided and exact, high for open until open has ten medium runs</button>
+      <button class="r-opt" data-value="medium-everywhere">Medium at every level now</button>
+      <button class="r-opt" data-value="keep-current">Keep the 58-run priors unchanged</button>
+      </p>
+    <p class="r-dec-rat">Follows the ledger where it has a sample: guided medium passes 0.91 over 416 runs at 9 min against high 0.89 at 13 min, exact medium 0.86 over 158 against high 0.83 over 197. Open has 61 high runs and no medium sample, so it stays at high until ten medium runs exist rather than being guessed on the least-specified work.</p>
+    </div>
+<div class="r-dec" data-key="spark-lane" data-choice="retire-to-defined" data-by="Simon McIntosh" data-when="2026-09-02T12:44:17+00:00">
+    <p class="r-dec-q">Does the spark small-model lane stay configured for exact nodes?</p>
+    <p class="r-dec-ctx">Nine promoted spark runs in total, eight passed, none since 2026-08-25; the reckon project layer still routes exact nodes there; its weekly meter is at 45%.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="retire-to-defined">Remove the exact overlay; keep the backend defined for shadows only</button>
+      <button class="r-opt" data-value="keep-gated">Keep the overlay and the eligibility gate as they are</button>
+      <button class="r-opt" data-value="replace-with-local">Route exact nodes to the local lane once it qualifies</button>
+      </p>
+    <p class="r-dec-rat">Evidence first, routing second, for spark and for the local models alike. The spark return on experience is nine pilot runs (eight passed; the one failure was a malformed tool call classified as infrastructure, not a specification defect) at a 3.9-minute median and roughly 2.3 times cheaper output tokens than sol, but eight runs consumed about 60% of its dedicated weekly meter (about 41M input tokens, almost all cached context) and one run inherited a ten-turn sol session for 22.9M tokens before session reuse was fenced to one model. The lane buys latency and sol-budget relief, never fleet share, and nothing has routed there since 2026-08-25. So the live exact overlay in the reckon project layer is removed, the backend stays defined, and the lane earns routing back the same way the local models do: at least ten usable shadow pairs showing a gain on the same nodes, then a gated pilot, then a slice-lock. Orchestrators are steered to a cheaper lane only once the ledger shows the gain.</p>
+    </div>
+<div class="r-dec" data-key="local-alias-mechanism" data-choice="flight-key-and-flag" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
+    <p class="r-dec-q">How does &quot;use local workers&quot; reach dispatch?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="flight-key-and-flag">A local_backend flight key plus a dispatch --local flag that refuses when unset</button>
+      <button class="r-opt" data-value="set-override-convention">Keep the --set default_backend convention and document it</button>
+      </p>
+    <p class="r-dec-rat">One declared local_backend key in the host layer names the local backend and dispatch --local resolves it, refusing when the key is unset or names an undeclared backend, so a request to use local workers fails loudly on a host with no local lane instead of silently running the incumbent. The skill text names the flag and a contract test pins it; the previous --set convention was a rule with no bound check.</p>
+    </div>
+<div class="r-dec" data-key="local-write-access-order" data-choice="after-boundary-enforced" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
+    <p class="r-dec-q">When does the local lane get repository write access?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="after-boundary-enforced">After the worktree-boundary check of §6 lands and six pairs requalify</button>
+      <button class="r-opt" data-value="now-with-audit">Now, with the first twenty runs full-diff audited</button>
+      </p>
+    <p class="r-dec-rat">Read-only roles go live on the local lane now; implementation nodes shadow only until a promotion refuses a stray write by test and six controlled pairs requalify. A local-model worker has already written into the shared checkout once under the current advisory sandbox, and the fix benefits every backend.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&#167;</span> Followups</h2>
-      <article class="r-fu" data-id="f-clw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Lock the four routing decisions, then land the alias, the GLM entry and the boundary check</h4>
-        <div class="r-fu-body"><p>Four decisions are open and each changes what ships; the &#167;4 table is the input and does not need re-deriving. The live read-only lane and the shadow sampling of &#167;5 can start as soon as the &#167;3 flag exists, because they need no write access. The GLM entry waits on the catalog publishing the release.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship clive-local-workers</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-clw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Lock the four routing decisions, then land the alias, the GLM entry and the boundary check</h4>
+    <div class="r-fu-body"><p>Four decisions are open and each changes what ships; the §4 table is the input and does not need re-deriving. The live read-only lane and the shadow sampling of §5 can start as soon as the §3 flag exists, because they need no write access. The GLM entry waits on the catalog publishing the release.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship clive-local-workers</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
