@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T15:57:57",
+  "updated": "2026-09-02T16:06:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -370,9 +370,11 @@
         "id": "harness-classify",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06250-dac0-7401-8843-bad928919aa3",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a06250-dac0-7401-8843-bad928919aa3"
+        },
         "created": "2026-09-02"
       },
       {
@@ -408,9 +410,11 @@
         "id": "local-alias",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06250-3251-71d2-8f1a-9719bfcc322c",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a06250-3251-71d2-8f1a-9719bfcc322c"
+        },
         "created": "2026-09-02"
       },
       {
@@ -34803,9 +34807,208 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T133012246969-local-backend-key-and-flag",
+        "plan": "clive-local-workers",
+        "section": "\u00a73",
+        "node": "local-backend-key-and-flag",
+        "node_definition": {
+          "done_when": "local_backend validates through the layered schema beside default_backend with leaf provenance, both derived schema artifacts regenerate byte-identically from the LinkML source, and a layer naming an undeclared backend is refused with its key path \u2014 asserted in tests/test_flight.py; reckon crew dispatch --local --dry-run resolves the declared backend as the effective default and the same call with the key unset exits 1 naming local_backend, while a real --local dispatch records local true on the live pointer and that bit survives into the promoted ledger record \u2014 asserted in tests/test_crew.py and tests/test_ledger.py; the routing text in skills/reckon-ship/SKILL.md names the flag in all three places it currently describes the alias and tests/test_skill_contracts.py pins it; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Make a declared local_backend flight key the one route by which a dispatch selects the locally served backend",
+          "id": "local-backend-key-and-flag",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133012246969-local-backend-key-and-flag/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "reckon/flight.py",
+            "reckon/cli.py",
+            "reckon/crew/dispatch.py",
+            "reckon/ledger.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_flight.py",
+            "tests/test_crew.py",
+            "tests/test_ledger.py",
+            "tests/test_skill_contracts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "local-alias",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T13:30:17Z",
+        "completed_at": "2026-09-02T14:03:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2012,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2012,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+        "commits": [
+          "42a339f17ae639505b2c1f2b40c666ef63a1c6ac"
+        ],
+        "changed_lines": {
+          "added": 287,
+          "removed": 14,
+          "files": 12
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133012246969-local-backend-key-and-flag/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133012246969-local-backend-key-and-flag/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06250-3251-71d2-8f1a-9719bfcc322c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 17670528,
+            "cached_input_tokens_cumulative": 17670528,
+            "input_tokens": 17886895,
+            "input_tokens_cumulative": 17886895,
+            "output_tokens": 31397,
+            "output_tokens_cumulative": 31397,
+            "reasoning_output_tokens": 8802,
+            "reasoning_output_tokens_cumulative": 8802
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T134557951244-suite-on-integrated-tree",
+        "plan": "derived-gate-state",
+        "section": "\u00a72",
+        "node": "suite-on-integrated-tree",
+        "node_definition": {
+          "done_when": "Report the pass, fail, error and skip counts plus the wall time from one full-suite run at the current integrated HEAD, captured to a log at the write-path, and state for each failure whether it also fails at the recorded pre-merge base 036bf45 so 0 failures are newly introduced by this session's merges",
+          "estimated_hours": null,
+          "goal": "Run the full reckon suite against the integrated primary branch and report its counts",
+          "id": "suite-on-integrated-tree",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T134557951244-suite-on-integrated-tree/manifest.md",
+          "plan": "derived-gate-state",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/derived-gate-state-integrated-suite.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "ev-dispatch",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T13:46:04Z",
+        "completed_at": "2026-09-02T14:05:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1188,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1188,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "b03b98297cd8e75989c6e1c59e2f11c6954cedd4",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/derived-gate-state-integrated-suite.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T134557951244-suite-on-integrated-tree/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0625e-a710-7eb2-8ae1-a897de8f222a",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "verification node; its deliverable is the suite report at the declared write-path, which lives outside the repository, and it changed no tracked file by design",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 564
+    "_version": 568
   }
 }

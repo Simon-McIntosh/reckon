@@ -181,6 +181,48 @@
       <code>1,530 worker-seconds</code> and cannot say how much of it was contention. Nothing
       in the record distinguishes a slow model from a busy machine.</p>
 
+    <h2 id="s3">§3 — The local lane is reachable by name</h2>
+    <p>Run <code>r-20260902T133012246969</code>, member <code>local-alias</code> at
+      <code>gpt-5.6-sol/medium</code>, 1,970 worker-seconds, first attempt, commit
+      <code>42a339f</code>: 287 insertions and 14 deletions across exactly the twelve
+      authorised paths, 8 tests added. Gate: full suite <strong>2,660 passed / 0
+      failed</strong> in 855s, focused 352 passed, ruff findings on the touched paths down
+      from 68 to 60 with none added.</p>
+    <p><strong>The baseline was not clean, and the manifest says so.</strong> At
+      <code>302022e</code> the suite carried one failure —
+      <code>test_the_attention_filter_is_inside_the_follower</code> — which passed in the
+      after suite. The worker recorded it as negative baseline evidence rather than claiming
+      it as a fix. That is the correct handling of a timing flake: the delta is what the node
+      is judged on, and an absolute green would have been a claim it could not support.</p>
+    <p>What the change actually removes is a rule with no bound check. The ship skill has
+      always said a request to use local workers routes through &ldquo;the configured locally
+      served backend alias&rdquo;, and no such configuration existed — the phrase was honoured
+      by a coordinator remembering to pass an override on every call.</p>
+    <ul>
+      <li><code>local_backend</code> is an optional peer of <code>default_backend</code> in
+        the LinkML source, validated against the merged backend map with its own key path and
+        carrying leaf provenance; both derived schema artifacts regenerate byte-identically.</li>
+      <li><code>--local</code> resolves it as that dispatch's default <em>through the existing
+        <code>plan_dispatch</code> authority</em> rather than a second resolver, which is what
+        the reuse map asked for; dry run and real dispatch therefore report the same backend.</li>
+      <li>An unset or undeclared key is a request error at exit 1 naming
+        <code>local_backend</code>, so a host with no local lane fails loudly instead of
+        silently running the incumbent — the whole point of the decision.</li>
+      <li>Role and specification overlays still apply after the selection, so a local review
+        node keeps its read-only sandbox.</li>
+      <li><code>local: true</code> is retained on the live pointer and in the promoted ledger
+        record, so the calibration slices can separate local runs later.</li>
+    </ul>
+    <p><strong>Verified end to end after the merge, not from the diff.</strong> The host layer
+      declares <code>local_backend: clive</code>, <code>reckon flight</code> attributes it to
+      the host layer, and a <code>--local --dry-run</code> resolves
+      <code>clive / deepseek-v4-flash</code> with <code>local: true</code> on the agent.</p>
+    <p>Two host-layer comments were corrected in the same beat because this change and §4
+      made them false: the <code>clive</code> entry still said nothing but an explicit
+      <code>--set</code> could route to it, and the <code>codex-spark</code> entry still
+      described the project mapping §4 removed. A comment that describes routing which no
+      longer exists is the same defect as a stale pointer — it reads as current.</p>
+
   </main>
 </body>
 </html>

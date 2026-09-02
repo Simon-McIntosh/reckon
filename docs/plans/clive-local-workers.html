@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="23">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-commits" content="a91abe9,a56eae9">
+<meta name="plan-impl" content="0.42">
+<meta name="plan-commits" content="a91abe9,a56eae9,42a339f">
 </head>
 <body>
   <main class="plan-doc">
@@ -92,7 +92,21 @@
       </tbody>
     </table>
 
-    <h2 id="s3">&#167;3 &mdash; "Use local workers" resolves through config, not convention</h2>
+    <section id="s3" class="section-landed">
+    <header><span class="badge badge-shipped">&#10003; landed 2026-09-02</span>
+    <h2>&#167;3 &mdash; "Use local workers" resolves through config, not convention</h2></header>
+    <p class="landed-summary">The phrase now reaches dispatch through one declared key.
+      <code>local_backend</code> validates as an optional peer of <code>default_backend</code>
+      with its own key path and leaf provenance, both derived schema artifacts regenerate
+      byte-identically, and <code>reckon crew dispatch --local</code> selects it through the
+      existing routing authority, refusing at exit 1 when it is unset. Role and spec
+      overlays still apply, and <code>local: true</code> is retained on pointer and ledger.
+      Verified end to end after merge: the host declares <code>local_backend: clive</code>
+      and a <code>--local</code> dry run resolves <code>deepseek-v4-flash</code>. Full suite
+      2,660 passed / 0 failed, 8 tests added, commit <code>42a339f</code>. Full record:
+      <a href="/reckon/evidence/clive-local-workers-landed#s3">&#167;3 landed</a>.</p>
+    </section>
+    <details><summary>Original section text</summary>
     <p>The ship skill says a request to use local workers routes every dispatch through
     <em>the configured locally served backend alias</em>. No such configuration exists: flight
     config has no key naming which backend is the local one, so the phrase is honoured by a
@@ -115,6 +129,7 @@
         <tr><td>Skill and CLI agree</td><td>The routing text in skills/reckon-ship/SKILL.md names the flag and the contract test in tests/test_skill_contracts.py pins it. Three places mention the alias today &mdash; the description block, the when-to-invoke list, and the routing section &mdash; and all three must name the flag or the rule is honoured in one place and remembered in the others. Measured 2026-09-02: the file estimates 15,504 tokens against the 16,000 read-set budget the same test file enforces, so this edit is a rewrite in place with roughly 500 tokens of headroom, not an addition.</td></tr>
       </tbody>
     </table>
+    </details>
 
     <section id="s4" class="section-landed">
     <header><span class="badge badge-shipped">&#10003; landed 2026-09-02</span>
@@ -353,6 +368,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260902-priors-detail" data-who="reckon-ship" data-when="2026-09-02T14:00:00Z">
     <div class="r-comment-body">§4 landed — run r-20260902T133031497200, member routing-priors at gpt-5.6-sol/medium, 1,530 worker-seconds over two attempts (blocked once, resumed), no scope change; commit a56eae9 merged, 18 insertions and 46 deletions across exactly the two authorised paths. Verified live after the merge rather than from the diff: reckon flight --project reckon now resolves by_spec_level as exact medium, guided medium, open high with all three attributed to the host layer in provenance, roles.implement.by_spec_level.exact.backend absent, and codex-spark still present under backends. That is the locked default-effort-by-spec-level and spark-lane pair, made resolvable from one place. The reference's advisory table is replaced by the measured one with its counts, and its small-model section now describes a lane that is defined and unrouted with the ladder it must climb to earn routing back. All three §4 measures are satisfied, including the negative one: no open-level medium sample exists, so open stays at high and that is recorded rather than left implicit. The node also scrubbed a plan-label reference to ‘the §6 checkpoint’ in the reference, which was a naming violation in a file that outlives the plan. Gate under an amended acceptance: grep -rnE over tests/ and reckon/ for either changed path returns empty — nothing in the tree reads them, so no Python behaviour can depend on the change and a full-suite delta could not have measured it — then 99/99 tests across test_flight, test_skill_contracts and test_crew_routing_visibility, plus four resolved-config assertions. The amendment is recorded because the original contract was defective, not because the evidence was inconvenient: it demanded two full suites inside a 25-minute fence while four peer suites contended, and the untouched baseline alone took 814s. The full-suite receipt moves to one integration verification at the merged head, which covers the wave. impl 4 of 11.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260902T133012246969-local-backend-key-and-flag" data-who="local-alias" data-when="2026-09-02T14:03:49Z">
+    <div class="r-comment-body"><p>local_backend validates as an optional peer of default_backend with its own key path and leaf provenance; --local selects it and refuses when unset; the selection is retained as local true on pointer and ledger; role and spec overlays still apply. Full suite 2660 passed 0 failed against a base carrying 1 unrelated timing flake; focused 352 passed; SKILL.md 15,500 tokens under a 16,000 budget with all three routing descriptions naming the flag.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260902-local-flag-detail" data-who="reckon-ship" data-when="2026-09-02T14:10:00Z">
+    <div class="r-comment-body">§3 landed — run r-20260902T133012246969, member local-alias at gpt-5.6-sol/medium, 1,970 worker-seconds, first attempt, no scope change; commit 42a339f merged, 287 insertions and 14 deletions across exactly the twelve authorised paths, 8 tests added. Gate: full suite 2,660 passed 0 failed in 855s, focused 352 passed across the four owned test files, ruff findings on the touched paths down from 68 to 60 with none added. The baseline at 302022e carried one unrelated failure, tests/test_crew_session_delivery.py::test_the_attention_filter_is_inside_the_follower, which passed in the after suite — recorded as negative baseline evidence rather than claimed as a fix, which is the right call for a timing flake. Mechanism: local_backend is an optional peer of default_backend in the LinkML source, validated against the merged backend map with its own key path, carrying leaf provenance, and both derived schema artifacts regenerate byte-identically. --local resolves it as that dispatch's default through the existing plan_dispatch authority rather than a second resolver, refuses with a request error at exit 1 naming the key when unset, and role and spec-level overlays still apply on top, so a local review node keeps its read-only sandbox. The selection is retained as local true on the live pointer and in the promoted ledger record, so the ledger can slice by it later. Verified end to end after the merge, beyond the suite: the host layer now declares local_backend clive, reckon flight attributes it to the host, and a --local --dry-run resolves clive/deepseek-v4-flash with local true. Two host-layer comments were corrected in the same beat because the change made them false — the clive entry still said nothing but --set could route to it, and the spark entry still described a project mapping that §4 removed. impl 5 of 12.</div>
 </div>
 </section>
 </main>
