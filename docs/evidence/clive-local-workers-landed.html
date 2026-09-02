@@ -410,13 +410,25 @@
       orchestrator merging each landed node, peers committing their own — and peers hold
       uncommitted work at all times. So the check refused on facts that had nothing to do
       with the run it was judging.</p>
-    <p><strong>Blast radius, measured rather than estimated.</strong> Nine of twelve live
-      pointers carried the new snapshot, across at least four sessions
-      (<code>ship-s15</code>, <code>ship-s10-20260901</code>, <code>s19-northstar</code> and
-      one more). Every one would have been refused at <code>crew complete</code>. Runs
-      dispatched before 15:13 were untouched, because they carry no snapshot to compare.
-      One peer run, <code>spa-project-render-fault</code> in session
-      <code>spa-blank-01</code>, sat completed-but-unpromoted through the window.</p>
+    <p><strong>Blast radius, and the difference between exposure and harm.</strong> This
+      session counted nine of twelve live pointers <em>carrying</em> the new snapshot, which
+      measures exposure. Session <code>reckon-2c</code>, which hit the guard from outside and
+      had no stake in defending it, measured what was actually blocked: <strong>six
+      completed-unpromoted runs across three sessions</strong> between roughly 17:15 and
+      18:15 local — four in imas-codex under <code>ship-s10-20260901</code>, the oldest
+      waiting 55 minutes, one in reckon under <code>ship-s15</code>, and one of their own.
+      Their figure is the better one and is the one to cite. Since <code>5dc92ce</code> the
+      fleet-wide completed-unpromoted count is zero; all six drained.</p>
+    <p>Their reproduction states the defect more clearly than the author's could: promoting a
+      run whose commit was <em>one file, exactly its declared write path</em>, the guard
+      refused citing <code>AGENTS.md</code>, four reckon source files, a plan document, and
+      files inside a different session's worktree — none of which their worker had touched.
+      They also separated the three independent causes: it compared HEAD, so committed branch
+      movement counted; it took the symmetric difference of status entries, so a peer
+      committing their own work counted too; and it flagged changed paths without
+      intersecting them against the run's declared scope. Their framing of the third is worth
+      keeping verbatim — <em>the declared-scope intersection is what makes it a stray-write
+      signal rather than a concurrency detector.</em></p>
     <p><strong>How it was caught.</strong> By its first real use: the check refused this
       session's own §7 promotion, naming a peer's <code>ticker.py</code> and the files of the
       orchestrator's own integration merge. A refusal listing another session's work is not

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T18:33:11",
+  "updated": "2026-09-02T20:07:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -36091,9 +36091,147 @@
           "role": "investigate",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T162038518034-shadow-honours-a-named-effort",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "shadow-honours-a-named-effort",
+        "node_definition": {
+          "done_when": "Measured today against committed run r-20260902T133132431763-silent-delivery-becomes-a-repairable-row, whose primary ran at effort medium: reckon crew shadow --backend clive --set backends.clive.effort=xhigh --dry-run resolves the agent at effort medium and records lineage.configuration.substituted.effort as primary medium, shadow medium, via override; --set roles.implement.effort=xhigh behaves identically; and --set roles.implement.backends.clive.effort=xhigh is rejected by schema validation. So an override is detected and not applied, asserting a substitution that did not happen. Make the per-backend effort key the honoured spelling, meaning a key of the form backends.BACKEND.effort for the candidate backend the shadow selected: it must resolve the shadow agent at the named effort and record substituted.effort with the primary's value and the differing shadow value. The roles.implement.effort spelling must also be honoured or must refuse with a request error naming the key, and the manifest states which was chosen and why; silent absorption is not an option for either. Tests in tests/test_crew_shadow_overrides.py assert four behaviours: a named effort resolves the agent at it and lineage records both differing values; the same shadow with no override inherits the primary's effort and records it under inherited rather than substituted; whichever spelling is not honoured refuses naming the key; and the existing single-variable pair with backend and model substituted and effort inherited is unchanged. Verify beyond the suite by re-running the exact dry-run above and pasting the resolved agent block and the lineage configuration into the manifest, showing effort xhigh where it previously showed medium. The full suite adds no failure against base 96c06b96188978b923c21e951e7d7623538441d7",
+          "estimated_hours": null,
+          "goal": "Make a shadow run at the effort its caller named, or refuse",
+          "id": "shadow-honours-a-named-effort",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162038518034-shadow-honours-a-named-effort/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_shadow_overrides.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "local-alias",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T16:20:46Z",
+        "completed_at": "2026-09-02T16:57:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2218,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2218,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "96c06b96188978b923c21e951e7d7623538441d7",
+        "commits": [
+          "8b80bdc691f5018cb1a3b4f8af50fadb756c733e"
+        ],
+        "changed_lines": {
+          "added": 139,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162038518034-shadow-honours-a-named-effort/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162038518034-shadow-honours-a-named-effort/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06250-3251-71d2-8f1a-9719bfcc322c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 11127424,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 11300403,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 23725,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 6695
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 903,
+              "log_age_seconds": 842,
+              "log_fresh": true,
+              "manifest_commits": [
+                "edd448891e6ab661fecc7cd9a3a7c42bd4c64837"
+              ],
+              "manifest_derived": false,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260902T153539322822-spa-project-render-fault --gate <verdict> --commit edd448891e6ab661fecc7cd9a3a7c42bd4c64837",
+              "node": "spa-project-render-fault",
+              "phase": "complete",
+              "plan": "blank-project-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260902T153539322822-spa-project-render-fault",
+              "session": "spa-blank-01",
+              "terminal_age_seconds": 855,
+              "terminal_at": "2026-09-02T16:06:29Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/spa-blank-01/spa-project-render-fault"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 589
+    "_version": 590
   }
 }
