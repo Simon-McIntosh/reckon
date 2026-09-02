@@ -133,6 +133,22 @@ def _configuration_from_key(key: str) -> dict[str, Any]:
     return dict(configuration)
 
 
+def _outcome_exclusion_reason(run: Mapping[str, Any]) -> str | None:
+    """Apply the ledger worker-pass eligibility rule to one outcome."""
+
+    gate = str(run.get("gate") or "")
+    if gate == "passed":
+        return None
+    if gate == "failed":
+        classification = str(run.get("failure_classification") or "")
+        if classification == "work-rejected":
+            return None
+        if classification in ledger.FAILURE_CLASSIFICATIONS:
+            return classification
+        return "unclassified_failure"
+    return "gate_not_run"
+
+
 def derive_capabilities(
     mounted_docs: Mapping[str, str | Path],
     *,
@@ -147,6 +163,9 @@ def derive_capabilities(
         raise ValueError("bin_width_hours must be positive")
 
     observations_by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    exclusions_by_agent: dict[str, dict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
     shadow_observations: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     excluded = {
         "scope_changed": 0,
@@ -166,12 +185,14 @@ def derive_capabilities(
             if run.get("run_id")
         }
         for run in data["runs"]:
+            agent_key = agent_configuration_key(run)
             exclusion = ledger.measurement_exclusion_reason(run)
             if exclusion:
                 excluded[exclusion] += 1
+                if agent_key:
+                    exclusions_by_agent[agent_key][exclusion] += 1
                 continue
             plan = str(run.get("plan") or "")
-            agent_key = agent_configuration_key(run)
             try:
                 estimated_hours = float(estimates[plan])
                 actual_hours = float(run.get("worker_seconds")) / 3600.0
@@ -216,10 +237,15 @@ def derive_capabilities(
                     (agent_key, str(run.get("spec_level") or ""))
                 ].append(observation)
                 continue
+            exclusion = _outcome_exclusion_reason(run)
+            if exclusion:
+                excluded[exclusion] = excluded.get(exclusion, 0) + 1
+                exclusions_by_agent[agent_key][exclusion] += 1
+                continue
             observations_by_agent[agent_key].append(observation)
 
     configurations = []
-    for key in sorted(observations_by_agent):
+    for key in sorted(set(observations_by_agent) | set(exclusions_by_agent)):
         observations = sorted(
             observations_by_agent[key],
             key=lambda item: (item["estimated_hours"], item["project"], item["run_id"]),
@@ -245,7 +271,8 @@ def derive_capabilities(
                 "competence_horizon_hours": max(passing_sizes)
                 if passing_sizes
                 else None,
-                "speed": _distribution(speed_values),
+                "speed": _distribution(speed_values) if speed_values else None,
+                "excluded": dict(sorted(exclusions_by_agent[key].items())),
                 "observations": observations,
             }
         )

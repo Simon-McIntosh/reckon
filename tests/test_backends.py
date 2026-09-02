@@ -371,6 +371,32 @@ def test_partial_stream_reads_as_working_not_finished() -> None:
     assert observation.session_id
 
 
+def test_recorded_truncated_codex_stream_is_infrastructure_failure() -> None:
+    lines = _lines("codex-turn.jsonl")[:2]
+
+    classification = _backends.classify_stream_failure(
+        backend=CODEX,
+        lines=lines,
+        process_exited=True,
+        diff_present=False,
+        manifest_present=False,
+    )
+
+    assert classification == "infrastructure-failure"
+
+
+def test_ordinary_gate_failure_is_not_a_wrapper_failure() -> None:
+    classification = _backends.classify_stream_failure(
+        backend=CODEX,
+        lines=_lines("codex-turn.jsonl"),
+        process_exited=True,
+        diff_present=False,
+        manifest_present=False,
+    )
+
+    assert classification is None
+
+
 def test_half_written_line_is_counted_not_raised() -> None:
     """A JSON line still being written is normal while a worker runs."""
     lines = _lines("codex-turn.jsonl") + ['{"type": "turn.start']
