@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -81,22 +81,36 @@
       failure is confined to the render that consumes them.</figcaption>
     </figure>
 
-    <p>Two properties narrow it further and both must be explained by whatever
-    root cause is proposed. First, it is <strong>project-specific</strong>: the
-    home page renders, so the shell mounts. Second, <code>nova</code> carries the
-    largest payload of the mounted projects measured that day — 1.81&nbsp;MB of
-    project state against 1.30&nbsp;MB for <code>imas-codex</code> and 0.74&nbsp;MB
-    for <code>reckon</code> — so a data-shape fault and a scale-dependent fault are
-    both live hypotheses, and size alone is not evidence for either.</p>
+    <p><strong>The surface was not project-specific, and the report's framing
+    misled the first pass.</strong> Measured after the fact: every mount served
+    the same broken entry point, so <code>nova</code>, <code>reckon</code>,
+    <code>imas-codex</code>, <code>imas-ambix</code> and <code>imas-efit</code>
+    were all blank together. The home page kept rendering because it does not
+    depend on the shell modules that were missing, so "the home page renders"
+    never implied the shell mounted. Only one project got clicked.</p>
 
-    <h3 id="s1-state-format">Measured: this is the only project on the distributed state format</h3>
+    <p>Two hypotheses were raised from the initial evidence and both are now
+    <strong>excluded</strong>, recorded here so they are not re-run: payload
+    scale, and the distributed state format. They are recorded below with the
+    measurement that killed them.</p>
 
-    <p>Across the thirteen mounted projects, <code>nova</code> is the only one
-    whose state directory carries a <code>manifests/</code> tree — the marker of
-    the distributed sprint / milestone / blocker layout. Every other mount still
-    keeps a single live aggregate. That is a candidate explanation for the
-    project-specificity §2 must account for, and it is an input to the
-    investigation rather than a verdict.</p>
+    <h3 id="s1-state-format">Excluded: the distributed state format and payload scale</h3>
+
+    <p>Across the thirteen mounted projects, <code>nova</code> is indeed the only
+    one whose state directory carries a <code>manifests/</code> tree, and it is
+    the largest payload of the mounts — 1.81&nbsp;MB of project state against
+    1.30&nbsp;MB for <code>imas-codex</code> and 0.74&nbsp;MB for
+    <code>reckon</code>. Both facts are true and neither is the cause: the
+    projects on the single live aggregate, at a fifth of the payload, were blank
+    in exactly the same way at exactly the same time. A property unique to the
+    one project that got reported cannot explain a failure shared by all of
+    them.</p>
+
+    <p>The table below stands as a record of the layout, which remains accurate
+    and is worth keeping for the reader who wonders about the 404 in the log
+    above: this project's <code>projection.json</code> genuinely is absent, and
+    the loader genuinely does fall back. That fallback succeeds, and it is not
+    what produced the blank page.</p>
 
     <table>
       <thead>
@@ -111,8 +125,9 @@
       </tbody>
     </table>
 
-    <p>Three consequences of that migration are measured and worth carrying into
-    §2:</p>
+    <p>Three properties of that migration were measured. All three are real, none
+    of them caused the blank page, and the third is a genuine trap for anyone
+    reproducing state-loading behaviour later:</p>
 
     <ul>
       <li><strong>The aggregate this project serves is frozen.</strong> Its
