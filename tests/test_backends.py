@@ -58,10 +58,9 @@ def test_worktree_full_runs_unsandboxed(backend, expected) -> None:
     "backend,expected",
     [
         (dict(CODEX, sandbox="read-only"), ["--sandbox", "workspace-write"]),
-        (dict(CLAUDE, sandbox="read-only"), ["--permission-mode", "plan"]),
     ],
 )
-def test_read_only_tier_withholds_writes(backend, expected) -> None:
+def test_read_only_codex_uses_a_filesystem_sandbox(backend, expected) -> None:
     plan = _backends.launch_plan(
         backend_name="b",
         backend=backend,
@@ -71,6 +70,27 @@ def test_read_only_tier_withholds_writes(backend, expected) -> None:
     )
     assert expected[0] in plan.argv
     assert plan.argv[plan.argv.index(expected[0]) + 1] == expected[1]
+
+
+def test_read_only_claude_grant_does_not_withhold_writes() -> None:
+    """The Claude read-only tier draws its boundary as a grant, not a mode.
+
+    A permission mode (plan) withheld every write so a node could not deliver
+    its declared files yet reported a completed turn. The read-only tier must
+    resolve to an approvals skip plus the argv's --add-dir grant, and fail if
+    it ever regresses to the write-withholding mode.
+    """
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend=dict(CLAUDE, sandbox="read-only"),
+        prompt="p",
+        worktree="/wt",
+        manifest_path="/delivery/manifest.md",
+        writable_directories=["/run", "/reports", "/delivery"],
+    )
+    assert "--dangerously-skip-permissions" in plan.argv
+    assert "--permission-mode" not in plan.argv
+    assert "/wt" not in plan.argv
 
 
 def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> None:
