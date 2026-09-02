@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="blank-project-surface">
+  <meta name="plan-title"     content="Blank Project Surface">
+  <meta name="plan-summary"   content="A project page renders nothing while every asset and payload it needs returns 200: find the render fault, repair it, and catch the next one.">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S12">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling">
+  <title>Blank Project Surface | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The symptom, and what it rules out</h2>
+
+    <p>Reported 2026-09-02: the reckon home page loads, and selecting the
+    <code>nova</code> project shows a blank page. Nothing renders — not an error
+    banner, not an empty state, not a partial shell.</p>
+
+    <p>Every request the surface makes succeeds. Measured against the running
+    server at <code>127.0.0.1:8765</code> on the day of the report:</p>
+
+    <table>
+      <thead>
+        <tr><th>Request</th><th>Status</th><th>Bytes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET /</code></td><td>200</td><td>—</td></tr>
+        <tr><td><code>GET /nova/</code></td><td>200</td><td>—</td></tr>
+        <tr><td><code>GET /_discover/nova</code></td><td>200</td><td>1&nbsp;814&nbsp;583</td></tr>
+        <tr><td><code>GET /state/nova/index.json</code></td><td>200</td><td>1&nbsp;801&nbsp;471</td></tr>
+        <tr><td>every <code>/_ui/*.js</code> and <code>/_ui/*.css</code> module</td><td>200</td><td>—</td></tr>
+        <tr><td><code>GET /_runtime/react.js</code>, <code>/_runtime/react-dom.js</code></td><td>200</td><td>—</td></tr>
+        <tr><td><code>GET /nova/state/nova/projection.json</code></td><td>404</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <p>The server log records the whole sequence completing: the shell's modules
+    are fetched, the <code>projection.json</code> probe 404s, the loader falls
+    back to <code>index.json</code> and gets it, and discovery returns. Then
+    nothing appears. So the fault is downstream of transport and downstream of
+    parsing, in the client-side render — and the 404 is a documented fallback
+    path, not by itself the failure.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 96" width="100%" role="img"
+           aria-label="Five-stage load pipeline: assets, runtime, discovery payload, state payload all succeed; render produces nothing.">
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">
+          <rect x="1" y="26" width="122" height="34" fill="none" stroke="#9a9a9a" stroke-width="1"/>
+          <text x="62" y="47" text-anchor="middle">assets 200</text>
+          <rect x="149" y="26" width="122" height="34" fill="none" stroke="#9a9a9a" stroke-width="1"/>
+          <text x="210" y="47" text-anchor="middle">runtime 200</text>
+          <rect x="297" y="26" width="122" height="34" fill="none" stroke="#9a9a9a" stroke-width="1"/>
+          <text x="358" y="47" text-anchor="middle">discovery 200</text>
+          <rect x="445" y="26" width="122" height="34" fill="none" stroke="#9a9a9a" stroke-width="1"/>
+          <text x="506" y="47" text-anchor="middle">state 200</text>
+          <rect x="593" y="26" width="126" height="34" fill="none" stroke="#c0392b" stroke-width="1.5"/>
+          <text x="656" y="47" text-anchor="middle" fill="#c0392b">render — nothing</text>
+          <path d="M123 43 H149 M271 43 H297 M419 43 H445 M567 43 H593" stroke="#9a9a9a" stroke-width="1"/>
+          <text x="656" y="18" text-anchor="middle" font-size="12" fill="#c0392b">fault is here</text>
+        </g>
+      </svg>
+      <figcaption>Every stage the surface depends on returns successfully; the
+      failure is confined to the render that consumes them.</figcaption>
+    </figure>
+
+    <p>Two properties narrow it further and both must be explained by whatever
+    root cause is proposed. First, it is <strong>project-specific</strong>: the
+    home page renders, so the shell mounts. Second, <code>nova</code> carries the
+    largest payload of the mounted projects measured that day — 1.81&nbsp;MB of
+    project state against 1.30&nbsp;MB for <code>imas-codex</code> and 0.74&nbsp;MB
+    for <code>reckon</code> — so a data-shape fault and a scale-dependent fault are
+    both live hypotheses, and size alone is not evidence for either.</p>
+
+    <h2 id="s2">§2 — Root cause</h2>
+
+    <p>Identify the exact failing code path: the module, the expression, and the
+    value that reaches it. A render that produces an empty document has a
+    concrete first throw, and that throw is the deliverable — not a plausible
+    story about one.</p>
+
+    <p>The repository already carries machinery for evaluating the surface
+    without a live browser: <code>tests/spa_module_eval.py</code>,
+    <code>tests/spa_render_capture.mjs</code>, and
+    <code>tests/spa_browser_harness.py</code>, alongside roughly thirty
+    <code>test_spa_*.py</code> suites. Use them rather than building a parallel
+    harness.</p>
+
+    <p>The investigation must state, with evidence: which module throws, on which
+    field of which payload, and why <code>nova</code> reaches it while at least
+    one other mounted project does not. A root cause that does not explain the
+    project-specificity is incomplete.</p>
+
+    <h2 id="s3">§3 — Repair</h2>
+
+    <p>Make the <code>nova</code> project surface render its content. The repair
+    follows the finding from §2 and is scoped to the fault that finding names.</p>
+
+    <p>A surface that cannot render its data must not fail silently. Whatever the
+    specific fault, the repaired surface either shows the content or shows a
+    legible failure — a blank document is not an acceptable outcome for any input,
+    because it is indistinguishable from an unreachable server and sends the
+    reader to the wrong diagnosis.</p>
+
+    <h2 id="s4">§4 — A blank surface becomes a caught failure</h2>
+
+    <p>The defect reached a user because nothing in the suite asserts that a
+    project surface renders anything at all. Close that: a check that fails when a
+    mounted project's surface produces an empty render.</p>
+
+    <p><strong>Host constraint.</strong> Headless-Chrome HTTP navigation is not
+    dependable on this workstation — that is the subject of
+    <code>rendered-evidence-on-this-host</code>, and browser-gated checks here have
+    timed out for reasons unrelated to the code under test. The guard must produce
+    its verdict without depending on a capability this host has not demonstrated,
+    or it will read as red when it is merely unable to run.</p>
+
+    <p>The check runs against payload shapes that reproduce the reported failure,
+    so that reverting the §3 repair turns it red. A guard that passes both before
+    and after the fix is not a guard.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="guard-mechanism" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What produces the render verdict in §4?</p>
+        <p class="r-dec-ctx">Settled by the §2 finding: the mechanism must be able
+        to observe the fault that was actually found, and must run on a host whose
+        headless-browser navigation is unproven.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="module-eval">Evaluate the modules directly, no browser</button>
+          <button class="r-opt" data-value="node-capture">Node render capture</button>
+          <button class="r-opt" data-value="browser-harness">Headless browser harness</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-bps-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-02">
+        <h4 class="r-fu-title">Find the render fault behind the blank nova surface</h4>
+        <div class="r-fu-body">
+          <p>Authoring complete. §2 is the entry point: name the module, the
+          expression and the value that stops the render, and explain why this
+          project reaches it and another does not. §3 and §4 follow that finding.</p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship blank-project-surface §2</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
