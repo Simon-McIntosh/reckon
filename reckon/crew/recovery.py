@@ -3,6 +3,8 @@ from __future__ import annotations
 import fcntl
 import os
 import re
+import shlex
+import subprocess
 import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -20,6 +22,7 @@ from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _manifest_freshness,
+    _mutate_pointer,
     _process_start_time,
     _project_watch_claim,
     _read_watch_record,
@@ -152,6 +155,15 @@ def classify_pointer(
         except OSError as exc:
             manifest_error = str(exc)
     manifest_status = str(manifest_data.get("status") or "").strip().lower()
+    manifest_derived = str(manifest_data.get("derived") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if manifest_derived:
+        # A recovery artifact preserves evidence; it is not delivery by the
+        # worker and therefore cannot satisfy the promotion precondition.
+        manifest_present = False
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
@@ -222,7 +234,9 @@ def classify_pointer(
         )
     elif terminal:
         classification = "abandoned"
-        if not manifest_present:
+        if manifest_derived:
+            delivery = "only a recovery-derived manifest exists"
+        elif not manifest_present:
             delivery = "no manifest was delivered"
         elif manifest_error:
             delivery = f"the manifest could not be read: {manifest_error}"
@@ -233,8 +247,13 @@ def classify_pointer(
             "for promotion"
         )
         action = (
-            f"read launch log {record.get('stderr_path')}; inspect the worktree at "
-            f"{record.get('worktree')} and redispatch if needed"
+            f"reckon crew resume --run {run_id} --advice "
+            f"{shlex.quote(f'review {manifest} and replace it with a worker-written manifest')}"
+            if manifest_derived
+            else (
+                f"read launch log {record.get('stderr_path')}; inspect the worktree at "
+                f"{record.get('worktree')} and redispatch if needed"
+            )
         )
     elif alive is True:
         classification = "running"
@@ -278,6 +297,7 @@ def classify_pointer(
         "manifest_fresh": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
         "manifest_status": manifest_status or None,
+        "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         "terminal_at": terminal_at,
         "terminal_age_seconds": terminal_age_seconds,
@@ -288,6 +308,102 @@ def classify_pointer(
         "detail": detail,
         "next_action": action,
     }
+
+
+def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:
+    """Return the base-to-worktree path census used for recovery evidence."""
+    worktree = Path(str(record.get("worktree") or ""))
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    if not base or not worktree.is_dir():
+        return []
+    tracked = subprocess.run(
+        ["git", "diff", "--name-only", "--no-renames", "-z", base, "--"],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    if tracked.returncode or untracked.returncode:
+        return []
+    paths = {
+        os.fsdecode(raw)
+        for raw in (*tracked.stdout.split(b"\0"), *untracked.stdout.split(b"\0"))
+        if raw
+    }
+    return sorted(paths)
+
+
+def _derived_manifest_text(record: Mapping[str, Any], paths: list[str]) -> str:
+    """Render evidence that recovery found without claiming worker delivery."""
+    node = str((record.get("node") or {}).get("id") or record.get("run_id") or "")
+    final_message = " ".join(str(record.get("final_message") or "").split())
+    changed = ", ".join(paths) or "none"
+    evidence = (
+        f"final message: {final_message}" if final_message else "final message: none"
+    )
+    return (
+        f"node: {node}\n"
+        "status: derived\n"
+        "derived: true\n"
+        "derived_reason: terminal run omitted its worker manifest\n"
+        "commits: none\n"
+        f"changed_paths: {changed}\n"
+        "tests: not verified — worker manifest missing\n"
+        "test_logs: none\n"
+        "baseline_suite: none\n"
+        "after_suite: none\n"
+        "artifacts: none\n"
+        f"evidence_inputs: {evidence}\n"
+        "follow_ons: none\n"
+        "blockers: replace this derived artifact with a worker-written manifest\n"
+    )
+
+
+def _derive_missing_manifest(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None
+) -> Mapping[str, Any]:
+    """Preserve terminal evidence without turning it into delivered work."""
+    fences = (config or {}).get("fences") or {}
+    if fences.get("manifest_required", True) is False:
+        return record
+    if str(record.get("phase") or "") not in {"complete", "failed"}:
+        return record
+    manifest_value = str(record.get("manifest_path") or "")
+    if not manifest_value:
+        return record
+    manifest = Path(manifest_value)
+    if manifest.exists():
+        return record
+    paths = _worktree_diff_paths(record)
+    final_message = str(record.get("final_message") or "").strip()
+    if not paths and not final_message:
+        return record
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with manifest.open("x", encoding="utf-8") as handle:
+            handle.write(_derived_manifest_text(record, paths))
+    except FileExistsError:
+        # Worker delivery won the race and remains authoritative.
+        return record
+
+    run_id = str(record.get("run_id") or "")
+
+    def record_gap(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["delivery_gap"] = {
+            "kind": "missing-worker-manifest",
+            "derived_manifest_path": str(manifest),
+            "derived_at": _utc_now(),
+            "final_message_present": bool(final_message),
+            "changed_paths": paths,
+        }
+        return pointer
+
+    return _mutate_pointer(run_id, record_gap) if run_id else record
 
 
 def overdue_unreconciled_runs(
@@ -837,6 +953,7 @@ def recover(
                 observed = observe(run_id, config=config)
             except CrewError as exc:
                 unreadable = str(exc)
+        observed = _derive_missing_manifest(observed, config=config)
         report = classify_pointer(observed)
         if unreadable:
             report["detail"] = f"{report['detail']} (stream unreadable — {unreadable})"
