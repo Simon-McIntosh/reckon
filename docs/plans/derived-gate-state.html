@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="32">
 <meta name="plan-impl" content="0.96">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -254,11 +254,15 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     document is a state write like every other.</p>
 
     <p><strong>The same gap has a second face, found while restating §5's gate.</strong> The gate
-    ops are append-and-verdict only: <code>gate</code> declares one and refuses a duplicate,
-    <code>pass</code> and <code>fail</code> record a verdict, and nothing amends a declared gate's
-    measure or required evidence — <code>set</code> refuses
-    <code>gates.&lt;id&gt;.required_evidence</code> as an unsupported path. So a gate whose wording
-    is measured wrong can only be corrected by raw HTML, which is how both earlier restatements on
+    ops are append-and-verdict only: <code>gate</code> declares one and refuses a duplicate, while
+    <code>pass</code> and <code>fail</code> record a verdict. Re-issuing <code>pass</code> does
+    amend the evidence <em>link</em> of an already-passed gate, which is how this plan's own ten
+    dangling links were repaired — they pointed into
+    <code>evidence/archive/</code> while an active plan's record sits at the live
+    <code>evidence/</code> root. What no op reaches is the gate's <code>measure</code> and its
+    <code>required_evidence</code> text: <code>set</code> refuses
+    <code>gates.&lt;id&gt;.required_evidence</code> as an unsupported path. So a gate whose measure
+    is worded wrong can only be corrected by raw HTML, which is how both earlier restatements on
     this plan were done. A gate that cannot be re-measured decays exactly the way persisted
     <code>blocked</code> did, which is the defect class this whole plan exists to remove. Amendment
     belongs beside retirement: both are representation edits to a gate section that the op
@@ -284,16 +288,23 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <code>north-star-orientation</code> — each carrying a measure and its required evidence. All
     three plans read <code>shipped</code>.</p>
 
-    <p><strong>What verdict a migrated row gets, and why two thirds of them cannot simply pass.</strong>
-    Every prior migration set each row to <code>passed</code> against an anchor in the plan's
-    landed-evidence record. Only <code>effort-calibration</code> has such a record; the other two
-    plans have none in <code>docs/evidence/archive/</code>, and
-    <code>north-star-orientation</code> is <code>shipped</code> at <code>impl</code> 0.92. So the
-    rule for this migration is: carry each measure and its required evidence across verbatim, and
-    record <code>passed</code> only where the plan's own record supplies a resolvable anchor.
-    Where none exists, declare the gate with no verdict and list it — never mint an anchor to make
-    a row look closed, because a gate that can pass without evidence is not a gate, which is this
-    plan's own premise.</p>
+    <p><strong>What verdict a migrated row gets.</strong> Every prior migration set each row to
+    <code>passed</code> against an anchor in the plan's landed-evidence record, and all three of
+    these plans have one — but they do not all sit in the same place, which is worth knowing before
+    looking for them. Evidence for an active plan lives at the live root
+    <code>docs/evidence/</code> and is moved to <code>docs/evidence/archive/</code> once frozen, so
+    <code>inflight-visibility</code> (12 anchors) and <code>north-star-orientation</code> (6) are at
+    the live root while <code>effort-calibration</code> (16) has already been archived. Their served
+    URLs differ accordingly.</p>
+
+    <p>So the rule for this migration is: carry each measure and its required evidence across
+    verbatim, and record <code>passed</code> against the anchor in that plan's own record which
+    actually covers the measure. Where a row's measure has no matching anchor, declare the gate with
+    no verdict and list it — never point a row at an anchor that does not cover it, and never mint
+    one, because a gate that can pass without evidence is not a gate, which is this plan's own
+    premise. Verify each URL resolves rather than assuming the pattern:
+    <code>north-star-orientation</code> is <code>shipped</code> at <code>impl</code> 0.92, so some
+    of its rows may genuinely have no evidence to cite.</p>
 
     <p><strong>How the op is reachable, which is not obvious.</strong> Reckon's server and every
     connected <code>reckon mcp</code> stdio process hold the code they started with, so both were
@@ -389,27 +400,27 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 <div class="r-gate" data-id="two-way-derivation" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Two-way derivation</h4>
     <p class="r-gate-required-evidence">A test asserting <code>effective_status</code> returns an open state for a legacy persisted <code>blocked</code> with no blockers, and <code>blocked</code> when a blocker exists. The current one-way behaviour is the seeded regression case.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#derivation">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#derivation">Evidence</a>
 </div>
 <div class="r-gate" data-id="gate-blocks-and-unblocks" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Gate blocks and unblocks</h4>
     <p class="r-gate-required-evidence">A failed gate renders its downstream sections blocked in <code>read_plan</code> and <code>roadmap</code>; passing it returns them to ready, with no status write in between. Both directions asserted in one test.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#gate-mechanism">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#gate-mechanism">Evidence</a>
 </div>
 <div class="r-gate" data-id="evidence-free-pass-rejected" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Evidence-free pass rejected</h4>
     <p class="r-gate-required-evidence">A test proving a <code>pass</code> op with no recorded measure is refused while <code>require_evidence</code> is in force, and that the refusal names the gate.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#evidence-required">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#evidence-required">Evidence</a>
 </div>
 <div class="r-gate" data-id="blocked-unwritable" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Blocked unwritable</h4>
     <p class="r-gate-required-evidence">Tests proving <code>plan-status="blocked"</code> and a persisted sprint-item status are both rejected on write, and that reading a legacy document carrying them still succeeds with a compatibility diagnostic.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#blocked-unwritable">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#blocked-unwritable">Evidence</a>
 </div>
 <div class="r-gate" data-id="round-trip-parity" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Round-trip parity</h4>
     <p class="r-gate-required-evidence">Gates survive the existing state round-trip invariant with byte-identity of the regenerated reckon-owned section, matching decisions and followups.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#round-trip">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#round-trip">Evidence</a>
 </div>
 <div class="r-gate" data-id="wave-fence-honoured" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">Wave fence honoured</h4>
@@ -418,22 +429,22 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 <div class="r-gate" data-id="concurrent-sprints-expressible" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Concurrent sprints expressible</h4>
     <p class="r-gate-required-evidence">Two sprints hold incomplete items simultaneously with no error raised, the derived default focus resolves to the earliest of them, and a test proves the derivation cannot go stale because nothing persists it.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#concurrent-sprints">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#concurrent-sprints">Evidence</a>
 </div>
 <div class="r-gate" data-id="runnability-derived" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Runnability derived</h4>
     <p class="r-gate-required-evidence">A plan declaring a gate and carrying an open followup reads runnable; one missing either does not, and the report names which property is absent. Authorisation remains a separate deliberate act.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#runnability">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#runnability">Evidence</a>
 </div>
 <div class="r-gate" data-id="draft-decay-alarmed" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Draft decay alarmed</h4>
     <p class="r-gate-required-evidence">A portfolio scan lists every authored-but-unauthorised plan with its age and the source that age came from. All eleven currently-unauthorised plans appear across the six projects holding them, the one sixty-four days old is verdicted stale, and no row reports an unknown age.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#draft-decay">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#draft-decay">Evidence</a>
 </div>
 <div class="r-gate" data-id="staleness-reaches-agent" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Staleness reaches the agent</h4>
     <p class="r-gate-required-evidence">A plan read carries derived age and a staleness verdict computed from the audit's existing thresholds, not new ones. A test proves the verdict is advisory and never blocks a read or a dispatch.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#staleness">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#staleness">Evidence</a>
 </div>
 <div class="r-gate" data-id="sweep-complete" data-section="s2" data-gated-sections="" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">Sweep complete</h4>
@@ -446,7 +457,7 @@ effective_status('active',  [])        -&gt; 'active'</pre>
 <div class="r-gate" data-id="suite-green" data-section="s2" data-gated-sections="" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Suite green</h4>
     <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
-    <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#suite">Evidence</a>
+    <a class="r-gate-evidence" href="/reckon/evidence/derived-gate-state-landed#suite">Evidence</a>
 </div>
 <div class="r-gate" data-id="prose-retirement-op" data-section="s6" data-gated-sections="s7" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">Prose retirement is a state write</h4>
