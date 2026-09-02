@@ -304,6 +304,67 @@
       benefits every backend, which is why it was worth putting in front of the lane rather
       than around it.</p>
 
+    <h2 id="s5-medium">§5 — The local lane was reviewing with its reasoning switched off</h2>
+    <p>Three read-only nodes were routed to <code>deepseek-v4-flash</code> at effort
+      <code>medium</code>, the value the backend had been pinned to since it was first
+      declared. One passed and two failed, and the two failures are the informative ones.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Fence</th><th>Actual</th><th>Delivered</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td><code>shadowable-node-census</code></td><td>20 min</td><td>1,324 s (1.1×)</td>
+          <td>full census, exclusion partition summing exactly, 126 ids grep-verified</td>
+          <td>passed</td></tr>
+        <tr><td><code>local-flag-merge-review</code></td><td>25 min</td><td>4,195 s (2.8×)</td>
+          <td><strong>nothing</strong> — no report at its write path, no manifest</td>
+          <td>failed · work-rejected</td></tr>
+        <tr><td><code>capability-eligibility-review</code></td><td>25 min</td><td>4,160 s (2.8×)</td>
+          <td><strong>a zero-byte report and an empty manifest</strong></td>
+          <td>failed · work-rejected</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Neither failure is infrastructure, and the classification matters.</strong>
+      Both runs ended <code>end_turn</code> normally; the first made 41 Bash calls, 2 Writes
+      and a Read across 90 assistant messages. A process that ran its tools and finished
+      cleanly produced no work, so the charge belongs to the configuration — which is exactly
+      the distinction §7's recognizer was built to preserve, and the reason
+      <code>work-rejected</code> is the one classification that still lowers a
+      configuration's pass rate.</p>
+    <p><strong>The cause is in the result record, not in inference.</strong> Both report
+      <code>output_tokens_details.thinking_tokens = 0</code> for the entire run. Probing the
+      wrapper directly, one trivial prompt per rung:</p>
+    <table>
+      <thead><tr><th>effort</th><th>wrapper</th><th>max output tokens</th><th>thinking blocks</th></tr></thead>
+      <tbody>
+        <tr><td><code>medium</code></td><td>accepts, exit 0</td><td>3</td><td><strong>0</strong></td></tr>
+        <tr><td><code>high</code></td><td>accepts, exit 0</td><td>26</td><td>1</td></tr>
+        <tr><td><code>xhigh</code></td><td>accepts, exit 0</td><td>28</td><td>1</td></tr>
+      </tbody>
+    </table>
+    <p>The ladder is live rather than a silently ignored flag — it changes the stream. And at
+      <code>medium</code> this model does no extended thinking at all, so seventy minutes of
+      wall clock bought a model reasoning at zero depth. That is not a fair measurement of the
+      local lane; it is a measurement of the lane misconfigured.</p>
+    <p><strong>Routing changed on that evidence.</strong> <code>clive</code> is pinned to
+      <code>xhigh</code> from 2026-09-02. The reasoning is general: a weaker model has more to
+      gain from thinking than a frontier one, and on a locally served endpoint the binding
+      cost of that thinking is wall clock — which the ledger already records — rather than a
+      metered quota someone else needs. The trivial probe cannot separate <code>high</code>
+      from <code>xhigh</code> (26 against 28 tokens); a real node can, and that comparison
+      belongs in the ledger. Probe artifact:
+      <code>~/.config/reckon/crew/reports/local-effort-probe.md</code>.</p>
+    <p><strong>These three runs are a closed slice and must not be pooled with what follows.</strong>
+      1 of 3 at a configuration nobody will run again. The count of live local-lane runs
+      toward §5's ten therefore stands at three attempted, one useful, and the qualification
+      sample effectively restarts at <code>xhigh</code>.</p>
+    <p>One further thing was learned by accident and is worth more than the reviews would have
+      been. The first failure — a terminal run with no manifest — is precisely the silent
+      delivery §7 had landed a repair for barely an hour earlier, and
+      <code>reckon crew recover</code> handled it exactly as specified: it derived a
+      provisional manifest from the run's own evidence, marked it derived so nothing could
+      promote it, kept the row classified <code>abandoned</code>, and printed the
+      <code>reckon crew resume</code> repair command. The fix was verified in anger by the
+      failure it was written for, on the same day, without being asked.</p>
+
   </main>
 </body>
 </html>
