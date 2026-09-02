@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-impl" content="0.96">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -294,6 +294,16 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     Where none exists, declare the gate with no verdict and list it — never mint an anchor to make
     a row look closed, because a gate that can pass without evidence is not a gate, which is this
     plan's own premise.</p>
+
+    <p><strong>How the op is reachable, which is not obvious.</strong> Reckon's server and every
+    connected <code>reckon mcp</code> stdio process hold the code they started with, so both were
+    running a pre-merge build when <code>retire_prose</code> landed and neither offers the verb.
+    There is no CLI edit command either. Until those are restarted, the op is reached by driving
+    the same engine from a fresh interpreter — <code>reckon._store.apply_ops</code> over the read
+    state, then <code>reckon._store.write_plan</code> — which is the identical code path
+    <code>edit_plan</code> takes, not a way around it. What remains forbidden is editing the HTML
+    as text: the whole point of the op is that a migration is a state write, so a run that
+    hand-edits a table has not migrated anything, it has repeated the bypass.</p>
 
     <p>Leaving those rows unpassed is safe and is the point.
     <code>effective_status</code> keeps terminal states terminal, so a
