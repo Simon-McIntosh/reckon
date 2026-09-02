@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-impl" content="0.95">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -278,6 +278,29 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     migration here can only repeat the announced raw-HTML bypass that §6 was written to end — so
     the work waits on evidence, not on effort. That is the gate doing its job, and the wave stays
     shut until the op is demonstrated on a real document.</p>
+
+    <p><strong>Sized on 2026-09-02:</strong> 26 authored rows in total — 10 in
+    <code>effort-calibration</code>, 9 in <code>inflight-visibility</code>, 7 in
+    <code>north-star-orientation</code> — each carrying a measure and its required evidence. All
+    three plans read <code>shipped</code>.</p>
+
+    <p><strong>What verdict a migrated row gets, and why two thirds of them cannot simply pass.</strong>
+    Every prior migration set each row to <code>passed</code> against an anchor in the plan's
+    landed-evidence record. Only <code>effort-calibration</code> has such a record; the other two
+    plans have none in <code>docs/evidence/archive/</code>, and
+    <code>north-star-orientation</code> is <code>shipped</code> at <code>impl</code> 0.92. So the
+    rule for this migration is: carry each measure and its required evidence across verbatim, and
+    record <code>passed</code> only where the plan's own record supplies a resolvable anchor.
+    Where none exists, declare the gate with no verdict and list it — never mint an anchor to make
+    a row look closed, because a gate that can pass without evidence is not a gate, which is this
+    plan's own premise.</p>
+
+    <p>Leaving those rows unpassed is safe and is the point.
+    <code>effective_status</code> keeps terminal states terminal, so a
+    <code>shipped</code> plan carrying an unpassed gate stays shipped rather than flipping to
+    blocked; the row simply becomes visible as evidence that was never captured. The migration is
+    a representation change and must not edit any of the three plans' persisted status or
+    implementation fraction.</p>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
