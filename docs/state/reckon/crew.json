@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T17:13:22",
+  "updated": "2026-09-02T17:21:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -39,18 +39,22 @@
         "id": "clive-b",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "066f04b2-75c1-43f0-aa27-0d72a67b340f",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "066f04b2-75c1-43f0-aa27-0d72a67b340f"
+        },
         "created": "2026-09-02"
       },
       {
         "id": "clive-c",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "a9f577d5-f45e-4aff-9961-b84afbdf99f8",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "a9f577d5-f45e-4aff-9961-b84afbdf99f8"
+        },
         "created": "2026-09-02"
       },
       {
@@ -408,9 +412,11 @@
         "id": "harness-orient",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a062b0-9fd5-7ac3-b127-710167682027",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "gpt-5.6-sol": "01a062b0-9fd5-7ac3-b127-710167682027"
+        },
         "created": "2026-09-02"
       },
       {
@@ -472,15 +478,6 @@
         "role": "implement",
         "session_id": "01a00aa8-4a6c-78a0-9c90-c5ef82985fc1",
         "created": "2026-08-16"
-      },
-      {
-        "id": "session-b3954f0a27c295dd3d42",
-        "harness": "codex",
-        "role": "documentation",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-01"
       },
       {
         "id": "surface-baseline",
@@ -35352,9 +35349,199 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T140952258990-local-flag-merge-review",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "local-flag-merge-review",
+        "node_definition": {
+          "done_when": "The report at the write path reviews commit 42a339f as merged on main and returns a verdict of clean or a list of defects, covering exactly these questions with a file-and-line citation for each answer: whether --local can reach a backend that no layer defines or that the layered validation would have rejected; whether the dry-run and the real dispatch can resolve different backends for the same call; whether the local selection can be silently lost between the live pointer and the promoted ledger record; whether role and specification overlays still apply after the local selection, so a local review node keeps its read-only sandbox; whether an unset key produces a refusal a caller can act on rather than a traceback or a silent fallback to the incumbent; and whether the three routing descriptions in skills/reckon-ship/SKILL.md now agree with what the code does. Each finding states the concrete input that triggers it and the observable wrong behaviour; a clean verdict states what was checked to reach it. Cite line numbers that exist at the reviewed revision",
+          "estimated_hours": null,
+          "goal": "Independently review the merged local-lane routing change for defects the node's own gate could not catch",
+          "id": "local-flag-merge-review",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T140952258990-local-flag-merge-review/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/local-flag-merge-review.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "clive-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-02T14:10:12Z",
+        "completed_at": "2026-09-02T14:27:08.401Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1004,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1016,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "23707a8142177d0b26dcdabf76e99aec6558cef7",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "work-rejected",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T140952258990-local-flag-merge-review/manifest.md",
+        "scope_changed": false,
+        "session_id": "066f04b2-75c1-43f0-aa27-0d72a67b340f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3892398,
+            "input_tokens_cumulative": 3892398,
+            "output_tokens": 31235,
+            "output_tokens_cumulative": 31235,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 20.242865,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 20.242865
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "read-only review node; its deliverable was a report at the write path, which was never created",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T141029447702-capability-eligibility-review",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "capability-eligibility-review",
+        "node_definition": {
+          "done_when": "The report at the write path reviews commit a2e488b as merged on main and returns a verdict of clean or a list of defects, covering exactly these questions with a file-and-line citation for each answer: whether any outcome that should lower a configuration's success rate is now excluded from it, work-rejected in particular; whether an excluded run can still influence the competence horizon, the speed distribution, or the success curve by any path; whether the exclusion reason counts can double-count one run or omit one, and whether their sum reconciles with the number of runs the cache saw; whether a configuration whose runs are all excluded is distinguishable in the output from one that was never observed; whether the Codex infrastructure recognizer can fire on a run that did produce a diff or a manifest, and whether it can miss a stream that ended mid-turn; and whether shadow observations remain partitioned from live configurations as they were before. Each finding states the concrete record shape that triggers it and the observable wrong number; a clean verdict states what was checked to reach it. Cite line numbers that exist at the reviewed revision",
+          "estimated_hours": null,
+          "goal": "Independently review the merged capability-eligibility change for ways it could misreport a configuration",
+          "id": "capability-eligibility-review",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T141029447702-capability-eligibility-review/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/capability-eligibility-review.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "clive-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-02T14:10:48Z",
+        "completed_at": "2026-09-02T14:24:20.321Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 802,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 812,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "23707a8142177d0b26dcdabf76e99aec6558cef7",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "work-rejected",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T141029447702-capability-eligibility-review/manifest.md",
+        "scope_changed": false,
+        "session_id": "a9f577d5-f45e-4aff-9961-b84afbdf99f8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2663871,
+            "input_tokens_cumulative": 2663871,
+            "output_tokens": 31479,
+            "output_tokens_cumulative": 31479,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 14.10633,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 14.10633
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "read-only review node; it created its report path as a zero-byte file and wrote an empty manifest",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 574
+    "_version": 580
   }
 }

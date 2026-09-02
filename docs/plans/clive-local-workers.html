@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="35">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-impl" content="0.62">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835">
 </head>
 <body>
@@ -297,6 +297,21 @@
       fence overrun that coincided with a raised count as contended. The fence itself does
       not move &mdash; a bound that stretches under load stops being a bound, and the point
       is to make the confound visible rather than to excuse it.</li>
+      <li><strong>A shadow's explicitly named effort override is detected and then not
+      applied.</strong> Found while trying to run the local lane at the effort it should be
+      measured at. <code>reckon crew shadow --set backends.clive.effort=xhigh</code> resolves
+      the agent at the <em>primary's</em> effort and records
+      <code>lineage.configuration.substituted.effort</code> as
+      <code>{primary: medium, shadow: medium, via: override}</code> &mdash; a substitution
+      the record asserts and the run did not make. <code>roles.implement.effort=xhigh</code>
+      behaves identically. This is the same class the shadow programme has already fixed
+      twice, one field further along: a configuration dimension that moves, or fails to
+      move, without the record saying so truthfully. It is worse than an unsupported
+      override, because an unsupported one refuses and this one agrees. Until it is fixed no
+      candidate tier can be shadowed at any effort but its primary's, which blocks the whole
+      qualification programme for a model whose whole point is that it needs a different
+      effort from the incumbent. An override that cannot be honoured must refuse; one that
+      is honoured must move the resolved value and say so.</li>
     </ul>
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
@@ -383,6 +398,15 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260902-census-detail" data-who="reckon-ship" data-when="2026-09-02T13:58:00Z">
     <div class="r-comment-body">Shadow corpus measured, and the local lane measured itself doing it — run r-20260902T133214247667, member clive-a on the LOCAL backend at deepseek-v4-flash/medium in the read-only tier, 1,324 worker-seconds against a 20-minute fence (a 10% overrun, recorded rather than enforced since the budget watchdog is off), first attempt, gate passed, commitless. This is live local-lane run 1 of the ten §5 asks for. Measure: 126 of 423 committed reckon runs are shadowable today, where shadowable means the record carries a resolved agent configuration, a recorded time budget, a base still reachable from main, an implement role, a stored node definition, and a plan section that resolves at that base. The exclusion partition sums to exactly 297, which is the property that makes the census checkable rather than merely plausible: role not implement 70, no stored node definition 215, no resolved agent config 6, is itself a shadow 5, base unreachable 1, section unresolvable 0, no recorded budget 0. All 126 ids verified present by grep -F, 0 missing. Reachability of the ten-pair threshold, which is what §5 actually needed to know: guided 118 and the medium (43) and unlabelled (75) size buckets clear it; open at 5, exact at 3 and the high bucket at 8 do not, so a candidate tier cannot be qualified on those slices from the existing corpus and needs a section-open sample. Recorded models on the shadowable set: sol 123, sonnet 2, spark 1. Median worker time 491s across the 122 with a value. The dominant limiter is not the fleet's age but a dispatch defect that has since been fixed — 215 implement runs carry no stored node_definition because early promotions did not persist one, so more than half the implement corpus is unreconstructable. Quality note on the lane itself: this is a local-model run whose exclusion counts partition exactly and whose every claim was verified by a named command — evidence for the read-only lane, not just from it. impl 3 of 11.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260902T140952258990-local-flag-merge-review" data-who="clive-b" data-when="2026-09-02T14:27:08.401Z">
+    <div class="r-comment-body"><p>Negative result for the local lane at effort medium. Ran 4,195s against a 25-minute fence (2.8x overrun), ended end_turn normally after 41 Bash calls, and delivered neither the report at its write path nor a manifest. The stream records thinking_tokens 0 for the whole run: at medium this model does no extended thinking, so the configuration was reviewing with its reasoning off. Not infrastructure — the turn completed and tools ran — so it counts against this configuration, which is the correct signal.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260902T141029447702-capability-eligibility-review" data-who="clive-c" data-when="2026-09-02T14:24:20.321Z">
+    <div class="r-comment-body"><p>Negative result for the local lane at effort medium, second of two. Ran 4,160s against a 25-minute fence, ended end_turn normally, wrote a 0-byte report and an empty manifest. thinking_tokens 0 for the whole run. Same configuration, same shape of failure, on a different node.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260902-local-medium-negative" data-who="reckon-ship" data-when="2026-09-02T15:25:00Z">
+    <div class="r-comment-body">Negative result for the local lane, and the routing change it forced. Two read-only review nodes were dispatched to deepseek-v4-flash at effort medium, r-20260902T140952258990 and r-20260902T141029447702, each with a 25-minute fence. Both ran about 4,180 seconds — a 2.8x overrun — both ended end_turn normally, and both delivered nothing usable: the first wrote neither its report nor a manifest, the second wrote a zero-byte report and an empty manifest. Both promoted failed with classification work-rejected, which is the correct charge because the turn completed and 41 tool calls ran, so this is capability at that configuration and not infrastructure. The cause is measurable rather than inferred. Both result records report output_tokens_details.thinking_tokens = 0 for the entire run. Probing the wrapper directly at each rung on a trivial prompt: medium returns 3 output tokens and zero thinking blocks, high returns 26 with one, xhigh 28 with one — the ladder is live and at medium this model does no extended thinking at all. So the lane had been reviewing with its reasoning switched off, and the 70 minutes bought nothing. The lead's routing instruction lands on exactly this: a weaker model has more to gain from thinking than a frontier one, and on a locally served endpoint the binding cost is wall clock, which the ledger already records, rather than a metered quota. The clive backend is pinned to xhigh from 2026-09-02; probe artifact ~/.config/reckon/crew/reports/local-effort-probe.md. The three earlier local runs stand as medium-configuration evidence and must not be pooled with anything that follows: the census passed at medium and these two failed, which is 1 of 3 at a configuration nobody will run again. impl re-based to 8 of 13 — the denominator grew by the shadow-override repair §7 gained.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260902T133031497200-routing-priors-from-the-ledger" data-who="routing-priors" data-when="2026-09-02T13:56:07Z">
     <div class="r-comment-body"><p>Project layer stops routing exact nodes to spark and stops restating host efforts; all three by_spec_level efforts now resolve with host provenance and the backend stays defined. 99/99 focused tests, empty path-reader grep bounding the blast radius, 4/4 resolved-config assertions. Blocked once at its fence on fleet suite contention and resumed under an amended acceptance; the full-suite receipt moves to one integration verification at the merged head.</p></div>
