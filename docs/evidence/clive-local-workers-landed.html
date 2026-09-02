@@ -399,6 +399,65 @@
       <code>reckon crew resume</code> repair command. The fix was verified in anger by the
       failure it was written for, on the same day, without being asked.</p>
 
+    <h2 id="boundary-regression">§6 regression — a check whose tests passed in a repository nobody else was using</h2>
+    <p>The boundary check landed at 15:13 UTC and was refusing legitimate promotions across
+      the fleet by 15:45. Recorded here in full because the failure is more instructive than
+      the feature.</p>
+    <p><strong>What it did.</strong> The first implementation compared each recorded tree's
+      HEAD and porcelain digest at promotion against the snapshot taken at dispatch, and
+      treated any difference as a violation. In a quiet repository that is the definition of
+      a stray write. In this one, the main checkout's HEAD advances continuously — the
+      orchestrator merging each landed node, peers committing their own — and peers hold
+      uncommitted work at all times. So the check refused on facts that had nothing to do
+      with the run it was judging.</p>
+    <p><strong>Blast radius, measured rather than estimated.</strong> Nine of twelve live
+      pointers carried the new snapshot, across at least four sessions
+      (<code>ship-s15</code>, <code>ship-s10-20260901</code>, <code>s19-northstar</code> and
+      one more). Every one would have been refused at <code>crew complete</code>. Runs
+      dispatched before 15:13 were untouched, because they carry no snapshot to compare.
+      One peer run, <code>spa-project-render-fault</code> in session
+      <code>spa-blank-01</code>, sat completed-but-unpromoted through the window.</p>
+    <p><strong>How it was caught.</strong> By its first real use: the check refused this
+      session's own §7 promotion, naming a peer's <code>ticker.py</code> and the files of the
+      orchestrator's own integration merge. A refusal listing another session's work is not
+      a subtle symptom.</p>
+    <p><strong>Why the tests did not catch it, which is the transferable part.</strong> The
+      five original cases each synthesised a stray write into an otherwise still tree and
+      asserted a refusal. Every one passed, and all five are still correct. What was missing
+      was the negative half at fleet scale — no case asserted that a run <em>promotes</em>
+      while the world around it moves. A guard tested only on the input it is meant to reject
+      has been shown to reject that input, and nothing else. The corrected node therefore
+      required three success cases as gate conditions, not extras: main advanced by several
+      commits including the merge of the run's own work, a peer holding unrelated uncommitted
+      edits, and both together.</p>
+    <p><strong>The corrected rule.</strong> Refuse only a newly uncommitted working-tree
+      entry, in the main checkout or a peer worktree, at a path overlapping this run's own
+      declared write scope. That is the signature of the actual failure — a worker doing its
+      assigned work in the wrong tree writes the paths it was told to write, in a tree it was
+      not. Committed movement is ignored entirely and the head-delta comparison was deleted
+      rather than filtered, because filtering an irrelevant signal leaves it available to be
+      trusted later. Uncommitted peer work outside this run's scope is not its business.</p>
+    <table>
+      <thead><tr><th></th><th>First implementation</th><th>Corrected</th></tr></thead>
+      <tbody>
+        <tr><td>Committed movement in another tree</td><td>violation</td><td>ignored</td></tr>
+        <tr><td>Peer WIP outside this run's scope</td><td>violation</td><td>ignored</td></tr>
+        <tr><td>Uncommitted edit at a declared path, another tree</td><td>violation</td><td>violation</td></tr>
+        <tr><td>Worktree registered after dispatch</td><td>not charged</td><td>not charged</td></tr>
+        <tr><td>Focused cases</td><td>5, all refusals</td><td>16, including 3 required successes</td></tr>
+      </tbody>
+    </table>
+    <p>Run <code>r-20260902T154754077965</code>, commit <code>5dc92ce</code>, 86 insertions
+      and 67 deletions, full suite 2,686 passed / 0 failed (+3 against base). It verified
+      itself non-mutatingly against the real run the old rule had blocked — verdict
+      <code>allow</code> — before that run was promoted, and the promotion then succeeded.
+      Because the CLI runs live from the working tree, the fleet recovered the moment the
+      merge landed rather than at anyone's next restart.</p>
+    <p><strong>One thing the incident did not require.</strong> A revert was attempted first
+      and denied by permission policy; the forward fix reached the same end in about half an
+      hour and kept the work. The window is the cost, and it is recorded rather than
+      minimised: roughly thirty-five minutes in which four sessions could not promote.</p>
+
   </main>
 </body>
 </html>
