@@ -21,8 +21,8 @@
   <title>Derived Gate State | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-25">
-<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="18">
 <meta name="plan-impl" content="0.95">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -228,6 +228,20 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     need a companion that retires the authored prose a gate section supersedes, so migrating a
     document is a state write like every other.</p>
 
+    <h2 id="s7">§7 — The three held plans</h2>
+
+    <p>Three plans of the sprint set still author their gates as prose:
+    <code>effort-calibration</code>, <code>inflight-visibility</code> and
+    <code>north-star-orientation</code>, carrying no <code>r-gate</code> element between them.
+    They were held rather than skipped — concurrent orchestrator sessions were mid-landing on all
+    three, writing followups into the same HTML, and racing them would have conflicted on the
+    system's own state store.</p>
+
+    <p>This section exists because the migration is now gated on a mechanism rather than on a
+    quiet window. Until §6's retirement op can remove the table a gates section supersedes, a
+    migration here can only repeat the announced raw-HTML bypass that §6 was written to end — so
+    the work waits on evidence, not on effort. That is the gate doing its job, and the wave stays
+    shut until the op is demonstrated on a real document.</p>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="gate-representation" data-choice="first-class-derived-blocker" data-by="Simon McIntosh" data-when="2026-08-12T00:00:00Z">
@@ -365,6 +379,10 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <p class="r-gate-required-evidence">Full reckon suite passes; new-test count recorded.</p>
     <a class="r-gate-evidence" href="/reckon/evidence/archive/derived-gate-state-landed#suite">Evidence</a>
 </div>
+<div class="r-gate" data-id="prose-retirement-op" data-section="s6" data-gated-sections="s7" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Prose retirement is a state write</h4>
+    <p class="r-gate-required-evidence">A real plan document migrates from an authored prose gate table to <code>r-gate</code> elements through <code>edit_plan</code> ops alone, with zero raw-HTML bypasses announced, the retired table absent from the file afterwards and <code>audit-doc</code> reporting no errors.</p>
+    </div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-gate-fence-computed" data-who="reckon-ship" data-when="2026-08-12T17:34:47Z">
