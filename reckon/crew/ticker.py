@@ -9,8 +9,10 @@ text is truncated to the room the grid leaves rather than allowed to overrun.
 
 Colour carries two questions that must not share an axis. *Which worker is
 this?* is answered by the node's own hue, handed out in order of first
-appearance. *Does this need me?* is answered by the destination state. The two
-palettes are disjoint, so a worker's colour can never read as an alarm.
+appearance. *Does this need me?* is answered by the state, painted on both
+sides of the arrow so a recovery out of a block reads differently from a routine
+landing. Identity is kept perceptually clear of the four verdict hues, so a
+worker's colour is never mistaken for a verdict about that worker.
 """
 
 from __future__ import annotations
@@ -28,25 +30,45 @@ STATE = 10
 AGENT = 18
 GAP = 2
 
-# Identity hues, chosen for one background each and deliberately excluding every
-# hue the state palette uses. Ten is past any fleet size the dispatcher opens, so
-# assignment recycles only in a session that has run a very long time.
+# Identity hues, one set per background. Picked by measurement rather than eye:
+# each clears a 3.8:1 contrast ratio against its pane, sits in the cool arc
+# (hue 190-330 degrees), and is at least 30 CIE76 units from every verdict hue
+# below. Identity may sit near a NEUTRAL state hue — a worker coloured like
+# `working` is harmless, because the two occupy different columns and neither is
+# a claim about the other — but a worker that reads as blocked, stalled or
+# finished is a false verdict, which is what the distance floor prevents.
 PALETTE = {
-    "light": [25, 30, 91, 61, 126, 24, 54, 23, 63, 133],
-    "dark": [110, 146, 141, 109, 175, 116, 152, 79, 183, 117],
+    "light": [20, 61, 56, 97, 91, 127, 126, 125],
+    "dark": [67, 170, 182, 104, 176, 169, 74],
 }
 
-# Severity, not identity. Only a destination worth reacting to is painted; a
-# routine dispatch stays in the body colour so the exceptions carry the contrast.
+# The verdict hues: the four a reader acts on the sight of. Identity is kept
+# perceptually clear of exactly these, and a test asserts they never overlap.
+VERDICTS = ("blocked", "stalled", "complete", "promoted")
+
+# What the state means, on both sides of the arrow. Red for a run that has
+# stopped and needs answering, amber for one that has gone quiet, green for
+# delivered work, blue for a run making progress, teal for delivered work still
+# waiting on its gate, and grey for one that has only just started.
+#
+# The light amber was 166 and measured 3.3:1 against the cream pane — the worst
+# contrast in the set, on the colour whose whole job is to be noticed. It is 130
+# at 4.1:1. `complete` and `promoted` are deliberately close, both being greens:
+# they mean the same good thing one gate apart.
 STATE_HUE = {
     "light": {
         "blocked": 124,
         "failed": 124,
         "stopped": 124,
         "abandoned": 124,
-        "stalled": 166,
+        "stalled": 130,
         "complete": 28,
         "promoted": 22,
+        "dispatched": 241,
+        "working": 26,
+        "running": 26,
+        "unknown": 124,
+        "unpromoted": 30,
     },
     "dark": {
         "blocked": 203,
@@ -56,12 +78,24 @@ STATE_HUE = {
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
+        "dispatched": 245,
+        "working": 75,
+        "running": 75,
+        "unknown": 203,
+        "unpromoted": 80,
     },
 }
 
-# States a reader must act on. They are the only ones allowed to carry a reason,
-# and only when they are being entered.
-NEEDS_ACTION = frozenset({"blocked", "failed", "stalled", "stopped", "abandoned"})
+# States a reader must act on: the ones that have stopped progressing and want
+# the coordinator. One set serves three purposes that have to agree — it is the
+# `blocked` bucket the fleet counter reports, the set of states allowed to carry
+# a reason, and the set allowed to keep one. Written out three times they drifted:
+# `unknown` counted as blocked and was permitted an explanation, but rendered
+# without it, so the number said something needed attention and the line did not
+# say what.
+NEEDS_ACTION = frozenset(
+    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown"}
+)
 
 # An internal classification longer than the column it must occupy. The display
 # term matches the bucket the fleet counter already reports, so one word means

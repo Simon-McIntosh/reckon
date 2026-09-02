@@ -19,7 +19,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
-from reckon.crew.ticker import Ticker, single_clause
+from reckon.crew.ticker import NEEDS_ACTION, Ticker, single_clause
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -539,11 +539,9 @@ def agent_label(pointer: Mapping[str, Any]) -> str:
     return model or effort
 
 
-# The states whose detail says why a reader must act. Every other state is
-# reported without one.
-EXPLAINED_STATES = frozenset(
-    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown"}
-)
+# A state that needs action is exactly a state that may explain itself, so this
+# is the grid's set rather than a second copy of it.
+EXPLAINED_STATES = NEEDS_ACTION
 
 
 def _watch_snapshot(
@@ -611,14 +609,9 @@ def _watch_snapshot(
 # described two workers working.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
 FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
-FLEET_BLOCKED_STATES = (
-    "blocked",
-    "failed",
-    "stalled",
-    "stopped",
-    "abandoned",
-    "unknown",
-)
+# The same set again: what the counter calls blocked is what a reader must act
+# on, and a state in one and not the other is a number nobody can explain.
+FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION))
 
 
 def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:

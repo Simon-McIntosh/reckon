@@ -187,16 +187,49 @@ def test_a_worker_keeps_one_colour_and_neighbours_differ():
     assert hue(first) != hue(other)
 
 
-def test_no_identity_colour_is_also_an_alarm_colour():
-    """A worker's colour must never read as a state alarm.
+def test_no_identity_colour_is_also_a_verdict_colour():
+    """A worker's colour must never read as a verdict about that worker.
 
-    If identity and severity share a hue, a red worker looks blocked while it is
-    running and a calm-coloured worker looks fine while it is stuck.
+    Identity may sit near a neutral state hue — a worker coloured like `working`
+    is harmless, since the two occupy different columns and neither is a claim
+    about the other. Sharing a hue with blocked, stalled, complete or promoted
+    is a false verdict: a worker looks finished while it runs, or stuck while it
+    is fine.
     """
     for theme in ("light", "dark"):
         identity = set(ticker_module.PALETTE[theme])
-        alarm = set(ticker_module.STATE_HUE[theme].values())
-        assert identity.isdisjoint(alarm), theme
+        verdicts = {
+            ticker_module.STATE_HUE[theme][name] for name in ticker_module.VERDICTS
+        }
+        assert identity.isdisjoint(verdicts), theme
+
+
+def test_every_state_the_snapshot_can_emit_has_a_colour():
+    """Both sides of the arrow are painted, so a bare state is a gap.
+
+    Extending the set of states without extending the palette leaves the new one
+    rendering dim on a line where every neighbour is coloured, which reads as
+    missing data rather than as a state.
+    """
+    # Every state _watch_snapshot can produce: the manifest statuses, the phases
+    # it maps, the recovery classifications it falls through to, and the
+    # promotion the transition fold synthesises.
+    emitted = {
+        "dispatched",
+        "working",
+        "running",
+        "complete",
+        "blocked",
+        "failed",
+        "stalled",
+        "stopped",
+        "abandoned",
+        "unknown",
+        "promoted",
+    } | set(ticker_module.DISPLAY.values())
+    for theme in ("light", "dark"):
+        missing = emitted - set(ticker_module.STATE_HUE[theme])
+        assert not missing, (theme, sorted(missing))
 
 
 def test_the_session_column_does_not_eat_the_node_column():
@@ -248,3 +281,21 @@ def test_both_sides_of_a_transition_are_painted_by_the_state_map():
     assert f"\x1b[38;5;{hues['blocked']}m" not in routine
     # The two read differently, which is the whole point of painting the source.
     assert plain(recovered) != plain(routine)
+
+
+def test_the_action_set_is_one_set_with_three_readers():
+    """The blocked bucket, the states that may explain themselves, and the ones
+    the grid lets carry a reason are the same proposition.
+
+    Written out separately they drifted: `unknown` counted toward the blocked
+    number and was allowed to keep its detail, but rendered without it, so the
+    count said something needed attention and the line would not say what.
+    """
+    from reckon.crew import recovery
+
+    assert set(recovery.EXPLAINED_STATES) == set(ticker_module.NEEDS_ACTION)
+    assert set(recovery.FLEET_BLOCKED_STATES) == set(ticker_module.NEEDS_ACTION)
+    # And each one is painted, since a state that needs action must be visible.
+    for theme in ("light", "dark"):
+        for state in ticker_module.NEEDS_ACTION:
+            assert state in ticker_module.STATE_HUE[theme], (theme, state)
