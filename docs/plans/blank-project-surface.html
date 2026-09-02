@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="blank-project-surface">
-  <meta name="plan-title"     content="Blank Project Surface">
-  <meta name="plan-summary"   content="A project page renders nothing while every asset and payload it needs returns 200: find the render fault, repair it, and catch the next one.">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="blank-project-surface">
+  <meta name="plan-title" content="Blank Project Surface">
+  <meta name="plan-summary" content="A project page renders nothing while every asset and payload it needs returns 200: find the render fault, repair it, and catch the next one.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S12">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling">
+  <meta name="plan-sprint" content="S12">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
   <title>Blank Project Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-02">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -87,6 +89,56 @@
     for <code>reckon</code> — so a data-shape fault and a scale-dependent fault are
     both live hypotheses, and size alone is not evidence for either.</p>
 
+    <h3 id="s1-state-format">Measured: this is the only project on the distributed state format</h3>
+
+    <p>Across the thirteen mounted projects, <code>nova</code> is the only one
+    whose state directory carries a <code>manifests/</code> tree — the marker of
+    the distributed sprint / milestone / blocker layout. Every other mount still
+    keeps a single live aggregate. That is a candidate explanation for the
+    project-specificity §2 must account for, and it is an input to the
+    investigation rather than a verdict.</p>
+
+    <table>
+      <thead>
+        <tr><th>Project</th><th><code>manifests/</code></th><th><code>projection.json</code></th><th><code>index.json</code> on disk</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>nova</code></td><td>present</td><td>absent</td><td>92&nbsp;999 bytes, frozen</td></tr>
+        <tr><td><code>imas-efit</code></td><td>absent</td><td>absent</td><td>577&nbsp;678 bytes, live</td></tr>
+        <tr><td><code>imas-codex</code></td><td>absent</td><td>absent</td><td>39&nbsp;724 bytes, live</td></tr>
+        <tr><td><code>reckon</code></td><td>absent</td><td>absent</td><td>11&nbsp;860 bytes, live</td></tr>
+        <tr><td>the remaining eight mounts</td><td>absent</td><td>absent</td><td>live</td></tr>
+      </tbody>
+    </table>
+
+    <p>Three consequences of that migration are measured and worth carrying into
+    §2:</p>
+
+    <ul>
+      <li><strong>The aggregate this project serves is frozen.</strong> Its
+      <code>index.json</code> carries a <code>superseded</code> block dated
+      2026-08-24 declaring itself no longer authoritative. Its <code>data</code>
+      retains <code>sprints</code> (15, as they stood at migration),
+      <code>timeline</code> and <code>blockers</code> — and has no
+      <code>milestones</code>, no <code>inventory</code> and no
+      <code>north_stars</code> key at all.</li>
+
+      <li><strong>The loader's preferred source does not exist here.</strong>
+      <code>docs/ui/state-loader.js</code> requests
+      <code>state/&lt;project&gt;/projection.json</code> first and falls back to
+      <code>index.json</code> when it 404s. <code>reckon</code> writes
+      <code>projection.json</code> only for a distributed project, and no such
+      file exists for this one — so the single project that should have it is the
+      one without it, and it takes the fallback meant for the projects it no
+      longer resembles.</li>
+
+      <li><strong>What the server returns is not what is on disk.</strong>
+      <code>GET /state/nova/index.json</code> answers with 1&nbsp;801&nbsp;471
+      bytes against a 92&nbsp;999-byte file: the served aggregate is composed at
+      read time from the distributed resources. Any reproduction must therefore
+      exercise the served payload, not the file.</li>
+    </ul>
+
     <h2 id="s2">§2 — Root cause</h2>
 
     <p>Identify the exact failing code path: the module, the expression, and the
@@ -135,35 +187,31 @@
     and after the fix is not a guard.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="guard-mechanism" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What produces the render verdict in §4?</p>
-        <p class="r-dec-ctx">Settled by the §2 finding: the mechanism must be able
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="guard-mechanism" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What produces the render verdict in §4?</p>
+    <p class="r-dec-ctx">Settled by the §2 finding: the mechanism must be able
         to observe the fault that was actually found, and must run on a host whose
         headless-browser navigation is unproven.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="module-eval">Evaluate the modules directly, no browser</button>
-          <button class="r-opt" data-value="node-capture">Node render capture</button>
-          <button class="r-opt" data-value="browser-harness">Headless browser harness</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="module-eval">Evaluate the modules directly, no browser</button>
+      <button class="r-opt" data-value="node-capture">Node render capture</button>
+      <button class="r-opt" data-value="browser-harness">Headless browser harness</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-bps-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-02">
-        <h4 class="r-fu-title">Find the render fault behind the blank nova surface</h4>
-        <div class="r-fu-body">
-          <p>Authoring complete. §2 is the entry point: name the module, the
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bps-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Find the render fault behind the blank nova surface</h4>
+    <div class="r-fu-body"><p>Authoring complete. §2 is the entry point: name the module, the
           expression and the value that stops the render, and explain why this
-          project reaches it and another does not. §3 and §4 follow that finding.</p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship blank-project-surface §2</pre>
-      </article>
-    </section>
+          project reaches it and another does not. §3 and §4 follow that finding.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship blank-project-surface §2</pre>
+    </article>
+</section>
 
   </main>
 </body>
