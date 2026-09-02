@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T16:06:03",
+  "updated": "2026-09-02T16:07:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -35006,9 +35006,115 @@
           "role": "test",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T133052982501-infrastructure-failure-not-charged-to-a-configuration",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "infrastructure-failure-not-charged-to-a-configuration",
+        "node_definition": {
+          "done_when": "derive_capabilities applies the same failure-classification eligibility the ledger's worker pass rate already applies, so an observation whose promoted record carries a non-work-rejected closed classification is excluded from that configuration's success curve rather than counted as a failure, and the cache publishes the exclusion count keyed by reason so an absent slice is legible instead of silent; a codex dialect recognizer classifies a recorded wrapper error stream \u2014 a malformed tool call or a stream truncated mid-turn with no diff and no manifest \u2014 as infrastructure rather than inferring it from any failed phase, asserted against a fixture stream in tests/fixtures rather than a synthesised dict; tests in tests/test_capabilities.py assert that a run excluded this way changes neither the success rate nor the competence horizon of its configuration while a work-rejected failure still lowers both, and tests/test_backends.py asserts the recognizer accepts the wrapper error shape and rejects an ordinary gate failure; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Stop the capability cache charging a configuration for failures that produced no work",
+          "id": "infrastructure-failure-not-charged-to-a-configuration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133052982501-infrastructure-failure-not-charged-to-a-configuration/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/capabilities.py",
+            "reckon/_backends.py",
+            "tests/test_capabilities.py",
+            "tests/test_backends.py",
+            "tests/test_failure_classification.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "harness-classify",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T13:31:00Z",
+        "completed_at": "2026-09-02T14:05:01Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2041,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2041,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "809906ba6164273f6c126179e1b9119bc30aa1ce",
+        "commits": [
+          "a2e488b963235d286b0c156d1e8a76966c1d00d0"
+        ],
+        "changed_lines": {
+          "added": 194,
+          "removed": 6,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133052982501-infrastructure-failure-not-charged-to-a-configuration/logs/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T133052982501-infrastructure-failure-not-charged-to-a-configuration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06250-dac0-7401-8843-bad928919aa3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 13249280,
+            "cached_input_tokens_cumulative": 13249280,
+            "input_tokens": 13467251,
+            "input_tokens_cumulative": 13467251,
+            "output_tokens": 25967,
+            "output_tokens_cumulative": 25967,
+            "reasoning_output_tokens": 8252,
+            "reasoning_output_tokens_cumulative": 8252
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 568
+    "_version": 569
   }
 }
