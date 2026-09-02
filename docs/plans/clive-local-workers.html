@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -66,10 +66,24 @@
     finding, and an unpinned row cannot enter a calibration slice. <strong>Sessions never cross
     models</strong>: a roster member captures one session for one configuration, so DSv4 and
     GLM get distinct members.</p>
+    <p><strong>Measured 2026-09-02, and it moves what this section can deliver.</strong>
+    <code>clive --list</code> publishes exactly one route —
+    <code>deepseek-v4-flash · 2&times;H200 · fp4+fp8 · 492,288-token usable input</code> —
+    so <strong>GLM 5.3 is not served yet</strong> and its release id does not exist to be
+    authored. Authoring a backend entry against a guessed id would be a fabrication, not a
+    placeholder. What is executable now is the half that makes the entry safe to add the
+    day the catalog publishes it: <strong>the availability probe is model-blind</strong>.
+    <code>reckon flight</code> resolves availability in <code>reckon/flight.py</code> from
+    <code>command_found</code> plus an optional <code>auth_check</code> argument vector, and
+    both are properties of the <em>wrapper</em>. A <code>clive-glm</code> entry naming an
+    unserved release would therefore report available, and its dispatch would fail inside
+    the worker rather than at the refusal. The catalog is the authority the probe is missing,
+    so this section's executable node teaches the probe to check the declared model against
+    the backend's own catalog and to refuse a dispatch naming an unserved one.</p>
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
       <tbody>
-        <tr><td>Probe</td><td>One trivial read-only exec per release id, bare and with explicit effort, with the exact accept or reject response saved as a run artifact (ladder step 1).</td></tr>
+        <tr><td>Probe</td><td>One trivial read-only exec per release id, bare and with explicit effort, with the exact accept or reject response saved as a run artifact (ladder step 1). Deferred for GLM 5.3 until the catalog publishes it.</td></tr>
         <tr><td>Defined, not defaulted</td><td><code>reckon flight --project reckon</code> lists both local backends with pinned effort and shows no role or spec-level overlay selecting either without the alias of &#167;3.</td></tr>
         <tr><td>Down reads as down</td><td>With GLM unavailable the availability probe marks its backend unavailable and a dispatch naming it exits 5 with the capability refusal, asserted against the live catalog.</td></tr>
       </tbody>
@@ -168,6 +182,14 @@
     <code>declared-sandbox-is-advisory-isolation</code> review error, and it gates write access
     for every backend, not only this one. It lives here because the local lane is what it
     blocks first.</p>
+    <p><strong>Re-verified in source 2026-09-02.</strong> The claim still holds exactly as
+    written: <code>sandbox_write_roots</code> in <code>reckon/_backends.py</code> returns
+    <code>None</code> &mdash; unrestricted &mdash; for the <code>worktree-full</code> tier,
+    and the codex dialect's <code>_sandbox_flags</code> emits
+    <code>--dangerously-bypass-approvals-and-sandbox</code> for it, with the comment already
+    in the file giving the reason: a sandbox is inherited by child processes and would break
+    the test runners a gate depends on. So nothing between the worker and the shared checkout
+    is enforced today, for any backend.</p>
     <p>Enforce without sandboxing children: at promotion, diff the main checkout and every
     peer worktree against their state at dispatch and refuse a run whose footprint touched a
     path outside its own worktree and declared scope, naming the path; at dispatch, record
