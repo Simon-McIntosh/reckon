@@ -522,30 +522,87 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     transcript is not read as cleaner than it was.</p>
   </section>
 
+  <section id="integrated-suite">
+    <h2>Green on the integrated tip — 2026-09-02</h2>
+
+    <p>One full-suite run at the integrated revision <code>b03b982</code>, captured once:
+    <strong>2,653 passed, 0 failed, 0 errors, 28 skipped in 935.67s</strong>. The integrated failure
+    set is empty, so no failure needed reproducing against the pre-merge base
+    <code>036bf45</code> and <strong>0 failures were newly introduced</strong> by this session's
+    merges. The count is stated as a delta against that base rather than as a target, because an
+    absolute pass count is one of the moving figures this plan exists to stop recording.</p>
+
+    <p>The verification node also reported a provisioning gap it was fenced out of repairing: the
+    dispatched worktree carried neither a <code>.venv</code> symlink to the root checkout nor the
+    gitignored <code>.env</code>, so it ran the suite through the root interpreter's absolute path.
+    Measured across all 14 live worktrees under the fleet root, spanning at least five sessions,
+    <strong>14 of 14 report both missing</strong> — but <strong>0 of 14 hold a real
+    <code>.venv</code> directory</strong>, so the duplicated-environment failure the provisioning
+    rule exists to prevent is not occurring. Routed to the plan that owns dispatch behaviour rather
+    than fixed here.</p>
+  </section>
+
+  <section id="drain-ledger">
+    <h2>Drain ledger — 2026-09-02</h2>
+
+    <table>
+      <thead><tr><th>Row</th><th>Disposition</th><th>Where it went</th></tr></thead>
+      <tbody>
+        <tr><td><code>f-dgs-005</code> — retire the prose, migrate the held plans, then sweep</td>
+        <td><strong>folded</strong></td>
+        <td>nodes <code>retire-prose-op</code> and <code>migrate-held-plan-gates</code>; resolved</td></tr>
+        <tr><td><code>f-eoh-cross-repo-node</code> — the condition holding <code>sweep-complete</code></td>
+        <td><strong>folded</strong>, no node required</td>
+        <td>verified already landed at <code>bc30c9a</code> on 2026-08-24 and resolved with that
+        evidence; nothing was left to build</td></tr>
+        <tr><td><code>f-dgs-006</code> — run the portfolio sweep</td>
+        <td><strong>authority-required</strong></td>
+        <td>this host's command classifier refuses a dispatch writing outside the orchestrator's own
+        repository, and refuses writing the permission rule that would allow it; an operator action,
+        not a node</td></tr>
+        <tr><td><code>suite-on-integrated-tree</code> manifest follow-on — worktree provisioning
+        omits the environment symlinks</td>
+        <td><strong>foreign-owner</strong></td>
+        <td><code>execution-orchestration-hardening</code>, as
+        <code>f-eoh-worktree-provisioning</code> — an active plan, so the row is tracked rather than
+        parked on a completed one</td></tr>
+        <tr><td><code>retire-prose-op</code> and <code>migrate-held-plan-gates</code> manifests</td>
+        <td>—</td><td>both reported <code>follow_ons: none</code></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>rows: 5 · foldable-remaining: 0 · unreconciled-runs: 0.</strong> The run count is read
+    from the live pointers rather than from memory. One pointer belonging to a concurrent session was
+    outstanding while this ledger was being written and that session promoted it, so no deliberate
+    remainder had to be recorded.</p>
+  </section>
+
   <section id="open">
     <h2>What is still open</h2>
 
-    <p>Three things remain, and none of them is unfinished work in the ordinary sense — each is held
-    by a named condition.</p>
+    <p>Superseded on 2026-09-02. Of the three conditions listed here, two are discharged and the
+    third has changed hands — <strong>13 of 14 gates now pass</strong>.</p>
 
     <ul>
-      <li><strong>Wave fence honoured.</strong> The mechanism landed, but no wave was actually
-      refused by a gate this session; the two waves that did not open were held by a dispatch gap and
-      by concurrency instead. Recording a manufactured transcript would defeat the gate, so it stays
-      open until a real gate refusal happens.</li>
-      <li><strong>Own gates migrated.</strong> Three plans of the sprint set were being written by
-      other sessions throughout. The migration needs a quiet window on those documents, not more
-      effort.</li>
-      <li><strong>Sweep complete.</strong> Held on the cross-repository dispatch gap recorded on the
-      orchestration plan. The survey is done and written down, so the work resumes from an inventory
-      rather than a re-scan.</li>
+      <li><strong>Wave fence honoured — passed.</strong> A gate genuinely closed a wave and passing
+      it opened that wave, with both halves recoverable from the run ledger and git history rather
+      than from prose. See <a href="#wave-fence">the transcript</a>.</li>
+      <li><strong>Own gates migrated — passed.</strong> The quiet window arrived and the migration
+      ran as a state write. See <a href="#own-gates-migration">the migration</a>.</li>
+      <li><strong>Sweep complete — still open, on a different condition.</strong> The
+      cross-repository dispatch gap was repaired upstream at <code>bc30c9a</code> and verified live,
+      so what holds the sweep now is a host permission boundary rather than a missing capability.
+      Its required evidence also still carries figures frozen on 2026-08-12 that have drifted, so
+      the gate must be re-measured before it can be met.</li>
     </ul>
 
-    <p>Two mechanisms were found missing while doing the work, and both are recorded as sections on
-    the plan rather than as handoffs: a node cannot be dispatched into a repository other than the
-    one holding its plan, and there is no op that retires the authored prose a gate section
-    supersedes — so every migration in this record went through raw HTML inside a worktree, announced
-    as a bypass each time.</p>
+    <p>Of the two missing mechanisms recorded here, one is built and one is not. Prose retirement is
+    now a state op, so a migration no longer needs a bypass — this record's last migration used
+    none. Cross-repository dispatch turned out to be already repaired. What replaced them is
+    narrower and sharper: <strong>no op amends a declared gate's <code>measure</code> or
+    <code>required_evidence</code></strong>, only its evidence link, so a gate measured wrong stays
+    correctable only by hand. That is the same decay class as persisted <code>blocked</code>, in the
+    one place this plan has not yet reached.</p>
   </section>
 </main>
 </body>
