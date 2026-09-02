@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type"  content="evidence">
+  <meta name="plan-slug"    content="blank-project-surface-landed">
+  <meta name="plan-title"   content="Blank Project Surface — Landed Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the blank project surface: the stale service, the module skew it served, and the hypotheses the measurement excluded.">
+  <meta name="plan-evidence-for" content="blank-project-surface">
+  <meta name="plan-verifies" content="blank-project-surface#s2">
+  <meta name="plan-tags"    content="reckon-tooling">
+  <title>Blank Project Surface — Landed Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s2">§2 — Root cause: the served entry point went stale</h2>
+
+    <p>Landed 2026-09-02, commit <code>edd4488</code>, node
+    <code>spa-project-render-fault</code>, gate passed
+    (<code>reckon audit-doc … --check-links</code>, exit 0, 0 ERROR).
+    Full research record:
+    <a href="/reckon/research/spa-project-render-fault">spa-project-render-fault</a>.</p>
+
+    <h3 id="s2-cause">The measurement</h3>
+
+    <p>The managed service entered its active state at
+    <strong>2026-09-01 22:10:59</strong>. Commit <code>737340f</code>, which
+    replaced the hard-coded entry-point renderer with one derived from the
+    authored index, landed at <strong>22:31:27</strong> — twenty minutes into the
+    life of the process that was still serving. The running server therefore
+    emitted the entry point as it existed before that commit, and kept doing so
+    for the following day.</p>
+
+    <table>
+      <thead>
+        <tr><th>Quantity</th><th>Served by the stale process</th><th>Authored in <code>docs/index.html</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>&lt;script&gt;</code> tags</td><td>14</td><td>22</td></tr>
+        <tr><td><code>/_ui/*</code> modules</td><td>12</td><td>20</td></tr>
+        <tr><td><code>shell-*</code> modules</td><td>0</td><td>8</td></tr>
+      </tbody>
+    </table>
+
+    <p>The eight absent modules were <code>shell-route</code>,
+    <code>shell-topbar</code>, <code>shell-plans</code>,
+    <code>shell-titlebar</code>, <code>shell-ready</code>,
+    <code>shell-palette</code>, <code>shell-overview</code> and
+    <code>shell-prompt</code>. With <code>shell-ready</code> absent,
+    <code>window.ReckonShell?.ready?.ReadyGate</code> evaluated to
+    <code>undefined</code>, and the composition root took its fallback branch:
+    <code>&lt;main data-shell-modules="unavailable"&gt;</code> with a child count
+    of zero.</p>
+
+    <p><strong>No exception was thrown.</strong> That is the property that made
+    the failure expensive: an empty document, a clean server log, every request
+    answering 200, and no error anywhere to point at the cause.</p>
+
+    <figure>
+      <svg viewBox="0 0 700 132" width="100%" role="img"
+           aria-label="Fault chain: a service older than the entry-point commit serves twelve of twenty modules, so the readiness gate is undefined and the shell renders zero children with no exception.">
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">
+          <text x="0" y="14" font-size="12" fill="#6a6a6a">service started 22:10:59 · entry-point fix committed 22:31:27</text>
+          <rect x="1" y="30" width="150" height="36" fill="none" stroke="#9a9a9a"/>
+          <text x="76" y="52" text-anchor="middle">process predates fix</text>
+          <rect x="177" y="30" width="150" height="36" fill="none" stroke="#9a9a9a"/>
+          <text x="252" y="52" text-anchor="middle">12 of 20 modules</text>
+          <rect x="353" y="30" width="150" height="36" fill="none" stroke="#9a9a9a"/>
+          <text x="428" y="52" text-anchor="middle">ReadyGate undefined</text>
+          <rect x="529" y="30" width="170" height="36" fill="none" stroke="#c0392b" stroke-width="1.5"/>
+          <text x="614" y="52" text-anchor="middle" fill="#c0392b">0 children, no throw</text>
+          <path d="M151 48 H177 M327 48 H353 M503 48 H529" stroke="#9a9a9a"/>
+          <text x="0" y="96" font-size="12" fill="#6a6a6a">every mount identically affected — nova, reckon, imas-codex, imas-ambix, imas-efit</text>
+          <text x="0" y="116" font-size="12" fill="#6a6a6a">excluded by measurement: payload scale · distributed state format</text>
+        </g>
+      </svg>
+      <figcaption>The chain from a long-lived process to a silent empty render.</figcaption>
+    </figure>
+
+    <h3 id="s2-excluded">What the measurement excluded</h3>
+
+    <p>Two hypotheses were raised from the reported symptom and both were
+    falsified rather than merely set aside:</p>
+
+    <ul>
+      <li><strong>Project-specificity.</strong> The report named one project, and
+      the first framing accepted that. Measured afterwards, all five checked
+      mounts served the identical broken entry point. The home page continued to
+      render because it does not depend on the missing modules, so its health
+      never evidenced a mounted shell.</li>
+
+      <li><strong>Payload scale and the distributed state format.</strong> This
+      project is genuinely the only mount carrying a <code>manifests/</code> tree
+      and genuinely the largest payload (1.81&nbsp;MB against 0.74&nbsp;MB for
+      <code>reckon</code>). Neither is causal: mounts on the single live
+      aggregate, at a fifth of the payload, were blank in the same way at the
+      same time.</li>
+    </ul>
+
+    <h3 id="s2-repair">Immediate repair</h3>
+
+    <p><code>reckon service restart</code>. Verified afterwards: every mount
+    serves 22 script tags, and the served <code>/_ui</code> module list diffs
+    identically against <code>docs/index.html</code>. All eight
+    <code>shell-*</code> modules resolve 200.</p>
+
+    <p>This repairs the instance and not the class. Two defects the incident
+    exposed remain open on the plan: the fallback renders a blank document
+    silently rather than a legible failure, and no check in roughly thirty
+    <code>test_spa_*</code> suites asserts that a project surface renders
+    anything at all.</p>
+
+    <h3 id="s2-harness">Reusable harness inventory</h3>
+
+    <p>The node catalogued the machinery already available for a regression
+    guard, so the §4 work extends rather than duplicates it:
+    <code>tests/spa_module_eval.py</code>,
+    <code>tests/spa_render_capture.mjs</code>,
+    <code>tests/spa_browser_harness.py</code>, and the
+    <code>test_spa_*.py</code> suites, with per-entry fitness verdicts recorded
+    in the research document.</p>
+
+  </main>
+</body>
+</html>

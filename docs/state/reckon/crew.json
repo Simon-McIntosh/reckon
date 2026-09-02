@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T18:18:55",
+  "updated": "2026-09-02T18:33:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -35868,9 +35868,232 @@
           "role": "review",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T153539322822-spa-project-render-fault",
+        "plan": "blank-project-surface",
+        "section": "\u00a72",
+        "node": "spa-project-render-fault",
+        "node_definition": {
+          "done_when": "The research doc names the failing module, the expression that throws, and the offending value; it quotes a recorded command that reproduces the empty render for nova and a matching command showing a non-empty render for another mounted project on the same code; it lists the existing SPA harness modules and test suites reusable for a regression guard with a one-line fitness verdict each; reckon audit-doc on the file reports no ERRORs",
+          "estimated_hours": null,
+          "goal": "Record the root cause of the blank nova project surface in docs/research/spa-project-render-fault.html",
+          "id": "spa-project-render-fault",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/manifest.md",
+          "plan": "blank-project-surface",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "open",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/research/spa-project-render-fault.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "open",
+        "member": "spa-render-fault",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T15:35:50Z",
+        "completed_at": "2026-09-02T16:06:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1852,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1852,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "09fbbcd4b7d1e626a166af5b369e46bf51b77112",
+        "commits": [
+          "edd448891e6ab661fecc7cd9a3a7c42bd4c64837"
+        ],
+        "changed_lines": {
+          "added": 260,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/research/spa-project-render-fault.html --project reckon --check-links",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/logs/audit-doc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a062c3-2354-7912-8b91-e27f1185c3c8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 235776,
+            "cached_input_tokens_cumulative": 235776,
+            "input_tokens": 240696,
+            "input_tokens_cumulative": 240696,
+            "output_tokens": 1788,
+            "output_tokens_cumulative": 1788,
+            "reasoning_output_tokens": 817,
+            "reasoning_output_tokens_cumulative": 817
+          },
+          "cost_usd": null,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260902T162151053861-read-only-tier-delivery-discriminator",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "read-only-tier-delivery-discriminator",
+        "node_definition": {
+          "done_when": "The report at the write path answers, with the evidence for each: whether reckon/_backends.py maps the read-only tier for the Claude dialect to --permission-mode plan and what that mode does to a Write tool call versus a shell redirection, cited to source and to the recorded streams; and what distinguishes run r-20260902T133214247667-shadowable-node-census, whose Write to its manifest and whose Bash-written report both landed, from runs r-20260902T140952258990 and r-20260902T152952677794, whose Write to their declared report path produced no file. All three ran the same dialect at the same tier, so a difference in role, in argv, in tool sequence, in whether a plan-mode exit was offered or taken, or in the target path must be identified from the three stream.jsonl files under the run directories and named exactly; if the streams cannot separate them, the report says so and names the one observation that would. It must also state whether --effort reaches the agentic loop, given that a single-turn probe of the wrapper returns 0, 1 and 1 thinking blocks at medium, high and xhigh while both agentic runs report output_tokens_details.thinking_tokens of 0 at medium and at xhigh alike. Close with a verdict on whether an investigate or review node on this dialect can be relied on to deliver a file-based deliverable today, and what would have to change. Do not modify any repository file; the deliverable is the report",
+          "estimated_hours": null,
+          "goal": "Settle whether the read-only tier can deliver a file at all on the Claude dialect, and what separates the run that did from the two that did not",
+          "id": "read-only-tier-delivery-discriminator",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162151053861-read-only-tier-delivery-discriminator/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "local-scout",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-02T16:21:57Z",
+        "completed_at": "2026-09-02T16:32:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 652,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 652,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "96c06b96188978b923c21e951e7d7623538441d7",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "read-only evidence validation: report line/byte count, 3/3 required run ids, rg resolution of every claimed source symbol, jq parse of init/result/tool events from all three streams, clean worktree",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162151053861-read-only-tier-delivery-discriminator/logs/validation.txt",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T162151053861-read-only-tier-delivery-discriminator/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06244-52f7-7290-a188-8f356fff7a85",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 974,
+              "log_age_seconds": 914,
+              "log_fresh": false,
+              "manifest_commits": [
+                "edd448891e6ab661fecc7cd9a3a7c42bd4c64837"
+              ],
+              "manifest_derived": false,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T153539322822-spa-project-render-fault/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "next_action": "reckon crew complete --run r-20260902T153539322822-spa-project-render-fault --gate <verdict> --commit edd448891e6ab661fecc7cd9a3a7c42bd4c64837",
+              "node": "spa-project-render-fault",
+              "phase": "complete",
+              "plan": "blank-project-surface",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260902T153539322822-spa-project-render-fault",
+              "session": "spa-blank-01",
+              "terminal_age_seconds": 927,
+              "terminal_at": "2026-09-02T16:06:29Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/spa-blank-01/spa-project-render-fault"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "read-only investigate node; the deliverable is the discriminator report in the durable run reports directory",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 587
+    "_version": 589
   }
 }

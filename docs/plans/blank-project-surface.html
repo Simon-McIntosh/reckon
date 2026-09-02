@@ -23,7 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="6">
+<meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837">
+<meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -154,12 +157,23 @@
       exercise the served payload, not the file.</li>
     </ul>
 
-    <h2 id="s2">§2 — Root cause</h2>
+    <h2 id="s2">§2 — Root cause <span class="badge badge-shipped">✓ landed 2026-09-02</span></h2>
 
-    <p>Identify the exact failing code path: the module, the expression, and the
-    value that reaches it. A render that produces an empty document has a
-    concrete first throw, and that throw is the deliverable — not a plausible
-    story about one.</p>
+    <p class="landed-summary">The managed service started 2026-09-01 22:10:59,
+    twenty minutes before commit <code>737340f</code> replaced the hard-coded
+    entry-point renderer — so it served 12 of 20 <code>/_ui</code> modules, all 8
+    <code>shell-*</code> among the missing. <code>ReadyGate</code> was
+    <code>undefined</code>, the composition root rendered
+    <code>data-shell-modules="unavailable"</code> with zero children, and
+    <strong>no exception was thrown</strong>. Every mount was affected
+    identically. Repaired by restart: 22 scripts served, module list identical to
+    the authored index. Full record:
+    <a href="/reckon/evidence/archive/blank-project-surface-landed#s2">§2 landed</a>
+    (commit <code>edd4488</code>).</p>
+
+    <p>There was no throw to find — the deliverable turned out to be the silent
+    fallback itself, which is why §3 and §4 below are the substantive remainder
+    rather than tidy-up.</p>
 
     <p>The repository already carries machinery for evaluating the surface
     without a live browser: <code>tests/spa_module_eval.py</code>,
@@ -203,17 +217,17 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="guard-mechanism" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="guard-mechanism" data-choice="module-eval" data-by="reckon-ship" data-when="2026-09-02T16:33:43+00:00">
     <p class="r-dec-q">What produces the render verdict in §4?</p>
     <p class="r-dec-ctx">Settled by the §2 finding: the mechanism must be able
         to observe the fault that was actually found, and must run on a host whose
         headless-browser navigation is unproven.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="module-eval">Evaluate the modules directly, no browser</button>
+      <button class="r-opt chosen" data-value="module-eval">Evaluate the modules directly, no browser</button>
       <button class="r-opt" data-value="node-capture">Node render capture</button>
       <button class="r-opt" data-value="browser-harness">Headless browser harness</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The §2 finding settles it: the fault is a silent fallback with no thrown exception, observable by evaluating the served modules and reading the composition root&#x27;s child count. That needs no browser, which matters because headless-Chrome navigation is unproven on this host. The node already produced served-shell-module-eval.json by exactly this route.</p>
     </div>
 </section>
 
@@ -228,6 +242,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260902T153539322822-spa-project-render-fault" data-who="spa-render-fault" data-when="2026-09-02T16:06:42Z">
+    <div class="r-comment-body"><p>Root cause: the managed service predated commit 737340f, so every mount served 12 of 20 /_ui modules and the shell fell back silently to zero children. Independently verified; restart repaired all mounts. Payload scale and distributed state format excluded.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
