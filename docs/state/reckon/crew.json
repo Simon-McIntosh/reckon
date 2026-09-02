@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T22:48:39",
+  "updated": "2026-09-02T22:59:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -36920,9 +36920,118 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260902T202552922178-silent-delivery-becomes-a-repairable-row",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "silent-delivery-becomes-a-repairable-row",
+        "node_definition": {
+          "done_when": "reckon crew recover, on a pointer whose stream reached a terminal event with no manifest, writes a provisional manifest next to the run from the final message and the worktree diff, marks it derived so it is never advised for promotion and never reads as delivered, records the delivery gap on the run record, and names the repair command in its next_action; the pre-existing abandoned classification and its refusal to advise promotion are preserved rather than replaced, so a run with no diff and no final message still classifies abandoned with nothing derived; recovery takes no lock it does not already take and the derivation is read-only with respect to reckon/crew/promotion.py; tests in tests/test_crew_recovery.py assert the derived manifest is produced with its marker, that promotion advice is still withheld, that a genuinely empty run derives nothing, and that a worker-written manifest is never overwritten; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Turn a run that did correct work and never wrote its manifest into a repairable row instead of a lost node",
+          "id": "silent-delivery-becomes-a-repairable-row",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202552922178-silent-delivery-becomes-a-repairable-row/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-02T20:25:54Z",
+        "completed_at": "2026-09-02T20:52:35.015Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1589,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1601,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "809906ba6164273f6c126179e1b9119bc30aa1ce",
+        "commits": [],
+        "changed_lines": {
+          "added": 313,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "Shadow of a sol/medium primary onto deepseek-v4-flash, same node, same base 809906b, same two declared paths. Volume comparable and arguably higher: 313 insertions against the primary's 246, in scope, no stray paths. But the manifest stops after changed_paths \u2014 no tests, no test_logs, no gate \u2014 so correctness is unmeasured and this qualifies nothing. Second time a local worker has produced real work with an incomplete manifest, which is the delivery-contract gap rather than a capability gap, and it lands on the very node about silent delivery. Gate recorded not-run rather than passed, because claiming a verdict the manifest does not carry is the failure this plan exists to stop.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202552922178-silent-delivery-becomes-a-repairable-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "6e9cc6ba-e2bb-44ae-a85c-4faa28d9bfbd",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260902T133132431763-silent-delivery-becomes-a-repairable-row"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260902T202552922178-silent-delivery-becomes-a-repairable-row/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "no_commit": "shadow run by design; its evidence is the retained worktree patch, never a merged commit",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 602
+    "_version": 603
   }
 }
