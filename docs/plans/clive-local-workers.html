@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="37">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.62">
+<meta name="plan-impl" content="0.57">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835">
 </head>
 <body>
@@ -312,6 +312,18 @@
       qualification programme for a model whose whole point is that it needs a different
       effort from the incumbent. An override that cannot be honoured must refuse; one that
       is honoured must move the resolved value and say so.</li>
+      <li><strong>Session reuse is fenced to the model and not to the effort.</strong> Found
+      one command after the item above, by watching an argv. Re-dispatching a failed node to
+      the same roster member at a different effort emitted
+      <code>--resume &lt;prior-session&gt; --effort xhigh</code>: the roster stores sessions
+      keyed by model alone, so the run inherited seventy minutes of the <em>medium</em>
+      configuration's context while claiming to measure <code>xhigh</code>. The earlier fence
+      that stopped sessions crossing models was right and is simply drawn one dimension too
+      narrow &mdash; effort is part of the configuration a slice is keyed on, so a session
+      carried across it confounds exactly the comparison the ledger exists to make, and does
+      so invisibly because the run record shows only the effort it was launched with. Key the
+      stored session on the resolved configuration rather than the model, so a changed effort
+      starts clean and an unchanged one still reuses.</li>
     </ul>
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
@@ -392,6 +404,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260902-classification-detail" data-who="reckon-ship" data-when="2026-09-02T14:12:00Z">
     <div class="r-comment-body">§7's third strengthening landed — run r-20260902T133052982501, member harness-classify at gpt-5.6-sol/medium, 1,584 worker-seconds, first attempt, no scope change; commit a2e488b merged, 194 insertions and 6 deletions across four of the five authorised paths, 4 tests added. Gate: full suite 2,657 passed 0 failed in 922s against a zero-failure baseline, delta +4 passed and +0 failed; focused 58 passed; scoped ruff output lines down from 15 to 10. The worker also checked that its baseline revision differed from the dispatch base only in a plan HTML file with no delta under reckon, tests, pyproject or the lockfile — which is what makes the delta claim mean anything. The defect was an asymmetry rather than an absence: ledger.summary already refused to charge worker pass rate for failures that were not the worker's, and derive_capabilities set success from gate == passed alone, so a malformed tool call or a truncated stream lowered the very configuration it carried no information about. Both halves now read the same eligibility — passed and work-rejected enter the success curve; correct-refusal, malformed-node, infrastructure-failure, pre-existing-failure, negative-result, unclassified failures and not-run are excluded with their reason counted globally and per configuration. A configuration whose every run was excluded stays visible with runs 0, an empty curve and a null horizon rather than vanishing, so an absent slice is legible instead of silent. The Codex recognizer is deliberately narrow: it requires a started but unfinished turn, an exited process, no diff AND no manifest, so infrastructure is never inferred from a generic failed phase, and its coverage is a recorded stream fixture rather than a synthesised dict. Measured effect on a scenario: an infrastructure-classified run changes neither the success curve nor the 4.0-hour competence horizon, while one work-rejected failure still drops that rate to 0.667 and the horizon to 1.0 hour. impl 6 of 12.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260902-session-effort-fence" data-who="reckon-ship" data-when="2026-09-02T15:32:00Z">
+    <div class="r-comment-body">§7 gains a seventh item, found one command after the sixth and by the same activity — trying to run the local lane at the effort it should be measured at. Re-dispatching the failed review to the same roster member at xhigh emitted argv containing --resume 066f04b2-75c1-43f0-aa27-0d72a67b340f alongside --effort xhigh: the roster keys sessions by model alone, visible in crew.json as sessions {model: id}, so the run would have inherited the failed medium run's seventy minutes of context while its record claimed xhigh. Caught before it produced anything; the run was stopped, discarded, its worktree reclaimed, and the node relaunched on a fresh member with no resume in the argv. Two observations worth keeping. The prior fence that stopped sessions crossing models was correct and is drawn one dimension too narrow — effort is part of the configuration a calibration slice is keyed on, so a session carried across it confounds the comparison invisibly, because the run record shows only the effort it was launched with and nothing about the context it inherited. And this is the third confound of the same family found in one session: an uninherited budget, an unapplied effort override, and now an over-inherited session. All three are dimensions that move or fail to move without the record saying so truthfully, which is what makes them expensive: they do not fail, they mislead. impl re-based to 8 of 14.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
