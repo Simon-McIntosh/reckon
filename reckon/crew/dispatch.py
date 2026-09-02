@@ -1229,6 +1229,16 @@ def _shadow_dispatch_config(
 
     explicit = {str(config_key) for config_key in configuration_overrides}
     effective = dict(candidate)
+    if "effort" in explicit:
+        backend = config.get("backends", {}).get(candidate_backend, {})
+        role = config.get("roles", {}).get(node.role, {})
+        # The CLI accepts both candidate-backend and direct-role spellings. Its
+        # routing overlays may otherwise hide either value before this point,
+        # so recover the explicitly named setting from its owning layer.
+        if "effort" in role:
+            effective["effort"] = role["effort"]
+        elif "effort" in backend:
+            effective["effort"] = backend["effort"]
     for config_key in ("effort", "sandbox"):
         if config_key not in explicit:
             effective[config_key] = primary_agent.get(config_key)
