@@ -528,6 +528,23 @@ def _resolved_flight(flight_module, project, checkout_path, overrides):
         raise click.ClickException(str(exc)) from exc
 
 
+def _model_availability_refusal(crew_module, flight_module, config, node):
+    """Return a typed refusal when the selected backend does not serve its model."""
+    backend_name, backend = crew_module.resolve_role(config, node.role, node.spec_level)
+    entry = flight_module.probe_availability({"backends": {backend_name: backend}})[
+        backend_name
+    ]
+    if entry.get("model_served") is not False:
+        return None
+    return {
+        "allowed": False,
+        "backend": backend_name,
+        "model": str(backend.get("model") or ""),
+        "reason": entry["detail"],
+        "refusal": "model-unavailable",
+    }
+
+
 def _repo_root(repo) -> Path:
     """Resolve the repository root a dispatch cuts its worktree from."""
     import subprocess
@@ -807,6 +824,20 @@ def crew_dispatch(
         requires_decisions=list(required_decisions),
         peer_scopes=_peer_scopes(peers),
     )
+
+    availability_refusal = _model_availability_refusal(
+        crew_module, flight_module, config, node
+    )
+    if availability_refusal is not None:
+        _emit(
+            {
+                "ok": False,
+                "error": "competence-refusal",
+                "competence": availability_refusal,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(5)
 
     if dry_run:
         try:

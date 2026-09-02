@@ -173,6 +173,24 @@ slots:
       Availability probing reports the result and never acts on it.
     multivalued: true
 
+  catalog:
+    description: >-
+      Optional declaration for asking a backend command which models it serves.
+      Availability probing runs the declared argument vector and matches the
+      configured model against its output; the declaration remains provider-neutral.
+    range: CatalogConfig
+
+  list_command:
+    description: >-
+      Argument vector that prints the models served by this backend. The vector
+      is user data and includes the executable.
+    multivalued: true
+
+  model_pattern:
+    description: >-
+      Regular expression used against each catalog output line. The required
+      `{model}` placeholder is replaced by the escaped configured model.
+
   environment:
     description: >-
       Environment variables added when this backend's worker is spawned,
@@ -363,6 +381,7 @@ classes:
       - launch
       - command
       - auth_check
+      - catalog
       - environment
       - model
       - effort
@@ -370,6 +389,12 @@ classes:
       - session_reuse
       - budget_check
       - time_budget
+
+  CatalogConfig:
+    description: Provider-neutral model catalog probe owned by a backend.
+    slots:
+      - list_command
+      - model_pattern
 
   EnvironmentVariable:
     description: One environment-variable name and its string value.

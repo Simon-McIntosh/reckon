@@ -21,6 +21,17 @@
                         "null"
                     ]
                 },
+                "catalog": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CatalogConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral."
+                },
                 "command": {
                     "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
                     "type": [
@@ -117,6 +128,17 @@
                         "boolean",
                         "null"
                     ]
+                },
+                "catalog": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CatalogConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral."
                 },
                 "command": {
                     "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
@@ -226,6 +248,31 @@
                 }
             },
             "title": "BudgetConfig",
+            "type": "object"
+        },
+        "CatalogConfig": {
+            "additionalProperties": false,
+            "description": "Provider-neutral model catalog probe owned by a backend.",
+            "properties": {
+                "list_command": {
+                    "description": "Argument vector that prints the models served by this backend. The vector is user data and includes the executable.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "model_pattern": {
+                    "description": "Regular expression used against each catalog output line. The required `{model}` placeholder is replaced by the escaped configured model.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "title": "CatalogConfig",
             "type": "object"
         },
         "EnvironmentVariable": {
