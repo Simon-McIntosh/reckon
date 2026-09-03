@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="67">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.76">
+<meta name="plan-impl" content="0.72">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947">
 </head>
 <body>
@@ -93,6 +93,50 @@
         <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
         <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
         <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s10">&#167;10 &mdash; An effort scan on real nodes, because the trivial probe was the wrong instrument</h2>
+    <p><strong>&#167;8 concluded too much from too little, and this section is the correction.</strong>
+    That probe asked each model <em>what is 17 times 23</em> at four thinking budgets, saw
+    38, 43, 37 and 38 characters of thinking on flash, and concluded the lane has no effort
+    dimension at all. A question with one arithmetic step gives a model nothing to think
+    about, so a flat response across budgets is what it would produce whether or not the
+    parameter works. The measurement was real; the generalisation to agentic work was not
+    earned, and it should not have been written as a routing conclusion.</p>
+    <p><strong>The prior worth testing is the opposite one.</strong> A model with less
+    capability per token has more to gain from spending more tokens deliberating, so if
+    effort reaches these checkpoints at all it should matter <em>more</em> here than on a
+    frontier model, not less. That is the hypothesis this section measures rather than
+    assumes.</p>
+    <p>The scan has to answer two questions in order, and the first is a precondition:</p>
+    <ol>
+      <li><strong>Does the declared effort reach the model on a real task?</strong> The
+      trivial probe cannot tell, and the harness counter cannot either &mdash; it reported
+      <code>thinking_tokens: 0</code> on runs whose streams carried 40, 30 and 38 thinking
+      blocks, so it measures the request rather than the response. The observable that does
+      work is the stream: count emitted thinking blocks and their character volume across a
+      multi-turn agentic run, at two declared efforts, on the same node at the same base.
+      If those are indistinguishable, effort is inert here and the routing conclusion of
+      &#167;8 stands on proper evidence for the first time.</li>
+      <li><strong>If it does reach, does it pay?</strong> Then it becomes an ordinary
+      calibration slice: gate pass rate, tests added, diff size against the primary's,
+      worker minutes, and redispatches charged, per (model &times; effort), over paired runs
+      of the same nodes.</li>
+    </ol>
+    <p>Two controls the earlier work has already shown are needed. Worker minutes are
+    dominated by local suite execution rather than inference, so wall clock alone cannot
+    separate a deliberating model from a busy machine and the scan must record tool time
+    separately from generation. And a session must never be reused across efforts, or the
+    higher-effort arm inherits the lower one's context and the pair measures nothing &mdash;
+    the fence for that is an open &#167;7 item and this scan depends on it.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Effort reaches the loop, or does not</td><td>Emitted thinking blocks and their character volume, per turn, from the streams of paired real-node runs at two declared efforts per model. A verdict either way, stated with the counts.</td></tr>
+        <tr><td>Paired, single-variable</td><td>Each pair shares node, base revision, time budget, sandbox and prompt, differing only in declared effort, with the run records showing effort substituted and everything else inherited. A fresh session per arm.</td></tr>
+        <tr><td>Enough to read</td><td>At least three paired nodes per model, spanning a small mechanical node and a node requiring design, since the prior is that effort pays most where reasoning is actually required.</td></tr>
+        <tr><td>Compared against the incumbent</td><td>The same nodes have committed frontier-model records, so each local arm is reported beside its primary's gate, diff and tests-added rather than in isolation.</td></tr>
       </tbody>
     </table>
 
@@ -676,6 +720,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260902-trims-landed" data-who="reckon-ship" data-when="2026-09-02T19:35:00Z">
     <div class="r-comment-body">§9 lands, both trims delivered by deepseek-v4-flash on the local lane. reckon: run r-20260902T205922510859, commit 6f99ac2 merged, root 15,030 to 4,313 estimated tokens with the crew command surface moving to reckon/crew/AGENTS.md and the plan data model, vocabulary, layout tables and server operations to docs/AGENTS.md, plus tests/test_agents_scoping.py pinning the root under a stated bound, checking every pointer resolves and checking no canonical heading is dropped or duplicated. imas-codex: run r-20260902T210020995337, commit 7f41635 merged as e7e1085e, root 22,063 to 4,920 across ten new sub-scoped files, taking that repository from one sibling to eleven. Both censuses were re-run by the coordinator independently of the worker's own: 29 headings in reckon and 64 in imas-codex, zero missing and zero duplicated in each. Fleet standing load per worker, root plus user-global, before and after: reckon 29,499 to 16,173, imas-codex 36,533 to 16,780, nova 18,670 to 16,060, imas-ambix 16,242 to 13,632. The spread collapsed from 16,242-36,533 to 13,632-16,780, so the outliers are gone and every repository now costs about the same to enter. For GLM the figure that matters is working room: 44,229 tokens before, 57,555 now, a 30% gain on the constraint that killed two nodes this evening. Both nodes ran the new focused-gate policy and neither ran a full suite or a browser test.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20260903-effort-scan-added" data-who="reckon-ship" data-when="2026-09-03T04:35:00Z">
+    <div class="r-comment-body">§10 added on the lead's instruction, and it corrects §8 rather than extending it. My endpoint probe asked each model what 17 times 23 is at four thinking budgets, saw a flat 37-to-43 characters of thinking on flash, and I wrote that the local lane has no effort dimension at all. A single-step arithmetic question gives a model nothing to deliberate about, so a flat response across budgets is what it would return whether or not the parameter reaches anything. The measurement was sound; the generalisation to agentic work was not earned and should not have been recorded as a routing conclusion. The lead's prior is the more plausible one and is now what the section tests: a model with less capability per token has MORE to gain from deliberating, so if effort reaches these checkpoints it should matter more here than on a frontier model. The scan is ordered so the precondition comes first — whether declared effort reaches the agentic loop at all, measured from emitted thinking blocks and their volume across paired real-node runs, because the harness counter is known to report the request rather than the response (it read zero on runs whose streams carried 40, 30 and 38 blocks). Only if it reaches does the second half become an ordinary calibration slice per model and effort. Two controls the session already proved necessary are written in: worker minutes are dominated by local suite execution rather than inference, so tool time must be recorded separately from generation; and a session must never be reused across efforts or the higher arm inherits the lower one's context, which makes this scan dependent on the open §7 session-keying fence. Denominator grows to 18 executable nodes; impl 13 of 18.</div>
 </div>
 </section>
 </main>
