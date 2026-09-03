@@ -221,6 +221,23 @@ class UnreconciledRuns(CrewError):
         )
 
 
+def dispatch_invocation_shape(*, project: str, role: str = "investigate") -> str:
+    """Compose the crew-dispatch invocation shape a refusal can teach.
+
+    A refusal that names the family of command to run costs one retry; a bare
+    "no" costs a diagnosis. Angle-bracket placeholders mark what only the
+    live plan and the caller's own work list can resolve — a refusal raised
+    outside dispatch has no section, goal, or done-when to fill in, only the
+    project and the role the redirected work belongs to.
+    """
+    return (
+        f"reckon crew dispatch --project {project} --plan <slug> "
+        f"--section <section> --role {role} --node <node> "
+        '--goal "<one deliverable>" --done-when "<measure>" '
+        "--write-path <path> --time-budget <duration> --session <session>"
+    )
+
+
 class WatcherRequired(CrewError):
     """A dispatch needs a producer, and a reader for the dispatching session.
 
