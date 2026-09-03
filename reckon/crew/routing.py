@@ -644,7 +644,22 @@ def _remove_worktree(repo: Path, path: str) -> None:
 
 
 def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
-    """Signal a worker only while its pid still names the spawned process."""
+    """Signal a worker only while its pid still names the spawned process.
+
+    A recorded pid is data from a run record, not a fact about who is calling
+    this function — a test double, a stale carry-forward, or any record whose
+    pid happens to equal the caller's own is otherwise indistinguishable from
+    a genuine spawned worker. os.killpg signals the whole process group, so
+    signalling one's own group takes the caller down with it. Refuse before
+    that lookup rather than let the OS enforce it as a self-inflicted SIGTERM.
+    """
+    own_pid = os.getpid()
+    if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
+        raise CrewError(
+            f"refusing to signal pid {pid}: it is this process's own pid or "
+            "shares this process's own process group, and killpg would "
+            "terminate the caller doing the releasing"
+        )
     actual_start_time = _process_start_time(pid)
     if not expected_start_time or actual_start_time != expected_start_time:
         raise CrewError(
