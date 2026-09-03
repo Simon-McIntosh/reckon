@@ -181,8 +181,13 @@ def classify_pointer(
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
+    # Superseded-by-newer-activity applies only to a manifest that is not yet a
+    # verdict. Complete, blocked and failed are facts a later log line cannot
+    # undo — discarding one of those through this staleness path is how the
+    # strongest completion signal on disk gets erased.
     if (
-        manifest_status == "blocked"
+        manifest_status
+        and manifest_status not in {"complete", "blocked", "failed"}
         and alive is True
         and log.is_file()
         and manifest.is_file()
@@ -573,7 +578,11 @@ def _watch_snapshot(
             detail = detail[len(prefix) :]
             break
 
-    if state == "working":
+    if state in ("dispatched", "working"):
+        # A run stops progressing whether it dies during dispatch or mid-work,
+        # so the stall check has to reach every non-terminal state a pointer
+        # can sit in — gating it on "working" alone left a run killed before
+        # its phase ever advanced past "starting" permanently exempt.
         quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
         if quiet > stall_seconds:
             state = "stalled"
