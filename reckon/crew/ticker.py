@@ -123,10 +123,17 @@ ROLE_DISPLAY = {"documentation": "docs"}
 ROLE_UNKNOWN = "?"
 
 _CELLS = ("working", "blocked", "unpromoted")
-# Two digits and a space per label, joined by " · ". Two digits cover any fleet
-# the dispatcher opens; a wider count pushes its own label rather than silently
-# misaligning the column beside it.
-STATS = sum(2 + 1 + len(label) for label in _CELLS) + 3 * (len(_CELLS) - 1)
+
+# The single-letter suffix each fleet counter renders as. The pane teaches the
+# mapping without a legend in the stream: the same words stand in the state
+# column on other rows, so a reader already knows b means blocked before they
+# reach the count column.
+STAT_LETTER = {"working": "w", "blocked": "b", "unpromoted": "u"}
+
+# Two digits and a single-letter suffix per counter, joined by " · ". Two digits
+# cover any fleet the dispatcher opens; a wider count pushes its own label
+# rather than silently misaligning the column beside it.
+STATS = sum(2 + 1 for _ in _CELLS) + 3 * (len(_CELLS) - 1)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
@@ -346,7 +353,8 @@ class Ticker:
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.
 
-        A zero is dimmed rather than dropped: blanking it would leave trailing
+        Each counter is its number followed by the state's single letter, so a
+        zero is dimmed rather than dropped: blanking it would leave trailing
         whitespace and take the right edge ragged, and a reader waiting for a
         drain needs to see the count reach zero, not see it disappear.
         """
@@ -355,7 +363,7 @@ class Ticker:
             if index:
                 cells += [(" ", None), ("·", "dim"), (" ", None)]
             count = int(event.get(label) or 0)
-            cells.append((f"{count:>2} {label}", None if count else "dim"))
+            cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
         return cells
 
     def _paint(self, text: str, style: Any) -> str:
