@@ -554,12 +554,12 @@ def test_unreadable_pointer_snapshots_unreadable_in_the_ticker_path(home) -> Non
     assert snapshot["state"] == "unreadable"
     assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
     assert snapshot["state"] not in recovery.FLEET_UNPROMOTED_STATES
-    # The refusal survives into the snapshot's reason rather than being cleared
+    # The refusal survives into the snapshot's detail rather than being cleared
     # with the routine-progress states. The clause is elided to the ticker
     # width, so assert it names the file rather than a substring that a long
     # path may push past the elision boundary.
-    assert snapshot["reason"]
-    assert "manifest" in snapshot["reason"]
+    assert snapshot["detail"]
+    assert "manifest" in snapshot["detail"]
     # The negative for the new arm: a dead process that delivered no manifest
     # at all still abandons, so unreadable cannot become the catch-all that
     # abandoned would be folded into.

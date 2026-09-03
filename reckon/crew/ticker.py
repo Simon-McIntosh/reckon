@@ -82,6 +82,7 @@ STATE_HUE = {
         "working": 26,
         "running": 26,
         "unknown": 124,
+        "unreadable": 124,
         "unpromoted": 30,
     },
     "dark": {
@@ -96,6 +97,7 @@ STATE_HUE = {
         "working": 75,
         "running": 75,
         "unknown": 203,
+        "unreadable": 203,
         "unpromoted": 80,
     },
 }
@@ -108,7 +110,7 @@ STATE_HUE = {
 # without it, so the number said something needed attention and the line did not
 # say what.
 NEEDS_ACTION = frozenset(
-    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown"}
+    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown", "unreadable"}
 )
 
 # An internal classification longer than the column it must occupy. The display

@@ -197,7 +197,10 @@ def test_a_scoped_follower_receives_only_the_runs_its_session_dispatched(
     assert nodes == {"my-node"}, "a peer session's run must not reach this follower"
 
 
-def test_an_unscoped_follower_names_the_session_that_owns_every_line(home) -> None:
+def test_an_unscoped_follower_marks_foreign_ownership_with_a_glyph(home) -> None:
+    """A row another session owns is not this reader's to act on, so the owned
+    column holds a single glyph rather than a name; the session id never reaches
+    the line."""
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
 
     with runs._project_watch_claim("proj", "1h") as (_acquired, _seat):
@@ -206,7 +209,9 @@ def test_an_unscoped_follower_names_the_session_that_owns_every_line(home) -> No
 
     assert events, "an unscoped follower still receives the fleet"
     rendered = recovery.format_watch_transition(events[0], with_session=True)
-    assert "mine" in rendered, "ownership must be readable in the notification"
+    # Ownership is the whole glyph, not a readable identifier.
+    assert ticker_module.FOREIGN_OWNER in rendered
+    assert "mine" not in rendered, "the session id is not for the line to show"
     assert "mine" not in recovery.format_watch_transition(events[0])
 
 
@@ -460,7 +465,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
     rendered = [recovery.format_watch_transition(event) for event in events]
-    assert all(" 2 working ·  0 blocked ·  0 unpromoted" in line for line in rendered)
+    assert all("2w ·  0b ·  0u" in line for line in rendered)
     for line in rendered:
         assert "[stderr]" not in line
 

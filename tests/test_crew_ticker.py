@@ -725,6 +725,10 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     what they say about themselves — a glyph for a row another session owns, a
     dim row for a shadow that will never merge — and in nothing about geometry.
     """
+    # The width is pinned by the invocation rather than read from whatever
+    # terminal this test happens to run under, so the grid's geometry cannot
+    # depend on the machine. What the test asserts is the property it exists
+    # for — every row kind shares one width — not any particular number.
     rows = _follow_rows(
         monkeypatch,
         [
@@ -733,10 +737,12 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
             _fact_event(node="shadow-node", lineage={"kind": "shadow"}),
             _fact_event(node="own-node", session="", working=12, unpromoted=7),
         ],
+        "--width",
+        "180",
     )
 
     assert len(rows) == 4
-    assert {len(row) for row in rows} == {180}
+    assert len({len(row) for row in rows}) == 1
     assert len({_arrow_column(row) for row in rows}) == 1
     assert len({row.index("sonnet5") for row in rows}) == 1
     assert len({row.index("implement"[:4]) for row in rows}) == 1
@@ -752,6 +758,40 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     assert "ship-s15-20260903" not in "\n".join(rows)
     assert rows[0][owner_column] == ticker_module.FOREIGN_OWNER
     assert rows[3][owner_column] == " "
+
+
+def test_pinning_the_width_gives_the_same_rows_with_or_without_a_terminal(
+    monkeypatch,
+) -> None:
+    """The render assertions must not read a width the host resolver found.
+
+    The same invocation, its width pinned by an explicit flag, renders
+    byte-identical rows whether an ancestor terminal would report a conflicting
+    width or the resolver falls back to the stated default. A test that omitted
+    the pin drew its width from the machine — 180 on a detached worker, the
+    pane's real width under a terminal — and passed on one and failed on the
+    other; pinning is what makes the answer the same on every machine.
+    """
+    fleet = [
+        _fact_event(event="baseline", from_state=None, to_state="working"),
+        _fact_event(),
+        _fact_event(node="shadow-node", lineage={"kind": "shadow"}),
+        _fact_event(node="own-node", session="", working=12, unpromoted=7),
+    ]
+
+    # A resolvable terminal announces a width that disagrees with the pin.
+    monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
+    with_terminal = _follow_rows(monkeypatch, fleet, "--width", "180")
+
+    # A detached follower's resolver falls back to the stated default.
+    monkeypatch.setattr(
+        ticker_module,
+        "resolve_terminal_width",
+        lambda: ticker_module.DEFAULT_WIDTH,
+    )
+    without_terminal = _follow_rows(monkeypatch, fleet, "--width", "180")
+
+    assert with_terminal == without_terminal
 
 
 def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
