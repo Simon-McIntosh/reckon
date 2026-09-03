@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="95">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d">
@@ -664,6 +664,22 @@
       so invisibly because the run record shows only the effort it was launched with. Key the
       stored session on the resolved configuration rather than the model, so a changed effort
       starts clean and an unchanged one still reuses.</li>
+      <li><strong>A shadow replays its primary's done-when, so a superseded specification
+      keeps executing.</strong> Found by watching an arm that looked alive for half an hour
+      and was generating nothing. Its stream carried 30,461 records of which 156 were
+      assistant turns; the rest was system noise and <code>tool_progress</code>, and the
+      pending call was <code>TaskOutput</code> with <code>block: true</code> and a 600-second
+      timeout, waiting on a full suite it had spawned. The cause was not the model: the
+      shadow reconstructs its primary's node definition, that primary was specified before
+      this session's gate policy changed, and the old text &mdash; <em>the full suite adds no
+      failure against base 33e6add</em> &mdash; still ran, browser tests included, refilling
+      the very orphan population the RCA covers. Two consequences follow. A shadow of any
+      node specified before a policy change executes the old contract, which makes a policy
+      change silently non-retroactive across the whole shadow corpus; and the arm was void as
+      measurement, because its worker time was suite execution rather than inference. A
+      shadow should either re-derive the gate from current policy or record on its own row
+      that it replayed a superseded contract, so a pair is never quietly comparing a model
+      against a test suite.</li>
       <li><strong>A shadow worktree path names its primary but not its candidate, so two
       models cannot be compared on one node at the same time.</strong> Found immediately on
       trying to do exactly that: the second shadow of a primary is refused with

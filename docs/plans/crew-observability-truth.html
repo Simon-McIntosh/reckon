@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-observability-truth">
+  <meta name="plan-title" content="A Fleet Display That Cannot Lie">
+  <meta name="plan-summary" content="Make the fleet display report what is true: liveness bound to real processes, gc scoped to the repository it names, and no confident wrong answers.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="clive-local-workers">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <title>A Fleet Display That Cannot Lie | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; Why this is its own plan</h2>
+    <p>Over one execution session the fleet display was wrong in five distinct ways, and in
+    every case a person noticed before the tooling did. The lead twice identified a dead
+    worker by looking at GPU utilisation while the ticker reported it running; a peer session
+    watched six finished runs display as <code>6 working</code> for 38 minutes, and later two
+    more for 13 and 6 minutes, finding each by stat-ing a manifest rather than by being told.
+    Three of those defects were fixed inside
+    <a href="/reckon/plans/clive-local-workers">clive-local-workers</a> &#167;7, because that
+    is where they were found. Two were not, and they have no owning plan at all &mdash; which
+    is the condition this plan exists to end, since a defect named only in a followup is
+    hidden work by the project's own rule.</p>
+    <p>The reason to separate them is that they are not about local workers. &#167;7 of that
+    plan is titled <em>strengthen the harness around local workers, so the model comparison is
+    a model comparison</em>, and it has been absorbing crew-wide observability work because
+    the local lane happened to expose it. That was correct while the lane was blocked; it is
+    now obscuring both subjects. The qualification questions belong there. Whether the display
+    tells the truth belongs here.</p>
+    <p>The <a href="/reckon/research/producer-orphans-and-liveness">producer-orphans RCA</a>
+    is the evidence base for &#167;2. It closed two of its three defects; this plan owns the
+    third.</p>
+
+    <h2 id="s2">&#167;2 &mdash; The registry disagrees with the machine, and the guard trusts the registry</h2>
+    <p><strong>Measured 2026-09-03.</strong> <code>crew list</code> returned
+    <code>watcher pid: None</code>, <code>seat_held: None</code>,
+    <code>watcher_live: None</code> for the reckon project while
+    <code>reckon crew watch --project reckon</code> was running as pid 85432, had been since
+    07:33:13, and had emitted four transitions in the preceding twenty minutes. The registry
+    and the process table were both readable and they disagreed.</p>
+    <p>This is not a display nicety. <code>watcher_live</code> and
+    <code>session_attached</code> are the fields <code>crew dispatch</code> reads to decide
+    whether to refuse with <code>watcher-required</code>. A guard whose whole purpose is to
+    stop work being dispatched into a fleet nobody is listening to is deciding on a value
+    that can be wrong in either direction: it can refuse a dispatch whose producer is alive,
+    or admit one whose producer is gone.</p>
+    <p>The likely mechanism, stated as the next thing to check rather than as a finding: the
+    registry is a written record guarded by a seat lock, and the binding between that record
+    and the process is one-way. The arming path already carries a comment describing the
+    opposite failure &mdash; a producer whose supervisor died keeps appending real
+    transitions while holding the seat, so the stale record outlives every session that cared.
+    Both failures together suggest the record and the process have no reliable binding in
+    either direction, and that a liveness answer should be derived from the process rather
+    than read from a file that hopes to describe it.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Liveness is derived, not remembered</td><td>A producer that is running is reported live, and one whose process is gone is reported absent, in both cases regardless of what the seat record says. Asserted against a synthesised registry that has been deliberately desynchronised from the process table in each direction.</td></tr>
+        <tr><td>The guard cannot be fooled</td><td>A dispatch into a project whose producer is alive is admitted, and one whose producer is gone is refused with <code>watcher-required</code>, when the record claims the opposite in each case. Asserted through the dispatch path rather than the helper.</td></tr>
+        <tr><td>A desync is repaired, not merely reported</td><td>Reading liveness reconciles a stale record rather than leaving the next reader to find the same disagreement, and the reconciliation never takes the seat lock, so observing still cannot deny an arming.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">&#167;3 &mdash; <code>gc</code> scans the repository it is standing in, not the one it names</h2>
+    <p><strong>Measured 2026-09-03.</strong> Running
+    <code>reckon crew gc --project nova</code>, then <code>--project imas-codex</code>, then
+    <code>--project imas-ambix</code>, all from the reckon checkout, returned byte-identical
+    counts: <code>dirty 8, live-referenced 2, unintegrated 2, reclaimable 0</code>. Those are
+    reckon's own worktrees. <code>--repo</code> defaults to the enclosing repository, so the
+    command paired each named project's ledger with the current directory's worktrees and
+    reported the result without qualification. Supplying <code>--repo</code> explicitly gave
+    nova's true figure: <strong>124 reclaimable</strong> against 12 dirty and 21
+    unintegrated.</p>
+    <p>The failure mode is the one this fleet keeps producing: a confident wrong answer rather
+    than a refusal. An operator running <code>gc</code> for another project from the wrong
+    directory is told there is nothing to reclaim, and 124 worktrees stay on disk. Nothing in
+    the output names which repository was actually scanned.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The pairing is checked</td><td>A <code>--project</code> whose registered checkout differs from the resolved <code>--repo</code> is refused, naming both paths, unless the caller states the cross-pairing deliberately. Asserted by test in both directions.</td></tr>
+        <tr><td>The answer says what it measured</td><td>Every <code>gc</code> result names the repository whose worktrees it scanned and the ledger it read, so a result cannot be attributed to the wrong project by a reader.</td></tr>
+        <tr><td>The default resolves the project's own checkout</td><td>With no <code>--repo</code>, a named project resolves the checkout registered in mounts rather than the current directory; asserted from a third directory belonging to neither.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">&#167;4 &mdash; What a person should be able to read off the pane</h2>
+    <p>The three sections above are individual defects. This one is the standing obligation
+    they violated, written down so a future change can be checked against it rather than
+    against taste. Twice in one session the honest signal was outside the tool: GPU
+    utilisation, and a manifest on disk. Both times the pane asserted the opposite.</p>
+    <ul>
+      <li><strong>A count of working runs means work is in progress.</strong> Not that
+      pointers exist. A run whose process is gone, or whose manifest is terminal, is not
+      working, and the display must not add it to that bucket.</li>
+      <li><strong>Activity is generation, not bytes.</strong> A stream file's mtime advances
+      on tool progress and system records; one measured run carried 30,461 records of which
+      156 were assistant turns while it sat blocked on a ten-minute wait. Liveness derived
+      from mtime called that healthy, and so did the orchestrator reading it.</li>
+      <li><strong>The pane says which code produced it.</strong> Already landed as the
+      producer version stamp; recorded here because it is part of this obligation rather than
+      a separate courtesy.</li>
+      <li><strong>A wrong answer is worse than no answer.</strong> Where a signal cannot be
+      derived honestly, report it as unknown. Absence of evidence has been mistaken for
+      evidence three times in this fleet's short history &mdash; a budget signal, a manifest,
+      and a watcher &mdash; and every instance cost more than a stated <em>unknown</em>
+      would have.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The buckets partition honestly</td><td>A run whose process is gone or whose manifest is terminal never appears in the working count, asserted across every phase a pointer can hold including those it never advanced past.</td></tr>
+        <tr><td>Activity means generation</td><td>Any liveness or stall judgement is derived from generation events rather than file mtime, asserted against a recorded stream that is byte-active and generation-idle.</td></tr>
+      </tbody>
+    </table>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="liveness-source" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does a liveness answer come from?</p>
+    <p class="r-dec-ctx">The registry and the process table disagreed in a measured case. Deriving from the process on every read is truthful but costs a scan; reconciling the record on read keeps the cheap path and repairs drift; keeping the record authoritative is what produced the defect.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="derive-from-process">Derive from the process table on every read</button>
+      <button class="r-opt" data-value="reconcile-on-read">Keep the record, reconcile it against the process on read</button>
+      <button class="r-opt" data-value="record-authoritative">Leave the record authoritative</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="cross-repo-gc" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What should gc do when the named project&#x27;s checkout is not the enclosing repository?</p>
+    <p class="r-dec-ctx">It currently scans the enclosing repository silently. Refusing is safest but blocks a legitimate cross-checkout call; resolving from mounts is convenient but changes existing behaviour for callers relying on the default.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="refuse-unless-stated">Refuse unless the cross-pairing is stated</button>
+      <button class="r-opt" data-value="resolve-from-mounts">Resolve the project&#x27;s registered checkout by default</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cot-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Settle the two decisions, then land the liveness derivation and the gc pairing check</h4>
+    <div class="r-fu-body"><p>Both sections carry a measured defect and a decision that changes what ships, so the decisions come first. &#167;2's is whether a liveness answer is derived from the process table on every read, reconciled against it, or left to the record that produced the defect; &#167;3's is whether a project and repository mismatch is refused or resolved from mounts. Neither needs new investigation &mdash; the evidence is in the producer-orphans RCA and in the measured gc counts, 124 reclaimable worktrees reported as zero.</p><p>&#167;4 is a standing obligation rather than a work item and lands as tests against the other sections. Take it last, and treat a failure there as a defect in the section that allowed it.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
