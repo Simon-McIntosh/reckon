@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T07:39:54",
+  "updated": "2026-09-03T07:51:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -38136,9 +38136,114 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T054823867999-blocked-is-a-question-not-a-verdict",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "blocked-is-a-question-not-a-verdict",
+        "node_definition": {
+          "done_when": "Commit 1b7e72e narrowed the staleness discard in reckon/crew/recovery.py from 'manifest_status == blocked' to 'manifest_status and manifest_status not in {complete, blocked, failed}', which removed blocked from the discard and introduced a regression. Reproduced directly against the merged code: a pointer whose manifest reports blocked, whose process is alive, and whose log is NEWER than that manifest now resolves manifest_status blocked, classification blocked and ticker state blocked, where before the merge the discard cleared the stale manifest and the state fell through to working. That is the resumed-worker case and it is well exercised: this ledger holds 49 runs with attempt_kind resume, and three runs in this session alone went blocked then working after a resume. The distinction the previous change missed is that complete and failed are VERDICTS a later log line cannot undo, while blocked is a SOLICITATION that resume answers, and the discard is how the system notices it was answered. Narrow the exclusion set to complete and failed only, so a blocked manifest is discardable again under the unchanged surrounding conditions of an alive process and a newer log, while complete and failed remain protected as 1b7e72e intended. Add to tests/test_crew_finished_display.py: a blocked manifest with an alive process and a newer log resolves to working rather than blocked, named for the resumed worker it represents; a blocked manifest with a DEAD process or an older log still resolves blocked, so the fix does not simply delete the signal; and the existing complete and failed protections still hold, which the parametrised test already covers and must keep passing. Your gate is tests/test_crew_finished_display.py plus tests/test_crew_recovery.py, tests/test_crew_ticker.py and tests/test_crew_watch_stream.py, which were 28 passed at 8692c0aa245b82ed05ce46c108f6729abf261203. Do NOT run the full suite and do NOT run any browser-driven test",
+          "estimated_hours": null,
+          "goal": "Restore resume visibility: a blocked manifest must go stale once its worker is producing again",
+          "id": "blocked-is-a-question-not-a-verdict",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T054823867999-blocked-is-a-question-not-a-verdict/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T05:48:30Z",
+        "completed_at": "2026-09-03T05:50:03.286Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 85,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 93,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "8692c0aa245b82ed05ce46c108f6729abf261203",
+        "commits": [
+          "9b609d9c46b5de36c1d4f53e9db33c19e4fc14b6"
+        ],
+        "changed_lines": {
+          "added": 56,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_finished_display.py tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_crew_watch_stream.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate_run2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T054823867999-blocked-is-a-question-not-a-verdict/manifest.md",
+        "scope_changed": false,
+        "session_id": "e8a82004-33a8-4308-9d5a-647b5aa8cdba",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 48517,
+            "cache_creation_input_tokens_cumulative": 48517,
+            "cache_read_input_tokens": 1099860,
+            "cache_read_input_tokens_cumulative": 1099860,
+            "inference_geo": "not_available",
+            "input_tokens": 34,
+            "input_tokens_cumulative": 34,
+            "output_tokens": 6570,
+            "output_tokens_cumulative": 6570,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.4798079999999999,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 0.4798079999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 616
+    "_version": 617
   }
 }
