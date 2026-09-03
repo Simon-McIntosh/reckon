@@ -44,15 +44,10 @@ if TYPE_CHECKING:
 # ── Routing ─────────────────────────────────────────────────────────────────
 
 
-def resolve_role(
-    config: Mapping[str, Any], role: str, spec_level: str = ""
-) -> tuple[str, dict[str, Any]]:
-    """Resolve a role to its backend name and the effective backend settings.
-
-    A role overlays only the keys it names; everything else falls through to the
-    backend it dispatches to. That is what lets a review role drop to a
-    read-only tier without restating a backend.
-    """
+def _role_overlay(
+    config: Mapping[str, Any], role: str, spec_level: str
+) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+    """Return a role's overlay and the level overlay selected by spec_level."""
     roles = config.get("roles") or {}
     overlay = roles.get(role)
     if overlay is None:
@@ -60,7 +55,6 @@ def resolve_role(
         raise CrewError(f"role {role!r} is not configured (configured roles: {known})")
     if not isinstance(overlay, Mapping):
         overlay = {}
-    backends = config.get("backends") or {}
     routing_by_level = overlay.get("by_spec_level") or {}
     level_overlay = (
         routing_by_level.get(spec_level, {})
@@ -69,21 +63,22 @@ def resolve_role(
     )
     if not isinstance(level_overlay, Mapping):
         level_overlay = {}
-    backend_name = (
-        level_overlay.get("backend")
-        or overlay.get("backend")
-        or config.get("default_backend")
-    )
-    if not backend_name:
-        raise CrewError(
-            f"role {role!r} selects no backend and no default_backend is set"
-        )
+    return overlay, level_overlay
+
+
+def _effective_backend(
+    config: Mapping[str, Any],
+    backend_name: str,
+    overlay: Mapping[str, Any],
+    level_overlay: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Merge a role's overlay onto one named backend's own settings."""
+    backends = config.get("backends") or {}
     backend = backends.get(backend_name)
     if not isinstance(backend, Mapping):
         known = ", ".join(sorted(backends)) or "none"
         raise CrewError(
-            f"role {role!r} routes to backend {backend_name!r}, which no layer "
-            f"defines (defined backends: {known})"
+            f"backend {backend_name!r} is not defined (defined backends: {known})"
         )
     effective = dict(backend)
     for key, value in overlay.items():
@@ -94,7 +89,83 @@ def resolve_role(
         if key == "backend":
             continue
         effective[key] = value
+    return effective
+
+
+def resolve_role(
+    config: Mapping[str, Any], role: str, spec_level: str = ""
+) -> tuple[str, dict[str, Any]]:
+    """Resolve a role to its backend name and the effective backend settings.
+
+    A role overlays only the keys it names; everything else falls through to the
+    backend it dispatches to. That is what lets a review role drop to a
+    read-only tier without restating a backend.
+    """
+    overlay, level_overlay = _role_overlay(config, role, spec_level)
+    backend_name = (
+        level_overlay.get("backend")
+        or overlay.get("backend")
+        or config.get("default_backend")
+    )
+    if not backend_name:
+        raise CrewError(
+            f"role {role!r} selects no backend and no default_backend is set"
+        )
+    try:
+        effective = _effective_backend(
+            config, str(backend_name), overlay, level_overlay
+        )
+    except CrewError as exc:
+        raise CrewError(
+            f"role {role!r} routes to backend {backend_name!r}, which no layer defines"
+        ) from exc
     return str(backend_name), effective
+
+
+def resolve_role_override(
+    config: Mapping[str, Any], role: str, spec_level: str, backend_name: str
+) -> tuple[str, dict[str, Any]]:
+    """Resolve a role's settings against an explicitly named backend.
+
+    Used to re-resolve a role onto a budget fallback: the role's own overlay
+    (an effort or sandbox override, say) still applies, only the concrete
+    backend it lands on changes.
+    """
+    overlay, level_overlay = _role_overlay(config, role, spec_level)
+    effective = _effective_backend(config, backend_name, overlay, level_overlay)
+    return str(backend_name), effective
+
+
+def resolve_budget_fallback(
+    config: Mapping[str, Any],
+    role: str,
+    spec_level: str,
+    held_backend_name: str,
+    held_backend: Mapping[str, Any],
+) -> tuple[str, dict[str, Any]] | None:
+    """Return a held backend's declared fallback, resolved for the same role.
+
+    ``None`` when the held backend declares no fallback — a caller must then
+    still refuse rather than guess a substitute. A fallback is backend-level
+    data (declared on the backend that is spent), never inferred from the
+    role or from what else happens to be configured.
+    """
+    fallback_name = held_backend.get("fallback")
+    if not fallback_name:
+        return None
+    fallback_name = str(fallback_name)
+    if fallback_name == held_backend_name:
+        raise CrewError(
+            f"backend {held_backend_name!r} declares itself as its own fallback"
+        )
+    backends = config.get("backends") or {}
+    if fallback_name not in backends:
+        known = ", ".join(sorted(backends)) or "none"
+        raise CrewError(
+            f"backend {held_backend_name!r} declares fallback {fallback_name!r}, "
+            f"which no layer defines (defined backends: {known})"
+        )
+    return resolve_role_override(config, role, spec_level, fallback_name)
 
 
 def _budget_verdict(
