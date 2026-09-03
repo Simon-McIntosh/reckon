@@ -22,6 +22,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
+from reckon.calibration import agent_configuration_key
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from reckon.crew import runs
 
@@ -2553,13 +2554,22 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     observed = crew.observe(second["run_id"])
     member = ledger.member("proj", "worker-a", repo)
 
+    original_agent = {
+        "backend": "alpha",
+        "launch": "cli",
+        "model": "some-model",
+        "effort": "high",
+        "sandbox": "worktree-full",
+    }
+    fresh_agent = {**original_agent, "model": "other-model"}
+
     assert observed["session_id"] == fresh_session
     assert observed["session_capture"]["captured"] is True
     assert member["session_id"] == original_session
     assert member["session_model"] == "some-model"
     assert member["sessions"] == {
-        "other-model": fresh_session,
-        "some-model": original_session,
+        agent_configuration_key({"agent": original_agent}): original_session,
+        agent_configuration_key({"agent": fresh_agent}): fresh_session,
     }
 
 
