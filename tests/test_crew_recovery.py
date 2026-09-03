@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import subprocess
 import time
 from collections.abc import Mapping
@@ -849,11 +850,17 @@ def test_a_pointer_without_a_role_renders_the_marker_without_raising(home) -> No
 # column added later that reads a key the snapshot never threads would render
 # its marker forever while the suite stayed green — the treadmill this section
 # exists to close — so the contract is that every key the renderer consumes is
-# carried on every transition it is given. The facts the display is derived from
+# carried on every transition it is given. That read surface is not only the
+# laid-out columns: the row's kind routes it to the baseline form and the block
+# glyph is derived from a persisted fact, and lineage drives whole-row dimming
+# rather than occupying any column, so a presence check scoped to the column set
+# would pass while the dimming fact never reached the event. Every read-by-any-
+# means field belongs in the carried set. The facts the display is derived from
 # travel under their own names, and the display-shaped fields themselves must
 # never reappear on the record.
 _TICKER_READ_FIELDS = (
     "observed_at",
+    "event",
     "role",
     "node",
     "run_id",
@@ -865,15 +872,19 @@ _TICKER_READ_FIELDS = (
     "effort",
     "alias",
     "detail",
+    "needs_help_complete",
+    "lineage",
     "working",
     "blocked",
     "unpromoted",
 )
 
 # A display-shaped field is exactly what the log must not persist: the composed
-# agent label, a pre-claused reason, and the marker glyph are all derived by the
-# renderer from the facts above.
-_DISPLAY_SHAPED_FIELDS = ("agent", "reason", "marker")
+# agent label, a pre-claused reason, the marker glyph, and the flattened shadow
+# flag are all derived by the renderer from the facts above (lineage chief among
+# them). A new-shape line carries the lineage it was shadowed under, never a
+# boolean shorthand.
+_DISPLAY_SHAPED_FIELDS = ("agent", "reason", "marker", "shadow")
 
 
 def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
@@ -922,6 +933,86 @@ def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
     assert "deepseek-v4-flash" not in line
     assert "medium" in line
     assert "impl" in line
+
+
+# ── The transition carries the shadow lineage it dims by ────────────────────
+
+
+def _shadow_transition(home: Path, run_id: str, **lineage_overrides) -> dict:
+    """Reduce a pointer carrying dispatch-written shadow lineage end to end.
+
+    Dispatch decides shadowship at launch and writes the lineage — kind shadow
+    plus the committed primary it derives from — onto the pointer. This builds
+    that pointer by hand and threads it through the snapshot and the transition
+    builders, so the emitted event is read rather than a synthetic one supplied
+    to the renderer, which is how the dimming defect survived a green suite four
+    times before.
+    """
+    lineage = {
+        "kind": "shadow",
+        "primary_run_id": f"{run_id}-primary",
+        "configuration": {"substituted": [], "inherited": []},
+    }
+    lineage.update(lineage_overrides)
+    manifest = home / "manifests" / f"{run_id}.md"
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "role": "implement",
+        "phase": "working",
+        "created_at": datetime.now(tz=UTC).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(home / "streams" / f"{run_id}.jsonl"),
+        "process_alive": True,
+        "lineage": lineage,
+    }
+    snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+    return recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({run_id: snapshot}),
+    )
+
+
+def test_a_shadow_pointer_dims_the_row_it_emits(home) -> None:
+    # The event built from a real shadow pointer carries the very lineage the
+    # renderer reads, so a genuinely sourced shadow row dims end to end rather
+    # than rendering like any other row.
+    transition = _shadow_transition(home, "r-shadow")
+
+    lineage = transition["lineage"]
+    assert isinstance(lineage, Mapping)
+    assert lineage.get("kind") == "shadow"
+    assert lineage.get("primary_run_id") == "r-shadow-primary"
+    assert ticker_module.is_shadow(transition) is True
+
+    painter = ticker_module.Ticker(theme="light", color=True)
+    shadow_line = painter.render(transition)
+    # A shadow row reads dim end to end: every styled cell that would carry a
+    # hue — the node and either side of the arrow among them — renders dim
+    # instead, so the line carries no hue selector, while the identical row
+    # with the lineage removed does.
+    control = painter.render({**transition, "lineage": None})
+    assert re.search(r"\x1b\[38;5;", control) is not None
+    assert ticker_module._DIM in shadow_line
+    assert re.search(r"\x1b\[38;5;", shadow_line) is None
+
+
+def test_a_pointer_without_lineage_renders_undimmed_without_raising(home) -> None:
+    # The negative: a run that was never shadowed carries no lineage, keeps
+    # rendering normally, and neither the producer nor the renderer raises on
+    # its absence.
+    transition = _role_transition(home, "r-plain")
+
+    assert transition.get("lineage") in (None, {})
+    assert ticker_module.is_shadow(transition) is False
+    painter = ticker_module.Ticker(theme="light", color=True)
+    line = painter.render(transition)
+    assert re.search(r"\x1b\[38;5;", line) is not None
 
 
 def test_agent_label_returns_the_declared_alias_and_effort_spelling() -> None:
