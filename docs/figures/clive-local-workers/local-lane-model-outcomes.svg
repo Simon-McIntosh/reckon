@@ -1,0 +1,52 @@
+<svg viewBox="0 0 720 300" width="100%" style="max-width:720px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="Gate outcomes and mean worker time per model dispatched under this plan. gpt-5.6-sol: 11 passed, 2 failed, mean 1356s over 13 runs. deepseek-v4-flash: 7 passed, 3 failed, 2 not-run, mean 1075s over 12 runs. glm-5.3: 0 passed, 4 failed, mean 524s over 4 runs. claude-sonnet-5: 7 passed, 0 failed, mean 285s over 7 runs. claude-opus-5: 2 passed, 0 failed, mean 753s over 2 runs.">
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #3a3a38; }
+    .axis { fill: #6b6a63; font-size: 11px; }
+    .label { font-size: 12px; }
+    .value { font-size: 11px; fill: #6b6a63; }
+  </style>
+  <text x="16" y="24" font-size="14" font-weight="600" fill="#1a1a19">Gate outcome and mean worker time, by model — clive-local-workers</text>
+
+  <!-- rows: model, passed, failed, notrun, total, mean_s -->
+  <g font-size="12">
+    <!-- gpt-5.6-sol: 13 runs, passed 11, failed 2, mean 1356s -->
+    <text x="16" y="62" class="label">gpt-5.6-sol</text>
+    <rect x="150" y="50" width="242.0" height="18" fill="#2a78d6"/>
+    <rect x="392.0" y="50" width="44.0" height="18" fill="#e34948"/>
+    <text x="446" y="63" class="value">11 passed, 2 failed · 13 runs · mean 1,356s</text>
+
+    <!-- deepseek-v4-flash: 12 runs, passed 7, failed 3, notrun 2, mean 1075s -->
+    <text x="16" y="102" class="label">deepseek-v4-flash</text>
+    <rect x="150" y="90" width="154.0" height="18" fill="#2a78d6"/>
+    <rect x="304.0" y="90" width="66.0" height="18" fill="#e34948"/>
+    <rect x="370.0" y="90" width="44.0" height="18" fill="#c3c2b7"/>
+    <text x="446" y="103" class="value">7 passed, 3 failed, 2 not-run · 12 runs · mean 1,075s</text>
+
+    <!-- glm-5.3: 4 runs, failed 4, mean 524s -->
+    <text x="16" y="142" class="label">glm-5.3</text>
+    <rect x="150" y="130" width="0" height="18" fill="#2a78d6"/>
+    <rect x="150" y="130" width="88.0" height="18" fill="#e34948"/>
+    <text x="446" y="143" class="value">0 passed, 4 failed · 4 runs · mean 524s</text>
+
+    <!-- claude-sonnet-5: 7 runs, passed 7, mean 285s -->
+    <text x="16" y="182" class="label">claude-sonnet-5</text>
+    <rect x="150" y="170" width="154.0" height="18" fill="#2a78d6"/>
+    <text x="446" y="183" class="value">7 passed, 0 failed · 7 runs · mean 285s</text>
+
+    <!-- claude-opus-5: 2 runs, passed 2, mean 753s -->
+    <text x="16" y="222" class="label">claude-opus-5</text>
+    <rect x="150" y="210" width="44.0" height="18" fill="#2a78d6"/>
+    <text x="446" y="223" class="value">2 passed, 0 failed · 2 runs · mean 753s</text>
+  </g>
+
+  <g class="axis">
+    <rect x="16" y="250" width="12" height="12" fill="#2a78d6"/>
+    <text x="34" y="260">passed</text>
+    <rect x="96" y="250" width="12" height="12" fill="#e34948"/>
+    <text x="114" y="260">failed</text>
+    <rect x="170" y="250" width="12" height="12" fill="#c3c2b7"/>
+    <text x="188" y="260">not-run</text>
+  </g>
+  <text x="16" y="284" class="axis">Source: uv run reckon crew ledger --project reckon --view records, filtered to plan clive-local-workers (38 runs). Bar length is count of runs; scale 2px per run.</text>
+</svg>
